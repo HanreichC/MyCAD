@@ -17,7 +17,10 @@
 #include <GProp_GProps.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS_Iterator.hxx>
+#include <gp_Ax1.hxx>
+#include <Standard_Failure.hxx>
 #include <gp_Pln.hxx>
 
 #include <algorithm>
@@ -28,6 +31,50 @@ namespace
 {
 const char* OpEnums[] = {"New Body", "Join", "Cut", "Intersect", nullptr};
 const char* ExtentEnums[] = {"One Side", "Symmetric", "Two Sides", nullptr};
+const char* AxisEnums[] = {"Sketch X", "Sketch Y", "X", "Y", "Z", nullptr};
+
+/// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
+std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, Part::Feature*& sketch, const char*& error)
+{
+    auto profiles = freecad_cast<Profiles*>(profile.getValue());
+    sketch = profiles ? freecad_cast<Part::Feature*>(profiles->Sketch.getValue()) : nullptr;
+    if (!sketch) {
+        error = "Select a profile";
+        return {};
+    }
+    const Part::TopoShape all = profiles->Shape.getShape();
+    std::vector<Part::TopoShape> faces;
+    for (const auto& sub : profile.getSubValues()) {
+        faces.push_back(all.getSubTopoShape(sub.c_str(), true));
+    }
+    if (faces.empty()) {
+        faces = all.getSubTopoShapes(TopAbs_FACE);
+    }
+    std::erase_if(faces, [](const Part::TopoShape& f) { return f.isNull(); });
+    if (faces.empty()) {
+        error = "Sketch has no closed profile";
+    }
+    return faces;
+}
+
+/// Ein Body ist ein Solid: Compound-Hüllen um genau einen Solid auspacken (Fillet/Chamfer scheitern sonst)
+Part::TopoShape solidOf(const Part::TopoShape& shape)
+{
+    if (shape.getShape().ShapeType() == TopAbs_COMPOUND && shape.countSubShapes(TopAbs_SOLID) == 1) {
+        return shape.getSubTopoShape(TopAbs_SOLID, 1);
+    }
+    return shape;
+}
+
+/// Mehrere Werkzeugkörper zu einem vereinen
+Part::TopoShape fuseAll(const std::vector<Part::TopoShape>& shapes, App::StringHasherRef hasher)
+{
+    if (shapes.size() == 1) {
+        return shapes.front();
+    }
+    Part::TopoShape tool = Part::TopoShape(0, hasher).makeElementFuse(shapes);
+    return tool.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched);
+}
 }  // namespace
 
 App::Part* Design::root(App::Document* doc, bool create)
@@ -214,7 +261,7 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& tool)
     std::vector<Part::TopoShape> results;
 
     if (op() == Op::NewBody) {
-        results.push_back(tool);
+        results.push_back(solidOf(tool));
     }
     else {
         if (bodies.empty() || bases.size() != bodies.size()) {
@@ -241,7 +288,7 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& tool)
             if (res.isNull() || res.countSubShapes(TopAbs_SOLID) == 0) {
                 return new App::DocumentObjectExecReturn("Result would be empty");
             }
-            results.push_back(res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched));
+            results.push_back(solidOf(res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched)));
         }
     }
 
@@ -267,23 +314,11 @@ Extrude::Extrude()
 
 App::DocumentObjectExecReturn* Extrude::execute()
 {
-    auto profiles = freecad_cast<Profiles*>(Profile.getValue());
-    auto sketch = profiles ? freecad_cast<Part::Feature*>(profiles->Sketch.getValue()) : nullptr;
-    if (!sketch) {
-        return new App::DocumentObjectExecReturn("Select a profile to extrude");
-    }
-
-    const Part::TopoShape all = profiles->Shape.getShape();
-    std::vector<Part::TopoShape> faces;
-    for (const auto& sub : Profile.getSubValues()) {
-        faces.push_back(all.getSubTopoShape(sub.c_str(), true));
-    }
+    Part::Feature* sketch = nullptr;
+    const char* error = nullptr;
+    const auto faces = profileFaces(Profile, sketch, error);
     if (faces.empty()) {
-        faces = all.getSubTopoShapes(TopAbs_FACE);
-    }
-    std::erase_if(faces, [](const Part::TopoShape& f) { return f.isNull(); });
-    if (faces.empty()) {
-        return new App::DocumentObjectExecReturn("Sketch has no closed profile");
+        return new App::DocumentObjectExecReturn(error);
     }
 
     Base::Vector3d n = sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1));
@@ -303,7 +338,7 @@ App::DocumentObjectExecReturn* Extrude::execute()
     }
 
     std::vector<Part::TopoShape> prisms;
-    for (auto& face : faces) {
+    for (const auto& face : faces) {
         Part::TopoShape base = face;
         if (start != 0) {
             Base::Matrix4D mov;
@@ -314,10 +349,123 @@ App::DocumentObjectExecReturn* Extrude::execute()
         prisms.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
                              .makeElementPrism(base, gp_Vec(v.x, v.y, v.z)));
     }
-    Part::TopoShape tool = prisms.front();
-    if (prisms.size() > 1) {
-        tool = Part::TopoShape(0, getDocument()->getStringHasher()).makeElementFuse(prisms);
-        tool = tool.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched);
-    }
-    return applyTool(tool);
+    return applyTool(fuseAll(prisms, getDocument()->getStringHasher()));
 }
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Revolve, Design::Feature)
+
+Revolve::Revolve()
+{
+    ADD_PROPERTY_TYPE(Profile, (nullptr), "Revolve", App::Prop_None, "Profiles to revolve");
+    ADD_PROPERTY_TYPE(Axis, (0L), "Revolve", App::Prop_None, "Axis of revolution");
+    Axis.setEnums(AxisEnums);
+    ADD_PROPERTY_TYPE(Angle, (360.0), "Revolve", App::Prop_None, "Angle");
+    ADD_PROPERTY_TYPE(Reversed, (false), "Revolve", App::Prop_None, "Flip direction");
+}
+
+App::DocumentObjectExecReturn* Revolve::execute()
+{
+    Part::Feature* sketch = nullptr;
+    const char* error = nullptr;
+    const auto faces = profileFaces(Profile, sketch, error);
+    if (faces.empty()) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+    const double angle = Angle.getValue();
+    if (angle < Precision::Angular() || angle > 360.0 + Precision::Angular()) {
+        return new App::DocumentObjectExecReturn("Angle must be between 0 and 360 degrees");
+    }
+
+    const Base::Placement pla = sketch->Placement.getValue();
+    Base::Vector3d origin, dir;
+    switch (Axis.getValue()) {
+        case 0:
+            origin = pla.getPosition();
+            dir = pla.getRotation().multVec(Base::Vector3d(1, 0, 0));
+            break;
+        case 1:
+            origin = pla.getPosition();
+            dir = pla.getRotation().multVec(Base::Vector3d(0, 1, 0));
+            break;
+        default:
+            dir[Axis.getValue() - 2] = 1;
+            break;
+    }
+    if (Reversed.getValue()) {
+        dir = -dir;
+    }
+    const gp_Ax1 axis(gp_Pnt(origin.x, origin.y, origin.z), gp_Dir(dir.x, dir.y, dir.z));
+
+    std::vector<Part::TopoShape> solids;
+    for (const auto& face : faces) {
+        solids.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
+                             .makeElementRevolve(face, axis, angle * M_PI / 180.0));
+    }
+    return applyTool(fuseAll(solids, getDocument()->getStringHasher()));
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::DressUp, Design::Feature)
+
+DressUp::DressUp()
+{
+    ADD_PROPERTY_TYPE(Edges, (), "DressUp", App::Prop_None, "Edges (or faces) of the body before this feature");
+    ADD_PROPERTY_TYPE(Size, (1.0), "DressUp", App::Prop_None, "Radius or distance");
+    Operation.setStatus(App::Property::Hidden, true);  // verändert immer den eigenen Body
+}
+
+App::DocumentObjectExecReturn* DressUp::run(bool fillet)
+{
+    const auto& bodies = Bodies.getValues();
+    const auto& bases = BaseFeatures.getValues();
+    auto base = bases.empty() ? nullptr : freecad_cast<Feature*>(bases.front());
+    if (bodies.size() != 1 || !base) {
+        return new App::DocumentObjectExecReturn("Select edges of one body");
+    }
+    const Part::TopoShape shape = base->shapeFor(bodies.front());
+
+    // Flächen stehen für alle ihre Kanten; doppelte Kanten zählen einmal
+    std::vector<Part::TopoShape> edges;
+    TopTools_IndexedMapOfShape seen;
+    for (const auto& name : Edges.getValues()) {
+        const Part::TopoShape sub = shape.getSubTopoShape(name.c_str(), true);
+        for (const auto& edge : sub.isNull() ? std::vector<Part::TopoShape>() : sub.getSubTopoShapes(TopAbs_EDGE)) {
+            if (seen.Add(edge.getShape()) == seen.Extent()) {
+                edges.push_back(edge);
+            }
+        }
+    }
+    if (edges.empty()) {
+        return new App::DocumentObjectExecReturn("Select one or more edges");
+    }
+    const double size = Size.getValue();
+    if (size < Precision::Confusion()) {
+        return new App::DocumentObjectExecReturn("Size must be greater than zero");
+    }
+
+    Part::TopoShape res(0, getDocument()->getStringHasher());
+    try {
+        if (fillet) {
+            res.makeElementFillet(shape, edges, size, size);
+        }
+        else {
+            res.makeElementChamfer(shape, edges, Part::ChamferType::equalDistance, size, size);
+        }
+    }
+    catch (const Standard_Failure&) {
+        return new App::DocumentObjectExecReturn(fillet ? "Fillet failed: radius too large?" : "Chamfer failed: distance too large?");
+    }
+    if (res.isNull() || !res.isValid()) {
+        return new App::DocumentObjectExecReturn(fillet ? "Fillet failed: radius too large?" : "Chamfer failed: distance too large?");
+    }
+    Part::TopoShape compound(0, getDocument()->getStringHasher());
+    compound.makeElementCompound({solidOf(res)});
+    Shape.setValue(compound);
+    return StdReturn;
+}
+
+PROPERTY_SOURCE(Design::Fillet, Design::DressUp)
+PROPERTY_SOURCE(Design::Chamfer, Design::DressUp)

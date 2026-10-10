@@ -5841,7 +5841,8 @@ DocumentObjectItem* DocumentItem::findItem(
     bool select
 )
 {
-    if (item->isHidden()) {
+    // MyCAD: Objekte mit ShowInTree=false (z. B. Timeline-Features) bleiben auch beim Auswählen versteckt
+    if (item->isHidden() && (item->object()->showInTree() || showHidden())) {
         item->setHidden(false);
     }
 
@@ -6082,7 +6083,7 @@ bool DocumentItem::showItem(DocumentObjectItem* item, bool select, bool force)
 {
     auto parent = item->parent();
     if (item->isHidden()) {
-        if (!force) {
+        if (!force || !(item->object()->showInTree() || showHidden())) {
             return false;
         }
         item->setHidden(false);

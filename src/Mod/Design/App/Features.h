@@ -81,6 +81,10 @@ public:
     {
         return static_cast<Op>(Operation.getValue());
     }
+    const char* getViewProviderName() const override
+    {
+        return "DesignGui::ViewProviderFeature";
+    }
     /// Ergebnis dieses Features für einen der betroffenen Bodies
     Part::TopoShape shapeFor(const App::DocumentObject* body) const;
 
@@ -102,9 +106,56 @@ public:
     App::PropertyBool Reversed;
 
     App::DocumentObjectExecReturn* execute() override;
-    const char* getViewProviderName() const override
+};
+
+class DesignExport Revolve: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Revolve);
+
+public:
+    Revolve();
+    App::PropertyLinkSub Profile;
+    App::PropertyEnumeration Axis;  ///< Skizzen-X/Y-Achse oder Ursprungsachse X/Y/Z
+    App::PropertyAngle Angle;
+    App::PropertyBool Reversed;
+
+    App::DocumentObjectExecReturn* execute() override;
+};
+
+/// Kanten-Features (Fillet, Chamfer): verändern genau einen Body.
+/// Edges sind Namen ("EdgeN", oder "FaceN" für alle Kanten einer Fläche) im Body-Zustand vor diesem Feature.
+class DesignExport DressUp: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::DressUp);
+
+public:
+    DressUp();
+    App::PropertyStringList Edges;
+    App::PropertyLength Size;  ///< Radius bzw. Fasenabstand
+
+protected:
+    App::DocumentObjectExecReturn* run(bool fillet);
+};
+
+class DesignExport Fillet: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Fillet);
+
+public:
+    App::DocumentObjectExecReturn* execute() override
     {
-        return "DesignGui::ViewProviderExtrude";
+        return run(true);
+    }
+};
+
+class DesignExport Chamfer: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Chamfer);
+
+public:
+    App::DocumentObjectExecReturn* execute() override
+    {
+        return run(false);
     }
 };
 

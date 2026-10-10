@@ -32,19 +32,19 @@ public:
 };
 
 /// Timeline-Feature: im 3D unsichtbar (das Ergebnis zeigt der Body), nicht im Browser, Doppelklick bearbeitet.
-class DesignGuiExport ViewProviderExtrude: public PartGui::ViewProviderPartExt
+class DesignGuiExport ViewProviderFeature: public PartGui::ViewProviderPartExt
 {
-    PROPERTY_HEADER_WITH_OVERRIDE(DesignGui::ViewProviderExtrude);
+    PROPERTY_HEADER_WITH_OVERRIDE(DesignGui::ViewProviderFeature);
 
 public:
-    ViewProviderExtrude();
+    ViewProviderFeature();
     void attach(App::DocumentObject* obj) override;
     QIcon getIcon() const override;
     bool doubleClicked() override;
     bool setEdit(int ModNum) override;
     void unsetEdit(int ModNum) override;
 
-    /// vom Extrude-Befehl gesetzt: der Dialog wählt dann Operation und Ziel-Body selbst
+    /// vom Befehl gesetzt: der Dialog wählt dann Operation und Ziel-Body selbst (Extrude, Revolve)
     bool createMode = false;
     Design::Body* defaultTarget = nullptr;
 };

@@ -36,6 +36,10 @@ PyMOD_INIT_FUNC(Design)
     Design::Profiles::init();
     Design::Feature::init();
     Design::Extrude::init();
+    Design::Revolve::init();
+    Design::DressUp::init();
+    Design::Fillet::init();
+    Design::Chamfer::init();
 
     PyMOD_Return(mod);
 }

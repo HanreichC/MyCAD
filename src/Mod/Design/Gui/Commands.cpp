@@ -27,6 +27,7 @@
 #include <QMessageBox>
 #include <QTimer>
 
+#include <functional>
 #include <memory>
 
 namespace
@@ -167,31 +168,47 @@ private:
     static inline std::unique_ptr<PlanePicker> active;
 };
 
-}  // namespace
-
-// ---------------------------------------------------------------------------------------------
-
-DEF_STD_CMD_A(CmdDesignCreateSketch)
-
-CmdDesignCreateSketch::CmdDesignCreateSketch()
-    : Command("Design_CreateSketch")
+/// Kleiner Befehl mit Funktion statt eigener Klasse je Werkzeug
+class DesignCommand: public Gui::Command
 {
-    sAppModule = "Design";
-    sGroup = "Design";
-    sMenuText = QT_TR_NOOP("Create Sketch");
-    sToolTipText = QT_TR_NOOP("Create Sketch: click a plane or planar face to sketch on");
-    sWhatsThis = "Design_CreateSketch";
-    sStatusTip = sToolTipText;
-    sPixmap = "Sketcher_NewSketch";
-    sAccel = "S";
-    eType = NoTransaction;
-}
+public:
+    DesignCommand(const char* name, const char* text, const char* tip, const char* pixmap, const char* accel,
+                  std::function<void(App::Document*)> run)
+        : Command(name)
+        , run(std::move(run))
+    {
+        sAppModule = "Design";
+        sGroup = "Design";
+        sMenuText = text;
+        sToolTipText = tip;
+        sWhatsThis = name;
+        sStatusTip = tip;
+        sPixmap = pixmap;
+        sAccel = accel;
+        eType = NoTransaction;  // Transaktion verwaltet der Werkzeug-Dialog selbst (Abbrechen = alles zurück)
+    }
+    const char* className() const override
+    {
+        return "DesignCommand";
+    }
 
-void CmdDesignCreateSketch::activated(int)
+protected:
+    void activated(int) override
+    {
+        run(getDocument());
+    }
+    bool isActive() override
+    {
+        return hasActiveDocument() && !Gui::Control().activeDialog();
+    }
+
+private:
+    std::function<void(App::Document*)> run;
+};
+
+void createSketchCommand(App::Document* doc)
 {
-    App::Document* doc = getDocument();
     App::Part* root = Design::root(doc, true);
-
     // Bereits etwas Passendes ausgewählt? Dann sofort darauf skizzieren.
     auto selection = Gui::Selection().getSelectionEx();
     for (auto& sel : selection) {
@@ -209,32 +226,19 @@ void CmdDesignCreateSketch::activated(int)
     PlanePicker::start(root);
 }
 
-bool CmdDesignCreateSketch::isActive()
+void startEditing(App::DocumentObject* feature, bool createMode, Design::Body* target)
 {
-    return hasActiveDocument() && !Gui::Control().activeDialog();
+    Gui::Selection().clearSelection();
+    Gui::Document* gdoc = Gui::Application::Instance->getDocument(feature->getDocument());
+    auto vp = static_cast<DesignGui::ViewProviderFeature*>(gdoc->getViewProvider(feature));
+    vp->createMode = createMode;
+    vp->defaultTarget = target;
+    gdoc->setEdit(vp);
 }
 
-// ---------------------------------------------------------------------------------------------
-
-DEF_STD_CMD_A(CmdDesignExtrude)
-
-CmdDesignExtrude::CmdDesignExtrude()
-    : Command("Design_Extrude")
+/// Extrude, Revolve: Profile aus der Auswahl (Profilflächen oder ganze Skizze)
+void startProfileFeature(App::Document* doc, const char* type, const char* name)
 {
-    sAppModule = "Design";
-    sGroup = "Design";
-    sMenuText = QT_TR_NOOP("Extrude");
-    sToolTipText = QT_TR_NOOP("Extrude: select one or more sketch profiles");
-    sWhatsThis = "Design_Extrude";
-    sStatusTip = sToolTipText;
-    sPixmap = "PartDesign_Pad";
-    sAccel = "E";
-    eType = NoTransaction;
-}
-
-void CmdDesignExtrude::activated(int)
-{
-    App::Document* doc = getDocument();
     Design::Profiles* profiles = nullptr;
     std::vector<std::string> faces;
     auto selection = Gui::Selection().getSelectionEx();
@@ -263,49 +267,91 @@ void CmdDesignExtrude::activated(int)
         }
     }
     if (!profiles) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Extrude"),
+        QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name),
                                  QStringLiteral("Select one or more profiles (closed areas of a sketch) first."));
         return;
     }
 
-    doc->openTransaction("Extrude");
-    App::Part* root = Design::root(doc, true);
-    auto ext = static_cast<Design::Extrude*>(doc->addObject("Design::Extrude", "Extrude"));
-    root->addObject(ext);
-    ext->Profile.setValue(profiles, faces);
+    doc->openTransaction(name);
+    auto feature = static_cast<Design::Feature*>(doc->addObject(type, name));
+    Design::root(doc, true)->addObject(feature);
+    static_cast<App::PropertyLinkSub*>(feature->getPropertyByName("Profile"))->setValue(profiles, faces);
 
     // Skizze auf einer Körperfläche: standardmäßig mit diesem Körper vereinen
     Design::Body* target = nullptr;
     if (auto sketch = freecad_cast<Part::Part2DObject*>(profiles->Sketch.getValue())) {
         const auto& support = sketch->AttachmentSupport.getValues();
         const auto& subs = sketch->AttachmentSupport.getSubValues();
-        auto feature = support.empty() ? nullptr : freecad_cast<Design::Feature*>(support.front());
-        if (feature && !subs.empty()) {
-            const TopoDS_Shape face = feature->Shape.getShape().getSubShape(subs.front().c_str(), true);
-            for (auto obj : feature->Bodies.getValues()) {
-                if (!faceName(feature->shapeFor(obj).getShape(), face).empty()) {
+        auto base = support.empty() ? nullptr : freecad_cast<Design::Feature*>(support.front());
+        if (base && !subs.empty()) {
+            const TopoDS_Shape face = base->Shape.getShape().getSubShape(subs.front().c_str(), true);
+            for (auto obj : base->Bodies.getValues()) {
+                if (!faceName(base->shapeFor(obj).getShape(), face).empty()) {
                     target = freecad_cast<Design::Body*>(obj);
                 }
             }
         }
     }
-
-    Gui::Selection().clearSelection();
-    Gui::Document* gdoc = Gui::Application::Instance->getDocument(doc);
-    auto vp = static_cast<DesignGui::ViewProviderExtrude*>(gdoc->getViewProvider(ext));
-    vp->createMode = true;
-    vp->defaultTarget = target;
-    gdoc->setEdit(vp);
+    startEditing(feature, true, target);
 }
 
-bool CmdDesignExtrude::isActive()
+/// Fillet, Chamfer: Kanten oder Flächen eines Bodies aus der Auswahl
+void startDressUp(App::Document* doc, const char* type, const char* name)
 {
-    return hasActiveDocument() && !Gui::Control().activeDialog();
+    Design::Body* body = nullptr;
+    std::vector<std::string> edges;
+    auto selection = Gui::Selection().getSelectionEx();
+    for (auto& sel : selection) {
+        auto b = freecad_cast<Design::Body*>(sel.getObject());
+        if (!b || (body && b != body)) {
+            continue;
+        }
+        body = b;
+        for (const auto& sub : sel.getSubNames()) {
+            if (sub.rfind("Edge", 0) == 0 || sub.rfind("Face", 0) == 0) {
+                edges.push_back(sub);
+            }
+        }
+    }
+    if (!body || edges.empty() || !body->Tip.getValue()) {
+        QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name),
+                                 QStringLiteral("Select edges (or faces) of a body first."));
+        return;
+    }
+
+    doc->openTransaction(name);
+    auto feature = static_cast<Design::DressUp*>(doc->addObject(type, name));
+    Design::root(doc, true)->addObject(feature);
+    feature->Bodies.setValues({body});
+    feature->BaseFeatures.setValues({body->Tip.getValue()});
+    feature->Edges.setValues(edges);
+    body->Tip.setValue(feature);
+    doc->recompute();
+    startEditing(feature, false, nullptr);
 }
+
+}  // namespace
 
 void CreateDesignCommands()
 {
     auto& mgr = Gui::Application::Instance->commandManager();
-    mgr.addCommand(new CmdDesignCreateSketch());
-    mgr.addCommand(new CmdDesignExtrude());
+    mgr.addCommand(new DesignCommand("Design_CreateSketch", "Create Sketch",
+                                     "Create Sketch: click a plane or planar face to sketch on",
+                                     "Sketcher_NewSketch", "S", createSketchCommand));
+    mgr.addCommand(new DesignCommand("Design_Extrude", "Extrude", "Extrude: select one or more sketch profiles",
+                                     "PartDesign_Pad", "E", [](App::Document* doc) {
+                                         startProfileFeature(doc, "Design::Extrude", "Extrude");
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_Revolve", "Revolve", "Revolve: select one or more sketch profiles",
+                                     "PartDesign_Revolution", "", [](App::Document* doc) {
+                                         startProfileFeature(doc, "Design::Revolve", "Revolve");
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_Fillet", "Fillet", "Fillet: select edges or faces of a body",
+                                     "PartDesign_Fillet", "F", [](App::Document* doc) {
+                                         startDressUp(doc, "Design::Fillet", "Fillet");
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_Chamfer", "Chamfer", "Chamfer: select edges or faces of a body",
+                                     "PartDesign_Chamfer", "", [](App::Document* doc) {
+                                         startDressUp(doc, "Design::Chamfer", "Chamfer");
+                                     }));
 }
