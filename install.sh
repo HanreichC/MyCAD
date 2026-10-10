@@ -34,7 +34,7 @@ exec podman run --rm --userns=keep-id --group-add keep-groups \\
     --device /dev/dri \\
     -v "$ROOT:/workspace" -v "\$HOME:\$HOME" -w "\$PWD" \\
     -v "\$XDG_RUNTIME_DIR/\$WAYLAND_DISPLAY:/tmp/runtime/\$WAYLAND_DISPLAY" \\
-    -v /usr/share/fonts:/usr/share/fonts:ro \\
+    -v /usr/share/fonts:/usr/local/share/fonts:ro \\
     -e HOME="\$HOME" -e XDG_RUNTIME_DIR=/tmp/runtime -e WAYLAND_DISPLAY="\$WAYLAND_DISPLAY" \\
     -e QT_QPA_PLATFORM=wayland \\
     $IMAGE /workspace/build/bin/FreeCAD "\$@"

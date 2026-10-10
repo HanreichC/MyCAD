@@ -9,5 +9,5 @@ RUN pacman -Syu --noconfirm --needed \
         qt6-base qt6-declarative qt6-shadertools qt6-svg qt6-tools qt6-wayland \
         pyside6 shiboken6 python-pivy coin opencascade xerces-c yaml-cpp fmt icu freetype2 zlib \
         python-yaml python-packaging python-matplotlib \
-        mesa glu libglvnd ttf-dejavu \
+        mesa glu libglvnd ttf-dejavu inter-font \
     && pacman -Scc --noconfirm

@@ -226,6 +226,17 @@ Ziel: `mycad` startet. Optisch ist es noch die alte FreeCAD-Oberfläche, aber nu
 - [x] `.gitignore`, `README.md`, `install.sh` (Build im Container + Starter `mycad` + Menüeintrag)
 
 ### Phase 2: Technik-Prototyp Liquid-Glass-Viewport *(größtes technisches Risiko zuerst)*
+
+> **Entscheidung (2026-10-10):** Statt eines kompletten QML-Neubaus sitzen die Glass-Panels als GPU-Elemente
+> direkt in der Szene des vorhandenen 3D-Viewers (`QuarterWidget` ist ein `QGraphicsView`). Coin rendert zuerst,
+> danach blurrt `Gui/Shell/GlassPanel` die fertigen Pixel unter sich. Vorteil: Sketcher, Task-Dialoge, Auswahl
+> und Undo von FreeCAD funktionieren unverändert weiter. Abschnitt 3.2 (QML) gilt damit nur noch als Option.
+
+- [x] `Gui/Shell/GlassPanel`: Blur (Downsample + Gauß), Linse mit Farbaufspaltung, Glanzkante, Tönung, Schatten
+- [x] `Gui/Shell/Shell`: Menüs/Toolbars/Docks/Statusleiste weg, 3D-Ansicht randlos über das ganze Fenster,
+      Glass-Toolbar (wechselt im Sketch-Modus), Browser links, Inspector rechts nur bei aktivem Werkzeug,
+      beim Start automatisch neues Design, Inter-Schrift, Hell/Dunkel nach System
+- [ ] Offen: eigenes Icon-Set, eigener ViewCube, Timeline unten, rahmenloses Fenster, pivy-SWIG-Fehler im Container
 Ziel: Ein QML-Fenster zeigt eine Coin-Szene mit Navigation, darüber ein echtes Liquid-Glass-Panel bei 60+ fps.
 - [ ] `CoinViewportItem` (QQuickFramebufferObject, OpenGL-RHI), Maus/Tastatur/Touchpad → `SoEventManager`
 - [ ] Glass-Shader v1: Blur, Lensing, Specular, adaptive Tönung. Vergleich mit Apple-Referenzscreenshots.

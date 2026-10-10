@@ -51,6 +51,7 @@
 #include "FileDialog.h"
 #include "GuiApplication.h"
 #include "MainWindow.h"
+#include "Shell/Shell.h"
 #include "Language/Translator.h"
 #include "Dialogs/DlgVersionMigrator.h"
 #include "FreeCADStyle.h"
@@ -227,6 +228,7 @@ void StartupPostProcess::execute()
     activateWorkbench();
     checkParameters();
     checkVersionMigration();
+    Shell::install();
 }
 
 void StartupPostProcess::setWindowTitle()

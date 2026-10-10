@@ -57,6 +57,11 @@ Gui::TaskView::TaskView* ControlSingleton::taskPanel() const
     auto taskView = qobject_cast<Gui::TaskView::TaskView*>(
         Gui::DockWindowManager::instance()->getDockWindow("Tasks")
     );
+    if (!taskView) {  // MyCAD: Aufgaben-Panel sitzt in einem Glass-Panel statt im Dock
+        taskView = qobject_cast<Gui::TaskView::TaskView*>(
+            Gui::DockWindowManager::instance()->findRegisteredDockWindow("Std_TaskView")
+        );
+    }
     return taskView;
 }
 
