@@ -19,6 +19,29 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QSpinBox>
+#include <QFontMetricsF>
+#include <QGraphicsItem>
+#include <QGraphicsScene>
+#include <QGraphicsSceneHoverEvent>
+#include <QGraphicsSceneMouseEvent>
+#include <QGuiApplication>
+#include <QPainter>
+#include <QPainterPath>
+#include <QPointer>
+#include <QStyleHints>
+
+#include <Gui/View3DInventor.h>
+#include <Gui/View3DInventorViewer.h>
+#include <Inventor/SbVec3f.h>
+
+#include <BRepAdaptor_Surface.hxx>
+#include <BRepGProp.hxx>
+#include <BRep_Builder.hxx>
+#include <GProp_GProps.hxx>
+#include <TopoDS.hxx>
+#include <TopoDS_Compound.hxx>
+
+#include <functional>
 
 #include <algorithm>
 
@@ -52,6 +75,134 @@ void ViewProviderProfiles::attach(App::DocumentObject* obj)
 
 namespace
 {
+
+/// Ziehpfeil im 3D-Fenster wie in Fusion: Griff an der Spitze entlang einer Achse ziehen ändert den Abstand
+class DragArrow: public QGraphicsItem
+{
+public:
+    DragArrow(Gui::View3DInventorViewer* viewer, const SbVec3f& base, const SbVec3f& dir,
+              std::function<double()> get, std::function<void(double)> set)
+        : viewer(viewer)
+        , base(base)
+        , dir(dir)
+        , get(std::move(get))
+        , set(std::move(set))
+    {
+        setZValue(5);  // unter den Glass-Panels
+        setAcceptHoverEvents(true);
+        viewer->scene()->addItem(this);
+    }
+
+    QRectF boundingRect() const override
+    {
+        return scene() ? scene()->sceneRect() : QRectF();  // zeichnet überall, greift nur am Griff
+    }
+    QPainterPath shape() const override
+    {
+        QPainterPath path;
+        path.addEllipse(tip, 15, 15);
+        return path;
+    }
+
+    void paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*) override
+    {
+        if (!viewer) {
+            return;
+        }
+        const double d = get();
+        const QPointF from = viewer->toQPoint(viewer->getPointOnViewport(base));
+        tip = viewer->toQPoint(viewer->getPointOnViewport(base + dir * float(d)));
+        const bool dark = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+        const QColor accent = dark ? QColor(10, 132, 255) : QColor(0, 122, 255);
+        p->setRenderHint(QPainter::Antialiasing);
+        p->setPen(QPen(accent, 2.5, Qt::SolidLine, Qt::RoundCap));
+        p->drawLine(from, tip);
+        p->setBrush(accent);
+        p->setPen(Qt::NoPen);
+        p->drawEllipse(from, 3.5, 3.5);
+
+        // Griff: Glas-Kreis mit Pfeil in Zugrichtung
+        p->setBrush(hovered || dragging ? accent : (dark ? QColor(44, 44, 48, 235) : QColor(255, 255, 255, 240)));
+        p->setPen(QPen(accent, 2));
+        p->drawEllipse(tip, 11, 11);
+        QLineF axis(from, tip);
+        if (axis.length() < 1) {
+            axis = QLineF(from, from + QPointF(0, -1));
+        }
+        QLineF unit = axis.unitVector();
+        const QPointF u = (unit.p2() - unit.p1()) * (d < 0 ? -1 : 1);
+        const QPointF n(-u.y(), u.x());
+        QPainterPath chevron;
+        chevron.moveTo(tip - u * 2.5 + n * 4);
+        chevron.lineTo(tip + u * 3.5);
+        chevron.lineTo(tip - u * 2.5 - n * 4);
+        p->setBrush(Qt::NoBrush);
+        p->setPen(QPen(hovered || dragging ? QColor(Qt::white) : accent, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        p->drawPath(chevron);
+
+        // Maß-Kapsel neben dem Griff
+        QFont font(QStringLiteral("Inter"));
+        font.setPixelSize(12);
+        font.setWeight(QFont::DemiBold);
+        p->setFont(font);
+        const QString text = QString::fromStdString(Base::Quantity(d, Base::Unit::Length).getUserString());
+        const QRectF label(tip + QPointF(18, -12), QSizeF(QFontMetricsF(font).horizontalAdvance(text) + 18, 24));
+        p->setPen(QPen(dark ? QColor(255, 255, 255, 40) : QColor(0, 0, 0, 30), 1));
+        p->setBrush(dark ? QColor(44, 44, 48, 235) : QColor(255, 255, 255, 240));
+        p->drawRoundedRect(label, 12, 12);
+        p->setPen(dark ? QColor(245, 245, 247) : QColor(29, 29, 31));
+        p->drawText(label, Qt::AlignCenter, text);
+    }
+
+protected:
+    void hoverEnterEvent(QGraphicsSceneHoverEvent*) override
+    {
+        hovered = true;
+        setCursor(Qt::SizeAllCursor);
+        update();
+    }
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent*) override
+    {
+        hovered = false;
+        update();
+    }
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override
+    {
+        dragging = true;
+        event->accept();
+    }
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override
+    {
+        if (!dragging || !viewer) {
+            return;
+        }
+        // Punkt auf der Zugachse, der dem Mausstrahl am nächsten liegt
+        const SbVec3f onAxis = viewer->getPointOnLine(viewer->fromQPoint(event->scenePos().toPoint()), base, dir);
+        const double d = std::round((onAxis - base).dot(dir) * 10.0) / 10.0;  // auf 0,1 mm rasten
+        set(d);
+    }
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent*) override
+    {
+        dragging = false;
+        update();
+    }
+
+private:
+    QPointer<Gui::View3DInventorViewer> viewer;
+    SbVec3f base, dir;
+    std::function<double()> get;
+    std::function<void(double)> set;
+    QPointF tip;
+    bool hovered = false;
+    bool dragging = false;
+};
+
+Gui::View3DInventorViewer* activeViewer(App::Document* doc)
+{
+    auto gdoc = Gui::Application::Instance->getDocument(doc);
+    auto view = gdoc ? dynamic_cast<Gui::View3DInventor*>(gdoc->getActiveView()) : nullptr;
+    return view ? view->getViewer() : nullptr;
+}
 
 QString featureTitle(const Design::Feature* f)
 {
@@ -293,6 +444,12 @@ public:
         form->addRow(status);
         addTaskBox(w, false);
         apply();
+        createArrow();
+    }
+
+    ~TaskFeature() override
+    {
+        delete arrow;
     }
 
     QDialogButtonBox::StandardButtons getStandardButtons() const override
@@ -342,6 +499,68 @@ public:
     }
 
 private:
+    /// Ziehpfeil für Extrude (vom Profil-Schwerpunkt entlang der Skizzennormalen) und Press Pull (Flächennormale)
+    void createArrow()
+    {
+        Gui::View3DInventorViewer* viewer = activeViewer(feature->getDocument());
+        if (!viewer || !distance) {
+            return;
+        }
+        TopoDS_Shape faces;
+        gp_Dir normal;
+        if (extrude) {
+            auto profiles = freecad_cast<Design::Profiles*>(extrude->Profile.getValue());
+            auto sketch = profiles ? freecad_cast<Part::Feature*>(profiles->Sketch.getValue()) : nullptr;
+            if (!sketch) {
+                return;
+            }
+            const Part::TopoShape all = profiles->Shape.getShape();
+            BRep_Builder builder;
+            TopoDS_Compound compound;
+            builder.MakeCompound(compound);
+            for (const auto& sub : extrude->Profile.getSubValues()) {
+                builder.Add(compound, all.getSubShape(sub.c_str(), true));
+            }
+            faces = extrude->Profile.getSubValues().empty() ? all.getShape() : TopoDS_Shape(compound);
+            const Base::Vector3d n = sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1));
+            normal = gp_Dir(n.x, n.y, n.z);
+        }
+        else if (auto pull = freecad_cast<Design::PressPull*>(feature)) {
+            const auto& bases = pull->BaseFeatures.getValues();
+            auto base = bases.empty() ? nullptr : freecad_cast<Design::Feature*>(bases.front());
+            if (!base || pull->Edges.getSize() == 0) {
+                return;
+            }
+            const TopoDS_Shape face = base->shapeFor(pull->Bodies.getValues().front())
+                                          .getSubShape(pull->Edges.getValues().front().c_str(), true);
+            if (face.IsNull() || BRepAdaptor_Surface(TopoDS::Face(face)).GetType() != GeomAbs_Plane) {
+                return;
+            }
+            faces = face;
+            normal = BRepAdaptor_Surface(TopoDS::Face(face)).Plane().Axis().Direction();
+            if (face.Orientation() == TopAbs_REVERSED) {
+                normal.Reverse();
+            }
+        }
+        else {
+            return;
+        }
+        GProp_GProps props;
+        BRepGProp::SurfaceProperties(faces, props);
+        const gp_Pnt c = props.CentreOfMass();
+        arrow = new DragArrow(
+            viewer, SbVec3f(float(c.X()), float(c.Y()), float(c.Z())),
+            SbVec3f(float(normal.X()), float(normal.Y()), float(normal.Z())),
+            [this] {
+                const double d = distance->value().getValue();
+                return extrude && flip->isChecked() ? -d : d;
+            },
+            [this](double d) {
+                distance->setValue(Base::Quantity(extrude && flip->isChecked() ? -d : d, Base::Unit::Length));
+            }
+        );
+    }
+
     void setupOperation(Design::Body* target)
     {
         operation = new QComboBox;
@@ -570,6 +789,7 @@ private:
     QComboBox* body = nullptr;
     QLabel* bodyLabel = nullptr;
     QLabel* status = nullptr;
+    DragArrow* arrow = nullptr;
 };
 
 }  // namespace
