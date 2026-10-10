@@ -72,6 +72,7 @@ SET(SketcherGui_SRCS
     DrawSketchHandlerSplitting.h
     DrawSketchHandlerExternal.h
     DrawSketchHandlerCarbonCopy.h
+    DrawSketchHandlerConic.h
     DrawSketchHandlerSlot.h
     DrawSketchHandlerOffset.h
     DrawSketchHandlerRotate.h

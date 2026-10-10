@@ -52,6 +52,7 @@
 #include "DrawSketchHandler.h"
 #include "DrawSketchHandlerArc.h"
 #include "DrawSketchHandlerArcOfEllipse.h"
+#include "DrawSketchHandlerConic.h"
 #include "DrawSketchHandlerArcOfHyperbola.h"
 #include "DrawSketchHandlerArcOfParabola.h"
 #include "DrawSketchHandlerArcSlot.h"
@@ -246,6 +247,33 @@ bool CmdSketcherCreatePolylineLegacy::isActive()
 {
     return isCommandActive(getActiveGuiDocument());
 }
+// Conic Curve (MyCAD) =====================================================
+
+DEF_STD_CMD_A(CmdSketcherCreateConic)
+
+CmdSketcherCreateConic::CmdSketcherCreateConic()
+    : Command("Sketcher_CreateConic")
+{
+    sAppModule = "Sketcher";
+    sGroup = "Sketcher";
+    sMenuText = QT_TR_NOOP("Conic Curve");
+    sToolTipText = QT_TR_NOOP("Conic Curve: click start point, end point and shoulder point");
+    sWhatsThis = "Sketcher_CreateConic";
+    sStatusTip = sToolTipText;
+    sPixmap = "Sketcher_CreateBSpline";
+    eType = ForEdit;
+}
+
+void CmdSketcherCreateConic::activated(int)
+{
+    ActivateHandler(getActiveGuiDocument(), std::make_unique<DrawSketchHandlerConic>());
+}
+
+bool CmdSketcherCreateConic::isActive()
+{
+    return isCommandActive(getActiveGuiDocument());
+}
+
 // Polyline ================================================================
 
 DEF_STD_CMD_AU(CmdSketcherCreatePolyline)
@@ -1987,6 +2015,7 @@ void CreateSketcherCommandsCreateGeo()
     rcCmdMgr.addCommand(new CmdSketcherCreatePeriodicBSplineByInterpolation());
     rcCmdMgr.addCommand(new CmdSketcherCreateLine());
     rcCmdMgr.addCommand(new CmdSketcherCreatePolyline());
+    rcCmdMgr.addCommand(new CmdSketcherCreateConic());
     rcCmdMgr.addCommand(new CmdSketcherCreatePolylineLegacy());
     rcCmdMgr.addCommand(new CmdSketcherCreateRectangle());
     rcCmdMgr.addCommand(new CmdSketcherCreateRectangleCenter());

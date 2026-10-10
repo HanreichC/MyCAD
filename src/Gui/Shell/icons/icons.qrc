@@ -33,6 +33,7 @@
         <file>Sketcher_CreateSlot.svg</file>
         <file>Sketcher_CompCreateRegularPolygon.svg</file>
         <file>Sketcher_CreateBSpline.svg</file>
+        <file>Sketcher_CreateConic.svg</file>
         <file>Sketcher_CreatePoint.svg</file>
         <file>Sketcher_CreateFillet.svg</file>
         <file>Sketcher_Trimming.svg</file>

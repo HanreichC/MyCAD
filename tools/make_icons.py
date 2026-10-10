@@ -51,6 +51,7 @@ ICONS = {
     "Sketcher_CreateSlot": '<rect x="3" y="8" width="18" height="8" rx="4"/>',
     "Sketcher_CompCreateRegularPolygon": '<path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/>',
     "Sketcher_CreateBSpline": '<path d="M4 18C8 6 12 22 20 6"/>' + DOT.format(4, 18) + DOT.format(20, 6),
+    "Sketcher_CreateConic": '<path d="M4 18Q10 2 20 18"/><path d="M4 18L12 4l8 14"' + DASH + '/>' + DOT.format(4, 18) + DOT.format(20, 18),
     "Sketcher_CreatePoint": '<circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/>',
     # Skizze: Ändern
     "Sketcher_CreateFillet": '<path d="M5 19v-8a6 6 0 0 1 6-6h8"/>',

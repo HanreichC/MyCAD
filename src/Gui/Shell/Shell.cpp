@@ -162,6 +162,13 @@ void applyTheme()
     view->SetUnsigned("ConstrainedDimColor", soft);
     view->SetUnsigned("ConstrainedIcoColor", soft);
     view->SetUnsigned("CursorTextColor", soft);
+
+    // B-Splines wie in Fusion: nur das Kontrollpolygon, keine Analyse-Überlagerungen (Kamm, Gewichte, Knoten)
+    auto sketcher = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher/General");
+    sketcher->SetBool("BSplineCombVisible", false);
+    sketcher->SetBool("BSplinePoleWeightVisible", false);
+    sketcher->SetBool("BSplineKnotMultiplicityVisible", false);
+    sketcher->SetBool("BSplineDegreeVisible", false);
     view->SetUnsigned("HighlightColor", t.dark ? 0x64B5FFFFUL : 0x66AFFFFFUL);
     view->SetUnsigned("DefaultShapeColor", t.dark ? 0x9EA3ADFFUL : 0xC8CCD4FFUL);
     view->SetUnsigned("DefaultShapeLineColor", t.dark ? 0x2A2D33FFUL : 0x6B717CFFUL);
@@ -859,7 +866,8 @@ void Gui::Shell::install()
     state.sketchBar = new GlassPanel(
         toolbar({"Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CreateRectangle",
                  "Sketcher_CreateCircle", "Sketcher_CreateArc", "Sketcher_CreateSlot",
-                 "Sketcher_CompCreateRegularPolygon", "Sketcher_CreateBSpline", "Sketcher_CreatePoint", "",
+                 "Sketcher_CompCreateRegularPolygon", "Sketcher_CreateBSpline", "Sketcher_CreateConic",
+                 "Sketcher_CreatePoint", "",
                  "Sketcher_CreateFillet", "Sketcher_Trimming", "Sketcher_Extend", "Sketcher_Split",
                  "Sketcher_ToggleConstruction", "", "Sketcher_Dimension",
                  "Sketcher_ConstrainCoincidentUnified", "Sketcher_ConstrainHorizontal",
