@@ -19,6 +19,8 @@ ICONS = {
     "Std_Undo": '<path d="M9 7l-4 4 4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-2"/>',
     "Std_Redo": '<path d="M15 7l4 4-4 4"/><path d="M19 11h-9a5 5 0 0 0 0 10h2"/>',
     "Std_ViewFitAll": '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>',
+    "MyCAD_Settings": '<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4'
+    'M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/><circle cx="12" cy="12" r="6.6"/>',
     # Browser, Meldungen (ersetzen FreeCAD-Icons gleichen Zwecks, Zuordnung in Shell.cpp)
     "Tree_Document": '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>',
     "Tree_Component": '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',

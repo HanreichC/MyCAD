@@ -3,6 +3,7 @@
 #include "Shell.h"
 #include "GlassPanel.h"
 #include "ViewCube.h"
+#include "Settings.h"
 
 #include <App/Application.h>
 #include <Gui/Action.h>
@@ -1123,12 +1124,13 @@ void Gui::Shell::install()
 
     // Design-Modul laden (Create Sketch, Extrude, …), egal welche Workbench zuletzt aktiv war
     Application::Instance->activateWorkbench("DesignWorkbench");
+    registerSettings();
 
     state.modelBar = new GlassPanel(
         toolbar({"Std_New", "Std_Open", "Std_Save", "Design_Export", "", "Std_Undo", "Std_Redo", "",
                  "Design_CreateSketch", "Design_Extrude", "Design_Revolve", "",
                  "Design_Hole", "Design_PressPull", "Design_Fillet", "Design_Chamfer", "Design_Shell", "", "Design_Pattern",
-                 "Design_Mirror", "Design_Combine", "Design_Move", "", "Design_OffsetPlane", "Design_NewComponent", "", "Std_ViewFitAll"}),
+                 "Design_Mirror", "Design_Combine", "Design_Move", "", "Design_OffsetPlane", "Design_NewComponent", "", "Std_ViewFitAll", "MyCAD_Settings"}),
         24);
     state.sketchBar = new GlassPanel(
         toolbar({"Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CreateRectangle",
@@ -1182,6 +1184,10 @@ void Gui::Shell::install()
         }
         del->setShortcut(QKeySequence::Delete);
     }
+    if (QAction* prefs = commandAction("Std_DlgPreferences")) {
+        prefs->setShortcut(QKeySequence());  // Ctrl+, öffnet MyCAD_Settings
+    }
+    commandAction("MyCAD_Settings");
 
     hideChrome();
     Application::Instance->signalActivateWorkbench.connect([](const char*) { hideChromeLater(); });

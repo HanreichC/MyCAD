@@ -690,6 +690,7 @@ SET(Dock_Windows_CPP_SRCS
     Shell/GlassPanel.cpp
     Shell/Shell.cpp
     Shell/ViewCube.cpp
+    Shell/Settings.cpp
     ComboView.cpp
     DockWindow.cpp
     PropertyView.cpp
@@ -707,6 +708,7 @@ SET(Dock_Windows_HPP_SRCS
     Shell/GlassPanel.h
     Shell/Shell.h
     Shell/ViewCube.h
+    Shell/Settings.h
     ComboView.h
     DockWindow.h
     PropertyView.h
