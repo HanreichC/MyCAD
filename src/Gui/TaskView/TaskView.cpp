@@ -707,9 +707,15 @@ void TaskView::removeDialog(std::vector<TaskInfo>::iterator infoIt)
     if (remove) {
         remove->ActiveDialog->closed();
         remove->ActiveDialog->emitDestructionSignal();
-        delete remove->ActiveCtrl;
-        delete remove->ActiveDialog;
-        delete remove->taskPanel;
+        // deleteLater: removeDialog läuft meist im clicked() eines Buttons, der selbst zu diesen Widgets gehört.
+        // Sofortiges delete lässt Qt danach auf das gelöschte Widget zugreifen (Absturz im Proxy-Widget der MyCAD-Panels).
+        for (QObject* obj : {static_cast<QObject*>(remove->ActiveCtrl),
+                             static_cast<QObject*>(remove->ActiveDialog),
+                             static_cast<QObject*>(remove->taskPanel)}) {
+            if (obj) {
+                obj->deleteLater();
+            }
+        }
     }
 
     tryRestoreWidth();
@@ -791,7 +797,7 @@ void TaskView::addTaskWatcher(const std::vector<TaskWatcher*>& Watcher)
 {
     // remove and delete the old set of TaskWatcher
     for (TaskWatcher* tw : ActiveWatcher) {
-        delete tw;
+        tw->deleteLater();  // siehe removeDialog: kann aus einem Klick auf einen Watcher-Button kommen
     }
 
     ActiveWatcher = Watcher;
