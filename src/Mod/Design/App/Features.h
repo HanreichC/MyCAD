@@ -91,6 +91,10 @@ public:
 protected:
     /// Wendet die Operation mit dem Werkzeug-Körper auf alle Bodies an und setzt Shape.
     App::DocumentObjectExecReturn* applyTool(const Part::TopoShape& tool);
+    /// Setzt je Body ein Ergebnis (gleiche Reihenfolge wie Bodies)
+    void setResults(const std::vector<Part::TopoShape>& results);
+    /// Zustand von Bodies[i] vor diesem Feature
+    Part::TopoShape baseShape(size_t i) const;
 };
 
 class DesignExport Extrude: public Feature
@@ -135,6 +139,8 @@ public:
 
 protected:
     App::DocumentObjectExecReturn* run(bool fillet);
+    /// Gewählte Elemente des Bodies vor diesem Feature; Flächen werden bei expandFaces zu ihren Kanten
+    std::vector<Part::TopoShape> elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type) const;
 };
 
 class DesignExport Fillet: public DressUp
@@ -157,6 +163,56 @@ public:
     {
         return run(false);
     }
+};
+
+/// Körper aushöhlen: Edges = zu öffnende Flächen, Size = Wandstärke
+class DesignExport Shell: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Shell);
+
+public:
+    Shell();
+    App::PropertyBool Outside;
+    App::DocumentObjectExecReturn* execute() override;
+};
+
+/// Ziel-Body mit Werkzeug-Bodies vereinen, abziehen oder schneiden
+class DesignExport Combine: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Combine);
+
+public:
+    Combine();
+    App::PropertyLinkListHidden ToolBodies;
+    App::PropertyLinkList ToolFeatures;  ///< Zustand der Werkzeug-Bodies (wie bei Skizzen: Timeline-Zustand)
+    App::PropertyBool KeepTools;
+    App::DocumentObjectExecReturn* execute() override;
+};
+
+/// Bodies verschieben und drehen (um ihren Mittelpunkt)
+class DesignExport Move: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Move);
+
+public:
+    Move();
+    App::PropertyVector Translation;
+    App::PropertyEnumeration RotationAxis;
+    App::PropertyAngle Angle;
+    App::DocumentObjectExecReturn* execute() override;
+};
+
+/// Bodies an einer Ursprungsebene spiegeln; jedes Ergebnis ist ein neuer Body
+class DesignExport Mirror: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Mirror);
+
+public:
+    Mirror();
+    App::PropertyLinkListHidden SourceBodies;
+    App::PropertyLinkList SourceFeatures;
+    App::PropertyEnumeration Plane;
+    App::DocumentObjectExecReturn* execute() override;
 };
 
 }  // namespace Design

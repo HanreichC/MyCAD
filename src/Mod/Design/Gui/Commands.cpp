@@ -296,7 +296,7 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name)
 }
 
 /// Fillet, Chamfer: Kanten oder Flächen eines Bodies aus der Auswahl
-void startDressUp(App::Document* doc, const char* type, const char* name)
+void startDressUp(App::Document* doc, const char* type, const char* name, bool bodyAlone = false)
 {
     Design::Body* body = nullptr;
     std::vector<std::string> edges;
@@ -313,7 +313,7 @@ void startDressUp(App::Document* doc, const char* type, const char* name)
             }
         }
     }
-    if (!body || edges.empty() || !body->Tip.getValue()) {
+    if (!body || (edges.empty() && !bodyAlone) || !body->Tip.getValue()) {
         QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name),
                                  QStringLiteral("Select edges (or faces) of a body first."));
         return;
@@ -326,6 +326,104 @@ void startDressUp(App::Document* doc, const char* type, const char* name)
     feature->BaseFeatures.setValues({body->Tip.getValue()});
     feature->Edges.setValues(edges);
     body->Tip.setValue(feature);
+    doc->recompute();
+    startEditing(feature, false, nullptr);
+}
+
+/// Gewählte Bodies in Auswahlreihenfolge (ohne Doppelte)
+std::vector<Design::Body*> selectedBodies()
+{
+    std::vector<Design::Body*> bodies;
+    auto selection = Gui::Selection().getSelectionEx();
+    for (auto& sel : selection) {
+        auto b = freecad_cast<Design::Body*>(sel.getObject());
+        if (b && b->Tip.getValue() && std::ranges::find(bodies, b) == bodies.end()) {
+            bodies.push_back(b);
+        }
+    }
+    return bodies;
+}
+
+Design::Feature* addFeature(App::Document* doc, const char* type, const char* name)
+{
+    doc->openTransaction(name);
+    auto feature = static_cast<Design::Feature*>(doc->addObject(type, name));
+    Design::root(doc, true)->addObject(feature);
+    return feature;
+}
+
+/// Feature verändert die Bodies: je Body vorheriger Zustand als Basis, das Feature wird neuer Tip
+void modifyBodies(Design::Feature* feature, const std::vector<Design::Body*>& bodies)
+{
+    std::vector<App::DocumentObject*> objs, bases;
+    for (auto b : bodies) {
+        objs.push_back(b);
+        bases.push_back(b->Tip.getValue());
+    }
+    feature->Bodies.setValues(objs);
+    feature->BaseFeatures.setValues(bases);
+    for (auto b : bodies) {
+        b->Tip.setValue(feature);
+    }
+}
+
+void startCombine(App::Document* doc)
+{
+    const auto bodies = selectedBodies();
+    if (bodies.size() < 2) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Combine"),
+                                 QStringLiteral("Select the target body first, then one or more tool bodies."));
+        return;
+    }
+    auto feature = static_cast<Design::Combine*>(addFeature(doc, "Design::Combine", "Combine"));
+    std::vector<App::DocumentObject*> tools, states;
+    for (size_t i = 1; i < bodies.size(); ++i) {
+        tools.push_back(bodies[i]);
+        states.push_back(bodies[i]->Tip.getValue());
+    }
+    feature->ToolBodies.setValues(tools);
+    feature->ToolFeatures.setValues(states);
+    modifyBodies(feature, {bodies.front()});
+    doc->recompute();
+    startEditing(feature, false, nullptr);
+}
+
+void startMove(App::Document* doc)
+{
+    const auto bodies = selectedBodies();
+    if (bodies.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Move"),
+                                 QStringLiteral("Select one or more bodies first."));
+        return;
+    }
+    auto feature = addFeature(doc, "Design::Move", "Move");
+    modifyBodies(feature, bodies);
+    doc->recompute();
+    startEditing(feature, false, nullptr);
+}
+
+void startMirror(App::Document* doc)
+{
+    const auto bodies = selectedBodies();
+    if (bodies.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Mirror"),
+                                 QStringLiteral("Select one or more bodies first."));
+        return;
+    }
+    auto feature = static_cast<Design::Mirror*>(addFeature(doc, "Design::Mirror", "Mirror"));
+    std::vector<App::DocumentObject*> sources, states, created;
+    for (auto b : bodies) {
+        sources.push_back(b);
+        states.push_back(b->Tip.getValue());
+        auto copy = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
+        copy->Label.setValue(std::string(b->Label.getValue()) + " Mirror");
+        Design::folder(Design::root(doc, true), "Bodies")->addObject(copy);
+        copy->Tip.setValue(feature);
+        created.push_back(copy);
+    }
+    feature->SourceBodies.setValues(sources);
+    feature->SourceFeatures.setValues(states);
+    feature->Bodies.setValues(created);
     doc->recompute();
     startEditing(feature, false, nullptr);
 }
@@ -350,6 +448,17 @@ void CreateDesignCommands()
                                      "PartDesign_Fillet", "F", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Fillet", "Fillet");
                                      }));
+    mgr.addCommand(new DesignCommand("Design_Shell", "Shell", "Shell: select faces to remove (or the body)",
+                                     "PartDesign_Thickness", "", [](App::Document* doc) {
+                                         startDressUp(doc, "Design::Shell", "Shell", true);
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_Combine", "Combine",
+                                     "Combine: select the target body, then the tool bodies",
+                                     "Part_Fuse", "", startCombine));
+    mgr.addCommand(new DesignCommand("Design_Move", "Move", "Move: select bodies to move or rotate",
+                                     "Std_TransformManip", "M", startMove));
+    mgr.addCommand(new DesignCommand("Design_Mirror", "Mirror", "Mirror: select bodies to mirror",
+                                     "PartDesign_Mirrored", "", startMirror));
     mgr.addCommand(new DesignCommand("Design_Chamfer", "Chamfer", "Chamfer: select edges or faces of a body",
                                      "PartDesign_Chamfer", "", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Chamfer", "Chamfer");

@@ -63,6 +63,18 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::Chamfer>()) {
         return QStringLiteral("Chamfer");
     }
+    if (f->isDerivedFrom<Design::Shell>()) {
+        return QStringLiteral("Shell");
+    }
+    if (f->isDerivedFrom<Design::Combine>()) {
+        return QStringLiteral("Combine");
+    }
+    if (f->isDerivedFrom<Design::Move>()) {
+        return QStringLiteral("Move");
+    }
+    if (f->isDerivedFrom<Design::Mirror>()) {
+        return QStringLiteral("Mirror");
+    }
     return QStringLiteral("Extrude");
 }
 
@@ -85,6 +97,10 @@ public:
         , extrude(freecad_cast<Design::Extrude*>(feature))
         , revolve(freecad_cast<Design::Revolve*>(feature))
         , dressUp(freecad_cast<Design::DressUp*>(feature))
+        , shell(freecad_cast<Design::Shell*>(feature))
+        , combine(freecad_cast<Design::Combine*>(feature))
+        , move(freecad_cast<Design::Move*>(feature))
+        , mirror(freecad_cast<Design::Mirror*>(feature))
         , create(create)
     {
         auto w = new QWidget;
@@ -116,10 +132,57 @@ public:
         if (dressUp) {
             auto edges = new QLabel(QStringLiteral("%1 selected").arg(dressUp->Edges.getSize()));
             distance = quantityBox(Base::Unit::Length, dressUp->Size.getValue());
-            form->addRow(QStringLiteral("Edges"), edges);
-            form->addRow(feature->isDerivedFrom<Design::Fillet>() ? QStringLiteral("Radius")
-                                                                  : QStringLiteral("Distance"),
+            form->addRow(shell ? QStringLiteral("Open faces") : QStringLiteral("Edges"), edges);
+            form->addRow(shell                                         ? QStringLiteral("Thickness")
+                             : feature->isDerivedFrom<Design::Fillet>() ? QStringLiteral("Radius")
+                                                                        : QStringLiteral("Distance"),
                          distance);
+        }
+        if (shell) {
+            check = new QCheckBox(QStringLiteral("Wall outside"));
+            check->setChecked(shell->Outside.getValue());
+            form->addRow(QString(), check);
+        }
+        if (combine) {
+            simpleOp = new QComboBox;
+            simpleOp->addItems({QStringLiteral("Join"), QStringLiteral("Cut"), QStringLiteral("Intersect")});
+            simpleOp->setCurrentIndex(std::max(0L, combine->Operation.getValue() - 1));
+            form->addRow(QStringLiteral("Tools"),
+                         new QLabel(QStringLiteral("%1 bodies").arg(combine->ToolBodies.getSize())));
+            form->addRow(QStringLiteral("Operation"), simpleOp);
+            check = new QCheckBox(QStringLiteral("Keep tools"));
+            check->setChecked(combine->KeepTools.getValue());
+            form->addRow(QString(), check);
+            QObject::connect(simpleOp, &QComboBox::currentIndexChanged, [this] { apply(); });
+        }
+        if (move) {
+            const Base::Vector3d t = move->Translation.getValue();
+            moveX = quantityBox(Base::Unit::Length, t.x);
+            moveY = quantityBox(Base::Unit::Length, t.y);
+            moveZ = quantityBox(Base::Unit::Length, t.z);
+            axis = new QComboBox;
+            axis->addItems({QStringLiteral("X axis"), QStringLiteral("Y axis"), QStringLiteral("Z axis")});
+            axis->setCurrentIndex(move->RotationAxis.getValue());
+            distance = quantityBox(Base::Unit::Angle, move->Angle.getValue());
+            form->addRow(QStringLiteral("X distance"), moveX);
+            form->addRow(QStringLiteral("Y distance"), moveY);
+            form->addRow(QStringLiteral("Z distance"), moveZ);
+            form->addRow(QStringLiteral("Rotate around"), axis);
+            form->addRow(QStringLiteral("Angle"), distance);
+            for (auto box : {moveX, moveY, moveZ}) {
+                QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
+            }
+            QObject::connect(axis, &QComboBox::currentIndexChanged, [this] { apply(); });
+        }
+        if (mirror) {
+            axis = new QComboBox;
+            axis->addItems({QStringLiteral("XY plane"), QStringLiteral("XZ plane"), QStringLiteral("YZ plane")});
+            axis->setCurrentIndex(mirror->Plane.getValue());
+            form->addRow(QStringLiteral("Mirror plane"), axis);
+            QObject::connect(axis, &QComboBox::currentIndexChanged, [this] { apply(); });
+        }
+        if (check) {
+            QObject::connect(check, &QCheckBox::toggled, [this] { apply(); });
         }
         if (distance) {
             QObject::connect(distance, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
@@ -160,6 +223,12 @@ public:
             profiles->Visibility.setValue(false);
             if (auto sketch = profiles->Sketch.getValue()) {
                 sketch->Visibility.setValue(false);
+            }
+        }
+        // Combine ohne "Keep tools": Werkzeug-Bodies verschwinden wie in Fusion
+        if (combine) {
+            for (auto tool : combine->ToolBodies.getValues()) {
+                tool->Visibility.setValue(combine->KeepTools.getValue());
             }
         }
         App::Document* doc = feature->getDocument();
@@ -303,6 +372,22 @@ private:
         if (dressUp) {
             dressUp->Size.setValue(std::abs(distance->value().getValue()));
         }
+        if (shell) {
+            shell->Outside.setValue(check->isChecked());
+        }
+        if (combine) {
+            combine->Operation.setValue(simpleOp->currentIndex() + 1L);
+            combine->KeepTools.setValue(check->isChecked());
+        }
+        if (move) {
+            move->Translation.setValue(Base::Vector3d(moveX->value().getValue(), moveY->value().getValue(),
+                                                      moveZ->value().getValue()));
+            move->RotationAxis.setValue(axis->currentIndex());
+            move->Angle.setValue(distance->value().getValue());
+        }
+        if (mirror) {
+            mirror->Plane.setValue(axis->currentIndex());
+        }
         if (body) {
             const bool showBody = feature->op() != Design::Feature::Op::NewBody;
             body->setVisible(showBody);
@@ -317,6 +402,10 @@ private:
     Design::Extrude* extrude;
     Design::Revolve* revolve;
     Design::DressUp* dressUp;
+    Design::Shell* shell;
+    Design::Combine* combine;
+    Design::Move* move;
+    Design::Mirror* mirror;
     bool create;
     bool autoFlipped = false;
     Design::Body* newBody = nullptr;
@@ -327,6 +416,11 @@ private:
     Gui::QuantitySpinBox* distance = nullptr;
     Gui::QuantitySpinBox* distance2 = nullptr;
     QCheckBox* flip = nullptr;
+    QCheckBox* check = nullptr;
+    QComboBox* simpleOp = nullptr;
+    Gui::QuantitySpinBox* moveX = nullptr;
+    Gui::QuantitySpinBox* moveY = nullptr;
+    Gui::QuantitySpinBox* moveZ = nullptr;
     QComboBox* operation = nullptr;
     QComboBox* body = nullptr;
     QLabel* bodyLabel = nullptr;
@@ -360,6 +454,18 @@ QIcon ViewProviderFeature::getIcon() const
     }
     else if (obj->isDerivedFrom<Design::Chamfer>()) {
         icon = "PartDesign_Chamfer";
+    }
+    else if (obj->isDerivedFrom<Design::Shell>()) {
+        icon = "PartDesign_Thickness";
+    }
+    else if (obj->isDerivedFrom<Design::Combine>()) {
+        icon = "Part_Fuse";
+    }
+    else if (obj->isDerivedFrom<Design::Move>()) {
+        icon = "Std_TransformManip";
+    }
+    else if (obj->isDerivedFrom<Design::Mirror>()) {
+        icon = "PartDesign_Mirrored";
     }
     return Gui::BitmapFactory().pixmap(icon);
 }

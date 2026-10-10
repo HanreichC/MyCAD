@@ -40,6 +40,10 @@ PyMOD_INIT_FUNC(Design)
     Design::DressUp::init();
     Design::Fillet::init();
     Design::Chamfer::init();
+    Design::Shell::init();
+    Design::Combine::init();
+    Design::Move::init();
+    Design::Mirror::init();
 
     PyMOD_Return(mod);
 }

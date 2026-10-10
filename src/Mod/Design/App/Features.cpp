@@ -20,6 +20,7 @@
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS_Iterator.hxx>
 #include <gp_Ax1.hxx>
+#include <gp_Ax2.hxx>
 #include <Standard_Failure.hxx>
 #include <gp_Pln.hxx>
 
@@ -32,6 +33,8 @@ namespace
 const char* OpEnums[] = {"New Body", "Join", "Cut", "Intersect", nullptr};
 const char* ExtentEnums[] = {"One Side", "Symmetric", "Two Sides", nullptr};
 const char* AxisEnums[] = {"Sketch X", "Sketch Y", "X", "Y", "Z", nullptr};
+const char* XYZEnums[] = {"X", "Y", "Z", nullptr};
+const char* PlaneEnums[] = {"XY", "XZ", "YZ", nullptr};
 
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
 std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, Part::Feature*& sketch, const char*& error)
@@ -292,10 +295,27 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& tool)
         }
     }
 
-    Part::TopoShape compound(0, getDocument()->getStringHasher());
-    compound.makeElementCompound(results);
-    Shape.setValue(compound);
+    setResults(results);
     return StdReturn;
+}
+
+void Feature::setResults(const std::vector<Part::TopoShape>& results)
+{
+    std::vector<Part::TopoShape> solids;
+    for (const auto& r : results) {
+        solids.push_back(solidOf(r));
+    }
+    Part::TopoShape compound(0, getDocument()->getStringHasher());
+    compound.makeElementCompound(solids);
+    Shape.setValue(compound);
+}
+
+Part::TopoShape Feature::baseShape(size_t i) const
+{
+    const auto& bodies = Bodies.getValues();
+    const auto& bases = BaseFeatures.getValues();
+    auto base = i < bases.size() ? freecad_cast<Feature*>(bases[i]) : nullptr;
+    return base && i < bodies.size() ? base->shapeFor(bodies[i]) : Part::TopoShape();
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -417,27 +437,29 @@ DressUp::DressUp()
     Operation.setStatus(App::Property::Hidden, true);  // verändert immer den eigenen Body
 }
 
-App::DocumentObjectExecReturn* DressUp::run(bool fillet)
+std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type) const
 {
-    const auto& bodies = Bodies.getValues();
-    const auto& bases = BaseFeatures.getValues();
-    auto base = bases.empty() ? nullptr : freecad_cast<Feature*>(bases.front());
-    if (bodies.size() != 1 || !base) {
-        return new App::DocumentObjectExecReturn("Select edges of one body");
-    }
-    const Part::TopoShape shape = base->shapeFor(bodies.front());
-
-    // Flächen stehen für alle ihre Kanten; doppelte Kanten zählen einmal
-    std::vector<Part::TopoShape> edges;
+    std::vector<Part::TopoShape> result;
     TopTools_IndexedMapOfShape seen;
     for (const auto& name : Edges.getValues()) {
         const Part::TopoShape sub = shape.getSubTopoShape(name.c_str(), true);
-        for (const auto& edge : sub.isNull() ? std::vector<Part::TopoShape>() : sub.getSubTopoShapes(TopAbs_EDGE)) {
-            if (seen.Add(edge.getShape()) == seen.Extent()) {
-                edges.push_back(edge);
+        for (const auto& el : sub.isNull() ? std::vector<Part::TopoShape>() : sub.getSubTopoShapes(type)) {
+            if (seen.Add(el.getShape()) == seen.Extent()) {
+                result.push_back(el);
             }
         }
     }
+    return result;
+}
+
+App::DocumentObjectExecReturn* DressUp::run(bool fillet)
+{
+    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+        return new App::DocumentObjectExecReturn("Select edges of one body");
+    }
+    const Part::TopoShape shape = baseShape(0);
+    // Flächen stehen für alle ihre Kanten; doppelte Kanten zählen einmal
+    const auto edges = elements(shape, TopAbs_EDGE);
     if (edges.empty()) {
         return new App::DocumentObjectExecReturn("Select one or more edges");
     }
@@ -445,7 +467,7 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
     if (size < Precision::Confusion()) {
         return new App::DocumentObjectExecReturn("Size must be greater than zero");
     }
-
+    const char* failed = fillet ? "Fillet failed: radius too large?" : "Chamfer failed: distance too large?";
     Part::TopoShape res(0, getDocument()->getStringHasher());
     try {
         if (fillet) {
@@ -456,16 +478,154 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
         }
     }
     catch (const Standard_Failure&) {
-        return new App::DocumentObjectExecReturn(fillet ? "Fillet failed: radius too large?" : "Chamfer failed: distance too large?");
+        return new App::DocumentObjectExecReturn(failed);
     }
     if (res.isNull() || !res.isValid()) {
-        return new App::DocumentObjectExecReturn(fillet ? "Fillet failed: radius too large?" : "Chamfer failed: distance too large?");
+        return new App::DocumentObjectExecReturn(failed);
     }
-    Part::TopoShape compound(0, getDocument()->getStringHasher());
-    compound.makeElementCompound({solidOf(res)});
-    Shape.setValue(compound);
+    setResults({res});
     return StdReturn;
 }
 
 PROPERTY_SOURCE(Design::Fillet, Design::DressUp)
 PROPERTY_SOURCE(Design::Chamfer, Design::DressUp)
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Shell, Design::DressUp)
+
+Shell::Shell()
+{
+    ADD_PROPERTY_TYPE(Outside, (false), "Shell", App::Prop_None, "Add the wall thickness outside");
+}
+
+App::DocumentObjectExecReturn* Shell::execute()
+{
+    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+        return new App::DocumentObjectExecReturn("Select faces of one body");
+    }
+    const Part::TopoShape shape = baseShape(0);
+    const auto faces = elements(shape, TopAbs_FACE);
+    const double t = Size.getValue();
+    if (t < Precision::Confusion()) {
+        return new App::DocumentObjectExecReturn("Thickness must be greater than zero");
+    }
+    Part::TopoShape res(0, getDocument()->getStringHasher());
+    try {
+        // Ohne geöffnete Fläche entsteht ein geschlossener Hohlkörper
+        res.makeElementThickSolid(shape, faces, Outside.getValue() ? t : -t, 1e-6, true, false, 0,
+                                  Part::JoinType::intersection);
+    }
+    catch (const Standard_Failure&) {
+        return new App::DocumentObjectExecReturn("Shell failed: thickness too large?");
+    }
+    if (res.isNull() || !res.isValid()) {
+        return new App::DocumentObjectExecReturn("Shell failed: thickness too large?");
+    }
+    setResults({res});
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Combine, Design::Feature)
+
+Combine::Combine()
+{
+    ADD_PROPERTY_TYPE(ToolBodies, (nullptr), "Combine", App::Prop_None, "Tool bodies");
+    ADD_PROPERTY_TYPE(ToolFeatures, (nullptr), "Combine", App::Prop_Hidden, "State of the tool bodies");
+    ADD_PROPERTY_TYPE(KeepTools, (false), "Combine", App::Prop_None, "Keep the tool bodies visible");
+    Operation.setValue(1L);  // Join
+}
+
+App::DocumentObjectExecReturn* Combine::execute()
+{
+    const auto& tools = ToolBodies.getValues();
+    const auto& states = ToolFeatures.getValues();
+    if (tools.empty() || tools.size() != states.size()) {
+        return new App::DocumentObjectExecReturn("Select a target body and one or more tool bodies");
+    }
+    if (op() == Op::NewBody) {
+        return new App::DocumentObjectExecReturn("Choose join, cut or intersect");
+    }
+    std::vector<Part::TopoShape> shapes;
+    for (size_t i = 0; i < tools.size(); ++i) {
+        auto state = freecad_cast<Feature*>(states[i]);
+        if (!state) {
+            return new App::DocumentObjectExecReturn("Tool body has no feature");
+        }
+        shapes.push_back(state->shapeFor(tools[i]));
+    }
+    return applyTool(fuseAll(shapes, getDocument()->getStringHasher()));
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Move, Design::Feature)
+
+Move::Move()
+{
+    ADD_PROPERTY_TYPE(Translation, (Base::Vector3d()), "Move", App::Prop_None, "Translation");
+    ADD_PROPERTY_TYPE(RotationAxis, (2L), "Move", App::Prop_None, "Rotation axis through the body center");
+    RotationAxis.setEnums(XYZEnums);
+    ADD_PROPERTY_TYPE(Angle, (0.0), "Move", App::Prop_None, "Rotation angle");
+    Operation.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* Move::execute()
+{
+    if (Bodies.getSize() == 0 || Bodies.getSize() != BaseFeatures.getSize()) {
+        return new App::DocumentObjectExecReturn("Select one or more bodies");
+    }
+    std::vector<Part::TopoShape> results;
+    for (int i = 0; i < Bodies.getSize(); ++i) {
+        const Part::TopoShape base = baseShape(i);
+        const Base::BoundBox3d bb = base.getBoundBox();
+        Base::Vector3d axis;
+        axis[RotationAxis.getValue()] = 1;
+        Base::Placement rot(Base::Vector3d(), Base::Rotation(axis, Angle.getValue() * M_PI / 180.0), bb.GetCenter());
+        Base::Placement move(Translation.getValue(), Base::Rotation());
+        Base::Matrix4D mat = (move * rot).toMatrix();
+        // Geometrie wirklich umrechnen (copy): eine bloße Lage würde Part::Feature beim Speichern im Body überschreiben
+        results.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
+                              .makeElementTransform(base, mat, nullptr, Part::CheckScale::noScaleCheck,
+                                                    Part::CopyType::copy));
+    }
+    setResults(results);
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Mirror, Design::Feature)
+
+Mirror::Mirror()
+{
+    ADD_PROPERTY_TYPE(SourceBodies, (nullptr), "Mirror", App::Prop_None, "Bodies to mirror");
+    ADD_PROPERTY_TYPE(SourceFeatures, (nullptr), "Mirror", App::Prop_Hidden, "State of the source bodies");
+    ADD_PROPERTY_TYPE(Plane, (2L), "Mirror", App::Prop_None, "Mirror plane");
+    Plane.setEnums(PlaneEnums);
+    Operation.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* Mirror::execute()
+{
+    const auto& sources = SourceBodies.getValues();
+    const auto& states = SourceFeatures.getValues();
+    if (sources.empty() || sources.size() != states.size() || Bodies.getSize() != int(sources.size())) {
+        return new App::DocumentObjectExecReturn("Select one or more bodies");
+    }
+    static const gp_Dir normals[] = {gp::DZ(), gp::DY(), gp::DX()};
+    const gp_Ax2 plane(gp::Origin(), normals[Plane.getValue()]);
+    std::vector<Part::TopoShape> results;
+    for (size_t i = 0; i < sources.size(); ++i) {
+        auto state = freecad_cast<Feature*>(states[i]);
+        if (!state) {
+            return new App::DocumentObjectExecReturn("Body has no feature");
+        }
+        results.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
+                              .makeElementMirror(state->shapeFor(sources[i]), plane));
+    }
+    setResults(results);
+    return StdReturn;
+}
