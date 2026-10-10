@@ -51,7 +51,7 @@ def visible(cls):
 def button(cmd):
     """Glass-Toolbar-Button eines Befehls"""
     for b in visible(QtWidgets.QToolButton):
-        if b.objectName() in ("GlassButton", "GlassProminent") and b.property("command") == cmd:
+        if b.objectName() in ("GlassButton", "GlassProminent") and cmd in (b.property("command"), str(b.property("command")).split("|")[0]):
             return b
     raise RuntimeError("no glass button for " + cmd)
 

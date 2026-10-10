@@ -21,6 +21,19 @@
 #include <Mod/Design/App/Features.h>
 #include <Mod/Sketcher/App/SketchObject.h>
 #include <Mod/Part/App/Geometry.h>
+#include <Mod/Part/App/AttachExtension.h>
+#include <Mod/Part/App/Attacher.h>
+#include <Gui/View3DInventor.h>
+#include <Gui/View3DInventorViewer.h>
+#include <BRepAdaptor_Curve.hxx>
+#include <BRepBndLib.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
+#include <Bnd_Box.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS_Vertex.hxx>
+#include <gp_Pln.hxx>
+#include <QLabel>
+#include <QVBoxLayout>
 #include <BRep_Tool.hxx>
 #include <GeomConvert.hxx>
 #include <Geom_BezierCurve.hxx>
@@ -78,29 +91,53 @@ Gui::ViewProviderCoordinateSystem* originView(App::Part* root)
     );
 }
 
-/// Name ("FaceN") der Fläche in shape, die geometrisch face entspricht (Schwerpunkt + Flächeninhalt).
-/// ponytail: geometrischer Abgleich statt topologischer Benennung; kann bei zwei deckungsgleichen Flächen irren
-std::string faceName(const TopoDS_Shape& shape, const TopoDS_Shape& face)
+/// Name ("FaceN", "EdgeN", "VertexN") des Elements in shape, das geometrisch element entspricht (Schwerpunkt + Größe).
+/// ponytail: geometrischer Abgleich statt topologischer Benennung; kann bei zwei deckungsgleichen Elementen irren
+std::string elementName(const TopoDS_Shape& shape, const TopoDS_Shape& element)
 {
-    if (face.IsNull()) {
+    if (element.IsNull()) {
         return {};
     }
-    auto props = [](const TopoDS_Shape& f) {
-        GProp_GProps p;
-        BRepGProp::SurfaceProperties(f, p);
+    const TopAbs_ShapeEnum type = element.ShapeType();
+    auto props = [type](const TopoDS_Shape& s) {
+        GProp_GProps p(type == TopAbs_VERTEX ? BRep_Tool::Pnt(TopoDS::Vertex(s)) : gp::Origin());
+        if (type == TopAbs_FACE) {
+            BRepGProp::SurfaceProperties(s, p);
+        }
+        else if (type == TopAbs_EDGE) {
+            BRepGProp::LinearProperties(s, p);
+        }
         return p;
     };
-    const GProp_GProps ref = props(face);
-    TopTools_IndexedMapOfShape faces;
-    TopExp::MapShapes(shape, TopAbs_FACE, faces);
-    for (int i = 1; i <= faces.Extent(); ++i) {
-        const GProp_GProps p = props(faces(i));
+    const char* prefix = type == TopAbs_FACE ? "Face" : type == TopAbs_EDGE ? "Edge" : "Vertex";
+    const GProp_GProps ref = props(element);
+    TopTools_IndexedMapOfShape all;
+    TopExp::MapShapes(shape, type, all);
+    for (int i = 1; i <= all.Extent(); ++i) {
+        const GProp_GProps p = props(all(i));
         if (std::abs(p.Mass() - ref.Mass()) < 1e-6 * (1 + ref.Mass())
             && p.CentreOfMass().Distance(ref.CentreOfMass()) < 1e-6) {
-            return "Face" + std::to_string(i);
+            return prefix + std::to_string(i);
         }
     }
     return {};
+}
+
+/// Bezug auf einen Body durch seinen Timeline-Zustand ersetzen (das Feature, das ihn gerade erzeugt hat).
+/// Sonst entsteht ein Kreis, sobald ein Feature aus einer Skizze/Ebene darauf denselben Body verändert.
+void stableRef(App::DocumentObject*& obj, std::string& element)
+{
+    auto body = freecad_cast<Design::Body*>(obj);
+    auto tip = body ? freecad_cast<Design::Feature*>(Design::stateAtMarker(body)) : nullptr;
+    if (!tip || element.empty()) {
+        return;
+    }
+    const TopoDS_Shape sub = body->Shape.getShape().getSubShape(element.c_str(), true);
+    const std::string name = elementName(tip->Shape.getShape().getShape(), sub);
+    if (!name.empty()) {
+        obj = tip;
+        element = name;
+    }
 }
 
 /// Ursprungsebene oder Konstruktionsebene (Offset Plane)
@@ -141,16 +178,7 @@ void createSketch(App::DocumentObject* support, std::string element)
     // Skizze auf einer Körperfläche an den Timeline-Zustand hängen (das Feature, das den Body gerade
     // erzeugt hat), nicht an den Body: sonst entsteht ein Kreis, sobald ein Feature aus dieser Skizze
     // denselben Body verändert. So bezieht sich die Skizze wie in Fusion auf den Körper zu diesem Zeitpunkt.
-    if (auto body = freecad_cast<Design::Body*>(support)) {
-        if (auto tip = freecad_cast<Design::Feature*>(Design::stateAtMarker(body))) {
-            const TopoDS_Shape face = body->Shape.getShape().getSubShape(element.c_str(), true);
-            const std::string name = faceName(tip->Shape.getShape().getShape(), face);
-            if (!name.empty()) {
-                support = tip;
-                element = name;
-            }
-        }
-    }
+    stableRef(support, element);
 
     App::Document* doc = support->getDocument();
     doc->openTransaction("Create Sketch");
@@ -341,7 +369,7 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name)
         if (base && !subs.empty()) {
             const TopoDS_Shape face = base->Shape.getShape().getSubShape(subs.front().c_str(), true);
             for (auto obj : base->Bodies.getValues()) {
-                if (!faceName(base->shapeFor(obj).getShape(), face).empty()) {
+                if (!elementName(base->shapeFor(obj).getShape(), face).empty()) {
                     target = freecad_cast<Design::Body*>(obj);
                 }
             }
@@ -968,7 +996,7 @@ Design::Body* bodyUnderSketch(App::DocumentObject* obj)
     }
     const TopoDS_Shape face = base->Shape.getShape().getSubShape(subs.front().c_str(), true);
     for (auto b : base->Bodies.getValues()) {
-        if (!faceName(base->shapeFor(b).getShape(), face).empty()) {
+        if (!elementName(base->shapeFor(b).getShape(), face).empty()) {
             return freecad_cast<Design::Body*>(b);
         }
     }
@@ -1075,6 +1103,328 @@ private:
     App::DocumentObject* plane;
 };
 
+/// Konstruktionselemente dezent statt FreeCAD-Gelb; Ebenen so groß wie die vorhandenen Körper
+void styleDatum(App::DocumentObject* datum)
+{
+    auto length = freecad_cast<App::PropertyLength*>(datum->getPropertyByName("Length"));
+    auto width = freecad_cast<App::PropertyLength*>(datum->getPropertyByName("Width"));
+    auto resize = freecad_cast<App::PropertyEnumeration*>(datum->getPropertyByName("ResizeMode"));
+    if (length && width && resize) {  // nur Ebenen (Achsen haben keine Breite)
+        Base::BoundBox3d bb;
+        for (auto b : datum->getDocument()->getObjectsOfType(Design::Body::getClassTypeId())) {
+            bb.Add(static_cast<Design::Body*>(b)->Shape.getShape().getBoundBox());
+        }
+        const double size = bb.IsValid() ? std::max(bb.LengthX(), bb.LengthY()) * 1.2 : 60.0;
+        resize->setValue("Manual");
+        length->setValue(size);
+        width->setValue(size);
+    }
+    if (auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(datum))) {
+        vp->ShapeAppearance.setDiffuseColor(0.45F, 0.62F, 1.0F);
+        vp->Transparency.setValue(80);
+    }
+}
+
+/// Gewählte Elemente als Bezüge (Body-Elemente über den Timeline-Zustand)
+void selectedRefs(std::vector<App::DocumentObject*>& objs, std::vector<std::string>& subs)
+{
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        std::vector<std::string> names = sel.getSubNames();
+        if (names.empty()) {
+            names.emplace_back();
+        }
+        for (auto name : names) {
+            App::DocumentObject* obj = sel.getObject();
+            stableRef(obj, name);
+            objs.push_back(obj);
+            subs.push_back(name);
+        }
+    }
+}
+
+/// Konstruktionsebene, -achse oder -punkt aus der Auswahl; FreeCADs Attacher wählt die passende Befestigung
+/// (drei Punkte, Fläche + Punkt, Kante + Punkt, Zylinderfläche, zwei Punkte, zwei Ebenen, Kreiskante, …)
+void startConstruct(App::Document* doc, const char* type, const char* name, const char* hint)
+{
+    std::vector<App::DocumentObject*> objs;
+    std::vector<std::string> subs;
+    selectedRefs(objs, subs);
+    if (objs.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name), QString::fromLatin1(hint));
+        return;
+    }
+    doc->openTransaction(name);
+    App::DocumentObject* datum = doc->addObject(type, name);
+    auto attach = datum ? datum->getExtensionByType<Part::AttachExtension>() : nullptr;
+    if (!attach) {
+        doc->abortTransaction();
+        return;
+    }
+    attach->AttachmentSupport.setValues(objs, subs);
+    attach->attacher().setReferences(attach->AttachmentSupport);
+    Attacher::SuggestResult suggestion;
+    attach->attacher().suggestMapModes(suggestion);
+    if (suggestion.message != Attacher::SuggestResult::srOK) {
+        doc->abortTransaction();
+        QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name),
+                                 QStringLiteral("This selection does not define a %1. %2")
+                                     .arg(QString::fromLatin1(name).toLower(), QString::fromLatin1(hint)));
+        return;
+    }
+    attach->MapMode.setValue(Attacher::AttachEngine::getModeName(suggestion.bestFitMode).c_str());
+    Design::folder(Design::componentOf(objs.front()), "Construction")->addObject(datum);
+    styleDatum(datum);
+    doc->recompute();
+    doc->commitTransaction();
+    Gui::Selection().clearSelection();
+}
+
+/// Ebene genau zwischen zwei parallelen Ebenen oder ebenen Flächen.
+/// ponytail: Abstand wird beim Erstellen berechnet; verschieben sich die Flächen später, bleibt er stehen
+void startMidplane(App::Document* doc)
+{
+    std::vector<App::DocumentObject*> objs;
+    std::vector<std::string> subs;
+    selectedRefs(objs, subs);
+    auto planeOf = [&](size_t i, gp_Pln& pln) {
+        const Part::TopoShape s = Part::Feature::getTopoShape(objs[i], Part::ShapeOption::ResolveLink
+                                                                       | Part::ShapeOption::Transform,
+                                                               subs[i].empty() ? nullptr : subs[i].c_str());
+        TopExp_Explorer face(s.getShape(), TopAbs_FACE);
+        if (!face.More()) {
+            return false;
+        }
+        BRepAdaptor_Surface surface(TopoDS::Face(face.Current()));
+        if (surface.GetType() != GeomAbs_Plane) {
+            return false;
+        }
+        pln = surface.Plane();
+        return true;
+    };
+    gp_Pln a, b;
+    if (objs.size() != 2 || !planeOf(0, a) || !planeOf(1, b) || !a.Axis().IsParallel(b.Axis(), 1e-6)) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Midplane"),
+                                 QStringLiteral("Select two parallel planes or planar faces."));
+        return;
+    }
+    doc->openTransaction("Midplane");
+    App::DocumentObject* plane = doc->addObject("PartDesign::Plane", "Midplane");
+    auto attach = plane->getExtensionByType<Part::AttachExtension>();
+    attach->AttachmentSupport.setValue(objs[0], std::vector<std::string> {subs[0]});
+    attach->MapMode.setValue("FlatFace");
+    Design::folder(Design::componentOf(objs.front()), "Construction")->addObject(plane);
+    plane->recomputeFeature();
+    // halber Abstand entlang der Normalen der befestigten Ebene (Vorzeichen aus deren Lage)
+    const Base::Placement placed = static_cast<App::GeoFeature*>(plane)->Placement.getValue();
+    Base::Vector3d n;
+    placed.getRotation().multVec(Base::Vector3d(0, 0, 1), n);
+    const gp_Pnt o = b.Location();
+    const double d = (Base::Vector3d(o.X(), o.Y(), o.Z()) - placed.getPosition()) * n;
+    attach->AttachmentOffset.setValue(Base::Placement(Base::Vector3d(0, 0, d / 2), Base::Rotation()));
+    styleDatum(plane);
+    doc->recompute();
+    doc->commitTransaction();
+    Gui::Selection().clearSelection();
+}
+
+/// Messen wie in Fusion: Werte der aktuellen Auswahl, live aktualisiert
+class TaskMeasure: public Gui::TaskView::TaskDialog, public Gui::SelectionObserver
+{
+public:
+    TaskMeasure()
+    {
+        auto w = new QWidget;
+        w->setWindowTitle(QStringLiteral("Measure"));
+        auto lay = new QVBoxLayout(w);
+        result = new QLabel;
+        result->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        result->setWordWrap(true);
+        lay->addWidget(result);
+        addTaskBox(w, false);
+        update();
+    }
+    QDialogButtonBox::StandardButtons getStandardButtons() const override
+    {
+        return QDialogButtonBox::Close;
+    }
+    bool accept() override
+    {
+        return true;
+    }
+    bool reject() override
+    {
+        return true;
+    }
+
+private:
+    void onSelectionChanged(const Gui::SelectionChanges& msg) override
+    {
+        if (msg.Type == Gui::SelectionChanges::AddSelection || msg.Type == Gui::SelectionChanges::RmvSelection
+            || msg.Type == Gui::SelectionChanges::SetSelection || msg.Type == Gui::SelectionChanges::ClrSelection) {
+            QTimer::singleShot(0, result, [this] { update(); });
+        }
+    }
+    static QString length(double v)
+    {
+        return QString::fromStdString(Base::Quantity(v, Base::Unit::Length).getUserString());
+    }
+    void update()
+    {
+        std::vector<TopoDS_Shape> shapes;
+        for (auto& sel : Gui::Selection().getSelectionEx()) {
+            std::vector<std::string> names = sel.getSubNames();
+            if (names.empty()) {
+                names.emplace_back();
+            }
+            for (const auto& name : names) {
+                const Part::TopoShape s = Part::Feature::getTopoShape(
+                    sel.getObject(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform
+                                         | Part::ShapeOption::NeedSubElement,
+                    name.empty() ? nullptr : name.c_str());
+                if (!s.isNull()) {
+                    shapes.push_back(s.getShape());
+                }
+            }
+        }
+        QStringList rows;
+        auto row = [&rows](const QString& label, const QString& value) {
+            rows << QStringLiteral("<tr><td style='color:gray; padding-right:12px'>%1</td><td><b>%2</b></td></tr>")
+                        .arg(label, value);
+        };
+        if (shapes.size() == 1) {
+            const TopoDS_Shape& s = shapes.front();
+            GProp_GProps p;
+            switch (s.ShapeType()) {
+                case TopAbs_VERTEX: {
+                    const gp_Pnt v = BRep_Tool::Pnt(TopoDS::Vertex(s));
+                    row(QStringLiteral("X"), length(v.X()));
+                    row(QStringLiteral("Y"), length(v.Y()));
+                    row(QStringLiteral("Z"), length(v.Z()));
+                    break;
+                }
+                case TopAbs_EDGE: {
+                    BRepGProp::LinearProperties(s, p);
+                    row(QStringLiteral("Length"), length(p.Mass()));
+                    BRepAdaptor_Curve curve(TopoDS::Edge(s));
+                    if (curve.GetType() == GeomAbs_Circle) {
+                        row(QStringLiteral("Radius"), length(curve.Circle().Radius()));
+                        row(QStringLiteral("Diameter"), length(2 * curve.Circle().Radius()));
+                    }
+                    break;
+                }
+                case TopAbs_FACE: {
+                    BRepGProp::SurfaceProperties(s, p);
+                    row(QStringLiteral("Area"), QStringLiteral("%1 mm²").arg(p.Mass(), 0, 'f', 2));
+                    BRepAdaptor_Surface surface(TopoDS::Face(s));
+                    if (surface.GetType() == GeomAbs_Cylinder) {
+                        row(QStringLiteral("Radius"), length(surface.Cylinder().Radius()));
+                        row(QStringLiteral("Diameter"), length(2 * surface.Cylinder().Radius()));
+                    }
+                    break;
+                }
+                default: {
+                    BRepGProp::VolumeProperties(s, p);
+                    row(QStringLiteral("Volume"), QStringLiteral("%1 mm³").arg(p.Mass(), 0, 'f', 2));
+                    GProp_GProps area;
+                    BRepGProp::SurfaceProperties(s, area);
+                    row(QStringLiteral("Area"), QStringLiteral("%1 mm²").arg(area.Mass(), 0, 'f', 2));
+                    Bnd_Box box;
+                    BRepBndLib::Add(s, box);
+                    if (!box.IsVoid()) {
+                        double x0, y0, z0, x1, y1, z1;
+                        box.Get(x0, y0, z0, x1, y1, z1);
+                        row(QStringLiteral("Size"), QStringLiteral("%1 × %2 × %3")
+                                                        .arg(length(x1 - x0), length(y1 - y0), length(z1 - z0)));
+                    }
+                    break;
+                }
+            }
+        }
+        else if (shapes.size() == 2) {
+            BRepExtrema_DistShapeShape dist(shapes[0], shapes[1]);
+            if (dist.IsDone()) {
+                row(QStringLiteral("Distance"), length(dist.Value()));
+            }
+            // Winkel zwischen zwei geraden Kanten oder zwei ebenen Flächen
+            auto direction = [](const TopoDS_Shape& s, gp_Dir& d) {
+                if (s.ShapeType() == TopAbs_EDGE) {
+                    BRepAdaptor_Curve c(TopoDS::Edge(s));
+                    if (c.GetType() == GeomAbs_Line) {
+                        d = c.Line().Direction();
+                        return true;
+                    }
+                }
+                else if (s.ShapeType() == TopAbs_FACE) {
+                    BRepAdaptor_Surface f(TopoDS::Face(s));
+                    if (f.GetType() == GeomAbs_Plane) {
+                        d = f.Plane().Axis().Direction();
+                        return true;
+                    }
+                }
+                return false;
+            };
+            gp_Dir a, b;
+            if (direction(shapes[0], a) && direction(shapes[1], b)) {
+                double angle = a.Angle(b) * 180 / M_PI;
+                angle = std::min(angle, 180 - angle);
+                row(QStringLiteral("Angle"), QStringLiteral("%1°").arg(angle, 0, 'f', 2));
+            }
+        }
+        result->setText(rows.isEmpty() ? QStringLiteral("Select a point, edge, face or body. "
+                                                         "Select two to measure distance and angle.")
+                                       : QStringLiteral("<table>%1</table>").arg(rows.join(QString())));
+    }
+    QLabel* result;
+};
+
+void startMeasure(App::Document*)
+{
+    Gui::Control().showDialog(new TaskMeasure);
+}
+
+/// Schnittansicht: das Modell an einer Ebene oder ebenen Fläche aufschneiden (nochmal: Schnitt aufheben)
+void toggleSection(App::Document* doc)
+{
+    auto gdoc = Gui::Application::Instance->getDocument(doc);
+    auto view = gdoc ? dynamic_cast<Gui::View3DInventor*>(gdoc->getActiveView()) : nullptr;
+    if (!view) {
+        return;
+    }
+    Gui::View3DInventorViewer* viewer = view->getViewer();
+    if (viewer->hasClippingPlane()) {
+        viewer->toggleClippingPlane(0);
+        return;
+    }
+    gp_Pln pln;
+    bool found = false;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        const auto& names = sel.getSubNames();
+        const Part::TopoShape s = Part::Feature::getTopoShape(
+            sel.getObject(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform,
+            names.empty() ? nullptr : names.front().c_str());
+        TopExp_Explorer face(s.getShape(), TopAbs_FACE);
+        if (face.More()) {
+            BRepAdaptor_Surface surface(TopoDS::Face(face.Current()));
+            if (surface.GetType() == GeomAbs_Plane) {
+                pln = surface.Plane();
+                found = true;
+                break;
+            }
+        }
+    }
+    if (!found) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Section Analysis"),
+                                 QStringLiteral("Select a plane or a planar face to cut the model at."));
+        return;
+    }
+    const gp_Pnt o = pln.Location();
+    const gp_Dir n = pln.Axis().Direction();
+    const Base::Placement placement(Base::Vector3d(o.X(), o.Y(), o.Z()),
+                                    Base::Rotation(Base::Vector3d(0, 0, 1), Base::Vector3d(n.X(), n.Y(), n.Z())));
+    Gui::Selection().clearSelection();
+    viewer->toggleClippingPlane(1, false, false, placement);
+}
+
 void startOffsetPlane(App::Document* doc)
 {
     App::DocumentObject* support = nullptr;
@@ -1096,6 +1446,7 @@ void startOffsetPlane(App::Document* doc)
                                  QStringLiteral("Select a plane or a planar face first."));
         return;
     }
+    stableRef(support, element);
     doc->openTransaction("Offset Plane");
     App::DocumentObject* plane = doc->addObject("PartDesign::Plane", "Plane");
     if (!plane) {
@@ -1107,19 +1458,7 @@ void startOffsetPlane(App::Document* doc)
         ->setValue(support, std::vector<std::string> {element});
     static_cast<App::PropertyEnumeration*>(plane->getPropertyByName("MapMode"))->setValue("FlatFace");
 
-    // Dezent statt FreeCAD-Gelb, Größe passend zu den vorhandenen Körpern
-    Base::BoundBox3d bb;
-    for (auto b : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
-        bb.Add(static_cast<Design::Body*>(b)->Shape.getShape().getBoundBox());
-    }
-    const double size = bb.IsValid() ? std::max(bb.LengthX(), bb.LengthY()) * 1.2 : 60.0;
-    static_cast<App::PropertyEnumeration*>(plane->getPropertyByName("ResizeMode"))->setValue("Manual");
-    static_cast<App::PropertyLength*>(plane->getPropertyByName("Length"))->setValue(size);
-    static_cast<App::PropertyLength*>(plane->getPropertyByName("Width"))->setValue(size);
-    if (auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(plane))) {
-        vp->ShapeAppearance.setDiffuseColor(0.45F, 0.62F, 1.0F);
-        vp->Transparency.setValue(80);
-    }
+    styleDatum(plane);
     Gui::Selection().clearSelection();
     Gui::Control().showDialog(new TaskOffsetPlane(plane));
 }
@@ -1174,6 +1513,35 @@ void CreateDesignCommands()
                                      "Part_Extrude", "Q", [](App::Document* doc) {
                                          startDressUp(doc, "Design::PressPull", "PressPull");
                                      }));
+    mgr.addCommand(new DesignCommand("Design_Plane", "Plane",
+                                     "Plane: select three points, a face and a point, or an edge and a point",
+                                     "PartDesign_Plane", "", [](App::Document* doc) {
+                                         startConstruct(doc, "PartDesign::Plane", "Plane",
+                                                        "Select three points, a face and a point, or an edge "
+                                                        "and a point.");
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_Midplane", "Midplane", "Midplane: select two parallel planes or faces",
+                                     "PartDesign_Plane", "", startMidplane));
+    mgr.addCommand(new DesignCommand("Design_Axis", "Axis",
+                                     "Axis: select a cylindrical face, a straight edge, two points or two planes",
+                                     "PartDesign_Line", "", [](App::Document* doc) {
+                                         startConstruct(doc, "PartDesign::Line", "Axis",
+                                                        "Select a cylindrical face, a straight edge, two points "
+                                                        "or two planes.");
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_Point", "Point",
+                                     "Point: select a vertex, a circular edge, an edge and a plane, or three planes",
+                                     "PartDesign_Point", "", [](App::Document* doc) {
+                                         startConstruct(doc, "PartDesign::Point", "Point",
+                                                        "Select a vertex, a circular edge, an edge and a plane, "
+                                                        "or three planes.");
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_Measure", "Measure",
+                                     "Measure: select one or two points, edges, faces or bodies", "Std_Measure",
+                                     "I", startMeasure));
+    mgr.addCommand(new DesignCommand("Design_Section", "Section Analysis",
+                                     "Section Analysis: select a plane or face to cut the view (again: turn off)",
+                                     "Std_ToggleClipPlane", "", toggleSection));
     mgr.addCommand(new DesignCommand("Design_NewComponent", "New Component",
                                      "New Component: an empty part with its own origin (double-click to activate)",
                                      "Std_Part", "", startNewComponent));

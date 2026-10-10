@@ -3,6 +3,12 @@
         <file>Std_New.svg</file>
         <file>Std_Open.svg</file>
         <file>Std_Save.svg</file>
+        <file>Design_Plane.svg</file>
+        <file>Design_Midplane.svg</file>
+        <file>Design_Axis.svg</file>
+        <file>Design_Point.svg</file>
+        <file>Design_Measure.svg</file>
+        <file>Design_Section.svg</file>
         <file>Design_Import.svg</file>
         <file>Design_Export.svg</file>
         <file>Std_Undo.svg</file>

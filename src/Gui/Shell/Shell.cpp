@@ -1261,7 +1261,8 @@ void Gui::Shell::install()
         toolbar({"Std_New", "Std_Open", "Std_Save", "Design_Import", "Design_Export", "", "Std_Undo", "Std_Redo", "",
                  "Design_CreateSketch", "Design_Extrude", "Design_Revolve", "",
                  "Design_Hole", "Design_PressPull", "Design_Fillet", "Design_Chamfer", "Design_Shell", "", "Design_Pattern",
-                 "Design_Mirror", "Design_Combine", "Design_Move", "", "Design_OffsetPlane", "Design_NewComponent", "", "Std_ViewFitAll", "MyCAD_Settings"}),
+                 "Design_Mirror", "Design_Combine", "Design_Move", "", "Design_OffsetPlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point", "Design_NewComponent", "",
+                 "Design_Measure", "Design_Section", "Std_ViewFitAll", "MyCAD_Settings"}),
         24);
     state.sketchBar = new GlassPanel(
         toolbar({"Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
