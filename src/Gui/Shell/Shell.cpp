@@ -143,6 +143,25 @@ void applyTheme()
     view->SetBool("ShowNaviCube", false);  // eigener ViewCube (Shell/ViewCube)
     view->SetInt("AntiAliasing", 3);       // MSAA 4x: glatte Kanten (8x lässt Coin auf Intel/Mesa Flächen verlieren)
     view->SetUnsigned("SelectionColor", t.dark ? 0x0A84FFFFUL : 0x007AFFFFUL);
+
+    // Skizzenfarben wie in Fusion (FreeCADs Vorgaben sind für dunkle Hintergründe gedacht):
+    // unterbestimmt blau, voll bestimmt schwarz/weiß, Konstruktion orange, projiziert lila
+    const unsigned long ink = t.dark ? 0xF5F5F7FFUL : 0x1D1D1FFFUL;
+    const unsigned long soft = t.dark ? 0xC7C7CCFFUL : 0x3C3C43FFUL;
+    view->SetUnsigned("EditedEdgeColor", t.dark ? 0x5AA9FFFFUL : 0x1E73E8FFUL);
+    view->SetUnsigned("FullyConstrainedColor", ink);
+    view->SetUnsigned("FullyConstraintElementColor", ink);
+    view->SetUnsigned("ConstructionColor", 0xFF9500FFUL);
+    view->SetUnsigned("FullyConstraintConstructionElementColor", 0xC77700FFUL);
+    view->SetUnsigned("InternalAlignedGeoColor", 0x8E8E93FFUL);
+    view->SetUnsigned("FullyConstraintInternalAlignmentColor", 0x636366FFUL);
+    view->SetUnsigned("ExternalColor", 0xAF52DEFFUL);
+    view->SetUnsigned("ExternalDefiningColor", 0x8944ABFFUL);
+    view->SetUnsigned("SketchEdgeColor", soft);
+    view->SetUnsigned("SketchVertexColor", soft);
+    view->SetUnsigned("ConstrainedDimColor", soft);
+    view->SetUnsigned("ConstrainedIcoColor", soft);
+    view->SetUnsigned("CursorTextColor", soft);
     view->SetUnsigned("HighlightColor", t.dark ? 0x64B5FFFFUL : 0x66AFFFFFUL);
     view->SetUnsigned("DefaultShapeColor", t.dark ? 0x9EA3ADFFUL : 0xC8CCD4FFUL);
     view->SetUnsigned("DefaultShapeLineColor", t.dark ? 0x2A2D33FFUL : 0x6B717CFFUL);
