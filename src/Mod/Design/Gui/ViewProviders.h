@@ -1,0 +1,52 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+#pragma once
+
+#include <Mod/Design/DesignGlobal.h>
+#include <Mod/Part/Gui/ViewProviderExt.h>
+
+namespace Design
+{
+class Body;
+}
+
+namespace DesignGui
+{
+
+class DesignGuiExport ViewProviderBody: public PartGui::ViewProviderPartExt
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(DesignGui::ViewProviderBody);
+
+public:
+    QIcon getIcon() const override;
+};
+
+/// Geschlossene Skizzen-Regionen: hellblau, halbtransparent, anklickbar, nicht im Browser.
+class DesignGuiExport ViewProviderProfiles: public PartGui::ViewProviderPartExt
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(DesignGui::ViewProviderProfiles);
+
+public:
+    ViewProviderProfiles();
+    void attach(App::DocumentObject* obj) override;
+};
+
+/// Timeline-Feature: im 3D unsichtbar (das Ergebnis zeigt der Body), nicht im Browser, Doppelklick bearbeitet.
+class DesignGuiExport ViewProviderExtrude: public PartGui::ViewProviderPartExt
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(DesignGui::ViewProviderExtrude);
+
+public:
+    ViewProviderExtrude();
+    void attach(App::DocumentObject* obj) override;
+    QIcon getIcon() const override;
+    bool doubleClicked() override;
+    bool setEdit(int ModNum) override;
+    void unsetEdit(int ModNum) override;
+
+    /// vom Extrude-Befehl gesetzt: der Dialog wählt dann Operation und Ziel-Body selbst
+    bool createMode = false;
+    Design::Body* defaultTarget = nullptr;
+};
+
+}  // namespace DesignGui

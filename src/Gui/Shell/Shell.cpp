@@ -191,6 +191,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         QAction* action = cmd->getAction()->action();
         auto btn = new QToolButton;
         btn->setObjectName(QStringLiteral("GlassButton"));
+        btn->setProperty("command", QString::fromLatin1(name));
         btn->setIcon(neutralIcon(action->icon(), dark));
         btn->setIconSize(QSize(22, 22));
         btn->setFixedSize(38, 38);
@@ -344,13 +345,12 @@ void Gui::Shell::install()
 {
     applyTheme();
 
+    // Design-Modul laden (Create Sketch, Extrude, …), egal welche Workbench zuletzt aktiv war
+    Application::Instance->activateWorkbench("DesignWorkbench");
+
     state.modelBar = new GlassPanel(
         toolbar({"Std_New", "Std_Open", "Std_Save", "", "Std_Undo", "Std_Redo", "",
-                 "PartDesign_Body", "PartDesign_NewSketch", "", "PartDesign_Pad", "PartDesign_Pocket",
-                 "PartDesign_Revolution", "PartDesign_Groove", "PartDesign_AdditiveLoft",
-                 "PartDesign_AdditivePipe", "PartDesign_Hole", "", "PartDesign_Fillet",
-                 "PartDesign_Chamfer", "PartDesign_Thickness", "PartDesign_Mirrored",
-                 "PartDesign_LinearPattern", "PartDesign_PolarPattern", "", "Std_ViewFitAll"}),
+                 "Design_CreateSketch", "Design_Extrude", "", "Std_ViewFitAll"}),
         24);
     state.sketchBar = new GlassPanel(
         toolbar({"Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CreateRectangle",

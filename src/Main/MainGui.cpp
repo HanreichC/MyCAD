@@ -212,7 +212,7 @@ int main(int argc, char** argv)
     App::Application::Config()["CopyrightInfo"] = sBanner;
     App::Application::Config()["AppIcon"] = "mycad";
     App::Application::Config()["SplashScreen"] = "freecadsplash";
-    App::Application::Config()["StartWorkbench"] = "PartDesignWorkbench";
+    App::Application::Config()["StartWorkbench"] = "DesignWorkbench";
     // App::Application::Config()["HiddenDockWindow"] = "Property editor";
     App::Application::Config()["SplashAlignment"] = "Bottom|Left";
     App::Application::Config()["SplashTextColor"] = "#418FDE";
