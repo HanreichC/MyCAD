@@ -426,7 +426,8 @@ MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags f)
     // Movable tabs
     d->mdiArea->setTabsMovable(true);
     d->mdiArea->setTabPosition(QTabWidget::South);
-    d->mdiArea->setViewMode(QMdiArea::TabbedView);
+    // MyCAD: eine randlose 3D-Ansicht pro Design, keine Dokument-Tabs
+    d->mdiArea->setViewMode(QMdiArea::SubWindowView);
     auto tab = d->mdiArea->findChild<QTabBar*>();
     if (tab) {
         tab->setTabsClosable(true);
@@ -1405,10 +1406,10 @@ void MainWindow::addWindow(MDIView* view)
 {
     // make workspace parent of view
 
-    bool isempty = d->mdiArea->subWindowList().isEmpty();
     auto child = qobject_cast<QMdiSubWindow*>(view->parentWidget());
     if (!child) {
-        child = new QMdiSubWindow(d->mdiArea->viewport());
+        // Gleich rahmenlos anlegen: nachträgliches setWindowFlags baut das Fenster samt GL-Kontext neu auf
+        child = new QMdiSubWindow(d->mdiArea->viewport(), Qt::SubWindow | Qt::FramelessWindowHint);
         child->setAttribute(Qt::WA_DeleteOnClose);
         child->setWidget(view);
         child->setWindowIcon(view->windowIcon());
@@ -1437,12 +1438,7 @@ void MainWindow::addWindow(MDIView* view)
     // Show the new window. This will also call onWindowActivated. The very first window is shown in
     // maximized mode.
 
-    if (isempty) {
-        view->showMaximized();
-    }
-    else {
-        view->show();
-    }
+    view->showMaximized();
 }
 
 /**

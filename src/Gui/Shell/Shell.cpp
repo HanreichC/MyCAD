@@ -322,16 +322,6 @@ void hideChrome()
     for (auto dw : mw->findChildren<QDockWidget*>()) {
         dw->hide();
     }
-    QMdiArea* mdi = mw->getMdiArea();
-    mdi->setViewMode(QMdiArea::SubWindowView);
-    for (auto sub : mdi->subWindowList()) {
-        if (!(sub->windowFlags() & Qt::FramelessWindowHint)) {
-            sub->setWindowFlags(Qt::SubWindow | Qt::FramelessWindowHint);
-        }
-        if (!sub->isMaximized()) {
-            sub->showMaximized();
-        }
-    }
 }
 
 void hideChromeLater()

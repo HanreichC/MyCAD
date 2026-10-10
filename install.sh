@@ -34,7 +34,6 @@ exec podman run --rm --userns=keep-id --group-add keep-groups \\
     --device /dev/dri \\
     -v "$ROOT:/workspace" -v "\$HOME:\$HOME" -w "\$PWD" \\
     -v "\$XDG_RUNTIME_DIR/\$WAYLAND_DISPLAY:/tmp/runtime/\$WAYLAND_DISPLAY" \\
-    -v /usr/share/fonts:/usr/local/share/fonts:ro \\
     -e HOME="\$HOME" -e XDG_RUNTIME_DIR=/tmp/runtime -e WAYLAND_DISPLAY="\$WAYLAND_DISPLAY" \\
     -e QT_QPA_PLATFORM=wayland \\
     $IMAGE /workspace/build/bin/FreeCAD "\$@"
@@ -56,6 +55,9 @@ Icon=mycad
 Terminal=false
 Categories=Graphics;Engineering;3DGraphics;
 EOF
+
+# KDE-Cache der Menüeinträge/Icons auffrischen, sonst zeigt die Taskleiste noch das alte Icon
+command -v kbuildsycoca6 >/dev/null && kbuildsycoca6 >/dev/null 2>&1 || true
 
 echo "==> Fertig. Starten mit: mycad   (oder über das App-Menü)"
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) echo "    Hinweis: ~/.local/bin ist nicht im PATH.";; esac
