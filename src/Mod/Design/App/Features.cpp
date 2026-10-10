@@ -5,6 +5,8 @@
 #include <App/Document.h>
 #include <App/DocumentObjectGroup.h>
 #include <App/Part.h>
+#include <App/Origin.h>
+#include <App/GeoFeatureGroupExtension.h>
 #include <App/ElementNamingUtils.h>
 #include <App/IndexedName.h>
 #include <App/MappedName.h>
@@ -111,6 +113,62 @@ App::Part* Design::root(App::Document* doc, bool create)
         group->Label.setValue(label);
         part->addObject(group);
     }
+    return part;
+}
+
+bool Design::isComponent(const App::DocumentObject* obj)
+{
+    auto part = freecad_cast<const App::Part*>(obj);
+    if (!part) {
+        return false;
+    }
+    const std::string type = part->Type.getValue();
+    return type == "Design" || type == "Component";
+}
+
+App::Part* Design::componentOf(const App::DocumentObject* obj)
+{
+    const App::DocumentObject* current = obj;
+    for (int guard = 0; current && guard < 64; ++guard) {
+        if (auto group = App::GeoFeatureGroupExtension::getGroupOfObject(current)) {
+            if (isComponent(group)) {
+                return static_cast<App::Part*>(group);
+            }
+            current = group;
+            continue;
+        }
+        // Ursprungsebenen/-achsen gehören zum Origin, der Origin zur Komponente
+        const App::DocumentObject* owner = nullptr;
+        for (auto in : current->getInList()) {
+            if (in->isDerivedFrom<App::Origin>() || isComponent(in)) {
+                owner = in;
+                break;
+            }
+        }
+        if (!owner) {
+            break;
+        }
+        if (isComponent(owner)) {
+            return static_cast<App::Part*>(const_cast<App::DocumentObject*>(owner));
+        }
+        current = owner;
+    }
+    return root(obj->getDocument(), true);
+}
+
+App::Part* Design::newComponent(App::Part* parent)
+{
+    App::Document* doc = parent->getDocument();
+    int count = 0;
+    for (auto obj : doc->getObjectsOfType(App::Part::getClassTypeId())) {
+        count += std::string(static_cast<App::Part*>(obj)->Type.getValue()) == "Component";
+    }
+    auto part = static_cast<App::Part*>(doc->addObject("App::Part", "Component"));
+    part->Type.setValue("Component");
+    part->Label.setValue("Component" + std::to_string(count + 1));
+    parent->addObject(part);
+    folder(part, "Bodies");
+    folder(part, "Sketches");
     return part;
 }
 

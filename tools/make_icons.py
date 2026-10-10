@@ -30,6 +30,7 @@ ICONS = {
     "Design_Revolve": '<path d="M12 4v16"' + DASH + '/><path d="M19 12a7 7 0 1 1-2.05-4.95"/><path d="M19 4v4h-4"/>',
     "Design_Hole": '<ellipse cx="12" cy="7" rx="8" ry="3"/><ellipse cx="12" cy="7" rx="3.4" ry="1.3"/>'
                    '<path d="M8.6 7v10M15.4 7v10"/><path d="M8.6 17a3.4 1.3 0 0 0 6.8 0"/>',
+    "Design_NewComponent": '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
     # Ändern
     "Design_PressPull": '<path d="M4 14l8-4 8 4-8 4z"/><path d="M12 13V3M9 6l3-3 3 3"/>',
     "Design_Fillet": '<path d="M4 20v-6A10 10 0 0 1 14 4h6"/><path d="M4 4h3M4 4v3"/>',

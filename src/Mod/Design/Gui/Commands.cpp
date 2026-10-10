@@ -12,7 +12,9 @@
 #include <Gui/QuantitySpinBox.h>
 #include <Gui/TaskView/TaskDialog.h>
 #include <Base/Interpreter.h>
+#include <Gui/ActiveObjectList.h>
 #include <Gui/MainWindow.h>
+#include <Gui/MDIView.h>
 #include <Gui/Selection/Selection.h>
 #include <Gui/ViewProviderCoordinateSystem.h>
 #include <Gui/ViewProviderGeometryObject.h>
@@ -40,6 +42,20 @@
 
 namespace
 {
+
+/// Aktive Komponente (Doppelklick im Browser), sonst die Root-Komponente
+App::Part* activeContainer(App::Document* doc)
+{
+    if (auto gdoc = Gui::Application::Instance->getDocument(doc)) {
+        if (auto view = gdoc->getActiveView()) {
+            auto part = view->getActiveObject<App::Part*>(PARTKEY);
+            if (part && Design::isComponent(part)) {
+                return part;
+            }
+        }
+    }
+    return Design::root(doc, true);
+}
 
 Gui::ViewProviderCoordinateSystem* originView(App::Part* root)
 {
@@ -108,7 +124,7 @@ void createSketch(App::DocumentObject* support, std::string element)
 
     App::Document* doc = support->getDocument();
     doc->openTransaction("Create Sketch");
-    App::Part* root = Design::root(doc, true);
+    App::Part* root = Design::componentOf(support);  // Komponente der Ebene bzw. des Körpers
     auto sketch = static_cast<Sketcher::SketchObject*>(doc->addObject("Sketcher::SketchObject", "Sketch"));
     Design::folder(root, "Sketches")->addObject(sketch);
     Design::addToTimeline(sketch);
@@ -224,7 +240,7 @@ private:
 
 void createSketchCommand(App::Document* doc)
 {
-    App::Part* root = Design::root(doc, true);
+    App::Part* root = activeContainer(doc);
     // Bereits etwas Passendes ausgewählt? Dann sofort darauf skizzieren.
     auto selection = Gui::Selection().getSelectionEx();
     for (auto& sel : selection) {
@@ -290,7 +306,7 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name)
 
     doc->openTransaction(name);
     auto feature = static_cast<Design::Feature*>(doc->addObject(type, name));
-    Design::root(doc, true)->addObject(feature);
+    Design::componentOf(profiles->Sketch.getValue())->addObject(feature);
     Design::addToTimeline(feature);
     static_cast<App::PropertyLinkSub*>(feature->getPropertyByName("Profile"))->setValue(profiles, faces);
 
@@ -338,7 +354,7 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
 
     doc->openTransaction(name);
     auto feature = static_cast<Design::DressUp*>(doc->addObject(type, name));
-    Design::root(doc, true)->addObject(feature);
+    Design::componentOf(body)->addObject(feature);
     Design::addToTimeline(feature);
     feature->Edges.setValues(edges);
     Design::attachToBodies(feature, {body});
@@ -360,11 +376,25 @@ std::vector<Design::Body*> selectedBodies()
     return bodies;
 }
 
-Design::Feature* addFeature(App::Document* doc, const char* type, const char* name)
+/// Alle in derselben Komponente? Verweise über Komponentengrenzen erlaubt FreeCAD nicht.
+/// ponytail: Operationen über mehrere Komponenten (Fusion kann das) brauchen globale Links + Transformationen
+bool sameComponent(const std::vector<Design::Body*>& bodies, const char* tool)
+{
+    for (auto b : bodies) {
+        if (Design::componentOf(b) != Design::componentOf(bodies.front())) {
+            QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(tool),
+                                     QStringLiteral("All bodies must be in the same component."));
+            return false;
+        }
+    }
+    return true;
+}
+
+Design::Feature* addFeature(App::Document* doc, const char* type, const char* name, App::DocumentObject* near)
 {
     doc->openTransaction(name);
     auto feature = static_cast<Design::Feature*>(doc->addObject(type, name));
-    Design::root(doc, true)->addObject(feature);
+    Design::componentOf(near)->addObject(feature);  // in die Komponente der Eingaben
     Design::addToTimeline(feature);
     return feature;
 }
@@ -383,7 +413,10 @@ void startCombine(App::Document* doc)
                                  QStringLiteral("Select the target body first, then one or more tool bodies."));
         return;
     }
-    auto feature = static_cast<Design::Combine*>(addFeature(doc, "Design::Combine", "Combine"));
+    if (!sameComponent(bodies, "Combine")) {
+        return;
+    }
+    auto feature = static_cast<Design::Combine*>(addFeature(doc, "Design::Combine", "Combine", bodies.front()));
     std::vector<App::DocumentObject*> tools, states;
     for (size_t i = 1; i < bodies.size(); ++i) {
         tools.push_back(bodies[i]);
@@ -396,15 +429,103 @@ void startCombine(App::Document* doc)
     startEditing(feature, false, nullptr);
 }
 
+/// Komponente verschieben/drehen: ändert direkt ihre Lage (wie das Verschieben von Komponenten in Fusion)
+class TaskPlaceComponent: public Gui::TaskView::TaskDialog
+{
+public:
+    explicit TaskPlaceComponent(App::Part* part)
+        : part(part)
+        , start(part->Placement.getValue())
+    {
+        auto w = new QWidget;
+        w->setWindowTitle(QStringLiteral("Move Component"));
+        auto form = new QFormLayout(w);
+        auto box = [](const Base::Unit& unit) {
+            auto b = new Gui::QuantitySpinBox;
+            b->setUnit(unit);
+            b->setRange(-1e7, 1e7);
+            b->setValue(Base::Quantity(0, unit));
+            return b;
+        };
+        x = box(Base::Unit::Length);
+        y = box(Base::Unit::Length);
+        z = box(Base::Unit::Length);
+        angle = box(Base::Unit::Angle);
+        form->addRow(QStringLiteral("X distance"), x);
+        form->addRow(QStringLiteral("Y distance"), y);
+        form->addRow(QStringLiteral("Z distance"), z);
+        form->addRow(QStringLiteral("Rotate around Z"), angle);
+        addTaskBox(w, false);
+        for (auto b : {x, y, z, angle}) {
+            QObject::connect(b, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
+        }
+    }
+    QDialogButtonBox::StandardButtons getStandardButtons() const override
+    {
+        return QDialogButtonBox::Ok | QDialogButtonBox::Cancel;
+    }
+    bool accept() override
+    {
+        part->getDocument()->commitTransaction();
+        return true;
+    }
+    bool reject() override
+    {
+        App::Document* doc = part->getDocument();
+        doc->abortTransaction();
+        doc->recompute();
+        return true;
+    }
+
+private:
+    void apply()
+    {
+        const Base::Placement move(
+            Base::Vector3d(x->value().getValue(), y->value().getValue(), z->value().getValue()),
+            Base::Rotation(Base::Vector3d(0, 0, 1), angle->value().getValue() * M_PI / 180.0)
+        );
+        part->Placement.setValue(move * start);
+        part->getDocument()->recompute();
+    }
+    App::Part* part;
+    Base::Placement start;
+    Gui::QuantitySpinBox *x, *y, *z, *angle;
+};
+
+void startNewComponent(App::Document* doc)
+{
+    App::Part* parent = activeContainer(doc);
+    doc->openTransaction("New Component");
+    App::Part* part = Design::newComponent(parent);
+    doc->recompute();
+    doc->commitTransaction();
+    // Wie in Fusion: die neue Komponente ist gleich aktiv
+    if (auto view = Gui::Application::Instance->getDocument(doc)->getActiveView()) {
+        view->setActiveObject(part, PARTKEY);
+    }
+}
+
 void startMove(App::Document* doc)
 {
+    // Komponente gewählt: ganze Komponente verschieben (Teile nebeneinander anordnen)
+    for (auto obj : Gui::Selection().getObjectsOfType(App::Part::getClassTypeId())) {
+        if (Design::isComponent(obj) && obj != Design::root(doc, false)) {
+            Gui::Selection().clearSelection();
+            doc->openTransaction("Move Component");
+            Gui::Control().showDialog(new TaskPlaceComponent(static_cast<App::Part*>(obj)));
+            return;
+        }
+    }
     const auto bodies = selectedBodies();
-    if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Move"),
-                                 QStringLiteral("Select one or more bodies first."));
+    if (!bodies.empty() && !sameComponent(bodies, "Move")) {
         return;
     }
-    auto feature = addFeature(doc, "Design::Move", "Move");
+    if (bodies.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Move"),
+                                 QStringLiteral("Select one or more bodies or a component first."));
+        return;
+    }
+    auto feature = addFeature(doc, "Design::Move", "Move", bodies.front());
     modifyBodies(feature, bodies);
     doc->recompute();
     startEditing(feature, false, nullptr);
@@ -418,14 +539,17 @@ void startMirror(App::Document* doc)
                                  QStringLiteral("Select one or more bodies first."));
         return;
     }
-    auto feature = static_cast<Design::Mirror*>(addFeature(doc, "Design::Mirror", "Mirror"));
+    if (!sameComponent(bodies, "Mirror")) {
+        return;
+    }
+    auto feature = static_cast<Design::Mirror*>(addFeature(doc, "Design::Mirror", "Mirror", bodies.front()));
     std::vector<App::DocumentObject*> sources, states, created;
     for (auto b : bodies) {
         sources.push_back(b);
         states.push_back(Design::stateAtMarker(b));
         auto copy = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
         copy->Label.setValue(std::string(b->Label.getValue()) + " Mirror");
-        Design::folder(Design::root(doc, true), "Bodies")->addObject(copy);
+        Design::folder(Design::componentOf(b), "Bodies")->addObject(copy);
         copy->Tip.setValue(feature);
         created.push_back(copy);
     }
@@ -555,7 +679,7 @@ void startHole(App::Document* doc)
                                  QStringLiteral("Create a sketch on a face of a body and place points where the holes go."));
         return;
     }
-    auto feature = static_cast<Design::Hole*>(addFeature(doc, "Design::Hole", "Hole"));
+    auto feature = static_cast<Design::Hole*>(addFeature(doc, "Design::Hole", "Hole", target));
     feature->Sketch.setValue(sketch);
     modifyBodies(feature, {target});
     doc->recompute();
@@ -583,7 +707,7 @@ void startPattern(App::Document* doc)
             bodies.push_back(body);
         }
     }
-    auto feature = static_cast<Design::Pattern*>(addFeature(doc, "Design::Pattern", "Pattern"));
+    auto feature = static_cast<Design::Pattern*>(addFeature(doc, "Design::Pattern", "Pattern", source));
     feature->Source.setValue(source);
     feature->Operation.setValue(source->op() == Design::Feature::Op::NewBody ? 1L : source->Operation.getValue());
     modifyBodies(feature, bodies);
@@ -666,7 +790,7 @@ void startOffsetPlane(App::Document* doc)
         doc->abortTransaction();
         return;
     }
-    Design::folder(Design::root(doc, true), "Construction")->addObject(plane);
+    Design::folder(Design::componentOf(support), "Construction")->addObject(plane);
     static_cast<App::PropertyLinkSubList*>(plane->getPropertyByName("AttachmentSupport"))
         ->setValue(support, std::vector<std::string> {element});
     static_cast<App::PropertyEnumeration*>(plane->getPropertyByName("MapMode"))->setValue("FlatFace");
@@ -735,6 +859,9 @@ void CreateDesignCommands()
                                      "Part_Extrude", "Q", [](App::Document* doc) {
                                          startDressUp(doc, "Design::PressPull", "PressPull");
                                      }));
+    mgr.addCommand(new DesignCommand("Design_NewComponent", "New Component",
+                                     "New Component: an empty part with its own origin (double-click to activate)",
+                                     "Std_Part", "", startNewComponent));
     mgr.addCommand(new DesignCommand("Design_Chamfer", "Chamfer", "Chamfer: select edges or faces of a body",
                                      "PartDesign_Chamfer", "", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Chamfer", "Chamfer");

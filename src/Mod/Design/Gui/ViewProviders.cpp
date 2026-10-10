@@ -415,7 +415,7 @@ private:
                 const auto count = doc->getObjectsOfType(Design::Body::getClassTypeId()).size();
                 newBody = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
                 newBody->Label.setValue("Body" + std::to_string(count + 1));
-                Design::folder(Design::root(doc, true), "Bodies")->addObject(newBody);
+                Design::folder(Design::componentOf(feature), "Bodies")->addObject(newBody);
             }
             feature->Bodies.setValues({newBody});
             feature->BaseFeatures.setValues({});

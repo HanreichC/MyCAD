@@ -24,6 +24,12 @@ namespace Design
 
 DesignExport App::Part* root(App::Document* doc, bool create);
 DesignExport App::DocumentObjectGroup* folder(App::Part* root, const char* label);
+/// Root-Komponente (Type "Design") oder Unterkomponente (Type "Component")
+DesignExport bool isComponent(const App::DocumentObject* obj);
+/// Komponente, in der ein Objekt liegt (auch für Ursprungsebenen); sonst die Root-Komponente
+DesignExport App::Part* componentOf(const App::DocumentObject* obj);
+/// neue leere Komponente mit Origin, Bodies und Sketches in parent
+DesignExport App::Part* newComponent(App::Part* parent);
 class Body;
 class Feature;
 
