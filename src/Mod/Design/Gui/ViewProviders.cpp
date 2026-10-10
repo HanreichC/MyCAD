@@ -566,6 +566,9 @@ private:
         operation = new QComboBox;
         operation->addItems({QStringLiteral("New Body"), QStringLiteral("Join"), QStringLiteral("Cut"),
                              QStringLiteral("Intersect")});
+        if (create) {
+            operation->addItem(QStringLiteral("New Component"));  // wie New Body, aber in einer neuen Komponente
+        }
         operation->setCurrentIndex(feature->Operation.getValue());
         body = new QComboBox;
         form->addRow(QStringLiteral("Operation"), operation);
@@ -591,7 +594,9 @@ private:
 
         QObject::connect(operation, &QComboBox::currentIndexChanged, [this](int idx) {
             if (this->create) {
-                setOperation(static_cast<Design::Feature::Op>(idx), selectedBody());
+                const bool component = idx == NewComponentIndex;
+                setOperation(component ? Design::Feature::Op::NewBody : static_cast<Design::Feature::Op>(idx),
+                             selectedBody(), component);
                 // Wie Fusion: Cut zeigt standardmäßig in den Körper hinein (unabhängig vom eingegebenen Abstand)
                 const bool cut = static_cast<Design::Feature::Op>(idx) == Design::Feature::Op::Cut;
                 if (extrude && cut != autoFlipped) {
@@ -620,8 +625,11 @@ private:
         return freecad_cast<Design::Body*>(feature->getDocument()->getObject(name.toLatin1().constData()));
     }
 
-    /// Nur im Erstell-Modus: stellt Operation und Ziel-Body um und legt bei New Body den neuen Body an.
-    void setOperation(Design::Feature::Op op, Design::Body* target)
+    static constexpr int NewComponentIndex = 4;
+
+    /// Nur im Erstell-Modus: stellt Operation und Ziel-Body um und legt bei New Body den neuen Body an
+    /// (bei inComponent in einer neuen Komponente).
+    void setOperation(Design::Feature::Op op, Design::Body* target, bool inComponent = false)
     {
         // vorherigen Ziel-Body wieder freigeben (New Body verwaltet newBody selbst)
         if (!(feature->op() == Design::Feature::Op::NewBody && newBody) && feature->BaseFeatures.getSize() > 0) {
@@ -629,12 +637,25 @@ private:
         }
 
         App::Document* doc = feature->getDocument();
+        // Body/Komponente passen nicht mehr zur gewünschten Variante: neu anlegen
+        if (newBody && (op != Design::Feature::Op::NewBody || inComponent != (newComponent != nullptr))) {
+            doc->removeObject(newBody->getNameInDocument());
+            newBody = nullptr;
+        }
+        if (newComponent && !(op == Design::Feature::Op::NewBody && inComponent)) {
+            newComponent->removeObjectsFromDocument();
+            doc->removeObject(newComponent->getNameInDocument());
+            newComponent = nullptr;
+        }
         if (op == Design::Feature::Op::NewBody) {
+            if (inComponent && !newComponent) {
+                newComponent = Design::newComponent(Design::componentOf(feature));
+            }
             if (!newBody) {
                 const auto count = doc->getObjectsOfType(Design::Body::getClassTypeId()).size();
                 newBody = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
                 newBody->Label.setValue("Body" + std::to_string(count + 1));
-                Design::folder(Design::componentOf(feature), "Bodies")->addObject(newBody);
+                Design::folder(newComponent ? newComponent : Design::componentOf(feature), "Bodies")->addObject(newBody);
             }
             feature->Bodies.setValues({newBody});
             feature->BaseFeatures.setValues({});
@@ -658,7 +679,7 @@ private:
         }
         feature->Operation.setValue(static_cast<long>(op));
         operation->blockSignals(true);
-        operation->setCurrentIndex(static_cast<int>(op));
+        operation->setCurrentIndex(newComponent ? NewComponentIndex : static_cast<int>(op));
         operation->blockSignals(false);
     }
 
@@ -766,6 +787,7 @@ private:
     bool create;
     bool autoFlipped = false;
     Design::Body* newBody = nullptr;
+    App::Part* newComponent = nullptr;
     QFormLayout* form = nullptr;
     QComboBox* extent = nullptr;
     QComboBox* axis = nullptr;

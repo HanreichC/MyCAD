@@ -57,7 +57,9 @@ class DesignExport Body: public Part::Feature
 
 public:
     Body();
-    App::PropertyLink Tip;  ///< letztes Feature, das diesen Body erzeugt oder verändert hat
+    /// letztes Feature, das diesen Body erzeugt oder verändert hat. Global: das Feature darf in der übergeordneten
+    /// Komponente liegen (Extrude -> New Component)
+    App::PropertyLinkGlobal Tip;
 
     App::DocumentObjectExecReturn* execute() override;
     const char* getViewProviderName() const override
