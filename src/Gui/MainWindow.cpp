@@ -2287,7 +2287,7 @@ void MainWindow::startSplasher()
                                         ->GetGroup("Preferences")
                                         ->GetGroup("General");
         // first search for an external image file
-        if (hGrp->GetBool("ShowSplasher", true)) {
+        if (hGrp->GetBool("ShowSplasher", false)) {
             d->splashscreen = new SplashScreen(SplashScreen::splashImage());
 
             if (!hGrp->GetBool("ShowSplasherMessages", false)) {

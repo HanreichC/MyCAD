@@ -26,6 +26,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QPainter>
+#include <QPointer>
 #include <QStatusBar>
 #include <QStyleHints>
 #include <QTimer>
@@ -186,7 +187,11 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         btn->setFixedSize(38, 38);
         btn->setToolTip(action->toolTip().isEmpty() ? action->text() : action->toolTip());
         btn->setEnabled(action->isEnabled());
-        QObject::connect(btn, &QToolButton::clicked, action, &QAction::trigger);
+        // Erst nach dem Mausklick auslösen: Befehle bauen die Oberfläche um (neue Ansicht, Dialog, Edit-Modus),
+        // während Qt den Klick noch an das Proxy-Widget weiterreicht. Synchron führte das zum Absturz.
+        QObject::connect(btn, &QToolButton::clicked, action, [action] {
+            QTimer::singleShot(0, action, &QAction::trigger);
+        });
         QObject::connect(action, &QAction::changed, btn, [btn, action] {
             btn->setEnabled(action->isEnabled());
         });
@@ -321,7 +326,7 @@ void hideChrome()
     mdi->setViewMode(QMdiArea::SubWindowView);
     for (auto sub : mdi->subWindowList()) {
         if (!(sub->windowFlags() & Qt::FramelessWindowHint)) {
-            sub->setWindowFlags(Qt::FramelessWindowHint);
+            sub->setWindowFlags(Qt::SubWindow | Qt::FramelessWindowHint);
         }
         if (!sub->isMaximized()) {
             sub->showMaximized();
@@ -381,9 +386,13 @@ void Gui::Shell::install()
 
     QMdiArea* mdi = getMainWindow()->getMdiArea();
     QObject::connect(mdi, &QMdiArea::subWindowActivated, mdi, [](QMdiSubWindow* sub) {
-        if (auto view = sub ? qobject_cast<View3DInventor*>(sub->widget()) : nullptr) {
-            attach(view);
-        }
+        // Panels nicht mitten in einem Event in eine andere Szene umziehen
+        QPointer<View3DInventor> view = sub ? qobject_cast<View3DInventor*>(sub->widget()) : nullptr;
+        QTimer::singleShot(0, [view] {
+            if (view) {
+                attach(view);
+            }
+        });
         hideChromeLater();
     });
 

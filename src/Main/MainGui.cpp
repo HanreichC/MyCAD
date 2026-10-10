@@ -210,7 +210,7 @@ int main(int argc, char** argv)
 
     // set the banner (for logging and console)
     App::Application::Config()["CopyrightInfo"] = sBanner;
-    App::Application::Config()["AppIcon"] = "freecad";
+    App::Application::Config()["AppIcon"] = "mycad";
     App::Application::Config()["SplashScreen"] = "freecadsplash";
     App::Application::Config()["StartWorkbench"] = "PartDesignWorkbench";
     // App::Application::Config()["HiddenDockWindow"] = "Property editor";

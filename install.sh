@@ -41,6 +41,10 @@ exec podman run --rm --userns=keep-id --group-add keep-groups \\
 EOF
 chmod +x "$BIN"
 
+ICON_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
+mkdir -p "$ICON_DIR"
+cp "$ROOT/src/Gui/Icons/mycad.svg" "$ICON_DIR/mycad.svg"
+
 cat > "$DESKTOP" <<EOF
 [Desktop Entry]
 Type=Application
@@ -48,7 +52,7 @@ Name=MyCAD
 StartupWMClass=mycad
 Comment=Parametric CAD
 Exec=$BIN %F
-Icon=$ROOT/src/Gui/Icons/freecad.svg
+Icon=mycad
 Terminal=false
 Categories=Graphics;Engineering;3DGraphics;
 EOF
