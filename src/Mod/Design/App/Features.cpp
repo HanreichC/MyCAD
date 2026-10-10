@@ -1265,3 +1265,34 @@ App::DocumentObjectExecReturn* PressPull::compute()
     setResults({res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched)});
     return StdReturn;
 }
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Import, Design::Feature)
+
+Import::Import()
+{
+    ADD_PROPERTY_TYPE(Imported, (TopoDS_Shape()), "Import", App::Prop_Hidden, "Imported geometry");
+    ADD_PROPERTY_TYPE(SourceFile, (""), "Import", App::Prop_ReadOnly, "File the geometry came from");
+    Operation.setStatus(App::Property::Hidden, true);
+}
+
+std::vector<Part::TopoShape> Import::pieces(const Part::TopoShape& shape)
+{
+    for (auto type : {TopAbs_SOLID, TopAbs_SHELL}) {
+        if (shape.countSubShapes(type) > 0) {
+            return shape.getSubTopoShapes(type);
+        }
+    }
+    return shape.isNull() ? std::vector<Part::TopoShape>() : std::vector<Part::TopoShape> {shape};
+}
+
+App::DocumentObjectExecReturn* Import::compute()
+{
+    const auto parts = pieces(Imported.getShape());
+    if (parts.empty() || parts.size() != size_t(Bodies.getSize())) {
+        return new App::DocumentObjectExecReturn("Imported geometry is missing");
+    }
+    setResults(parts);
+    return StdReturn;
+}

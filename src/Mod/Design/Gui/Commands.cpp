@@ -20,6 +20,19 @@
 #include <Gui/ViewProviderGeometryObject.h>
 #include <Mod/Design/App/Features.h>
 #include <Mod/Sketcher/App/SketchObject.h>
+#include <Mod/Part/App/Geometry.h>
+#include <BRep_Tool.hxx>
+#include <GeomConvert.hxx>
+#include <Geom_BezierCurve.hxx>
+#include <Geom_TrimmedCurve.hxx>
+#include <TColgp_Array1OfPnt.hxx>
+#include <QPaintDevice>
+#include <QPaintEngine>
+#include <QPainter>
+#include <QPainterPath>
+#include <QRegularExpression>
+#include <QSvgRenderer>
+#include <QXmlStreamReader>
 
 #include "ViewProviders.h"
 
@@ -29,6 +42,7 @@
 #include <TopExp.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
+#include <TopoDS_Edge.hxx>
 
 #include <QDir>
 #include <QFileDialog>
@@ -106,6 +120,22 @@ bool isPlanarFace(App::DocumentObject* obj, const std::string& element)
     return !face.isNull() && BRepAdaptor_Surface(TopoDS::Face(face.getShape())).GetType() == GeomAbs_Plane;
 }
 
+/// Neue Skizze mit Profiles-Begleiter in der Komponente der Ebene bzw. des Körpers (ohne Transaktion)
+Sketcher::SketchObject* addSketch(App::DocumentObject* support, const std::string& element)
+{
+    App::Document* doc = support->getDocument();
+    App::Part* root = Design::componentOf(support);
+    auto sketch = static_cast<Sketcher::SketchObject*>(doc->addObject("Sketcher::SketchObject", "Sketch"));
+    Design::folder(root, "Sketches")->addObject(sketch);
+    Design::addToTimeline(sketch);
+    sketch->AttachmentSupport.setValue(support, std::vector<std::string> {element});
+    sketch->MapMode.setValue("FlatFace");
+    auto profiles = static_cast<Design::Profiles*>(doc->addObject("Design::Profiles", "Profiles"));
+    root->addObject(profiles);
+    profiles->Sketch.setValue(sketch);
+    return sketch;
+}
+
 void createSketch(App::DocumentObject* support, std::string element)
 {
     // Skizze auf einer Körperfläche an den Timeline-Zustand hängen (das Feature, das den Body gerade
@@ -124,15 +154,7 @@ void createSketch(App::DocumentObject* support, std::string element)
 
     App::Document* doc = support->getDocument();
     doc->openTransaction("Create Sketch");
-    App::Part* root = Design::componentOf(support);  // Komponente der Ebene bzw. des Körpers
-    auto sketch = static_cast<Sketcher::SketchObject*>(doc->addObject("Sketcher::SketchObject", "Sketch"));
-    Design::folder(root, "Sketches")->addObject(sketch);
-    Design::addToTimeline(sketch);
-    sketch->AttachmentSupport.setValue(support, std::vector<std::string> {element});
-    sketch->MapMode.setValue("FlatFace");
-    auto profiles = static_cast<Design::Profiles*>(doc->addObject("Design::Profiles", "Profiles"));
-    root->addObject(profiles);
-    profiles->Sketch.setValue(sketch);
+    Sketcher::SketchObject* sketch = addSketch(support, element);
     doc->recompute();
     doc->commitTransaction();
 
@@ -584,6 +606,296 @@ void deleteSelected(App::Document* doc)
     doc->commitTransaction();
 }
 
+/// SVG-Pfade beim Rendern mitschneiden: Qt kennt alle SVG-Formen, Transformationen und Bögen
+class PathRecorder: public QPaintEngine
+{
+public:
+    PathRecorder()
+        : QPaintEngine(QPaintEngine::AllFeatures)
+    {}
+    bool begin(QPaintDevice*) override
+    {
+        return true;
+    }
+    bool end() override
+    {
+        return true;
+    }
+    void updateState(const QPaintEngineState& state) override
+    {
+        if (state.state() & QPaintEngine::DirtyTransform) {
+            transform = state.transform();
+        }
+    }
+    void drawPath(const QPainterPath& path) override
+    {
+        paths.push_back(transform.map(path));
+    }
+    void drawPolygon(const QPointF* points, int count, PolygonDrawMode mode) override
+    {
+        QPainterPath path;
+        path.addPolygon(QPolygonF(QList<QPointF>(points, points + count)));
+        if (mode != PolylineMode) {
+            path.closeSubpath();
+        }
+        drawPath(path);
+    }
+    void drawLines(const QLineF* lines, int count) override
+    {
+        for (int i = 0; i < count; ++i) {
+            QPainterPath path(lines[i].p1());
+            path.lineTo(lines[i].p2());
+            drawPath(path);
+        }
+    }
+    void drawPixmap(const QRectF&, const QPixmap&, const QRectF&) override
+    {}
+    Type type() const override
+    {
+        return User;
+    }
+
+    QTransform transform;
+    std::vector<QPainterPath> paths;
+};
+
+class PathDevice: public QPaintDevice
+{
+public:
+    explicit PathDevice(QSize size)
+        : size(size)
+    {}
+    QPaintEngine* paintEngine() const override
+    {
+        return &engine;
+    }
+    mutable PathRecorder engine;
+
+protected:
+    int metric(PaintDeviceMetric metric) const override
+    {
+        switch (metric) {
+            case PdmWidth:
+                return size.width();
+            case PdmHeight:
+                return size.height();
+            case PdmDpiX:
+            case PdmDpiY:
+            case PdmPhysicalDpiX:
+            case PdmPhysicalDpiY:
+                return 96;
+            case PdmDepth:
+                return 32;
+            case PdmDevicePixelRatio:
+                return 1;
+            case PdmDevicePixelRatioScaled:
+                return int(devicePixelRatioFScale());
+            default:
+                return 0;
+        }
+    }
+
+private:
+    QSize size;
+};
+
+using Geometries = std::vector<std::unique_ptr<Part::Geometry>>;
+
+Geometries svgGeometry(const QString& file, std::string& error)
+{
+    QSvgRenderer renderer(file);
+    if (!renderer.isValid()) {
+        error = "This is not a valid SVG file.";
+        return {};
+    }
+    PathDevice device(renderer.defaultSize());
+    QPainter painter(&device);
+    renderer.render(&painter);
+    painter.end();
+
+    // Qt rechnet absolute Einheiten (mm, in, pt) mit 90 dpi in Pixel um; Pixel ohne Einheit sind CSS-Pixel (96 dpi)
+    double scale = 25.4 / 96;
+    QFile in(file);
+    if (in.open(QIODevice::ReadOnly)) {
+        QXmlStreamReader xml(&in);
+        while (xml.readNextStartElement()) {
+            static const QRegularExpression absolute(QStringLiteral("\\d\\s*(mm|cm|in|pt|pc)\\s*$"));
+            if (absolute.match(xml.attributes().value(QStringLiteral("width"))).hasMatch()) {
+                scale = 25.4 / 90;
+            }
+            break;  // nur das <svg>-Element
+        }
+    }
+    auto point = [scale](const QPointF& p) {
+        return Base::Vector3d(p.x() * scale, -p.y() * scale, 0);  // SVG zeigt mit y nach unten
+    };
+
+    Geometries result;
+    for (const QPainterPath& path : device.engine.paths) {
+        Base::Vector3d current;
+        for (int i = 0; i < path.elementCount(); ++i) {
+            const QPainterPath::Element e = path.elementAt(i);
+            const Base::Vector3d p = point(e);
+            if (e.isMoveTo()) {
+                current = p;
+            }
+            else if (e.isLineTo()) {
+                if (Base::DistanceP2(current, p) > 1e-12) {
+                    auto line = std::make_unique<Part::GeomLineSegment>();
+                    line->setPoints(current, p);
+                    result.push_back(std::move(line));
+                }
+                current = p;
+            }
+            else if (e.isCurveTo() && i + 2 < path.elementCount()) {
+                TColgp_Array1OfPnt poles(1, 4);
+                const Base::Vector3d c2 = point(path.elementAt(i + 1)), end = point(path.elementAt(i + 2));
+                int k = 1;
+                for (const auto& v : {current, p, c2, end}) {
+                    poles.SetValue(k++, gp_Pnt(v.x, v.y, v.z));
+                }
+                Handle(Geom_BezierCurve) bezier = new Geom_BezierCurve(poles);
+                result.push_back(std::make_unique<Part::GeomBSplineCurve>(GeomConvert::CurveToBSplineCurve(bezier)));
+                current = end;
+                i += 2;
+            }
+        }
+    }
+    if (result.empty()) {
+        error = "The SVG file contains no paths.";
+    }
+    return result;
+}
+
+/// Skizzentaugliche Geometrie einer Kante (Linie, Kreis, Bogen, Ellipse, B-Spline; alles andere als B-Spline)
+std::unique_ptr<Part::Geometry> sketchGeometry(const TopoDS_Edge& edge)
+{
+    auto geo = Part::Geometry::fromShape(edge, true);
+    static const Base::Type supported[] = {Part::GeomLineSegment::getClassTypeId(), Part::GeomCircle::getClassTypeId(),
+                                           Part::GeomArcOfCircle::getClassTypeId(), Part::GeomEllipse::getClassTypeId(),
+                                           Part::GeomArcOfEllipse::getClassTypeId(),
+                                           Part::GeomBSplineCurve::getClassTypeId()};
+    if (geo && std::ranges::find(supported, geo->getTypeId()) != std::end(supported)) {
+        return geo;
+    }
+    double first {}, last {};
+    Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, first, last);
+    if (curve.IsNull()) {
+        return nullptr;
+    }
+    return std::make_unique<Part::GeomBSplineCurve>(
+        GeomConvert::CurveToBSplineCurve(new Geom_TrimmedCurve(curve, first, last))
+    );
+}
+
+Geometries dxfGeometry(const std::string& file, std::string& error)
+{
+    // FreeCADs DXF-Leser legt Part-Objekte an: in ein unsichtbares Hilfsdokument lesen und die Kanten übernehmen
+    App::Document* tmp = App::GetApplication().newDocument("MyCADImport", "MyCADImport", {false, true});
+    const std::string name = tmp->getName();
+    // eigene Optionen: Layer und Farben bräuchten das Draft-Modul (fehlt; die erste Linie ginge verloren)
+    const char* options = "User parameter:BaseApp/Preferences/Mod/Design/DXF";
+    auto grp = App::GetApplication().GetParameterGroupByPath(options);
+    grp->SetBool("dxfUseDraftVisGroups", false);
+    grp->SetBool("dxfGetOriginalColors", false);
+    grp->SetBool("dxfImportPoints", false);
+    try {
+        const QString hex = QString::fromLatin1(QByteArray::fromStdString(file).toHex());
+        Base::Interpreter().runString(("import Import\nImport.readDXF(bytes.fromhex('" + hex.toStdString()
+                                       + "').decode(), '" + name + "', True, '" + options + "')")
+                                          .c_str());
+    }
+    catch (const Base::Exception& e) {
+        error = e.what();
+    }
+    Geometries result;
+    for (auto obj : tmp->getObjectsOfType(Part::Feature::getClassTypeId())) {
+        if (!obj->getInList().empty()) {
+            continue;  // Teil eines Compounds: kommt über das Compound
+        }
+        for (const auto& edge : static_cast<Part::Feature*>(obj)->Shape.getShape().getSubTopoShapes(TopAbs_EDGE)) {
+            if (auto geo = sketchGeometry(TopoDS::Edge(edge.getShape()))) {
+                result.push_back(std::move(geo));
+            }
+        }
+    }
+    App::GetApplication().closeDocument(name.c_str());
+    if (result.empty() && error.empty()) {
+        error = "The DXF file contains no supported geometry.";
+    }
+    return result;
+}
+
+/// STEP: Timeline-Eintrag "Import" mit je einem Body pro Solid; DXF/SVG: Skizze auf der XY-Ebene
+void importFile(App::Document* doc)
+{
+    const QString file = QFileDialog::getOpenFileName(
+        Gui::getMainWindow(), QStringLiteral("Insert"), QString(),
+        QStringLiteral("CAD files (*.step *.stp *.dxf *.svg);;STEP (*.step *.stp);;DXF (*.dxf);;SVG (*.svg)")
+    );
+    if (file.isEmpty()) {
+        return;
+    }
+    const QString stem = QFileInfo(file).completeBaseName();
+    const QString suffix = QFileInfo(file).suffix().toLower();
+    App::Part* comp = activeContainer(doc);
+    std::string error;
+    try {
+        if (suffix == QLatin1String("step") || suffix == QLatin1String("stp")) {
+            Part::TopoShape shape;
+            shape.read(file.toUtf8().constData());
+            const auto pieces = Design::Import::pieces(shape);
+            if (pieces.empty()) {
+                throw Base::RuntimeError("The STEP file contains no geometry.");
+            }
+            doc->openTransaction("Insert");
+            auto feature = static_cast<Design::Import*>(doc->addObject("Design::Import", "Import"));
+            feature->Label.setValue(stem.toStdString());
+            feature->SourceFile.setValue(file.toStdString());
+            feature->Imported.setValue(shape);
+            comp->addObject(feature);
+            Design::addToTimeline(feature);
+            std::vector<App::DocumentObject*> bodies;
+            for (size_t i = 0; i < pieces.size(); ++i) {
+                auto body = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
+                body->Label.setValue(
+                    pieces.size() == 1 ? stem.toStdString() : stem.toStdString() + " " + std::to_string(i + 1)
+                );
+                Design::folder(comp, "Bodies")->addObject(body);
+                body->Tip.setValue(feature);
+                bodies.push_back(body);
+            }
+            feature->Bodies.setValues(bodies);
+        }
+        else {
+            Geometries geos = suffix == QLatin1String("svg") ? svgGeometry(file, error)
+                                                             : dxfGeometry(file.toStdString(), error);
+            if (geos.empty()) {
+                throw Base::RuntimeError(error);
+            }
+            doc->openTransaction("Insert");
+            Sketcher::SketchObject* sketch = addSketch(comp->getOrigin()->getXY(), std::string());
+            sketch->Label.setValue(stem.toStdString());
+            std::vector<Part::Geometry*> raw;
+            for (const auto& g : geos) {
+                raw.push_back(g.get());
+            }
+            sketch->addGeometry(raw);
+        }
+        doc->recompute();
+        doc->commitTransaction();
+        Gui::Application::Instance->commandManager().runCommandByName("Std_ViewFitAll");
+    }
+    catch (const Base::Exception& e) {
+        doc->abortTransaction();
+        QMessageBox::warning(Gui::getMainWindow(), QStringLiteral("Insert"), QString::fromUtf8(e.what()));
+    }
+    catch (const Standard_Failure& e) {
+        doc->abortTransaction();
+        QMessageBox::warning(Gui::getMainWindow(), QStringLiteral("Insert"), QString::fromUtf8(e.GetMessageString()));
+    }
+}
+
 /// Gewählte Bodies exportieren, ohne Auswahl alle sichtbaren. 3MF/STL über Mesh, STEP über Import.
 void exportBodies(App::Document* doc)
 {
@@ -847,6 +1159,9 @@ void CreateDesignCommands()
                                      "edit-delete", "", deleteSelected));
     mgr.addCommand(new DesignCommand("Design_Export", "Export", "Export bodies as 3MF, STL or STEP",
                                      "document-save-as", "", exportBodies));
+    mgr.addCommand(new DesignCommand("Design_Import", "Insert",
+                                     "Insert a STEP file as bodies, or a DXF or SVG file as a sketch",
+                                     "document-open", "", importFile));
     mgr.addCommand(new DesignCommand("Design_Hole", "Hole", "Hole: place points in a sketch on a face",
                                      "PartDesign_Hole", "H", startHole));
     mgr.addCommand(new DesignCommand("Design_Pattern", "Pattern",

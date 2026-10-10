@@ -1159,6 +1159,12 @@ void rebuildTimeline()
         static_cast<TitleBar*>(state.titleBar->content())
             ->setTitle(doc ? QString::fromUtf8(doc->Label.getValue()) : QStringLiteral("MyCAD"));
     }
+    // Knöpfe eines verborgenen Panels gelten sonst als versteckt und zählen nicht zur Größe (Timeline war zu flach)
+    for (int i = 0; i < lay->count(); ++i) {
+        if (QWidget* w = lay->itemAt(i)->widget()) {
+            w->show();
+        }
+    }
     box->adjustSize();
     layout();
 }
@@ -1252,7 +1258,7 @@ void Gui::Shell::install()
     registerSettings();
 
     state.modelBar = new GlassPanel(
-        toolbar({"Std_New", "Std_Open", "Std_Save", "Design_Export", "", "Std_Undo", "Std_Redo", "",
+        toolbar({"Std_New", "Std_Open", "Std_Save", "Design_Import", "Design_Export", "", "Std_Undo", "Std_Redo", "",
                  "Design_CreateSketch", "Design_Extrude", "Design_Revolve", "",
                  "Design_Hole", "Design_PressPull", "Design_Fillet", "Design_Chamfer", "Design_Shell", "", "Design_Pattern",
                  "Design_Mirror", "Design_Combine", "Design_Move", "", "Design_OffsetPlane", "Design_NewComponent", "", "Std_ViewFitAll", "MyCAD_Settings"}),

@@ -236,6 +236,9 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::PressPull>()) {
         return QStringLiteral("Press Pull");
     }
+    if (f->isDerivedFrom<Design::Import>()) {
+        return QStringLiteral("Insert");
+    }
     return QStringLiteral("Extrude");
 }
 
@@ -864,6 +867,9 @@ QIcon ViewProviderFeature::getIcon() const
     else if (obj->isDerivedFrom<Design::PressPull>()) {
         icon = "Part_Extrude";
     }
+    else if (obj->isDerivedFrom<Design::Import>()) {
+        icon = "document-open";
+    }
     return Gui::BitmapFactory().pixmap(icon);
 }
 
@@ -875,8 +881,8 @@ bool ViewProviderFeature::doubleClicked()
 bool ViewProviderFeature::setEdit(int)
 {
     auto feature = freecad_cast<Design::Feature*>(getObject());
-    if (!feature || Gui::Control().activeDialog()) {
-        return false;
+    if (!feature || feature->isDerivedFrom<Design::Import>() || Gui::Control().activeDialog()) {
+        return false;  // eingefügte Geometrie hat keine Einstellungen
     }
     App::Document* doc = feature->getDocument();
     if (!doc->hasPendingTransaction()) {

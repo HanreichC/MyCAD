@@ -305,6 +305,20 @@ public:
     App::DocumentObjectExecReturn* compute() override;
 };
 
+/// Eingefügte Geometrie (STEP): je Solid ein neuer Body, ohne Verlauf (wie Fusions Base Feature)
+class DesignExport Import: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Import);
+
+public:
+    Import();
+    Part::PropertyPartShape Imported;
+    App::PropertyString SourceFile;
+    /// Solids einzeln (ohne Solids: Schalen, sonst die ganze Form), je einer pro Body
+    static std::vector<Part::TopoShape> pieces(const Part::TopoShape& shape);
+    App::DocumentObjectExecReturn* compute() override;
+};
+
 /// Ebene Flächen herausziehen (positiv) oder hineindrücken (negativ)
 class DesignExport PressPull: public DressUp
 {
