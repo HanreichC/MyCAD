@@ -8,6 +8,10 @@
 #include <Gui/Application.h>
 #include <Gui/Command.h>
 #include <Gui/Control.h>
+#include <Gui/Document.h>
+#include <Gui/Selection/Selection.h>
+#include <Gui/ViewProviderDocumentObject.h>
+#include <App/Document.h>
 #include <Gui/DockWindowManager.h>
 #include <Gui/MainWindow.h>
 #include <Gui/View3DInventor.h>
@@ -24,6 +28,7 @@
 #include <QMdiArea>
 #include <QMdiSubWindow>
 #include <QMenu>
+#include <QMouseEvent>
 #include <QMenuBar>
 #include <QPainter>
 #include <QPointer>
@@ -34,6 +39,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#include <functional>
 #include <vector>
 
 using namespace Gui;
@@ -67,6 +73,7 @@ QToolButton#GlassButton { border: none; border-radius: 10px; background: transpa
 QToolButton#GlassButton:hover { background: %4; }
 QToolButton#GlassButton:pressed { background: %5; }
 QToolButton#GlassButton:disabled { background: transparent; }
+QToolButton#GlassButton[error="true"] { background: rgba(255,59,48,0.28); }
 QFrame#GlassSeparator { background: %8; border: none; }
 #GlassContent, #GlassContent QWidget { background: transparent; }
 #GlassContent QAbstractScrollArea { border: none; }
@@ -235,12 +242,38 @@ QWidget* takeDockWindow(const char* name)
     return box;
 }
 
+/// Timeline-Eintrag: Klick wählt aus, Doppelklick bearbeitet (wie in Fusion)
+class TimelineButton: public QToolButton
+{
+public:
+    std::function<void()> onDoubleClick;
+
+protected:
+    void mouseDoubleClickEvent(QMouseEvent* event) override
+    {
+        event->accept();
+        if (onDoubleClick) {
+            QTimer::singleShot(0, onDoubleClick);  // nicht mitten im Maus-Event den Edit-Modus starten
+        }
+    }
+};
+
+/// Skizzen und Design-Features in Dokument-Reihenfolge. Typen per Name, damit die Shell nicht vom Design-Modul abhängt.
+bool isTimelineItem(const App::DocumentObject* obj)
+{
+    static const Base::Type sketch = Base::Type::fromName("Sketcher::SketchObject");
+    static const Base::Type feature = Base::Type::fromName("Design::Feature");
+    const Base::Type t = obj->getTypeId();
+    return (!sketch.isBad() && t.isDerivedFrom(sketch)) || (!feature.isBad() && t.isDerivedFrom(feature));
+}
+
 struct State
 {
     GlassPanel* modelBar = nullptr;
     GlassPanel* sketchBar = nullptr;
     GlassPanel* browser = nullptr;
     GlassPanel* inspector = nullptr;
+    GlassPanel* timeline = nullptr;
     bool sketchMode = false;
     QGraphicsScene* scene = nullptr;
 } state;
@@ -248,7 +281,7 @@ struct State
 std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
-    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.inspector}) {
+    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.inspector, state.timeline}) {
         if (p) {
             all.push_back(p);
         }
@@ -269,15 +302,89 @@ void layout()
     const QSizeF bs = bar->content()->sizeHint();
     bar->setGeometry(QRectF(r.center().x() - bs.width() / 2, m, bs.width(), bs.height()));
 
+    qreal bottom = r.height() - m;
+    if (state.timeline) {
+        const QSizeF ts = state.timeline->content()->sizeHint();
+        const bool show = state.timeline->content()->property("count").toInt() > 0;
+        state.timeline->setVisible(show);
+        state.timeline->setGeometry(
+            QRectF(r.center().x() - ts.width() / 2, r.height() - m - ts.height(), ts.width(), ts.height())
+        );
+    }
+
     const qreal top = m + bs.height() + m;
     if (state.browser) {
-        state.browser->setGeometry(QRectF(m, top, 290, r.height() - top - m));
+        state.browser->setGeometry(QRectF(m, top, 290, bottom - top));
     }
     if (state.inspector) {
         const qreal itop = 150;  // unter dem ViewCube
         state.inspector->setVisible(Control().activeDialog() != nullptr);
-        state.inspector->setGeometry(QRectF(r.width() - 340 - m, itop, 340, r.height() - itop - m));
+        state.inspector->setGeometry(QRectF(r.width() - 340 - m, itop, 340, bottom - itop));
     }
+}
+
+/// Timeline-Leiste neu aufbauen (nach jeder Änderung am Dokument, gebündelt)
+void rebuildTimeline()
+{
+    if (!state.timeline) {
+        return;
+    }
+    QWidget* box = state.timeline->content();
+    auto lay = static_cast<QHBoxLayout*>(box->layout());
+    while (QLayoutItem* item = lay->takeAt(0)) {
+        delete item->widget();
+        delete item;
+    }
+
+    int count = 0;
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    Gui::Document* gdoc = doc ? Application::Instance->getDocument(doc) : nullptr;
+    for (App::DocumentObject* obj : doc ? doc->getObjects() : std::vector<App::DocumentObject*>()) {
+        if (!isTimelineItem(obj) || !gdoc) {
+            continue;
+        }
+        auto vp = gdoc->getViewProvider(obj);
+        auto btn = new TimelineButton;
+        btn->setObjectName(QStringLiteral("GlassButton"));
+        btn->setIcon(neutralIcon(vp ? vp->getIcon() : QIcon(), theme().dark));
+        btn->setIconSize(QSize(22, 22));
+        btn->setFixedSize(36, 36);
+        btn->setToolTip(QString::fromUtf8(obj->Label.getValue())
+                        + (obj->isError() ? QStringLiteral("\n") + QString::fromUtf8(obj->getStatusString())
+                                          : QString()));
+        btn->setProperty("error", obj->isError());
+        const App::DocumentObjectT ref(obj);
+        QObject::connect(btn, &QToolButton::clicked, btn, [ref] {
+            if (auto o = ref.getObject()) {
+                Selection().clearSelection();
+                Selection().addSelection(o->getDocument()->getName(), o->getNameInDocument());
+            }
+        });
+        btn->onDoubleClick = [ref] {
+            auto o = ref.getObject();
+            if (o && !Control().activeDialog()) {
+                auto gd = Application::Instance->getDocument(o->getDocument());
+                gd->setEdit(gd->getViewProvider(o));
+            }
+        };
+        lay->addWidget(btn);
+        ++count;
+    }
+    box->setProperty("count", count);
+    box->adjustSize();
+    layout();
+}
+
+void rebuildTimelineLater()
+{
+    static QTimer* timer = [] {
+        auto t = new QTimer(qApp);
+        t->setSingleShot(true);
+        t->setInterval(50);
+        QObject::connect(t, &QTimer::timeout, rebuildTimeline);
+        return t;
+    }();
+    timer->start();
 }
 
 void attach(View3DInventor* view)
@@ -363,6 +470,13 @@ void Gui::Shell::install()
                  "Sketcher_ConstrainPerpendicular", "Sketcher_ConstrainTangent", "Sketcher_ConstrainEqual",
                  "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock", "", "Sketcher_LeaveSketch"}),
         24);
+    {
+        auto box = content();
+        auto lay = new QHBoxLayout(box);
+        lay->setContentsMargins(10, 6, 10, 6);
+        lay->setSpacing(2);
+        state.timeline = new GlassPanel(box, 24);
+    }
     if (QWidget* tree = takeDockWindow("Std_ComboView")) {
         state.browser = new GlassPanel(tree, 20);
     }
@@ -394,6 +508,13 @@ void Gui::Shell::install()
         });
         hideChromeLater();
     });
+
+    // Timeline aktuell halten
+    App::GetApplication().signalNewObject.connect([](const App::DocumentObject&) { rebuildTimelineLater(); });
+    App::GetApplication().signalDeletedObject.connect([](const App::DocumentObject&) { rebuildTimelineLater(); });
+    App::GetApplication().signalRelabelObject.connect([](const App::DocumentObject&) { rebuildTimelineLater(); });
+    App::GetApplication().signalRecomputed.connect([](const App::Document&) { rebuildTimelineLater(); });
+    App::GetApplication().signalActiveDocument.connect([](const App::Document&) { rebuildTimelineLater(); });
 
     // Inspector ein-/ausblenden, wenn ein Werkzeug-Dialog startet oder endet
     // ponytail: Polling, weil ControlSingleton kein Signal hat; 4 Hz reicht fürs Auge
