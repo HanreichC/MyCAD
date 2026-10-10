@@ -1,0 +1,17 @@
+{
+    "name": "MyCAD (Arch, Qt6, OCCT)",
+    "build": { "dockerfile": "Dockerfile" },
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "runArgs": [
+        "--userns=keep-id",
+        "--device=/dev/dri",
+        "--volume=${localEnv:XDG_RUNTIME_DIR}/${localEnv:WAYLAND_DISPLAY}:/tmp/runtime/${localEnv:WAYLAND_DISPLAY}"
+    ],
+    "containerEnv": {
+        "XDG_RUNTIME_DIR": "/tmp/runtime",
+        "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+        "QT_QPA_PLATFORM": "wayland",
+        "CCACHE_DIR": "/workspace/.ccache"
+    }
+}

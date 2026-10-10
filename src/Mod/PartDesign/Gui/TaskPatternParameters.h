@@ -1,0 +1,113 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+/******************************************************************************
+ *   Copyright (c) 2012 Jan Rheinländer <jrheinlaender@users.sourceforge.net> *
+ *                                                                            *
+ *   This file is part of the FreeCAD CAx development system.                 *
+ *                                                                            *
+ *   This library is free software; you can redistribute it and/or            *
+ *   modify it under the terms of the GNU Library General Public              *
+ *   License as published by the Free Software Foundation; either             *
+ *   version 2 of the License, or (at your option) any later version.         *
+ *                                                                            *
+ *   This library  is distributed in the hope that it will be useful,         *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            *
+ *   GNU Library General Public License for more details.                     *
+ *                                                                            *
+ *   You should have received a copy of the GNU Library General Public        *
+ *   License along with this library; see the file COPYING.LIB. If not,       *
+ *   write to the Free Software Foundation, Inc., 59 Temple Place,            *
+ *   Suite 330, Boston, MA  02111-1307, USA                                   *
+ *                                                                            *
+ ******************************************************************************/
+
+#pragma once
+
+#include "TaskTransformedParameters.h"
+#include "ViewProviderTransformed.h"
+#include <Mod/Part/Gui/TaskPatternParameters.h>
+#include <Mod/PartDesign/App/FeatureLinearPattern.h>
+
+class Ui_TaskPatternParameters;
+
+namespace PartGui
+{
+class PatternInstanceControls;
+}
+
+namespace PartDesignGui
+{
+
+class TaskMultiTransformParameters;
+
+class TaskPatternParameters: public TaskTransformedParameters, protected PartGui::TaskPatternParameters
+{
+    Q_OBJECT
+
+public:
+    /// Constructor for task with ViewProvider
+    explicit TaskPatternParameters(ViewProviderTransformed* TransformedView, QWidget* parent = nullptr);
+    /// Constructor for task with parent task (MultiTransform mode)
+    TaskPatternParameters(TaskMultiTransformParameters* parentTask, QWidget* parameterWidget);
+    ~TaskPatternParameters() override;
+
+    void apply() override;
+
+protected:
+    void onSelectionChanged(const Gui::SelectionChanges& msg) override;
+
+private Q_SLOTS:
+    // Update view signal (might be redundant now)
+    void onUpdateView(bool on) override;
+
+
+private:
+    void setupParameterUI(QWidget* widget) override;
+    void retranslateParameterUI(QWidget* widget) override;
+
+    App::DocumentObject* getPatternObject() const override;
+    void fillDirectionCombo(Gui::ComboLinks& combo, Part::LinearPatternDirection direction) override;
+    void onReferenceSelectionRequested() override;
+    void onPatternParametersChanged() override;
+    void setupPatternTransaction() override;
+    void recomputePatternFeature() override;
+    Base::Vector3d getPatternStartPoint() const override;
+    Base::Vector3d getLinearPatternFallbackDirection(
+        Part::LinearPatternDirection direction
+    ) const override;
+    Base::Vector3d transformLinearPatternDirection(const Base::Vector3d& direction) const override;
+    Base::Vector3d getLinearPatternLabelPlaneNormal(
+        Part::LinearPatternDirection direction
+    ) const override;
+    void transformPolarPatternAxis(gp_Ax2& axis) const override;
+    std::string buildDirectionReferencePythonString(
+        const App::DocumentObject* obj,
+        const std::vector<std::string>& subs
+    ) const override;
+
+    // Task-specific logic remains
+    void showOriginAxes(bool show);
+    void enterReferenceSelectionMode();
+    void exitReferenceSelectionMode();  // Ensure this clears gates etc.
+    void setupInstanceControls();
+    void updateInstanceControls();
+    void setInstanceSuppressed(int index, bool suppress);
+
+    Base::Vector3d getStartPoint() const;
+
+    std::unique_ptr<Ui_TaskPatternParameters> ui;
+    std::unique_ptr<PartGui::PatternInstanceControls> instanceControls;
+};
+
+
+/// simulation dialog for the TaskView
+class TaskDlgLinearPatternParameters: public TaskDlgTransformedParameters
+{
+    Q_OBJECT
+
+public:
+    explicit TaskDlgLinearPatternParameters(ViewProviderTransformed* LinearPatternView);
+};
+
+}  // namespace PartDesignGui

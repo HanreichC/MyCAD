@@ -1,0 +1,2431 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="cs" sourcelanguage="en">
+  <context>
+    <name>CmdMeshAddFacet</name>
+    <message>
+      <location filename="../../Command.cpp" line="751"/>
+      <source>Mesh</source>
+      <translation type="unfinished">Mesh</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="752"/>
+      <source>Add Triangle</source>
+      <translation>Přidat trojúhelník</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="753"/>
+      <source>Adds a triangle manually to a mesh</source>
+      <translation>Manuálně přidává trojúhelník do sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshBoundingBox</name>
+    <message>
+      <location filename="../../Command.cpp" line="1488"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1489"/>
+      <source>Bounding Box Info</source>
+      <translation>Informace o ohraničujícím rámečku</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1490"/>
+      <source>Shows the bounding box coordinates of the selected mesh</source>
+      <translation>Zobrazí souřadnice ohraničujícího obdélníku vybrané sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshBuildRegularSolid</name>
+    <message>
+      <location filename="../../Command.cpp" line="1543"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1544"/>
+      <source>Regular Solid</source>
+      <translation>Pravidelné těleso</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1545"/>
+      <source>Builds a regular solid</source>
+      <translation>Vytvoří pravidelné těleso</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshCrossSections</name>
+    <message>
+      <location filename="../../Command.cpp" line="993"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="994"/>
+      <source>Cross-Sections</source>
+      <translation>Průřezy</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="995"/>
+      <source>Creates cross-sections of the mesh</source>
+      <translation>Vytvoří řezy sítí</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshDecimating</name>
+    <message>
+      <location filename="../../Command.cpp" line="1378"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1379"/>
+      <source>Decimate</source>
+      <translation>Zdecimovat</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1380"/>
+      <source>Decimates a mesh</source>
+      <translation>Zredukuje síť</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshDifference</name>
+    <message>
+      <location filename="../../Command.cpp" line="172"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="173"/>
+      <source>Difference</source>
+      <translation>Rozdíl</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="174"/>
+      <source>Creates a boolean difference of the selected meshes</source>
+      <translation>Vytvoří booleovský rozdíl vybraných sítí</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshEvaluateFacet</name>
+    <message>
+      <location filename="../../Command.cpp" line="1126"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1127"/>
+      <source>Face Info</source>
+      <translation>Informace o ploše</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1128"/>
+      <source>Displays information about the selected faces</source>
+      <translation>Zobrazuje informace o vybraných plochách</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshEvaluateSolid</name>
+    <message>
+      <location filename="../../Command.cpp" line="1307"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1308"/>
+      <source>Evaluate Solid</source>
+      <translation>Vyhodnotit pevnost</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1309"/>
+      <source>Checks whether the mesh is a solid</source>
+      <translation>Zkontroluje, zda je síť uzavřená</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshEvaluation</name>
+    <message>
+      <location filename="../../Command.cpp" line="1080"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1082"/>
+      <source>Evaluate and Repair</source>
+      <translation>Vyhodnotit a opravit</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1083"/>
+      <source>Opens a dialog to analyze and repair a mesh</source>
+      <translation>Otevře dialog pro analýzu a opravu sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshExport</name>
+    <message>
+      <location filename="../../Command.cpp" line="402"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="403"/>
+      <source>Export Mesh…</source>
+      <translation>Exportovat síť…</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="404"/>
+      <source>Exports a mesh to a file</source>
+      <translation>Exportuje síť do souboru</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshFillInteractiveHole</name>
+    <message>
+      <location filename="../../Command.cpp" line="1630"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1631"/>
+      <source>Close Hole</source>
+      <translation>Uzavřít otvor</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1632"/>
+      <source>Closes a hole interactively in the mesh</source>
+      <translation>Interaktivně uzavře otvor v síti</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshFillupHoles</name>
+    <message>
+      <location filename="../../Command.cpp" line="1575"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1576"/>
+      <source>Fill Holes</source>
+      <translation>Vyplnit otvory</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1577"/>
+      <source>Fills holes in the mesh</source>
+      <translation>Vyplňuje otvory v síti</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshFlipNormals</name>
+    <message>
+      <location filename="../../Command.cpp" line="1449"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1450"/>
+      <source>Flip Normals</source>
+      <translation>Obrátit normály</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1451"/>
+      <source>Flips the normals of the selected mesh</source>
+      <translation>Obrátí normály vybrané sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshFromGeometry</name>
+    <message>
+      <location filename="../../Command.cpp" line="483"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="484"/>
+      <source>Mesh From Geometry</source>
+      <translation>Síť z geometrie</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="485"/>
+      <source>Creates a mesh from the selected geometry</source>
+      <translation>Vytvoří síť z vybrané geometrie</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshFromPartShape</name>
+    <message>
+      <location filename="../../Command.cpp" line="556"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="557"/>
+      <source>Mesh From Shape</source>
+      <translation>Síť z tvaru</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="558"/>
+      <source>Tessellates the selected shape to a mesh</source>
+      <translation>Vytvoří z vybraného tvaru mozaiku na síti</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshHarmonizeNormals</name>
+    <message>
+      <location filename="../../Command.cpp" line="1410"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1411"/>
+      <source>Harmonize Normals</source>
+      <translation>Sladit normály</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1412"/>
+      <source>Harmonizes the normals of the mesh</source>
+      <translation>Uspořádá normály sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshImport</name>
+    <message>
+      <location filename="../../Command.cpp" line="344"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="345"/>
+      <source>Import Mesh…</source>
+      <translation>Importovat síť…</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="346"/>
+      <source>Imports a mesh from a file</source>
+      <translation>Importuje síť ze souboru</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshIntersection</name>
+    <message>
+      <location filename="../../Command.cpp" line="258"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="259"/>
+      <source>Intersection</source>
+      <translation>Průnik</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="260"/>
+      <source>Creates a boolean intersection from the selected meshes</source>
+      <translation>Vytvoří booleovský průnik z vybraných sítí</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshMerge</name>
+    <message>
+      <location filename="../../Command.cpp" line="1752"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1753"/>
+      <source>Merge</source>
+      <translation>Sloučit</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1754"/>
+      <source>Merges selected meshes into one</source>
+      <translation>Sloučí vybrané sítě do jedné</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshPolyCut</name>
+    <message>
+      <location filename="../../Command.cpp" line="801"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="802"/>
+      <source>Cut</source>
+      <translation>Oříznout</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="803"/>
+      <source>Cuts the mesh with a selected polygon</source>
+      <translation>Vyřízne síť pomocí vybraného mnohoúhelníku</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshPolySegm</name>
+    <message>
+      <location filename="../../Command.cpp" line="690"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="691"/>
+      <source>Segment</source>
+      <translation>Segment</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="692"/>
+      <source>Creates a mesh segment</source>
+      <translation>Vytvoří segment sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshPolySplit</name>
+    <message>
+      <location filename="../../Command.cpp" line="1021"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1022"/>
+      <source>Split</source>
+      <translation>Rozdělit</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1023"/>
+      <source>Splits a mesh into 2 meshes</source>
+      <translation>Rozdělí síť na 2 sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshPolyTrim</name>
+    <message>
+      <location filename="../../Command.cpp" line="868"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="869"/>
+      <source>Trim</source>
+      <translation>Oříznout</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="870"/>
+      <source>Trims a mesh with a selected polygon</source>
+      <translation>Ořízne síť podle vybraného mnohoúhelníku</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="872"/>
+      <source>Trims a mesh with a picked polygon</source>
+      <translation>Oříznout síť vybraným mnohoúhelníkem</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshRemeshGmsh</name>
+    <message>
+      <location filename="../../Command.cpp" line="1223"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1224"/>
+      <source>Refinement</source>
+      <translation>Zpřesnění</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1225"/>
+      <source>Refines an existing mesh</source>
+      <translation>Vylepší stávající síť</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshRemoveCompByHand</name>
+    <message>
+      <location filename="../../Command.cpp" line="1257"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1258"/>
+      <source>Remove Components Manually</source>
+      <translation>Manuálně odstranit komponenty</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1259"/>
+      <source>Marks a component to remove it from the mesh</source>
+      <translation>Označí komponentu, aby byla odstraněna ze sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshRemoveComponents</name>
+    <message>
+      <location filename="../../Command.cpp" line="1175"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1176"/>
+      <source>Remove Components</source>
+      <translation>Odstranit komponenty</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1177"/>
+      <source>Removes topologically independent components from the mesh</source>
+      <translation>Odstraní z sítě topologicky nezávislé komponenty</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshScale</name>
+    <message>
+      <location filename="../../Command.cpp" line="1847"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1848"/>
+      <source>Scale</source>
+      <translation>Změna velikosti</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1849"/>
+      <source>Scales the selected mesh objects</source>
+      <translation>Změní měřítko vybraných síťových objektů</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshSectionByPlane</name>
+    <message>
+      <location filename="../../Command.cpp" line="964"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="965"/>
+      <source>Section From Plane</source>
+      <translation>Řez v rovině</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="966"/>
+      <source>Sections the mesh with the selected plane</source>
+      <translation>Rozdělí síť na části pomocí vybrané roviny</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshSegmentation</name>
+    <message>
+      <location filename="../../Command.cpp" line="1678"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1679"/>
+      <source>Segmentation</source>
+      <translation>Segmentace</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1680"/>
+      <source>Creates new mesh segments from the mesh</source>
+      <translation>Vytvoří nové segmenty sítě z dané sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshSegmentationBestFit</name>
+    <message>
+      <location filename="../../Command.cpp" line="1715"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1716"/>
+      <source>Segmentation From Best-Fit Surfaces</source>
+      <translation>Segmentovat na základě nejvhodnějších povrchů</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1717"/>
+      <source>Creates new mesh segments from the best-fit surfaces</source>
+      <translation>Vytvoří nové segmenty sítě na základě nejlépe padnoucích ploch</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshSmoothing</name>
+    <message>
+      <location filename="../../Command.cpp" line="1349"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1350"/>
+      <source>Smooth</source>
+      <translation>Vyhladit</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1351"/>
+      <source>Smoothes the selected meshes</source>
+      <translation>Vyhladí vybrané sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshSplitComponents</name>
+    <message>
+      <location filename="../../Command.cpp" line="1798"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1799"/>
+      <source>Split by Components</source>
+      <translation>Rozdělit podle komponent</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1800"/>
+      <source>Splits the selected mesh into its components</source>
+      <translation>Rozdělí vybranou síť na její jednotlivé součásti</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshTrimByPlane</name>
+    <message>
+      <location filename="../../Command.cpp" line="935"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="936"/>
+      <source>Trim With Plane</source>
+      <translation>Ořezání pomocí roviny</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="937"/>
+      <source>Trims a mesh by removing faces on one side of a selected plane</source>
+      <translation>Ořízne síť odstraněním ploch na jedné straně vybrané roviny</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshUnion</name>
+    <message>
+      <location filename="../../Command.cpp" line="86"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="87"/>
+      <source>Union</source>
+      <translation>Sjednocení</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="88"/>
+      <source>Unifies the selected meshes</source>
+      <translation>Sloučí vybrané sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshVertexCurvature</name>
+    <message>
+      <location filename="../../Command.cpp" line="582"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="583"/>
+      <source>Curvature Plot</source>
+      <translation>Graf zakřivení</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="584"/>
+      <source>Calculates the curvature of the vertices of a mesh</source>
+      <translation>Vypočte zakřivení vrcholů sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>CmdMeshVertexCurvatureInfo</name>
+    <message>
+      <location filename="../../Command.cpp" line="639"/>
+      <source>Mesh</source>
+      <translation>Síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="640"/>
+      <source>Curvature Info</source>
+      <translation>Informace o zakřivení</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="641"/>
+      <source>Displays information about the curvature</source>
+      <translation>Zobrazuje informace o zakřivení</translation>
+    </message>
+  </context>
+  <context>
+    <name>Command</name>
+    <message>
+      <location filename="../../Command.cpp" line="104"/>
+      <source>Mesh union</source>
+      <translation>Sjednocení sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="188"/>
+      <source>Mesh difference</source>
+      <translation>Rozdíl sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="274"/>
+      <source>Mesh intersection</source>
+      <translation>Průnik sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="381"/>
+      <source>Import Mesh</source>
+      <translation>Importovat síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="600"/>
+      <source>Mesh VertexCurvature</source>
+      <translation>Křivost vrcholů sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSmoothing.cpp" line="175"/>
+      <source>Mesh Smoothing</source>
+      <translation>Vyhlazení sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1423"/>
+      <source>Harmonize mesh normals</source>
+      <translation>Sladit normály sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1462"/>
+      <source>Flip mesh normals</source>
+      <translation>Obrátit normály sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1603"/>
+      <source>Fill up holes</source>
+      <translation>Vyplnit otvory</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1767"/>
+      <source>Mesh merge</source>
+      <translation>Sloučit síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1813"/>
+      <source>Mesh split</source>
+      <translation>Rozdělit síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1878"/>
+      <source>Mesh scale</source>
+      <translation>Škálovat síť</translation>
+    </message>
+    <message>
+      <location filename="../../DlgDecimating.cpp" line="180"/>
+      <source>Mesh Decimating</source>
+      <translation>Ztenčení sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="552"/>
+      <source>Harmonize normals</source>
+      <translation>Uspořádat normály</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="666"/>
+      <source>Remove non-manifolds</source>
+      <translation>Odstranit ne-manifoldní</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="773"/>
+      <source>Fix indices</source>
+      <translation>Opravit indice</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="844"/>
+      <source>Remove degenerated faces</source>
+      <translation>Odstranit degenerované plochy</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="917"/>
+      <source>Remove duplicated faces</source>
+      <translation>Odstranit duplicitní plochy</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="987"/>
+      <source>Remove duplicated points</source>
+      <translation>Odstranit duplikované body</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1073"/>
+      <source>Fix self-intersections</source>
+      <translation>Opravit vlastní průsečíky</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1151"/>
+      <source>Remove folds</source>
+      <translation>Odstranit přehyby</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1196"/>
+      <source>Repair Mesh</source>
+      <translation>Opravit síť</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.cpp" line="164"/>
+      <source>Delete selection</source>
+      <translation>Smazat výběr</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="955"/>
+      <location filename="../../ViewProvider.cpp" line="1016"/>
+      <source>Cut</source>
+      <translation>Oříznout</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="965"/>
+      <location filename="../../ViewProvider.cpp" line="1082"/>
+      <source>Trim</source>
+      <translation>Oříznout</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1167"/>
+      <source>Split</source>
+      <translation>Rozdělit</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1242"/>
+      <source>Segment</source>
+      <translation>Segment</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1870"/>
+      <source>Delete</source>
+      <translation>Odstranit</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="2000"/>
+      <source>Fill hole</source>
+      <translation>Vyplnit otvor</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::DlgDecimating</name>
+    <message>
+      <location filename="../../DlgDecimating.ui" line="14"/>
+      <source>Decimating</source>
+      <translation>Decimování</translation>
+    </message>
+    <message>
+      <location filename="../../DlgDecimating.ui" line="20"/>
+      <source>Reduction</source>
+      <translation>Redukce</translation>
+    </message>
+    <message>
+      <location filename="../../DlgDecimating.ui" line="28"/>
+      <source>None</source>
+      <translation>Žádný</translation>
+    </message>
+    <message>
+      <location filename="../../DlgDecimating.ui" line="57"/>
+      <source>Full</source>
+      <translation>Plný</translation>
+    </message>
+    <message>
+      <location filename="../../DlgDecimating.ui" line="66"/>
+      <location filename="../../DlgDecimating.cpp" line="107"/>
+      <source>Absolute number</source>
+      <translation>Absolutní číslo</translation>
+    </message>
+    <message>
+      <location filename="../../DlgDecimating.ui" line="102"/>
+      <source>Tolerance</source>
+      <translation>Odchylka</translation>
+    </message>
+    <message>
+      <location filename="../../DlgDecimating.cpp" line="101"/>
+      <source>Absolute number (Maximum: %1)</source>
+      <translation>Absolutní číslo (maximum: %1)</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::DlgEvaluateMesh</name>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="61"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="141"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="221"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="301"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="381"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="461"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="541"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="603"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="795"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="828"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="861"/>
+      <source>No information</source>
+      <translation>Žádné informace</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="745"/>
+      <source>Mesh Information</source>
+      <translation>Informace o síti</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="772"/>
+      <source>Number of faces</source>
+      <translation>Počet ploch</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="805"/>
+      <source>Number of edges</source>
+      <translation>Počet hran</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="838"/>
+      <source>Number of points</source>
+      <translation>Počet bodů</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="754"/>
+      <source>Refresh</source>
+      <translation>Aktualizovat</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="14"/>
+      <source>Evaluate and Repair Mesh</source>
+      <translation>Vyhodnocení a oprava sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="37"/>
+      <source>Orientation</source>
+      <translation>Orientace</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="84"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="164"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="244"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="324"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="404"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="484"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="564"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="623"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="703"/>
+      <source>Analyze</source>
+      <translation>Analyzovat</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="94"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="174"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="254"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="334"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="414"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="494"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="574"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="633"/>
+      <location filename="../../DlgEvaluateMesh.ui" line="713"/>
+      <source>Repair</source>
+      <translation>Opravit</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="117"/>
+      <source>Duplicated faces</source>
+      <translation>Duplikované plochy</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="197"/>
+      <source>Duplicated points</source>
+      <translation>Duplikované body</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="277"/>
+      <source>Non-manifolds</source>
+      <translation>Ne-mainfoldní</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="357"/>
+      <source>Degenerated faces</source>
+      <translation>Degenerované stěny</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="437"/>
+      <source>Face indices</source>
+      <translation>Indexy plochy</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="517"/>
+      <source>Self-intersections</source>
+      <translation>Samoprotnutí</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="585"/>
+      <source>Folds on surface</source>
+      <translation>Záhyby na povrchu</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="656"/>
+      <source>All above tests together</source>
+      <translation>Všechny výše uvedené testy dohromady</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMesh.ui" line="680"/>
+      <source>Repetitive repair</source>
+      <translation>Opakované opravy</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::DlgEvaluateMeshImp</name>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="255"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="424"/>
+      <source>No selection</source>
+      <translation>Žádný výběr</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="454"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="455"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="456"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="457"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="458"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="459"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="460"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="461"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="462"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="463"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="464"/>
+      <source>No information</source>
+      <translation>Žádné informace</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="562"/>
+      <source>Orientation</source>
+      <translation>Orientace</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="528"/>
+      <source>No flipped normals</source>
+      <translation>Žádné převrácené normály</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="142"/>
+      <source>Settings</source>
+      <translation>Nastavení</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="534"/>
+      <source>%1 flipped normals</source>
+      <translation>%1 převrácených normál</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="622"/>
+      <source>No non-manifolds</source>
+      <translation>Nejsou ne-mainfoldní</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="630"/>
+      <source>%1 non-manifolds</source>
+      <translation>%1 ne-mainfoldní</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="685"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="688"/>
+      <source>Non-manifolds</source>
+      <translation>Non-mainfolds</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="688"/>
+      <source>Cannot remove non-manifolds</source>
+      <translation>Nemohu odstranit ne-mainfoldní</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="728"/>
+      <source>Invalid face indices</source>
+      <translation>Neplatné indexy povrchů</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="735"/>
+      <source>Invalid point indices</source>
+      <translation>Neplatné indexy bodů</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="742"/>
+      <source>Multiple point indices</source>
+      <translation>Indexy vícenásobných bodů</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="749"/>
+      <source>Invalid neighbour indices</source>
+      <translation>Neplatné sousední indexy</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="756"/>
+      <source>No invalid indices</source>
+      <translation>Žádné neplatné indexy</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="783"/>
+      <source>Indices</source>
+      <translation>Indexy</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="820"/>
+      <source>No degenerations</source>
+      <translation>Žádná degenerace</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="826"/>
+      <source>%1 degenerated faces</source>
+      <translation>%1 degenerovaných ploch</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="855"/>
+      <source>Degenerations</source>
+      <translation>Degenerace</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="892"/>
+      <source>No duplicated faces</source>
+      <translation>Žádné duplicitní plochy</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="898"/>
+      <source>%1 duplicated faces</source>
+      <translation>%1 duplikovaných ploch</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="927"/>
+      <source>Duplicated Faces</source>
+      <translation>Duplikované plochy</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="969"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="997"/>
+      <source>Duplicated Points</source>
+      <translation>Duplikované body</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1295"/>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1298"/>
+      <source>Mesh Repair</source>
+      <translation>Oprava sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="963"/>
+      <source>No duplicated points</source>
+      <translation>Žádné duplicitní body</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1040"/>
+      <source>No self-intersections</source>
+      <translation>Nesebeprotínající</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1046"/>
+      <source>Self-intersections</source>
+      <translation>Samoprotnutí</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1116"/>
+      <source>No folds on surface</source>
+      <translation>Žádné záhyby na ploše</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1132"/>
+      <source>%1 folds on surface</source>
+      <translation>%1 záhybů na ploše</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1161"/>
+      <source>Folds</source>
+      <translation>Záhyb</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::DlgEvaluateSettings</name>
+    <message>
+      <location filename="../../DlgEvaluateSettings.ui" line="14"/>
+      <source>Evaluation Settings</source>
+      <translation>Nastavení hodnocení</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateSettings.ui" line="20"/>
+      <source>Settings</source>
+      <translation>Nastavení</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateSettings.ui" line="26"/>
+      <source>Check for non-manifold points</source>
+      <translation>Zkontrolovat non-manifold body</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateSettings.ui" line="33"/>
+      <source>Enable check for folds on surface</source>
+      <translation>Umožnit kontrolu přehybů na povrchu</translation>
+    </message>
+    <message>
+      <location filename="../../DlgEvaluateSettings.ui" line="40"/>
+      <source>Only consider zero area faces as degenerated</source>
+      <translation>Za degenerované plochy považovat jen ty s nulovou plochou</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::DlgRegularSolid</name>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="14"/>
+      <source>Regular Solid</source>
+      <translation>Pravidelné těleso</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="29"/>
+      <source>Solid</source>
+      <translation>Těleso</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="42"/>
+      <source>Cube</source>
+      <translation>Krychle</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="51"/>
+      <source>Cylinder</source>
+      <translation>Válec</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="60"/>
+      <source>Cone</source>
+      <translation>Kužel</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="69"/>
+      <source>Sphere</source>
+      <translation>Koule</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="78"/>
+      <source>Ellipsoid</source>
+      <translation>Elipsoid</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="87"/>
+      <source>Torus</source>
+      <translation>Anuloid</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="120"/>
+      <location filename="../../DlgRegularSolid.ui" line="236"/>
+      <location filename="../../DlgRegularSolid.ui" line="387"/>
+      <source>Length</source>
+      <translation>Délka</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="143"/>
+      <source>Width</source>
+      <translation>Šířka</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="163"/>
+      <source>Height</source>
+      <translation>Výška</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="219"/>
+      <location filename="../../DlgRegularSolid.ui" line="501"/>
+      <source>Radius</source>
+      <translation>Poloměr</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="273"/>
+      <location filename="../../DlgRegularSolid.ui" line="424"/>
+      <source>Edge length</source>
+      <translation>Délka hrany</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="293"/>
+      <location filename="../../DlgRegularSolid.ui" line="441"/>
+      <location filename="../../DlgRegularSolid.ui" line="538"/>
+      <location filename="../../DlgRegularSolid.ui" line="642"/>
+      <location filename="../../DlgRegularSolid.ui" line="746"/>
+      <source>Sampling</source>
+      <translation>Vzorkování</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="353"/>
+      <location filename="../../DlgRegularSolid.ui" line="588"/>
+      <location filename="../../DlgRegularSolid.ui" line="692"/>
+      <source>Radius 1</source>
+      <translation>Poloměr 1</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="370"/>
+      <location filename="../../DlgRegularSolid.ui" line="605"/>
+      <location filename="../../DlgRegularSolid.ui" line="709"/>
+      <source>Radius 2</source>
+      <translation>Poloměr 2</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="307"/>
+      <location filename="../../DlgRegularSolid.ui" line="455"/>
+      <source>Closed</source>
+      <translation>Uzavřeno</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="809"/>
+      <source>&amp;Create</source>
+      <translation>&amp;Vytvořit</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="812"/>
+      <source>Alt+C</source>
+      <translation>Alt+C</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolid.ui" line="825"/>
+      <source>Close</source>
+      <translation>Zavřít</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::DlgRegularSolidImp</name>
+    <message>
+      <location filename="../../DlgRegularSolidImp.cpp" line="122"/>
+      <location filename="../../DlgRegularSolidImp.cpp" line="203"/>
+      <location filename="../../DlgRegularSolidImp.cpp" line="211"/>
+      <source>Create %1</source>
+      <translation>Vytvořit %1</translation>
+    </message>
+    <message>
+      <location filename="../../DlgRegularSolidImp.cpp" line="122"/>
+      <source>No Active Document</source>
+      <translation>Žádný aktivní dokument</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::DlgSettingsImportExport</name>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="14"/>
+      <source>Mesh Formats</source>
+      <translation>Formáty sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="20"/>
+      <source>Export</source>
+      <translation>Export</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="28"/>
+      <source>Deviation of tessellation to the actual surface</source>
+      <translation>Odchylka mozaiky ke skutečnému povrchu</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="31"/>
+      <source>&lt;html&gt;&lt;head&gt;&lt;meta name="qrichtext" content="1" /&gt;&lt;/head&gt;&lt;body style=" white-space: pre-wrap; font-size:7.8pt; font-weight:400; font-style:normal; text-decoration:none;"&gt;&lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"&gt;&lt;span style=" font-weight:600;"&gt;Tessellation&lt;/span&gt;&lt;/p&gt;&lt;p style="-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-weight:600;"&gt;&lt;/p&gt;&lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-weight:600;"&gt;&lt;span style=" font-weight:400;"&gt;Defines the maximum deviation of the tessellated mesh to the surface. The smaller the value is the slower the render speed which results in increased detail/resolution.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+      <translation>&lt;html&gt;&lt;head&gt;&lt;meta name="qrichtext" content="1" /&gt;&lt;/head&gt;&lt;body style=" white-space: pre-wrap; font-size:7.8pt; font-weight:400; font-style:normal; text-decoration:none;"&gt;&lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"&gt;&lt;span style=" font-weight:600;"&gt;Mozaika&lt;/span&gt;&lt;/p&gt;&lt;p style="-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-weight:600;"&gt;&lt;/p&gt;&lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-weight:600;"&gt;&lt;span style=" font-weight:400;"&gt;Určuje maximální odchylku mozaikové sítě od povrchu. Čím menší je tato hodnota, tím pomalejší je vykreslování, což vede ke zvýšení podrobnosti/rozlišení..&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="34"/>
+      <source>Maximum mesh deviation</source>
+      <translation>Maximální odchylka sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="41"/>
+      <source>Maximal deviation between mesh and object</source>
+      <translation>Maximální odchylka mezi sítí a objektem</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="63"/>
+      <source>ZIP compression is used when writing a mesh file in AMF format</source>
+      <translation>Komprese ZIP se používá při zápisu souboru sítě v AMF formátu</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="66"/>
+      <source>Export AMF files using compression</source>
+      <translation>Exportovat soubory AMF za použití komprese</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="82"/>
+      <source>Always export mesh as model type in 3MF format even if not a solid</source>
+      <translation>Vždy exportovat síť jako typ modelu ve formátu 3MF, i když není uzavřený</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="85"/>
+      <source>Export 3MF files as model type</source>
+      <translation>Exportovat 3MF soubory jako typ modelu</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="114"/>
+      <source>Width</source>
+      <translation>Šířka</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExport.ui" line="138"/>
+      <source>Height</source>
+      <translation>Výška</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsImportExportImp.cpp" line="41"/>
+      <source>This parameter indicates whether ZIP compression
+is used when writing a file in AMF format</source>
+      <translation>Tento parametr udává, jestli je použita komprese ZIP při zapisování souboru do formátu AMF</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::DlgSettingsMeshView</name>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="73"/>
+      <source>Default mesh color</source>
+      <translation>Výchozí barva sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="80"/>
+      <source>Default color for new meshes</source>
+      <translation>Výchozí barva pro nové sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="116"/>
+      <source>Mesh transparency</source>
+      <translation>Průhlednost sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="142"/>
+      <source>Default line color</source>
+      <translation>Výchozí barva čáry</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="149"/>
+      <source>Default line color for new meshes</source>
+      <translation>Výchozí barva čáry pro nové sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="185"/>
+      <source>Line transparency</source>
+      <translation>Průhlednost čáry</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="211"/>
+      <source>Backface color</source>
+      <translation>Barva zadní stěny</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="257"/>
+      <source>Two-side rendering</source>
+      <translation>Oboustranný render</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="273"/>
+      <source>A bounding box will be displayed</source>
+      <translation>Bude zobrazen ohraničující kvádr</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="276"/>
+      <source>Show bounding-box for highlighted or selected meshes</source>
+      <translation>Ukázat ohraničující box pro zvýrazněné nebo vybrané sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="313"/>
+      <source>Smoothing</source>
+      <translation>Vyhlazování</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="343"/>
+      <source>Define normal per vertex</source>
+      <translation>Definovat normálu podle vrcholu</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="356"/>
+      <source>&lt;html&gt;&lt;head&gt;&lt;meta name="qrichtext" content="1" /&gt;&lt;/head&gt;&lt;body style=" white-space: pre-wrap; font-size:7.8pt; font-weight:400; font-style:normal; text-decoration:none;"&gt;&lt;p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt;"&gt;This is the smallest angle between two faces where normals get calculated to do flat shading.&lt;/p&gt;&lt;p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt;"&gt;If the angle between the normals of two neighbouring faces is less than the crease angle, the faces will be smoothshaded around their common edge.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+      <translation>&lt;html&gt;&lt;head&gt;&lt;meta name="qrichtext" content="1" /&gt;&lt;/head&gt;&lt;body style=" white-space: pre-wrap; font-size:7.8pt; font-weight:400; font-style:normal; text-decoration:none;"&gt;&lt;p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt;"&gt;Jedná se o nejmenší úhel mezi dvěma plochami, pro který se vypočítávají normály za účelem plochého stínování.&lt;/p&gt;&lt;p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt;"&gt;Pokud je úhel mezi normálami dvou sousedních ploch menší než úhel ohybu, budou plochy kolem společné hrany vykresleny s plynulým stínováním.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="404"/>
+      <source>&lt;html&gt;&lt;head&gt;&lt;meta name="qrichtext" content="1" /&gt;&lt;/head&gt;&lt;body style=" white-space: pre-wrap; font-size:7.8pt; font-weight:400; font-style:normal; text-decoration:none;"&gt;&lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt;"&gt;&lt;span style=" font-weight:600;"&gt;Hint&lt;/span&gt;&lt;/p&gt;&lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt;"&gt;Defining the normals per vertex is also called &lt;span style=" font-style:italic;"&gt;Phong shading&lt;/span&gt;&lt;/p&gt;&lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt; font-style:italic;"&gt;&lt;span style=" font-style:normal;"&gt;while defining the normals per face is called &lt;/span&gt;Flat shading&lt;span style=" font-style:normal;"&gt;.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+      <translation>&lt;html&gt;&lt;head&gt;&lt;meta name="qrichtext" content="1" /&gt;&lt;/head&gt;&lt;body style=" white-space: pre-wrap; font-size:7.8pt; font-weight:400; font-style:normal; text-decoration:none;"&gt;&lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt;"&gt;&lt;span style=" font-weight:600;"&gt;Tip&lt;/span&gt;&lt;/p&gt;&lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt;"&gt;Definování normál pro každý vrchol se také nazývá &lt;span style=" font-style:italic;"&gt;Phong stínování&lt;/span&gt;&lt;/p&gt;&lt;p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt; font-style:italic;"&gt;&lt;span style=" font-style:normal;"&gt;zatímco definování normál pro jednotlivé plochy se nazývá &lt;/span&gt;Ploché stínování&lt;span style=" font-style:normal;"&gt;.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="359"/>
+      <source>Crease angle</source>
+      <translation>Úhel vrásky</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="14"/>
+      <source>Mesh View</source>
+      <translation>Zobrazení sítě</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="35"/>
+      <source>Default Appearance for New Meshes</source>
+      <translation>Výchozí vzhled nových sítí</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="251"/>
+      <source>The bottom side of the surface will be rendered the same way as the top side.
+If not checked, it depends on the option "Enable backlight color"
+(preferences section Display -&gt; 3D View). Either the backlight color
+will be used or black.</source>
+      <translation>Spodní strana povrchu bude vykreslena stejným způsobem jako horní. 
+Pokud není zaškrtnuto, záleží na možnosti "Povolit barvu podsvícení" 
+(sekce preferencí Zobrazit -&gt; 3D pohled). Bude použita buď barva
+podsvícení nebo černá.</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="334"/>
+      <source>If this option is set Phong shading is used, otherwise flat shading.
+Shading defines the appearance of surfaces.
+
+With flat shading the surface normals are not defined per vertex that leads
+to an unreal appearance for curved surfaces while using Phong shading leads
+to a smoother appearance.
+</source>
+      <translation>Pokud je tato možnost nastavena, používá se Phongovo stínování, jinak ploché stínování. 
+Stínování definuje vzhled povrchů. 
+
+Při plochém stínování nejsou povrchové normály definovány pro každý vrchol, který vede
+až po nereálný vzhled zakřivených povrchů při použití Phongových stínovacích vývodů
+k hladšímu vzhledu.
+</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSettingsMeshView.ui" line="369"/>
+      <source>Crease angle is a threshold angle between two faces.
+
+ If face angle ≥ crease angle, facet shading is used
+ If face angle &lt; crease angle, smooth shading is used</source>
+      <translation>Úhel záhybu je prahový úhel mezi dvěma stěnami. 
+
+ Pokud je úhel plochy ≥ úhel záhybu použije se stínování faset
+ Pokud je úhel plochy &lt; úhel záhybu použije se hladký stín</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::DlgSmoothing</name>
+    <message>
+      <location filename="../../DlgSmoothing.ui" line="14"/>
+      <source>Smoothing</source>
+      <translation>Vyhlazování</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSmoothing.ui" line="23"/>
+      <source>Method</source>
+      <translation>Metoda</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSmoothing.ui" line="29"/>
+      <source>Taubin</source>
+      <translation>Taubin</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSmoothing.ui" line="39"/>
+      <source>Laplace</source>
+      <translation>Laplace</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSmoothing.ui" line="49"/>
+      <source>Parameter</source>
+      <translation>Parametry</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSmoothing.ui" line="55"/>
+      <source>Iterations</source>
+      <translation>Iterace</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSmoothing.ui" line="72"/>
+      <source>Lambda</source>
+      <translation>Lambda</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSmoothing.ui" line="95"/>
+      <source>Mu</source>
+      <translation>Mu</translation>
+    </message>
+    <message>
+      <location filename="../../DlgSmoothing.ui" line="118"/>
+      <source>Only selection</source>
+      <translation>Pouze výběr</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::GmshWidget</name>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="100"/>
+      <source>Automatic</source>
+      <translation>Automaticky</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="101"/>
+      <source>Adaptive</source>
+      <translation>Adaptivní</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="103"/>
+      <source>Frontal</source>
+      <translation>Frontální</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="106"/>
+      <source>Parallelograms</source>
+      <translation>Rovnoběžníky</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="105"/>
+      <source>Frontal quad</source>
+      <translation>Čelní čtyřúhelníková síť</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="107"/>
+      <source>Quasi-structured quad</source>
+      <translation>Kvazistrukturovaná čtyřúhelníková síť</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="201"/>
+      <source>Time</source>
+      <translation>Čas</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="259"/>
+      <source>Time:</source>
+      <translation>Čas:</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="247"/>
+      <source>Running Gmsh…</source>
+      <translation>Běží Gmsh…</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="270"/>
+      <source>Failed to start</source>
+      <translation>Nepodařilo se spustit</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.cpp" line="277"/>
+      <source>Error</source>
+      <translation>Chyba</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::MeshFaceAddition</name>
+    <message>
+      <location filename="../../MeshEditor.cpp" line="255"/>
+      <source>Cannot add triangle to avoid non-manifolds.</source>
+      <translation>Nelze přidat trojúhelník, abychom se vyhnuli nevarietám.</translation>
+    </message>
+    <message>
+      <location filename="../../MeshEditor.cpp" line="407"/>
+      <source>Add Triangle</source>
+      <translation>Přidat trojúhelník</translation>
+    </message>
+    <message>
+      <location filename="../../MeshEditor.cpp" line="408"/>
+      <source>Flip Normal</source>
+      <translation>Obrátit normálu</translation>
+    </message>
+    <message>
+      <location filename="../../MeshEditor.cpp" line="409"/>
+      <source>Clear</source>
+      <translation>Vyčistit</translation>
+    </message>
+    <message>
+      <location filename="../../MeshEditor.cpp" line="426"/>
+      <source>Finish</source>
+      <translation>Dokončit</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::MeshFillHole</name>
+    <message>
+      <location filename="../../MeshEditor.cpp" line="778"/>
+      <source>Finish</source>
+      <translation>Dokončit</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::ParametersDialog</name>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="176"/>
+      <source>Surface Fit</source>
+      <translation>Povrchové přizpůsobení</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="183"/>
+      <source>Parameters</source>
+      <translation>Parametry</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="188"/>
+      <source>Selection</source>
+      <translation>Výběr</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="196"/>
+      <source>Region</source>
+      <translation>Region</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="202"/>
+      <source>Triangle</source>
+      <translation>Trojúhelník</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="208"/>
+      <source>Clear</source>
+      <translation>Vyčistit</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="214"/>
+      <source>Compute</source>
+      <translation>Vypočítat</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="308"/>
+      <source>No selection</source>
+      <translation>Žádný výběr</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="308"/>
+      <source>Before fitting the surface select an area.</source>
+      <translation>Vyberte oblast před proložením plochy.</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::RemeshGmsh</name>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="14"/>
+      <source>Remesh by Gmsh</source>
+      <translation>Přeměna sítě pomocí Gmsh</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="26"/>
+      <source>Remeshing Parameter</source>
+      <translation>Parametr přeměny sítě</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="32"/>
+      <source>Meshing</source>
+      <translation>Generování sítě</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="42"/>
+      <source>Max element size (0.0 = Auto)</source>
+      <translation>Maximální velikost prvku (0,0 = Auto)</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="68"/>
+      <source>Min element size (0.0 = Auto)</source>
+      <translation>Minimální velikost prvku (0,0 = Auto)</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="94"/>
+      <source>Angle</source>
+      <translation>Úhel</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="126"/>
+      <source>Gmsh</source>
+      <translation>Gmsh</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="134"/>
+      <source>Path</source>
+      <translation>Dráha</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="141"/>
+      <source>Leave empty to use default gmsh executable</source>
+      <translation>Ponechte prázdné pro použití výchozího spustitelného souboru gmsh</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="157"/>
+      <source>Kill</source>
+      <translation>Vynuceně ukončit</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="184"/>
+      <source>Time</source>
+      <translation>Čas</translation>
+    </message>
+    <message>
+      <location filename="../../RemeshGmsh.ui" line="191"/>
+      <source>Clear</source>
+      <translation>Vyčistit</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::RemoveComponents</name>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="14"/>
+      <source>Remove Components</source>
+      <translation>Odstranit komponenty</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="20"/>
+      <source>Select</source>
+      <translation>Vybrat</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="32"/>
+      <location filename="../../RemoveComponents.ui" line="118"/>
+      <source>Region</source>
+      <translation>Region</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="52"/>
+      <location filename="../../RemoveComponents.ui" line="138"/>
+      <source>All</source>
+      <translation>Vše</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="72"/>
+      <location filename="../../RemoveComponents.ui" line="158"/>
+      <source>Components</source>
+      <translation>Komponenty</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="79"/>
+      <source>&lt; faces than</source>
+      <translation>&lt; než ploch</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="89"/>
+      <location filename="../../RemoveComponents.ui" line="175"/>
+      <source>Pick Triangle</source>
+      <translation>Vybrat trojúhelník</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="192"/>
+      <source>Region Options</source>
+      <translation>Možnosti oblasti</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="208"/>
+      <source>Respect only triangles with screen-facing normals</source>
+      <translation>Respektujte pouze trojúhelníky s normálami orientovanými na obrazovku</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="96"/>
+      <source>Select whole component</source>
+      <translation>Vybrat celou komponentu</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="106"/>
+      <source>Deselect</source>
+      <translation>Zrušit výběr</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="165"/>
+      <source>&gt; faces than</source>
+      <translation>&gt; než ploch</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="182"/>
+      <source>Deselect whole component</source>
+      <translation>Zrušit výběr celé komponenty</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.ui" line="198"/>
+      <source>Respect only visible triangles</source>
+      <translation>Respektovat pouze viditelné trojúhelníky</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::Segmentation</name>
+    <message>
+      <location filename="../../Segmentation.ui" line="14"/>
+      <source>Mesh Segmentation</source>
+      <translation>Segmentace sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="20"/>
+      <source>Smooth mesh</source>
+      <translation>Hladká síť</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="37"/>
+      <source>Plane</source>
+      <translation>Rovina</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="46"/>
+      <location filename="../../Segmentation.ui" line="189"/>
+      <location filename="../../Segmentation.ui" line="252"/>
+      <location filename="../../Segmentation.ui" line="286"/>
+      <source>Tolerance</source>
+      <translation>Odchylka</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="63"/>
+      <location filename="../../Segmentation.ui" line="143"/>
+      <location filename="../../Segmentation.ui" line="206"/>
+      <location filename="../../Segmentation.ui" line="303"/>
+      <source>Minimum number of faces</source>
+      <translation>Minimální počet ploch</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="83"/>
+      <source>Cylinder</source>
+      <translation>Válec</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="92"/>
+      <location filename="../../Segmentation.ui" line="172"/>
+      <source>Curvature</source>
+      <translation>Křivost</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="109"/>
+      <source>Tolerance (flat)</source>
+      <translation>Tolerance (plochá)</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="126"/>
+      <source>Tolerance (curved)</source>
+      <translation>Tolerance (zakřivená)</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="235"/>
+      <source>Maximum curvature</source>
+      <translation>Maximální zakřivení</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="269"/>
+      <source>Minimum curvature</source>
+      <translation>Minimální zakřivení</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="163"/>
+      <source>Sphere</source>
+      <translation>Koule</translation>
+    </message>
+    <message>
+      <location filename="../../Segmentation.ui" line="226"/>
+      <source>Freeform</source>
+      <translation>Volný tvar</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::SegmentationBestFit</name>
+    <message>
+      <location filename="../../SegmentationBestFit.ui" line="20"/>
+      <source>Plane</source>
+      <translation>Rovina</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.ui" line="14"/>
+      <source>Mesh Segmentation</source>
+      <translation>Segmentace sítě</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.ui" line="29"/>
+      <location filename="../../SegmentationBestFit.ui" line="82"/>
+      <location filename="../../SegmentationBestFit.ui" line="135"/>
+      <source>Parameters</source>
+      <translation>Parametry</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.ui" line="36"/>
+      <location filename="../../SegmentationBestFit.ui" line="89"/>
+      <location filename="../../SegmentationBestFit.ui" line="142"/>
+      <source>Tolerance</source>
+      <translation>Odchylka</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.ui" line="53"/>
+      <location filename="../../SegmentationBestFit.ui" line="106"/>
+      <location filename="../../SegmentationBestFit.ui" line="159"/>
+      <source>Minimum number of faces</source>
+      <translation>Minimální počet ploch</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.ui" line="73"/>
+      <source>Cylinder</source>
+      <translation>Válec</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.ui" line="126"/>
+      <source>Sphere</source>
+      <translation>Koule</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="376"/>
+      <location filename="../../SegmentationBestFit.cpp" line="401"/>
+      <source>Base</source>
+      <translation>Základna</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="377"/>
+      <source>Normal</source>
+      <translation>Normála</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="402"/>
+      <source>Axis</source>
+      <translation>Osa</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="403"/>
+      <location filename="../../SegmentationBestFit.cpp" line="429"/>
+      <source>Radius</source>
+      <translation>Poloměr</translation>
+    </message>
+    <message>
+      <location filename="../../SegmentationBestFit.cpp" line="428"/>
+      <source>Center</source>
+      <translation>Střed</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::Selection</name>
+    <message>
+      <location filename="../../Selection.ui" line="14"/>
+      <location filename="../../Selection.ui" line="20"/>
+      <source>Selection</source>
+      <translation>Výběr</translation>
+    </message>
+    <message>
+      <location filename="../../Selection.ui" line="39"/>
+      <source>Add</source>
+      <translation>Přidat</translation>
+    </message>
+    <message>
+      <location filename="../../Selection.ui" line="46"/>
+      <source>Clear</source>
+      <translation>Vyčistit</translation>
+    </message>
+    <message>
+      <location filename="../../Selection.ui" line="53"/>
+      <source>Accept only visible triangles</source>
+      <translation>Přijmout pouze viditelné trojúhelníky</translation>
+    </message>
+    <message>
+      <location filename="../../Selection.ui" line="63"/>
+      <source>Accept only triangles with screen-facing normals</source>
+      <translation>Akceptuje pouze trojúhelníky s normálami směřujícími k obrazovce</translation>
+    </message>
+    <message>
+      <location filename="../../Selection.cpp" line="87"/>
+      <source>Use a brush tool to select the area</source>
+      <translation>Použít nástroj štětec pro výběr oblasti</translation>
+    </message>
+    <message>
+      <location filename="../../Selection.cpp" line="90"/>
+      <source>Clears completely the selected area</source>
+      <translation>Zcela vymaže vybranou oblast</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshGui::TaskRemoveComponents</name>
+    <message>
+      <location filename="../../RemoveComponents.cpp" line="210"/>
+      <location filename="../../RemoveComponents.cpp" line="255"/>
+      <source>Delete</source>
+      <translation>Odstranit</translation>
+    </message>
+    <message>
+      <location filename="../../RemoveComponents.cpp" line="211"/>
+      <location filename="../../RemoveComponents.cpp" line="256"/>
+      <source>Invert</source>
+      <translation>Převrátit</translation>
+    </message>
+  </context>
+  <context>
+    <name>MeshInfoWatcher</name>
+    <message>
+      <location filename="../../Workbench.cpp" line="122"/>
+      <location filename="../../Workbench.cpp" line="123"/>
+      <source>X: %1	Y: %2	Z: %3</source>
+      <translation>X: %1	Y: %2	Z: %3</translation>
+    </message>
+  </context>
+  <context>
+    <name>Mesh_BoundingBox</name>
+    <message>
+      <location filename="../../Command.cpp" line="1515"/>
+      <source>Boundings of %1:</source>
+      <translation>Hranice %1:</translation>
+    </message>
+  </context>
+  <context>
+    <name>Mesh_Union</name>
+    <message>
+      <location filename="../../Command.cpp" line="141"/>
+      <location filename="../../Command.cpp" line="148"/>
+      <location filename="../../Command.cpp" line="227"/>
+      <location filename="../../Command.cpp" line="234"/>
+      <location filename="../../Command.cpp" line="313"/>
+      <location filename="../../Command.cpp" line="320"/>
+      <source>OpenSCAD</source>
+      <translation>OpenSCAD</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="142"/>
+      <location filename="../../Command.cpp" line="228"/>
+      <location filename="../../Command.cpp" line="314"/>
+      <source>Unknown error occurred while running OpenSCAD.</source>
+      <translation>Při běhu OpenSCADu došlo k neznámé chybě.</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="149"/>
+      <location filename="../../Command.cpp" line="235"/>
+      <location filename="../../Command.cpp" line="321"/>
+      <source>OpenSCAD cannot be found on the system.
+Visit https://openscad.org/ to install it.</source>
+      <translation>OpenSCAD nelze v systému najít. 
+Navštivte https://openscad.org/ a nainstalujte ho.</translation>
+    </message>
+  </context>
+  <context>
+    <name>QDockWidget</name>
+    <message>
+      <location filename="../../DlgEvaluateMeshImp.cpp" line="1345"/>
+      <source>Evaluate &amp; Repair Mesh</source>
+      <translation>Vyhodnotit &amp; Opravit síť</translation>
+    </message>
+  </context>
+  <context>
+    <name>QObject</name>
+    <message>
+      <location filename="../../AppMeshGui.cpp" line="156"/>
+      <source>Display</source>
+      <translation>Zobrazení</translation>
+    </message>
+    <message>
+      <location filename="../../AppMeshGui.cpp" line="159"/>
+      <source>Import-Export</source>
+      <translation>Import-Export</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="357"/>
+      <source>All Mesh Files</source>
+      <translation>Všechny soubory sítí</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="359"/>
+      <location filename="../../Command.cpp" line="425"/>
+      <source>Binary STL</source>
+      <translation>Binární STL</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="360"/>
+      <location filename="../../Command.cpp" line="426"/>
+      <location filename="../../Command.cpp" line="427"/>
+      <source>ASCII STL</source>
+      <translation>ASCII STL</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="361"/>
+      <location filename="../../Command.cpp" line="428"/>
+      <source>Binary Mesh</source>
+      <translation>Binární síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="362"/>
+      <location filename="../../Command.cpp" line="429"/>
+      <source>Alias Mesh</source>
+      <translation>Alias sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="363"/>
+      <location filename="../../Command.cpp" line="431"/>
+      <source>Object File Format</source>
+      <translation>Formát souboru objektu</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="364"/>
+      <source>Inventor V2.1 ASCII</source>
+      <translation>Inventor V2.1 ASCII</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="365"/>
+      <location filename="../../Command.cpp" line="436"/>
+      <source>Stanford Polygon</source>
+      <translation>Mnohoúhelník Stanford</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="374"/>
+      <source>Import Mesh</source>
+      <translation>Importovat síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="430"/>
+      <source>Simple Model Format</source>
+      <translation>Jednoduchá formát modelu</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="432"/>
+      <source>Inventor V2.1 ascii</source>
+      <translation>Inventor V2.1 ASCII</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="433"/>
+      <source>X3D Extensible 3D</source>
+      <translation>X3D rozšířitelné 3D</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="434"/>
+      <source>Compressed X3D</source>
+      <translation>Komprimované X3D</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="435"/>
+      <source>WebGL/X3D</source>
+      <translation>WebGL/X3D</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="437"/>
+      <source>VRML V2.0</source>
+      <translation>VRML V2.0</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="438"/>
+      <source>Compressed VRML 2.0</source>
+      <translation>Komprimované VRML 2.0</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="440"/>
+      <source>Python module def</source>
+      <translation>Definice Python modulu</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="441"/>
+      <source>Asymptote Format</source>
+      <translation>Asymptotický formát</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="366"/>
+      <location filename="../../Command.cpp" line="442"/>
+      <source>3D Manufacturing Format</source>
+      <translation>3D výrobní formát</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="453"/>
+      <source>Export Mesh</source>
+      <translation>Exportovat síť</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="495"/>
+      <source>Meshing Tolerance</source>
+      <translation>Tolerance sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="496"/>
+      <source>Enter tolerance for meshing geometry:</source>
+      <translation>Vložit toleranci pro síťovou geometrii:</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1324"/>
+      <source>The mesh '%1' is not a solid.</source>
+      <translation>Síť '%1' netvoří těleso.</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1328"/>
+      <source>The mesh '%1' is a solid.</source>
+      <translation>Síť '%1' je pevná.</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1331"/>
+      <source>Solid Mesh</source>
+      <translation>Síť tělesa</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1524"/>
+      <source>Boundings</source>
+      <translation>Hraniční</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1591"/>
+      <source>Fill Holes</source>
+      <translation>Vyplnit otvory</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1592"/>
+      <source>Fill holes with maximum number of edges</source>
+      <translation>Vyplní otvory s maximálním počtem hran</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1865"/>
+      <source>Scaling</source>
+      <translation>Škálování</translation>
+    </message>
+    <message>
+      <location filename="../../Command.cpp" line="1866"/>
+      <source>Enter scaling factor:</source>
+      <translation>Vložte měřítko:</translation>
+    </message>
+    <message>
+      <location filename="../../PropertyEditorMesh.cpp" line="81"/>
+      <source>[Points: %1, Edges: %2, Faces: %3]</source>
+      <translation>[Body: %1, Hrany: %2, Plochy: %3]</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="796"/>
+      <source>Display Components</source>
+      <translation>Zobrazit komponenty</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="804"/>
+      <source>Display Segments</source>
+      <translation>Zobrazit segmentyDisplay Segments</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="812"/>
+      <source>Display Colors</source>
+      <translation>Zobrazit barvy</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProviderCurvature.cpp" line="475"/>
+      <location filename="../../ViewProvider.cpp" line="1701"/>
+      <source>Leave Info Mode</source>
+      <translation>Opustit informační režim</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1745"/>
+      <source>Mesh: %1</source>
+      <translation>Síť: %1</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1748"/>
+      <source>Index: %1</source>
+      <translation>Index: %1</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1751"/>
+      <source>Points: &lt;%1, %2, %3&gt;</source>
+      <translation>Body: &lt;%1, %2, %3&gt;</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1758"/>
+      <source>Neighbours: &lt;%1, %2, %3&gt;</source>
+      <translation>Sousedí: &lt;%1, %2, %3&gt;</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1764"/>
+      <source>Triangle:</source>
+      <translation>Trojúhelník:</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1798"/>
+      <source>Leave Hole-Filling Mode</source>
+      <translation>Opustit režim vyplňování otvorů</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1844"/>
+      <source>Leave Removal Mode</source>
+      <translation>Opustit režim odstraňování</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1845"/>
+      <source>Delete Selected Faces</source>
+      <translation>Odstranit vybrané plochy</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProvider.cpp" line="1846"/>
+      <source>Clear Selected Faces</source>
+      <translation>Vyčistit vybrané plochy</translation>
+    </message>
+    <message>
+      <location filename="../../ViewProviderCurvature.cpp" line="472"/>
+      <source>Annotation</source>
+      <translation>Poznámka</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="69"/>
+      <source>Number of points</source>
+      <translation>Počet bodů</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="72"/>
+      <source>Number of facets</source>
+      <translation>Počet trojúhelníkových fazet</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="78"/>
+      <source>Minimum bound</source>
+      <translation>Minimální hranice</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="81"/>
+      <source>Maximum bound</source>
+      <translation>Maximální hranice</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="88"/>
+      <source>Mesh Info Box</source>
+      <translation>Informační box sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="89"/>
+      <source>Mesh Info</source>
+      <translation>Informace o síti</translation>
+    </message>
+  </context>
+  <context>
+    <name>Workbench</name>
+    <message>
+      <location filename="../../Workbench.cpp" line="44"/>
+      <source>Analyze</source>
+      <translation>Analyzovat</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="45"/>
+      <source>Boolean</source>
+      <translation>Booleovská</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="46"/>
+      <source>&amp;Meshes</source>
+      <translation>&amp;Sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="47"/>
+      <source>Cutting</source>
+      <translation>Řez</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="48"/>
+      <source>Mesh Tools</source>
+      <translation>Nástroje sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="49"/>
+      <source>Mesh Modify</source>
+      <translation>Úpravy sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="50"/>
+      <source>Mesh Boolean</source>
+      <translation>Booleovská síť</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="51"/>
+      <source>Mesh Cutting</source>
+      <translation>Řezání sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="52"/>
+      <source>Mesh Segmentation</source>
+      <translation>Segmentace sítě</translation>
+    </message>
+    <message>
+      <location filename="../../Workbench.cpp" line="53"/>
+      <source>Mesh Analyze</source>
+      <translation>Analýza sítě</translation>
+    </message>
+  </context>
+  <context>
+    <name>FileFormat</name>
+    <message>
+      <location filename="../../../Init.py" line="19"/>
+      <source>STL Mesh</source>
+      <translation>STL síť</translation>
+    </message>
+    <message>
+      <location filename="../../../Init.py" line="20"/>
+      <source>Binary Mesh</source>
+      <translation>Binární síť</translation>
+    </message>
+    <message>
+      <location filename="../../../Init.py" line="23"/>
+      <source>Alias Mesh</source>
+      <extracomment>Translation note: "Alias" in this case is a product/format name and should not be translated</extracomment>
+      <translation>Alias sítě</translation>
+    </message>
+    <message>
+      <location filename="../../../Init.py" line="27"/>
+      <source>Object File Format Mesh</source>
+      <extracomment>Translation note: "Object File Format" is the official name and should not be translated</extracomment>
+      <translation>Síť formátu objektového souboru</translation>
+    </message>
+  </context>
+</TS>
