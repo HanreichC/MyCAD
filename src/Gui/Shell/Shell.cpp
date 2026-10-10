@@ -1185,8 +1185,10 @@ void Gui::Shell::install()
 
     hideChrome();
     Application::Instance->signalActivateWorkbench.connect([](const char*) { hideChromeLater(); });
-    Application::Instance->signalInEdit.connect([](const ViewProviderDocumentObject&) {
-        state.sketchMode = true;  // ponytail: jeder Edit-Modus gilt als Sketch; reicht, solange nur Skizzen editiert werden
+    Application::Instance->signalInEdit.connect([](const ViewProviderDocumentObject& vp) {
+        // Nur Skizzen schalten auf Sketch-Toolbar und Palette; Feature-Dialoge brauchen den Inspector
+        static const Base::Type sketch = Base::Type::fromName("Sketcher::SketchObject");
+        state.sketchMode = !sketch.isBad() && vp.getObject()->getTypeId().isDerivedFrom(sketch);
         hideChromeLater();
         QTimer::singleShot(0, layout);
     });
