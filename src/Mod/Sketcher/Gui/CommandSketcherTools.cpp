@@ -2490,6 +2490,34 @@ void CmdSketcherOffset::activated(int iMsg)
         }
     }
 
+    // MyCAD: wie in Fusion die ganze zusammenhängende Kontur versetzen, auch wenn nur eine Kante gewählt ist
+    auto chainable = [Obj](int geoId) {
+        const Part::Geometry* geo = Obj->getGeometry(geoId);
+        return geo && (isLineSegment(*geo) || isArcOfCircle(*geo)) && !GeometryFacade::getConstruction(geo)
+            && !GeometryFacade::isInternalAligned(geo);
+    };
+    auto touches = [Obj](int a, int b) {
+        for (auto pa : {Sketcher::PointPos::start, Sketcher::PointPos::end}) {
+            for (auto pb : {Sketcher::PointPos::start, Sketcher::PointPos::end}) {
+                if (Obj->getPoint(a, pa).IsEqual(Obj->getPoint(b, pb), 1e-6)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    for (size_t k = 0; k < listOfGeoIds.size(); ++k) {  // wächst beim Durchlaufen
+        if (!chainable(listOfGeoIds[k])) {
+            continue;
+        }
+        for (int other = 0; other <= Obj->getHighestCurveIndex(); ++other) {
+            if (chainable(other) && std::ranges::find(listOfGeoIds, other) == listOfGeoIds.end()
+                && touches(listOfGeoIds[k], other)) {
+                listOfGeoIds.push_back(other);
+            }
+        }
+    }
+
     if (listOfGeoIds.size() != 0) {
         ActivateHandler(getActiveGuiDocument(), std::make_unique<DrawSketchHandlerOffset>(listOfGeoIds));
     }

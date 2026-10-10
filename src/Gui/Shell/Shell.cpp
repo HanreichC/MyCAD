@@ -937,14 +937,17 @@ class SketchTaskFilter: public QObject
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
-        if ((event->type() == QEvent::Show || event->type() == QEvent::Hide) && obj->inherits("Gui::TaskView::TaskBox")) {
-            if (obj->inherits("SketcherGui::TaskSketcherTool")) {
+        const auto type = event->type();
+        if (obj->inherits("SketcherGui::TaskSketcherTool")) {
+            // *ToParent: kommt auch, solange das Panel noch verborgen ist (Show käme erst danach)
+            if (type == QEvent::ShowToParent || type == QEvent::HideToParent) {
                 QTimer::singleShot(0, layout);
             }
-            else if (event->type() == QEvent::Show && state.sketchMode
-                     && QByteArray(obj->metaObject()->className()).startsWith("SketcherGui::")) {
-                QTimer::singleShot(0, static_cast<QWidget*>(obj), &QWidget::hide);
-            }
+            return false;
+        }
+        if (type == QEvent::Show && state.sketchMode && obj->inherits("Gui::TaskView::TaskBox")
+            && QByteArray(obj->metaObject()->className()).startsWith("SketcherGui::")) {
+            QTimer::singleShot(0, static_cast<QWidget*>(obj), &QWidget::hide);
         }
         return false;
     }
