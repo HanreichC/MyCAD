@@ -23,7 +23,9 @@
 #include <Gui/View3DInventorViewer.h>
 
 #include <QAbstractScrollArea>
+#include <QActionGroup>
 #include <QApplication>
+#include <QDialogButtonBox>
 #include <QDockWidget>
 #include <QFontDatabase>
 #include <QFrame>
@@ -40,6 +42,7 @@
 #include <QLabel>
 #include <QWindow>
 #include <QMenuBar>
+#include <QDir>
 #include <QFile>
 #include <QPainter>
 #include <QSvgRenderer>
@@ -52,6 +55,7 @@
 #include <QVBoxLayout>
 
 #include <functional>
+#include <memory>
 #include <vector>
 
 using namespace Gui;
@@ -98,6 +102,9 @@ QToolButton#TrafficLight[role="close"] { background: #FF5F57; }
 QToolButton#TrafficLight[role="minimize"] { background: #FEBC2E; }
 QToolButton#TrafficLight[role="zoom"] { background: #28C840; }
 QLabel#WindowTitle { font-weight: 600; }
+QToolButton#GlassButton[popupMode="1"] { padding-right: 10px; }
+QToolButton#GlassButton::menu-button { border: none; width: 12px; }
+QToolButton#GlassButton::menu-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 9px; height: 9px; }
 QToolButton#GlassButton[error="true"] { background: rgba(255,59,48,0.28); }
 QFrame#GlassSeparator { background: %8; border: none; }
 #GlassContent, #GlassContent QWidget { background: transparent; }
@@ -106,6 +113,9 @@ QFrame#GlassSeparator { background: %8; border: none; }
     background: %6; border: 1px solid %7; border-radius: 7px; padding: 3px 6px; min-height: 20px;
 }
 #GlassContent QLineEdit:focus, #GlassContent QAbstractSpinBox:focus { border: 2px solid %3; }
+#GlassContent QAbstractSpinBox::up-button, #GlassContent QAbstractSpinBox::down-button { width: 0; border: none; }
+#GlassContent QComboBox::drop-down { border: none; width: 20px; }
+#GlassContent QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
 #GlassContent QPushButton {
     background: %6; border: 1px solid %7; border-radius: 7px; padding: 5px 12px;
 }
@@ -284,11 +294,11 @@ void overrideFreeCadIcons(const Theme& t)
     const QString grey = t.dark ? QStringLiteral("#AEAEB2") : QStringLiteral("#6E6E73");
     struct Override
     {
-        const char* freecad;
-        const char* ours;
+        QByteArray freecad;
+        QByteArray ours;
         QString color;
     };
-    const Override overrides[] = {
+    std::vector<Override> overrides = {
         {"Document", "Tree_Document", grey},
         {"Geofeaturegroup.svg", "Tree_Component", t.accent},
         {"folder", "Tree_Folder", t.accent},
@@ -314,6 +324,11 @@ void overrideFreeCadIcons(const Theme& t)
         {"Constraint_Block", "Sketcher_ConstrainBlock", grey},
         {"Constraint_PointOnObject", "Sketcher_ConstrainCoincidentUnified", grey},
     };
+    // Sketcher-Befehle heißen wie ihre FreeCAD-Bilder: so passen auch Menüs, Panel-Köpfe und Kontextmenüs
+    for (const QString& file : QDir(QStringLiteral(":/mycad/icons")).entryList({QStringLiteral("Sketcher_*.svg")})) {
+        const QByteArray name = file.chopped(4).toLatin1();
+        overrides.push_back({name, name, t.text});
+    }
     for (const auto& o : overrides) {
         QFile file(QStringLiteral(":/mycad/icons/%1.svg").arg(QString::fromLatin1(o.ours)));
         if (!file.open(QIODevice::ReadOnly)) {
@@ -352,7 +367,33 @@ QAction* commandAction(const char* name)
     return action;
 }
 
-/// Kapsel-Toolbar mit Befehls-Buttons. "" = Trenner.
+/// Varianten eines Knopfs: "A|B" = eigene Gruppe, Gruppenbefehle (z. B. Sketcher_CompCreateArc) bringen ihre mit
+std::vector<std::pair<QString, QAction*>> variants(const QString& entry)
+{
+    std::vector<std::pair<QString, QAction*>> result;
+    const QStringList names = entry.split(QLatin1Char('|'));
+    if (names.size() > 1) {
+        for (const QString& n : names) {
+            if (QAction* a = commandAction(n.toLatin1().constData())) {
+                result.emplace_back(n, a);
+            }
+        }
+        return result;
+    }
+    const QByteArray name = entry.toLatin1();
+    commandAction(name.constData());  // legt die Action an
+    Command* cmd = Application::Instance->commandManager().getCommandByName(name.constData());
+    if (auto group = cmd ? qobject_cast<ActionGroup*>(cmd->getAction()) : nullptr) {
+        for (QAction* a : group->groupAction()->actions()) {
+            if (auto owner = qobject_cast<Action*>(a->parent()); owner && !a->isSeparator()) {
+                result.emplace_back(QString::fromLatin1(owner->command()->getName()), a);
+            }
+        }
+    }
+    return result;
+}
+
+/// Kapsel-Toolbar mit Befehls-Buttons. "" = Trenner, "A|B" = Knopf mit Varianten-Menü.
 QWidget* toolbar(const std::vector<const char*>& commands)
 {
 
@@ -370,11 +411,48 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             lay->addSpacing(6);
             continue;
         }
-        QAction* action = commandAction(name);
+        const auto choices = variants(QString::fromLatin1(name));
+        QAction* action = choices.empty() ? commandAction(name) : choices.front().second;
         if (!action) {
             continue;
         }
         auto btn = new QToolButton;
+        if (!choices.empty()) {
+            // Knopf führt die zuletzt gewählte Variante aus, der Pfeil zeigt alle (wie Fusions Dropdowns)
+            auto current = std::make_shared<QPointer<QAction>>(action);
+            auto pick = [btn, current](const QString& n, QAction* a) {
+                *current = a;
+                btn->setIcon(commandIcon(n, a->icon()));
+                btn->setToolTip(a->toolTip().isEmpty() ? a->text() : a->toolTip());
+            };
+            auto menu = new QMenu;  // ohne Eltern: sonst bettet Qt das Menü in die 3D-Szene ein
+            QObject::connect(btn, &QObject::destroyed, menu, &QObject::deleteLater);
+            for (const auto& [n, a] : choices) {
+                QObject::connect(menu->addAction(commandIcon(n, a->icon()), a->text()), &QAction::triggered, a,
+                                 [pick, n, a] {
+                                     pick(n, a);
+                                     QTimer::singleShot(0, a, &QAction::trigger);
+                                 });
+            }
+            btn->setObjectName(QStringLiteral("GlassButton"));
+            btn->setProperty("command", QString::fromLatin1(name));
+            btn->setMenu(menu);
+            btn->setPopupMode(QToolButton::MenuButtonPopup);
+            btn->setIconSize(QSize(22, 22));
+            btn->setFixedSize(48, 38);
+            pick(choices.front().first, action);
+            btn->setEnabled(action->isEnabled());
+            QObject::connect(btn, &QToolButton::clicked, action, [current] {
+                if (*current) {
+                    QTimer::singleShot(0, current->data(), &QAction::trigger);
+                }
+            });
+            QObject::connect(action, &QAction::changed, btn, [btn, action] {
+                btn->setEnabled(action->isEnabled());
+            });
+            lay->addWidget(btn);
+            continue;
+        }
         btn->setObjectName(QStringLiteral("GlassButton"));
         btn->setProperty("command", QString::fromLatin1(name));
         if (std::string(name) == "Sketcher_LeaveSketch") {  // wie in Fusion: deutlicher Abschluss-Knopf
@@ -826,11 +904,51 @@ void layout()
     }
     if (state.inspector) {
         const qreal itop = 170;  // unter dem ViewCube
-        // Im Skizzenmodus übernimmt die Sketch Palette (FreeCADs Skizzen-Panel bleibt verborgen aktiv)
-        state.inspector->setVisible(Control().activeDialog() != nullptr && !state.sketchMode);
-        state.inspector->setGeometry(QRectF(r.width() - 340 - m, itop, 340, bottom - itop));
+        QWidget* inspector = state.inspector->content();
+        for (auto box : inspector->findChildren<QDialogButtonBox*>()) {
+            box->setVisible(!state.sketchMode);
+        }
+        if (!state.sketchMode) {
+            state.inspector->setVisible(Control().activeDialog() != nullptr);
+            state.inspector->setGeometry(QRectF(r.width() - 340 - m, itop, 340, bottom - itop));
+        }
+        else {
+            // Im Skizzenmodus übernimmt die Sketch Palette; nur Werkzeug-Optionen (Kopien, Ecken, Abstand …)
+            // erscheinen darunter, solange das Werkzeug welche hat (wie Fusions kleine Werkzeug-Dialoge)
+            QWidget* tool = nullptr;
+            for (auto w : inspector->findChildren<QWidget*>()) {
+                if (w->inherits("SketcherGui::TaskSketcherTool") && !w->isHidden()) {
+                    tool = w;
+                }
+            }
+            state.inspector->setVisible(tool != nullptr);
+            if (tool) {
+                const qreal top = state.palette ? state.palette->sceneBoundingRect().bottom() + m : itop;
+                const qreal h = std::min<qreal>(tool->sizeHint().height() + 40, bottom - top);
+                state.inspector->setGeometry(QRectF(r.width() - 340 - m, top, 340, h));
+            }
+        }
     }
 }
+
+/// Sketcher-Panel: im Skizzenmodus nur "Tool Parameters" zeigen, bei jedem Werkzeugwechsel neu anordnen
+class SketchTaskFilter: public QObject
+{
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if ((event->type() == QEvent::Show || event->type() == QEvent::Hide) && obj->inherits("Gui::TaskView::TaskBox")) {
+            if (obj->inherits("SketcherGui::TaskSketcherTool")) {
+                QTimer::singleShot(0, layout);
+            }
+            else if (event->type() == QEvent::Show && state.sketchMode
+                     && QByteArray(obj->metaObject()->className()).startsWith("SketcherGui::")) {
+                QTimer::singleShot(0, static_cast<QWidget*>(obj), &QWidget::hide);
+            }
+        }
+        return false;
+    }
+};
 
 /// Objekt mit der Timeline-Reihenfolge (Root-Komponente des Design-Moduls), sonst nullptr
 App::DocumentObject* timelineHolder(App::Document* doc)
@@ -1137,12 +1255,13 @@ void Gui::Shell::install()
                  "Design_Mirror", "Design_Combine", "Design_Move", "", "Design_OffsetPlane", "Design_NewComponent", "", "Std_ViewFitAll", "MyCAD_Settings"}),
         24);
     state.sketchBar = new GlassPanel(
-        toolbar({"Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CreateRectangle",
-                 "Sketcher_CreateCircle", "Sketcher_CreateArc", "Sketcher_CreateSlot",
-                 "Sketcher_CompCreateRegularPolygon", "Sketcher_CreateBSpline", "Sketcher_CreateConic",
-                 "Sketcher_CreatePoint", "Sketcher_CompExternal", "",
-                 "Sketcher_CreateFillet", "Sketcher_Trimming", "Sketcher_Extend", "Sketcher_Split",
-                 "Sketcher_ToggleConstruction", "", "Sketcher_Dimension",
+        toolbar({"Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
+                 "Sketcher_CompCreateConic", "Sketcher_CompCreateArc", "Sketcher_CompSlot",
+                 "Sketcher_CompCreateRegularPolygon", "Sketcher_CompCreateBSpline", "Sketcher_CreateConic",
+                 "Sketcher_CreatePoint", "Sketcher_CreateText", "Sketcher_CompExternal", "",
+                 "Sketcher_CompCreateFillets", "Sketcher_Trimming", "Sketcher_Extend", "Sketcher_Split",
+                 "Sketcher_Offset", "Sketcher_Symmetry", "Sketcher_RectangularArray|Sketcher_Rotate",
+                 "Sketcher_Translate|Sketcher_Scale", "Sketcher_ToggleConstruction", "", "Sketcher_Dimension",
                  "Sketcher_ConstrainCoincidentUnified", "Sketcher_ConstrainHorizontal",
                  "Sketcher_ConstrainVertical", "Sketcher_ConstrainParallel",
                  "Sketcher_ConstrainPerpendicular", "Sketcher_ConstrainTangent", "Sketcher_ConstrainEqual",
@@ -1151,6 +1270,7 @@ void Gui::Shell::install()
     state.viewCube = new ViewCube;
     state.palette = new GlassPanel(sketchPalette(), 20);
     qApp->installEventFilter(new MenuPolisher);
+    qApp->installEventFilter(new SketchTaskFilter);
     // Rahmenloses Fenster wie eine macOS-App (abschaltbar: MainWindow/MyCADFrameless = false)
     auto mainGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow");
     if (mainGrp->GetBool("MyCADFrameless", true)) {

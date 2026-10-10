@@ -3,12 +3,20 @@
 """MyCAD-Icons im SF-Symbols-Stil: 24er-Raster, Strich 1.7, runde Enden, Farbe = currentColor.
 Die Shell färbt currentColor beim Laden in die Textfarbe des Themes.
 Erzeugt src/Gui/Shell/icons/<Befehl>.svg und icons.qrc.   python3 tools/make_icons.py"""
+import math
 import pathlib
 
 OUT = pathlib.Path(__file__).resolve().parent.parent / "src/Gui/Shell/icons"
 
 DOT = '<circle cx="{}" cy="{}" r="1.7" fill="currentColor" stroke="none"/>'
 DASH = ' stroke-dasharray="2 2.6"'
+
+
+def polygon(n, r=8.5):
+    """regelmäßiges n-Eck um (12, 12), Spitze oben"""
+    pts = [(12 + r * math.sin(2 * math.pi * k / n), 12 - r * math.cos(2 * math.pi * k / n)) for k in range(n)]
+    return '<path d="M' + "L".join("%.2f %.2f" % p for p in pts) + 'z"/>'
+
 
 ICONS = {
     # Datei / Bearbeiten
@@ -42,6 +50,7 @@ ICONS = {
     "Notify_Error": '<circle cx="12" cy="12" r="10" fill="#FF3B30" stroke="none"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#FFFFFF" stroke-width="2.2"/>',
     "Notify_Warning": '<path d="M12 2.5L22.5 20.5h-21z" fill="#FF9500" stroke="#FF9500" stroke-width="1.5"/><path d="M12 9v5" stroke="#FFFFFF" stroke-width="2.2"/><circle cx="12" cy="17.3" r="1.3" fill="#FFFFFF" stroke="none"/>',
     "Notify_Info": '<circle cx="12" cy="12" r="10" fill="#007AFF" stroke="none"/><path d="M12 11v6" stroke="#FFFFFF" stroke-width="2.2"/><circle cx="12" cy="7.6" r="1.3" fill="#FFFFFF" stroke="none"/>',
+    "Chevron_Down": '<path d="M6 9l6 6 6-6" stroke="#8E8E93" stroke-width="2.6"/>',
     # Timeline
     "Timeline_Start": '<path d="M7 5v14M17 6l-7 6 7 6"/>',
     "Timeline_Back": '<path d="M15 6l-6 6 6 6"/>',
@@ -75,6 +84,29 @@ ICONS = {
     "Sketcher_CompCreateRegularPolygon": '<path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/>',
     "Sketcher_CreateBSpline": '<path d="M4 18C8 6 12 22 20 6"/>' + DOT.format(4, 18) + DOT.format(20, 6),
     "Sketcher_CreateConic": '<path d="M4 18Q10 2 20 18"/><path d="M4 18L12 4l8 14"' + DASH + '/>' + DOT.format(4, 18) + DOT.format(20, 18),
+    "Sketcher_Create3PointArc": '<path d="M5 17a8 8 0 0 1 14 0"/>' + DOT.format(5, 17) + DOT.format(12, 9.1) + DOT.format(19, 17),
+    "Sketcher_CreateArcOfEllipse": '<path d="M3 15a9 5.5 0 0 1 18 0"/>' + DOT.format(3, 15) + DOT.format(21, 15),
+    "Sketcher_CreateArcOfHyperbola": '<path d="M6 4q8 8 0 16M18 4q-8 8 0 16"/>',
+    "Sketcher_CreateArcOfParabola": '<path d="M5 4q7 22 14 0"/>' + DOT.format(12, 14.8),
+    "Sketcher_Create3PointCircle": '<circle cx="12" cy="12" r="8"/>' + DOT.format(12, 4) + DOT.format(5.1, 16) + DOT.format(18.9, 16),
+    "Sketcher_CreateEllipseByCenter": '<ellipse cx="12" cy="12" rx="9" ry="5.5"/>' + DOT.format(12, 12),
+    "Sketcher_CreateEllipseBy3Points": '<ellipse cx="12" cy="12" rx="9" ry="5.5"/>' + DOT.format(3, 12) + DOT.format(21, 12) + DOT.format(12, 6.5),
+    "Sketcher_CreateRectangle_Center": '<rect x="4" y="6" width="16" height="12" rx="1"/>' + DOT.format(12, 12),
+    "Sketcher_CreateOblong": '<rect x="4" y="6" width="16" height="12" rx="4"/>',
+    "Sketcher_CreateTriangle": polygon(3, 9),
+    "Sketcher_CreateSquare": polygon(4, 8.5),
+    "Sketcher_CreatePentagon": polygon(5),
+    "Sketcher_CreateHexagon": polygon(6),
+    "Sketcher_CreateHeptagon": polygon(7),
+    "Sketcher_CreateOctagon": polygon(8),
+    "Sketcher_CreateRegularPolygon": polygon(9) + DOT.format(12, 12),
+    "Sketcher_CreateArcSlot": '<path d="M4.5 16a8 8 0 0 1 15 0M8.5 16a4 4 0 0 1 7 0"/><path d="M4.5 16a2 2 0 0 0 4 0M15.5 16a2 2 0 0 0 4 0"/>',
+    "Sketcher_CreatePeriodicBSpline": '<path d="M12 4c6 0 9 4 7 8s-2 8-7 8-9-3-8-8 2-8 8-8z"/>',
+    "Sketcher_CreateBSplineByInterpolation": '<path d="M4 18C8 6 12 22 20 6"/>' + DOT.format(4, 18) + DOT.format(12, 13) + DOT.format(20, 6),
+    "Sketcher_CreatePeriodicBSplineByInterpolation": '<path d="M12 4c6 0 9 4 7 8s-2 8-7 8-9-3-8-8 2-8 8-8z"/>' + DOT.format(12, 4) + DOT.format(12, 20),
+    "Sketcher_CreateText": '<path d="M6 6h12M12 6v13M9.5 19h5"/>',
+    "Sketcher_Projection": '<path d="M3 18l5-3h13l-5 3z"/><path d="M12 3v9M9 9l3 3 3-3"/>',
+    "Sketcher_Intersection": '<path d="M3 18l5-3h13l-5 3z"/><path d="M8 5l8 8"/>' + DOT.format(14.5, 16.5),
     "Sketcher_CreatePoint": '<circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/>',
     "Sketcher_CompExternal": '<path d="M3 18l5-3h13l-5 3z"/><path d="M12 3v9M9 9l3 3 3-3"/>',
     "Palette_LookAt": '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
@@ -83,6 +115,13 @@ ICONS = {
     "Palette_Snap": '<path d="M7 4v7a5 5 0 0 0 10 0V4"/><path d="M7 8h3M14 8h3"/>',
     # Skizze: Ändern
     "Sketcher_CreateFillet": '<path d="M5 19v-8a6 6 0 0 1 6-6h8"/>',
+    "Sketcher_CreateChamfer": '<path d="M5 19v-8l6-6h8"/>',
+    "Sketcher_Offset": '<rect x="7.5" y="7.5" width="9" height="9" rx="1"/><rect x="3.5" y="3.5" width="17" height="17" rx="3"' + DASH + '/>',
+    "Sketcher_Symmetry": '<path d="M12 3v18"' + DASH + '/><path d="M9 7L4 17h5zM15 7l5 10h-5z"/>',
+    "Sketcher_RectangularArray": '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
+    "Sketcher_Rotate": '<circle cx="12" cy="12" r="1.2" fill="currentColor"/>' + "".join(DOT.format(round(12 + 8 * math.sin(a), 2), round(12 - 8 * math.cos(a), 2)) for a in [k * math.pi / 3 for k in range(6)]),
+    "Sketcher_Translate": '<path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
+    "Sketcher_Scale": '<rect x="4" y="11" width="9" height="9" rx="1"/><path d="M13 11l7-7M14 4h6v6"/>',
     "Sketcher_Trimming": '<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8.2 8.4L20 16M8.2 15.6L20 8"/>',
     "Sketcher_Extend": '<path d="M4 12h9"/><path d="M13 12h6"' + DASH + '/><path d="M17 9l3 3-3 3"/>',
     "Sketcher_Split": '<path d="M3 12h5.5M15.5 12H21"/>' + DOT.format(9.5, 12) + DOT.format(14.5, 12),

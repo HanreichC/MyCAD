@@ -27,6 +27,7 @@
         <file>Notify_Error.svg</file>
         <file>Notify_Warning.svg</file>
         <file>Notify_Info.svg</file>
+        <file>Chevron_Down.svg</file>
         <file>Timeline_Start.svg</file>
         <file>Timeline_Back.svg</file>
         <file>Timeline_Forward.svg</file>
@@ -54,6 +55,29 @@
         <file>Sketcher_CompCreateRegularPolygon.svg</file>
         <file>Sketcher_CreateBSpline.svg</file>
         <file>Sketcher_CreateConic.svg</file>
+        <file>Sketcher_Create3PointArc.svg</file>
+        <file>Sketcher_CreateArcOfEllipse.svg</file>
+        <file>Sketcher_CreateArcOfHyperbola.svg</file>
+        <file>Sketcher_CreateArcOfParabola.svg</file>
+        <file>Sketcher_Create3PointCircle.svg</file>
+        <file>Sketcher_CreateEllipseByCenter.svg</file>
+        <file>Sketcher_CreateEllipseBy3Points.svg</file>
+        <file>Sketcher_CreateRectangle_Center.svg</file>
+        <file>Sketcher_CreateOblong.svg</file>
+        <file>Sketcher_CreateTriangle.svg</file>
+        <file>Sketcher_CreateSquare.svg</file>
+        <file>Sketcher_CreatePentagon.svg</file>
+        <file>Sketcher_CreateHexagon.svg</file>
+        <file>Sketcher_CreateHeptagon.svg</file>
+        <file>Sketcher_CreateOctagon.svg</file>
+        <file>Sketcher_CreateRegularPolygon.svg</file>
+        <file>Sketcher_CreateArcSlot.svg</file>
+        <file>Sketcher_CreatePeriodicBSpline.svg</file>
+        <file>Sketcher_CreateBSplineByInterpolation.svg</file>
+        <file>Sketcher_CreatePeriodicBSplineByInterpolation.svg</file>
+        <file>Sketcher_CreateText.svg</file>
+        <file>Sketcher_Projection.svg</file>
+        <file>Sketcher_Intersection.svg</file>
         <file>Sketcher_CreatePoint.svg</file>
         <file>Sketcher_CompExternal.svg</file>
         <file>Palette_LookAt.svg</file>
@@ -61,6 +85,13 @@
         <file>Palette_Grid.svg</file>
         <file>Palette_Snap.svg</file>
         <file>Sketcher_CreateFillet.svg</file>
+        <file>Sketcher_CreateChamfer.svg</file>
+        <file>Sketcher_Offset.svg</file>
+        <file>Sketcher_Symmetry.svg</file>
+        <file>Sketcher_RectangularArray.svg</file>
+        <file>Sketcher_Rotate.svg</file>
+        <file>Sketcher_Translate.svg</file>
+        <file>Sketcher_Scale.svg</file>
         <file>Sketcher_Trimming.svg</file>
         <file>Sketcher_Extend.svg</file>
         <file>Sketcher_Split.svg</file>
