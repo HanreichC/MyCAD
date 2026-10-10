@@ -2,6 +2,7 @@
 
 #include "Shell.h"
 #include "GlassPanel.h"
+#include "ViewCube.h"
 
 #include <App/Application.h>
 #include <Gui/Action.h>
@@ -132,6 +133,10 @@ void applyTheme()
     view->SetUnsigned("BackgroundColor2", t.dark ? 0x2A2C31FFUL : 0xF4F5F7FFUL);
     view->SetUnsigned("BackgroundColor3", t.dark ? 0x111214FFUL : 0xD5D9E0FFUL);
     view->SetBool("Gradient", true);
+    view->SetBool("ShowNaviCube", false);  // eigener ViewCube (Shell/ViewCube)
+    view->SetInt("AntiAliasing", 4);       // MSAA 8x: glatte Kanten
+    view->SetUnsigned("SelectionColor", t.dark ? 0x0A84FFFFUL : 0x007AFFFFUL);
+    view->SetUnsigned("HighlightColor", t.dark ? 0x64B5FFFFUL : 0x66AFFFFFUL);
     view->SetUnsigned("DefaultShapeColor", t.dark ? 0x9EA3ADFFUL : 0xC8CCD4FFUL);
     view->SetUnsigned("DefaultShapeLineColor", t.dark ? 0x2A2D33FFUL : 0x6B717CFFUL);
     view->SetInt("DefaultShapeLineWidth", 1);
@@ -348,6 +353,7 @@ struct State
     GlassPanel* browser = nullptr;
     GlassPanel* inspector = nullptr;
     GlassPanel* timeline = nullptr;
+    ViewCube* viewCube = nullptr;
     bool sketchMode = false;
     QGraphicsScene* scene = nullptr;
 } state;
@@ -390,8 +396,11 @@ void layout()
     if (state.browser) {
         state.browser->setGeometry(QRectF(m, top, 290, bottom - top));
     }
+    if (state.viewCube) {
+        state.viewCube->setPos(r.width() - state.viewCube->boundingRect().width() - m, m);
+    }
     if (state.inspector) {
-        const qreal itop = 150;  // unter dem ViewCube
+        const qreal itop = 170;  // unter dem ViewCube
         state.inspector->setVisible(Control().activeDialog() != nullptr);
         state.inspector->setGeometry(QRectF(r.width() - 340 - m, itop, 340, bottom - itop));
     }
@@ -625,6 +634,10 @@ void attach(View3DInventor* view)
     for (auto p : panels()) {
         scene->addItem(p);  // entfernt es automatisch aus der vorherigen Szene
     }
+    if (state.viewCube) {
+        scene->addItem(state.viewCube);
+        state.viewCube->setViewer(view->getViewer());
+    }
     if (!scene->property("mycadShell").toBool()) {
         scene->setProperty("mycadShell", true);
         QObject::connect(scene, &QGraphicsScene::sceneRectChanged, scene, [scene] {
@@ -700,6 +713,7 @@ void Gui::Shell::install()
                  "Sketcher_ConstrainPerpendicular", "Sketcher_ConstrainTangent", "Sketcher_ConstrainEqual",
                  "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock", "", "Sketcher_LeaveSketch"}),
         24);
+    state.viewCube = new ViewCube;
     {
         auto box = content();
         auto lay = new QHBoxLayout(box);
