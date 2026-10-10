@@ -9,6 +9,8 @@
 #include <Mod/Part/App/TopoShapeOpCode.h>
 
 #include <BRepAlgoAPI_Splitter.hxx>
+#include <BRep_Builder.hxx>
+#include <TopoDS_Compound.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepGProp.hxx>
@@ -116,6 +118,70 @@ App::DocumentObjectGroup* Design::folder(App::Part* root, const char* label)
     group->Label.setValue(label);
     root->addObject(group);
     return group;
+}
+
+void Design::removeFromTimeline(App::DocumentObject* obj)
+{
+    App::Document* doc = obj->getDocument();
+    auto feature = freecad_cast<Feature*>(obj);
+    if (!feature) {  // Skizze: mit ihrem Profiles-Begleiter
+        if (auto profiles = Profiles::forSketch(obj)) {
+            doc->removeObject(profiles->getNameInDocument());
+        }
+        doc->removeObject(obj->getNameInDocument());
+        return;
+    }
+
+    const auto bodies = feature->Bodies.getValues();
+    const auto bases = feature->BaseFeatures.getValues();
+    auto baseFor = [&](const App::DocumentObject* body) -> App::DocumentObject* {
+        const auto idx = std::ranges::find(bodies, body) - bodies.begin();
+        return idx < static_cast<long>(bases.size()) ? bases[idx] : nullptr;
+    };
+    // Spätere Features, die auf diesem aufbauen, nehmen stattdessen dessen Basis
+    auto rewire = [&](App::PropertyLinkList& states, const std::vector<App::DocumentObject*>& stateBodies) {
+        auto values = states.getValues();
+        bool changed = false;
+        for (size_t j = 0; j < values.size() && j < stateBodies.size(); ++j) {
+            if (values[j] == feature) {
+                if (auto base = baseFor(stateBodies[j])) {
+                    values[j] = base;
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            states.setValues(values);
+        }
+    };
+    for (auto user : feature->getInList()) {
+        if (auto later = freecad_cast<Feature*>(user)) {
+            rewire(later->BaseFeatures, later->Bodies.getValues());
+        }
+        if (auto combine = freecad_cast<Combine*>(user)) {
+            rewire(combine->ToolFeatures, combine->ToolBodies.getValues());
+        }
+        if (auto mirror = freecad_cast<Mirror*>(user)) {
+            rewire(mirror->SourceFeatures, mirror->SourceBodies.getValues());
+        }
+    }
+    // Bodies zurücksetzen; einen Body, den nur dieses Feature erzeugt hat, mitlöschen
+    std::vector<std::string> orphans;
+    for (auto obj : bodies) {
+        auto body = freecad_cast<Body*>(obj);
+        if (body && body->Tip.getValue() == feature) {
+            if (auto base = baseFor(body)) {
+                body->Tip.setValue(base);
+            }
+            else {
+                orphans.emplace_back(body->getNameInDocument());
+            }
+        }
+    }
+    doc->removeObject(feature->getNameInDocument());
+    for (const auto& name : orphans) {
+        doc->removeObject(name.c_str());
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -241,6 +307,20 @@ Feature::Feature()
     Operation.setEnums(OpEnums);
     ADD_PROPERTY_TYPE(Bodies, (nullptr), "Design", App::Prop_None, "Bodies changed by this feature");
     ADD_PROPERTY_TYPE(BaseFeatures, (nullptr), "Design", App::Prop_Hidden, "Previous feature per body");
+    ADD_PROPERTY_TYPE(Suppressed, (false), "Design", App::Prop_None, "Skip this feature");
+}
+
+App::DocumentObjectExecReturn* Feature::execute()
+{
+    if (Suppressed.getValue()) {
+        std::vector<Part::TopoShape> results;
+        for (int i = 0; i < Bodies.getSize(); ++i) {
+            results.push_back(op() == Op::NewBody ? Part::TopoShape() : baseShape(i));
+        }
+        setResults(results);
+        return StdReturn;
+    }
+    return compute();
 }
 
 Part::TopoShape Feature::shapeFor(const App::DocumentObject* body) const
@@ -303,7 +383,14 @@ void Feature::setResults(const std::vector<Part::TopoShape>& results)
 {
     std::vector<Part::TopoShape> solids;
     for (const auto& r : results) {
-        solids.push_back(solidOf(r));
+        if (r.isNull()) {  // leerer Platzhalter, damit shapeFor-Indizes stimmen
+            TopoDS_Compound empty;
+            BRep_Builder().MakeCompound(empty);
+            solids.emplace_back(empty);
+        }
+        else {
+            solids.push_back(solidOf(r));
+        }
     }
     Part::TopoShape compound(0, getDocument()->getStringHasher());
     compound.makeElementCompound(solids);
@@ -332,7 +419,7 @@ Extrude::Extrude()
     ADD_PROPERTY_TYPE(Reversed, (false), "Extrude", App::Prop_None, "Flip direction");
 }
 
-App::DocumentObjectExecReturn* Extrude::execute()
+App::DocumentObjectExecReturn* Extrude::compute()
 {
     Part::Feature* sketch = nullptr;
     const char* error = nullptr;
@@ -385,7 +472,7 @@ Revolve::Revolve()
     ADD_PROPERTY_TYPE(Reversed, (false), "Revolve", App::Prop_None, "Flip direction");
 }
 
-App::DocumentObjectExecReturn* Revolve::execute()
+App::DocumentObjectExecReturn* Revolve::compute()
 {
     Part::Feature* sketch = nullptr;
     const char* error = nullptr;
@@ -499,7 +586,7 @@ Shell::Shell()
     ADD_PROPERTY_TYPE(Outside, (false), "Shell", App::Prop_None, "Add the wall thickness outside");
 }
 
-App::DocumentObjectExecReturn* Shell::execute()
+App::DocumentObjectExecReturn* Shell::compute()
 {
     if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
         return new App::DocumentObjectExecReturn("Select faces of one body");
@@ -538,7 +625,7 @@ Combine::Combine()
     Operation.setValue(1L);  // Join
 }
 
-App::DocumentObjectExecReturn* Combine::execute()
+App::DocumentObjectExecReturn* Combine::compute()
 {
     const auto& tools = ToolBodies.getValues();
     const auto& states = ToolFeatures.getValues();
@@ -572,7 +659,7 @@ Move::Move()
     Operation.setStatus(App::Property::Hidden, true);
 }
 
-App::DocumentObjectExecReturn* Move::execute()
+App::DocumentObjectExecReturn* Move::compute()
 {
     if (Bodies.getSize() == 0 || Bodies.getSize() != BaseFeatures.getSize()) {
         return new App::DocumentObjectExecReturn("Select one or more bodies");
@@ -608,7 +695,7 @@ Mirror::Mirror()
     Operation.setStatus(App::Property::Hidden, true);
 }
 
-App::DocumentObjectExecReturn* Mirror::execute()
+App::DocumentObjectExecReturn* Mirror::compute()
 {
     const auto& sources = SourceBodies.getValues();
     const auto& states = SourceFeatures.getValues();

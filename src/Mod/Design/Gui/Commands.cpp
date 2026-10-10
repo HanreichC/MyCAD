@@ -428,6 +428,30 @@ void startMirror(App::Document* doc)
     startEditing(feature, false, nullptr);
 }
 
+/// Features und Skizzen aus der Timeline löschen (Kette wird neu verbunden), alles andere wie gewohnt
+void deleteSelected(App::Document* doc)
+{
+    std::vector<App::DocumentObjectT> items;
+    for (auto obj : Gui::Selection().getObjectsOfType(App::DocumentObject::getClassTypeId())) {
+        if (obj->isDerivedFrom<Design::Feature>() || obj->isDerivedFrom<Sketcher::SketchObject>()) {
+            items.emplace_back(obj);
+        }
+    }
+    if (items.empty()) {
+        Gui::Application::Instance->commandManager().runCommandByName("Std_Delete");
+        return;
+    }
+    Gui::Selection().clearSelection();
+    doc->openTransaction("Delete");
+    for (const auto& item : items) {
+        if (auto obj = item.getObject()) {
+            Design::removeFromTimeline(obj);
+        }
+    }
+    doc->recompute();
+    doc->commitTransaction();
+}
+
 }  // namespace
 
 void CreateDesignCommands()
@@ -459,6 +483,8 @@ void CreateDesignCommands()
                                      "Std_TransformManip", "M", startMove));
     mgr.addCommand(new DesignCommand("Design_Mirror", "Mirror", "Mirror: select bodies to mirror",
                                      "PartDesign_Mirrored", "", startMirror));
+    mgr.addCommand(new DesignCommand("Design_Delete", "Delete", "Delete: remove features or sketches from the timeline",
+                                     "edit-delete", "", deleteSelected));
     mgr.addCommand(new DesignCommand("Design_Chamfer", "Chamfer", "Chamfer: select edges or faces of a body",
                                      "PartDesign_Chamfer", "", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Chamfer", "Chamfer");

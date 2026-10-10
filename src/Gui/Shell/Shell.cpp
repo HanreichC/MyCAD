@@ -12,6 +12,7 @@
 #include <Gui/Selection/Selection.h>
 #include <Gui/ViewProviderDocumentObject.h>
 #include <App/Document.h>
+#include <App/PropertyStandard.h>
 #include <Gui/DockWindowManager.h>
 #include <Gui/MainWindow.h>
 #include <Gui/View3DInventor.h>
@@ -28,6 +29,7 @@
 #include <QMdiArea>
 #include <QMdiSubWindow>
 #include <QMenu>
+#include <QCursor>
 #include <QMouseEvent>
 #include <QMenuBar>
 #include <QPainter>
@@ -353,7 +355,52 @@ void rebuildTimeline()
                         + (obj->isError() ? QStringLiteral("\n") + QString::fromUtf8(obj->getStatusString())
                                           : QString()));
         btn->setProperty("error", obj->isError());
+        auto suppressed = freecad_cast<App::PropertyBool*>(obj->getPropertyByName("Suppressed"));
+        if (suppressed && suppressed->getValue()) {
+            btn->setIcon(QIcon(btn->icon().pixmap(QSize(44, 44), QIcon::Disabled)));  // unterdrückt: blass
+        }
         const App::DocumentObjectT ref(obj);
+        btn->setContextMenuPolicy(Qt::CustomContextMenu);
+        QObject::connect(btn, &QWidget::customContextMenuRequested, btn, [ref] {
+            auto o = ref.getObject();
+            if (!o || Control().activeDialog()) {
+                return;
+            }
+            QMenu menu;
+            QAction* edit = menu.addAction(QStringLiteral("Edit"));
+            QAction* suppress = nullptr;
+            if (auto prop = freecad_cast<App::PropertyBool*>(o->getPropertyByName("Suppressed"))) {
+                suppress = menu.addAction(prop->getValue() ? QStringLiteral("Unsuppress") : QStringLiteral("Suppress"));
+            }
+            menu.addSeparator();
+            QAction* remove = menu.addAction(QStringLiteral("Delete"));
+            QAction* chosen = menu.exec(QCursor::pos());
+            // Nach dem Menü ausführen, nicht innerhalb des Maus-Events
+            QTimer::singleShot(0, [ref, chosen, edit, suppress, remove] {
+                auto o = ref.getObject();
+                if (!o || !chosen) {
+                    return;
+                }
+                App::Document* doc = o->getDocument();
+                if (chosen == edit) {
+                    auto gd = Application::Instance->getDocument(doc);
+                    gd->setEdit(gd->getViewProvider(o));
+                }
+                else if (chosen == suppress) {
+                    auto prop = static_cast<App::PropertyBool*>(o->getPropertyByName("Suppressed"));
+                    doc->openTransaction(prop->getValue() ? "Unsuppress" : "Suppress");
+                    prop->setValue(!prop->getValue());
+                    doc->recompute();
+                    doc->commitTransaction();
+                }
+                else if (chosen == remove) {
+                    Selection().clearSelection();
+                    Selection().addSelection(doc->getName(), o->getNameInDocument());
+                    auto& mgr = Application::Instance->commandManager();
+                    mgr.runCommandByName(mgr.getCommandByName("Design_Delete") ? "Design_Delete" : "Std_Delete");
+                }
+            });
+        });
         QObject::connect(btn, &QToolButton::clicked, btn, [ref] {
             if (auto o = ref.getObject()) {
                 Selection().clearSelection();
