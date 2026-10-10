@@ -5,6 +5,9 @@
 #include <App/Document.h>
 #include <App/DocumentObjectGroup.h>
 #include <App/Part.h>
+#include <App/ElementNamingUtils.h>
+#include <App/IndexedName.h>
+#include <App/MappedName.h>
 #include <Base/Placement.h>
 #include <Mod/Part/App/TopoShapeOpCode.h>
 
@@ -102,7 +105,7 @@ App::Part* Design::root(App::Document* doc, bool create)
     }
     auto part = static_cast<App::Part*>(doc->addObject("App::Part", "Root"));
     part->Type.setValue("Design");
-    part->Label.setValue(doc->Label.getValue());
+    part->Label.setValue("Design");  // der Dokumentname steht schon darüber im Browser
     for (const char* label : {"Bodies", "Sketches"}) {
         auto group = doc->addObject("App::DocumentObjectGroup", label);
         group->Label.setValue(label);
@@ -491,11 +494,19 @@ Part::TopoShape Feature::shapeFor(const App::DocumentObject* body) const
 {
     const auto& bodies = Bodies.getValues();
     const auto idx = std::ranges::find(bodies, body) - bodies.begin();
+    if (idx >= static_cast<long>(bodies.size())) {
+        return {};
+    }
+    const Part::TopoShape all = Shape.getShape();
+    if (bodies.size() == 1) {
+        return all;  // ein Body: Ergebnis direkt, mit Element-Map (verfolgbare Namen)
+    }
     int i = 0;
-    // ponytail: die Teil-Shapes verlieren hier ihre Element-Map (topologische Benennung); Upgrade: eigene Shape-Property je Body
-    for (TopoDS_Iterator it(Shape.getShape().getShape()); it.More(); it.Next(), ++i) {
+    for (TopoDS_Iterator it(all.getShape()); it.More(); it.Next(), ++i) {
         if (i == idx) {
-            return Part::TopoShape(it.Value());
+            Part::TopoShape child(it.Value());
+            child.mapSubElement(all);  // Namen aus dem Compound übernehmen
+            return child;
         }
     }
     return {};
@@ -555,6 +566,10 @@ void Feature::setResults(const std::vector<Part::TopoShape>& results)
         else {
             solids.push_back(solidOf(r));
         }
+    }
+    if (solids.size() == 1) {  // ein Body: ohne Compound-Hülle speichern, damit die Element-Map erhalten bleibt
+        Shape.setValue(solids.front());
+        return;
     }
     Part::TopoShape compound(0, getDocument()->getStringHasher());
     compound.makeElementCompound(solids);
@@ -711,14 +726,45 @@ DressUp::DressUp()
 {
     ADD_PROPERTY_TYPE(Edges, (), "DressUp", App::Prop_None, "Edges (or faces) of the body before this feature");
     ADD_PROPERTY_TYPE(Size, (1.0), "DressUp", App::Prop_None, "Radius or distance");
+    ADD_PROPERTY_TYPE(ElementMaps, (), "DressUp", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Traceable names of the selected elements");
     Operation.setStatus(App::Property::Hidden, true);  // verändert immer den eigenen Body
 }
 
-std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type) const
+std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type)
 {
+    // Gewählte Elemente über ihre verfolgbaren Namen wiederfinden (topologische Benennung):
+    // 1. derselbe Name existiert noch, 2. ein Element, das laut Entstehungsgeschichte daraus hervorging
+    //    (z. B. wenn davor ein Feature eingefügt wurde), 3. sonst die ursprüngliche Nummer.
+    std::vector<std::string> names = Edges.getValues();
+    std::vector<std::string> maps = ElementMaps.getValues();
+    maps.resize(names.size());
+    App::DocumentObject* base = BaseFeatures.getSize() ? BaseFeatures.getValues().front() : nullptr;
+    for (size_t i = 0; i < names.size(); ++i) {
+        if (!maps[i].empty()) {
+            const Data::IndexedName idx = shape.getIndexedName(Data::MappedName(maps[i]));
+            if (idx) {
+                names[i] = idx.toString();
+            }
+            else if (base) {
+                const auto related = Part::Feature::getRelatedElements(
+                    base, (std::string(Data::ELEMENT_MAP_PREFIX) + maps[i]).c_str()
+                );
+                if (!related.isEmpty()) {
+                    names[i] = related.front().index.toString();
+                }
+            }
+        }
+        const Data::MappedName mapped = shape.getMappedName(Data::IndexedName(names[i].c_str()));
+        if (mapped) {
+            maps[i] = mapped.toString();
+        }
+    }
+    ElementMaps.setValues(maps);  // Ausgabe-Property: markiert das Feature nicht als geändert
+
     std::vector<Part::TopoShape> result;
     TopTools_IndexedMapOfShape seen;
-    for (const auto& name : Edges.getValues()) {
+    for (const auto& name : names) {
         const Part::TopoShape sub = shape.getSubTopoShape(name.c_str(), true);
         for (const auto& el : sub.isNull() ? std::vector<Part::TopoShape>() : sub.getSubTopoShapes(type)) {
             if (seen.Add(el.getShape()) == seen.Extent()) {

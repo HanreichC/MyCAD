@@ -174,11 +174,12 @@ public:
     DressUp();
     App::PropertyStringList Edges;
     App::PropertyLength Size;  ///< Radius bzw. Fasenabstand
+    App::PropertyStringList ElementMaps;  ///< verfolgbare Namen zu Edges (topologische Benennung)
 
 protected:
     App::DocumentObjectExecReturn* run(bool fillet);
     /// Gewählte Elemente des Bodies vor diesem Feature; Flächen werden bei expandFaces zu ihren Kanten
-    std::vector<Part::TopoShape> elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type) const;
+    std::vector<Part::TopoShape> elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type);
 };
 
 class DesignExport Fillet: public DressUp
