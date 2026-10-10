@@ -32,6 +32,8 @@
 #include <QMenu>
 #include <QCursor>
 #include <QMouseEvent>
+#include <QLabel>
+#include <QWindow>
 #include <QMenuBar>
 #include <QFile>
 #include <QPainter>
@@ -81,6 +83,11 @@ QToolButton#GlassButton:disabled { background: transparent; }
 #GlassContent QToolButton#GlassProminent { border: none; border-radius: 15px; background: %3; color: white; font-weight: 600; padding: 0 14px; }
 #GlassContent QToolButton#GlassProminent:hover { background: %3; border: 2px solid rgba(255,255,255,0.35); }
 QFrame#TimelineMarker { background: %3; border-radius: 2px; }
+QToolButton#TrafficLight { border: none; border-radius: 6px; }
+QToolButton#TrafficLight[role="close"] { background: #FF5F57; }
+QToolButton#TrafficLight[role="minimize"] { background: #FEBC2E; }
+QToolButton#TrafficLight[role="zoom"] { background: #28C840; }
+QLabel#WindowTitle { font-weight: 600; }
 QToolButton#GlassButton[error="true"] { background: rgba(255,59,48,0.28); }
 QFrame#GlassSeparator { background: %8; border: none; }
 #GlassContent, #GlassContent QWidget { background: transparent; }
@@ -134,7 +141,7 @@ void applyTheme()
     view->SetUnsigned("BackgroundColor3", t.dark ? 0x111214FFUL : 0xD5D9E0FFUL);
     view->SetBool("Gradient", true);
     view->SetBool("ShowNaviCube", false);  // eigener ViewCube (Shell/ViewCube)
-    view->SetInt("AntiAliasing", 4);       // MSAA 8x: glatte Kanten
+    view->SetInt("AntiAliasing", 3);       // MSAA 4x: glatte Kanten (8x lässt Coin auf Intel/Mesa Flächen verlieren)
     view->SetUnsigned("SelectionColor", t.dark ? 0x0A84FFFFUL : 0x007AFFFFUL);
     view->SetUnsigned("HighlightColor", t.dark ? 0x64B5FFFFUL : 0x66AFFFFFUL);
     view->SetUnsigned("DefaultShapeColor", t.dark ? 0x9EA3ADFFUL : 0xC8CCD4FFUL);
@@ -337,6 +344,125 @@ protected:
     }
 };
 
+/// Rahmenloses Fenster: Knöpfe wie macOS + Dokumentname; Ziehen verschiebt, Doppelklick maximiert
+class TitleBar: public QWidget
+{
+public:
+    TitleBar()
+    {
+        setObjectName(QStringLiteral("GlassContent"));
+        auto lay = new QHBoxLayout(this);
+        lay->setContentsMargins(14, 0, 16, 0);
+        lay->setSpacing(8);
+        auto light = [&](const char* role, std::function<void()> action) {
+            auto btn = new QToolButton;
+            btn->setObjectName(QStringLiteral("TrafficLight"));
+            btn->setProperty("role", QString::fromLatin1(role));
+            btn->setFixedSize(12, 12);
+            btn->setCursor(Qt::ArrowCursor);
+            QObject::connect(btn, &QToolButton::clicked, btn, [action] { QTimer::singleShot(0, action); });
+            lay->addWidget(btn);
+        };
+        light("close", [] { getMainWindow()->close(); });
+        light("minimize", [] { getMainWindow()->showMinimized(); });
+        light("zoom", toggleMaximized);
+        lay->addSpacing(8);
+        title = new QLabel;
+        title->setObjectName(QStringLiteral("WindowTitle"));
+        lay->addWidget(title);
+        lay->addStretch();
+        setFixedHeight(50);
+    }
+
+    void setTitle(const QString& text)
+    {
+        title->setText(text);
+        adjustSize();
+    }
+
+    static void toggleMaximized()
+    {
+        MainWindow* mw = getMainWindow();
+        mw->isMaximized() ? mw->showNormal() : mw->showMaximized();
+    }
+
+protected:
+    void mousePressEvent(QMouseEvent* event) override
+    {
+        if (event->button() == Qt::LeftButton && getMainWindow()->windowHandle()) {
+            getMainWindow()->windowHandle()->startSystemMove();
+        }
+    }
+    void mouseDoubleClickEvent(QMouseEvent*) override
+    {
+        QTimer::singleShot(0, toggleMaximized);
+    }
+
+private:
+    QLabel* title;
+};
+
+/// Größe ändern an den Rändern des rahmenlosen Fensters
+class EdgeResizer: public QObject
+{
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (event->type() != QEvent::MouseMove && event->type() != QEvent::MouseButtonPress) {
+            return false;
+        }
+        MainWindow* mw = getMainWindow();
+        auto widget = qobject_cast<QWidget*>(obj);
+        if (!mw->isVisible() || mw->isMaximized() || !widget || widget->window() != mw || !mw->windowHandle()) {
+            return false;
+        }
+        auto me = static_cast<QMouseEvent*>(event);
+        const QPoint p = mw->mapFromGlobal(me->globalPosition().toPoint());
+        constexpr int border = 6;
+        Qt::Edges edges;
+        if (p.x() < border) {
+            edges |= Qt::LeftEdge;
+        }
+        if (p.x() > mw->width() - border) {
+            edges |= Qt::RightEdge;
+        }
+        if (p.y() < border) {
+            edges |= Qt::TopEdge;
+        }
+        if (p.y() > mw->height() - border) {
+            edges |= Qt::BottomEdge;
+        }
+        if (event->type() == QEvent::MouseMove && me->buttons() == Qt::NoButton) {
+            const bool diagonal = (edges & (Qt::LeftEdge | Qt::RightEdge)) && (edges & (Qt::TopEdge | Qt::BottomEdge));
+            const bool falling = edges == (Qt::LeftEdge | Qt::TopEdge) || edges == (Qt::RightEdge | Qt::BottomEdge);
+            const Qt::CursorShape shape = !edges ? Qt::ArrowCursor
+                : diagonal ? (falling ? Qt::SizeFDiagCursor : Qt::SizeBDiagCursor)
+                : (edges & (Qt::LeftEdge | Qt::RightEdge)) ? Qt::SizeHorCursor
+                                                           : Qt::SizeVerCursor;
+            if (edges && !overriding) {
+                QApplication::setOverrideCursor(shape);
+                overriding = true;
+            }
+            else if (edges && overriding) {
+                QApplication::changeOverrideCursor(shape);
+            }
+            else if (!edges && overriding) {
+                QApplication::restoreOverrideCursor();
+                overriding = false;
+            }
+            return false;
+        }
+        if (event->type() == QEvent::MouseButtonPress && edges && me->button() == Qt::LeftButton) {
+            mw->windowHandle()->startSystemResize(edges);
+            return true;
+        }
+        return false;
+    }
+
+private:
+    bool overriding = false;
+};
+
 /// Skizzen und Design-Features in Dokument-Reihenfolge. Typen per Name, damit die Shell nicht vom Design-Modul abhängt.
 bool isTimelineItem(const App::DocumentObject* obj)
 {
@@ -353,6 +479,7 @@ struct State
     GlassPanel* browser = nullptr;
     GlassPanel* inspector = nullptr;
     GlassPanel* timeline = nullptr;
+    GlassPanel* titleBar = nullptr;
     ViewCube* viewCube = nullptr;
     bool sketchMode = false;
     QGraphicsScene* scene = nullptr;
@@ -361,7 +488,7 @@ struct State
 std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
-    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.inspector, state.timeline}) {
+    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.inspector, state.timeline, state.titleBar}) {
         if (p) {
             all.push_back(p);
         }
@@ -395,6 +522,10 @@ void layout()
     const qreal top = m + bs.height() + m;
     if (state.browser) {
         state.browser->setGeometry(QRectF(m, top, 290, bottom - top));
+    }
+    if (state.titleBar) {
+        const QSizeF ts = state.titleBar->content()->sizeHint();
+        state.titleBar->setGeometry(QRectF(m, m, ts.width(), bs.height()));
     }
     if (state.viewCube) {
         state.viewCube->setPos(r.width() - state.viewCube->boundingRect().width() - m, m);
@@ -608,6 +739,10 @@ void rebuildTimeline()
         markerLine();
     }
     box->setProperty("count", count);
+    if (state.titleBar) {
+        static_cast<TitleBar*>(state.titleBar->content())
+            ->setTitle(doc ? QString::fromUtf8(doc->Label.getValue()) : QStringLiteral("MyCAD"));
+    }
     box->adjustSize();
     layout();
 }
@@ -714,6 +849,18 @@ void Gui::Shell::install()
                  "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock", "", "Sketcher_LeaveSketch"}),
         24);
     state.viewCube = new ViewCube;
+    // Rahmenloses Fenster wie eine macOS-App (abschaltbar: MainWindow/MyCADFrameless = false)
+    auto mainGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow");
+    if (mainGrp->GetBool("MyCADFrameless", true)) {
+        MainWindow* mw = getMainWindow();
+        const bool wasVisible = mw->isVisible();
+        mw->setWindowFlag(Qt::FramelessWindowHint, true);
+        if (wasVisible) {
+            mw->show();
+        }
+        state.titleBar = new GlassPanel(new TitleBar, 24);
+        qApp->installEventFilter(new EdgeResizer);
+    }
     {
         auto box = content();
         auto lay = new QHBoxLayout(box);
