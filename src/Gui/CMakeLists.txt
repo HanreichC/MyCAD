@@ -401,6 +401,7 @@ qt_find_and_add_translation(QM_SRCS "Language/FreeCAD_*.ts"
 qt_create_resource_file_prefix(${FreeCAD_TR_QRC} ${QM_SRCS})
 set(Gui_RES_SRCS
     Icons/resource.qrc
+    Shell/icons/icons.qrc
     Language/translation.qrc
     ${FreeCAD_TR_QRC}
 )

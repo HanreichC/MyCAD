@@ -32,7 +32,9 @@
 #include <QCursor>
 #include <QMouseEvent>
 #include <QMenuBar>
+#include <QFile>
 #include <QPainter>
+#include <QSvgRenderer>
 #include <QPointer>
 #include <QStatusBar>
 #include <QStyleHints>
@@ -75,6 +77,8 @@ QToolButton#GlassButton { border: none; border-radius: 10px; background: transpa
 QToolButton#GlassButton:hover { background: %4; }
 QToolButton#GlassButton:pressed { background: %5; }
 QToolButton#GlassButton:disabled { background: transparent; }
+#GlassContent QToolButton#GlassProminent { border: none; border-radius: 15px; background: %3; color: white; font-weight: 600; padding: 0 14px; }
+#GlassContent QToolButton#GlassProminent:hover { background: %3; border: 2px solid rgba(255,255,255,0.35); }
 QToolButton#GlassButton[error="true"] { background: rgba(255,59,48,0.28); }
 QFrame#GlassSeparator { background: %8; border: none; }
 #GlassContent, #GlassContent QWidget { background: transparent; }
@@ -130,6 +134,21 @@ void applyTheme()
     view->SetUnsigned("DefaultShapeColor", t.dark ? 0x9EA3ADFFUL : 0xC8CCD4FFUL);
     view->SetUnsigned("DefaultShapeLineColor", t.dark ? 0x2A2D33FFUL : 0x6B717CFFUL);
     view->SetInt("DefaultShapeLineWidth", 1);
+
+    // ViewCube: hell/dunkel wie die Glass-Panels, runde Kanten, Inter, Akzentfarbe beim Überfahren
+    auto cube = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/NaviCube");
+    cube->SetInt("CubeSize", 112);
+    cube->SetFloat("ChamferSize", 0.1);
+    cube->SetFloat("BorderWidth", 0.6);
+    cube->SetFloat("FontZoom", 0.34);
+    cube->SetASCII("FontString", "Inter");
+    cube->SetInt("FontWeight", 600);
+    cube->SetBool("ShowCS", false);
+    cube->SetInt("InactiveOpacity", 90);
+    cube->SetInt("OffsetY", 6);
+    cube->SetUnsigned("BaseColor", t.dark ? 0x3A3B40F0UL : 0xF7F8FAF0UL);
+    cube->SetUnsigned("EmphaseColor", t.dark ? 0xEBEBF0FFUL : 0x3C3C43FFUL);
+    cube->SetUnsigned("HiliteColor", t.dark ? 0x0A84FFFFUL : 0x007AFFFFUL);
 }
 
 /// Bunte FreeCAD-Icons neutral einfärben, Schattierung bleibt erhalten.
@@ -162,6 +181,37 @@ QIcon neutralIcon(const QIcon& icon, bool dark)
     return out;
 }
 
+/// Eigenes MyCAD-Icon (src/Gui/Shell/icons, tools/make_icons.py) in der Textfarbe des Themes, sonst leer
+QIcon designIcon(const QString& name)
+{
+    QFile file(QStringLiteral(":/mycad/icons/%1.svg").arg(name));
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    const QByteArray svg = file.readAll().replace("currentColor", theme().text.toLatin1());
+    QSvgRenderer renderer(svg);
+    QIcon icon;
+    for (int s : {22, 44}) {
+        for (bool faded : {false, true}) {
+            QImage img(s, s, QImage::Format_ARGB32_Premultiplied);
+            img.fill(Qt::transparent);
+            QPainter p(&img);
+            p.setOpacity(faded ? 0.3 : 1.0);  // deaktiviert: blass
+            renderer.render(&p);
+            p.end();
+            icon.addPixmap(QPixmap::fromImage(img), faded ? QIcon::Disabled : QIcon::Normal);
+        }
+    }
+    return icon;
+}
+
+/// Icon für einen Befehl: eigenes MyCAD-Icon, sonst das FreeCAD-Icon neutral eingefärbt
+QIcon commandIcon(const QString& name, const QIcon& fallback)
+{
+    QIcon icon = designIcon(name);
+    return icon.isNull() ? neutralIcon(fallback, theme().dark) : icon;
+}
+
 QWidget* content()
 {
     auto w = new QWidget;
@@ -169,12 +219,25 @@ QWidget* content()
     return w;
 }
 
+/// QAction eines Befehls; hängt sie ans Hauptfenster, damit ihr Tastenkürzel auch ohne Menü/Toolbar wirkt
+QAction* commandAction(const char* name)
+{
+    static QWidget sink;  // Command::addTo legt die QAction erst beim ersten Einfügen an
+    Command* cmd = Application::Instance->commandManager().getCommandByName(name);
+    if (!cmd) {
+        return nullptr;
+    }
+    if (!cmd->getAction()) {
+        cmd->addTo(&sink);
+    }
+    QAction* action = cmd->getAction()->action();
+    getMainWindow()->addAction(action);
+    return action;
+}
+
 /// Kapsel-Toolbar mit Befehls-Buttons. "" = Trenner.
 QWidget* toolbar(const std::vector<const char*>& commands)
 {
-    static QWidget sink;  // Command::addTo legt die QAction erst beim ersten Einfügen an
-    auto& mgr = Application::Instance->commandManager();
-    const bool dark = theme().dark;
 
     auto w = content();
     auto lay = new QHBoxLayout(w);
@@ -190,18 +253,26 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             lay->addSpacing(6);
             continue;
         }
-        Command* cmd = mgr.getCommandByName(name);
-        if (!cmd) {
+        QAction* action = commandAction(name);
+        if (!action) {
             continue;
         }
-        if (!cmd->getAction()) {
-            cmd->addTo(&sink);
-        }
-        QAction* action = cmd->getAction()->action();
         auto btn = new QToolButton;
         btn->setObjectName(QStringLiteral("GlassButton"));
         btn->setProperty("command", QString::fromLatin1(name));
-        btn->setIcon(neutralIcon(action->icon(), dark));
+        if (std::string(name) == "Sketcher_LeaveSketch") {  // wie in Fusion: deutlicher Abschluss-Knopf
+            btn->setObjectName(QStringLiteral("GlassProminent"));
+            btn->setText(QStringLiteral("Finish Sketch"));
+            btn->setToolTip(QStringLiteral("Finish Sketch"));
+            btn->setFixedHeight(30);
+            QObject::connect(btn, &QToolButton::clicked, action, [action] {
+                QTimer::singleShot(0, action, &QAction::trigger);
+            });
+            lay->addSpacing(6);
+            lay->addWidget(btn);
+            continue;
+        }
+        btn->setIcon(commandIcon(QString::fromLatin1(name), action->icon()));
         btn->setIconSize(QSize(22, 22));
         btn->setFixedSize(38, 38);
         btn->setToolTip(action->toolTip().isEmpty() ? action->text() : action->toolTip());
@@ -348,7 +419,12 @@ void rebuildTimeline()
         auto vp = gdoc->getViewProvider(obj);
         auto btn = new TimelineButton;
         btn->setObjectName(QStringLiteral("GlassButton"));
-        btn->setIcon(neutralIcon(vp ? vp->getIcon() : QIcon(), theme().dark));
+        // Timeline-Icon = Icon des Werkzeugs, das den Eintrag erzeugt hat ("Design::Extrude" -> "Design_Extrude")
+        QString type = QString::fromLatin1(obj->getTypeId().getName()).replace(QStringLiteral("::"), QStringLiteral("_"));
+        if (type.startsWith(QLatin1String("Sketcher_"))) {
+            type = QStringLiteral("Design_CreateSketch");
+        }
+        btn->setIcon(commandIcon(type, vp ? vp->getIcon() : QIcon()));
         btn->setIconSize(QSize(22, 22));
         btn->setFixedSize(36, 36);
         btn->setToolTip(QString::fromUtf8(obj->Label.getValue())
@@ -531,6 +607,14 @@ void Gui::Shell::install()
     }
     if (QWidget* tasks = takeDockWindow("Std_TaskView")) {
         state.inspector = new GlassPanel(tasks, 20);
+    }
+
+    // Entf löscht Timeline-Einträge mit neu verbundener Kette (Design_Delete fällt sonst auf Std_Delete zurück)
+    if (QAction* del = commandAction("Design_Delete")) {
+        if (QAction* std = commandAction("Std_Delete")) {
+            std->setShortcut(QKeySequence());
+        }
+        del->setShortcut(QKeySequence::Delete);
     }
 
     hideChrome();

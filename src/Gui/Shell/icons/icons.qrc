@@ -1,0 +1,47 @@
+<RCC>
+    <qresource prefix="/mycad/icons">
+        <file>Std_New.svg</file>
+        <file>Std_Open.svg</file>
+        <file>Std_Save.svg</file>
+        <file>Design_Export.svg</file>
+        <file>Std_Undo.svg</file>
+        <file>Std_Redo.svg</file>
+        <file>Std_ViewFitAll.svg</file>
+        <file>Design_CreateSketch.svg</file>
+        <file>Design_Extrude.svg</file>
+        <file>Design_Revolve.svg</file>
+        <file>Design_Hole.svg</file>
+        <file>Design_Fillet.svg</file>
+        <file>Design_Chamfer.svg</file>
+        <file>Design_Shell.svg</file>
+        <file>Design_Pattern.svg</file>
+        <file>Design_Mirror.svg</file>
+        <file>Design_Combine.svg</file>
+        <file>Design_Move.svg</file>
+        <file>Design_OffsetPlane.svg</file>
+        <file>Sketcher_CreateLine.svg</file>
+        <file>Sketcher_CreatePolyline.svg</file>
+        <file>Sketcher_CreateRectangle.svg</file>
+        <file>Sketcher_CreateCircle.svg</file>
+        <file>Sketcher_CreateArc.svg</file>
+        <file>Sketcher_CreateSlot.svg</file>
+        <file>Sketcher_CompCreateRegularPolygon.svg</file>
+        <file>Sketcher_CreateBSpline.svg</file>
+        <file>Sketcher_CreatePoint.svg</file>
+        <file>Sketcher_CreateFillet.svg</file>
+        <file>Sketcher_Trimming.svg</file>
+        <file>Sketcher_Extend.svg</file>
+        <file>Sketcher_Split.svg</file>
+        <file>Sketcher_ToggleConstruction.svg</file>
+        <file>Sketcher_Dimension.svg</file>
+        <file>Sketcher_ConstrainCoincidentUnified.svg</file>
+        <file>Sketcher_ConstrainHorizontal.svg</file>
+        <file>Sketcher_ConstrainVertical.svg</file>
+        <file>Sketcher_ConstrainParallel.svg</file>
+        <file>Sketcher_ConstrainPerpendicular.svg</file>
+        <file>Sketcher_ConstrainTangent.svg</file>
+        <file>Sketcher_ConstrainEqual.svg</file>
+        <file>Sketcher_ConstrainSymmetric.svg</file>
+        <file>Sketcher_ConstrainBlock.svg</file>
+    </qresource>
+</RCC>
