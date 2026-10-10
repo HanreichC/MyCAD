@@ -257,6 +257,14 @@ Ziel: Die leere MyCAD-Oberfläche steht komplett, mit Dokument laden/speichern u
 - [ ] Viewport-Look v1: Beleuchtung, Hintergrund, Kanten, Auswahl-Glow, Grid
 
 ### Phase 4: Fusion-Datenmodell (`Mod/Design`)
+
+> **Stand 2026-10-10 (vorgezogen vor Phase 3):** `Mod/Design` steht und ist in der Oberfläche verdrahtet.
+> Root-Komponente (App::Part) mit Origin/Bodies/Sketches, Profile (alle geschlossenen Regionen einer Skizze),
+> Body mit Tip, globale Timeline-Leiste (Klick wählt, Doppelklick bearbeitet, Rechtsklick Suppress/Delete).
+> Features: Extrude, Revolve, Fillet, Chamfer, Shell, Combine, Move, Mirror (Bodies). Export 3MF/STL/STEP.
+> Skizzen auf Körperflächen und Werkzeug-Bodies hängen am Timeline-Zustand (Feature), nicht am Body.
+> Offen: Pattern, Hole, Press Pull, Mirror/Pattern von Features, New Component, Konstruktionsebenen,
+> Rollback-Marker, topologische Benennung der Profile/Flächen (derzeit Index bzw. geometrischer Abgleich).
 Ziel: Mehrere Komponenten und Bodies in einer Datei, globale Timeline, erste Features.
 - [ ] `Component`, `Body`, `Feature`-Basis, `Timeline` inkl. Rollback-Marker, Suppress, Reorder, Gruppen
 - [ ] Algorithmen aus PartDesign in eine Bibliothek auslagern (`Design/Algo`)

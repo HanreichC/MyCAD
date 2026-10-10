@@ -503,7 +503,7 @@ void Gui::Shell::install()
     Application::Instance->activateWorkbench("DesignWorkbench");
 
     state.modelBar = new GlassPanel(
-        toolbar({"Std_New", "Std_Open", "Std_Save", "", "Std_Undo", "Std_Redo", "",
+        toolbar({"Std_New", "Std_Open", "Std_Save", "Design_Export", "", "Std_Undo", "Std_Redo", "",
                  "Design_CreateSketch", "Design_Extrude", "Design_Revolve", "",
                  "Design_Fillet", "Design_Chamfer", "Design_Shell", "", "Design_Combine", "Design_Move",
                  "Design_Mirror", "", "Std_ViewFitAll"}),

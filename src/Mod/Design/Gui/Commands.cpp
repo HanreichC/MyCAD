@@ -9,6 +9,7 @@
 #include <Gui/Command.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
+#include <Base/Interpreter.h>
 #include <Gui/MainWindow.h>
 #include <Gui/Selection/Selection.h>
 #include <Gui/ViewProviderCoordinateSystem.h>
@@ -24,6 +25,9 @@
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
 
+#include <QDir>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QMessageBox>
 #include <QTimer>
 
@@ -452,6 +456,63 @@ void deleteSelected(App::Document* doc)
     doc->commitTransaction();
 }
 
+/// Gewählte Bodies exportieren, ohne Auswahl alle sichtbaren. 3MF/STL über Mesh, STEP über Import.
+void exportBodies(App::Document* doc)
+{
+    std::vector<App::DocumentObject*> bodies;
+    for (auto b : selectedBodies()) {
+        bodies.push_back(b);
+    }
+    if (bodies.empty()) {
+        for (auto obj : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
+            if (obj->Visibility.getValue() && !static_cast<Design::Body*>(obj)->Shape.getShape().isNull()) {
+                bodies.push_back(obj);
+            }
+        }
+    }
+    if (bodies.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Export"), QStringLiteral("There is no body to export."));
+        return;
+    }
+
+    // Die eingetippte Endung bestimmt das Format; nur ohne Endung kommt die des gewählten Filters dazu
+    const QString start = QDir::home().filePath(QString::fromUtf8(doc->Label.getValue()));
+    QString filter;
+    QString file = QFileDialog::getSaveFileName(
+        Gui::getMainWindow(), QStringLiteral("Export"), start,
+        QStringLiteral("3MF for 3D printing (*.3mf);;STL (*.stl);;STEP (*.step *.stp)"), &filter
+    );
+    if (file.isEmpty()) {
+        return;
+    }
+    static const QStringList known = {QStringLiteral("3mf"), QStringLiteral("stl"), QStringLiteral("step"), QStringLiteral("stp")};
+    if (!known.contains(QFileInfo(file).suffix().toLower())) {
+        file += filter.startsWith(QLatin1String("STL")) ? QStringLiteral(".stl")
+            : filter.startsWith(QLatin1String("STEP")) ? QStringLiteral(".step")
+                                                        : QStringLiteral(".3mf");
+    }
+
+    // Pfad als Python-String: nur Backslash und Apostroph escapen
+    QString path = file;
+    path.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('\''), QStringLiteral("\\'"));
+    std::string objs = "[";
+    for (auto b : bodies) {
+        objs += "App.getDocument('" + std::string(doc->getName()) + "').getObject('" + b->getNameInDocument() + "'),";
+    }
+    objs += "]";
+    const QString suffix = QFileInfo(file).suffix().toLower();
+    const std::string module = (suffix == QLatin1String("step") || suffix == QLatin1String("stp")) ? "Import" : "Mesh";
+    try {
+        Base::Interpreter().runString(
+            ("import FreeCAD as App, " + module + "\n" + module + ".export(" + objs + ", '" + path.toStdString() + "')").c_str()
+        );
+        Gui::getMainWindow()->showMessage(QStringLiteral("Exported %1 bodies to %2").arg(bodies.size()).arg(file));
+    }
+    catch (const Base::Exception& e) {
+        QMessageBox::warning(Gui::getMainWindow(), QStringLiteral("Export"), QString::fromUtf8(e.what()));
+    }
+}
+
 }  // namespace
 
 void CreateDesignCommands()
@@ -485,6 +546,8 @@ void CreateDesignCommands()
                                      "PartDesign_Mirrored", "", startMirror));
     mgr.addCommand(new DesignCommand("Design_Delete", "Delete", "Delete: remove features or sketches from the timeline",
                                      "edit-delete", "", deleteSelected));
+    mgr.addCommand(new DesignCommand("Design_Export", "Export", "Export bodies as 3MF, STL or STEP",
+                                     "document-save-as", "", exportBodies));
     mgr.addCommand(new DesignCommand("Design_Chamfer", "Chamfer", "Chamfer: select edges or faces of a body",
                                      "PartDesign_Chamfer", "", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Chamfer", "Chamfer");
