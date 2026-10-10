@@ -9,6 +9,8 @@
 #include <Mod/Part/App/TopoShapeOpCode.h>
 
 #include <BRepAlgoAPI_Splitter.hxx>
+#include <BRepAdaptor_Surface.hxx>
+#include <gp_Pln.hxx>
 #include <BRep_Builder.hxx>
 #include <TopoDS_Compound.hxx>
 #include <BRepBndLib.hxx>
@@ -899,4 +901,55 @@ App::DocumentObjectExecReturn* Hole::compute()
         return new App::DocumentObjectExecReturn(error);
     }
     return applyTool(tool);
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::PressPull, Design::DressUp)
+
+PressPull::PressPull()
+{
+    ADD_PROPERTY_TYPE(Distance, (5.0), "PressPull", App::Prop_None, "Positive pulls out, negative pushes in");
+    Size.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* PressPull::compute()
+{
+    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+        return new App::DocumentObjectExecReturn("Select faces of one body");
+    }
+    const double d = Distance.getValue();
+    if (std::abs(d) < Precision::Confusion()) {
+        return new App::DocumentObjectExecReturn("Distance must not be zero");
+    }
+    const Part::TopoShape shape = baseShape(0);
+    std::vector<Part::TopoShape> prisms;
+    for (const auto& face : elements(shape, TopAbs_FACE)) {
+        BRepAdaptor_Surface surf(TopoDS::Face(face.getShape()));
+        if (surf.GetType() != GeomAbs_Plane) {
+            return new App::DocumentObjectExecReturn("Press Pull supports planar faces");
+        }
+        gp_Dir n = surf.Plane().Axis().Direction();  // nach außen zeigende Normale
+        if (face.getShape().Orientation() == TopAbs_REVERSED) {
+            n.Reverse();
+        }
+        prisms.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
+                             .makeElementPrism(face, gp_Vec(n) * d));
+    }
+    if (prisms.empty()) {
+        return new App::DocumentObjectExecReturn("Select one or more faces");
+    }
+    const Part::TopoShape tool = fuseAll(prisms, getDocument()->getStringHasher());
+    Part::TopoShape res(0, getDocument()->getStringHasher());
+    if (d > 0) {
+        res.makeElementFuse({shape, tool});
+    }
+    else {
+        res.makeElementCut({shape, tool});
+    }
+    if (res.isNull() || res.countSubShapes(TopAbs_SOLID) == 0) {
+        return new App::DocumentObjectExecReturn("Result would be empty");
+    }
+    setResults({res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched)});
+    return StdReturn;
 }

@@ -738,6 +738,10 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_OffsetPlane", "Offset Plane",
                                      "Offset Plane: select a plane or planar face", "PartDesign_Plane", "",
                                      startOffsetPlane));
+    mgr.addCommand(new DesignCommand("Design_PressPull", "Press Pull", "Press Pull: select planar faces of a body",
+                                     "Part_Extrude", "Q", [](App::Document* doc) {
+                                         startDressUp(doc, "Design::PressPull", "PressPull");
+                                     }));
     mgr.addCommand(new DesignCommand("Design_Chamfer", "Chamfer", "Chamfer: select edges or faces of a body",
                                      "PartDesign_Chamfer", "", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Chamfer", "Chamfer");

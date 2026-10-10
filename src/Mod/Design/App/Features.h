@@ -275,4 +275,15 @@ public:
     App::DocumentObjectExecReturn* compute() override;
 };
 
+/// Ebene Flächen herausziehen (positiv) oder hineindrücken (negativ)
+class DesignExport PressPull: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::PressPull);
+
+public:
+    PressPull();
+    App::PropertyDistance Distance;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
 }  // namespace Design

@@ -82,6 +82,9 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::Hole>()) {
         return QStringLiteral("Hole");
     }
+    if (f->isDerivedFrom<Design::PressPull>()) {
+        return QStringLiteral("Press Pull");
+    }
     return QStringLiteral("Extrude");
 }
 
@@ -138,7 +141,12 @@ public:
             form->addRow(QStringLiteral("Angle"), distance);
             QObject::connect(axis, &QComboBox::currentIndexChanged, [this] { apply(); });
         }
-        if (dressUp) {
+        if (auto pull = freecad_cast<Design::PressPull*>(feature)) {
+            form->addRow(QStringLiteral("Faces"), new QLabel(QStringLiteral("%1 selected").arg(pull->Edges.getSize())));
+            distance = quantityBox(Base::Unit::Length, pull->Distance.getValue());
+            form->addRow(QStringLiteral("Distance"), distance);
+        }
+        else if (dressUp) {
             auto edges = new QLabel(QStringLiteral("%1 selected").arg(dressUp->Edges.getSize()));
             distance = quantityBox(Base::Unit::Length, dressUp->Size.getValue());
             form->addRow(shell ? QStringLiteral("Open faces") : QStringLiteral("Edges"), edges);
@@ -464,7 +472,10 @@ private:
             revolve->Angle.setValue(std::abs(distance->value().getValue()));
             revolve->Reversed.setValue(flip->isChecked() != (distance->value().getValue() < 0));
         }
-        if (dressUp) {
+        if (auto pull = freecad_cast<Design::PressPull*>(feature)) {
+            pull->Distance.setValue(distance->value().getValue());
+        }
+        else if (dressUp) {
             dressUp->Size.setValue(std::abs(distance->value().getValue()));
         }
         if (shell) {
@@ -611,6 +622,9 @@ QIcon ViewProviderFeature::getIcon() const
     }
     else if (obj->isDerivedFrom<Design::Hole>()) {
         icon = "PartDesign_Hole";
+    }
+    else if (obj->isDerivedFrom<Design::PressPull>()) {
+        icon = "Part_Extrude";
     }
     return Gui::BitmapFactory().pixmap(icon);
 }
