@@ -82,7 +82,7 @@ struct NotificationAreaP
     /// Control of confirmation mechanism (for Critical Messages)
     bool requireConfirmationCriticalMessageDuringRestoring = true;
     /// Width of the non-intrusive notification
-    int notificationWidth = 800;
+    int notificationWidth = 480;
     /// Any open non-intrusive notifications will disappear when another window is activated
     bool hideNonIntrusiveNotificationsWhenWindowDeactivated = true;
     /// Prevent non-intrusive notifications from appearing when the FreeCAD Window is not the active
@@ -152,10 +152,10 @@ private:
     ResourceManager()
     {
         // NOLINTBEGIN
-        error = BitmapFactory().pixmapFromSvg(":/icons/edit_Cancel.svg", QSize(16, 16));
-        warning = BitmapFactory().pixmapFromSvg(":/icons/Warning.svg", QSize(16, 16));
-        critical = BitmapFactory().pixmapFromSvg(":/icons/critical-info.svg", QSize(16, 16));
-        info = BitmapFactory().pixmapFromSvg(":/icons/info.svg", QSize(16, 16));
+        error = BitmapFactory().pixmapFromSvg(":/mycad/icons/Notify_Error.svg", QSize(16, 16));
+        warning = BitmapFactory().pixmapFromSvg(":/mycad/icons/Notify_Warning.svg", QSize(16, 16));
+        critical = BitmapFactory().pixmapFromSvg(":/mycad/icons/Notify_Error.svg", QSize(16, 16));
+        info = BitmapFactory().pixmapFromSvg(":/mycad/icons/Notify_Info.svg", QSize(16, 16));
         // NOLINTEND
         notificationArea = QIcon(QStringLiteral(":/icons/InTray.svg"));
         notificationAreaMissedNotifications = QIcon(
@@ -295,6 +295,13 @@ void NotificationAreaObserver::sendLog(
     }
 
     if (violatesBasicPolicy && !meetsDerogationCriteria) {
+        return;
+    }
+
+    // MyCAD: nur Fehler und für Benutzer formulierte (übersetzte) Warnungen einblenden;
+    // Solver-Interna wie "Invalid solution from DogLeg solver" bleiben im Report
+    if (level == Base::LogStyle::Warning && content != Base::ContentType::Translated
+        && !notificationArea->areDeveloperWarningsActive()) {
         return;
     }
 
@@ -827,7 +834,7 @@ NotificationArea::ParameterObserver::ParameterObserver(NotificationArea* notific
          }},
         {"NotificiationWidth",
          [this](const std::string& string) {
-             auto width = hGrp->GetInt(string.c_str(), 800);
+             auto width = hGrp->GetInt(string.c_str(), 480);
              if (width < 300) {
                  width = 300;
              }
@@ -1171,29 +1178,17 @@ void NotificationArea::showInNotificationArea()
         // There is space for at least one more notification
         // We update the message with the most recent up to maxOpenNotifications
 
-        QString msgw
-            = QStringLiteral(
-                  "<style>p { margin: 0 0 0 0 } td { padding: 0 15px }</style>                     \
-        <p style='white-space:normal'>                                                                                      \
-        <table>                                                                                                             \
-        <tr>                                                                                                               \
-        <th><small>%1</small></th>                                                                                        \
-        <th><small>%2</small></th>                                                                                        \
-        <th><small>%3</small></th>                                                                                        \
-        </tr>"
-            )
-                  .arg(QObject::tr("Type"), QObject::tr("Notifier"), QObject::tr("Message"));
+        // MyCAD: schlichte Liste (Symbol + Meldung) statt Tabelle mit Kopfzeile und Notifier-Spalte
+        QString msgw = QStringLiteral(
+            "<style>td { padding: 3px 6px; vertical-align: middle }</style><table cellspacing='0'>"
+        );
 
         auto currentlynotifying = na->getCurrentlyNotifyingCount();
 
         if (currentlynotifying > pImp->maxOpenNotifications) {
             msgw += QStringLiteral(
-                        "                                                                                   \
-            <tr>                                                                                                            \
-            <td align='left'><img width=\"16\" height=\"16\" src=':/icons/Warning.svg'></td>                                \
-            <td align='left'>FreeCAD</td>                                                                                   \
-            <td align='left'>%1</td>                                                                                        \
-            </tr>"
+                        "<tr><td><img width='18' height='18' src=':/mycad/icons/Notify_Warning.svg'></td>"
+                        "<td>%1</td></tr>"
             )
                         .arg(
                             QObject::tr(
@@ -1214,30 +1209,25 @@ void NotificationArea::showInNotificationArea()
 
                 QString iconstr;
                 if (item->isType(Base::LogStyle::Error)) {
-                    iconstr = QStringLiteral(":/icons/edit_Cancel.svg");
+                    iconstr = QStringLiteral(":/mycad/icons/Notify_Error.svg");
                 }
                 else if (item->isType(Base::LogStyle::Warning)) {
-                    iconstr = QStringLiteral(":/icons/Warning.svg");
+                    iconstr = QStringLiteral(":/mycad/icons/Notify_Warning.svg");
                 }
                 else if (item->isType(Base::LogStyle::Critical)) {
-                    iconstr = QStringLiteral(":/icons/critical-info.svg");
+                    iconstr = QStringLiteral(":/mycad/icons/Notify_Error.svg");
                 }
                 else {
-                    iconstr = QStringLiteral(":/icons/info.svg");
+                    iconstr = QStringLiteral(":/mycad/icons/Notify_Info.svg");
                 }
 
                 QString tmpmessage
                     = convertFromPlainText(item->getMessage(), Qt::WhiteSpaceMode::WhiteSpaceNormal);
 
                 msgw += QStringLiteral(
-                            "                                                                                   \
-                <tr>                                                                                                            \
-                <td align='left'><img width=\"16\" height=\"16\" src='%1'></td>                                                 \
-                <td align='left'>%2</td>                                                                                        \
-                <td align='left'>%3</td>                                                                                        \
-                </tr>"
+                            "<tr><td><img width='18' height='18' src='%1'></td><td>%2</td></tr>"
                 )
-                            .arg(iconstr, item->getNotifier(), tmpmessage);
+                            .arg(iconstr, tmpmessage);
 
                 // start a timer for each of these notifications that was not previously shown
                 if (!item->isShown()) {
@@ -1279,7 +1269,7 @@ void NotificationArea::showInNotificationArea()
             i++;
         }
 
-        msgw += QStringLiteral("</table></p>");
+        msgw += QStringLiteral("</table>");
 
         NotificationBox::Options options = NotificationBox::Options::RestrictAreaToReference;
 
@@ -1291,8 +1281,10 @@ void NotificationArea::showInNotificationArea()
             options = options | NotificationBox::Options::HideIfReferenceWidgetDeactivated;
         }
 
+        // MyCAD: oben rechts unter dem ViewCube (die Statusleiste mit diesem Knopf ist ausgeblendet)
+        QWidget* mw = getMainWindow();
         bool isshown = NotificationBox::showText(
-            this->mapToGlobal(QPoint()),
+            mw->mapToGlobal(QPoint(mw->width() - pImp->notificationWidth - 30, 160)),
             msgw,
             getMainWindow(),
             static_cast<int>(pImp->notificationExpirationTime),

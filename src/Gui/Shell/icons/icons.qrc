@@ -24,6 +24,9 @@
         <file>Badge_Error.svg</file>
         <file>Check.svg</file>
         <file>Badge_Dot.svg</file>
+        <file>Notify_Error.svg</file>
+        <file>Notify_Warning.svg</file>
+        <file>Notify_Info.svg</file>
         <file>Timeline_Start.svg</file>
         <file>Timeline_Back.svg</file>
         <file>Timeline_Forward.svg</file>

@@ -141,6 +141,7 @@ QMessageBox QPushButton:default, QDialog QPushButton:default { background: %3; c
 QCheckBox::indicator { width: 16px; height: 16px; border-radius: 5px; border: 1px solid %7; background: %6; }
 QCheckBox::indicator:checked { background: %3; border: none; image: url(:/mycad/icons/Check.svg); }
 QToolTip { background: %6; color: %1; border: 1px solid %7; border-radius: 6px; padding: 4px 8px; }
+Gui--NotificationLabel { background: %9; color: %1; border: 1px solid %7; border-radius: 12px; padding: 8px 10px; }
 )")
         .arg(t.text, t.secondary, t.accent, t.hover, t.pressed, t.field, t.fieldBorder, t.separator)
         .arg(t.dark ? QStringLiteral("#2C2C2E") : QStringLiteral("#FBFBFD"));
@@ -521,6 +522,9 @@ protected:
             if (auto menu = qobject_cast<QMenu*>(obj)) {
                 menu->setAttribute(Qt::WA_TranslucentBackground);
                 menu->setWindowFlags(menu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+            }
+            else if (obj->inherits("Gui::NotificationLabel")) {  // Fehlermeldungen: runde Ecken statt gelbem Tooltip
+                static_cast<QWidget*>(obj)->setAttribute(Qt::WA_TranslucentBackground);
             }
         }
         return false;

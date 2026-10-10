@@ -38,6 +38,10 @@ ICONS = {
     "Badge_Error": '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',
     "Check": '<path d="M6 12.5l4 4 8-9" stroke="#FFFFFF" stroke-width="2.4"/>',
     "Badge_Dot": '<circle cx="12" cy="12" r="6.5" fill="currentColor" stroke="none"/>',
+    # Meldungen (NotificationArea, fest eingefärbt wie die Systemfarben)
+    "Notify_Error": '<circle cx="12" cy="12" r="10" fill="#FF3B30" stroke="none"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#FFFFFF" stroke-width="2.2"/>',
+    "Notify_Warning": '<path d="M12 2.5L22.5 20.5h-21z" fill="#FF9500" stroke="#FF9500" stroke-width="1.5"/><path d="M12 9v5" stroke="#FFFFFF" stroke-width="2.2"/><circle cx="12" cy="17.3" r="1.3" fill="#FFFFFF" stroke="none"/>',
+    "Notify_Info": '<circle cx="12" cy="12" r="10" fill="#007AFF" stroke="none"/><path d="M12 11v6" stroke="#FFFFFF" stroke-width="2.2"/><circle cx="12" cy="7.6" r="1.3" fill="#FFFFFF" stroke="none"/>',
     # Timeline
     "Timeline_Start": '<path d="M7 5v14M17 6l-7 6 7 6"/>',
     "Timeline_Back": '<path d="M15 6l-6 6 6 6"/>',
