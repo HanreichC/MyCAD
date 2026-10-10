@@ -62,6 +62,8 @@ class TreeWidget: public QTreeWidget, public SelectionObserver
     Q_OBJECT
 
 public:
+    /// MyCAD: Dokument-Icon neu aus der BitmapFactory laden (nach dem Ersetzen der FreeCAD-Icons)
+    static void reloadDocumentPixmap();
     explicit TreeWidget(const char* name, QWidget* parent = nullptr);
     ~TreeWidget() override;
 

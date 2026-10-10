@@ -92,6 +92,13 @@ namespace sp = std::placeholders;
 
 std::unique_ptr<QPixmap> TreeWidget::documentPixmap;
 std::unique_ptr<QPixmap> TreeWidget::documentPartialPixmap;
+
+void TreeWidget::reloadDocumentPixmap()
+{
+    documentPixmap = std::make_unique<QPixmap>(Gui::BitmapFactory().pixmap("Document"));
+    QIcon icon(*documentPixmap);
+    documentPartialPixmap = std::make_unique<QPixmap>(icon.pixmap(documentPixmap->size(), QIcon::Disabled));
+}
 static QBrush _TreeItemBackground;
 std::set<TreeWidget*> TreeWidget::Instances;
 static TreeWidget* _LastSelectedTreeWidget;

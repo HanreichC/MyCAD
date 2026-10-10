@@ -7,6 +7,22 @@
         <file>Std_Undo.svg</file>
         <file>Std_Redo.svg</file>
         <file>Std_ViewFitAll.svg</file>
+        <file>Tree_Document.svg</file>
+        <file>Tree_Component.svg</file>
+        <file>Tree_Folder.svg</file>
+        <file>Tree_Origin.svg</file>
+        <file>Tree_Axis.svg</file>
+        <file>Tree_Plane.svg</file>
+        <file>Tree_Point.svg</file>
+        <file>Tree_Body.svg</file>
+        <file>Tree_Sketch.svg</file>
+        <file>Tree_Visible.svg</file>
+        <file>Tree_Invisible.svg</file>
+        <file>Badge_Warning.svg</file>
+        <file>Badge_Info.svg</file>
+        <file>Badge_Error.svg</file>
+        <file>Check.svg</file>
+        <file>Badge_Dot.svg</file>
         <file>Timeline_Start.svg</file>
         <file>Timeline_Back.svg</file>
         <file>Timeline_Forward.svg</file>
@@ -35,6 +51,11 @@
         <file>Sketcher_CreateBSpline.svg</file>
         <file>Sketcher_CreateConic.svg</file>
         <file>Sketcher_CreatePoint.svg</file>
+        <file>Sketcher_CompExternal.svg</file>
+        <file>Palette_LookAt.svg</file>
+        <file>Palette_Section.svg</file>
+        <file>Palette_Grid.svg</file>
+        <file>Palette_Snap.svg</file>
         <file>Sketcher_CreateFillet.svg</file>
         <file>Sketcher_Trimming.svg</file>
         <file>Sketcher_Extend.svg</file>

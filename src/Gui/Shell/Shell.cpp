@@ -7,6 +7,7 @@
 #include <App/Application.h>
 #include <Gui/Action.h>
 #include <Gui/Application.h>
+#include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
@@ -16,6 +17,7 @@
 #include <App/PropertyStandard.h>
 #include <Gui/DockWindowManager.h>
 #include <Gui/MainWindow.h>
+#include <Gui/Tree.h>
 #include <Gui/View3DInventor.h>
 #include <Gui/View3DInventorViewer.h>
 
@@ -32,6 +34,8 @@
 #include <QMenu>
 #include <QCursor>
 #include <QMouseEvent>
+#include <QTreeWidget>
+#include <QSizePolicy>
 #include <QLabel>
 #include <QWindow>
 #include <QMenuBar>
@@ -72,6 +76,8 @@ Theme theme()
             "rgba(0,0,0,0.12)", "rgba(255,255,255,0.65)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.10)"};
 }
 
+void overrideFreeCadIcons(const Theme& t);
+
 QString styleSheet(const Theme& t)
 {
     return QStringLiteral(R"(
@@ -83,6 +89,9 @@ QToolButton#GlassButton:disabled { background: transparent; }
 #GlassContent QToolButton#GlassProminent { border: none; border-radius: 15px; background: %3; color: white; font-weight: 600; padding: 0 14px; }
 #GlassContent QToolButton#GlassProminent:hover { background: %3; border: 2px solid rgba(255,255,255,0.35); }
 QFrame#TimelineMarker { background: %3; border-radius: 2px; }
+QToolButton#PaletteRow { border: none; border-radius: 8px; padding: 0 8px; text-align: left; background: transparent; }
+QToolButton#PaletteRow:hover { background: %4; }
+QToolButton#PaletteRow:checked { background: %5; }
 QToolButton#TrafficLight { border: none; border-radius: 6px; }
 QToolButton#TrafficLight[role="close"] { background: #FF5F57; }
 QToolButton#TrafficLight[role="minimize"] { background: #FEBC2E; }
@@ -118,9 +127,22 @@ QFrame#GlassSeparator { background: %8; border: none; }
 #GlassContent QScrollBar::add-line, #GlassContent QScrollBar::sub-line { width: 0; height: 0; }
 #GlassContent QScrollBar::add-page, #GlassContent QScrollBar::sub-page { background: transparent; }
 #GlassContent QSplitter::handle { background: %8; height: 1px; }
+QDialogButtonBox { dialogbuttonbox-buttons-have-icons: 0; }
+QMenu { background: %9; border: 1px solid %7; border-radius: 10px; padding: 5px; }
+QMenu::item { padding: 6px 22px 6px 12px; border-radius: 6px; margin: 1px 0; }
+QMenu::item:selected { background: %3; color: white; }
+QMenu::item:disabled { color: %2; }
+QMenu::separator { height: 1px; background: %8; margin: 4px 8px; }
+QMenu::icon { padding-left: 8px; }
+QMessageBox, QDialog { background: %9; }
+QMessageBox QPushButton, QDialog QPushButton { background: %6; border: 1px solid %7; border-radius: 7px; padding: 5px 16px; min-width: 64px; }
+QMessageBox QPushButton:default, QDialog QPushButton:default { background: %3; color: white; border: none; }
+QCheckBox::indicator { width: 16px; height: 16px; border-radius: 5px; border: 1px solid %7; background: %6; }
+QCheckBox::indicator:checked { background: %3; border: none; image: url(:/mycad/icons/Check.svg); }
 QToolTip { background: %6; color: %1; border: 1px solid %7; border-radius: 6px; padding: 4px 8px; }
 )")
-        .arg(t.text, t.secondary, t.accent, t.hover, t.pressed, t.field, t.fieldBorder, t.separator);
+        .arg(t.text, t.secondary, t.accent, t.hover, t.pressed, t.field, t.fieldBorder, t.separator)
+        .arg(t.dark ? QStringLiteral("#2C2C2E") : QStringLiteral("#FBFBFD"));
 }
 
 void applyTheme()
@@ -132,6 +154,8 @@ void applyTheme()
         QApplication::setFont(font);
     }
     qApp->setStyleSheet(styleSheet(t));
+    overrideFreeCadIcons(t);
+    TreeWidget::reloadDocumentPixmap();  // der Baum hat sein Dokument-Icon schon beim Start geladen
 
     // 3D-Hintergrund: ruhiger Verlauf passend zum Theme (Farben als 0xRRGGBBAA)
     auto view = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
@@ -251,6 +275,58 @@ QIcon commandIcon(const QString& name, const QIcon& fallback)
     return icon.isNull() ? neutralIcon(fallback, theme().dark) : icon;
 }
 
+/// FreeCAD-Icons, die im Browser, in Menüs, Meldungen und im Skizzenbild auftauchen, durch eigene ersetzen.
+/// Der BitmapFactory-Cache wird vor jeder Datei gefragt, also gewinnen diese Einträge überall.
+void overrideFreeCadIcons(const Theme& t)
+{
+    const QString grey = t.dark ? QStringLiteral("#AEAEB2") : QStringLiteral("#6E6E73");
+    struct Override
+    {
+        const char* freecad;
+        const char* ours;
+        QString color;
+    };
+    const Override overrides[] = {
+        {"Document", "Tree_Document", grey},
+        {"Geofeaturegroup.svg", "Tree_Component", t.accent},
+        {"folder", "Tree_Folder", t.accent},
+        {"Std_CoordinateSystem", "Tree_Origin", grey},
+        {"Std_Axis", "Tree_Axis", grey},
+        {"Std_Plane", "Tree_Plane", grey},
+        {"Std_Point", "Tree_Point", grey},
+        {"PartDesign_Body", "Tree_Body", t.accent},
+        {"Sketcher_Sketch", "Tree_Sketch", t.accent},
+        {"TreeItemVisible", "Tree_Visible", grey},
+        {"TreeItemInvisible", "Tree_Invisible", grey},
+        {"Sketcher_NotFullyConstrained", "Badge_Dot", QStringLiteral("#FF9500")},
+        {":/icons/Warning.svg", "Badge_Warning", QStringLiteral("#FF9500")},
+        {":/icons/info.svg", "Badge_Info", t.accent},
+        {":/icons/critical-info.svg", "Badge_Error", QStringLiteral("#FF3B30")},
+        {"Constraint_Horizontal", "Sketcher_ConstrainHorizontal", grey},
+        {"Constraint_Vertical", "Sketcher_ConstrainVertical", grey},
+        {"Constraint_Parallel", "Sketcher_ConstrainParallel", grey},
+        {"Constraint_Perpendicular", "Sketcher_ConstrainPerpendicular", grey},
+        {"Constraint_Tangent", "Sketcher_ConstrainTangent", grey},
+        {"Constraint_EqualLength", "Sketcher_ConstrainEqual", grey},
+        {"Constraint_Symmetric", "Sketcher_ConstrainSymmetric", grey},
+        {"Constraint_Block", "Sketcher_ConstrainBlock", grey},
+        {"Constraint_PointOnObject", "Sketcher_ConstrainCoincidentUnified", grey},
+    };
+    for (const auto& o : overrides) {
+        QFile file(QStringLiteral(":/mycad/icons/%1.svg").arg(QString::fromLatin1(o.ours)));
+        if (!file.open(QIODevice::ReadOnly)) {
+            continue;
+        }
+        QSvgRenderer renderer(file.readAll().replace("currentColor", o.color.toLatin1()));
+        QImage img(64, 64, QImage::Format_ARGB32_Premultiplied);
+        img.fill(Qt::transparent);
+        QPainter p(&img);
+        renderer.render(&p, QRectF(4, 4, 56, 56));  // etwas Luft wie bei den FreeCAD-Icons
+        p.end();
+        BitmapFactory().addPixmapToCache(o.freecad, QPixmap::fromImage(img));
+    }
+}
+
 QWidget* content()
 {
     auto w = new QWidget;
@@ -351,6 +427,12 @@ QWidget* takeDockWindow(const char* name)
         area->setFrameShape(QFrame::NoFrame);
         area->viewport()->setAutoFillBackground(false);
     }
+    // Wie in Fusion zeigt der Browser nur den Baum; Einstellungen haben eigene Dialoge
+    for (auto child : box->findChildren<QWidget*>()) {
+        if (std::string(child->metaObject()->className()) == "Gui::PropertyView") {
+            child->hide();
+        }
+    }
     return box;
 }
 
@@ -428,6 +510,124 @@ private:
     QLabel* title;
 };
 
+/// Menüs mit runden Ecken: dafür brauchen sie einen transparenten, rahmenlosen Hintergrund
+class MenuPolisher: public QObject
+{
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (event->type() == QEvent::Polish) {
+            if (auto menu = qobject_cast<QMenu*>(obj)) {
+                menu->setAttribute(Qt::WA_TranslucentBackground);
+                menu->setWindowFlags(menu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+            }
+        }
+        return false;
+    }
+};
+
+/// Eigenes Kontextmenü aus Befehlen; "" = Trenner, "@rename" = Umbenennen im Browser
+void showCommandMenu(const std::vector<std::pair<QString, const char*>>& entries, QTreeWidget* tree = nullptr)
+{
+    QMenu menu;
+    auto& mgr = Application::Instance->commandManager();
+    for (const auto& [label, command] : entries) {
+        if (!*command) {
+            if (!menu.isEmpty() && !menu.actions().back()->isSeparator()) {
+                menu.addSeparator();  // keine doppelten oder führenden Trenner
+            }
+            continue;
+        }
+        if (std::string(command) == "@rename") {
+            const auto items = tree ? tree->selectedItems() : QList<QTreeWidgetItem*>();
+            if (items.size() == 1) {
+                QTreeWidgetItem* item = items.front();
+                menu.addAction(QStringLiteral("Rename"), [tree, item] { tree->editItem(item); });
+            }
+            continue;
+        }
+        Command* cmd = mgr.getCommandByName(command);
+        if (!cmd || !cmd->isActive()) {
+            continue;
+        }
+        QAction* action = menu.addAction(label);
+        action->setIcon(designIcon(QString::fromLatin1(command)));
+        const std::string name = command;
+        QObject::connect(action, &QAction::triggered, [name] {
+            QTimer::singleShot(0, [name] { Application::Instance->commandManager().runCommandByName(name.c_str()); });
+        });
+    }
+    if (!menu.isEmpty() && menu.actions().back()->isSeparator()) {
+        menu.removeAction(menu.actions().back());
+    }
+    if (!menu.isEmpty()) {
+        menu.exec(QCursor::pos());
+    }
+}
+
+/// Rechtsklick ohne Ziehen im 3D-Fenster bzw. im Browser: eigene, aufgeräumte Menüs statt der FreeCAD-Menüs
+class ContextMenus: public QObject
+{
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        auto widget = qobject_cast<QWidget*>(obj);
+        if (!widget) {
+            return false;
+        }
+        if (auto tree = qobject_cast<QTreeWidget*>(widget->parentWidget());
+            tree && event->type() == QEvent::ContextMenu) {
+            QTimer::singleShot(0, [tree] {
+                const bool any = !Selection().getSelection().empty();
+                if (!any) {
+                    return;
+                }
+                showCommandMenu({{QStringLiteral("Show / Hide"), "Std_ToggleVisibility"},
+                                 {QString(), "@rename"},
+                                 {QString(), ""},
+                                 {QStringLiteral("Move"), "Design_Move"},
+                                 {QStringLiteral("Export"), "Design_Export"},
+                                 {QString(), ""},
+                                 {QStringLiteral("Delete"), "Design_Delete"}},
+                                tree);
+            });
+            return true;
+        }
+        if (qobject_cast<QGraphicsView*>(widget->parentWidget())) {
+            auto me = static_cast<QMouseEvent*>(event);
+            if (event->type() == QEvent::MouseButtonPress && me->button() == Qt::RightButton) {
+                pressPos = me->globalPosition().toPoint();
+            }
+            else if (event->type() == QEvent::MouseButtonRelease && me->button() == Qt::RightButton
+                     && (me->globalPosition().toPoint() - pressPos).manhattanLength() < 5) {
+                QTimer::singleShot(0, [] {
+                    if (Control().activeDialog()) {
+                        return;
+                    }
+                    showCommandMenu({{QStringLiteral("Undo"), "Std_Undo"},
+                                     {QStringLiteral("Redo"), "Std_Redo"},
+                                     {QString(), ""},
+                                     {QStringLiteral("Create Sketch"), "Design_CreateSketch"},
+                                     {QStringLiteral("Extrude"), "Design_Extrude"},
+                                     {QStringLiteral("Press Pull"), "Design_PressPull"},
+                                     {QStringLiteral("Fillet"), "Design_Fillet"},
+                                     {QStringLiteral("Hole"), "Design_Hole"},
+                                     {QStringLiteral("Move"), "Design_Move"},
+                                     {QString(), ""},
+                                     {QStringLiteral("Show / Hide"), "Std_ToggleVisibility"},
+                                     {QStringLiteral("Delete"), "Design_Delete"},
+                                     {QString(), ""},
+                                     {QStringLiteral("Fit All"), "Std_ViewFitAll"}});
+                });
+            }
+        }
+        return false;
+    }
+
+private:
+    QPoint pressPos;
+};
+
 /// Größe ändern an den Rändern des rahmenlosen Fensters
 class EdgeResizer: public QObject
 {
@@ -498,6 +698,61 @@ bool isTimelineItem(const App::DocumentObject* obj)
     return (!sketch.isBad() && t.isDerivedFrom(sketch)) || (!feature.isBad() && t.isDerivedFrom(feature));
 }
 
+/// Sketch Palette wie in Fusion: ersetzt im Skizzenmodus FreeCADs Skizzen-Panel
+QWidget* sketchPalette()
+{
+    auto box = content();
+    auto lay = new QVBoxLayout(box);
+    lay->setContentsMargins(14, 12, 14, 14);
+    lay->setSpacing(4);
+    auto title = new QLabel(QStringLiteral("Sketch Palette"));
+    title->setObjectName(QStringLiteral("WindowTitle"));
+    lay->addWidget(title);
+    lay->addSpacing(4);
+    const std::pair<const char*, const char*> rows[] = {
+        {"Look At", "Sketcher_ViewSketch"}, {"Slice", "Sketcher_ViewSection"}, {"Grid", "Sketcher_Grid"},
+        {"Snap", "Sketcher_Snap"},          {"Construction", "Sketcher_ToggleConstruction"},
+    };
+    const char* icons[] = {"Palette_LookAt", "Palette_Section", "Palette_Grid", "Palette_Snap",
+                           "Sketcher_ToggleConstruction"};
+    for (size_t i = 0; i < std::size(rows); ++i) {
+        QAction* action = commandAction(rows[i].second);
+        if (!action) {
+            continue;
+        }
+        auto btn = new QToolButton;
+        btn->setObjectName(QStringLiteral("PaletteRow"));
+        btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        btn->setText(QString::fromLatin1(rows[i].first));
+        btn->setIcon(designIcon(QString::fromLatin1(icons[i])));
+        btn->setIconSize(QSize(18, 18));
+        btn->setCheckable(action->isCheckable());
+        btn->setChecked(action->isChecked());
+        btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        btn->setFixedHeight(32);
+        QObject::connect(btn, &QToolButton::clicked, action, [action] {
+            QTimer::singleShot(0, action, &QAction::trigger);
+        });
+        QObject::connect(action, &QAction::changed, btn, [btn, action] { btn->setChecked(action->isChecked()); });
+        lay->addWidget(btn);
+    }
+    lay->addSpacing(8);
+    if (QAction* finish = commandAction("Sketcher_LeaveSketch")) {
+        auto btn = new QToolButton;
+        btn->setObjectName(QStringLiteral("GlassProminent"));
+        btn->setText(QStringLiteral("Finish Sketch"));
+        btn->setFixedHeight(32);
+        btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        QObject::connect(btn, &QToolButton::clicked, finish, [finish] {
+            QTimer::singleShot(0, finish, &QAction::trigger);
+        });
+        lay->addWidget(btn);
+    }
+    box->setFixedWidth(220);
+    box->adjustSize();
+    return box;
+}
+
 struct State
 {
     GlassPanel* modelBar = nullptr;
@@ -506,6 +761,7 @@ struct State
     GlassPanel* inspector = nullptr;
     GlassPanel* timeline = nullptr;
     GlassPanel* titleBar = nullptr;
+    GlassPanel* palette = nullptr;
     ViewCube* viewCube = nullptr;
     bool sketchMode = false;
     QGraphicsScene* scene = nullptr;
@@ -514,7 +770,8 @@ struct State
 std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
-    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.inspector, state.timeline, state.titleBar}) {
+    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.inspector, state.timeline, state.titleBar,
+                   state.palette}) {
         if (p) {
             all.push_back(p);
         }
@@ -553,12 +810,19 @@ void layout()
         const QSizeF ts = state.titleBar->content()->sizeHint();
         state.titleBar->setGeometry(QRectF(m, m, ts.width(), bs.height()));
     }
+    if (state.palette) {
+        QSizeF ps = state.palette->content()->sizeHint();
+        ps.setWidth(std::max<qreal>(ps.width(), state.palette->content()->minimumWidth()));
+        state.palette->setVisible(state.sketchMode);
+        state.palette->setGeometry(QRectF(r.width() - ps.width() - m, 170, ps.width(), ps.height()));
+    }
     if (state.viewCube) {
         state.viewCube->setPos(r.width() - state.viewCube->boundingRect().width() - m, m);
     }
     if (state.inspector) {
         const qreal itop = 170;  // unter dem ViewCube
-        state.inspector->setVisible(Control().activeDialog() != nullptr);
+        // Im Skizzenmodus übernimmt die Sketch Palette (FreeCADs Skizzen-Panel bleibt verborgen aktiv)
+        state.inspector->setVisible(Control().activeDialog() != nullptr && !state.sketchMode);
         state.inspector->setGeometry(QRectF(r.width() - 340 - m, itop, 340, bottom - itop));
     }
 }
@@ -799,6 +1063,9 @@ void attach(View3DInventor* view)
         scene->addItem(state.viewCube);
         state.viewCube->setViewer(view->getViewer());
     }
+    static ContextMenus* menus = new ContextMenus;
+    view->getViewer()->setPopupMenuEnabled(false);  // FreeCAD-Menü aus, eigenes Menü über ContextMenus
+    view->getViewer()->viewport()->installEventFilter(menus);
     if (!scene->property("mycadShell").toBool()) {
         scene->setProperty("mycadShell", true);
         QObject::connect(scene, &QGraphicsScene::sceneRectChanged, scene, [scene] {
@@ -867,7 +1134,7 @@ void Gui::Shell::install()
         toolbar({"Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CreateRectangle",
                  "Sketcher_CreateCircle", "Sketcher_CreateArc", "Sketcher_CreateSlot",
                  "Sketcher_CompCreateRegularPolygon", "Sketcher_CreateBSpline", "Sketcher_CreateConic",
-                 "Sketcher_CreatePoint", "",
+                 "Sketcher_CreatePoint", "Sketcher_CompExternal", "",
                  "Sketcher_CreateFillet", "Sketcher_Trimming", "Sketcher_Extend", "Sketcher_Split",
                  "Sketcher_ToggleConstruction", "", "Sketcher_Dimension",
                  "Sketcher_ConstrainCoincidentUnified", "Sketcher_ConstrainHorizontal",
@@ -876,6 +1143,8 @@ void Gui::Shell::install()
                  "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock", "", "Sketcher_LeaveSketch"}),
         24);
     state.viewCube = new ViewCube;
+    state.palette = new GlassPanel(sketchPalette(), 20);
+    qApp->installEventFilter(new MenuPolisher);
     // Rahmenloses Fenster wie eine macOS-App (abschaltbar: MainWindow/MyCADFrameless = false)
     auto mainGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow");
     if (mainGrp->GetBool("MyCADFrameless", true)) {
@@ -896,6 +1165,10 @@ void Gui::Shell::install()
         state.timeline = new GlassPanel(box, 24);
     }
     if (QWidget* tree = takeDockWindow("Std_ComboView")) {
+        static ContextMenus* menus = new ContextMenus;
+        for (auto t : tree->findChildren<QTreeWidget*>()) {
+            t->viewport()->installEventFilter(menus);
+        }
         state.browser = new GlassPanel(tree, 20);
     }
     if (QWidget* tasks = takeDockWindow("Std_TaskView")) {
