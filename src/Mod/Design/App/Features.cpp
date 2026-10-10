@@ -27,6 +27,9 @@
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
+#include <TopTools_DataMapOfShapeInteger.hxx>
+#include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <set>
 #include <TopoDS_Iterator.hxx>
 #include <gp_Ax1.hxx>
 #include <gp_Ax2.hxx>
@@ -51,7 +54,10 @@ const char* HoleEnums[] = {"Simple", "Counterbore", "Countersink", nullptr};
 const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
-std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, Part::Feature*& sketch, const char*& error)
+/// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Profile werden über ihre Signatur
+/// (begrenzende Skizzenkanten) wiedergefunden; keys hält die Signaturen der gewählten Profile aktuell.
+std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, App::PropertyStringList& keys,
+                                          Part::Feature*& sketch, const char*& error)
 {
     auto profiles = freecad_cast<Profiles*>(profile.getValue());
     sketch = profiles ? freecad_cast<Part::Feature*>(profiles->Sketch.getValue()) : nullptr;
@@ -60,10 +66,22 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, P
         return {};
     }
     const Part::TopoShape all = profiles->Shape.getShape();
+    const auto& signatures = profiles->Signatures.getValues();
+    const auto& subs = profile.getSubValues();
+    std::vector<std::string> known = keys.getValues();
+    known.resize(subs.size());
     std::vector<Part::TopoShape> faces;
-    for (const auto& sub : profile.getSubValues()) {
-        faces.push_back(all.getSubTopoShape(sub.c_str(), true));
+    for (size_t i = 0; i < subs.size(); ++i) {
+        std::string name = subs[i];
+        const auto match = std::ranges::find(signatures, known[i]);
+        if (!known[i].empty() && match != signatures.end() && std::ranges::count(signatures, known[i]) == 1) {
+            name = "Face" + std::to_string(match - signatures.begin() + 1);
+        }
+        const int idx = std::atoi(name.c_str() + 4);
+        known[i] = idx >= 1 && idx <= static_cast<int>(signatures.size()) ? signatures[idx - 1] : std::string();
+        faces.push_back(all.getSubTopoShape(name.c_str(), true));
     }
+    keys.setValues(known);  // Ausgabe-Property: markiert das Feature nicht als geändert
     if (faces.empty()) {
         faces = all.getSubTopoShapes(TopAbs_FACE);
     }
@@ -432,6 +450,8 @@ PROPERTY_SOURCE(Design::Profiles, Part::Feature)
 Profiles::Profiles()
 {
     ADD_PROPERTY_TYPE(Sketch, (nullptr), "Design", App::Prop_None, "Sketch whose closed regions are offered");
+    ADD_PROPERTY_TYPE(Signatures, (), "Design", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Bounding sketch edges of each profile");
 }
 
 Profiles* Profiles::forSketch(App::DocumentObject* sketch)
@@ -482,10 +502,20 @@ App::DocumentObjectExecReturn* Profiles::execute()
         return new App::DocumentObjectExecReturn("Could not compute sketch profiles");
     }
 
+    // Welche Skizzenkante steckt hinter jedem Kantenstück? (für die Profil-Signaturen)
+    TopTools_DataMapOfShapeInteger source;
+    int edgeIndex = 0;
+    for (TopTools_ListIteratorOfListOfShape it(edges); it.More(); it.Next(), ++edgeIndex) {
+        source.Bind(it.Value(), edgeIndex);
+        for (TopTools_ListIteratorOfListOfShape piece(splitter.Modified(it.Value())); piece.More(); piece.Next()) {
+            source.Bind(piece.Value(), edgeIndex);
+        }
+    }
     struct Region
     {
         TopoDS_Face face;
         gp_Pnt center;
+        std::string signature;  ///< sortierte Indizes der begrenzenden Skizzenkanten
     };
     std::vector<Region> regions;
     const double tol = 1e-6 * m;
@@ -499,19 +529,36 @@ App::DocumentObjectExecReturn* Profiles::execute()
         if (!outer) {
             GProp_GProps props;
             BRepGProp::SurfaceProperties(ex.Current(), props);
-            regions.push_back({TopoDS::Face(ex.Current()), props.CentreOfMass()});
+            std::set<int> ids;
+            for (TopExp_Explorer ed(ex.Current(), TopAbs_EDGE); ed.More(); ed.Next()) {
+                const TopoDS_Shape forward = ed.Current().Oriented(TopAbs_FORWARD);
+                if (source.IsBound(forward)) {
+                    ids.insert(source.Find(forward));
+                }
+                else if (source.IsBound(ed.Current())) {
+                    ids.insert(source.Find(ed.Current()));
+                }
+            }
+            std::string signature;
+            for (int id : ids) {
+                signature += (signature.empty() ? "" : ",") + std::to_string(id);
+            }
+            regions.push_back({TopoDS::Face(ex.Current()), props.CentreOfMass(), signature});
         }
     }
-    // Feste Reihenfolge (links nach rechts, unten nach oben), damit Face1… bei kleinen Änderungen gleich bleiben
-    // ponytail: echte topologische Benennung der Profile fehlt noch; Upgrade über Element-Maps der Skizzenkanten
+    // Feste Reihenfolge (links nach rechts, unten nach oben); Extrude & Co. finden ihre Profile zusätzlich
+    // über die Signaturen wieder, wenn sich die Nummerierung durch Skizzenänderungen verschiebt
     std::ranges::sort(regions, [](const Region& a, const Region& b) {
         return a.center.X() != b.center.X() ? a.center.X() < b.center.X() : a.center.Y() < b.center.Y();
     });
 
     std::vector<Part::TopoShape> faces;
+    std::vector<std::string> signatures;
     for (auto& r : regions) {
         faces.emplace_back(r.face);
+        signatures.push_back(r.signature);
     }
+    Signatures.setValues(signatures);
     Part::TopoShape result;
     if (!faces.empty()) {
         result.makeElementCompound(faces);
@@ -648,6 +695,8 @@ PROPERTY_SOURCE(Design::Extrude, Design::Feature)
 
 Extrude::Extrude()
 {
+    ADD_PROPERTY_TYPE(ProfileKeys, (), "Extrude", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Signatures of the selected profiles");
     ADD_PROPERTY_TYPE(Profile, (nullptr), "Extrude", App::Prop_None, "Profiles to extrude");
     ADD_PROPERTY_TYPE(Extent, (0L), "Extrude", App::Prop_None, "One side, symmetric or two sides");
     Extent.setEnums(ExtentEnums);
@@ -660,7 +709,7 @@ bool Extrude::makeTool(Part::TopoShape& tool, std::string& error) const
 {
     Part::Feature* sketch = nullptr;
     const char* reason = nullptr;
-    const auto faces = profileFaces(Profile, sketch, reason);
+    const auto faces = profileFaces(Profile, const_cast<App::PropertyStringList&>(ProfileKeys), sketch, reason);
     if (faces.empty()) {
         error = reason;
         return false;
@@ -715,6 +764,8 @@ PROPERTY_SOURCE(Design::Revolve, Design::Feature)
 
 Revolve::Revolve()
 {
+    ADD_PROPERTY_TYPE(ProfileKeys, (), "Revolve", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Signatures of the selected profiles");
     ADD_PROPERTY_TYPE(Profile, (nullptr), "Revolve", App::Prop_None, "Profiles to revolve");
     ADD_PROPERTY_TYPE(Axis, (0L), "Revolve", App::Prop_None, "Axis of revolution");
     Axis.setEnums(AxisEnums);
@@ -726,7 +777,7 @@ bool Revolve::makeTool(Part::TopoShape& tool, std::string& error) const
 {
     Part::Feature* sketch = nullptr;
     const char* reason = nullptr;
-    const auto faces = profileFaces(Profile, sketch, reason);
+    const auto faces = profileFaces(Profile, const_cast<App::PropertyStringList&>(ProfileKeys), sketch, reason);
     if (faces.empty()) {
         error = reason;
         return false;

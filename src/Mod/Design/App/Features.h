@@ -76,6 +76,7 @@ class DesignExport Profiles: public Part::Feature
 public:
     Profiles();
     App::PropertyLink Sketch;
+    App::PropertyStringList Signatures;  ///< je Profil die begrenzenden Skizzenkanten (für die Wiedererkennung)
 
     App::DocumentObjectExecReturn* execute() override;
     const char* getViewProviderName() const override
@@ -148,6 +149,7 @@ class DesignExport Extrude: public Feature
 public:
     Extrude();
     App::PropertyLinkSub Profile;  ///< Profiles-Objekt + gewählte Flächen (leer = alle)
+    App::PropertyStringList ProfileKeys;  ///< Signaturen der gewählten Profile
     App::PropertyEnumeration Extent;
     App::PropertyLength Distance;
     App::PropertyLength Distance2;
@@ -164,6 +166,7 @@ class DesignExport Revolve: public Feature
 public:
     Revolve();
     App::PropertyLinkSub Profile;
+    App::PropertyStringList ProfileKeys;
     App::PropertyEnumeration Axis;  ///< Skizzen-X/Y-Achse oder Ursprungsachse X/Y/Z
     App::PropertyAngle Angle;
     App::PropertyBool Reversed;
