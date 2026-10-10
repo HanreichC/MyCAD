@@ -140,6 +140,15 @@ QIcon neutralIcon(const QIcon& icon, bool dark)
             }
         }
         out.addPixmap(QPixmap::fromImage(img));
+        // Deaktiviert: deutlich blasser, damit man sieht, was gerade nicht anklickbar ist
+        QImage faded = img;
+        for (int y = 0; y < faded.height(); ++y) {
+            auto line = reinterpret_cast<QRgb*>(faded.scanLine(y));
+            for (int x = 0; x < faded.width(); ++x) {
+                line[x] = qRgba(qRed(line[x]), qGreen(line[x]), qBlue(line[x]), qAlpha(line[x]) * 3 / 10);
+            }
+        }
+        out.addPixmap(QPixmap::fromImage(faded), QIcon::Disabled);
     }
     return out;
 }

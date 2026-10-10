@@ -11,7 +11,7 @@ MyCAD basiert auf [FreeCAD](https://github.com/FreeCAD/FreeCAD) (LGPL-2.1-or-lat
 |---|---|
 | `CMakeLists.txt`, `LICENSE`, `version.json`, `cMake/` | gleich |
 | `src/{App,Base,Build,Ext,Gui,Main,Tools,XDGData}` | gleich |
-| `src/Mod/{Part,Sketcher,PartDesign,Material,Import,Measure,Mesh,MeshPart}` | gleich |
+| `src/Mod/{Part,Sketcher,PartDesign,Material,Import,Measure,Mesh,MeshPart,Show}` | gleich |
 | `src/3rdParty/{FastSignals,GSL,json,lazy_loader,PyCXX,WildMagic4,zipios++,libkdtree,Clipper2,lru-cache}` | gleich |
 | `tests/src/{App,Base,Gui,zipios++}`, `tests/src/Mod/{Part,Sketcher,PartDesign,Material,Measure,Mesh,MeshPart}` | gleich |
 | `data/tests/` (Teilmenge) | gleich |
