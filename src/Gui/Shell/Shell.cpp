@@ -505,8 +505,8 @@ void Gui::Shell::install()
     state.modelBar = new GlassPanel(
         toolbar({"Std_New", "Std_Open", "Std_Save", "Design_Export", "", "Std_Undo", "Std_Redo", "",
                  "Design_CreateSketch", "Design_Extrude", "Design_Revolve", "",
-                 "Design_Fillet", "Design_Chamfer", "Design_Shell", "", "Design_Combine", "Design_Move",
-                 "Design_Mirror", "", "Std_ViewFitAll"}),
+                 "Design_Hole", "Design_Fillet", "Design_Chamfer", "Design_Shell", "", "Design_Pattern",
+                 "Design_Mirror", "Design_Combine", "Design_Move", "", "Design_OffsetPlane", "", "Std_ViewFitAll"}),
         24);
     state.sketchBar = new GlassPanel(
         toolbar({"Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CreateRectangle",

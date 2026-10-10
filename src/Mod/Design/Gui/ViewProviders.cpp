@@ -18,6 +18,7 @@
 #include <QFormLayout>
 #include <QLabel>
 #include <QMessageBox>
+#include <QSpinBox>
 
 #include <algorithm>
 
@@ -75,6 +76,12 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::Mirror>()) {
         return QStringLiteral("Mirror");
     }
+    if (f->isDerivedFrom<Design::Pattern>()) {
+        return QStringLiteral("Pattern");
+    }
+    if (f->isDerivedFrom<Design::Hole>()) {
+        return QStringLiteral("Hole");
+    }
     return QStringLiteral("Extrude");
 }
 
@@ -101,6 +108,8 @@ public:
         , combine(freecad_cast<Design::Combine*>(feature))
         , move(freecad_cast<Design::Move*>(feature))
         , mirror(freecad_cast<Design::Mirror*>(feature))
+        , pattern(freecad_cast<Design::Pattern*>(feature))
+        , hole(freecad_cast<Design::Hole*>(feature))
         , create(create)
     {
         auto w = new QWidget;
@@ -181,14 +190,80 @@ public:
             form->addRow(QStringLiteral("Mirror plane"), axis);
             QObject::connect(axis, &QComboBox::currentIndexChanged, [this] { apply(); });
         }
+        if (hole) {
+            holeType = new QComboBox;
+            holeType->addItems({QStringLiteral("Simple"), QStringLiteral("Counterbore"), QStringLiteral("Countersink")});
+            holeType->setCurrentIndex(hole->HoleType.getValue());
+            distance = quantityBox(Base::Unit::Length, hole->Diameter.getValue());
+            distance2 = quantityBox(Base::Unit::Length, hole->Depth.getValue());
+            check = new QCheckBox(QStringLiteral("Through all"));
+            check->setChecked(hole->ThroughAll.getValue());
+            headDiameter = quantityBox(Base::Unit::Length, hole->HeadDiameter.getValue());
+            headDepth = quantityBox(Base::Unit::Length, hole->HeadDepth.getValue());
+            sinkAngle = quantityBox(Base::Unit::Angle, hole->CountersinkAngle.getValue());
+            flip = new QCheckBox(QStringLiteral("Flip direction"));
+            flip->setChecked(hole->Reversed.getValue());
+            form->addRow(QStringLiteral("Type"), holeType);
+            form->addRow(QStringLiteral("Diameter"), distance);
+            form->addRow(QStringLiteral("Depth"), distance2);
+            form->addRow(QString(), check);
+            form->addRow(QStringLiteral("Head diameter"), headDiameter);
+            form->addRow(QStringLiteral("Head depth"), headDepth);
+            form->addRow(QStringLiteral("Countersink angle"), sinkAngle);
+            form->addRow(QString(), flip);
+            QObject::connect(holeType, &QComboBox::currentIndexChanged, [this] { apply(); });
+            QObject::connect(flip, &QCheckBox::toggled, [this] { apply(); });
+            for (auto box : {headDiameter, headDepth, sinkAngle}) {
+                QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
+            }
+        }
+        if (pattern) {
+            holeType = new QComboBox;
+            holeType->addItems({QStringLiteral("Rectangular"), QStringLiteral("Circular")});
+            holeType->setCurrentIndex(pattern->Type.getValue());
+            auto xyz = [](long index) {
+                auto box = new QComboBox;
+                box->addItems({QStringLiteral("X"), QStringLiteral("Y"), QStringLiteral("Z")});
+                box->setCurrentIndex(index);
+                return box;
+            };
+            auto count = [](long value) {
+                auto box = new QSpinBox;
+                box->setRange(1, 1000);
+                box->setValue(value);
+                return box;
+            };
+            dir1 = xyz(pattern->Direction1.getValue());
+            count1 = count(pattern->Count1.getValue());
+            distance = quantityBox(Base::Unit::Length, pattern->Spacing1.getValue());
+            dir2 = xyz(pattern->Direction2.getValue());
+            count2 = count(pattern->Count2.getValue());
+            distance2 = quantityBox(Base::Unit::Length, pattern->Spacing2.getValue());
+            axis = xyz(pattern->Axis.getValue());
+            sinkAngle = quantityBox(Base::Unit::Angle, pattern->Angle.getValue());
+            simpleOp = new QComboBox;
+            simpleOp->addItems({QStringLiteral("Join"), QStringLiteral("Cut"), QStringLiteral("Intersect")});
+            simpleOp->setCurrentIndex(std::max(0L, pattern->Operation.getValue() - 1));
+            form->addRow(QStringLiteral("Type"), holeType);
+            form->addRow(QStringLiteral("Direction"), dir1);
+            form->addRow(QStringLiteral("Count"), count1);
+            form->addRow(QStringLiteral("Spacing"), distance);
+            form->addRow(QStringLiteral("Direction 2"), dir2);
+            form->addRow(QStringLiteral("Count 2"), count2);
+            form->addRow(QStringLiteral("Spacing 2"), distance2);
+            form->addRow(QStringLiteral("Axis"), axis);
+            form->addRow(QStringLiteral("Angle"), sinkAngle);
+            form->addRow(QStringLiteral("Operation"), simpleOp);
+            for (auto box : {holeType, dir1, dir2, axis, simpleOp}) {
+                QObject::connect(box, &QComboBox::currentIndexChanged, [this] { apply(); });
+            }
+            for (auto box : {count1, count2}) {
+                QObject::connect(box, &QSpinBox::valueChanged, [this] { apply(); });
+            }
+            QObject::connect(sinkAngle, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
+        }
         if (check) {
             QObject::connect(check, &QCheckBox::toggled, [this] { apply(); });
-        }
-        if (distance) {
-            QObject::connect(distance, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
-        }
-        if (distance2) {
-            QObject::connect(distance2, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
         }
         if (extrude || revolve) {
             flip = new QCheckBox(QStringLiteral("Flip direction"));
@@ -198,6 +273,12 @@ public:
             setupOperation(target);
         }
 
+        if (distance) {
+            QObject::connect(distance, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
+        }
+        if (distance2) {
+            QObject::connect(distance2, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
+        }
         status = new QLabel;
         status->setWordWrap(true);
         status->setStyleSheet(QStringLiteral("color: #FF3B30;"));
@@ -218,6 +299,12 @@ public:
             return false;
         }
         // Wie in Fusion: die verwendete Skizze danach ausblenden
+        if (hole && hole->Sketch.getValue()) {
+            hole->Sketch.getValue()->Visibility.setValue(false);
+            if (auto profiles = Design::Profiles::forSketch(hole->Sketch.getValue())) {
+                profiles->Visibility.setValue(false);
+            }
+        }
         const App::PropertyLinkSub* profile = extrude ? &extrude->Profile : revolve ? &revolve->Profile : nullptr;
         if (auto profiles = profile ? freecad_cast<Design::Profiles*>(profile->getValue()) : nullptr) {
             profiles->Visibility.setValue(false);
@@ -351,6 +438,14 @@ private:
         operation->blockSignals(false);
     }
 
+    void showRow(QWidget* field, bool show)
+    {
+        field->setVisible(show);
+        if (QWidget* label = form->labelForField(field)) {
+            label->setVisible(show);
+        }
+    }
+
     void apply()
     {
         if (extrude) {
@@ -388,6 +483,39 @@ private:
         if (mirror) {
             mirror->Plane.setValue(axis->currentIndex());
         }
+        if (hole) {
+            const int type = holeType->currentIndex();
+            hole->HoleType.setValue(type);
+            hole->Diameter.setValue(std::abs(distance->value().getValue()));
+            hole->Depth.setValue(std::abs(distance2->value().getValue()));
+            hole->ThroughAll.setValue(check->isChecked());
+            hole->HeadDiameter.setValue(std::abs(headDiameter->value().getValue()));
+            hole->HeadDepth.setValue(std::abs(headDepth->value().getValue()));
+            hole->CountersinkAngle.setValue(std::abs(sinkAngle->value().getValue()));
+            hole->Reversed.setValue(flip->isChecked());
+            distance2->setEnabled(!check->isChecked());
+            showRow(headDiameter, type != 0);
+            showRow(headDepth, type == 1);
+            showRow(sinkAngle, type == 2);
+        }
+        if (pattern) {
+            const bool rect = holeType->currentIndex() == 0;
+            pattern->Type.setValue(holeType->currentIndex());
+            pattern->Direction1.setValue(dir1->currentIndex());
+            pattern->Count1.setValue(count1->value());
+            pattern->Spacing1.setValue(std::abs(distance->value().getValue()));
+            pattern->Direction2.setValue(dir2->currentIndex());
+            pattern->Count2.setValue(count2->value());
+            pattern->Spacing2.setValue(std::abs(distance2->value().getValue()));
+            pattern->Axis.setValue(axis->currentIndex());
+            pattern->Angle.setValue(std::abs(sinkAngle->value().getValue()));
+            pattern->Operation.setValue(simpleOp->currentIndex() + 1L);
+            for (QWidget* w : std::initializer_list<QWidget*> {dir1, distance, dir2, count2, distance2}) {
+                showRow(w, rect);
+            }
+            showRow(axis, !rect);
+            showRow(sinkAngle, !rect);
+        }
         if (body) {
             const bool showBody = feature->op() != Design::Feature::Op::NewBody;
             body->setVisible(showBody);
@@ -406,6 +534,8 @@ private:
     Design::Combine* combine;
     Design::Move* move;
     Design::Mirror* mirror;
+    Design::Pattern* pattern;
+    Design::Hole* hole;
     bool create;
     bool autoFlipped = false;
     Design::Body* newBody = nullptr;
@@ -418,6 +548,14 @@ private:
     QCheckBox* flip = nullptr;
     QCheckBox* check = nullptr;
     QComboBox* simpleOp = nullptr;
+    QComboBox* holeType = nullptr;
+    QComboBox* dir1 = nullptr;
+    QComboBox* dir2 = nullptr;
+    QSpinBox* count1 = nullptr;
+    QSpinBox* count2 = nullptr;
+    Gui::QuantitySpinBox* headDiameter = nullptr;
+    Gui::QuantitySpinBox* headDepth = nullptr;
+    Gui::QuantitySpinBox* sinkAngle = nullptr;
     Gui::QuantitySpinBox* moveX = nullptr;
     Gui::QuantitySpinBox* moveY = nullptr;
     Gui::QuantitySpinBox* moveZ = nullptr;
@@ -466,6 +604,13 @@ QIcon ViewProviderFeature::getIcon() const
     }
     else if (obj->isDerivedFrom<Design::Mirror>()) {
         icon = "PartDesign_Mirrored";
+    }
+    else if (obj->isDerivedFrom<Design::Pattern>()) {
+        icon = static_cast<const Design::Pattern*>(obj)->Type.getValue() ? "PartDesign_PolarPattern"
+                                                                          : "PartDesign_LinearPattern";
+    }
+    else if (obj->isDerivedFrom<Design::Hole>()) {
+        icon = "PartDesign_Hole";
     }
     return Gui::BitmapFactory().pixmap(icon);
 }

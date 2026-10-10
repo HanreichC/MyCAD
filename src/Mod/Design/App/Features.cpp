@@ -23,6 +23,8 @@
 #include <TopoDS_Iterator.hxx>
 #include <gp_Ax1.hxx>
 #include <gp_Ax2.hxx>
+#include <BRepPrimAPI_MakeCone.hxx>
+#include <BRepPrimAPI_MakeCylinder.hxx>
 #include <Standard_Failure.hxx>
 #include <gp_Pln.hxx>
 
@@ -37,6 +39,9 @@ const char* ExtentEnums[] = {"One Side", "Symmetric", "Two Sides", nullptr};
 const char* AxisEnums[] = {"Sketch X", "Sketch Y", "X", "Y", "Z", nullptr};
 const char* XYZEnums[] = {"X", "Y", "Z", nullptr};
 const char* PlaneEnums[] = {"XY", "XZ", "YZ", nullptr};
+const char* PatternEnums[] = {"Rectangular", "Circular", nullptr};
+const char* HoleEnums[] = {"Simple", "Counterbore", "Countersink", nullptr};
+const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
 std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, Part::Feature*& sketch, const char*& error)
@@ -419,13 +424,14 @@ Extrude::Extrude()
     ADD_PROPERTY_TYPE(Reversed, (false), "Extrude", App::Prop_None, "Flip direction");
 }
 
-App::DocumentObjectExecReturn* Extrude::compute()
+bool Extrude::makeTool(Part::TopoShape& tool, std::string& error) const
 {
     Part::Feature* sketch = nullptr;
-    const char* error = nullptr;
-    const auto faces = profileFaces(Profile, sketch, error);
+    const char* reason = nullptr;
+    const auto faces = profileFaces(Profile, sketch, reason);
     if (faces.empty()) {
-        return new App::DocumentObjectExecReturn(error);
+        error = reason;
+        return false;
     }
 
     Base::Vector3d n = sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1));
@@ -441,7 +447,8 @@ App::DocumentObjectExecReturn* Extrude::compute()
         start = -Distance2.getValue();
     }
     if (end - start < Precision::Confusion()) {
-        return new App::DocumentObjectExecReturn("Distance must be greater than zero");
+        error = "Distance must be greater than zero";
+        return false;
     }
 
     std::vector<Part::TopoShape> prisms;
@@ -456,7 +463,18 @@ App::DocumentObjectExecReturn* Extrude::compute()
         prisms.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
                              .makeElementPrism(base, gp_Vec(v.x, v.y, v.z)));
     }
-    return applyTool(fuseAll(prisms, getDocument()->getStringHasher()));
+    tool = fuseAll(prisms, getDocument()->getStringHasher());
+    return true;
+}
+
+App::DocumentObjectExecReturn* Extrude::compute()
+{
+    Part::TopoShape tool;
+    std::string error;
+    if (!makeTool(tool, error)) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+    return applyTool(tool);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -472,17 +490,19 @@ Revolve::Revolve()
     ADD_PROPERTY_TYPE(Reversed, (false), "Revolve", App::Prop_None, "Flip direction");
 }
 
-App::DocumentObjectExecReturn* Revolve::compute()
+bool Revolve::makeTool(Part::TopoShape& tool, std::string& error) const
 {
     Part::Feature* sketch = nullptr;
-    const char* error = nullptr;
-    const auto faces = profileFaces(Profile, sketch, error);
+    const char* reason = nullptr;
+    const auto faces = profileFaces(Profile, sketch, reason);
     if (faces.empty()) {
-        return new App::DocumentObjectExecReturn(error);
+        error = reason;
+        return false;
     }
     const double angle = Angle.getValue();
     if (angle < Precision::Angular() || angle > 360.0 + Precision::Angular()) {
-        return new App::DocumentObjectExecReturn("Angle must be between 0 and 360 degrees");
+        error = "Angle must be between 0 and 360 degrees";
+        return false;
     }
 
     const Base::Placement pla = sketch->Placement.getValue();
@@ -510,7 +530,18 @@ App::DocumentObjectExecReturn* Revolve::compute()
         solids.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
                              .makeElementRevolve(face, axis, angle * M_PI / 180.0));
     }
-    return applyTool(fuseAll(solids, getDocument()->getStringHasher()));
+    tool = fuseAll(solids, getDocument()->getStringHasher());
+    return true;
+}
+
+App::DocumentObjectExecReturn* Revolve::compute()
+{
+    Part::TopoShape tool;
+    std::string error;
+    if (!makeTool(tool, error)) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+    return applyTool(tool);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -715,4 +746,157 @@ App::DocumentObjectExecReturn* Mirror::compute()
     }
     setResults(results);
     return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Pattern, Design::Feature)
+
+Pattern::Pattern()
+{
+    ADD_PROPERTY_TYPE(Source, (nullptr), "Pattern", App::Prop_None, "Feature to repeat");
+    ADD_PROPERTY_TYPE(Type, (0L), "Pattern", App::Prop_None, "Rectangular or circular");
+    Type.setEnums(PatternEnums);
+    ADD_PROPERTY_TYPE(Direction1, (0L), "Pattern", App::Prop_None, "First direction");
+    Direction1.setEnums(XYZEnums);
+    ADD_PROPERTY_TYPE(Count1, (3L), "Pattern", App::Prop_None, "Count in the first direction");
+    Count1.setConstraints(&CountRange);
+    ADD_PROPERTY_TYPE(Spacing1, (10.0), "Pattern", App::Prop_None, "Spacing in the first direction");
+    ADD_PROPERTY_TYPE(Direction2, (1L), "Pattern", App::Prop_None, "Second direction");
+    Direction2.setEnums(XYZEnums);
+    ADD_PROPERTY_TYPE(Count2, (1L), "Pattern", App::Prop_None, "Count in the second direction");
+    Count2.setConstraints(&CountRange);
+    ADD_PROPERTY_TYPE(Spacing2, (10.0), "Pattern", App::Prop_None, "Spacing in the second direction");
+    ADD_PROPERTY_TYPE(Axis, (2L), "Pattern", App::Prop_None, "Axis of a circular pattern (through the origin)");
+    Axis.setEnums(XYZEnums);
+    ADD_PROPERTY_TYPE(Angle, (360.0), "Pattern", App::Prop_None, "Total angle of a circular pattern");
+    Operation.setValue(1L);
+}
+
+App::DocumentObjectExecReturn* Pattern::compute()
+{
+    auto source = freecad_cast<Feature*>(Source.getValue());
+    if (!source) {
+        return new App::DocumentObjectExecReturn("Select a feature to pattern");
+    }
+    Part::TopoShape tool;
+    std::string error;
+    if (!source->makeTool(tool, error)) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+
+    std::vector<Base::Matrix4D> transforms;
+    if (Type.getValue() == 0) {
+        Base::Vector3d d1, d2;
+        d1[Direction1.getValue()] = Spacing1.getValue();
+        d2[Direction2.getValue()] = Spacing2.getValue();
+        for (long i = 0; i < Count1.getValue(); ++i) {
+            for (long j = 0; j < Count2.getValue(); ++j) {
+                if (i || j) {
+                    Base::Matrix4D m;
+                    m.move(d1 * double(i) + d2 * double(j));
+                    transforms.push_back(m);
+                }
+            }
+        }
+    }
+    else {
+        const long n = Count1.getValue();
+        const double total = Angle.getValue();
+        const bool full = std::abs(total - 360.0) < Precision::Angular();
+        const double step = n > 1 ? (full ? total / n : total / (n - 1)) : 0;
+        Base::Vector3d axis;
+        axis[Axis.getValue()] = 1;
+        for (long k = 1; k < n; ++k) {
+            transforms.push_back(Base::Placement(Base::Vector3d(), Base::Rotation(axis, k * step * M_PI / 180.0)).toMatrix());
+        }
+    }
+    if (transforms.empty()) {
+        return new App::DocumentObjectExecReturn("Count must be at least 2");
+    }
+
+    std::vector<Part::TopoShape> copies;
+    for (const auto& m : transforms) {
+        copies.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
+                             .makeElementTransform(tool, m, nullptr, Part::CheckScale::noScaleCheck,
+                                                   Part::CopyType::copy));
+    }
+    return applyTool(fuseAll(copies, getDocument()->getStringHasher()));
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Hole, Design::Feature)
+
+Hole::Hole()
+{
+    ADD_PROPERTY_TYPE(Sketch, (nullptr), "Hole", App::Prop_None, "Sketch whose points are the hole centers");
+    ADD_PROPERTY_TYPE(HoleType, (0L), "Hole", App::Prop_None, "Simple, counterbore or countersink");
+    HoleType.setEnums(HoleEnums);
+    ADD_PROPERTY_TYPE(Diameter, (5.0), "Hole", App::Prop_None, "Hole diameter");
+    ADD_PROPERTY_TYPE(Depth, (10.0), "Hole", App::Prop_None, "Hole depth");
+    ADD_PROPERTY_TYPE(ThroughAll, (false), "Hole", App::Prop_None, "Through all");
+    ADD_PROPERTY_TYPE(HeadDiameter, (9.0), "Hole", App::Prop_None, "Counterbore/countersink diameter");
+    ADD_PROPERTY_TYPE(HeadDepth, (3.0), "Hole", App::Prop_None, "Counterbore depth");
+    ADD_PROPERTY_TYPE(CountersinkAngle, (90.0), "Hole", App::Prop_None, "Countersink angle");
+    ADD_PROPERTY_TYPE(Reversed, (false), "Hole", App::Prop_None, "Flip direction");
+    Operation.setValue(2L);  // Cut
+}
+
+bool Hole::makeTool(Part::TopoShape& tool, std::string& error) const
+{
+    auto sketch = freecad_cast<Part::Feature*>(Sketch.getValue());
+    if (!sketch) {
+        error = "Select a sketch with points";
+        return false;
+    }
+    // Einzelne Skizzenpunkte sind die Vertices direkt unter dem Compound der Skizze
+    std::vector<gp_Pnt> centers;
+    for (TopoDS_Iterator it(sketch->Shape.getShape().getShape()); it.More(); it.Next()) {
+        if (it.Value().ShapeType() == TopAbs_VERTEX) {
+            centers.push_back(BRep_Tool::Pnt(TopoDS::Vertex(it.Value())));
+        }
+    }
+    if (centers.empty()) {
+        error = "The sketch has no points; place points where the holes go";
+        return false;
+    }
+    const double r = Diameter.getValue() / 2, head = HeadDiameter.getValue() / 2;
+    if (r < Precision::Confusion()) {
+        error = "Diameter must be greater than zero";
+        return false;
+    }
+    Base::Vector3d n = sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, -1));
+    if (Reversed.getValue()) {
+        n = -n;
+    }
+    const gp_Dir dir(n.x, n.y, n.z);
+    constexpr double lead = 0.01;  // knapp über der Fläche beginnen, sonst schneidet die Bohrung koplanar
+    const double depth = (ThroughAll.getValue() ? 10000.0 : Depth.getValue()) + lead;  // ponytail: "durch alles" = 10 m
+
+    std::vector<Part::TopoShape> holes;
+    for (const auto& c : centers) {
+        const gp_Ax2 ax(c.Translated(gp_Vec(dir) * -lead), dir);
+        std::vector<Part::TopoShape> parts {Part::TopoShape(BRepPrimAPI_MakeCylinder(ax, r, depth).Shape())};
+        if (HoleType.getValue() == 1 && head > r) {
+            parts.emplace_back(BRepPrimAPI_MakeCylinder(ax, head, HeadDepth.getValue() + lead).Shape());
+        }
+        else if (HoleType.getValue() == 2 && head > r) {
+            const double h = head / std::tan(CountersinkAngle.getValue() * M_PI / 360.0);
+            parts.emplace_back(BRepPrimAPI_MakeCone(ax, head, 0, h + lead).Shape());
+        }
+        holes.push_back(fuseAll(parts, getDocument()->getStringHasher()));
+    }
+    tool = fuseAll(holes, getDocument()->getStringHasher());
+    return true;
+}
+
+App::DocumentObjectExecReturn* Hole::compute()
+{
+    Part::TopoShape tool;
+    std::string error;
+    if (!makeTool(tool, error)) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+    return applyTool(tool);
 }

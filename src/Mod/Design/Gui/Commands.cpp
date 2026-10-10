@@ -9,10 +9,13 @@
 #include <Gui/Command.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
+#include <Gui/QuantitySpinBox.h>
+#include <Gui/TaskView/TaskDialog.h>
 #include <Base/Interpreter.h>
 #include <Gui/MainWindow.h>
 #include <Gui/Selection/Selection.h>
 #include <Gui/ViewProviderCoordinateSystem.h>
+#include <Gui/ViewProviderGeometryObject.h>
 #include <Mod/Design/App/Features.h>
 #include <Mod/Sketcher/App/SketchObject.h>
 
@@ -28,6 +31,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFormLayout>
 #include <QMessageBox>
 #include <QTimer>
 
@@ -67,6 +71,13 @@ std::string faceName(const TopoDS_Shape& shape, const TopoDS_Shape& face)
         }
     }
     return {};
+}
+
+/// Ursprungsebene oder Konstruktionsebene (Offset Plane)
+bool isPlane(const App::DocumentObject* obj)
+{
+    static const Base::Type datum = Base::Type::fromName("Part::Datum");
+    return obj && (obj->isDerivedFrom<App::Plane>() || (!datum.isBad() && obj->getTypeId().isDerivedFrom(datum)));
 }
 
 bool isPlanarFace(App::DocumentObject* obj, const std::string& element)
@@ -154,7 +165,7 @@ private:
         }
         App::DocumentObject* leaf = msg.Object.getSubObject();
         const std::string element = msg.Object.getOldElementName();
-        if (!leaf || !(leaf->isDerivedFrom<App::Plane>() || isPlanarFace(leaf, element))) {
+        if (!leaf || !(isPlane(leaf) || isPlanarFace(leaf, element))) {
             return;
         }
         App::DocumentObjectT target(leaf);
@@ -163,7 +174,7 @@ private:
             stop();
             Gui::Selection().clearSelection();
             if (auto obj = target.getObject()) {
-                createSketch(obj, obj->isDerivedFrom<App::Plane>() ? std::string() : element);
+                createSketch(obj, isPlane(obj) ? std::string() : element);
             }
         });
     }
@@ -218,7 +229,7 @@ void createSketchCommand(App::Document* doc)
     for (auto& sel : selection) {
         App::DocumentObject* obj = sel.getObject();
         const auto& subs = sel.getSubNames();
-        if (obj && obj->isDerivedFrom<App::Plane>()) {
+        if (isPlane(obj) && subs.empty()) {
             createSketch(obj, std::string());
             return;
         }
@@ -513,6 +524,177 @@ void exportBodies(App::Document* doc)
     }
 }
 
+/// Body, auf dessen Fläche eine Skizze liegt (über den Timeline-Zustand), sonst nullptr
+Design::Body* bodyUnderSketch(App::DocumentObject* obj)
+{
+    auto sketch = freecad_cast<Part::Part2DObject*>(obj);
+    if (!sketch) {
+        return nullptr;
+    }
+    const auto& support = sketch->AttachmentSupport.getValues();
+    const auto& subs = sketch->AttachmentSupport.getSubValues();
+    auto base = support.empty() ? nullptr : freecad_cast<Design::Feature*>(support.front());
+    if (!base || subs.empty()) {
+        return nullptr;
+    }
+    const TopoDS_Shape face = base->Shape.getShape().getSubShape(subs.front().c_str(), true);
+    for (auto b : base->Bodies.getValues()) {
+        if (!faceName(base->shapeFor(b).getShape(), face).empty()) {
+            return freecad_cast<Design::Body*>(b);
+        }
+    }
+    return nullptr;
+}
+
+void startHole(App::Document* doc)
+{
+    App::DocumentObject* sketch = nullptr;
+    for (auto obj : Gui::Selection().getObjectsOfType(Sketcher::SketchObject::getClassTypeId())) {
+        sketch = obj;
+    }
+    if (!sketch) {  // sonst die zuletzt erstellte Skizze
+        auto sketches = doc->getObjectsOfType(Sketcher::SketchObject::getClassTypeId());
+        sketch = sketches.empty() ? nullptr : sketches.back();
+    }
+    Design::Body* target = bodyUnderSketch(sketch);
+    if (!target) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Hole"),
+                                 QStringLiteral("Create a sketch on a face of a body and place points where the holes go."));
+        return;
+    }
+    auto feature = static_cast<Design::Hole*>(addFeature(doc, "Design::Hole", "Hole"));
+    feature->Sketch.setValue(sketch);
+    modifyBodies(feature, {target});
+    doc->recompute();
+    startEditing(feature, false, nullptr);
+}
+
+void startPattern(App::Document* doc)
+{
+    Design::Feature* source = nullptr;
+    for (auto obj : Gui::Selection().getObjectsOfType(Design::Feature::getClassTypeId())) {
+        Part::TopoShape tool;
+        std::string error;
+        if (static_cast<Design::Feature*>(obj)->makeTool(tool, error)) {
+            source = static_cast<Design::Feature*>(obj);
+        }
+    }
+    if (!source) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Pattern"),
+                                 QStringLiteral("Select an Extrude, Revolve or Hole in the timeline first."));
+        return;
+    }
+    std::vector<Design::Body*> bodies;
+    for (auto b : source->Bodies.getValues()) {
+        if (auto body = freecad_cast<Design::Body*>(b)) {
+            bodies.push_back(body);
+        }
+    }
+    auto feature = static_cast<Design::Pattern*>(addFeature(doc, "Design::Pattern", "Pattern"));
+    feature->Source.setValue(source);
+    feature->Operation.setValue(source->op() == Design::Feature::Op::NewBody ? 1L : source->Operation.getValue());
+    modifyBodies(feature, bodies);
+    doc->recompute();
+    startEditing(feature, false, nullptr);
+}
+
+/// Konstruktionsebene im Abstand zu einer Ebene oder ebenen Fläche
+class TaskOffsetPlane: public Gui::TaskView::TaskDialog
+{
+public:
+    explicit TaskOffsetPlane(App::DocumentObject* plane)
+        : plane(plane)
+    {
+        auto w = new QWidget;
+        w->setWindowTitle(QStringLiteral("Offset Plane"));
+        auto form = new QFormLayout(w);
+        auto distance = new Gui::QuantitySpinBox;
+        distance->setUnit(Base::Unit::Length);
+        distance->setRange(-1e7, 1e7);
+        distance->setValue(Base::Quantity(10.0, Base::Unit::Length));
+        form->addRow(QStringLiteral("Distance"), distance);
+        addTaskBox(w, false);
+        QObject::connect(distance, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this](double d) {
+            setOffset(d);
+        });
+        setOffset(10.0);
+    }
+    QDialogButtonBox::StandardButtons getStandardButtons() const override
+    {
+        return QDialogButtonBox::Ok | QDialogButtonBox::Cancel;
+    }
+    bool accept() override
+    {
+        plane->getDocument()->commitTransaction();
+        return true;
+    }
+    bool reject() override
+    {
+        App::Document* doc = plane->getDocument();
+        doc->abortTransaction();
+        doc->recompute();
+        return true;
+    }
+
+private:
+    void setOffset(double d)
+    {
+        auto offset = static_cast<App::PropertyPlacement*>(plane->getPropertyByName("AttachmentOffset"));
+        offset->setValue(Base::Placement(Base::Vector3d(0, 0, d), Base::Rotation()));
+        plane->getDocument()->recompute();
+    }
+    App::DocumentObject* plane;
+};
+
+void startOffsetPlane(App::Document* doc)
+{
+    App::DocumentObject* support = nullptr;
+    std::string element;
+    auto selection = Gui::Selection().getSelectionEx();
+    for (auto& sel : selection) {
+        App::DocumentObject* obj = sel.getObject();
+        const auto& subs = sel.getSubNames();
+        if (isPlane(obj) && subs.empty()) {
+            support = obj;
+        }
+        else if (obj && subs.size() == 1 && isPlanarFace(obj, subs.front())) {
+            support = obj;
+            element = subs.front();
+        }
+    }
+    if (!support) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Offset Plane"),
+                                 QStringLiteral("Select a plane or a planar face first."));
+        return;
+    }
+    doc->openTransaction("Offset Plane");
+    App::DocumentObject* plane = doc->addObject("PartDesign::Plane", "Plane");
+    if (!plane) {
+        doc->abortTransaction();
+        return;
+    }
+    Design::folder(Design::root(doc, true), "Construction")->addObject(plane);
+    static_cast<App::PropertyLinkSubList*>(plane->getPropertyByName("AttachmentSupport"))
+        ->setValue(support, std::vector<std::string> {element});
+    static_cast<App::PropertyEnumeration*>(plane->getPropertyByName("MapMode"))->setValue("FlatFace");
+
+    // Dezent statt FreeCAD-Gelb, Größe passend zu den vorhandenen Körpern
+    Base::BoundBox3d bb;
+    for (auto b : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
+        bb.Add(static_cast<Design::Body*>(b)->Shape.getShape().getBoundBox());
+    }
+    const double size = bb.IsValid() ? std::max(bb.LengthX(), bb.LengthY()) * 1.2 : 60.0;
+    static_cast<App::PropertyEnumeration*>(plane->getPropertyByName("ResizeMode"))->setValue("Manual");
+    static_cast<App::PropertyLength*>(plane->getPropertyByName("Length"))->setValue(size);
+    static_cast<App::PropertyLength*>(plane->getPropertyByName("Width"))->setValue(size);
+    if (auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(plane))) {
+        vp->ShapeAppearance.setDiffuseColor(0.45F, 0.62F, 1.0F);
+        vp->Transparency.setValue(80);
+    }
+    Gui::Selection().clearSelection();
+    Gui::Control().showDialog(new TaskOffsetPlane(plane));
+}
+
 }  // namespace
 
 void CreateDesignCommands()
@@ -548,6 +730,14 @@ void CreateDesignCommands()
                                      "edit-delete", "", deleteSelected));
     mgr.addCommand(new DesignCommand("Design_Export", "Export", "Export bodies as 3MF, STL or STEP",
                                      "document-save-as", "", exportBodies));
+    mgr.addCommand(new DesignCommand("Design_Hole", "Hole", "Hole: place points in a sketch on a face",
+                                     "PartDesign_Hole", "H", startHole));
+    mgr.addCommand(new DesignCommand("Design_Pattern", "Pattern",
+                                     "Pattern: select an Extrude, Revolve or Hole in the timeline",
+                                     "PartDesign_LinearPattern", "", startPattern));
+    mgr.addCommand(new DesignCommand("Design_OffsetPlane", "Offset Plane",
+                                     "Offset Plane: select a plane or planar face", "PartDesign_Plane", "",
+                                     startOffsetPlane));
     mgr.addCommand(new DesignCommand("Design_Chamfer", "Chamfer", "Chamfer: select edges or faces of a body",
                                      "PartDesign_Chamfer", "", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Chamfer", "Chamfer");

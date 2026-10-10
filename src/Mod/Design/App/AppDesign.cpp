@@ -44,6 +44,8 @@ PyMOD_INIT_FUNC(Design)
     Design::Combine::init();
     Design::Move::init();
     Design::Mirror::init();
+    Design::Pattern::init();
+    Design::Hole::init();
 
     PyMOD_Return(mod);
 }

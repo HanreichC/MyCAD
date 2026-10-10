@@ -93,6 +93,14 @@ public:
 
     App::DocumentObjectExecReturn* execute() override;
 
+    /// Werkzeugkörper (Extrude, Revolve, Hole), z. B. für Pattern
+    virtual bool makeTool(Part::TopoShape& tool, std::string& error) const
+    {
+        (void)tool;
+        error = "This feature cannot be patterned";
+        return false;
+    }
+
 protected:
     /// Eigentliche Berechnung (execute kümmert sich um Suppressed)
     virtual App::DocumentObjectExecReturn* compute()
@@ -119,6 +127,7 @@ public:
     App::PropertyLength Distance2;
     App::PropertyBool Reversed;
 
+    bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;
 };
 
@@ -133,6 +142,7 @@ public:
     App::PropertyAngle Angle;
     App::PropertyBool Reversed;
 
+    bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;
 };
 
@@ -222,6 +232,46 @@ public:
     App::PropertyLinkListHidden SourceBodies;
     App::PropertyLinkList SourceFeatures;
     App::PropertyEnumeration Plane;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
+/// Ein Feature (Extrude, Revolve, Hole) rechteckig oder kreisförmig wiederholen
+class DesignExport Pattern: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Pattern);
+
+public:
+    Pattern();
+    App::PropertyLink Source;
+    App::PropertyEnumeration Type;  ///< Rectangular, Circular
+    App::PropertyEnumeration Direction1;
+    App::PropertyIntegerConstraint Count1;
+    App::PropertyLength Spacing1;
+    App::PropertyEnumeration Direction2;
+    App::PropertyIntegerConstraint Count2;
+    App::PropertyLength Spacing2;
+    App::PropertyEnumeration Axis;
+    App::PropertyAngle Angle;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
+/// Bohrungen an allen Punkten einer Skizze (wie "Hole from sketch" in Fusion)
+class DesignExport Hole: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Hole);
+
+public:
+    Hole();
+    App::PropertyLink Sketch;
+    App::PropertyEnumeration HoleType;  ///< Simple, Counterbore, Countersink
+    App::PropertyLength Diameter;
+    App::PropertyLength Depth;
+    App::PropertyBool ThroughAll;
+    App::PropertyLength HeadDiameter;
+    App::PropertyLength HeadDepth;
+    App::PropertyAngle CountersinkAngle;
+    App::PropertyBool Reversed;
+    bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;
 };
 
