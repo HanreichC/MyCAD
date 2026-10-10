@@ -7,6 +7,10 @@
         <file>Std_Undo.svg</file>
         <file>Std_Redo.svg</file>
         <file>Std_ViewFitAll.svg</file>
+        <file>Timeline_Start.svg</file>
+        <file>Timeline_Back.svg</file>
+        <file>Timeline_Forward.svg</file>
+        <file>Timeline_End.svg</file>
         <file>Design_CreateSketch.svg</file>
         <file>Design_Extrude.svg</file>
         <file>Design_Revolve.svg</file>

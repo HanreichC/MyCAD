@@ -19,6 +19,11 @@ ICONS = {
     "Std_Undo": '<path d="M9 7l-4 4 4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-2"/>',
     "Std_Redo": '<path d="M15 7l4 4-4 4"/><path d="M19 11h-9a5 5 0 0 0 0 10h2"/>',
     "Std_ViewFitAll": '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>',
+    # Timeline
+    "Timeline_Start": '<path d="M7 5v14M17 6l-7 6 7 6"/>',
+    "Timeline_Back": '<path d="M15 6l-6 6 6 6"/>',
+    "Timeline_Forward": '<path d="M9 6l6 6-6 6"/>',
+    "Timeline_End": '<path d="M17 5v14M7 6l7 6-7 6"/>',
     # Erstellen
     "Design_CreateSketch": '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 8l3 3"/><path d="M13 20h7"/>',
     "Design_Extrude": '<path d="M3 18l5-3h13l-5 3z"/><path d="M13 12V3M10 6l3-3 3 3"/>',

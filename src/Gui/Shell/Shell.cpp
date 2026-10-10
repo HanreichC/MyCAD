@@ -79,6 +79,7 @@ QToolButton#GlassButton:pressed { background: %5; }
 QToolButton#GlassButton:disabled { background: transparent; }
 #GlassContent QToolButton#GlassProminent { border: none; border-radius: 15px; background: %3; color: white; font-weight: 600; padding: 0 14px; }
 #GlassContent QToolButton#GlassProminent:hover { background: %3; border: 2px solid rgba(255,255,255,0.35); }
+QFrame#TimelineMarker { background: %3; border-radius: 2px; }
 QToolButton#GlassButton[error="true"] { background: rgba(255,59,48,0.28); }
 QFrame#GlassSeparator { background: %8; border: none; }
 #GlassContent, #GlassContent QWidget { background: transparent; }
@@ -396,6 +397,60 @@ void layout()
     }
 }
 
+/// Objekt mit der Timeline-Reihenfolge (Root-Komponente des Design-Moduls), sonst nullptr
+App::DocumentObject* timelineHolder(App::Document* doc)
+{
+    for (auto obj : doc ? doc->getObjects() : std::vector<App::DocumentObject*>()) {
+        if (freecad_cast<App::PropertyLinkList*>(obj->getPropertyByName("Timeline"))) {
+            return obj;
+        }
+    }
+    return nullptr;
+}
+
+std::vector<App::DocumentObject*> timelineItems(App::Document* doc)
+{
+    std::vector<App::DocumentObject*> items;
+    if (auto holder = timelineHolder(doc)) {
+        items = static_cast<App::PropertyLinkList*>(holder->getPropertyByName("Timeline"))->getValues();
+        std::erase(items, nullptr);
+        return items;
+    }
+    for (auto obj : doc ? doc->getObjects() : std::vector<App::DocumentObject*>()) {
+        if (isTimelineItem(obj)) {
+            items.push_back(obj);
+        }
+    }
+    return items;
+}
+
+int timelineMarker(App::Document* doc)
+{
+    auto holder = timelineHolder(doc);
+    auto prop = holder ? freecad_cast<App::PropertyInteger*>(holder->getPropertyByName("RollbackMarker")) : nullptr;
+    return prop ? static_cast<int>(prop->getValue()) : -1;
+}
+
+/// Rollback-Marker setzen: nur die ersten n Einträge sind aktiv (-1 = alle)
+void setTimelineMarker(App::Document* doc, int n)
+{
+    auto holder = timelineHolder(doc);
+    auto prop = holder ? freecad_cast<App::PropertyInteger*>(holder->getPropertyByName("RollbackMarker")) : nullptr;
+    if (!prop || Control().activeDialog()) {
+        return;
+    }
+    const int count = static_cast<int>(timelineItems(doc).size());
+    doc->openTransaction("Roll Back");
+    prop->setValue(n < 0 || n >= count ? -1 : n);
+    for (auto obj : doc->getObjects()) {
+        if (obj->getPropertyByName("Suppressed")) {  // Features neu berechnen lassen
+            obj->touch();
+        }
+    }
+    doc->recompute();
+    doc->commitTransaction();
+}
+
 /// Timeline-Leiste neu aufbauen (nach jeder Änderung am Dokument, gebündelt)
 void rebuildTimeline()
 {
@@ -412,9 +467,50 @@ void rebuildTimeline()
     int count = 0;
     App::Document* doc = App::GetApplication().getActiveDocument();
     Gui::Document* gdoc = doc ? Application::Instance->getDocument(doc) : nullptr;
-    for (App::DocumentObject* obj : doc ? doc->getObjects() : std::vector<App::DocumentObject*>()) {
-        if (!isTimelineItem(obj) || !gdoc) {
-            continue;
+    const auto items = timelineItems(doc);
+    const int marker = timelineMarker(doc);
+    const int total = static_cast<int>(items.size());
+
+    // Wiedergabe-Knöpfe wie in Fusion: Anfang, zurück, vor, Ende
+    if (gdoc && timelineHolder(doc) && total > 0) {
+        const std::string docName = doc->getName();
+        auto play = [&](const char* icon, std::function<int(int)> target) {
+            auto btn = new QToolButton;
+            btn->setObjectName(QStringLiteral("GlassButton"));
+            btn->setIcon(designIcon(QString::fromLatin1(icon)));
+            btn->setIconSize(QSize(18, 18));
+            btn->setFixedSize(28, 36);
+            QObject::connect(btn, &QToolButton::clicked, btn, [docName, target] {
+                QTimer::singleShot(0, [docName, target] {
+                    if (App::Document* d = App::GetApplication().getDocument(docName.c_str())) {
+                        setTimelineMarker(d, target(timelineMarker(d)));
+                    }
+                });
+            });
+            lay->addWidget(btn);
+        };
+        play("Timeline_Start", [](int) { return 0; });
+        play("Timeline_Back", [total](int m) { return std::max(0, (m < 0 ? total : m) - 1); });
+        play("Timeline_Forward", [](int m) { return m < 0 ? -1 : m + 1; });
+        play("Timeline_End", [](int) { return -1; });
+        auto sep = new QFrame;
+        sep->setObjectName(QStringLiteral("GlassSeparator"));
+        sep->setFixedSize(1, 22);
+        lay->addSpacing(4);
+        lay->addWidget(sep);
+        lay->addSpacing(4);
+    }
+    auto markerLine = [&] {
+        auto line = new QFrame;
+        line->setObjectName(QStringLiteral("TimelineMarker"));
+        line->setFixedSize(4, 30);
+        lay->addWidget(line);
+    };
+
+    for (int index = 0; index < total && gdoc; ++index) {
+        App::DocumentObject* obj = items[index];
+        if (index == marker) {
+            markerLine();
         }
         auto vp = gdoc->getViewProvider(obj);
         auto btn = new TimelineButton;
@@ -432,7 +528,8 @@ void rebuildTimeline()
                                           : QString()));
         btn->setProperty("error", obj->isError());
         auto suppressed = freecad_cast<App::PropertyBool*>(obj->getPropertyByName("Suppressed"));
-        if (suppressed && suppressed->getValue()) {
+        const bool rolledBack = marker >= 0 && index >= marker;
+        if ((suppressed && suppressed->getValue()) || rolledBack) {
             btn->setIcon(QIcon(btn->icon().pixmap(QSize(44, 44), QIcon::Disabled)));  // unterdrückt: blass
         }
         const App::DocumentObjectT ref(obj);
@@ -444,6 +541,7 @@ void rebuildTimeline()
             }
             QMenu menu;
             QAction* edit = menu.addAction(QStringLiteral("Edit"));
+            QAction* rollback = timelineHolder(o->getDocument()) ? menu.addAction(QStringLiteral("Roll Back to Here")) : nullptr;
             QAction* suppress = nullptr;
             if (auto prop = freecad_cast<App::PropertyBool*>(o->getPropertyByName("Suppressed"))) {
                 suppress = menu.addAction(prop->getValue() ? QStringLiteral("Unsuppress") : QStringLiteral("Suppress"));
@@ -452,13 +550,17 @@ void rebuildTimeline()
             QAction* remove = menu.addAction(QStringLiteral("Delete"));
             QAction* chosen = menu.exec(QCursor::pos());
             // Nach dem Menü ausführen, nicht innerhalb des Maus-Events
-            QTimer::singleShot(0, [ref, chosen, edit, suppress, remove] {
+            QTimer::singleShot(0, [ref, chosen, edit, rollback, suppress, remove] {
                 auto o = ref.getObject();
                 if (!o || !chosen) {
                     return;
                 }
                 App::Document* doc = o->getDocument();
-                if (chosen == edit) {
+                if (chosen == rollback) {
+                    const auto all = timelineItems(doc);
+                    setTimelineMarker(doc, static_cast<int>(std::ranges::find(all, o) - all.begin()) + 1);
+                }
+                else if (chosen == edit) {
                     auto gd = Application::Instance->getDocument(doc);
                     gd->setEdit(gd->getViewProvider(o));
                 }
@@ -492,6 +594,9 @@ void rebuildTimeline()
         };
         lay->addWidget(btn);
         ++count;
+    }
+    if (marker >= 0 && marker >= total && total > 0) {
+        markerLine();
     }
     box->setProperty("count", count);
     box->adjustSize();

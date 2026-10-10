@@ -404,10 +404,10 @@ private:
     /// Nur im Erstell-Modus: stellt Operation und Ziel-Body um und legt bei New Body den neuen Body an.
     void setOperation(Design::Feature::Op op, Design::Body* target)
     {
-        for (auto& [b, tip] : savedTips) {
-            b->Tip.setValue(tip);
+        // vorherigen Ziel-Body wieder freigeben (New Body verwaltet newBody selbst)
+        if (!(feature->op() == Design::Feature::Op::NewBody && newBody) && feature->BaseFeatures.getSize() > 0) {
+            Design::detachFromBodies(feature);
         }
-        savedTips.clear();
 
         App::Document* doc = feature->getDocument();
         if (op == Design::Feature::Op::NewBody) {
@@ -427,10 +427,7 @@ private:
                 newBody = nullptr;
             }
             if (target) {
-                savedTips[target] = target->Tip.getValue();
-                feature->Bodies.setValues({target});
-                feature->BaseFeatures.setValues({target->Tip.getValue()});
-                target->Tip.setValue(feature);
+                Design::attachToBodies(feature, {target});
                 body->blockSignals(true);
                 body->setCurrentIndex(body->findData(QString::fromLatin1(target->getNameInDocument())));
                 body->blockSignals(false);
@@ -550,7 +547,6 @@ private:
     bool create;
     bool autoFlipped = false;
     Design::Body* newBody = nullptr;
-    std::map<Design::Body*, App::DocumentObject*> savedTips;
     QFormLayout* form = nullptr;
     QComboBox* extent = nullptr;
     QComboBox* axis = nullptr;

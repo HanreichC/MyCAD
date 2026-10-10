@@ -24,8 +24,26 @@ namespace Design
 
 DesignExport App::Part* root(App::Document* doc, bool create);
 DesignExport App::DocumentObjectGroup* folder(App::Part* root, const char* label);
+class Body;
+class Feature;
+
+/// @name Timeline (Reihenfolge und Rollback-Marker liegen an der Root-Komponente)
+///@{
+DesignExport std::vector<App::DocumentObject*> timeline(App::Document* doc);
+/// neuen Eintrag an der Marker-Position einfügen (ohne Marker: anhängen)
+DesignExport void addToTimeline(App::DocumentObject* obj);
+DesignExport int rollbackMarker(App::Document* doc);  ///< Anzahl aktiver Einträge, -1 = alle
+DesignExport void setRollbackMarker(App::Document* doc, int active);
+DesignExport bool isRolledBack(const App::DocumentObject* obj);
+/// Zustand eines Bodies am Marker (letztes nicht zurückgerolltes Feature)
+DesignExport App::DocumentObject* stateAtMarker(Body* body);
+/// Feature verändert die Bodies: Basis = Zustand am Marker, spätere Features bauen auf ihm auf
+DesignExport void attachToBodies(Feature* feature, const std::vector<Body*>& bodies);
+/// Gegenstück; liefert Bodies, die nur dieses Feature erzeugt hat
+DesignExport std::vector<std::string> detachFromBodies(Feature* feature);
 /// Skizze oder Feature aus der Timeline löschen und die Kette dahinter neu verbinden
 DesignExport void removeFromTimeline(App::DocumentObject* obj);
+///@}
 
 class DesignExport Body: public Part::Feature
 {

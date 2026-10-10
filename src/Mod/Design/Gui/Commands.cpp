@@ -96,7 +96,7 @@ void createSketch(App::DocumentObject* support, std::string element)
     // erzeugt hat), nicht an den Body: sonst entsteht ein Kreis, sobald ein Feature aus dieser Skizze
     // denselben Body verändert. So bezieht sich die Skizze wie in Fusion auf den Körper zu diesem Zeitpunkt.
     if (auto body = freecad_cast<Design::Body*>(support)) {
-        if (auto tip = freecad_cast<Design::Feature*>(body->Tip.getValue())) {
+        if (auto tip = freecad_cast<Design::Feature*>(Design::stateAtMarker(body))) {
             const TopoDS_Shape face = body->Shape.getShape().getSubShape(element.c_str(), true);
             const std::string name = faceName(tip->Shape.getShape().getShape(), face);
             if (!name.empty()) {
@@ -111,6 +111,7 @@ void createSketch(App::DocumentObject* support, std::string element)
     App::Part* root = Design::root(doc, true);
     auto sketch = static_cast<Sketcher::SketchObject*>(doc->addObject("Sketcher::SketchObject", "Sketch"));
     Design::folder(root, "Sketches")->addObject(sketch);
+    Design::addToTimeline(sketch);
     sketch->AttachmentSupport.setValue(support, std::vector<std::string> {element});
     sketch->MapMode.setValue("FlatFace");
     auto profiles = static_cast<Design::Profiles*>(doc->addObject("Design::Profiles", "Profiles"));
@@ -290,6 +291,7 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name)
     doc->openTransaction(name);
     auto feature = static_cast<Design::Feature*>(doc->addObject(type, name));
     Design::root(doc, true)->addObject(feature);
+    Design::addToTimeline(feature);
     static_cast<App::PropertyLinkSub*>(feature->getPropertyByName("Profile"))->setValue(profiles, faces);
 
     // Skizze auf einer Körperfläche: standardmäßig mit diesem Körper vereinen
@@ -328,7 +330,7 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
             }
         }
     }
-    if (!body || (edges.empty() && !bodyAlone) || !body->Tip.getValue()) {
+    if (!body || (edges.empty() && !bodyAlone) || !Design::stateAtMarker(body)) {
         QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name),
                                  QStringLiteral("Select edges (or faces) of a body first."));
         return;
@@ -337,10 +339,9 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
     doc->openTransaction(name);
     auto feature = static_cast<Design::DressUp*>(doc->addObject(type, name));
     Design::root(doc, true)->addObject(feature);
-    feature->Bodies.setValues({body});
-    feature->BaseFeatures.setValues({body->Tip.getValue()});
+    Design::addToTimeline(feature);
     feature->Edges.setValues(edges);
-    body->Tip.setValue(feature);
+    Design::attachToBodies(feature, {body});
     doc->recompute();
     startEditing(feature, false, nullptr);
 }
@@ -352,7 +353,7 @@ std::vector<Design::Body*> selectedBodies()
     auto selection = Gui::Selection().getSelectionEx();
     for (auto& sel : selection) {
         auto b = freecad_cast<Design::Body*>(sel.getObject());
-        if (b && b->Tip.getValue() && std::ranges::find(bodies, b) == bodies.end()) {
+        if (b && Design::stateAtMarker(b) && std::ranges::find(bodies, b) == bodies.end()) {
             bodies.push_back(b);
         }
     }
@@ -364,22 +365,14 @@ Design::Feature* addFeature(App::Document* doc, const char* type, const char* na
     doc->openTransaction(name);
     auto feature = static_cast<Design::Feature*>(doc->addObject(type, name));
     Design::root(doc, true)->addObject(feature);
+    Design::addToTimeline(feature);
     return feature;
 }
 
-/// Feature verändert die Bodies: je Body vorheriger Zustand als Basis, das Feature wird neuer Tip
+/// Feature verändert die Bodies (Basis = Zustand am Rollback-Marker)
 void modifyBodies(Design::Feature* feature, const std::vector<Design::Body*>& bodies)
 {
-    std::vector<App::DocumentObject*> objs, bases;
-    for (auto b : bodies) {
-        objs.push_back(b);
-        bases.push_back(b->Tip.getValue());
-    }
-    feature->Bodies.setValues(objs);
-    feature->BaseFeatures.setValues(bases);
-    for (auto b : bodies) {
-        b->Tip.setValue(feature);
-    }
+    Design::attachToBodies(feature, bodies);
 }
 
 void startCombine(App::Document* doc)
@@ -394,7 +387,7 @@ void startCombine(App::Document* doc)
     std::vector<App::DocumentObject*> tools, states;
     for (size_t i = 1; i < bodies.size(); ++i) {
         tools.push_back(bodies[i]);
-        states.push_back(bodies[i]->Tip.getValue());
+        states.push_back(Design::stateAtMarker(bodies[i]));
     }
     feature->ToolBodies.setValues(tools);
     feature->ToolFeatures.setValues(states);
@@ -429,7 +422,7 @@ void startMirror(App::Document* doc)
     std::vector<App::DocumentObject*> sources, states, created;
     for (auto b : bodies) {
         sources.push_back(b);
-        states.push_back(b->Tip.getValue());
+        states.push_back(Design::stateAtMarker(b));
         auto copy = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
         copy->Label.setValue(std::string(b->Label.getValue()) + " Mirror");
         Design::folder(Design::root(doc, true), "Bodies")->addObject(copy);

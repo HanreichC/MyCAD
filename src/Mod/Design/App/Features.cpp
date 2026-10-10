@@ -127,9 +127,212 @@ App::DocumentObjectGroup* Design::folder(App::Part* root, const char* label)
     return group;
 }
 
+namespace
+{
+App::PropertyLinkList* timelineProperty(App::Document* doc, bool create)
+{
+    App::Part* r = Design::root(doc, create);
+    if (!r) {
+        return nullptr;
+    }
+    auto prop = freecad_cast<App::PropertyLinkList*>(r->getPropertyByName("Timeline"));
+    if (!prop && create) {
+        // Bisherige Einträge in Dokument-Reihenfolge übernehmen (Dateien vor dem Rollback-Marker)
+        const auto existing = Design::timeline(doc);
+        prop = static_cast<App::PropertyLinkList*>(r->addDynamicProperty(
+            "App::PropertyLinkListHidden", "Timeline", "Design", "Order of the timeline", App::Prop_Hidden
+        ));
+        r->addDynamicProperty("App::PropertyInteger", "RollbackMarker", "Design",
+                              "Number of active timeline entries (-1 = all)", App::Prop_Hidden);
+        static_cast<App::PropertyInteger*>(r->getPropertyByName("RollbackMarker"))->setValue(-1);
+        prop->setValues(existing);
+    }
+    return prop;
+}
+
+App::PropertyInteger* markerProperty(App::Document* doc)
+{
+    App::Part* r = Design::root(doc, false);
+    return r ? freecad_cast<App::PropertyInteger*>(r->getPropertyByName("RollbackMarker")) : nullptr;
+}
+
+/// In states (parallel zu stateBodies) für body den Eintrag from durch to ersetzen
+void replaceState(App::PropertyLinkList& states, const std::vector<App::DocumentObject*>& stateBodies,
+                  const App::DocumentObject* body, App::DocumentObject* from, App::DocumentObject* to)
+{
+    auto values = states.getValues();
+    bool changed = false;
+    for (size_t j = 0; j < values.size() && j < stateBodies.size(); ++j) {
+        if (values[j] == from && stateBodies[j] == body && to) {
+            values[j] = to;
+            changed = true;
+        }
+    }
+    if (changed) {
+        states.setValues(values);
+    }
+}
+
+/// Alle Features, die für body auf dem Zustand from aufbauen, bauen stattdessen auf to auf
+void rewireUsers(App::DocumentObject* from, App::DocumentObject* to, const App::DocumentObject* body,
+                 const App::DocumentObject* except)
+{
+    for (auto user : from->getInList()) {
+        if (user == except) {
+            continue;
+        }
+        if (auto later = freecad_cast<Design::Feature*>(user)) {
+            replaceState(later->BaseFeatures, later->Bodies.getValues(), body, from, to);
+        }
+        if (auto combine = freecad_cast<Design::Combine*>(user)) {
+            replaceState(combine->ToolFeatures, combine->ToolBodies.getValues(), body, from, to);
+        }
+        if (auto mirror = freecad_cast<Design::Mirror*>(user)) {
+            replaceState(mirror->SourceFeatures, mirror->SourceBodies.getValues(), body, from, to);
+        }
+    }
+}
+}  // namespace
+
+std::vector<App::DocumentObject*> Design::timeline(App::Document* doc)
+{
+    if (auto prop = timelineProperty(doc, false)) {
+        auto items = prop->getValues();
+        std::erase(items, nullptr);
+        return items;
+    }
+    std::vector<App::DocumentObject*> items;
+    for (auto obj : doc->getObjects()) {
+        if (obj->isDerivedFrom<Feature>() || obj->getTypeId().isDerivedFrom(Base::Type::fromName("Sketcher::SketchObject"))) {
+            items.push_back(obj);
+        }
+    }
+    return items;
+}
+
+void Design::addToTimeline(App::DocumentObject* obj)
+{
+    App::Document* doc = obj->getDocument();
+    auto prop = timelineProperty(doc, true);
+    auto items = prop->getValues();
+    std::erase(items, obj);
+    auto marker = markerProperty(doc);
+    const int m = marker ? marker->getValue() : -1;
+    if (m < 0 || m >= static_cast<int>(items.size())) {
+        items.push_back(obj);
+        if (marker && m >= 0) {
+            marker->setValue(static_cast<int>(items.size()));
+        }
+    }
+    else {
+        items.insert(items.begin() + m, obj);  // an der Marker-Position einfügen
+        marker->setValue(m + 1);
+    }
+    prop->setValues(items);
+}
+
+int Design::rollbackMarker(App::Document* doc)
+{
+    auto marker = markerProperty(doc);
+    return marker ? marker->getValue() : -1;
+}
+
+void Design::setRollbackMarker(App::Document* doc, int active)
+{
+    timelineProperty(doc, true);
+    const int count = static_cast<int>(timeline(doc).size());
+    markerProperty(doc)->setValue(active < 0 || active >= count ? -1 : active);
+    for (auto obj : doc->getObjectsOfType(Feature::getClassTypeId())) {
+        obj->touch();
+    }
+    doc->recompute();
+}
+
+bool Design::isRolledBack(const App::DocumentObject* obj)
+{
+    const int m = rollbackMarker(obj->getDocument());
+    if (m < 0) {
+        return false;
+    }
+    const auto items = timeline(obj->getDocument());
+    const auto idx = std::ranges::find(items, obj) - items.begin();
+    return idx < static_cast<long>(items.size()) && idx >= m;
+}
+
+App::DocumentObject* Design::stateAtMarker(Body* body)
+{
+    App::DocumentObject* state = body->Tip.getValue();
+    while (auto f = freecad_cast<Feature*>(state)) {
+        if (!isRolledBack(f)) {
+            return f;
+        }
+        // Zurückgerollt: Zustand davor für diesen Body
+        const auto& bodies = f->Bodies.getValues();
+        const auto& bases = f->BaseFeatures.getValues();
+        const auto idx = std::ranges::find(bodies, body) - bodies.begin();
+        state = idx < static_cast<long>(bases.size()) ? bases[idx] : nullptr;
+    }
+    return state;
+}
+
+void Design::attachToBodies(Feature* feature, const std::vector<Body*>& bodies)
+{
+    std::vector<App::DocumentObject*> objs, bases;
+    for (auto b : bodies) {
+        objs.push_back(b);
+        bases.push_back(stateAtMarker(b));
+    }
+    feature->Bodies.setValues(objs);
+    feature->BaseFeatures.setValues(bases);
+    for (size_t i = 0; i < bodies.size(); ++i) {
+        if (!bases[i]) {
+            continue;
+        }
+        rewireUsers(bases[i], feature, bodies[i], feature);  // eingefügt: spätere Features bauen auf diesem auf
+        if (bodies[i]->Tip.getValue() == bases[i]) {
+            bodies[i]->Tip.setValue(feature);
+        }
+    }
+}
+
+std::vector<std::string> Design::detachFromBodies(Feature* feature)
+{
+    const auto bodies = feature->Bodies.getValues();
+    const auto bases = feature->BaseFeatures.getValues();
+    std::vector<std::string> orphans;
+    for (size_t i = 0; i < bodies.size(); ++i) {
+        App::DocumentObject* base = i < bases.size() ? bases[i] : nullptr;
+        if (base) {
+            rewireUsers(feature, base, bodies[i], nullptr);
+        }
+        auto body = freecad_cast<Body*>(bodies[i]);
+        if (body && body->Tip.getValue() == feature) {
+            if (base) {
+                body->Tip.setValue(base);
+            }
+            else {
+                orphans.emplace_back(body->getNameInDocument());  // nur von diesem Feature erzeugt
+            }
+        }
+    }
+    feature->Bodies.setValues({});
+    feature->BaseFeatures.setValues({});
+    return orphans;
+}
+
 void Design::removeFromTimeline(App::DocumentObject* obj)
 {
     App::Document* doc = obj->getDocument();
+    if (auto prop = timelineProperty(doc, false)) {
+        auto items = prop->getValues();
+        const auto idx = std::ranges::find(items, obj) - items.begin();
+        auto marker = markerProperty(doc);
+        if (marker && marker->getValue() > idx) {
+            marker->setValue(marker->getValue() - 1);
+        }
+        std::erase(items, obj);
+        prop->setValues(items);
+    }
     auto feature = freecad_cast<Feature*>(obj);
     if (!feature) {  // Skizze: mit ihrem Profiles-Begleiter
         if (auto profiles = Profiles::forSketch(obj)) {
@@ -138,53 +341,7 @@ void Design::removeFromTimeline(App::DocumentObject* obj)
         doc->removeObject(obj->getNameInDocument());
         return;
     }
-
-    const auto bodies = feature->Bodies.getValues();
-    const auto bases = feature->BaseFeatures.getValues();
-    auto baseFor = [&](const App::DocumentObject* body) -> App::DocumentObject* {
-        const auto idx = std::ranges::find(bodies, body) - bodies.begin();
-        return idx < static_cast<long>(bases.size()) ? bases[idx] : nullptr;
-    };
-    // Spätere Features, die auf diesem aufbauen, nehmen stattdessen dessen Basis
-    auto rewire = [&](App::PropertyLinkList& states, const std::vector<App::DocumentObject*>& stateBodies) {
-        auto values = states.getValues();
-        bool changed = false;
-        for (size_t j = 0; j < values.size() && j < stateBodies.size(); ++j) {
-            if (values[j] == feature) {
-                if (auto base = baseFor(stateBodies[j])) {
-                    values[j] = base;
-                    changed = true;
-                }
-            }
-        }
-        if (changed) {
-            states.setValues(values);
-        }
-    };
-    for (auto user : feature->getInList()) {
-        if (auto later = freecad_cast<Feature*>(user)) {
-            rewire(later->BaseFeatures, later->Bodies.getValues());
-        }
-        if (auto combine = freecad_cast<Combine*>(user)) {
-            rewire(combine->ToolFeatures, combine->ToolBodies.getValues());
-        }
-        if (auto mirror = freecad_cast<Mirror*>(user)) {
-            rewire(mirror->SourceFeatures, mirror->SourceBodies.getValues());
-        }
-    }
-    // Bodies zurücksetzen; einen Body, den nur dieses Feature erzeugt hat, mitlöschen
-    std::vector<std::string> orphans;
-    for (auto obj : bodies) {
-        auto body = freecad_cast<Body*>(obj);
-        if (body && body->Tip.getValue() == feature) {
-            if (auto base = baseFor(body)) {
-                body->Tip.setValue(base);
-            }
-            else {
-                orphans.emplace_back(body->getNameInDocument());
-            }
-        }
-    }
+    const auto orphans = detachFromBodies(feature);
     doc->removeObject(feature->getNameInDocument());
     for (const auto& name : orphans) {
         doc->removeObject(name.c_str());
@@ -319,10 +476,10 @@ Feature::Feature()
 
 App::DocumentObjectExecReturn* Feature::execute()
 {
-    if (Suppressed.getValue()) {
+    if (Suppressed.getValue() || isRolledBack(this)) {  // unterdrückt oder hinter dem Rollback-Marker
         std::vector<Part::TopoShape> results;
         for (int i = 0; i < Bodies.getSize(); ++i) {
-            results.push_back(op() == Op::NewBody ? Part::TopoShape() : baseShape(i));
+            results.push_back(baseShape(i));  // Vorzustand durchreichen; ohne Vorzustand (neuer Body) leer
         }
         setResults(results);
         return StdReturn;
