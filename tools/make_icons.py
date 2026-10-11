@@ -42,6 +42,7 @@ ICONS = {
     "Design_Align": '<rect x="3" y="14" width="8" height="7" rx="1"/><rect x="13" y="3" width="8" height="7" rx="1"/><path d="M7 14V6.5h6M10 4l3 2.5L10 9"/>',
     "Design_SplitBody": '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M3 14L21 10" stroke-dasharray="2.4 2"/>',
     "Design_Thread": '<path d="M8 3h8M8 21h8M8 6l8 2M8 10l8 2M8 14l8 2M8 18l8 2"/><path d="M8 3v18M16 3v18"/>',
+    "Design_Appearance": '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-2 0-1.4-1.3-1.8-1.3-3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/>' + DOT.format(7.5, 11) + DOT.format(10, 7) + DOT.format(15, 7.5),
     "Design_Import": '<path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5"/><path d="M12 10.5v7M9 14.5l3 3 3-3"/>',
     "Design_Export": '<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
     "Std_Undo": '<path d="M9 7l-4 4 4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-2"/>',

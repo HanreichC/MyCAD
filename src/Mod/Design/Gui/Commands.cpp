@@ -33,6 +33,10 @@
 #include <TopoDS_Vertex.hxx>
 #include <gp_Pln.hxx>
 #include <QLabel>
+#include <App/Material.h>
+#include <QToolButton>
+#include <QPushButton>
+#include <QGridLayout>
 #include <QVBoxLayout>
 #include <BRep_Tool.hxx>
 #include <GeomConvert.hxx>
@@ -1682,6 +1686,118 @@ private:
     QLabel* result;
 };
 
+/// Aussehen wie in Fusion: Material-Vorlagen und Farben für die gewählten Bodies, sofort sichtbar
+class TaskAppearance: public Gui::TaskView::TaskDialog
+{
+public:
+    TaskAppearance(App::Document* doc, std::vector<App::DocumentObject*> bodies)
+        : doc(doc)
+        , bodies(std::move(bodies))
+    {
+        doc->openTransaction("Appearance");
+        auto w = new QWidget;
+        w->setWindowTitle(QStringLiteral("Appearance"));
+        auto lay = new QVBoxLayout(w);
+        lay->addWidget(new QLabel(QStringLiteral("%1 selected").arg(this->bodies.size() == 1
+                                                                        ? QString::fromUtf8(this->bodies.front()->Label.getValue())
+                                                                        : QStringLiteral("%1 bodies").arg(this->bodies.size()))));
+        auto heading = [lay](const QString& text) {
+            auto label = new QLabel(text);
+            label->setStyleSheet(QStringLiteral("font-weight: 600; margin-top: 8px;"));
+            lay->addWidget(label);
+        };
+        heading(QStringLiteral("Material"));
+        struct Preset
+        {
+            const char* name;
+            App::Material::MaterialType type;
+        };
+        const Preset presets[] = {{"Steel", App::Material::STEEL},       {"Aluminum", App::Material::ALUMINIUM},
+                                  {"Chrome", App::Material::CHROME},     {"Brass", App::Material::BRASS},
+                                  {"Copper", App::Material::COPPER},     {"Gold", App::Material::GOLD},
+                                  {"Plastic", App::Material::PLASTIC},   {"Glossy", App::Material::SHINY_PLASTIC},
+                                  {"Satin", App::Material::SATIN},       {"Stone", App::Material::STONE},
+                                  {"Plaster", App::Material::PLASTER},   {"Default", App::Material::DEFAULT}};
+        auto grid = new QGridLayout;
+        int i = 0;
+        for (const auto& preset : presets) {
+            auto button = new QPushButton(QString::fromLatin1(preset.name));
+            button->setAutoDefault(false);
+            const App::Material material(preset.type);
+            QObject::connect(button, &QPushButton::clicked, button, [this, material] { apply(material); });
+            grid->addWidget(button, i / 3, i % 3);
+            ++i;
+        }
+        lay->addLayout(grid);
+        heading(QStringLiteral("Color"));
+        auto swatches = new QGridLayout;
+        swatches->setSpacing(8);
+        const char* colors[] = {"#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#00C7BE", "#30B0C7", "#007AFF",
+                                "#5856D6", "#AF52DE", "#FF2D55", "#A2845E", "#8E8E93", "#F2F2F7", "#1C1C1E"};
+        i = 0;
+        for (const char* hex : colors) {
+            auto swatch = new QToolButton;
+            swatch->setFixedSize(30, 30);
+            swatch->setToolTip(QString::fromLatin1(hex));
+            swatch->setStyleSheet(QStringLiteral("QToolButton { background: %1; border-radius: 15px; "
+                                                 "border: 1px solid rgba(128,128,128,0.35); }"
+                                                 "QToolButton:hover { border: 2px solid #007AFF; }")
+                                      .arg(QString::fromLatin1(hex)));
+            const QColor c(QString::fromLatin1(hex));
+            QObject::connect(swatch, &QToolButton::clicked, swatch, [this, c] {
+                App::Material material(App::Material::PLASTIC);
+                material.diffuseColor = Base::Color(float(c.redF()), float(c.greenF()), float(c.blueF()));
+                apply(material);
+            });
+            swatches->addWidget(swatch, i / 7, i % 7);
+            ++i;
+        }
+        lay->addLayout(swatches);
+        addTaskBox(w, false);
+    }
+    QDialogButtonBox::StandardButtons getStandardButtons() const override
+    {
+        return QDialogButtonBox::Ok | QDialogButtonBox::Cancel;
+    }
+    bool accept() override
+    {
+        doc->commitTransaction();
+        return true;
+    }
+    bool reject() override
+    {
+        doc->abortTransaction();
+        return true;
+    }
+
+private:
+    void apply(const App::Material& material)
+    {
+        for (auto body : bodies) {
+            if (auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(body))) {
+                vp->ShapeAppearance.setValue(material);
+            }
+        }
+    }
+    App::Document* doc;
+    std::vector<App::DocumentObject*> bodies;
+};
+
+void startAppearance(App::Document* doc)
+{
+    std::vector<App::DocumentObject*> bodies;
+    for (auto b : selectedBodies()) {
+        bodies.push_back(b);
+    }
+    if (bodies.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Appearance"),
+                                 QStringLiteral("Select one or more bodies first."));
+        return;
+    }
+    Gui::Selection().clearSelection();
+    Gui::Control().showDialog(new TaskAppearance(doc, bodies));
+}
+
 void startMeasure(App::Document*)
 {
     Gui::Control().showDialog(new TaskMeasure);
@@ -1883,6 +1999,9 @@ void CreateDesignCommands()
                                      "PartDesign_Hole", "", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Thread", "Thread");
                                      }));
+    mgr.addCommand(new DesignCommand("Design_Appearance", "Appearance",
+                                     "Appearance: select bodies, then pick a material or color", "Std_SetAppearance",
+                                     "A", startAppearance));
     mgr.addCommand(new DesignCommand("Design_NewComponent", "New Component",
                                      "New Component: an empty part with its own origin (double-click to activate)",
                                      "Std_Part", "", startNewComponent));
