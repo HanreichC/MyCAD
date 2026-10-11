@@ -33,6 +33,19 @@
 #include <TopoDS_Iterator.hxx>
 #include <gp_Ax1.hxx>
 #include <gp_Ax2.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <BRepOffsetAPI_MakePipe.hxx>
+#include <BRepOffsetAPI_MakePipeShell.hxx>
+#include <BRepPrimAPI_MakeBox.hxx>
+#include <BRepPrimAPI_MakeSphere.hxx>
+#include <BRepPrimAPI_MakeTorus.hxx>
+#include <BRepTools.hxx>
+#include <TopoDS_Edge.hxx>
+#include <TopoDS_Wire.hxx>
+#include <gp_Ax3.hxx>
+#include <gp_Circ.hxx>
 #include <BRepPrimAPI_MakeCone.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <Standard_Failure.hxx>
@@ -51,6 +64,8 @@ const char* XYZEnums[] = {"X", "Y", "Z", nullptr};
 const char* PlaneEnums[] = {"XY", "XZ", "YZ", nullptr};
 const char* PatternEnums[] = {"Rectangular", "Circular", nullptr};
 const char* HoleEnums[] = {"Simple", "Counterbore", "Countersink", nullptr};
+const char* PrimitiveEnums[] = {"Box", "Cylinder", "Sphere", "Torus", "Coil", nullptr};
+const char* CenterEnums[] = {"Origin", "Body center", nullptr};
 const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
@@ -99,6 +114,44 @@ Part::TopoShape solidOf(const Part::TopoShape& shape)
         return shape.getSubTopoShape(TopAbs_SOLID, 1);
     }
     return shape;
+}
+
+/// Lage einer Ebene (Ursprungsebene, Konstruktionsebene oder ebene Fläche); ohne Bezug: XY
+bool planeAxes(const App::PropertyLinkSub& link, gp_Ax3& ax)
+{
+    App::DocumentObject* obj = link.getValue();
+    if (!obj) {
+        ax = gp_Ax3();
+        return true;
+    }
+    const auto& subs = link.getSubValues();
+    if (subs.empty() || subs.front().empty()) {
+        auto geo = freecad_cast<App::GeoFeature*>(obj);
+        if (!geo) {
+            return false;
+        }
+        const Base::Placement p = geo->globalPlacement();
+        Base::Vector3d z, x;
+        p.getRotation().multVec(Base::Vector3d(0, 0, 1), z);
+        p.getRotation().multVec(Base::Vector3d(1, 0, 0), x);
+        const Base::Vector3d o = p.getPosition();
+        ax = gp_Ax3(gp_Pnt(o.x, o.y, o.z), gp_Dir(z.x, z.y, z.z), gp_Dir(x.x, x.y, x.z));
+        return true;
+    }
+    const Part::TopoShape face = Part::Feature::getTopoShape(
+        obj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform, subs.front().c_str());
+    if (face.isNull() || face.getShape().ShapeType() != TopAbs_FACE) {
+        return false;
+    }
+    BRepAdaptor_Surface surface(TopoDS::Face(face.getShape()));
+    if (surface.GetType() != GeomAbs_Plane) {
+        return false;
+    }
+    ax = surface.Plane().Position();
+    if (face.getShape().Orientation() == TopAbs_REVERSED) {
+        ax.ZReverse();  // Normale zeigt aus dem Körper heraus
+    }
+    return true;
 }
 
 /// Mehrere Werkzeugkörper zu einem vereinen
@@ -1294,5 +1347,325 @@ App::DocumentObjectExecReturn* Import::compute()
         return new App::DocumentObjectExecReturn("Imported geometry is missing");
     }
     setResults(parts);
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Sweep, Design::Feature)
+
+Sweep::Sweep()
+{
+    ADD_PROPERTY_TYPE(ProfileKeys, (), "Sweep", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Signatures of the selected profiles");
+    ADD_PROPERTY_TYPE(Profile, (nullptr), "Sweep", App::Prop_None, "Profiles to sweep");
+    ADD_PROPERTY_TYPE(Path, (nullptr), "Sweep", App::Prop_None, "Path edges");
+}
+
+bool Sweep::makeTool(Part::TopoShape& tool, std::string& error) const
+{
+    Part::Feature* sketch = nullptr;
+    const char* reason = nullptr;
+    const auto faces = profileFaces(Profile, const_cast<App::PropertyStringList&>(ProfileKeys), sketch, reason);
+    if (faces.empty()) {
+        error = reason;
+        return false;
+    }
+    auto path = freecad_cast<Part::Feature*>(Path.getValue());
+    if (!path) {
+        error = "Select a path (sketch lines or body edges)";
+        return false;
+    }
+    const Part::TopoShape all = path->Shape.getShape();
+    std::vector<Part::TopoShape> edges;
+    for (const auto& sub : Path.getSubValues()) {
+        edges.push_back(all.getSubTopoShape(sub.c_str(), true));
+    }
+    if (edges.empty()) {
+        edges = all.getSubTopoShapes(TopAbs_EDGE);
+    }
+    std::erase_if(edges, [](const Part::TopoShape& e) { return e.isNull(); });
+    const Part::TopoShape wires = Part::TopoShape(0, getDocument()->getStringHasher()).makeElementWires(edges);
+    TopExp_Explorer wire(wires.getShape(), TopAbs_WIRE);
+    if (!wire.More()) {
+        error = "The path must be a connected chain of edges";
+        return false;
+    }
+    std::vector<Part::TopoShape> pipes;
+    try {
+        for (const auto& face : faces) {
+            BRepOffsetAPI_MakePipe pipe(TopoDS::Wire(wire.Current()), face.getShape());
+            pipe.Build();
+            pipes.emplace_back(pipe.Shape());
+        }
+    }
+    catch (const Standard_Failure&) {
+        error = "Sweep failed: does the path cross itself or the profile?";
+        return false;
+    }
+    tool = fuseAll(pipes, getDocument()->getStringHasher());
+    return true;
+}
+
+App::DocumentObjectExecReturn* Sweep::compute()
+{
+    Part::TopoShape tool;
+    std::string error;
+    if (!makeTool(tool, error)) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+    return applyTool(tool);
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Loft, Design::Feature)
+
+Loft::Loft()
+{
+    ADD_PROPERTY_TYPE(Sections, (nullptr), "Loft", App::Prop_None, "Profiles in order");
+    ADD_PROPERTY_TYPE(Ruled, (false), "Parameters", App::Prop_None, "Straight transitions");
+    ADD_PROPERTY_TYPE(Closed, (false), "Parameters", App::Prop_None, "Connect the last profile back to the first");
+}
+
+bool Loft::makeTool(Part::TopoShape& tool, std::string& error) const
+{
+    const auto& objs = Sections.getValues();
+    const auto& subs = Sections.getSubValues();
+    std::vector<Part::TopoShape> wires;
+    for (size_t i = 0; i < objs.size(); ++i) {
+        auto profiles = freecad_cast<Profiles*>(objs[i]);
+        if (!profiles) {
+            continue;
+        }
+        const Part::TopoShape all = profiles->Shape.getShape();
+        const std::string sub = i < subs.size() && !subs[i].empty() ? subs[i] : std::string("Face1");
+        const TopoDS_Shape face = all.getSubShape(sub.c_str(), true);
+        if (!face.IsNull()) {
+            wires.emplace_back(BRepTools::OuterWire(TopoDS::Face(face)));
+        }
+    }
+    if (wires.size() < 2) {
+        error = "Select two or more profiles from different sketches";
+        return false;
+    }
+    try {
+        tool = Part::TopoShape(0, getDocument()->getStringHasher())
+                   .makeElementLoft(wires, Part::IsSolid::solid,
+                                    Ruled.getValue() ? Part::IsRuled::ruled : Part::IsRuled::notRuled,
+                                    Closed.getValue() ? Part::IsClosed::closed : Part::IsClosed::notClosed);
+    }
+    catch (const Standard_Failure&) {
+        error = "Loft failed: are the profiles compatible?";
+        return false;
+    }
+    catch (const Base::Exception& e) {
+        error = e.what();
+        return false;
+    }
+    return !tool.isNull();
+}
+
+App::DocumentObjectExecReturn* Loft::compute()
+{
+    Part::TopoShape tool;
+    std::string error;
+    if (!makeTool(tool, error)) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+    return applyTool(tool);
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Primitive, Design::Feature)
+
+Primitive::Primitive()
+{
+    static const App::PropertyFloatConstraint::Constraints turns = {0.25, 1000.0, 0.25};
+    ADD_PROPERTY_TYPE(Plane, (nullptr), "Primitive", App::Prop_None, "Plane or planar face (empty: XY)");
+    ADD_PROPERTY_TYPE(Type, (0L), "Parameters", App::Prop_None, "Shape");
+    Type.setEnums(PrimitiveEnums);
+    ADD_PROPERTY_TYPE(Length, (20.0), "Parameters", App::Prop_None, "Length along X");
+    ADD_PROPERTY_TYPE(Width, (20.0), "Parameters", App::Prop_None, "Width along Y");
+    ADD_PROPERTY_TYPE(Height, (20.0), "Parameters", App::Prop_None, "Height");
+    ADD_PROPERTY_TYPE(Radius, (10.0), "Parameters", App::Prop_None, "Radius");
+    ADD_PROPERTY_TYPE(TubeRadius, (2.0), "Parameters", App::Prop_None, "Tube radius (torus, coil)");
+    ADD_PROPERTY_TYPE(Pitch, (6.0), "Parameters", App::Prop_None, "Height per turn");
+    ADD_PROPERTY_TYPE(Turns, (4.0), "Parameters", App::Prop_None, "Number of turns");
+    Turns.setConstraints(&turns);
+    ADD_PROPERTY_TYPE(PositionX, (0.0), "Parameters", App::Prop_None, "Position on the plane (X)");
+    ADD_PROPERTY_TYPE(PositionY, (0.0), "Parameters", App::Prop_None, "Position on the plane (Y)");
+    onChanged(&Type);
+}
+
+void Primitive::onChanged(const App::Property* prop)
+{
+    if (prop == &Type) {  // nur die Maße der gewählten Form zeigen
+        const long t = Type.getValue();
+        Length.setStatus(App::Property::Hidden, t != 0);
+        Width.setStatus(App::Property::Hidden, t != 0);
+        Height.setStatus(App::Property::Hidden, t != 0 && t != 1);
+        Radius.setStatus(App::Property::Hidden, t == 0);
+        TubeRadius.setStatus(App::Property::Hidden, t != 3 && t != 4);
+        Pitch.setStatus(App::Property::Hidden, t != 4);
+        Turns.setStatus(App::Property::Hidden, t != 4);
+    }
+    Feature::onChanged(prop);
+}
+
+bool Primitive::makeTool(Part::TopoShape& tool, std::string& error) const
+{
+    gp_Ax3 ax;
+    if (!planeAxes(Plane, ax)) {
+        error = "Select a plane or a planar face";
+        return false;
+    }
+    const double l = Length.getValue(), w = Width.getValue(), h = Height.getValue();
+    const double r = Radius.getValue(), r2 = TubeRadius.getValue();
+    TopoDS_Shape shape;
+    try {
+        switch (Type.getValue()) {
+            case 0:
+                shape = BRepPrimAPI_MakeBox(gp_Pnt(-l / 2, -w / 2, 0), l, w, h).Shape();
+                break;
+            case 1:
+                shape = BRepPrimAPI_MakeCylinder(r, h).Shape();
+                break;
+            case 2:
+                shape = BRepPrimAPI_MakeSphere(r).Shape();
+                break;
+            case 3:
+                if (r2 >= r) {
+                    error = "Tube radius must be smaller than the radius";
+                    return false;
+                }
+                shape = BRepPrimAPI_MakeTorus(r, r2).Shape();
+                break;
+            default: {
+                if (r2 >= r) {
+                    error = "Tube radius must be smaller than the radius";
+                    return false;
+                }
+                const double pitch = Pitch.getValue();
+                const TopoDS_Shape helix = Part::TopoShape().makeHelix(pitch, pitch * Turns.getValue(), r);
+                TopExp_Explorer spine(helix, TopAbs_WIRE);
+                // Querschnitt am Anfang der Helix, quer zur Laufrichtung
+                const TopoDS_Edge circle = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(gp_Pnt(r, 0, 0), gp::DY()), r2));
+                BRepOffsetAPI_MakePipeShell pipe(TopoDS::Wire(spine.Current()));
+                pipe.SetMode(Standard_True);  // Frenet: Querschnitt dreht mit
+                pipe.Add(BRepBuilderAPI_MakeWire(circle).Wire());
+                pipe.Build();
+                pipe.MakeSolid();
+                shape = pipe.Shape();
+                break;
+            }
+        }
+    }
+    catch (const Standard_Failure&) {
+        error = "Check the dimensions: all must be greater than zero";
+        return false;
+    }
+    gp_Trsf place, offset;
+    place.SetDisplacement(gp_Ax3(gp::XOY()), ax);
+    offset.SetTranslation(gp_Vec(PositionX.getValue(), PositionY.getValue(), 0));
+    tool = Part::TopoShape(BRepBuilderAPI_Transform(shape, place * offset, Standard_True).Shape());
+    return true;
+}
+
+App::DocumentObjectExecReturn* Primitive::compute()
+{
+    Part::TopoShape tool;
+    std::string error;
+    if (!makeTool(tool, error)) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+    return applyTool(tool);
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Draft, Design::DressUp)
+
+Draft::Draft()
+{
+    ADD_PROPERTY_TYPE(Angle, (3.0), "Parameters", App::Prop_None, "Draft angle");
+    ADD_PROPERTY_TYPE(Reversed, (false), "Parameters", App::Prop_None, "Flip direction");
+    ADD_PROPERTY_TYPE(Plane, (nullptr), "Draft", App::Prop_None, "Neutral plane (empty: bottom of the body)");
+    Size.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* Draft::compute()
+{
+    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+        return new App::DocumentObjectExecReturn("Select faces of one body");
+    }
+    const Part::TopoShape shape = baseShape(0);
+    const auto faces = elements(shape, TopAbs_FACE);
+    if (faces.empty()) {
+        return new App::DocumentObjectExecReturn("Select the faces to draft");
+    }
+    gp_Ax3 ax;
+    if (Plane.getValue()) {
+        if (!planeAxes(Plane, ax)) {
+            return new App::DocumentObjectExecReturn("The neutral plane must be a plane or planar face");
+        }
+    }
+    else {
+        ax = gp_Ax3(gp_Pnt(0, 0, shape.getBoundBox().MinZ), gp::DZ());
+    }
+    gp_Dir pull = ax.Direction();
+    if (Reversed.getValue()) {
+        pull.Reverse();
+    }
+    Part::TopoShape res(0, getDocument()->getStringHasher());
+    try {
+        res.makeElementDraft(shape, faces, pull, Angle.getValue() * M_PI / 180.0, gp_Pln(ax), false);
+    }
+    catch (const Standard_Failure&) {
+        return new App::DocumentObjectExecReturn("Draft failed: are the faces planar and adjacent to the plane?");
+    }
+    catch (const Base::Exception& e) {
+        return new App::DocumentObjectExecReturn(e.what());
+    }
+    if (res.isNull() || !res.isValid()) {
+        return new App::DocumentObjectExecReturn("Draft failed");
+    }
+    setResults({res});
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Scale, Design::Feature)
+
+Scale::Scale()
+{
+    static const App::PropertyFloatConstraint::Constraints factor = {0.001, 1000.0, 0.1};
+    ADD_PROPERTY_TYPE(Factor, (1.0), "Parameters", App::Prop_None, "Scale factor");
+    Factor.setConstraints(&factor);
+    ADD_PROPERTY_TYPE(Center, (1L), "Parameters", App::Prop_None, "Scale around");
+    Center.setEnums(CenterEnums);
+    Operation.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* Scale::compute()
+{
+    if (Bodies.getSize() == 0 || Bodies.getSize() != BaseFeatures.getSize()) {
+        return new App::DocumentObjectExecReturn("Select one or more bodies");
+    }
+    std::vector<Part::TopoShape> results;
+    for (int i = 0; i < Bodies.getSize(); ++i) {
+        const Part::TopoShape base = baseShape(i);
+        const Base::Vector3d c = Center.getValue() == 1 ? base.getBoundBox().GetCenter() : Base::Vector3d();
+        Base::Matrix4D mat;
+        mat.move(-c);
+        mat.scale(Factor.getValue());
+        mat.move(c);
+        results.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
+                              .makeElementTransform(base, mat, nullptr, Part::CheckScale::checkScale,
+                                                    Part::CopyType::copy));
+    }
+    setResults(results);
     return StdReturn;
 }

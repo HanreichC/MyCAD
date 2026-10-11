@@ -319,7 +319,9 @@ void startEditing(App::DocumentObject* feature, bool createMode, Design::Body* t
 }
 
 /// Extrude, Revolve: Profile aus der Auswahl (Profilflächen oder ganze Skizze)
-void startProfileFeature(App::Document* doc, const char* type, const char* name)
+/// setup: zusätzliche Eingaben aus der Auswahl übernehmen (Sweep: Pfad); false = abbrechen
+void startProfileFeature(App::Document* doc, const char* type, const char* name,
+                         const std::function<bool(Design::Feature*)>& setup = {})
 {
     Design::Profiles* profiles = nullptr;
     std::vector<std::string> faces;
@@ -334,8 +336,9 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name)
                 }
             }
         }
-        else if (obj && obj->isDerivedFrom<Sketcher::SketchObject>()) {
-            profiles = Design::Profiles::forSketch(obj);
+        else if (obj && obj->isDerivedFrom<Sketcher::SketchObject>()
+                 && std::ranges::none_of(sel.getSubNames(), [](const std::string& s) { return s.rfind("Edge", 0) == 0; })) {
+            profiles = Design::Profiles::forSketch(obj);  // Skizze mit gewählten Kanten ist ein Pfad (Sweep)
         }
     }
     // Nichts gewählt: hat die zuletzt erstellte Skizze genau ein Profil, nimm es (wie Fusion)
@@ -359,6 +362,10 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name)
     Design::componentOf(profiles->Sketch.getValue())->addObject(feature);
     Design::addToTimeline(feature);
     static_cast<App::PropertyLinkSub*>(feature->getPropertyByName("Profile"))->setValue(profiles, faces);
+    if (setup && !setup(feature)) {
+        doc->abortTransaction();
+        return;
+    }
 
     // Skizze auf einer Körperfläche: standardmäßig mit diesem Körper vereinen
     Design::Body* target = nullptr;
@@ -374,6 +381,104 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name)
                 }
             }
         }
+    }
+    startEditing(feature, true, target);
+}
+
+/// Sweep: Pfad aus gewählten Skizzen- oder Körperkanten
+bool setSweepPath(Design::Feature* feature)
+{
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        std::vector<std::string> edges;
+        for (const auto& sub : sel.getSubNames()) {
+            if (sub.rfind("Edge", 0) == 0) {
+                edges.push_back(sub);
+            }
+        }
+        App::DocumentObject* obj = sel.getObject();
+        if (edges.empty() || obj->isDerivedFrom<Design::Profiles>()) {
+            continue;
+        }
+        if (freecad_cast<Design::Body*>(obj)) {  // Körperkanten über den Timeline-Zustand (sonst Kreis)
+            for (auto& edge : edges) {
+                App::DocumentObject* ref = obj;
+                stableRef(ref, edge);
+                if (ref != obj && edge == edges.front()) {
+                    obj = ref;
+                }
+            }
+        }
+        static_cast<Design::Sweep*>(feature)->Path.setValue(obj, edges);
+        return true;
+    }
+    QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Sweep"),
+                             QStringLiteral("Select a profile and the path (sketch lines or body edges)."));
+    return false;
+}
+
+/// Loft: zwei oder mehr Profile aus verschiedenen Skizzen, in Auswahlreihenfolge
+void startLoft(App::Document* doc)
+{
+    std::vector<App::DocumentObject*> objs;
+    std::vector<std::string> subs;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        auto profiles = freecad_cast<Design::Profiles*>(sel.getObject());
+        if (!profiles && sel.getObject()->isDerivedFrom<Sketcher::SketchObject>()) {
+            profiles = Design::Profiles::forSketch(sel.getObject());
+        }
+        if (!profiles) {
+            continue;
+        }
+        const auto& names = sel.getSubNames();
+        if (names.empty()) {
+            objs.push_back(profiles);
+            subs.emplace_back("Face1");
+        }
+        for (const auto& name : names) {
+            objs.push_back(profiles);
+            subs.push_back(name);
+        }
+    }
+    if (objs.size() < 2) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Loft"),
+                                 QStringLiteral("Select two or more profiles from different sketches, in order."));
+        return;
+    }
+    doc->openTransaction("Loft");
+    auto feature = static_cast<Design::Loft*>(doc->addObject("Design::Loft", "Loft"));
+    Design::componentOf(objs.front())->addObject(feature);
+    Design::addToTimeline(feature);
+    feature->Sections.setValues(objs, subs);
+    startEditing(feature, true, nullptr);
+}
+
+/// Grundkörper auf der gewählten Ebene oder Fläche (sonst XY); auf einer Körperfläche standardmäßig Join
+void startPrimitive(App::Document* doc, long type)
+{
+    App::DocumentObject* plane = nullptr;
+    std::string element;
+    Design::Body* target = nullptr;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        App::DocumentObject* obj = sel.getObject();
+        const auto& names = sel.getSubNames();
+        if (isPlane(obj) && names.empty()) {
+            plane = obj;
+        }
+        else if (names.size() == 1 && isPlanarFace(obj, names.front())) {
+            target = freecad_cast<Design::Body*>(obj);
+            plane = obj;
+            element = names.front();
+            stableRef(plane, element);
+        }
+    }
+    doc->openTransaction("Primitive");
+    auto feature = static_cast<Design::Primitive*>(doc->addObject("Design::Primitive", "Primitive"));
+    App::Part* comp = plane ? Design::componentOf(plane) : activeContainer(doc);
+    comp->addObject(feature);
+    Design::addToTimeline(feature);
+    feature->Type.setValue(type);
+    if (plane) {
+        feature->Plane.setValue(plane, std::vector<std::string> {element});
     }
     startEditing(feature, true, target);
 }
@@ -553,6 +658,24 @@ void startNewComponent(App::Document* doc)
     if (auto view = Gui::Application::Instance->getDocument(doc)->getActiveView()) {
         view->setActiveObject(part, PARTKEY);
     }
+}
+
+/// Scale: gewählte Bodies
+void startScale(App::Document* doc)
+{
+    const auto bodies = selectedBodies();
+    if (bodies.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Scale"),
+                                 QStringLiteral("Select one or more bodies first."));
+        return;
+    }
+    if (!sameComponent(bodies, "Scale")) {
+        return;
+    }
+    auto feature = addFeature(doc, "Design::Scale", "Scale", bodies.front());
+    modifyBodies(feature, bodies);
+    doc->recompute();
+    startEditing(feature, false, nullptr);
 }
 
 void startMove(App::Document* doc)
@@ -748,7 +871,7 @@ Geometries svgGeometry(const QString& file, std::string& error)
         QXmlStreamReader xml(&in);
         while (xml.readNextStartElement()) {
             static const QRegularExpression absolute(QStringLiteral("\\d\\s*(mm|cm|in|pt|pc)\\s*$"));
-            if (absolute.match(xml.attributes().value(QStringLiteral("width"))).hasMatch()) {
+            if (absolute.matchView(xml.attributes().value(QStringLiteral("width"))).hasMatch()) {
                 scale = 25.4 / 90;
             }
             break;  // nur das <svg>-Element
@@ -1542,6 +1665,32 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_Section", "Section Analysis",
                                      "Section Analysis: select a plane or face to cut the view (again: turn off)",
                                      "Std_ToggleClipPlane", "", toggleSection));
+    mgr.addCommand(new DesignCommand("Design_Sweep", "Sweep", "Sweep: select a profile and a path",
+                                     "PartDesign_AdditivePipe", "", [](App::Document* doc) {
+                                         startProfileFeature(doc, "Design::Sweep", "Sweep", setSweepPath);
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_Loft", "Loft", "Loft: select two or more profiles in order",
+                                     "PartDesign_AdditiveLoft", "", startLoft));
+    struct Shape
+    {
+        const char* command;
+        const char* text;
+        long type;
+    };
+    for (const Shape& s : {Shape {"Design_Box", "Box", 0}, Shape {"Design_Cylinder", "Cylinder", 1},
+                           Shape {"Design_Sphere", "Sphere", 2}, Shape {"Design_Torus", "Torus", 3},
+                           Shape {"Design_Coil", "Coil", 4}}) {
+        const long type = s.type;
+        mgr.addCommand(new DesignCommand(s.command, s.text,
+                                         "Primitive on the selected plane or face (otherwise XY)", "Part_Box", "",
+                                         [type](App::Document* doc) { startPrimitive(doc, type); }));
+    }
+    mgr.addCommand(new DesignCommand("Design_Draft", "Draft", "Draft: select side faces of a body to tilt",
+                                     "PartDesign_Draft", "", [](App::Document* doc) {
+                                         startDressUp(doc, "Design::Draft", "Draft");
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_Scale", "Scale", "Scale: select one or more bodies", "Part_Scale",
+                                     "", startScale));
     mgr.addCommand(new DesignCommand("Design_NewComponent", "New Component",
                                      "New Component: an empty part with its own origin (double-click to activate)",
                                      "Std_Part", "", startNewComponent));

@@ -48,6 +48,11 @@ PyMOD_INIT_FUNC(Design)
     Design::Hole::init();
     Design::PressPull::init();
     Design::Import::init();
+    Design::Sweep::init();
+    Design::Loft::init();
+    Design::Primitive::init();
+    Design::Draft::init();
+    Design::Scale::init();
 
     PyMOD_Return(mod);
 }

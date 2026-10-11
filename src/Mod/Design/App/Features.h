@@ -305,6 +305,88 @@ public:
     App::DocumentObjectExecReturn* compute() override;
 };
 
+/// Profil entlang eines Pfads ziehen (Skizzenkanten oder Körperkanten). Einstellbare Werte liegen in der
+/// Gruppe "Parameters": der Feature-Dialog baut daraus seine Felder.
+class DesignExport Sweep: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Sweep);
+
+public:
+    Sweep();
+    App::PropertyLinkSub Profile;
+    App::PropertyStringList ProfileKeys;
+    App::PropertyLinkSub Path;  ///< Objekt mit Kanten ("EdgeN"; leer = alle Kanten)
+
+    bool makeTool(Part::TopoShape& tool, std::string& error) const override;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
+/// Körper durch zwei oder mehr Profile (aus verschiedenen Skizzen)
+class DesignExport Loft: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Loft);
+
+public:
+    Loft();
+    App::PropertyLinkSubList Sections;  ///< Profiles-Objekte mit je einer Fläche, in Reihenfolge
+    App::PropertyBool Ruled;
+    App::PropertyBool Closed;
+
+    bool makeTool(Part::TopoShape& tool, std::string& error) const override;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
+/// Grundkörper auf einer Ebene (ohne Ebene: XY): Box, Cylinder, Sphere, Torus, Coil
+class DesignExport Primitive: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Primitive);
+
+public:
+    Primitive();
+    App::PropertyLinkSub Plane;
+    App::PropertyEnumeration Type;
+    App::PropertyLength Length;
+    App::PropertyLength Width;
+    App::PropertyLength Height;
+    App::PropertyLength Radius;
+    App::PropertyLength TubeRadius;
+    App::PropertyLength Pitch;
+    App::PropertyFloatConstraint Turns;
+    App::PropertyDistance PositionX;
+    App::PropertyDistance PositionY;
+
+    bool makeTool(Part::TopoShape& tool, std::string& error) const override;
+    App::DocumentObjectExecReturn* compute() override;
+
+protected:
+    void onChanged(const App::Property* prop) override;
+};
+
+/// Seitenflächen um einen Winkel neigen (Entformungsschräge); Zugrichtung = Normale der Ebene (ohne: Z)
+class DesignExport Draft: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Draft);
+
+public:
+    Draft();
+    App::PropertyAngle Angle;
+    App::PropertyBool Reversed;
+    App::PropertyLinkSub Plane;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
+/// Bodies gleichmäßig skalieren (um den Ursprung oder ihren Mittelpunkt)
+class DesignExport Scale: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Scale);
+
+public:
+    Scale();
+    App::PropertyFloatConstraint Factor;
+    App::PropertyEnumeration Center;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
 /// Eingefügte Geometrie (STEP): je Solid ein neuer Body, ohne Verlauf (wie Fusions Base Feature)
 class DesignExport Import: public Feature
 {

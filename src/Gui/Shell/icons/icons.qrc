@@ -9,6 +9,16 @@
         <file>Design_Point.svg</file>
         <file>Design_Measure.svg</file>
         <file>Design_Section.svg</file>
+        <file>Design_Sweep.svg</file>
+        <file>Design_Loft.svg</file>
+        <file>Design_Box.svg</file>
+        <file>Design_Primitive.svg</file>
+        <file>Design_Cylinder.svg</file>
+        <file>Design_Sphere.svg</file>
+        <file>Design_Torus.svg</file>
+        <file>Design_Coil.svg</file>
+        <file>Design_Draft.svg</file>
+        <file>Design_Scale.svg</file>
         <file>Design_Import.svg</file>
         <file>Design_Export.svg</file>
         <file>Std_Undo.svg</file>

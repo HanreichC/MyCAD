@@ -10,6 +10,7 @@
 #include <Gui/Control.h>
 #include <Gui/Document.h>
 #include <Gui/QuantitySpinBox.h>
+#include <Mod/Sketcher/App/SketchObject.h>
 #include <Gui/TaskView/TaskDialog.h>
 #include <Mod/Design/App/Features.h>
 
@@ -19,6 +20,8 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QSpinBox>
+#include <cstring>
+#include <QDoubleSpinBox>
 #include <QFontMetricsF>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
@@ -239,6 +242,21 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::Import>()) {
         return QStringLiteral("Insert");
     }
+    if (f->isDerivedFrom<Design::Sweep>()) {
+        return QStringLiteral("Sweep");
+    }
+    if (f->isDerivedFrom<Design::Loft>()) {
+        return QStringLiteral("Loft");
+    }
+    if (auto primitive = freecad_cast<const Design::Primitive*>(f)) {
+        return QString::fromLatin1(primitive->Type.getValueAsString());
+    }
+    if (f->isDerivedFrom<Design::Draft>()) {
+        return QStringLiteral("Draft");
+    }
+    if (f->isDerivedFrom<Design::Scale>()) {
+        return QStringLiteral("Scale");
+    }
     return QStringLiteral("Extrude");
 }
 
@@ -258,9 +276,10 @@ class TaskFeature: public Gui::TaskView::TaskDialog
 public:
     TaskFeature(Design::Feature* feature, bool create, Design::Body* target)
         : feature(feature)
+        , generic(hasParameters(feature))
         , extrude(freecad_cast<Design::Extrude*>(feature))
         , revolve(freecad_cast<Design::Revolve*>(feature))
-        , dressUp(freecad_cast<Design::DressUp*>(feature))
+        , dressUp(generic ? nullptr : freecad_cast<Design::DressUp*>(feature))
         , shell(freecad_cast<Design::Shell*>(feature))
         , combine(freecad_cast<Design::Combine*>(feature))
         , move(freecad_cast<Design::Move*>(feature))
@@ -424,6 +443,9 @@ public:
             }
             QObject::connect(sinkAngle, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
         }
+        if (generic) {
+            addParameterRows();
+        }
         if (check) {
             QObject::connect(check, &QCheckBox::toggled, [this] { apply(); });
         }
@@ -432,6 +454,10 @@ public:
             flip->setChecked(extrude ? extrude->Reversed.getValue() : revolve->Reversed.getValue());
             form->addRow(QString(), flip);
             QObject::connect(flip, &QCheckBox::toggled, [this] { apply(); });
+        }
+        // Features, die Körper erzeugen: New Body / Join / Cut / Intersect und Ziel-Body
+        if (extrude || revolve || feature->isDerivedFrom<Design::Sweep>() || feature->isDerivedFrom<Design::Loft>()
+            || feature->isDerivedFrom<Design::Primitive>()) {
             setupOperation(target);
         }
 
@@ -473,11 +499,28 @@ public:
                 profiles->Visibility.setValue(false);
             }
         }
-        const App::PropertyLinkSub* profile = extrude ? &extrude->Profile : revolve ? &revolve->Profile : nullptr;
-        if (auto profiles = profile ? freecad_cast<Design::Profiles*>(profile->getValue()) : nullptr) {
-            profiles->Visibility.setValue(false);
-            if (auto sketch = profiles->Sketch.getValue()) {
-                sketch->Visibility.setValue(false);
+        // verwendete Profile, Pfade und Querschnitte (Extrude, Revolve, Sweep, Loft)
+        std::vector<App::DocumentObject*> used;
+        for (const char* name : {"Profile", "Path"}) {
+            if (auto link = freecad_cast<App::PropertyLinkSub*>(feature->getPropertyByName(name))) {
+                used.push_back(link->getValue());
+            }
+        }
+        if (auto sections = freecad_cast<App::PropertyLinkSubList*>(feature->getPropertyByName("Sections"))) {
+            for (auto obj : sections->getValues()) {
+                used.push_back(obj);
+            }
+        }
+        for (auto obj : used) {
+            if (auto profiles = freecad_cast<Design::Profiles*>(obj)) {
+                profiles->Visibility.setValue(false);
+                obj = profiles->Sketch.getValue();
+            }
+            if (obj && obj->isDerivedFrom<Sketcher::SketchObject>()) {
+                obj->Visibility.setValue(false);
+                if (auto profiles = Design::Profiles::forSketch(obj)) {
+                    profiles->Visibility.setValue(false);
+                }
             }
         }
         // Combine ohne "Keep tools": Werkzeug-Bodies verschwinden wie in Fusion
@@ -686,6 +729,103 @@ private:
         operation->blockSignals(false);
     }
 
+    /// Hat das Feature Eigenschaften in der Gruppe "Parameters"? Dann baut der Dialog seine Felder daraus.
+    static bool hasParameters(Design::Feature* feature)
+    {
+        std::vector<App::Property*> props;
+        feature->getPropertyList(props);
+        return std::ranges::any_of(props, [](App::Property* p) {
+            return p->getGroup() && std::strcmp(p->getGroup(), "Parameters") == 0;
+        });
+    }
+
+    /// "Radius2" -> "Radius 2", "PositionX" -> "Position X"
+    static QString propertyLabel(const char* name)
+    {
+        QString label;
+        for (const QChar c : QString::fromLatin1(name)) {
+            if (!label.isEmpty() && (c.isUpper() || (c.isDigit() && !label.back().isDigit()))) {
+                label += QLatin1Char(' ');
+            }
+            label += c;
+        }
+        return label;
+    }
+
+    /// Felder für Länge, Winkel, Auswahl, Haken, Anzahl und Zahl; Sichtbarkeit folgt dem Hidden-Status
+    void addParameterRows()
+    {
+        std::vector<App::Property*> props;
+        feature->getPropertyList(props);
+        for (App::Property* prop : props) {
+            if (!prop->getGroup() || std::strcmp(prop->getGroup(), "Parameters") != 0) {
+                continue;
+            }
+            const QString label = propertyLabel(prop->getName());
+            QWidget* field = nullptr;
+            if (auto q = freecad_cast<App::PropertyQuantity*>(prop)) {
+                auto box = quantityBox(q->getUnit(), q->getValue());
+                const bool positive = prop->isDerivedFrom<App::PropertyLength>();
+                QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this, q, positive](double v) {
+                    q->setValue(positive ? std::abs(v) : v);
+                    apply();
+                });
+                field = box;
+            }
+            else if (auto e = freecad_cast<App::PropertyEnumeration*>(prop)) {
+                auto box = new QComboBox;
+                for (const auto& item : e->getEnumVector()) {
+                    box->addItem(QString::fromStdString(item));
+                }
+                box->setCurrentIndex(e->getValue());
+                QObject::connect(box, &QComboBox::currentIndexChanged, [this, e](int i) {
+                    e->setValue(i);
+                    apply();
+                });
+                field = box;
+            }
+            else if (auto b = freecad_cast<App::PropertyBool*>(prop)) {
+                auto box = new QCheckBox(QString::fromUtf8(prop->getDocumentation()));
+                box->setChecked(b->getValue());
+                QObject::connect(box, &QCheckBox::toggled, [this, b](bool on) {
+                    b->setValue(on);
+                    apply();
+                });
+                form->addRow(QString(), box);
+                paramRows.emplace_back(prop, box);
+                continue;
+            }
+            else if (auto f = freecad_cast<App::PropertyFloatConstraint*>(prop)) {
+                auto box = new QDoubleSpinBox;
+                if (const auto* c = f->getConstraints()) {
+                    box->setRange(c->LowerBound, c->UpperBound);
+                    box->setSingleStep(c->StepSize);
+                }
+                box->setDecimals(3);
+                box->setValue(f->getValue());
+                QObject::connect(box, &QDoubleSpinBox::valueChanged, [this, f](double v) {
+                    f->setValue(v);
+                    apply();
+                });
+                field = box;
+            }
+            else if (auto n = freecad_cast<App::PropertyInteger*>(prop)) {
+                auto box = new QSpinBox;
+                box->setRange(1, 10000);
+                box->setValue(int(n->getValue()));
+                QObject::connect(box, &QSpinBox::valueChanged, [this, n](int v) {
+                    n->setValue(v);
+                    apply();
+                });
+                field = box;
+            }
+            if (field) {
+                form->addRow(label, field);
+                paramRows.emplace_back(prop, field);
+            }
+        }
+    }
+
     void showRow(QWidget* field, bool show)
     {
         field->setVisible(show);
@@ -767,6 +907,14 @@ private:
             showRow(axis, !rect);
             showRow(sinkAngle, !rect);
         }
+        for (const auto& [prop, field] : paramRows) {
+            showRow(field, !prop->testStatus(App::Property::Hidden));
+        }
+        if (generic) {  // Titel folgt z. B. dem Grundkörper-Typ
+            if (auto box = form->parentWidget()) {
+                box->setWindowTitle(featureTitle(feature));
+            }
+        }
         if (body) {
             const bool showBody = feature->op() != Design::Feature::Op::NewBody;
             body->setVisible(showBody);
@@ -778,6 +926,8 @@ private:
     }
 
     Design::Feature* feature;
+    bool generic;
+    std::vector<std::pair<App::Property*, QWidget*>> paramRows;
     Design::Extrude* extrude;
     Design::Revolve* revolve;
     Design::DressUp* dressUp;
