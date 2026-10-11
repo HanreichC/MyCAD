@@ -249,6 +249,7 @@ public:
     App::PropertyVector Translation;
     App::PropertyEnumeration RotationAxis;
     App::PropertyAngle Angle;
+    App::PropertyPlacement Alignment;  ///< Align: vor Drehung und Verschiebung angewandt
     App::DocumentObjectExecReturn* compute() override;
 };
 
@@ -273,6 +274,8 @@ class DesignExport Pattern: public Feature
 public:
     Pattern();
     App::PropertyLink Source;
+    App::PropertyLinkListHidden SourceBodies;  ///< Körper-Muster: zu wiederholende Bodies (Bodies = neue Bodies)
+    App::PropertyLinkList SourceFeatures;      ///< Zustand der Quell-Bodies
     App::PropertyEnumeration Type;  ///< Rectangular, Circular
     App::PropertyEnumeration Direction1;
     App::PropertyIntegerConstraint Count1;
@@ -283,6 +286,9 @@ public:
     App::PropertyEnumeration Axis;
     App::PropertyAngle Angle;
     App::DocumentObjectExecReturn* compute() override;
+
+private:
+    std::vector<Base::Matrix4D> transforms() const;
 };
 
 /// Bohrungen an allen Punkten einer Skizze (wie "Hole from sketch" in Fusion)
@@ -384,6 +390,31 @@ public:
     Scale();
     App::PropertyFloatConstraint Factor;
     App::PropertyEnumeration Center;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
+/// Body an einer Ebene oder Fläche teilen. Bodies[0] ist der geteilte Body (behält das erste Teil),
+/// die übrigen Einträge sind die neuen Bodies der weiteren Teile.
+class DesignExport Split: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Split);
+
+public:
+    Split();
+    App::PropertyLinkSub Tool;
+    App::PropertyInteger Pieces;  ///< Anzahl der Teile beim letzten Berechnen
+    App::DocumentObjectExecReturn* compute() override;
+};
+
+/// Modelliertes Gewinde auf einer Zylinderfläche (außen: Welle, innen: Bohrung)
+class DesignExport Thread: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Thread);
+
+public:
+    Thread();
+    App::PropertyLength Pitch;
+    App::PropertyBool LeftHanded;
     App::DocumentObjectExecReturn* compute() override;
 };
 

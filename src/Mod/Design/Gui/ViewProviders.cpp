@@ -257,6 +257,12 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::Scale>()) {
         return QStringLiteral("Scale");
     }
+    if (f->isDerivedFrom<Design::Split>()) {
+        return QStringLiteral("Split Body");
+    }
+    if (f->isDerivedFrom<Design::Thread>()) {
+        return QStringLiteral("Thread");
+    }
     return QStringLiteral("Extrude");
 }
 
@@ -906,6 +912,7 @@ private:
             }
             showRow(axis, !rect);
             showRow(sinkAngle, !rect);
+            showRow(simpleOp, pattern->SourceBodies.getSize() == 0);  // Körper-Muster: neue Bodies, keine Operation
         }
         for (const auto& [prop, field] : paramRows) {
             showRow(field, !prop->testStatus(App::Property::Hidden));
@@ -1031,8 +1038,9 @@ bool ViewProviderFeature::doubleClicked()
 bool ViewProviderFeature::setEdit(int)
 {
     auto feature = freecad_cast<Design::Feature*>(getObject());
-    if (!feature || feature->isDerivedFrom<Design::Import>() || Gui::Control().activeDialog()) {
-        return false;  // eingefügte Geometrie hat keine Einstellungen
+    if (!feature || feature->isDerivedFrom<Design::Import>() || feature->isDerivedFrom<Design::Split>()
+        || Gui::Control().activeDialog()) {
+        return false;  // eingefügte Geometrie und Split haben keine Einstellungen
     }
     App::Document* doc = feature->getDocument();
     if (!doc->hasPendingTransaction()) {

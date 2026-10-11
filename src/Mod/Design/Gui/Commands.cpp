@@ -660,6 +660,166 @@ void startNewComponent(App::Document* doc)
     }
 }
 
+/// Bezugspunkt und -richtung eines Elements: Ebene/ebene Fläche (Mitte + Normale), Zylinderfläche (Achse),
+/// gerade Kante (Mitte + Richtung), Kreiskante (Mittelpunkt + Achse), Punkt
+struct Frame
+{
+    gp_Pnt point;
+    gp_Dir dir;
+    bool hasDir = false;
+    bool planar = false;
+};
+
+bool frameOf(App::DocumentObject* obj, const std::string& sub, Frame& f)
+{
+    if (sub.empty() && isPlane(obj)) {
+        const Base::Placement p = static_cast<App::GeoFeature*>(obj)->globalPlacement();
+        Base::Vector3d z;
+        p.getRotation().multVec(Base::Vector3d(0, 0, 1), z);
+        f = {gp_Pnt(p.getPosition().x, p.getPosition().y, p.getPosition().z), gp_Dir(z.x, z.y, z.z), true, true};
+        return true;
+    }
+    const TopoDS_Shape s = Part::Feature::getTopoShape(obj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform
+                                                           | Part::ShapeOption::NeedSubElement,
+                                                       sub.empty() ? nullptr : sub.c_str())
+                               .getShape();
+    if (s.IsNull()) {
+        return false;
+    }
+    GProp_GProps props;
+    switch (s.ShapeType()) {
+        case TopAbs_VERTEX:
+            f.point = BRep_Tool::Pnt(TopoDS::Vertex(s));
+            return true;
+        case TopAbs_EDGE: {
+            BRepGProp::LinearProperties(s, props);
+            f.point = props.CentreOfMass();
+            BRepAdaptor_Curve c(TopoDS::Edge(s));
+            if (c.GetType() == GeomAbs_Line) {
+                f.dir = c.Line().Direction();
+                f.hasDir = true;
+            }
+            else if (c.GetType() == GeomAbs_Circle) {
+                f.point = c.Circle().Location();
+                f.dir = c.Circle().Axis().Direction();
+                f.hasDir = true;
+            }
+            return true;
+        }
+        case TopAbs_FACE: {
+            BRepGProp::SurfaceProperties(s, props);
+            f.point = props.CentreOfMass();
+            BRepAdaptor_Surface surface(TopoDS::Face(s));
+            if (surface.GetType() == GeomAbs_Plane) {
+                f.dir = surface.Plane().Axis().Direction();
+                if (s.Orientation() == TopAbs_REVERSED) {
+                    f.dir.Reverse();
+                }
+                f.hasDir = f.planar = true;
+            }
+            else if (surface.GetType() == GeomAbs_Cylinder) {
+                const gp_Ax1 axis = surface.Cylinder().Axis();
+                f.dir = axis.Direction();
+                f.point = axis.Location().Translated(
+                    gp_Vec(axis.Direction()) * gp_Vec(axis.Location(), f.point).Dot(gp_Vec(axis.Direction())));
+                f.hasDir = true;
+            }
+            return true;
+        }
+        default:
+            return false;
+    }
+}
+
+/// Align wie in Fusion: erst ein Element des zu bewegenden Bodies, dann das Ziel. Flächen liegen danach bündig
+/// aufeinander, Kanten/Achsen fluchten, Punkte fallen zusammen. Feinjustieren im Move-Dialog.
+/// ponytail: die Ausrichtung wird beim Erstellen berechnet und folgt späteren Änderungen der Geometrie nicht
+void startAlign(App::Document* doc)
+{
+    std::vector<std::pair<App::DocumentObject*, std::string>> refs;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        const auto& names = sel.getSubNames();
+        if (names.empty()) {
+            refs.emplace_back(sel.getObject(), std::string());
+        }
+        for (const auto& name : names) {
+            refs.emplace_back(sel.getObject(), name);
+        }
+    }
+    auto body = refs.size() == 2 ? freecad_cast<Design::Body*>(refs[0].first) : nullptr;
+    Frame from, to;
+    if (!body || refs[1].first == body || !frameOf(refs[0].first, refs[0].second, from)
+        || !frameOf(refs[1].first, refs[1].second, to)) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Align"),
+                                 QStringLiteral("Select a face, edge or point of the body to move, "
+                                                "then the face, edge, point or plane to align it to."));
+        return;
+    }
+    Base::Rotation rot;
+    if (from.hasDir && to.hasDir) {
+        const gp_Dir target = from.planar && to.planar ? to.dir.Reversed() : to.dir;
+        rot = Base::Rotation(Base::Vector3d(from.dir.X(), from.dir.Y(), from.dir.Z()),
+                             Base::Vector3d(target.X(), target.Y(), target.Z()));
+    }
+    Base::Vector3d moved;
+    rot.multVec(Base::Vector3d(from.point.X(), from.point.Y(), from.point.Z()), moved);
+    auto feature = static_cast<Design::Move*>(addFeature(doc, "Design::Move", "Align", body));
+    feature->Label.setValue("Align");
+    feature->Alignment.setValue(Base::Placement(Base::Vector3d(to.point.X(), to.point.Y(), to.point.Z()) - moved, rot));
+    modifyBodies(feature, {body});
+    doc->recompute();
+    startEditing(feature, false, nullptr);
+}
+
+/// Split Body: erst den Body, dann die Ebene oder Fläche, an der geteilt wird; jedes weitere Teil wird ein Body
+void startSplit(App::Document* doc)
+{
+    Design::Body* body = nullptr;
+    App::DocumentObject* tool = nullptr;
+    std::string element;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        App::DocumentObject* obj = sel.getObject();
+        const auto& names = sel.getSubNames();
+        if (!body && freecad_cast<Design::Body*>(obj) && names.empty()) {
+            body = static_cast<Design::Body*>(obj);
+        }
+        else if (!tool && (isPlane(obj) || (names.size() == 1 && names.front().rfind("Face", 0) == 0))) {
+            tool = obj;
+            element = names.empty() ? std::string() : names.front();
+            stableRef(tool, element);
+        }
+    }
+    if (!body || !tool || tool == body) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Split Body"),
+                                 QStringLiteral("Select the body to split and a plane or face to split it with."));
+        return;
+    }
+    auto feature = static_cast<Design::Split*>(addFeature(doc, "Design::Split", "Split", body));
+    feature->Tool.setValue(tool, std::vector<std::string> {element});
+    modifyBodies(feature, {body});
+    doc->recompute();
+    // je weiteres Teil ein neuer Body
+    auto bodies = feature->Bodies.getValues();
+    for (long i = 1; i < feature->Pieces.getValue(); ++i) {
+        auto piece = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
+        piece->Label.setValue(std::string(body->Label.getValue()) + " (" + std::to_string(i + 1) + ")");
+        Design::folder(Design::componentOf(body), "Bodies")->addObject(piece);
+        piece->Tip.setValue(feature);
+        bodies.push_back(piece);
+    }
+    feature->Bodies.setValues(bodies);
+    doc->recompute();
+    if (feature->isError()) {
+        QMessageBox::warning(Gui::getMainWindow(), QStringLiteral("Split Body"),
+                             QString::fromUtf8(feature->getStatusString()));
+        doc->abortTransaction();
+        doc->recompute();
+        return;
+    }
+    doc->commitTransaction();
+    Gui::Selection().clearSelection();
+}
+
 /// Scale: gewählte Bodies
 void startScale(App::Document* doc)
 {
@@ -1160,8 +1320,30 @@ void startPattern(App::Document* doc)
         }
     }
     if (!source) {
+        // Körper-Muster: Kopien der gewählten Bodies, je Quelle ein neuer Body (wie Mirror)
+        const auto selected = selectedBodies();
+        if (!selected.empty() && sameComponent(selected, "Pattern")) {
+            auto feature = static_cast<Design::Pattern*>(addFeature(doc, "Design::Pattern", "Pattern", selected.front()));
+            std::vector<App::DocumentObject*> sources, states, created;
+            for (auto b : selected) {
+                sources.push_back(b);
+                states.push_back(Design::stateAtMarker(b));
+                auto copy = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
+                copy->Label.setValue(std::string(b->Label.getValue()) + " Pattern");
+                Design::folder(Design::componentOf(b), "Bodies")->addObject(copy);
+                copy->Tip.setValue(feature);
+                created.push_back(copy);
+            }
+            feature->SourceBodies.setValues(sources);
+            feature->SourceFeatures.setValues(states);
+            feature->Bodies.setValues(created);
+            feature->Operation.setValue(0L);
+            doc->recompute();
+            startEditing(feature, false, nullptr);
+            return;
+        }
         QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Pattern"),
-                                 QStringLiteral("Select an Extrude, Revolve or Hole in the timeline first."));
+                                 QStringLiteral("Select bodies, or an Extrude, Revolve or Hole in the timeline first."));
         return;
     }
     std::vector<Design::Body*> bodies;
@@ -1691,6 +1873,16 @@ void CreateDesignCommands()
                                      }));
     mgr.addCommand(new DesignCommand("Design_Scale", "Scale", "Scale: select one or more bodies", "Part_Scale",
                                      "", startScale));
+    mgr.addCommand(new DesignCommand("Design_Align", "Align",
+                                     "Align: select a face, edge or point of a body, then the target", "Std_TransformManip",
+                                     "", startAlign));
+    mgr.addCommand(new DesignCommand("Design_SplitBody", "Split Body",
+                                     "Split Body: select a body and a plane or face to split it with", "Part_Slice", "",
+                                     startSplit));
+    mgr.addCommand(new DesignCommand("Design_Thread", "Thread", "Thread: select a cylindrical face of a body",
+                                     "PartDesign_Hole", "", [](App::Document* doc) {
+                                         startDressUp(doc, "Design::Thread", "Thread");
+                                     }));
     mgr.addCommand(new DesignCommand("Design_NewComponent", "New Component",
                                      "New Component: an empty part with its own origin (double-click to activate)",
                                      "Std_Part", "", startNewComponent));

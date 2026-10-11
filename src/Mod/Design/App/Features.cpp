@@ -42,6 +42,11 @@
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
 #include <BRepTools.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
+#include <TopTools_ListOfShape.hxx>
+#include <gp_Cylinder.hxx>
+#include <TopoDS_Vertex.hxx>
+#include <TopoDS_Face.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Wire.hxx>
 #include <gp_Ax3.hxx>
@@ -321,6 +326,9 @@ void rewireUsers(App::DocumentObject* from, App::DocumentObject* to, const App::
         }
         if (auto mirror = freecad_cast<Design::Mirror*>(user)) {
             replaceState(mirror->SourceFeatures, mirror->SourceBodies.getValues(), body, from, to);
+        }
+        if (auto pattern = freecad_cast<Design::Pattern*>(user)) {
+            replaceState(pattern->SourceFeatures, pattern->SourceBodies.getValues(), body, from, to);
         }
     }
 }
@@ -1054,6 +1062,7 @@ Move::Move()
     ADD_PROPERTY_TYPE(RotationAxis, (2L), "Move", App::Prop_None, "Rotation axis through the body center");
     RotationAxis.setEnums(XYZEnums);
     ADD_PROPERTY_TYPE(Angle, (0.0), "Move", App::Prop_None, "Rotation angle");
+    ADD_PROPERTY_TYPE(Alignment, (Base::Placement()), "Move", App::Prop_Hidden, "Alignment (Align)");
     Operation.setStatus(App::Property::Hidden, true);
 }
 
@@ -1065,12 +1074,13 @@ App::DocumentObjectExecReturn* Move::compute()
     std::vector<Part::TopoShape> results;
     for (int i = 0; i < Bodies.getSize(); ++i) {
         const Part::TopoShape base = baseShape(i);
-        const Base::BoundBox3d bb = base.getBoundBox();
+        Base::BoundBox3d bb = base.getBoundBox();
+        bb = bb.Transformed(Alignment.getValue().toMatrix());  // gedreht wird um die Mitte nach dem Ausrichten
         Base::Vector3d axis;
         axis[RotationAxis.getValue()] = 1;
         Base::Placement rot(Base::Vector3d(), Base::Rotation(axis, Angle.getValue() * M_PI / 180.0), bb.GetCenter());
         Base::Placement move(Translation.getValue(), Base::Rotation());
-        Base::Matrix4D mat = (move * rot).toMatrix();
+        Base::Matrix4D mat = (move * rot * Alignment.getValue()).toMatrix();
         // Geometrie wirklich umrechnen (copy): eine bloße Lage würde Part::Feature beim Speichern im Body überschreiben
         results.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
                               .makeElementTransform(base, mat, nullptr, Part::CheckScale::noScaleCheck,
@@ -1122,6 +1132,8 @@ PROPERTY_SOURCE(Design::Pattern, Design::Feature)
 Pattern::Pattern()
 {
     ADD_PROPERTY_TYPE(Source, (nullptr), "Pattern", App::Prop_None, "Feature to repeat");
+    ADD_PROPERTY_TYPE(SourceBodies, (nullptr), "Pattern", App::Prop_None, "Bodies to repeat");
+    ADD_PROPERTY_TYPE(SourceFeatures, (nullptr), "Pattern", App::Prop_Hidden, "State of the source bodies");
     ADD_PROPERTY_TYPE(Type, (0L), "Pattern", App::Prop_None, "Rectangular or circular");
     Type.setEnums(PatternEnums);
     ADD_PROPERTY_TYPE(Direction1, (0L), "Pattern", App::Prop_None, "First direction");
@@ -1140,18 +1152,8 @@ Pattern::Pattern()
     Operation.setValue(1L);
 }
 
-App::DocumentObjectExecReturn* Pattern::compute()
+std::vector<Base::Matrix4D> Pattern::transforms() const
 {
-    auto source = freecad_cast<Feature*>(Source.getValue());
-    if (!source) {
-        return new App::DocumentObjectExecReturn("Select a feature to pattern");
-    }
-    Part::TopoShape tool;
-    std::string error;
-    if (!source->makeTool(tool, error)) {
-        return new App::DocumentObjectExecReturn(error);
-    }
-
     std::vector<Base::Matrix4D> transforms;
     if (Type.getValue() == 0) {
         Base::Vector3d d1, d2;
@@ -1178,17 +1180,53 @@ App::DocumentObjectExecReturn* Pattern::compute()
             transforms.push_back(Base::Placement(Base::Vector3d(), Base::Rotation(axis, k * step * M_PI / 180.0)).toMatrix());
         }
     }
+    return transforms;
+}
+
+App::DocumentObjectExecReturn* Pattern::compute()
+{
+    const std::vector<Base::Matrix4D> transforms = this->transforms();
     if (transforms.empty()) {
         return new App::DocumentObjectExecReturn("Count must be at least 2");
     }
-
-    std::vector<Part::TopoShape> copies;
-    for (const auto& m : transforms) {
-        copies.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
-                             .makeElementTransform(tool, m, nullptr, Part::CheckScale::noScaleCheck,
-                                                   Part::CopyType::copy));
+    auto copiesOf = [&](const Part::TopoShape& shape) {
+        std::vector<Part::TopoShape> copies;
+        for (const auto& m : transforms) {
+            copies.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
+                                 .makeElementTransform(shape, m, nullptr, Part::CheckScale::noScaleCheck,
+                                                       Part::CopyType::copy));
+        }
+        return copies;
+    };
+    // Körper-Muster: je Quell-Body ein neuer Body mit allen Kopien
+    const auto& sources = SourceBodies.getValues();
+    if (!sources.empty()) {
+        const auto& states = SourceFeatures.getValues();
+        if (states.size() != sources.size() || Bodies.getSize() != int(sources.size())) {
+            return new App::DocumentObjectExecReturn("Select one or more bodies");
+        }
+        std::vector<Part::TopoShape> results;
+        for (size_t i = 0; i < sources.size(); ++i) {
+            auto state = freecad_cast<Feature*>(states[i]);
+            if (!state) {
+                return new App::DocumentObjectExecReturn("Body has no feature");
+            }
+            results.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
+                                  .makeElementCompound(copiesOf(state->shapeFor(sources[i]))));
+        }
+        setResults(results);
+        return StdReturn;
     }
-    return applyTool(fuseAll(copies, getDocument()->getStringHasher()));
+    auto source = freecad_cast<Feature*>(Source.getValue());
+    if (!source) {
+        return new App::DocumentObjectExecReturn("Select a feature or bodies to pattern");
+    }
+    Part::TopoShape tool;
+    std::string error;
+    if (!source->makeTool(tool, error)) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+    return applyTool(fuseAll(copiesOf(tool), getDocument()->getStringHasher()));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1667,5 +1705,162 @@ App::DocumentObjectExecReturn* Scale::compute()
                                                     Part::CopyType::copy));
     }
     setResults(results);
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Split, Design::Feature)
+
+Split::Split()
+{
+    ADD_PROPERTY_TYPE(Tool, (nullptr), "Split", App::Prop_None, "Plane or face to split with");
+    ADD_PROPERTY_TYPE(Pieces, (0L), "Split", App::PropertyType(App::Prop_Output | App::Prop_Hidden), "Pieces");
+    Operation.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* Split::compute()
+{
+    if (Bodies.getSize() < 1 || BaseFeatures.getSize() < 1) {
+        return new App::DocumentObjectExecReturn("Select a body and a plane or face");
+    }
+    const Part::TopoShape shape = baseShape(0);
+    // Ebene: große Fläche über den ganzen Körper; sonst die gewählte Fläche selbst
+    TopoDS_Shape tool;
+    gp_Ax3 ax;
+    if (Tool.getValue() && planeAxes(Tool, ax)) {
+        const Base::BoundBox3d bb = shape.getBoundBox();
+        const double s = bb.CalcDiagonalLength() * 2 + 10;
+        tool = BRepBuilderAPI_MakeFace(gp_Pln(ax), -s, s, -s, s).Face();
+    }
+    else if (Tool.getValue()) {
+        const auto& subs = Tool.getSubValues();
+        tool = Part::Feature::getTopoShape(Tool.getValue(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform,
+                                           subs.empty() ? nullptr : subs.front().c_str())
+                   .getShape();
+    }
+    if (tool.IsNull()) {
+        return new App::DocumentObjectExecReturn("Select a plane or face to split with");
+    }
+    TopTools_ListOfShape args, tools;
+    args.Append(shape.getShape());
+    tools.Append(tool);
+    BRepAlgoAPI_Splitter splitter;
+    splitter.SetArguments(args);
+    splitter.SetTools(tools);
+    splitter.Build();
+    if (!splitter.IsDone()) {
+        return new App::DocumentObjectExecReturn("Split failed");
+    }
+    std::vector<Part::TopoShape> pieces;
+    for (TopExp_Explorer it(splitter.Shape(), TopAbs_SOLID); it.More(); it.Next()) {
+        pieces.emplace_back(it.Current());
+    }
+    if (pieces.size() < 2) {
+        return new App::DocumentObjectExecReturn("The plane or face does not cut through the body");
+    }
+    if (Pieces.getValue() != long(pieces.size())) {
+        Pieces.setValue(long(pieces.size()));
+    }
+    std::vector<Part::TopoShape> results;
+    for (int i = 0; i < Bodies.getSize(); ++i) {
+        results.push_back(i < int(pieces.size()) ? pieces[i] : Part::TopoShape());
+    }
+    // mehr Teile als Bodies (Werkzeug verschoben): die übrigen bleiben beim letzten Body
+    for (size_t i = Bodies.getSize(); i < pieces.size(); ++i) {
+        results.back() = Part::TopoShape(0, getDocument()->getStringHasher()).makeElementCompound({results.back(), pieces[i]});
+    }
+    setResults(results);
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Thread, Design::DressUp)
+
+Thread::Thread()
+{
+    ADD_PROPERTY_TYPE(Pitch, (1.5), "Parameters", App::Prop_None, "Thread pitch");
+    ADD_PROPERTY_TYPE(LeftHanded, (false), "Parameters", App::Prop_None, "Left-handed thread");
+    Size.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* Thread::compute()
+{
+    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+        return new App::DocumentObjectExecReturn("Select a cylindrical face of one body");
+    }
+    const Part::TopoShape shape = baseShape(0);
+    const auto faces = elements(shape, TopAbs_FACE);
+    if (faces.size() != 1) {
+        return new App::DocumentObjectExecReturn("Select one cylindrical face");
+    }
+    const TopoDS_Face face = TopoDS::Face(faces.front().getShape());
+    BRepAdaptor_Surface surface(face);
+    if (surface.GetType() != GeomAbs_Cylinder) {
+        return new App::DocumentObjectExecReturn("The face must be cylindrical");
+    }
+    const gp_Cylinder cyl = surface.Cylinder();
+    const gp_Ax1 axis = cyl.Axis();
+    const double r = cyl.Radius(), p = Pitch.getValue();
+    // Länge der Fläche entlang der Achse
+    double t0 = 1e100, t1 = -1e100;
+    for (TopExp_Explorer v(face, TopAbs_VERTEX); v.More(); v.Next()) {
+        const double t = gp_Vec(axis.Location(), BRep_Tool::Pnt(TopoDS::Vertex(v.Current()))).Dot(gp_Vec(axis.Direction()));
+        t0 = std::min(t0, t);
+        t1 = std::max(t1, t);
+    }
+    const double height = t1 - t0 - p;  // eine halbe Steigung Abstand an beiden Enden
+    if (p < Precision::Confusion() || height < p) {
+        return new App::DocumentObjectExecReturn("The face is too short for this pitch");
+    }
+    // Welle: Rillen nach innen; Bohrung (Fläche zeigt zur Achse): Rillen nach außen. Beides wird abgezogen.
+    // Zeigt die Flächennormale von der Achse weg, ist es eine Welle (die Orientierung allein hängt von der Entstehung ab)
+    gp_Pnt mid;
+    gp_Vec du, dv;
+    surface.D1((surface.FirstUParameter() + surface.LastUParameter()) / 2,
+               (surface.FirstVParameter() + surface.LastVParameter()) / 2, mid, du, dv);
+    gp_Vec normal = du.Crossed(dv);
+    if (face.Orientation() == TopAbs_REVERSED) {
+        normal.Reverse();
+    }
+    const gp_Vec fromAxis(axis.Location().Translated(gp_Vec(axis.Direction())
+                                                     * gp_Vec(axis.Location(), mid).Dot(gp_Vec(axis.Direction()))),
+                          mid);
+    const bool external = normal.Dot(fromAxis) > 0;
+    const double depth = (external ? 0.6134 : 0.5413) * p;
+    const double out = external ? 0.05 : -0.05, in = external ? -depth : depth;
+    // ponytail: vereinfachtes V-Profil ohne Abflachungen, Gewindeenden enden stumpf
+    TopoDS_Shape tool;
+    try {
+        const TopoDS_Shape helix = Part::TopoShape().makeHelix(p, height, r, 0, LeftHanded.getValue());
+        TopExp_Explorer spine(helix, TopAbs_WIRE);
+        BRepBuilderAPI_MakePolygon profile(gp_Pnt(r + out, 0, -0.45 * p), gp_Pnt(r + out, 0, 0.45 * p),
+                                           gp_Pnt(r + in, 0, 0), Standard_True);
+        BRepOffsetAPI_MakePipeShell pipe(TopoDS::Wire(spine.Current()));
+        pipe.SetMode(gp::DZ());  // Profil bleibt parallel zur Achse
+        pipe.Add(profile.Wire());
+        pipe.Build();
+        pipe.MakeSolid();
+        gp_Trsf place;
+        place.SetDisplacement(gp_Ax3(gp::XOY()),
+                              gp_Ax3(axis.Location().Translated(gp_Vec(axis.Direction()) * (t0 + p / 2)),
+                                     axis.Direction()));
+        tool = BRepBuilderAPI_Transform(pipe.Shape(), place, Standard_True).Shape();
+    }
+    catch (const Standard_Failure&) {
+        return new App::DocumentObjectExecReturn("Thread failed");
+    }
+    Part::TopoShape res(0, getDocument()->getStringHasher());
+    try {
+        res.makeElementCut({shape, Part::TopoShape(tool)});
+    }
+    catch (const Standard_Failure&) {
+        return new App::DocumentObjectExecReturn("Thread failed");
+    }
+    if (res.isNull() || !res.isValid()) {
+        return new App::DocumentObjectExecReturn("Thread failed");
+    }
+    setResults({res});
     return StdReturn;
 }

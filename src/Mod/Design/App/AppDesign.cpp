@@ -53,6 +53,8 @@ PyMOD_INIT_FUNC(Design)
     Design::Primitive::init();
     Design::Draft::init();
     Design::Scale::init();
+    Design::Split::init();
+    Design::Thread::init();
 
     PyMOD_Return(mod);
 }
