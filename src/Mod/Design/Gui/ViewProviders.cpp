@@ -10,6 +10,7 @@
 #include <Gui/Control.h>
 #include <Gui/Document.h>
 #include <Gui/QuantitySpinBox.h>
+#include <Gui/ViewProviderDocumentObject.h>
 #include <Mod/Sketcher/App/SketchObject.h>
 #include <Gui/TaskView/TaskDialog.h>
 #include <Mod/Design/App/Features.h>
@@ -21,6 +22,12 @@
 #include <QMessageBox>
 #include <QSpinBox>
 #include <cstring>
+#include <regex>
+#include <QLineEdit>
+#include <QKeyEvent>
+#include <App/ObjectIdentifier.h>
+#include <App/Expression.h>
+#include <App/VarSet.h>
 #include <QDoubleSpinBox>
 #include <QFontMetricsF>
 #include <QGraphicsItem>
@@ -278,6 +285,26 @@ Gui::QuantitySpinBox* quantityBox(const Base::Unit& unit, double value)
     return box;
 }
 
+/// Commit eines Maßfelds (Enter oder Fokus weg); true = Ereignis verbraucht
+class CommitFilter: public QObject
+{
+public:
+    std::function<bool()> commit;
+
+protected:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        if (event->type() == QEvent::KeyPress) {
+            const int key = static_cast<QKeyEvent*>(event)->key();
+            return (key == Qt::Key_Return || key == Qt::Key_Enter) && commit();
+        }
+        if (event->type() == QEvent::FocusOut) {
+            commit();  // Spinbox stellt danach den gültigen Wert dar
+        }
+        return false;
+    }
+};
+
 /// Dialog für alle Features im Inspector. Läuft in einer eigenen Transaktion: Abbrechen macht alles rückgängig.
 /// Extrude/Revolve haben zusätzlich Operation (New Body/Join/Cut/Intersect) und Ziel-Body.
 class TaskFeature: public Gui::TaskView::TaskDialog
@@ -307,7 +334,9 @@ public:
             extent->addItems({QStringLiteral("One Side"), QStringLiteral("Symmetric"), QStringLiteral("Two Sides")});
             extent->setCurrentIndex(extrude->Extent.getValue());
             distance = quantityBox(Base::Unit::Length, extrude->Distance.getValue());
+            bindExpression(distance, &extrude->Distance);
             distance2 = quantityBox(Base::Unit::Length, extrude->Distance2.getValue());
+            bindExpression(distance2, &extrude->Distance2);
             form->addRow(QStringLiteral("Direction"), extent);
             form->addRow(QStringLiteral("Distance"), distance);
             form->addRow(QStringLiteral("Distance 2"), distance2);
@@ -319,6 +348,7 @@ public:
                             QStringLiteral("X axis"), QStringLiteral("Y axis"), QStringLiteral("Z axis")});
             axis->setCurrentIndex(revolve->Axis.getValue());
             distance = quantityBox(Base::Unit::Angle, revolve->Angle.getValue());
+            bindExpression(distance, &revolve->Angle);
             form->addRow(QStringLiteral("Axis"), axis);
             form->addRow(QStringLiteral("Angle"), distance);
             QObject::connect(axis, &QComboBox::currentIndexChanged, [this] { apply(); });
@@ -326,11 +356,13 @@ public:
         if (auto pull = freecad_cast<Design::PressPull*>(feature)) {
             form->addRow(QStringLiteral("Faces"), new QLabel(QStringLiteral("%1 selected").arg(pull->Edges.getSize())));
             distance = quantityBox(Base::Unit::Length, pull->Distance.getValue());
+            bindExpression(distance, &pull->Distance);
             form->addRow(QStringLiteral("Distance"), distance);
         }
         else if (dressUp) {
             auto edges = new QLabel(QStringLiteral("%1 selected").arg(dressUp->Edges.getSize()));
             distance = quantityBox(Base::Unit::Length, dressUp->Size.getValue());
+            bindExpression(distance, &dressUp->Size);
             form->addRow(shell ? QStringLiteral("Open faces") : QStringLiteral("Edges"), edges);
             form->addRow(shell                                         ? QStringLiteral("Thickness")
                              : feature->isDerivedFrom<Design::Fillet>() ? QStringLiteral("Radius")
@@ -363,6 +395,7 @@ public:
             axis->addItems({QStringLiteral("X axis"), QStringLiteral("Y axis"), QStringLiteral("Z axis")});
             axis->setCurrentIndex(move->RotationAxis.getValue());
             distance = quantityBox(Base::Unit::Angle, move->Angle.getValue());
+            bindExpression(distance, &move->Angle);
             form->addRow(QStringLiteral("X distance"), moveX);
             form->addRow(QStringLiteral("Y distance"), moveY);
             form->addRow(QStringLiteral("Z distance"), moveZ);
@@ -385,12 +418,17 @@ public:
             holeType->addItems({QStringLiteral("Simple"), QStringLiteral("Counterbore"), QStringLiteral("Countersink")});
             holeType->setCurrentIndex(hole->HoleType.getValue());
             distance = quantityBox(Base::Unit::Length, hole->Diameter.getValue());
+            bindExpression(distance, &hole->Diameter);
             distance2 = quantityBox(Base::Unit::Length, hole->Depth.getValue());
+            bindExpression(distance2, &hole->Depth);
             check = new QCheckBox(QStringLiteral("Through all"));
             check->setChecked(hole->ThroughAll.getValue());
             headDiameter = quantityBox(Base::Unit::Length, hole->HeadDiameter.getValue());
+            bindExpression(headDiameter, &hole->HeadDiameter);
             headDepth = quantityBox(Base::Unit::Length, hole->HeadDepth.getValue());
+            bindExpression(headDepth, &hole->HeadDepth);
             sinkAngle = quantityBox(Base::Unit::Angle, hole->CountersinkAngle.getValue());
+            bindExpression(sinkAngle, &hole->CountersinkAngle);
             flip = new QCheckBox(QStringLiteral("Flip direction"));
             flip->setChecked(hole->Reversed.getValue());
             form->addRow(QStringLiteral("Type"), holeType);
@@ -426,11 +464,14 @@ public:
             dir1 = xyz(pattern->Direction1.getValue());
             count1 = count(pattern->Count1.getValue());
             distance = quantityBox(Base::Unit::Length, pattern->Spacing1.getValue());
+            bindExpression(distance, &pattern->Spacing1);
             dir2 = xyz(pattern->Direction2.getValue());
             count2 = count(pattern->Count2.getValue());
             distance2 = quantityBox(Base::Unit::Length, pattern->Spacing2.getValue());
+            bindExpression(distance2, &pattern->Spacing2);
             axis = xyz(pattern->Axis.getValue());
             sinkAngle = quantityBox(Base::Unit::Angle, pattern->Angle.getValue());
+            bindExpression(sinkAngle, &pattern->Angle);
             simpleOp = new QComboBox;
             simpleOp->addItems({QStringLiteral("Join"), QStringLiteral("Cut"), QStringLiteral("Intersect")});
             simpleOp->setCurrentIndex(std::max(0L, pattern->Operation.getValue() - 1));
@@ -738,6 +779,54 @@ private:
         operation->blockSignals(false);
     }
 
+    /// Maßfeld nimmt auch Ausdrücke mit Parametern an ("Width * 2"); eine Zahl mit Einheit löst den Ausdruck wieder
+    void bindExpression(Gui::QuantitySpinBox* box, App::Property* prop)
+    {
+        auto quantity = freecad_cast<App::PropertyQuantity*>(prop);
+        auto edit = box->findChild<QLineEdit*>();
+        if (!quantity || !edit) {
+            return;
+        }
+        const App::ObjectIdentifier path(*prop);
+        App::Document* doc = feature->getDocument();
+        auto show = [this, box, path, doc] {
+            const auto info = feature->getExpression(path);
+            box->setToolTip(info.expression ? QStringLiteral("= %1").arg(QString::fromStdString(
+                                                  displayExpression(doc, info.expression->toString())))
+                                            : QString());
+        };
+        show();
+        auto filter = new CommitFilter;
+        filter->setParent(box);
+        filter->commit = [this, box, edit, quantity, path, doc, show] {
+            const QString text = edit->text().trimmed();
+            try {
+                Base::Quantity::parse(text.toStdString());
+                if (feature->getExpression(path).expression) {
+                    feature->setExpression(path, nullptr);  // feste Zahl ersetzt den Ausdruck
+                    show();
+                }
+                return false;  // normale Eingabe
+            }
+            catch (const Base::Exception&) {
+            }
+            try {
+                App::ExpressionPtr expr = App::Expression::parse(feature, parameterExpression(doc, text.toStdString()));
+                feature->setExpression(path, std::shared_ptr<App::Expression>(expr.release()));
+                doc->recompute();
+                box->setValue(quantity->getQuantityValue());
+                show();
+                apply();
+            }
+            catch (const Base::Exception& e) {
+                status->setText(QStringLiteral("Unknown parameter or invalid expression: %1").arg(text));
+            }
+            return true;
+        };
+        edit->installEventFilter(filter);
+        box->installEventFilter(filter);
+    }
+
     /// Hat das Feature Eigenschaften in der Gruppe "Parameters"? Dann baut der Dialog seine Felder daraus.
     static bool hasParameters(Design::Feature* feature)
     {
@@ -774,6 +863,7 @@ private:
             QWidget* field = nullptr;
             if (auto q = freecad_cast<App::PropertyQuantity*>(prop)) {
                 auto box = quantityBox(q->getUnit(), q->getValue());
+                bindExpression(box, q);
                 const bool positive = prop->isDerivedFrom<App::PropertyLength>();
                 QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this, q, positive](double v) {
                     q->setValue(positive ? std::abs(v) : v);
@@ -1058,4 +1148,71 @@ bool ViewProviderFeature::setEdit(int)
 void ViewProviderFeature::unsetEdit(int)
 {
     Gui::Control().closeDialog();
+}
+
+App::DocumentObject* DesignGui::parameters(App::Document* doc, bool create)
+{
+    App::Part* root = Design::root(doc, create);
+    if (!root) {
+        return nullptr;
+    }
+    for (auto obj : root->Group.getValues()) {
+        if (obj->isDerivedFrom<App::VarSet>() && std::strcmp(obj->Label.getValue(), "Parameters") == 0) {
+            return obj;
+        }
+    }
+    if (!create) {
+        return nullptr;
+    }
+    App::DocumentObject* set = doc->addObject("App::VarSet", "Parameters");
+    set->Label.setValue("Parameters");
+    root->addObject(set);
+    // wie in Fusion nur über "Change Parameters" erreichbar, nicht im Browser
+    if (auto vp = freecad_cast<Gui::ViewProviderDocumentObject*>(Gui::Application::Instance->getViewProvider(set))) {
+        vp->ShowInTree.setValue(false);
+    }
+    return set;
+}
+
+namespace
+{
+/// Bezeichner im Text, die Parameter sind, ersetzen (nicht nach einem Punkt, also keine Objekt.Eigenschaft-Pfade)
+std::string mapParameters(App::Document* doc, const std::string& text, bool toTable)
+{
+    App::DocumentObject* set = DesignGui::parameters(doc, false);
+    if (!set) {
+        return text;
+    }
+    const std::string prefix = std::string(set->getNameInDocument()) + ".";
+    if (!toTable) {
+        std::string out = text;
+        for (size_t pos; (pos = out.find(prefix)) != std::string::npos;) {
+            out.erase(pos, prefix.size());
+        }
+        return out;
+    }
+    static const std::regex word(R"([A-Za-z_]\w*)");
+    std::string out;
+    size_t last = 0;
+    for (auto it = std::sregex_iterator(text.begin(), text.end(), word); it != std::sregex_iterator(); ++it) {
+        const size_t at = it->position();
+        const bool afterDot = at > 0 && text[at - 1] == '.';
+        App::Property* prop = afterDot ? nullptr : set->getPropertyByName(it->str().c_str());
+        out += text.substr(last, at - last);
+        out += prop && prop->getGroup() && std::strcmp(prop->getGroup(), "Parameters") == 0 ? prefix + it->str()
+                                                                                          : it->str();
+        last = at + it->length();
+    }
+    return out + text.substr(last);
+}
+}  // namespace
+
+std::string DesignGui::parameterExpression(App::Document* doc, const std::string& text)
+{
+    return mapParameters(doc, text, true);
+}
+
+std::string DesignGui::displayExpression(App::Document* doc, const std::string& text)
+{
+    return mapParameters(doc, text, false);
 }

@@ -13,6 +13,13 @@ class Body;
 namespace DesignGui
 {
 
+/// Parameter-Tabelle des Designs (App::VarSet "Parameters" in der Root-Komponente), wie Fusions "Change Parameters"
+DesignGuiExport App::DocumentObject* parameters(App::Document* doc, bool create);
+/// Parameternamen in einem Ausdruck auf die Tabelle beziehen: "Width * 2" -> "Parameters.Width * 2"
+DesignGuiExport std::string parameterExpression(App::Document* doc, const std::string& text);
+/// Rückweg für die Anzeige: "Parameters.Width * 2" -> "Width * 2"
+DesignGuiExport std::string displayExpression(App::Document* doc, const std::string& text);
+
 class DesignGuiExport ViewProviderBody: public PartGui::ViewProviderPartExt
 {
     PROPERTY_HEADER_WITH_OVERRIDE(DesignGui::ViewProviderBody);

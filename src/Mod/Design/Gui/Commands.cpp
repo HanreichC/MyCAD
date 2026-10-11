@@ -33,6 +33,14 @@
 #include <TopoDS_Vertex.hxx>
 #include <gp_Pln.hxx>
 #include <QLabel>
+#include <cstring>
+#include <App/ObjectIdentifier.h>
+#include <App/Expression.h>
+#include <QDialogButtonBox>
+#include <QDialog>
+#include <QLineEdit>
+#include <QHeaderView>
+#include <QTableWidget>
 #include <App/Material.h>
 #include <QToolButton>
 #include <QPushButton>
@@ -1830,6 +1838,140 @@ void startAppearance(App::Document* doc)
     Gui::Control().showDialog(new TaskAppearance(doc, bodies));
 }
 
+/// Parameter wie in Fusion ("Change Parameters"): Name und Ausdruck ("40 mm", "Width / 10"); Maßfelder der
+/// Features nehmen diese Namen an. Änderungen wirken sofort, Abbrechen nimmt alle zurück.
+void showParameters(App::Document* doc)
+{
+    doc->openTransaction("Parameters");
+    App::DocumentObject* set = DesignGui::parameters(doc, true);
+    QDialog dlg(Gui::getMainWindow());
+    dlg.setWindowTitle(QStringLiteral("Parameters"));
+    dlg.setMinimumSize(520, 360);
+    auto lay = new QVBoxLayout(&dlg);
+    lay->setContentsMargins(24, 20, 24, 20);
+    auto hint = new QLabel(QStringLiteral("Use the names in any dimension field, e.g. “Width * 2”."));
+    hint->setWordWrap(true);
+    lay->addWidget(hint);
+    auto table = new QTableWidget(0, 4);
+    table->setHorizontalHeaderLabels({QStringLiteral("Name"), QStringLiteral("Expression"), QStringLiteral("Value"), QString()});
+    table->verticalHeader()->hide();
+    table->setShowGrid(false);
+    table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    table->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    lay->addWidget(table);
+
+    auto names = [set] {
+        std::vector<App::Property*> props;
+        set->getPropertyList(props);
+        std::vector<std::string> result;
+        for (auto prop : props) {
+            if (prop->getGroup() && std::strcmp(prop->getGroup(), "Parameters") == 0) {
+                result.emplace_back(prop->getName());
+            }
+        }
+        return result;
+    };
+    std::function<void()> refresh;
+    auto setExpression = [set, doc](const std::string& name, const QString& text) {
+        App::Property* prop = set->getPropertyByName(name.c_str());
+        // Tabelleneintrag selbst ist der Eigentümer: andere Parameter heißen dort einfach "Width"
+        set->setExpression(App::ObjectIdentifier(*prop),
+                           std::shared_ptr<App::Expression>(App::Expression::parse(set, text.toStdString()).release()));
+        doc->recompute();
+    };
+    refresh = [&, set, table] {
+        table->blockSignals(true);
+        table->setRowCount(0);
+        for (const auto& name : names()) {
+            auto prop = static_cast<App::PropertyQuantity*>(set->getPropertyByName(name.c_str()));
+            const int r = table->rowCount();
+            table->insertRow(r);
+            auto nameItem = new QTableWidgetItem(QString::fromStdString(name));
+            nameItem->setFlags(Qt::ItemIsEnabled);
+            table->setItem(r, 0, nameItem);
+            const auto info = set->getExpression(App::ObjectIdentifier(*prop));
+            table->setItem(r, 1, new QTableWidgetItem(info.expression ? QString::fromStdString(info.expression->toString())
+                                                                      : QString()));
+            auto value = new QTableWidgetItem(QString::fromStdString(prop->getQuantityValue().getUserString()));
+            value->setFlags(Qt::ItemIsEnabled);
+            table->setItem(r, 2, value);
+            auto remove = new QPushButton(QStringLiteral("Remove"));
+            remove->setAutoDefault(false);
+            QObject::connect(remove, &QPushButton::clicked, table, [&, set, name] {
+                set->removeDynamicProperty(name.c_str());
+                doc->recompute();
+                QTimer::singleShot(0, table, [&] { refresh(); });
+            });
+            table->setCellWidget(r, 3, remove);
+        }
+        table->blockSignals(false);
+    };
+    QObject::connect(table, &QTableWidget::itemChanged, table, [&, table](QTableWidgetItem* item) {
+        if (item->column() != 1) {
+            return;
+        }
+        const std::string name = table->item(item->row(), 0)->text().toStdString();
+        try {
+            setExpression(name, item->text());
+            item->setToolTip(QString());
+        }
+        catch (const Base::Exception& e) {
+            item->setToolTip(QString::fromUtf8(e.what()));
+        }
+        QTimer::singleShot(0, table, [&] { refresh(); });
+    });
+
+    auto row = new QHBoxLayout;
+    auto nameEdit = new QLineEdit;
+    nameEdit->setPlaceholderText(QStringLiteral("Name, e.g. Width"));
+    auto exprEdit = new QLineEdit;
+    exprEdit->setPlaceholderText(QStringLiteral("Value, e.g. 40 mm"));
+    auto add = new QPushButton(QStringLiteral("Add"));
+    add->setAutoDefault(false);
+    row->addWidget(nameEdit);
+    row->addWidget(exprEdit);
+    row->addWidget(add);
+    lay->addLayout(row);
+    auto error = new QLabel;
+    error->setStyleSheet(QStringLiteral("color: #FF3B30;"));
+    lay->addWidget(error);
+    QObject::connect(add, &QPushButton::clicked, &dlg, [&, set] {
+        static const QRegularExpression valid(QStringLiteral("^[A-Za-z_][A-Za-z0-9_]*$"));
+        const QString name = nameEdit->text().trimmed();
+        if (!valid.match(name).hasMatch() || set->getPropertyByName(name.toLatin1().constData())) {
+            error->setText(QStringLiteral("Use a new name of letters, digits and _ (no spaces)."));
+            return;
+        }
+        set->addDynamicProperty("App::PropertyQuantity", name.toLatin1().constData(), "Parameters");
+        try {
+            setExpression(name.toStdString(), exprEdit->text().trimmed().isEmpty() ? QStringLiteral("0 mm") : exprEdit->text());
+            error->clear();
+            nameEdit->clear();
+            exprEdit->clear();
+        }
+        catch (const Base::Exception& e) {
+            set->removeDynamicProperty(name.toLatin1().constData());
+            error->setText(QString::fromUtf8(e.what()));
+        }
+        refresh();
+    });
+    refresh();
+
+    auto buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    lay->addWidget(buttons);
+    if (dlg.exec() == QDialog::Accepted) {
+        doc->commitTransaction();
+    }
+    else {
+        doc->abortTransaction();
+        doc->recompute();
+    }
+}
+
 void startMeasure(App::Document*)
 {
     Gui::Control().showDialog(new TaskMeasure);
@@ -2036,6 +2178,9 @@ void CreateDesignCommands()
                                      "A", startAppearance));
     mgr.addCommand(new DesignCommand("Design_Rib", "Rib", "Rib: select a body and sketch lines", "PartDesign_Rib",
                                      "", startRib));
+    mgr.addCommand(new DesignCommand("Design_Parameters", "Change Parameters",
+                                     "Parameters: named values to use in any dimension field", "Std_VarSet", "",
+                                     showParameters));
     mgr.addCommand(new DesignCommand("Design_NewComponent", "New Component",
                                      "New Component: an empty part with its own origin (double-click to activate)",
                                      "Std_Part", "", startNewComponent));
