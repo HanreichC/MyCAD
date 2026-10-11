@@ -42,6 +42,7 @@
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
 #include <BRepTools.hxx>
+#include <BRepOffset_MakeOffset.hxx>
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
@@ -1330,12 +1331,36 @@ App::DocumentObjectExecReturn* PressPull::compute()
         return new App::DocumentObjectExecReturn("Distance must not be zero");
     }
     const Part::TopoShape shape = baseShape(0);
-    std::vector<Part::TopoShape> prisms;
-    for (const auto& face : elements(shape, TopAbs_FACE)) {
-        BRepAdaptor_Surface surf(TopoDS::Face(face.getShape()));
-        if (surf.GetType() != GeomAbs_Plane) {
-            return new App::DocumentObjectExecReturn("Press Pull supports planar faces");
+    const auto faces = elements(shape, TopAbs_FACE);
+    // Gekrümmte Flächen (Zylinder, Freiform): Fläche versetzen wie Fusions Offset Face, die Nachbarn passen sich an
+    if (std::ranges::any_of(faces, [](const Part::TopoShape& f) {
+            return BRepAdaptor_Surface(TopoDS::Face(f.getShape())).GetType() != GeomAbs_Plane;
+        })) {
+        BRepOffset_MakeOffset offset;
+        offset.Initialize(shape.getShape(), 0.0, 1e-6, BRepOffset_Skin, Standard_False, Standard_False,
+                          GeomAbs_Intersection);
+        for (const auto& face : faces) {
+            offset.SetOffsetOnFace(TopoDS::Face(face.getShape()), d);
         }
+        try {
+            offset.MakeOffsetShape();
+        }
+        catch (const Standard_Failure&) {
+            return new App::DocumentObjectExecReturn("Press Pull failed: distance too large?");
+        }
+        if (!offset.IsDone() || offset.Shape().IsNull()) {
+            return new App::DocumentObjectExecReturn("Press Pull failed: distance too large?");
+        }
+        Part::TopoShape res(offset.Shape());
+        if (!res.isValid() || res.countSubShapes(TopAbs_SOLID) == 0) {
+            return new App::DocumentObjectExecReturn("Press Pull failed: distance too large?");
+        }
+        setResults({res});
+        return StdReturn;
+    }
+    std::vector<Part::TopoShape> prisms;
+    for (const auto& face : faces) {
+        BRepAdaptor_Surface surf(TopoDS::Face(face.getShape()));
         gp_Dir n = surf.Plane().Axis().Direction();  // nach außen zeigende Normale
         if (face.getShape().Orientation() == TopAbs_REVERSED) {
             n.Reverse();

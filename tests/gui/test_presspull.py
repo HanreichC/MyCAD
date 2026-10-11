@@ -17,5 +17,10 @@ run([
     ("Press Pull 2", lambda: click(button("Design_PressPull"))),
     ("-3", lambda: type_into(0, "-3 mm")),
     ("OK 2", ok), ("volumes", lambda: L("%s expect 34200 bb=%s" % (volumes(), body("Box").Shape.BoundBox))),
+    ("cylinder", lambda: make_body([Part.Circle(App.Vector(100, 0, 0), App.Vector(0, 0, 1), 8)], 0, 20, "Cyl")),
+    ("pick mantle", lambda: (Gui.Selection.clearSelection(), Gui.Selection.addSelection(body("Cyl"), "Face%d" % (1 + [f.Surface.TypeId for f in body("Cyl").Shape.Faces].index("Part::GeomCylinder"))))),
+    ("Press Pull 3", lambda: click(button("Design_PressPull"))),
+    ("+2", lambda: type_into(0, "2 mm")),
+    ("OK 3", ok), ("cyl", lambda: L("cylinder: %.0f expect 6283 (r 8 -> 10)" % body("Cyl").Shape.Volume)),
     ("errors", lambda: L("errors=%s" % errors())),
 ])
