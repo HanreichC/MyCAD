@@ -46,6 +46,7 @@ ICONS = {
     "Design_Rib": '<path d="M4 4v16h16"/><path d="M4 9l11 11M4 13l7 7" stroke-width="2.6"/>',
     "Design_Parameters": '<path d="M14.5 4c-2 0-2.7 1.4-3 3.4L10 17c-.3 2-1 3-3 3"/><path d="M8 10h7"/><path d="M15.5 13l4.5 5M20 13l-4.5 5"/>',
     "Design_AnglePlane": '<path d="M3 19h18"/><path d="M6 19l9-13h5l-9 13"/><path d="M14 19a5 5 0 0 0-1.6-3.6"/>',
+    "Design_Web": '<path d="M3 20h18M3 20V8M21 20V8"/><path d="M8 20v-8M16 20v-8M3 12h18" stroke-width="2.4"/>',
     "Design_Import": '<path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5"/><path d="M12 10.5v7M9 14.5l3 3 3-3"/>',
     "Design_Export": '<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
     "Std_Undo": '<path d="M9 7l-4 4 4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-2"/>',

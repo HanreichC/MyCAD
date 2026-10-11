@@ -76,6 +76,7 @@ const char* PatternEnums[] = {"Rectangular", "Circular", nullptr};
 const char* HoleEnums[] = {"Simple", "Counterbore", "Countersink", nullptr};
 const char* PrimitiveEnums[] = {"Box", "Cylinder", "Sphere", "Torus", "Coil", nullptr};
 const char* CenterEnums[] = {"Origin", "Body center", nullptr};
+const char* RibEnums[] = {"Rib", "Web", nullptr};
 const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
@@ -1902,6 +1903,8 @@ Rib::Rib()
 {
     ADD_PROPERTY_TYPE(Curves, (nullptr), "Rib", App::Prop_None, "Sketch lines of the rib");
     ADD_PROPERTY_TYPE(Thickness, (3.0), "Parameters", App::Prop_None, "Rib thickness");
+    ADD_PROPERTY_TYPE(Mode, (0L), "Rib", App::Prop_None, "Rib: grows in the sketch plane; Web: perpendicular to it");
+    Mode.setEnums(RibEnums);
     Operation.setStatus(App::Property::Hidden, true);
 }
 
@@ -1943,18 +1946,22 @@ App::DocumentObjectExecReturn* Rib::compute()
         }
         const gp_Pnt a = curve.Value(curve.FirstParameter()), b = curve.Value(curve.LastParameter());
         const gp_Vec along(a, b);
-        const gp_Vec side = normal.Crossed(along).Normalized();  // in der Skizzenebene quer zur Linie
+        const gp_Vec inPlane = normal.Crossed(along).Normalized();  // in der Skizzenebene quer zur Linie
+        // Rib wächst in der Ebene (quer zur Linie), die Dicke liegt senkrecht dazu; Web umgekehrt
+        const bool web = Mode.getValue() == 1;
+        const gp_Vec grow = web ? normal.Normalized() : inPlane;
+        const gp_Vec across = web ? inPlane : normal.Normalized();
+        const gp_Vec side = grow;
         const gp_Pnt mid = a.Translated(along * 0.5);
         // beide Seiten probieren: genommen wird das Stück an der Linie, das ringsum vom Körper begrenzt ist
         bool done = false;
         for (double s : {1.0, -1.0}) {
-            const gp_Vec out = side * (s * far);
+            const gp_Vec out = grow * (s * far);
             BRepBuilderAPI_MakePolygon outline(a, b, b.Translated(out), a.Translated(out), Standard_True);
             const TopoDS_Face face = BRepBuilderAPI_MakeFace(outline.Wire()).Face();
             gp_Trsf shift;
-            shift.SetTranslation(normal.Normalized() * (-t / 2));
-            const TopoDS_Shape slab = BRepPrimAPI_MakePrism(BRepBuilderAPI_Transform(face, shift).Shape(),
-                                                            normal.Normalized() * t)
+            shift.SetTranslation(across * (-t / 2));
+            const TopoDS_Shape slab = BRepPrimAPI_MakePrism(BRepBuilderAPI_Transform(face, shift).Shape(), across * t)
                                           .Shape();
             BRepAlgoAPI_Cut cut(slab, shape.getShape());
             if (!cut.IsDone()) {

@@ -415,6 +415,7 @@ public:
     Rib();
     App::PropertyLinkSub Curves;  ///< Skizze mit Linien ("EdgeN"; leer = alle Linien)
     App::PropertyLength Thickness;
+    App::PropertyEnumeration Mode;  ///< Rib: wächst in der Skizzenebene; Web: senkrecht zur Skizze
     App::DocumentObjectExecReturn* compute() override;
 };
 

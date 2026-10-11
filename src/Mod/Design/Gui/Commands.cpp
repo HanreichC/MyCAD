@@ -836,7 +836,7 @@ void startSplit(App::Document* doc)
 }
 
 /// Rib: einen Body und Skizzenlinien wählen
-void startRib(App::Document* doc)
+void startRib(App::Document* doc, long mode = 0)
 {
     Design::Body* body = nullptr;
     App::DocumentObject* sketch = nullptr;
@@ -860,7 +860,8 @@ void startRib(App::Document* doc)
                                  QStringLiteral("Select the body and the sketch lines of the rib (or the whole sketch)."));
         return;
     }
-    auto feature = static_cast<Design::Rib*>(addFeature(doc, "Design::Rib", "Rib", body));
+    auto feature = static_cast<Design::Rib*>(addFeature(doc, "Design::Rib", mode ? "Web" : "Rib", body));
+    feature->Mode.setValue(mode);
     feature->Curves.setValue(sketch, lines);
     modifyBodies(feature, {body});
     doc->recompute();
@@ -2329,7 +2330,10 @@ void CreateDesignCommands()
                                      "Appearance: select bodies, then pick a material or color", "Std_SetAppearance",
                                      "A", startAppearance));
     mgr.addCommand(new DesignCommand("Design_Rib", "Rib", "Rib: select a body and sketch lines", "PartDesign_Rib",
-                                     "", startRib));
+                                     "", [](App::Document* doc) { startRib(doc, 0); }));
+    mgr.addCommand(new DesignCommand("Design_Web", "Web",
+                                     "Web: select a body and sketch lines; walls grow perpendicular to the sketch",
+                                     "PartDesign_Rib", "", [](App::Document* doc) { startRib(doc, 1); }));
     mgr.addCommand(new DesignCommand("Design_Parameters", "Change Parameters",
                                      "Parameters: named values to use in any dimension field", "Std_VarSet", "",
                                      showParameters));

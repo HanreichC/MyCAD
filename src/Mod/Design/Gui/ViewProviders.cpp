@@ -270,8 +270,8 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::Thread>()) {
         return QStringLiteral("Thread");
     }
-    if (f->isDerivedFrom<Design::Rib>()) {
-        return QStringLiteral("Rib");
+    if (auto rib = freecad_cast<const Design::Rib*>(f)) {
+        return QString::fromLatin1(rib->Mode.getValueAsString());
     }
     return QStringLiteral("Extrude");
 }
