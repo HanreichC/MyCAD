@@ -270,6 +270,15 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::Thread>()) {
         return QStringLiteral("Thread");
     }
+    if (f->isDerivedFrom<Design::ReplaceFace>()) {
+        return QStringLiteral("Replace Face");
+    }
+    if (f->isDerivedFrom<Design::SplitFace>()) {
+        return QStringLiteral("Split Face");
+    }
+    if (auto emboss = freecad_cast<const Design::Emboss*>(f)) {
+        return QString::fromLatin1(emboss->Type.getValueAsString());
+    }
     if (auto rib = freecad_cast<const Design::Rib*>(f)) {
         return QString::fromLatin1(rib->Mode.getValueAsString());
     }
@@ -551,7 +560,7 @@ public:
         }
         // verwendete Profile, Pfade und Querschnitte (Extrude, Revolve, Sweep, Loft)
         std::vector<App::DocumentObject*> used;
-        for (const char* name : {"Profile", "Path", "Curves"}) {
+        for (const char* name : {"Profile", "Path", "Curves"}) {  // auch Emboss (Profile)
             if (auto link = freecad_cast<App::PropertyLinkSub*>(feature->getPropertyByName(name))) {
                 used.push_back(link->getValue());
             }
@@ -1132,6 +1141,7 @@ bool ViewProviderFeature::setEdit(int)
 {
     auto feature = freecad_cast<Design::Feature*>(getObject());
     if (!feature || feature->isDerivedFrom<Design::Import>() || feature->isDerivedFrom<Design::Split>()
+        || feature->isDerivedFrom<Design::ReplaceFace>() || feature->isDerivedFrom<Design::SplitFace>()
         || Gui::Control().activeDialog()) {
         return false;  // eingefügte Geometrie und Split haben keine Einstellungen
     }

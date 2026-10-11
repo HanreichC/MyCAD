@@ -42,6 +42,12 @@
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
 #include <BRepTools.hxx>
+#include <ElSLib.hxx>
+#include <BRepAlgoAPI_Common.hxx>
+#include <BRepAlgoAPI_Section.hxx>
+#include <BRepFeat_SplitShape.hxx>
+#include <BRepPrimAPI_MakeHalfSpace.hxx>
+#include <TopoDS_Solid.hxx>
 #include <BRepOffset_MakeOffset.hxx>
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
@@ -77,6 +83,7 @@ const char* HoleEnums[] = {"Simple", "Counterbore", "Countersink", nullptr};
 const char* PrimitiveEnums[] = {"Box", "Cylinder", "Sphere", "Torus", "Coil", nullptr};
 const char* CenterEnums[] = {"Origin", "Body center", nullptr};
 const char* RibEnums[] = {"Rib", "Web", nullptr};
+const char* EmbossEnums[] = {"Emboss", "Deboss", nullptr};
 const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
@@ -150,7 +157,7 @@ bool planeAxes(const App::PropertyLinkSub& link, gp_Ax3& ax)
         return true;
     }
     const Part::TopoShape face = Part::Feature::getTopoShape(
-        obj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform, subs.front().c_str());
+        obj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform | Part::ShapeOption::NeedSubElement, subs.front().c_str());
     if (face.isNull() || face.getShape().ShapeType() != TopAbs_FACE) {
         return false;
     }
@@ -161,6 +168,69 @@ bool planeAxes(const App::PropertyLinkSub& link, gp_Ax3& ax)
     ax = surface.Plane().Position();
     if (face.getShape().Orientation() == TopAbs_REVERSED) {
         ax.ZReverse();  // Normale zeigt aus dem Körper heraus
+    }
+    return true;
+}
+
+/// Große Fläche auf einer Ebene, die den ganzen Bereich around abdeckt (um dessen Projektion, nicht um den Ursprung)
+TopoDS_Face planeFace(const gp_Pln& pln, const Base::BoundBox3d& around)
+{
+    const double far = around.CalcDiagonalLength() * 2 + 10;
+    const Base::Vector3d c = around.GetCenter();
+    double u = 0, v = 0;
+    ElSLib::Parameters(pln, gp_Pnt(c.x, c.y, c.z), u, v);
+    return BRepBuilderAPI_MakeFace(pln, u - far, u + far, v - far, v + far).Face();
+}
+
+/// Werkzeugform aus einem Bezug: Ebene -> große Fläche über den Körper, Skizze -> Kanten senkrecht zur Skizze
+/// gezogen (Flächen), sonst die gewählte Fläche bzw. das Objekt selbst
+TopoDS_Shape toolShape(const App::PropertyLinkSub& link, const Base::BoundBox3d& around)
+{
+    App::DocumentObject* obj = link.getValue();
+    if (!obj) {
+        return {};
+    }
+    const double far = around.CalcDiagonalLength() * 2 + 10;
+    const auto& subs = link.getSubValues();
+    const std::string sub = subs.empty() ? std::string() : subs.front();
+    if (obj->getTypeId().isDerivedFrom(Base::Type::fromName("Sketcher::SketchObject")) && sub.empty()) {
+        auto sketch = static_cast<Part::Feature*>(obj);
+        Base::Vector3d n;
+        sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1), n);
+        const gp_Vec dir(n.x * far, n.y * far, n.z * far);
+        BRep_Builder builder;
+        TopoDS_Compound walls;
+        builder.MakeCompound(walls);
+        for (TopExp_Explorer e(sketch->Shape.getShape().getShape(), TopAbs_EDGE); e.More(); e.Next()) {
+            gp_Trsf back;
+            back.SetTranslation(-dir);
+            const TopoDS_Shape start = BRepBuilderAPI_Transform(e.Current(), back, Standard_True).Shape();
+            builder.Add(walls, BRepPrimAPI_MakePrism(start, dir * 2).Shape());
+        }
+        return walls;
+    }
+    gp_Ax3 ax;
+    if (planeAxes(link, ax) && (sub.empty() || sub.rfind("Face", 0) == 0)) {
+        return planeFace(gp_Pln(ax), around);
+    }
+    return Part::Feature::getTopoShape(obj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform | Part::ShapeOption::NeedSubElement,
+                                       sub.empty() ? nullptr : sub.c_str())
+        .getShape();
+}
+
+/// Nach außen zeigende Normale einer ebenen Fläche und ihr Schwerpunkt
+bool planarFrame(const TopoDS_Face& face, gp_Pnt& center, gp_Vec& normal)
+{
+    BRepAdaptor_Surface surface(face);
+    if (surface.GetType() != GeomAbs_Plane) {
+        return false;
+    }
+    GProp_GProps props;
+    BRepGProp::SurfaceProperties(face, props);
+    center = props.CentreOfMass();
+    normal = gp_Vec(surface.Plane().Axis().Direction());
+    if (face.Orientation() == TopAbs_REVERSED) {
+        normal.Reverse();
     }
     return true;
 }
@@ -1759,13 +1829,11 @@ App::DocumentObjectExecReturn* Split::compute()
     TopoDS_Shape tool;
     gp_Ax3 ax;
     if (Tool.getValue() && planeAxes(Tool, ax)) {
-        const Base::BoundBox3d bb = shape.getBoundBox();
-        const double s = bb.CalcDiagonalLength() * 2 + 10;
-        tool = BRepBuilderAPI_MakeFace(gp_Pln(ax), -s, s, -s, s).Face();
+        tool = planeFace(gp_Pln(ax), shape.getBoundBox());
     }
     else if (Tool.getValue()) {
         const auto& subs = Tool.getSubValues();
-        tool = Part::Feature::getTopoShape(Tool.getValue(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform,
+        tool = Part::Feature::getTopoShape(Tool.getValue(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform | Part::ShapeOption::NeedSubElement,
                                            subs.empty() ? nullptr : subs.front().c_str())
                    .getShape();
     }
@@ -2001,5 +2069,207 @@ App::DocumentObjectExecReturn* Rib::compute()
         return new App::DocumentObjectExecReturn("Select straight sketch lines for the rib");
     }
     setResults({shape});
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::ReplaceFace, Design::DressUp)
+
+ReplaceFace::ReplaceFace()
+{
+    ADD_PROPERTY_TYPE(Target, (nullptr), "Replace Face", App::Prop_None, "Plane or face to extend or trim to");
+    Size.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* ReplaceFace::compute()
+{
+    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+        return new App::DocumentObjectExecReturn("Select faces of one body and a target");
+    }
+    Part::TopoShape shape = baseShape(0);
+    const auto faces = elements(shape, TopAbs_FACE);
+    const TopoDS_Shape target = toolShape(Target, shape.getBoundBox());
+    TopExp_Explorer targetFace(target, TopAbs_FACE);
+    if (faces.empty() || !targetFace.More()) {
+        return new App::DocumentObjectExecReturn("Select the faces to replace and a target plane or face");
+    }
+    const double far = shape.getBoundBox().CalcDiagonalLength() * 4 + 10;
+    for (const auto& f : faces) {
+        const TopoDS_Face face = TopoDS::Face(f.getShape());
+        gp_Pnt c;
+        gp_Vec n;
+        if (!planarFrame(face, c, n)) {
+            return new App::DocumentObjectExecReturn("Replace Face supports planar faces");
+        }
+        // Ziel ist eine Ebene (bzw. ebene Fläche): wo trifft die Flächennormale sie? t > 0: Ziel liegt außen
+        BRepAdaptor_Surface targetSurface(TopoDS::Face(targetFace.Current()));
+        if (targetSurface.GetType() != GeomAbs_Plane) {
+            return new App::DocumentObjectExecReturn("The target must be a plane or planar face");
+        }
+        const gp_Pln pln = targetSurface.Plane();
+        const gp_Vec tn(pln.Axis().Direction());
+        const double dot = tn.Dot(n);
+        if (std::abs(dot) < 1e-9) {
+            return new App::DocumentObjectExecReturn("The target must cross the direction of the face");
+        }
+        const double t = tn.Dot(gp_Vec(c, pln.Location())) / dot;
+        if (std::abs(t) < Precision::Confusion()) {
+            continue;  // liegt schon dort
+        }
+        const bool outward = t > 0;
+        // Prisma der Fläche Richtung Ziel, geschnitten mit einer dicken Platte an der Zielebene auf der Seite der Fläche
+        const TopoDS_Shape prism = BRepPrimAPI_MakePrism(face, (outward ? n : -n) * far).Shape();
+        const double side = tn.Dot(gp_Vec(pln.Location(), c)) > 0 ? 1.0 : -1.0;
+        const TopoDS_Shape slab = BRepPrimAPI_MakePrism(TopoDS::Face(targetFace.Current()), tn * (side * far)).Shape();
+        BRepAlgoAPI_Common region(prism, slab);
+        if (!region.IsDone()) {
+            return new App::DocumentObjectExecReturn("Replace Face failed");
+        }
+        const Part::TopoShape piece(region.Shape());
+        Part::TopoShape res(0, getDocument()->getStringHasher());
+        if (outward) {
+            res.makeElementFuse({shape, piece});
+        }
+        else {
+            res.makeElementCut({shape, piece});
+        }
+        shape = res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched);
+    }
+    if (shape.isNull() || !shape.isValid()) {
+        return new App::DocumentObjectExecReturn("Replace Face failed");
+    }
+    setResults({shape});
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::SplitFace, Design::DressUp)
+
+SplitFace::SplitFace()
+{
+    ADD_PROPERTY_TYPE(Tool, (nullptr), "Split Face", App::Prop_None, "Plane, face or sketch to split with");
+    Size.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* SplitFace::compute()
+{
+    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+        return new App::DocumentObjectExecReturn("Select faces of one body and a splitting tool");
+    }
+    const Part::TopoShape shape = baseShape(0);
+    const auto faces = elements(shape, TopAbs_FACE);
+    const TopoDS_Shape tool = toolShape(Tool, shape.getBoundBox());
+    if (faces.empty() || tool.IsNull()) {
+        return new App::DocumentObjectExecReturn("Select the faces to split and a plane, face or sketch");
+    }
+    BRepFeat_SplitShape split(shape.getShape());
+    int added = 0;
+    for (const auto& f : faces) {
+        BRepAlgoAPI_Section section(f.getShape(), tool, Standard_False);
+        section.ComputePCurveOn1(Standard_True);
+        section.Approximation(Standard_True);
+        section.Build();
+        if (!section.IsDone()) {
+            continue;
+        }
+        for (TopExp_Explorer e(section.Shape(), TopAbs_EDGE); e.More(); e.Next()) {
+            split.Add(TopoDS::Edge(e.Current()), TopoDS::Face(f.getShape()));
+            ++added;
+        }
+    }
+    if (!added) {
+        return new App::DocumentObjectExecReturn("The tool does not cross the selected faces");
+    }
+    try {
+        split.Build();
+    }
+    catch (const Standard_Failure&) {
+        return new App::DocumentObjectExecReturn("Split Face failed");
+    }
+    if (!split.IsDone()) {
+        return new App::DocumentObjectExecReturn("Split Face failed");
+    }
+    setResults({Part::TopoShape(split.Shape())});
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Emboss, Design::DressUp)
+
+Emboss::Emboss()
+{
+    ADD_PROPERTY_TYPE(ProfileKeys, (), "Emboss", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Signatures of the selected profiles");
+    ADD_PROPERTY_TYPE(Profile, (nullptr), "Emboss", App::Prop_None, "Profiles (sketch areas, text) to emboss");
+    ADD_PROPERTY_TYPE(Type, (0L), "Parameters", App::Prop_None, "Raised or engraved");
+    Type.setEnums(EmbossEnums);
+    ADD_PROPERTY_TYPE(Depth, (1.0), "Parameters", App::Prop_None, "Height or depth");
+    Size.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* Emboss::compute()
+{
+    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+        return new App::DocumentObjectExecReturn("Select a face of one body and a profile");
+    }
+    Part::Feature* sketch = nullptr;
+    const char* reason = nullptr;
+    const auto profiles = profileFaces(Profile, ProfileKeys, sketch, reason);
+    if (profiles.empty()) {
+        return new App::DocumentObjectExecReturn(reason);
+    }
+    const Part::TopoShape shape = baseShape(0);
+    const auto faces = elements(shape, TopAbs_FACE);
+    const double depth = Depth.getValue();
+    if (faces.empty() || depth < Precision::Confusion()) {
+        return new App::DocumentObjectExecReturn("Select the face to emboss on and a depth greater than zero");
+    }
+    // Profile senkrecht zur Skizze durch alles ziehen ...
+    const double far = shape.getBoundBox().CalcDiagonalLength() * 2 + 10;
+    Base::Vector3d sn;
+    sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1), sn);
+    const gp_Vec dir(sn.x * far, sn.y * far, sn.z * far);
+    std::vector<Part::TopoShape> prisms;
+    for (const auto& p : profiles) {
+        gp_Trsf back;
+        back.SetTranslation(-dir);
+        prisms.emplace_back(BRepPrimAPI_MakePrism(BRepBuilderAPI_Transform(p.getShape(), back, Standard_True).Shape(),
+                                                  dir * 2)
+                                .Shape());
+    }
+    const Part::TopoShape tool = fuseAll(prisms, getDocument()->getStringHasher());
+    // ... und mit einer Schicht der gewählten Flächen (außen bzw. innen, Dicke = Tiefe) schneiden
+    const bool raised = Type.getValue() == 0;
+    Part::TopoShape res = shape;
+    try {
+        for (const auto& face : faces) {
+            Part::TopoShape skin(0, getDocument()->getStringHasher());
+            skin.makeElementOffset(face, raised ? depth : -depth, 1e-6, false, false, 0, Part::JoinType::arc,
+                                   Part::FillType::fill);
+            Part::TopoShape part(0, getDocument()->getStringHasher());
+            part.makeElementBoolean(Part::OpCodes::Common, {tool, skin});
+            Part::TopoShape next(0, getDocument()->getStringHasher());
+            if (raised) {
+                next.makeElementFuse({res, part});
+            }
+            else {
+                next.makeElementCut({res, part});
+            }
+            res = next;
+        }
+    }
+    catch (const Standard_Failure&) {
+        return new App::DocumentObjectExecReturn("Emboss failed: depth too large for the face?");
+    }
+    catch (const Base::Exception& e) {
+        return new App::DocumentObjectExecReturn(e.what());
+    }
+    if (res.isNull() || !res.isValid()) {
+        return new App::DocumentObjectExecReturn("Emboss failed");
+    }
+    setResults({res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched)});
     return StdReturn;
 }

@@ -868,6 +868,96 @@ void startRib(App::Document* doc, long mode = 0)
     startEditing(feature, false, nullptr);
 }
 
+/// Flächen eines Bodies + Bezug (zuletzt gewählt): Replace Face (Ziel), Split Face (Werkzeug).
+/// Ohne Einstellungen: wird sofort berechnet, Fehler zeigt eine Meldung.
+void startFaceTool(App::Document* doc, const char* type, const char* name, const char* refProperty, const char* hint)
+{
+    std::vector<std::pair<App::DocumentObject*, std::string>> refs;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        const auto& names = sel.getSubNames();
+        if (names.empty()) {
+            refs.emplace_back(sel.getObject(), std::string());
+        }
+        for (const auto& n : names) {
+            refs.emplace_back(sel.getObject(), n);
+        }
+    }
+    auto body = refs.size() >= 2 ? freecad_cast<Design::Body*>(refs.front().first) : nullptr;
+    std::vector<std::string> faces;
+    for (size_t i = 0; body && i + 1 < refs.size(); ++i) {
+        if (refs[i].first == body && refs[i].second.rfind("Face", 0) == 0) {
+            faces.push_back(refs[i].second);
+        }
+    }
+    if (!body || faces.empty() || !Design::stateAtMarker(body)) {
+        QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name), QString::fromLatin1(hint));
+        return;
+    }
+    App::DocumentObject* ref = refs.back().first;
+    std::string refSub = refs.back().second;
+    stableRef(ref, refSub);
+    doc->openTransaction(name);
+    auto feature = static_cast<Design::DressUp*>(doc->addObject(type, name));
+    Design::componentOf(body)->addObject(feature);
+    Design::addToTimeline(feature);
+    feature->Edges.setValues(faces);
+    static_cast<App::PropertyLinkSub*>(feature->getPropertyByName(refProperty))
+        ->setValue(ref, refSub.empty() ? std::vector<std::string>() : std::vector<std::string> {refSub});
+    Design::attachToBodies(feature, {body});
+    doc->recompute();
+    if (feature->isError()) {
+        QMessageBox::warning(Gui::getMainWindow(), QString::fromLatin1(name), QString::fromUtf8(feature->getStatusString()));
+        doc->abortTransaction();
+        doc->recompute();
+        return;
+    }
+    doc->commitTransaction();
+    Gui::Selection().clearSelection();
+}
+
+/// Emboss: Profile (Skizzenflächen oder Text) und die Fläche des Bodies, auf die geprägt wird
+void startEmboss(App::Document* doc)
+{
+    Design::Profiles* profiles = nullptr;
+    std::vector<std::string> areas;
+    Design::Body* body = nullptr;
+    std::vector<std::string> faces;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        App::DocumentObject* obj = sel.getObject();
+        if (auto p = freecad_cast<Design::Profiles*>(obj)) {
+            profiles = p;
+            for (const auto& n : sel.getSubNames()) {
+                areas.push_back(n);
+            }
+        }
+        else if (obj->isDerivedFrom<Sketcher::SketchObject>()) {
+            profiles = Design::Profiles::forSketch(obj);
+        }
+        else if (auto b = freecad_cast<Design::Body*>(obj)) {
+            body = b;
+            for (const auto& n : sel.getSubNames()) {
+                if (n.rfind("Face", 0) == 0) {
+                    faces.push_back(n);
+                }
+            }
+        }
+    }
+    if (!profiles || !body || faces.empty() || !Design::stateAtMarker(body)) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Emboss"),
+                                 QStringLiteral("Select the profiles or text of a sketch and the face to emboss on."));
+        return;
+    }
+    doc->openTransaction("Emboss");
+    auto feature = static_cast<Design::Emboss*>(doc->addObject("Design::Emboss", "Emboss"));
+    Design::componentOf(body)->addObject(feature);
+    Design::addToTimeline(feature);
+    feature->Profile.setValue(profiles, areas);
+    feature->Edges.setValues(faces);
+    Design::attachToBodies(feature, {body});
+    doc->recompute();
+    startEditing(feature, false, nullptr);
+}
+
 /// Scale: gewählte Bodies
 void startScale(App::Document* doc)
 {
@@ -1541,7 +1631,7 @@ void startMidplane(App::Document* doc)
     selectedRefs(objs, subs);
     auto planeOf = [&](size_t i, gp_Pln& pln) {
         const Part::TopoShape s = Part::Feature::getTopoShape(objs[i], Part::ShapeOption::ResolveLink
-                                                                       | Part::ShapeOption::Transform,
+                                                                       | Part::ShapeOption::Transform | Part::ShapeOption::NeedSubElement,
                                                                subs[i].empty() ? nullptr : subs[i].c_str());
         TopExp_Explorer face(s.getShape(), TopAbs_FACE);
         if (!face.More()) {
@@ -1999,7 +2089,7 @@ void toggleSection(App::Document* doc)
     for (auto& sel : Gui::Selection().getSelectionEx()) {
         const auto& names = sel.getSubNames();
         const Part::TopoShape s = Part::Feature::getTopoShape(
-            sel.getObject(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform,
+            sel.getObject(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform | Part::ShapeOption::NeedSubElement,
             names.empty() ? nullptr : names.front().c_str());
         TopExp_Explorer face(s.getShape(), TopAbs_FACE);
         if (face.More()) {
@@ -2337,6 +2427,21 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_Parameters", "Change Parameters",
                                      "Parameters: named values to use in any dimension field", "Std_VarSet", "",
                                      showParameters));
+    mgr.addCommand(new DesignCommand("Design_ReplaceFace", "Replace Face",
+                                     "Replace Face: select faces of a body, then the target plane or face",
+                                     "Part_Extrude", "", [](App::Document* doc) {
+                                         startFaceTool(doc, "Design::ReplaceFace", "Replace Face", "Target",
+                                                       "Select the faces to replace, then the target plane or face.");
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_SplitFace", "Split Face",
+                                     "Split Face: select faces of a body, then a plane, face or sketch",
+                                     "Part_Slice", "", [](App::Document* doc) {
+                                         startFaceTool(doc, "Design::SplitFace", "Split Face", "Tool",
+                                                       "Select the faces to split, then a plane, face or sketch.");
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_Emboss", "Emboss",
+                                     "Emboss: select sketch profiles or text and the face to emboss on",
+                                     "PartDesign_Pad", "", startEmboss));
     mgr.addCommand(new DesignCommand("Design_NewComponent", "New Component",
                                      "New Component: an empty part with its own origin (double-click to activate)",
                                      "Std_Part", "", startNewComponent));

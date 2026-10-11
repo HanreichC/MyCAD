@@ -56,6 +56,9 @@ PyMOD_INIT_FUNC(Design)
     Design::Split::init();
     Design::Thread::init();
     Design::Rib::init();
+    Design::ReplaceFace::init();
+    Design::SplitFace::init();
+    Design::Emboss::init();
 
     PyMOD_Return(mod);
 }

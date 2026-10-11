@@ -27,6 +27,9 @@
         <file>Design_Parameters.svg</file>
         <file>Design_AnglePlane.svg</file>
         <file>Design_Web.svg</file>
+        <file>Design_ReplaceFace.svg</file>
+        <file>Design_SplitFace.svg</file>
+        <file>Design_Emboss.svg</file>
         <file>Design_Import.svg</file>
         <file>Design_Export.svg</file>
         <file>Std_Undo.svg</file>

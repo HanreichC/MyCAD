@@ -419,6 +419,42 @@ public:
     App::DocumentObjectExecReturn* compute() override;
 };
 
+/// Flächen bis zu einer Zielebene oder -fläche verlängern bzw. zurückschneiden (wie Fusions Replace Face)
+class DesignExport ReplaceFace: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::ReplaceFace);
+
+public:
+    ReplaceFace();
+    App::PropertyLinkSub Target;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
+/// Flächen an einer Ebene, Fläche oder Skizze teilen (Körper bleibt gleich, bekommt neue Kanten)
+class DesignExport SplitFace: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::SplitFace);
+
+public:
+    SplitFace();
+    App::PropertyLinkSub Tool;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
+/// Skizzenprofile (auch Text) auf Flächen prägen: erhaben (Emboss) oder vertieft (Deboss)
+class DesignExport Emboss: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Emboss);
+
+public:
+    Emboss();
+    App::PropertyLinkSub Profile;
+    App::PropertyStringList ProfileKeys;
+    App::PropertyEnumeration Type;
+    App::PropertyLength Depth;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
 /// Modelliertes Gewinde auf einer Zylinderfläche (außen: Welle, innen: Bohrung)
 class DesignExport Thread: public DressUp
 {
