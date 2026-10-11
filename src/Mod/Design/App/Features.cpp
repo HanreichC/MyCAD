@@ -172,6 +172,14 @@ bool planeAxes(const App::PropertyLinkSub& link, gp_Ax3& ax)
     return true;
 }
 
+/// Bodies rechnen in den Koordinaten ihrer Komponente. Eine globale Transformation m wirkt auf einen Body
+/// in seiner Komponente als P^-1 * m * P (bei Komponenten ohne Verschiebung: m selbst).
+Base::Matrix4D inComponent(const App::DocumentObject* body, const Base::Matrix4D& m)
+{
+    const Base::Placement p = Design::componentOf(body)->globalPlacement();
+    return p.inverse().toMatrix() * m * p.toMatrix();
+}
+
 /// Große Fläche auf einer Ebene, die den ganzen Bereich around abdeckt (um dessen Projektion, nicht um den Ursprung)
 TopoDS_Face planeFace(const gp_Pln& pln, const Base::BoundBox3d& around)
 {
@@ -717,6 +725,9 @@ Feature::Feature()
     ADD_PROPERTY_TYPE(Bodies, (nullptr), "Design", App::Prop_None, "Bodies changed by this feature");
     ADD_PROPERTY_TYPE(BaseFeatures, (nullptr), "Design", App::Prop_Hidden, "Previous feature per body");
     ADD_PROPERTY_TYPE(Suppressed, (false), "Design", App::Prop_None, "Skip this feature");
+    // Zustände dürfen aus anderen Komponenten kommen (Move/Combine über Komponenten). Nur sichtbare Abhängigkeiten:
+    // die versteckten Bodies-Listen global zu machen, erzeugt Kreise (Body -> Feature -> Body)
+    BaseFeatures.setScope(App::LinkScope::Global);
 }
 
 App::DocumentObjectExecReturn* Feature::execute()
@@ -1103,6 +1114,7 @@ Combine::Combine()
 {
     ADD_PROPERTY_TYPE(ToolBodies, (nullptr), "Combine", App::Prop_None, "Tool bodies");
     ADD_PROPERTY_TYPE(ToolFeatures, (nullptr), "Combine", App::Prop_Hidden, "State of the tool bodies");
+    ToolFeatures.setScope(App::LinkScope::Global);
     ADD_PROPERTY_TYPE(KeepTools, (false), "Combine", App::Prop_None, "Keep the tool bodies visible");
     Operation.setValue(1L);  // Join
 }
@@ -1123,7 +1135,14 @@ App::DocumentObjectExecReturn* Combine::compute()
         if (!state) {
             return new App::DocumentObjectExecReturn("Tool body has no feature");
         }
-        shapes.push_back(state->shapeFor(tools[i]));
+        // Werkzeug aus einer anderen Komponente in die Koordinaten der Ziel-Komponente holen
+        const Base::Placement from = Design::componentOf(tools[i])->globalPlacement();
+        const Base::Placement to = Bodies.getSize() ? Design::componentOf(Bodies[0])->globalPlacement() : from;
+        const Base::Matrix4D m = (to.inverse() * from).toMatrix();
+        shapes.push_back(m.isUnity() ? state->shapeFor(tools[i])
+                                     : Part::TopoShape(0, getDocument()->getStringHasher())
+                                           .makeElementTransform(state->shapeFor(tools[i]), m, nullptr,
+                                                                 Part::CheckScale::noScaleCheck, Part::CopyType::copy));
     }
     return applyTool(fuseAll(shapes, getDocument()->getStringHasher()));
 }
@@ -1150,13 +1169,15 @@ App::DocumentObjectExecReturn* Move::compute()
     std::vector<Part::TopoShape> results;
     for (int i = 0; i < Bodies.getSize(); ++i) {
         const Part::TopoShape base = baseShape(i);
-        Base::BoundBox3d bb = base.getBoundBox();
+        // global rechnen, dann in die Komponente des Bodies umrechnen
+        const Base::Matrix4D toGlobal = Design::componentOf(Bodies[i])->globalPlacement().toMatrix();
+        Base::BoundBox3d bb = base.getBoundBox().Transformed(toGlobal);
         bb = bb.Transformed(Alignment.getValue().toMatrix());  // gedreht wird um die Mitte nach dem Ausrichten
         Base::Vector3d axis;
         axis[RotationAxis.getValue()] = 1;
         Base::Placement rot(Base::Vector3d(), Base::Rotation(axis, Angle.getValue() * M_PI / 180.0), bb.GetCenter());
         Base::Placement move(Translation.getValue(), Base::Rotation());
-        Base::Matrix4D mat = (move * rot * Alignment.getValue()).toMatrix();
+        Base::Matrix4D mat = inComponent(Bodies[i], (move * rot * Alignment.getValue()).toMatrix());
         // Geometrie wirklich umrechnen (copy): eine bloße Lage würde Part::Feature beim Speichern im Body überschreiben
         results.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
                               .makeElementTransform(base, mat, nullptr, Part::CheckScale::noScaleCheck,
@@ -1174,6 +1195,7 @@ Mirror::Mirror()
 {
     ADD_PROPERTY_TYPE(SourceBodies, (nullptr), "Mirror", App::Prop_None, "Bodies to mirror");
     ADD_PROPERTY_TYPE(SourceFeatures, (nullptr), "Mirror", App::Prop_Hidden, "State of the source bodies");
+    SourceFeatures.setScope(App::LinkScope::Global);
     ADD_PROPERTY_TYPE(Plane, (2L), "Mirror", App::Prop_None, "Mirror plane");
     Plane.setEnums(PlaneEnums);
     Operation.setStatus(App::Property::Hidden, true);
@@ -1194,8 +1216,15 @@ App::DocumentObjectExecReturn* Mirror::compute()
         if (!state) {
             return new App::DocumentObjectExecReturn("Body has no feature");
         }
+        // Ursprungsebene ist global: Spiegelung in die Komponente des Quell-Bodies umrechnen
+        const Base::Placement p = Design::componentOf(sources[i])->globalPlacement();
+        const Part::TopoShape global = Part::TopoShape(0, getDocument()->getStringHasher())
+                                           .makeElementTransform(state->shapeFor(sources[i]), p.toMatrix(), nullptr,
+                                                                 Part::CheckScale::noScaleCheck, Part::CopyType::copy);
+        const Part::TopoShape mirrored = Part::TopoShape(0, getDocument()->getStringHasher()).makeElementMirror(global, plane);
         results.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
-                              .makeElementMirror(state->shapeFor(sources[i]), plane));
+                              .makeElementTransform(mirrored, p.inverse().toMatrix(), nullptr,
+                                                    Part::CheckScale::noScaleCheck, Part::CopyType::copy));
     }
     setResults(results);
     return StdReturn;
@@ -1210,6 +1239,7 @@ Pattern::Pattern()
     ADD_PROPERTY_TYPE(Source, (nullptr), "Pattern", App::Prop_None, "Feature to repeat");
     ADD_PROPERTY_TYPE(SourceBodies, (nullptr), "Pattern", App::Prop_None, "Bodies to repeat");
     ADD_PROPERTY_TYPE(SourceFeatures, (nullptr), "Pattern", App::Prop_Hidden, "State of the source bodies");
+    SourceFeatures.setScope(App::LinkScope::Global);
     ADD_PROPERTY_TYPE(Type, (0L), "Pattern", App::Prop_None, "Rectangular or circular");
     Type.setEnums(PatternEnums);
     ADD_PROPERTY_TYPE(Direction1, (0L), "Pattern", App::Prop_None, "First direction");
@@ -1287,8 +1317,13 @@ App::DocumentObjectExecReturn* Pattern::compute()
             if (!state) {
                 return new App::DocumentObjectExecReturn("Body has no feature");
             }
-            results.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
-                                  .makeElementCompound(copiesOf(state->shapeFor(sources[i]))));
+            std::vector<Part::TopoShape> copies;
+            for (const auto& m : transforms) {  // Richtungen und Achse sind global
+                copies.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
+                                     .makeElementTransform(state->shapeFor(sources[i]), inComponent(sources[i], m),
+                                                           nullptr, Part::CheckScale::noScaleCheck, Part::CopyType::copy));
+            }
+            results.push_back(Part::TopoShape(0, getDocument()->getStringHasher()).makeElementCompound(copies));
         }
         setResults(results);
         return StdReturn;
@@ -1795,11 +1830,14 @@ App::DocumentObjectExecReturn* Scale::compute()
     std::vector<Part::TopoShape> results;
     for (int i = 0; i < Bodies.getSize(); ++i) {
         const Part::TopoShape base = baseShape(i);
-        const Base::Vector3d c = Center.getValue() == 1 ? base.getBoundBox().GetCenter() : Base::Vector3d();
-        Base::Matrix4D mat;
-        mat.move(-c);
-        mat.scale(Factor.getValue());
-        mat.move(c);
+        const Base::Matrix4D toGlobal = Design::componentOf(Bodies[i])->globalPlacement().toMatrix();
+        const Base::Vector3d c = Center.getValue() == 1 ? base.getBoundBox().Transformed(toGlobal).GetCenter()
+                                                        : Base::Vector3d();
+        Base::Matrix4D global;
+        global.move(-c);
+        global.scale(Factor.getValue());
+        global.move(c);
+        const Base::Matrix4D mat = inComponent(Bodies[i], global);
         results.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
                               .makeElementTransform(base, mat, nullptr, Part::CheckScale::checkScale,
                                                     Part::CopyType::copy));

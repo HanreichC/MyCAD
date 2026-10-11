@@ -43,14 +43,14 @@ run([
     ("split", lambda: Gui.runCommand("Design_SplitBody")),
     ("split?", lambda: L("split: %s errors=%s" % ([(b.Label, round(b.Shape.Volume)) for b in doc().Objects if b.Label.startswith("A")], errors()))),
     ("thread sel", lambda: select(body("D"), faces(body("D"), lambda f: f.Surface.TypeId == "Part::GeomCylinder"))),
-    ("thread", lambda: Gui.runCommand("Design_Thread")), ("thread dialog", lambda: shot("thread")), ("ok", ok),
+    ("thread", lambda: Gui.runCommand("Design_Thread")), ("wait", lambda: None), ("wait", lambda: None), ("thread dialog", lambda: shot("thread")), ("ok", ok), ("wait", lambda: None), ("wait", lambda: None),
     ("thread?", lambda: L("thread: D volume=%.0f (Zylinder %.0f, mit Gewinde kleiner) faces=%d errors=%s" % (
         body("D").Shape.Volume, 3.14159265 * 64 * 20, len(body("D").Shape.Faces), errors()))),
     ("plate", lambda: make_body(rect(-140, -20, -100, 20) + circle(6, -120, 0), 0, 15, "E")),
     ("ring only", lambda: (lambda ext: (setattr(ext, "Profile", (ext.Profile[0], ["Face%d" % (1 + max(range(len(ext.Profile[0].Shape.Faces)),
         key=lambda k: len(ext.Profile[0].Shape.Faces[k].Wires)))])), doc().recompute()))(body("E").Tip)),
     ("hole sel", lambda: select(body("E"), faces(body("E"), lambda f: f.Surface.TypeId == "Part::GeomCylinder"))),
-    ("inner", lambda: Gui.runCommand("Design_Thread")), ("ok", ok),
+    ("inner", lambda: Gui.runCommand("Design_Thread")), ("wait", lambda: None), ("wait", lambda: None), ("ok", ok), ("wait", lambda: None),
     ("inner?", lambda: L("inner thread: E volume=%.0f (Platte mit Bohrung %.0f, Rillen nach außen -> kleiner) errors=%s" % (
         body("E").Shape.Volume, 40 * 40 * 15 - 3.14159265 * 36 * 15, errors()))),
     ("shot", lambda: shot("features2")),

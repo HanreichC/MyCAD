@@ -548,18 +548,6 @@ std::vector<Design::Body*> selectedBodies()
 
 /// Alle in derselben Komponente? Verweise über Komponentengrenzen erlaubt FreeCAD nicht.
 /// ponytail: Operationen über mehrere Komponenten (Fusion kann das) brauchen globale Links + Transformationen
-bool sameComponent(const std::vector<Design::Body*>& bodies, const char* tool)
-{
-    for (auto b : bodies) {
-        if (Design::componentOf(b) != Design::componentOf(bodies.front())) {
-            QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(tool),
-                                     QStringLiteral("All bodies must be in the same component."));
-            return false;
-        }
-    }
-    return true;
-}
-
 Design::Feature* addFeature(App::Document* doc, const char* type, const char* name, App::DocumentObject* near)
 {
     doc->openTransaction(name);
@@ -581,9 +569,6 @@ void startCombine(App::Document* doc)
     if (bodies.size() < 2) {
         QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Combine"),
                                  QStringLiteral("Select the target body first, then one or more tool bodies."));
-        return;
-    }
-    if (!sameComponent(bodies, "Combine")) {
         return;
     }
     auto feature = static_cast<Design::Combine*>(addFeature(doc, "Design::Combine", "Combine", bodies.front()));
@@ -967,9 +952,6 @@ void startScale(App::Document* doc)
                                  QStringLiteral("Select one or more bodies first."));
         return;
     }
-    if (!sameComponent(bodies, "Scale")) {
-        return;
-    }
     auto feature = addFeature(doc, "Design::Scale", "Scale", bodies.front());
     modifyBodies(feature, bodies);
     doc->recompute();
@@ -988,9 +970,6 @@ void startMove(App::Document* doc)
         }
     }
     const auto bodies = selectedBodies();
-    if (!bodies.empty() && !sameComponent(bodies, "Move")) {
-        return;
-    }
     if (bodies.empty()) {
         QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Move"),
                                  QStringLiteral("Select one or more bodies or a component first."));
@@ -1008,9 +987,6 @@ void startMirror(App::Document* doc)
     if (bodies.empty()) {
         QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Mirror"),
                                  QStringLiteral("Select one or more bodies first."));
-        return;
-    }
-    if (!sameComponent(bodies, "Mirror")) {
         return;
     }
     auto feature = static_cast<Design::Mirror*>(addFeature(doc, "Design::Mirror", "Mirror", bodies.front()));
@@ -1460,7 +1436,7 @@ void startPattern(App::Document* doc)
     if (!source) {
         // Körper-Muster: Kopien der gewählten Bodies, je Quelle ein neuer Body (wie Mirror)
         const auto selected = selectedBodies();
-        if (!selected.empty() && sameComponent(selected, "Pattern")) {
+        if (!selected.empty()) {
             auto feature = static_cast<Design::Pattern*>(addFeature(doc, "Design::Pattern", "Pattern", selected.front()));
             std::vector<App::DocumentObject*> sources, states, created;
             for (auto b : selected) {
