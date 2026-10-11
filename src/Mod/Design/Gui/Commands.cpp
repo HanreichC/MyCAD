@@ -30,6 +30,9 @@
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <Bnd_Box.hxx>
 #include <TopExp_Explorer.hxx>
+#include <Mod/Part/App/Part2DObject.h>
+#include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopoDS_Vertex.hxx>
 #include <gp_Pln.hxx>
 #include <QLabel>
@@ -2020,6 +2023,152 @@ void toggleSection(App::Document* doc)
     viewer->toggleClippingPlane(1, false, false, placement);
 }
 
+/// Ebene durch eine gerade Kante unter einem Winkel zur Bezugsebene (Fläche an der Kante, Skizzenebene oder gewählte Ebene)
+class TaskAnglePlane: public Gui::TaskView::TaskDialog
+{
+public:
+    /// axisPoint/axisDir: Kante in den lokalen Koordinaten der Bezugsebene
+    TaskAnglePlane(App::DocumentObject* plane, Base::Vector3d axisPoint, Base::Vector3d axisDir)
+        : plane(plane)
+        , point(axisPoint)
+        , dir(axisDir)
+    {
+        auto w = new QWidget;
+        w->setWindowTitle(QStringLiteral("Plane at Angle"));
+        auto form = new QFormLayout(w);
+        auto angle = new Gui::QuantitySpinBox;
+        angle->setUnit(Base::Unit::Angle);
+        angle->setRange(-360, 360);
+        angle->setValue(Base::Quantity(45.0, Base::Unit::Angle));
+        form->addRow(QStringLiteral("Angle"), angle);
+        addTaskBox(w, false);
+        QObject::connect(angle, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this](double a) { setAngle(a); });
+        setAngle(45.0);
+    }
+    QDialogButtonBox::StandardButtons getStandardButtons() const override
+    {
+        return QDialogButtonBox::Ok | QDialogButtonBox::Cancel;
+    }
+    bool accept() override
+    {
+        plane->getDocument()->commitTransaction();
+        return true;
+    }
+    bool reject() override
+    {
+        App::Document* doc = plane->getDocument();
+        doc->abortTransaction();
+        doc->recompute();
+        return true;
+    }
+
+private:
+    void setAngle(double a)
+    {
+        // Drehung um die Kante: Ebene liegt auf der Bezugsebene, Kante als Achse durch ihren Punkt
+        auto offset = static_cast<App::PropertyPlacement*>(plane->getPropertyByName("AttachmentOffset"));
+        offset->setValue(Base::Placement(Base::Vector3d(), Base::Rotation(dir, a * M_PI / 180.0), point));
+        plane->getDocument()->recompute();
+    }
+    App::DocumentObject* plane;
+    Base::Vector3d point, dir;
+};
+
+void startAnglePlane(App::Document* doc)
+{
+    App::DocumentObject* edgeObj = nullptr;
+    std::string edgeName;
+    App::DocumentObject* ref = nullptr;
+    std::string refName;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        App::DocumentObject* obj = sel.getObject();
+        const auto& names = sel.getSubNames();
+        if (names.empty() && isPlane(obj)) {
+            ref = obj;
+        }
+        else if (names.empty() && obj->isDerivedFrom<App::Line>()) {
+            edgeObj = obj;  // Ursprungsachse
+        }
+        for (const auto& name : names) {
+            if (name.rfind("Edge", 0) == 0 && !edgeObj) {
+                edgeObj = obj;
+                edgeName = name;
+            }
+            else if (name.rfind("Face", 0) == 0 && isPlanarFace(obj, name)) {
+                ref = obj;
+                refName = name;
+            }
+        }
+    }
+    gp_Pnt p0;
+    gp_Dir d0;
+    bool line = false;
+    if (edgeObj) {
+        const TopoDS_Shape s = Part::Feature::getTopoShape(edgeObj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform
+                                                                         | Part::ShapeOption::NeedSubElement,
+                                                           edgeName.empty() ? nullptr : edgeName.c_str())
+                                   .getShape();
+        TopExp_Explorer e(s, TopAbs_EDGE);
+        if (e.More()) {
+            BRepAdaptor_Curve c(TopoDS::Edge(e.Current()));
+            if (c.GetType() == GeomAbs_Line) {
+                p0 = c.Value(c.FirstParameter());
+                d0 = c.Line().Direction();
+                line = true;
+            }
+        }
+    }
+    if (!line) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Plane at Angle"),
+                                 QStringLiteral("Select a straight edge, sketch line or axis (and optionally the "
+                                                "plane or face to measure the angle from)."));
+        return;
+    }
+    // Bezugsebene: gewählt, sonst die Skizzenebene, eine ebene Fläche an der Kante oder XY
+    if (!ref) {
+        if (edgeObj->isDerivedFrom<Part::Part2DObject>()) {
+            ref = static_cast<Part::Part2DObject*>(edgeObj)->AttachmentSupport.getValue();
+            const auto& subs = static_cast<Part::Part2DObject*>(edgeObj)->AttachmentSupport.getSubValues();
+            refName = subs.empty() ? std::string() : subs.front();
+        }
+        else if (auto body = freecad_cast<Design::Body*>(edgeObj)) {
+            const TopoDS_Shape edge = body->Shape.getShape().getSubShape(edgeName.c_str(), true);
+            TopTools_IndexedDataMapOfShapeListOfShape adjacency;
+            TopExp::MapShapesAndAncestors(body->Shape.getShape().getShape(), TopAbs_EDGE, TopAbs_FACE, adjacency);
+            const int idx = adjacency.FindIndex(edge);
+            if (idx > 0) {
+                for (TopTools_ListIteratorOfListOfShape it(adjacency(idx)); it.More(); it.Next()) {
+                    const std::string name = elementName(body->Shape.getShape().getShape(), it.Value());
+                    if (isPlanarFace(body, name)) {
+                        ref = body;
+                        refName = name;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!ref) {
+            ref = activeContainer(doc)->getOrigin()->getXY();
+        }
+    }
+    stableRef(ref, refName);
+    doc->openTransaction("Plane at Angle");
+    App::DocumentObject* plane = doc->addObject("PartDesign::Plane", "Plane");
+    auto attach = plane->getExtensionByType<Part::AttachExtension>();
+    attach->AttachmentSupport.setValue(ref, std::vector<std::string> {refName});
+    attach->MapMode.setValue("FlatFace");
+    Design::folder(Design::componentOf(ref), "Construction")->addObject(plane);
+    styleDatum(plane);
+    plane->recomputeFeature();
+    // Kante in lokale Koordinaten der befestigten (noch ungedrehten) Ebene umrechnen
+    const Base::Placement inverse = static_cast<App::GeoFeature*>(plane)->Placement.getValue().inverse();
+    Base::Vector3d point, dir;
+    inverse.multVec(Base::Vector3d(p0.X(), p0.Y(), p0.Z()), point);
+    inverse.getRotation().multVec(Base::Vector3d(d0.X(), d0.Y(), d0.Z()), dir);
+    Gui::Selection().clearSelection();
+    Gui::Control().showDialog(new TaskAnglePlane(plane, point, dir));
+}
+
 void startOffsetPlane(App::Document* doc)
 {
     App::DocumentObject* support = nullptr;
@@ -2115,6 +2264,9 @@ void CreateDesignCommands()
                                                         "Select three points, a face and a point, or an edge "
                                                         "and a point.");
                                      }));
+    mgr.addCommand(new DesignCommand("Design_AnglePlane", "Plane at Angle",
+                                     "Plane at Angle: select a straight edge or axis (and optionally a plane)",
+                                     "PartDesign_Plane", "", startAnglePlane));
     mgr.addCommand(new DesignCommand("Design_Midplane", "Midplane", "Midplane: select two parallel planes or faces",
                                      "PartDesign_Plane", "", startMidplane));
     mgr.addCommand(new DesignCommand("Design_Axis", "Axis",

@@ -51,6 +51,11 @@ run([
     ("point?", lambda: L(placement("Point"))),
     ("top+bottom", lambda: select(faces(15) + faces(0))), ("midplane", lambda: Gui.runCommand("Design_Midplane")),
     ("midplane?", lambda: L(placement("Midplane"))),
+    ("edge", lambda: select(["Edge%d" % (i + 1) for i, e in enumerate(box().Shape.Edges)
+                             if abs(e.CenterOfMass.z - 15) < 1e-6 and abs(e.CenterOfMass.y) < 1e-6
+                             and abs(e.Vertexes[0].Y - e.Vertexes[1].Y) < 1e-6])),
+    ("angle plane", lambda: Gui.runCommand("Design_AnglePlane")), ("ok angle", ok),
+    ("angle?", lambda: L(placement("Plane001") + " (Normale ~(0, ±0.71, 0.71), durch y=0 z=15)")),
     ("measure", lambda: click(button("Design_Measure"))),
     ("top face", lambda: select(faces(15))), ("m1", lambda: L("measure 1: %s" % measured())),
     ("two faces", lambda: select(faces(15) + faces(0))), ("m2", lambda: L("measure 2: %s" % measured())),
