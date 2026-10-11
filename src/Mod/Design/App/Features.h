@@ -406,6 +406,18 @@ public:
     App::DocumentObjectExecReturn* compute() override;
 };
 
+/// Rippe aus Skizzenlinien: füllt mit der Dicke den Bereich zwischen Linie und Körper (wie Fusions Rib)
+class DesignExport Rib: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Rib);
+
+public:
+    Rib();
+    App::PropertyLinkSub Curves;  ///< Skizze mit Linien ("EdgeN"; leer = alle Linien)
+    App::PropertyLength Thickness;
+    App::DocumentObjectExecReturn* compute() override;
+};
+
 /// Modelliertes Gewinde auf einer Zylinderfläche (außen: Welle, innen: Bohrung)
 class DesignExport Thread: public DressUp
 {

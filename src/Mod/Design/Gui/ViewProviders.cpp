@@ -263,6 +263,9 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::Thread>()) {
         return QStringLiteral("Thread");
     }
+    if (f->isDerivedFrom<Design::Rib>()) {
+        return QStringLiteral("Rib");
+    }
     return QStringLiteral("Extrude");
 }
 
@@ -507,7 +510,7 @@ public:
         }
         // verwendete Profile, Pfade und Querschnitte (Extrude, Revolve, Sweep, Loft)
         std::vector<App::DocumentObject*> used;
-        for (const char* name : {"Profile", "Path"}) {
+        for (const char* name : {"Profile", "Path", "Curves"}) {
             if (auto link = freecad_cast<App::PropertyLinkSub*>(feature->getPropertyByName(name))) {
                 used.push_back(link->getValue());
             }

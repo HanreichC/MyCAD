@@ -824,6 +824,38 @@ void startSplit(App::Document* doc)
     Gui::Selection().clearSelection();
 }
 
+/// Rib: einen Body und Skizzenlinien wählen
+void startRib(App::Document* doc)
+{
+    Design::Body* body = nullptr;
+    App::DocumentObject* sketch = nullptr;
+    std::vector<std::string> lines;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        App::DocumentObject* obj = sel.getObject();
+        if (auto b = freecad_cast<Design::Body*>(obj)) {
+            body = b;
+        }
+        else if (obj->isDerivedFrom<Sketcher::SketchObject>()) {
+            sketch = obj;
+            for (const auto& sub : sel.getSubNames()) {
+                if (sub.rfind("Edge", 0) == 0) {
+                    lines.push_back(sub);
+                }
+            }
+        }
+    }
+    if (!body || !sketch || !Design::stateAtMarker(body)) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Rib"),
+                                 QStringLiteral("Select the body and the sketch lines of the rib (or the whole sketch)."));
+        return;
+    }
+    auto feature = static_cast<Design::Rib*>(addFeature(doc, "Design::Rib", "Rib", body));
+    feature->Curves.setValue(sketch, lines);
+    modifyBodies(feature, {body});
+    doc->recompute();
+    startEditing(feature, false, nullptr);
+}
+
 /// Scale: gewählte Bodies
 void startScale(App::Document* doc)
 {
@@ -2002,6 +2034,8 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_Appearance", "Appearance",
                                      "Appearance: select bodies, then pick a material or color", "Std_SetAppearance",
                                      "A", startAppearance));
+    mgr.addCommand(new DesignCommand("Design_Rib", "Rib", "Rib: select a body and sketch lines", "PartDesign_Rib",
+                                     "", startRib));
     mgr.addCommand(new DesignCommand("Design_NewComponent", "New Component",
                                      "New Component: an empty part with its own origin (double-click to activate)",
                                      "Std_Part", "", startNewComponent));

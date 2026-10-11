@@ -42,6 +42,10 @@
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
 #include <BRepTools.hxx>
+#include <BRepAdaptor_Curve.hxx>
+#include <BRepAlgoAPI_Cut.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
+#include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <gp_Cylinder.hxx>
@@ -1862,5 +1866,108 @@ App::DocumentObjectExecReturn* Thread::compute()
         return new App::DocumentObjectExecReturn("Thread failed");
     }
     setResults({res});
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::Rib, Design::Feature)
+
+Rib::Rib()
+{
+    ADD_PROPERTY_TYPE(Curves, (nullptr), "Rib", App::Prop_None, "Sketch lines of the rib");
+    ADD_PROPERTY_TYPE(Thickness, (3.0), "Parameters", App::Prop_None, "Rib thickness");
+    Operation.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* Rib::compute()
+{
+    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+        return new App::DocumentObjectExecReturn("Select a body and sketch lines");
+    }
+    auto sketch = freecad_cast<Part::Feature*>(Curves.getValue());
+    if (!sketch) {
+        return new App::DocumentObjectExecReturn("Select sketch lines for the rib");
+    }
+    const double t = Thickness.getValue();
+    if (t < Precision::Confusion()) {
+        return new App::DocumentObjectExecReturn("Thickness must be greater than zero");
+    }
+    Part::TopoShape shape = baseShape(0);
+    const Base::BoundBox3d bb = shape.getBoundBox();
+    const double far = bb.CalcDiagonalLength() * 2 + 10;
+    Base::Vector3d sn;
+    sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1), sn);
+    const gp_Vec normal(sn.x, sn.y, sn.z);
+
+    const Part::TopoShape all = sketch->Shape.getShape();
+    std::vector<TopoDS_Shape> edges;
+    for (const auto& sub : Curves.getSubValues()) {
+        edges.push_back(all.getSubShape(sub.c_str(), true));
+    }
+    if (edges.empty()) {
+        for (TopExp_Explorer e(all.getShape(), TopAbs_EDGE); e.More(); e.Next()) {
+            edges.push_back(e.Current());
+        }
+    }
+    int made = 0;
+    for (const auto& edge : edges) {
+        BRepAdaptor_Curve curve(TopoDS::Edge(edge));
+        if (curve.GetType() != GeomAbs_Line) {
+            continue;  // ponytail: nur gerade Linien; gebogene Rippen bräuchten einen 2D-Versatz
+        }
+        const gp_Pnt a = curve.Value(curve.FirstParameter()), b = curve.Value(curve.LastParameter());
+        const gp_Vec along(a, b);
+        const gp_Vec side = normal.Crossed(along).Normalized();  // in der Skizzenebene quer zur Linie
+        const gp_Pnt mid = a.Translated(along * 0.5);
+        // beide Seiten probieren: genommen wird das Stück an der Linie, das ringsum vom Körper begrenzt ist
+        bool done = false;
+        for (double s : {1.0, -1.0}) {
+            const gp_Vec out = side * (s * far);
+            BRepBuilderAPI_MakePolygon outline(a, b, b.Translated(out), a.Translated(out), Standard_True);
+            const TopoDS_Face face = BRepBuilderAPI_MakeFace(outline.Wire()).Face();
+            gp_Trsf shift;
+            shift.SetTranslation(normal.Normalized() * (-t / 2));
+            const TopoDS_Shape slab = BRepPrimAPI_MakePrism(BRepBuilderAPI_Transform(face, shift).Shape(),
+                                                            normal.Normalized() * t)
+                                          .Shape();
+            BRepAlgoAPI_Cut cut(slab, shape.getShape());
+            if (!cut.IsDone()) {
+                continue;
+            }
+            const gp_Pnt probe = mid.Translated(side * (s * 1e-3 * (1 + along.Magnitude())));
+            for (TopExp_Explorer piece(cut.Shape(), TopAbs_SOLID); piece.More(); piece.Next()) {
+                BRepClass3d_SolidClassifier inside(piece.Current(), probe, 1e-7);
+                if (inside.State() != TopAbs_IN) {
+                    continue;
+                }
+                Bnd_Box box;
+                BRepBndLib::Add(piece.Current(), box);
+                double x0, y0, z0, x1, y1, z1;
+                box.Get(x0, y0, z0, x1, y1, z1);
+                const double tol = t + 1e-3;
+                if (x0 < bb.MinX - tol || y0 < bb.MinY - tol || z0 < bb.MinZ - tol || x1 > bb.MaxX + tol
+                    || y1 > bb.MaxY + tol || z1 > bb.MaxZ + tol) {
+                    break;  // läuft ins Leere: diese Seite ist offen
+                }
+                shape = Part::TopoShape(0, getDocument()->getStringHasher())
+                            .makeElementFuse({shape, Part::TopoShape(piece.Current())})
+                            .makeElementRefine(nullptr, Part::RefineFail::shapeUntouched);
+                done = true;
+                break;
+            }
+            if (done) {
+                break;
+            }
+        }
+        if (!done) {
+            return new App::DocumentObjectExecReturn("Both ends of each rib line must touch the body");
+        }
+        ++made;
+    }
+    if (!made) {
+        return new App::DocumentObjectExecReturn("Select straight sketch lines for the rib");
+    }
+    setResults({shape});
     return StdReturn;
 }

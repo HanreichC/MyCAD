@@ -55,6 +55,7 @@ PyMOD_INIT_FUNC(Design)
     Design::Scale::init();
     Design::Split::init();
     Design::Thread::init();
+    Design::Rib::init();
 
     PyMOD_Return(mod);
 }
