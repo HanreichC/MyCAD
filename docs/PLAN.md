@@ -267,7 +267,12 @@ Ziel: Die leere MyCAD-Oberfläche steht komplett, mit Dokument laden/speichern u
 > Verschieben, Extrude -> New Component), Rollback-Marker, Suppress/Delete, topologische Benennung
 > für Kanten/Flächen (Element-Maps) und Profile (Signaturen), Ziehpfeile, Conic Curve.
 > Optik: eigenes Icon-Set, eigener ViewCube, rahmenloses Fenster, Fusion-Skizzenfarben, MSAA 4x.
-> Offen: Operationen über Komponentengrenzen, Mirror/Pattern von Bodies, Joints (Phase 9).
+> Stand 2026-10-11 dazu: Sweep, Loft, Rib, Box/Cylinder/Sphere/Torus/Coil, Draft, Scale, Align, Split Body,
+> Thread (modelliert), Pattern von Bodies, Press Pull auf gekrümmten Flächen, Appearance, Change Parameters
+> (Ausdrücke in allen Maßfeldern), Insert STEP/DXF/SVG, Plane/Midplane/Axis/Point, Measure, Section Analysis.
+> Skizze: Varianten-Dropdowns, Offset (ganze Kontur), Mirror, Muster, Move/Scale, Text. Einstellungen:
+> Navigation, Kamera, Tasten als Maustasten (cad.helper). Fehlermeldungen im MyCAD-Stil.
+> Offen: Emboss, Web, Replace/Split Face, Plane at Angle, Operationen über Komponentengrenzen, Joints (Phase 9).
 Ziel: Mehrere Komponenten und Bodies in einer Datei, globale Timeline, erste Features.
 - [ ] `Component`, `Body`, `Feature`-Basis, `Timeline` inkl. Rollback-Marker, Suppress, Reorder, Gruppen
 - [ ] Algorithmen aus PartDesign in eine Bibliothek auslagern (`Design/Algo`)
