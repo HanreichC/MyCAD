@@ -2,6 +2,8 @@
 
 #include "GlassPanel.h"
 
+#include <App/Application.h>
+
 #include <QGraphicsProxyWidget>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
@@ -58,7 +60,7 @@ const char* GlassFs = R"(
 uniform sampler2D uTex;
 uniform float uFbH;
 uniform vec2 uCenter, uHalf, uCapOrigin, uCapSize;
-uniform float uRadius, uShadow, uDpr, uDark;
+uniform float uRadius, uShadow, uDpr, uDark, uClear;
 
 float sdRound(vec2 p, vec2 b, float r) {
     vec2 q = abs(p) - b + vec2(r);
@@ -91,13 +93,14 @@ void main() {
 
     // Vibrancy + Tönung
     float l = dot(col, vec3(0.299, 0.587, 0.114));
-    col = mix(vec3(l), col, 1.4);
-    col = dark ? mix(col, vec3(0.12, 0.12, 0.14), 0.42) : mix(col, vec3(1.0), 0.38);
+    col = mix(vec3(l), col, 1.4 + 0.15 * uClear);
+    // Tönung: Tinted deckt mehr ab (lesbarer), Clear lässt den Hintergrund stärker durch
+    col = dark ? mix(col, vec3(0.12, 0.12, 0.14), mix(0.42, 0.24, uClear)) : mix(col, vec3(1.0), mix(0.38, 0.17, uClear));
 
     // Glanzkante: oben-links und unten-rechts heller
     float rim = 1.0 - smoothstep(0.0, 1.6 * uDpr, t);
     float spec = rim * (0.3 + 0.7 * abs(dot(n, normalize(vec2(-0.45, -1.0)))));
-    col += spec * (dark ? 0.32 : 0.55);
+    col += spec * (dark ? 0.32 : 0.55) * (1.0 + 0.3 * uClear);
     // feiner Innenverlauf von oben
     col += (1.0 - smoothstep(0.0, 2.0 * uHalf.y, rel.y + uHalf.y)) * (dark ? 0.03 : 0.05);
 
@@ -135,7 +138,7 @@ public:
     }
 
     /// panel/fb in Gerätepixeln, Ursprung oben links. Gibt false zurück, wenn GL den Blur nicht kann.
-    bool draw(const QRect& panel, const QSize& fb, float radius, float shadow, float dpr, bool dark)
+    bool draw(const QRect& panel, const QSize& fb, float radius, float shadow, float dpr, bool dark, bool clear)
     {
         if (!ok) {
             return false;
@@ -205,6 +208,7 @@ public:
                 glass.setUniformValue("uShadow", shadow);
                 glass.setUniformValue("uDpr", dpr);
                 glass.setUniformValue("uDark", dark ? 1.f : 0.f);
+                glass.setUniformValue("uClear", clear ? 1.f : 0.f);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
                 glass.release();
                 vbo.release();
@@ -270,6 +274,13 @@ bool isDark()
     return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
 }
 
+/// Einstellung "Glass": Clear (durchsichtiger) statt Tinted
+bool clearGlass()
+{
+    static ParameterGrp::handle grp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+    return grp->GetInt("GlassClear", 0) == 1;
+}
+
 }  // namespace
 
 GlassPanel::GlassPanel(QWidget* content, qreal radius)
@@ -316,7 +327,7 @@ void GlassPanel::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidg
                        QSize(qRound(size.width() * dpr), qRound(size.height() * dpr)));
         painter->beginNativePainting();
         drawn = GlassRenderer::forContext(ctx)->draw(px, gl->size() * dpr, float(radius * dpr),
-                                                     float(ShadowMargin * dpr), float(dpr), isDark());
+                                                     float(ShadowMargin * dpr), float(dpr), isDark(), clearGlass());
         painter->endNativePainting();
     }
 

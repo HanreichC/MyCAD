@@ -574,7 +574,20 @@ QPushButton#Remove { background: transparent; border: none; color: %6; font-size
 QPushButton#Remove:hover { color: #FF3B30; }
 )")
                           .arg(text, bg, card, border, sep, secondary, accent, chipBg, segBg)
-                          .arg(segSel));
+                          .arg(segSel)
+                      + (myParams()->GetInt("InterfaceStyle", 0) != 0 ? QString() : QStringLiteral(R"(
+QFrame#Window { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 %1, stop:0.55 %2, stop:1 %3);
+    border: 1px solid %4; border-radius: 26px; }
+QFrame#Card { background: %5; border: 1px solid %6; border-radius: 16px; }
+QWidget#Segmented { border-radius: 10px; }
+QPushButton#Segment { border-radius: 8px; }
+QComboBox { border-radius: 10px; }
+QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
+)")
+                                                                                     .arg(dark ? "#2A2A2E" : "#F7F7F9", dark ? "#222225" : "#EFEFF3",
+                                                                                          dark ? "#1C1C1F" : "#E8E8ED", border,
+                                                                                          dark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.62)",
+                                                                                          dark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.95)")));
 
     auto outer = new QVBoxLayout(&dlg);
     outer->setContentsMargins(0, 0, 0, 0);
@@ -785,6 +798,12 @@ QPushButton#Remove:hover { color: #FF3B30; }
         addRow(c, label, sw);
     };
     toggle(viewCard, QStringLiteral("Animate view changes"), "UseNavigationAnimations", true);
+    addRow(viewCard, QStringLiteral("Interface style"),
+           segmented({QStringLiteral("Liquid Glass"), QStringLiteral("Classic")}, int(myParams()->GetInt("InterfaceStyle", 0)),
+                     [](int i) { Gui::Shell::setInterfaceStyle(i); }));
+    addRow(viewCard, QStringLiteral("Glass"),
+           segmented({QStringLiteral("Tinted"), QStringLiteral("Clear")}, int(myParams()->GetInt("GlassClear", 0)),
+                     [](int i) { Gui::Shell::setGlass(i); }));
     auto names = new Switch(myParams()->GetBool("ToolNames", false));
     QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
     addRow(viewCard, QStringLiteral("Show tool names"), names);

@@ -31,6 +31,8 @@
 #include <QFontDatabase>
 #include <QFrame>
 #include <QGraphicsScene>
+#include <QPropertyAnimation>
+#include <QGraphicsOpacityEffect>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QMdiArea>
@@ -104,6 +106,7 @@ Theme theme()
 }
 
 void overrideFreeCadIcons(const Theme& t);
+bool liquid();
 
 QString styleSheet(const Theme& t)
 {
@@ -173,13 +176,24 @@ QMenu::icon { padding-left: 8px; }
 QMessageBox, QDialog { background: %9; }
 QMessageBox QPushButton, QDialog QPushButton { background: %6; border: 1px solid %7; border-radius: 7px; padding: 5px 16px; min-width: 64px; }
 QMessageBox QPushButton:default, QDialog QPushButton:default { background: %3; color: white; border: none; }
+QMessageBox[glass="true"] { background: transparent; }
+QMessageBox[glass="true"] QPushButton { border: none; border-radius: 15px; min-height: 30px; padding: 0 18px; min-width: 76px; background: %5; }
+QMessageBox[glass="true"] QPushButton:default { background: %3; color: white; }
 QCheckBox::indicator { width: 16px; height: 16px; border-radius: 5px; border: 1px solid %7; background: %6; }
 QCheckBox::indicator:checked { background: %3; border: none; image: url(:/mycad/icons/Check.svg); }
 QToolTip { background: %6; color: %1; border: 1px solid %7; border-radius: 6px; padding: 4px 8px; }
 Gui--NotificationLabel { background: %9; color: %1; border: 1px solid %7; border-radius: 12px; padding: 8px 10px; }
 )")
         .arg(t.text, t.secondary, t.accent, t.hover, t.pressed, t.field, t.fieldBorder, t.separator)
-        .arg(t.dark ? QStringLiteral("#2C2C2E") : QStringLiteral("#FBFBFD"));
+        .arg(t.dark ? QStringLiteral("#2C2C2E") : QStringLiteral("#FBFBFD"))
+        // Liquid Glass: konzentrische Rundungen (Knopf = Panelradius minus Abstand), Auswahl als Kapsel
+        + (liquid() ? QStringLiteral(R"(
+QToolButton#GlassButton, QToolButton#WindowClose { border-radius: 17px; }
+QToolButton#PaletteRow { border-radius: 12px; }
+#GlassContent QLineEdit, #GlassContent QAbstractSpinBox, #GlassContent QComboBox { border-radius: 10px; }
+#GlassContent QToolButton#GlassProminent { border-radius: 16px; }
+)")
+                    : QString());
 }
 
 /// Aussehen der Körper (Einstellung "Body material"), Farben als 0xRRGGBBAA
@@ -526,6 +540,13 @@ bool toolNames()
 {
     return App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool(
         "ToolNames", false);
+}
+
+/// Oberflächenstil: Liquid Glass (Standard) oder Classic (eine Glasleiste mit Trennstrichen, flache Karten)
+bool liquid()
+{
+    return App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetInt(
+               "InterfaceStyle", 0) == 0;
 }
 
 void styleToolButton(QToolButton* btn)
@@ -1023,6 +1044,7 @@ public:
         setAttribute(Qt::WA_Hover);
         setCursor(Qt::PointingHandCursor);
         setFixedSize(Picture.width() + 16, Picture.height() + 58);
+
         auto lay = new QVBoxLayout(this);
         lay->setContentsMargins(8, 8, 8, 8);
         lay->setSpacing(1);
@@ -1099,7 +1121,6 @@ public:
         : QWidget(getMainWindow())
     {
         setObjectName(QStringLiteral("StartPage"));
-        setAttribute(Qt::WA_StyledBackground);
         auto outer = new QVBoxLayout(this);
         outer->setContentsMargins(0, 0, 0, 0);
         outer->setSpacing(0);
@@ -1134,11 +1155,23 @@ public:
 
     void open()
     {
+        const bool wasVisible = isVisible();
         rebuild();
         back->setVisible(anyDesignOpen());
         setGeometry(getMainWindow()->rect());
         show();
         raise();
+        if (liquid() && !wasVisible) {  // weich einblenden
+            auto fade = new QGraphicsOpacityEffect(this);
+            setGraphicsEffect(fade);
+            auto anim = new QPropertyAnimation(fade, "opacity", fade);
+            anim->setDuration(220);
+            anim->setStartValue(0.0);
+            anim->setEndValue(1.0);
+            anim->setEasingCurve(QEasingCurve::OutCubic);
+            QObject::connect(anim, &QPropertyAnimation::finished, this, [this] { setGraphicsEffect(nullptr); });
+            anim->start(QAbstractAnimation::DeleteWhenStopped);
+        }
     }
 
 protected:
@@ -1155,27 +1188,40 @@ protected:
             hide();
         }
     }
+    void paintEvent(QPaintEvent*) override
+    {
+        const bool dark = theme().dark;
+        QPainter p(this);
+        QLinearGradient base(0, 0, 0, height());
+        base.setColorAt(0, dark ? QColor(0x2A2C31) : QColor(0xF4F5F7));
+        base.setColorAt(1, dark ? QColor(0x111214) : QColor(0xD5D9E0));
+        p.fillRect(rect(), base);
+    }
 
 private:
     void rebuild()
     {
         const Theme t = theme();
         setStyleSheet(QStringLiteral(R"(
-#StartPage { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %1, stop:1 %2); }
 #StartTitle { font-size: 26px; font-weight: 700; }
 QScrollArea, #StartContent { background: transparent; }
-QLabel#StartSection { color: %3; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; }
-QLabel#StartDate, QLabel#StartHint { color: %3; font-size: 11px; }
+QLabel#StartSection { color: %1; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; }
+QLabel#StartDate, QLabel#StartHint { color: %1; font-size: 11px; }
 QLabel#StartName { font-size: 13px; font-weight: 600; }
-QFrame#StartTile { background: %4; border: 1px solid %5; border-radius: 14px; }
-QFrame#StartTile:hover { border: 1px solid %6; background: %7; }
-QPushButton#StartBack { background: %4; border: 1px solid %5; border-radius: 15px; padding: 5px 14px 5px 8px; min-height: 20px; }
-QPushButton#StartBack:hover { border-color: %6; }
+QFrame#StartTile { background: %2; border: 1px solid %3; border-radius: %6px; }
+QFrame#StartTile:hover { border: 1px solid %4; background: %5; }
+QPushButton#StartBack { background: %2; border: 1px solid %3; border-radius: 15px; padding: 5px 14px 5px 8px; min-height: 20px; }
+QPushButton#StartBack:hover { border-color: %4; }
 )")
-                          .arg(t.dark ? "#2A2C31" : "#F4F5F7", t.dark ? "#111214" : "#D5D9E0", t.secondary,
-                               t.dark ? "rgba(44,44,46,0.92)" : "rgba(255,255,255,0.86)",
-                               t.dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", t.accent,
-                               t.dark ? "rgba(58,58,62,0.95)" : "rgba(255,255,255,0.98)"));
+                          .arg(t.secondary,
+                               liquid() ? (t.dark ? "rgba(60,60,68,0.42)" : "rgba(255,255,255,0.55)")
+                                        : (t.dark ? "rgba(44,44,46,0.92)" : "rgba(255,255,255,0.86)"),
+                               liquid() ? (t.dark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.92)")
+                                        : (t.dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"),
+                               liquid() ? (t.dark ? "rgba(255,255,255,0.30)" : "rgba(255,255,255,1.0)") : t.accent,
+                               liquid() ? (t.dark ? "rgba(72,72,80,0.55)" : "rgba(255,255,255,0.78)")
+                                        : (t.dark ? "rgba(58,58,62,0.95)" : "rgba(255,255,255,0.98)"),
+                               liquid() ? QStringLiteral("18") : QStringLiteral("14")));
 
         auto page = new QWidget;
         page->setObjectName(QStringLiteral("StartContent"));
@@ -1271,13 +1317,64 @@ void showStartPage()
     }
 }
 
-/// Menüs mit runden Ecken: dafür brauchen sie einen transparenten, rahmenlosen Hintergrund
+/// Glas-Alert (Liquid Glass): runde helle Fläche mit weichem Schatten und Lichtkante statt Fenster mit Titelleiste
+class AlertPainter: public QObject
+{
+public:
+    static constexpr int Shadow = 18;
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (event->type() != QEvent::Paint) {
+            return false;
+        }
+        auto box = static_cast<QWidget*>(obj);
+        const bool dark = theme().dark;
+        QPainter p(box);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setPen(Qt::NoPen);
+        const QRectF r = QRectF(box->rect()).adjusted(Shadow, Shadow, -Shadow, -Shadow);
+        constexpr qreal radius = 22;
+        for (int i = Shadow; i > 0; i -= 2) {  // weicher Schatten, leicht nach unten
+            p.setBrush(QColor(0, 0, 0, dark ? 9 : 4));
+            p.drawRoundedRect(r.adjusted(-i, -i + 5, i, i + 5), radius + i, radius + i);
+        }
+        QLinearGradient fill(r.topLeft(), r.bottomLeft());
+        fill.setColorAt(0, dark ? QColor(52, 52, 58, 250) : QColor(255, 255, 255, 252));
+        fill.setColorAt(1, dark ? QColor(38, 38, 43, 250) : QColor(244, 245, 248, 252));
+        p.setBrush(fill);
+        p.setPen(QPen(dark ? QColor(255, 255, 255, 34) : QColor(0, 0, 0, 22), 1));
+        p.drawRoundedRect(r.adjusted(0.5, 0.5, -0.5, -0.5), radius, radius);
+        return false;  // Text und Knöpfe zeichnet die Box selbst
+    }
+};
+
+/// Menüs mit runden Ecken: dafür brauchen sie einen transparenten, rahmenlosen Hintergrund.
+/// Liquid Glass: Meldungen und Rückfragen als rahmenlose Glas-Alerts (Titel fett im Text, Kapsel-Knöpfe)
 class MenuPolisher: public QObject
 {
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
         if (event->type() == QEvent::Polish) {
+            if (auto box = qobject_cast<QMessageBox*>(obj); box && liquid() && !box->property("glass").toBool()) {
+                static AlertPainter painter;
+                box->setProperty("glass", true);
+                box->setWindowFlags(box->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+                box->setAttribute(Qt::WA_TranslucentBackground);
+                box->setContentsMargins(AlertPainter::Shadow + 8, AlertPainter::Shadow + 6, AlertPainter::Shadow + 8,
+                                        AlertPainter::Shadow + 4);
+                box->installEventFilter(&painter);
+                if (!box->windowTitle().isEmpty() && !Qt::mightBeRichText(box->text())) {
+                    box->setText(QStringLiteral("<p style='font-size:15px; font-weight:600; margin-bottom:4px'>%1</p>%2")
+                                     .arg(box->windowTitle().toHtmlEscaped(),
+                                          box->text().toHtmlEscaped().replace(QLatin1Char('\n'), QStringLiteral("<br>"))));
+                }
+                box->setIcon(QMessageBox::NoIcon);
+                box->style()->unpolish(box);  // Stylesheet-Regeln für [glass="true"] greifen erst nach neuem Polieren
+                box->style()->polish(box);
+            }
             if (auto menu = qobject_cast<QMenu*>(obj)) {
                 menu->setAttribute(Qt::WA_TranslucentBackground);
                 menu->setWindowFlags(menu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
@@ -2288,6 +2385,24 @@ void Gui::Shell::setBodyMaterial(int index)
                 line->setValue(Base::Color(m.line));
             }
         }
+    }
+}
+
+void Gui::Shell::setInterfaceStyle(int style)
+{
+    App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetInt("InterfaceStyle", style);
+    applyTheme();
+    layout();
+    if (startPage && startPage->isVisible()) {
+        startPage->open();
+    }
+}
+
+void Gui::Shell::setGlass(int clear)
+{
+    App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetInt("GlassClear", clear);
+    if (state.scene) {
+        state.scene->update();
     }
 }
 

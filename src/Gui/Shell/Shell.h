@@ -13,6 +13,10 @@ namespace Gui::Shell
 void install();
 /// Namen unter den Symbolen der Toolbar ein-/ausblenden (Einstellung "Show tool names")
 void setToolNames(bool on);
+/// Oberflächenstil: 0 = Liquid Glass, 1 = Classic (Einstellung "Interface style"), wirkt sofort
+void setInterfaceStyle(int style);
+/// Glas wie in iOS 26.1: 0 = Tinted (besser lesbar), 1 = Clear (durchsichtiger)
+void setGlass(int clear);
 /// Aussehen der Körper (Einstellung "Body material"): Auswahl und Wahl; färbt Körper mit Standard-Look gleich um
 std::vector<const char*> bodyMaterialNames();
 void setBodyMaterial(int index);
