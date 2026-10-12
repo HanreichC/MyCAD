@@ -54,6 +54,7 @@
 #include <QSvgRenderer>
 #include <QPointer>
 #include <QStatusBar>
+#include <QRegularExpression>
 #include <QScreen>
 #include <QStyleHints>
 #include <QTimer>
@@ -118,7 +119,8 @@ QToolButton#GlassButton::menu-button { border: none; width: 12px; }
 QToolButton#GlassButton::menu-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 9px; height: 9px; }
 QToolButton#GlassButton[error="true"] { background: rgba(255,59,48,0.28); }
 QFrame#GlassSeparator { background: %8; border: none; }
-QFrame#ToolbarSeparator { background: %8; border: none; margin: 0 6px; }
+QFrame#ToolbarSeparator { background: %8; border: none; margin: 0 4px; }
+QLabel#SectionCaption { color: %2; font-size: 9px; font-weight: 600; letter-spacing: 0.6px; padding-top: 1px; }
 #GlassContent, #GlassContent QWidget { background: transparent; }
 #GlassContent QAbstractScrollArea { border: none; }
 #GlassContent QLineEdit, #GlassContent QAbstractSpinBox, #GlassContent QComboBox {
@@ -444,6 +446,20 @@ QString shortName(QString text)
     if (auto it = shorter.find(text.trimmed()); it != shorter.end()) {
         return it->second;
     }
+    // FreeCAD-Sketcher-Namen auf Fusion-Kürze bringen: "Coincident Constraint", "Text (Experimental)",
+    // "Rotate / Polar Transform", "Circle From Center" …
+    static const QRegularExpression noise(QStringLiteral(
+        R"(\s*\(.*\)|\s+Constraint$|\s+Transform$|\s+[Ff]rom\s+.*$|^Centered\s+|^External\s+|^Toggle\s+|\s+Edge$)"));
+    text.remove(noise);
+    text = text.section(QStringLiteral(" / "), 0, 0).section(QLatin1Char('/'), 0, 0);
+    static const std::map<QString, QString> sketch = {
+        {QStringLiteral("Projection"), QStringLiteral("Project")},
+        {QStringLiteral("Rectangular Array"), QStringLiteral("Pattern")},
+        {QStringLiteral("Conic Curve"), QStringLiteral("Conic")},
+    };
+    if (auto it = sketch.find(text.trimmed()); it != sketch.end()) {
+        return it->second;
+    }
     text.remove(QLatin1Char('&'));
     text.remove(QStringLiteral("…"));
     text.remove(QStringLiteral("..."));
@@ -469,14 +485,14 @@ void styleToolButton(QToolButton* btn)
     btn->setToolButtonStyle(names ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonIconOnly);
     btn->setProperty("names", names);
     if (names) {
-        const int width = dropdown ? 82 : 70;
+        const int width = dropdown ? 86 : 74;
         QFont font = btn->font();
         font.setPixelSize(10);  // wie im Stylesheet für die Beschriftung
         btn->setText(QFontMetrics(font).elidedText(btn->property("label").toString(), Qt::ElideRight, width - 6));
         btn->setFixedSize(width, 56);
     }
     else {
-        btn->setFixedSize(dropdown ? 48 : 38, 38);
+        btn->setFixedSize(dropdown ? 44 : 34, 38);
     }
     btn->style()->unpolish(btn);
     btn->style()->polish(btn);
@@ -616,7 +632,8 @@ std::vector<std::pair<QString, QAction*>> variants(const QString& entry)
     return result;
 }
 
-/// Kapsel-Toolbar mit Befehls-Buttons. "" = Trenner, "A|B" = Knopf mit Varianten-Menü.
+/// Kapsel-Toolbar mit Befehls-Buttons in Abschnitten wie bei Fusion: "#CREATE" beginnt einen Abschnitt mit dieser
+/// Überschrift (darunter), Abschnitte sind durch eine Linie getrennt; "A|B" = Knopf mit Varianten-Menü.
 QWidget* toolbar(const std::vector<const char*>& commands)
 {
 
@@ -624,13 +641,39 @@ QWidget* toolbar(const std::vector<const char*>& commands)
     auto lay = new FlowLayout(w);  // bricht um, wenn das Fenster schmal ist
     lay->setContentsMargins(10, 6, 10, 6);
     lay->setSpacing(2);
-    for (const char* name : commands) {
-        if (!*name) {
+    QHBoxLayout* row = nullptr;  // Knöpfe des aktuellen Abschnitts
+    auto section = [&](const QString& caption) {
+        if (row) {
             auto sep = new QFrame;
             sep->setObjectName(QStringLiteral("ToolbarSeparator"));
-            sep->setFixedSize(13, 22);
+            sep->setFixedSize(9, 40);
             lay->addWidget(sep);
+        }
+        auto group = new QWidget;
+        auto column = new QVBoxLayout(group);
+        column->setContentsMargins(0, 0, 0, 0);
+        column->setSpacing(0);
+        row = new QHBoxLayout;
+        row->setSpacing(2);
+        column->addLayout(row);
+        if (!caption.isEmpty()) {
+            auto label = new QLabel(caption);
+            label->setObjectName(QStringLiteral("SectionCaption"));
+            label->setAlignment(Qt::AlignCenter);
+            column->addWidget(label);
+        }
+        lay->addWidget(group);
+    };
+    for (const char* name : commands) {
+        if (*name == '#') {
+            section(QString::fromLatin1(name + 1));
             continue;
+        }
+        if (!*name) {
+            continue;
+        }
+        if (!row) {
+            section(QString());
         }
         const auto choices = variants(QString::fromLatin1(name));
         QAction* action = choices.empty() ? commandAction(name) : choices.front().second;
@@ -676,7 +719,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             QObject::connect(action, &QAction::changed, btn, [btn, action] {
                 btn->setEnabled(action->isEnabled());
             });
-            lay->addWidget(btn);
+            row->addWidget(btn);
             continue;
         }
         btn->setObjectName(QStringLiteral("GlassButton"));
@@ -689,7 +732,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             QObject::connect(btn, &QToolButton::clicked, action, [action] {
                 QTimer::singleShot(0, action, &QAction::trigger);
             });
-            lay->addWidget(btn);
+            row->addWidget(btn);
             continue;
         }
         btn->setIcon(commandIcon(QString::fromLatin1(name), action->icon()));
@@ -707,7 +750,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         QObject::connect(action, &QAction::changed, btn, [btn, action] {
             btn->setEnabled(action->isEnabled());
         });
-        lay->addWidget(btn);
+        row->addWidget(btn);
     }
     w->adjustSize();
     return w;
@@ -835,6 +878,9 @@ public:
         handle->setCursor(Qt::OpenHandCursor);
         handle->setToolTip(QStringLiteral("Drag to move the window, double-click to maximize"));
         lay->addWidget(handle);
+        button("MyCAD_Settings", "GlassButton", QStringLiteral("Settings (Ctrl+,)"), [] {
+            Application::Instance->commandManager().runCommandByName("MyCAD_Settings");
+        });
         button("Window_Minimize", "GlassButton", QStringLiteral("Minimize"), [] { getMainWindow()->showMinimized(); });
         maximize = button("Window_Maximize", "GlassButton", QStringLiteral("Maximize"), toggleMaximized);
         button("Window_Close", "WindowClose", QStringLiteral("Close"), [] { getMainWindow()->close(); });
@@ -1635,25 +1681,32 @@ void Gui::Shell::install()
     registerSettings();
 
     state.modelBar = new GlassPanel(
-        toolbar({"Std_New", "Std_Open", "Std_Save", "Design_Import", "Design_Export", "", "Std_Undo", "Std_Redo", "",
-                 "Design_CreateSketch", "Design_Extrude", "Design_Revolve", "Design_Sweep|Design_Loft|Design_Rib|Design_Web|Design_Emboss",
-                 "Design_Box|Design_Cylinder|Design_Sphere|Design_Torus|Design_Coil", "",
-                 "Design_Hole|Design_Thread", "Design_PressPull|Design_ReplaceFace|Design_SplitFace", "Design_Fillet", "Design_Chamfer", "Design_Shell", "Design_Draft", "", "Design_Pattern",
-                 "Design_Mirror", "Design_Combine|Design_SplitBody", "Design_Move|Design_Align|Design_Scale", "", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point", "Design_NewComponent", "Design_Joint", "",
-                 "Design_Parameters", "Design_Measure", "Design_Section", "Design_Appearance", "Std_ViewFitAll", "MyCAD_Settings"}),
+        toolbar({"#FILE", "Std_New", "Std_Open", "Std_Save", "Design_Import", "Design_Export",
+                 "Std_Undo", "Std_Redo",
+                 "#CREATE", "Design_CreateSketch", "Design_Extrude", "Design_Revolve",
+                 "Design_Sweep|Design_Loft|Design_Rib|Design_Web|Design_Emboss",
+                 "Design_Box|Design_Cylinder|Design_Sphere|Design_Torus|Design_Coil", "Design_Hole|Design_Thread",
+                 "Design_Pattern", "Design_Mirror",
+                 "#MODIFY", "Design_PressPull|Design_ReplaceFace|Design_SplitFace", "Design_Fillet", "Design_Chamfer",
+                 "Design_Shell", "Design_Draft", "Design_Combine|Design_SplitBody", "Design_Move|Design_Align|Design_Scale",
+                 "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
+                 "#ASSEMBLE", "Design_NewComponent", "Design_Joint",
+                 "#INSPECT", "Design_Measure", "Design_Section", "Std_ViewFitAll",
+                 "#UTILITIES", "Design_Parameters", "Design_Appearance"}),
         24);
     state.sketchBar = new GlassPanel(
-        toolbar({"Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
+        toolbar({"#CREATE", "Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
                  "Sketcher_CompCreateConic", "Sketcher_CompCreateArc", "Sketcher_CompSlot",
                  "Sketcher_CompCreateRegularPolygon", "Sketcher_CompCreateBSpline", "Sketcher_CreateConic",
-                 "Sketcher_CreatePoint", "Sketcher_CreateText", "Sketcher_CompExternal", "",
-                 "Sketcher_CompCreateFillets", "Sketcher_Trimming|Sketcher_Extend|Sketcher_Split",
+                 "Sketcher_CreatePoint", "Sketcher_CreateText", "Sketcher_CompExternal",
+                 "#MODIFY", "Sketcher_CompCreateFillets", "Sketcher_Trimming|Sketcher_Extend|Sketcher_Split",
                  "Sketcher_Offset", "Sketcher_Symmetry", "Sketcher_RectangularArray|Sketcher_Rotate",
-                 "Sketcher_Translate|Sketcher_Scale", "Sketcher_ToggleConstruction", "", "Sketcher_Dimension",
-                 "Sketcher_ConstrainCoincidentUnified", "Sketcher_ConstrainHorizontal|Sketcher_ConstrainVertical",
+                 "Sketcher_Translate|Sketcher_Scale", "Sketcher_ToggleConstruction",
+                 "#CONSTRAINTS", "Sketcher_Dimension", "Sketcher_ConstrainCoincidentUnified",
+                 "Sketcher_ConstrainHorizontal|Sketcher_ConstrainVertical",
                  "Sketcher_ConstrainParallel|Sketcher_ConstrainPerpendicular", "Sketcher_ConstrainTangent",
-                 "Sketcher_ConstrainEqual",
-                 "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock", "", "Sketcher_LeaveSketch"}),
+                 "Sketcher_ConstrainEqual", "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock",
+                 "#", "Sketcher_LeaveSketch"}),
         24);
     state.viewCube = new ViewCube;
     state.palette = new GlassPanel(sketchPalette(), 20);
@@ -1785,6 +1838,13 @@ void Gui::Shell::setToolNames(bool on)
         for (auto btn : bar->content()->findChildren<QToolButton*>(QStringLiteral("GlassButton"))) {
             styleToolButton(btn);
         }
+        // Abschnitte zuerst neu rechnen, sonst misst die Toolbar mit den alten Knopfgrößen (zweite Reihe abgeschnitten)
+        for (auto group : bar->content()->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
+            if (group->layout()) {
+                group->layout()->activate();
+            }
+        }
+        bar->content()->layout()->invalidate();
     }
     layout();
 }

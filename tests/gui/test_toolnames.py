@@ -53,8 +53,11 @@ run([
     ("rename", rename_with_shift),
     ("after", lambda: L("umbenennen mit Shift: %s (muss gleich bleiben)" % camera())),
     ("restore keys", lambda: grp.SetString("MouseKeys", old)),
+    ("shot plain", lambda: (L("  names at start=%s" % grp.GetBool("ToolNames")), shot("plain"))),
     ("names on", toggle_names), ("wait", lambda: None),
     ("shot names", lambda: shot("names")),
-    ("names off", toggle_names), ("wait", lambda: None),
-    ("shot plain", lambda: shot("plain")),
+    ("sketch", lambda: click(button("Design_CreateSketch"))),
+    ("pick XY", lambda: Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XY_Plane")][0])),
+    ("shot sketch", lambda: shot("sketchnames")),
+    ("names off", lambda: grp.SetBool("ToolNames", False)),  # Einstellung des Benutzers nicht verändert lassen
 ])
