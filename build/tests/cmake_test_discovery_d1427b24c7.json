@@ -1,0 +1,64 @@
+{
+  "tests": 8,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "Collection",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "TestValidity",
+          "file": "\/workspace\/tests\/src\/zipios++\/collectioncollection.cpp",
+          "line": 8
+        },
+        {
+          "name": "TestCopy",
+          "file": "\/workspace\/tests\/src\/zipios++\/collectioncollection.cpp",
+          "line": 23
+        },
+        {
+          "name": "TestCopyAssign",
+          "file": "\/workspace\/tests\/src\/zipios++\/collectioncollection.cpp",
+          "line": 37
+        },
+        {
+          "name": "TestClone",
+          "file": "\/workspace\/tests\/src\/zipios++\/collectioncollection.cpp",
+          "line": 52
+        },
+        {
+          "name": "TestAdd",
+          "file": "\/workspace\/tests\/src\/zipios++\/collectioncollection.cpp",
+          "line": 66
+        }
+      ]
+    },
+    {
+      "name": "ZipFile",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "TestValidity",
+          "file": "\/workspace\/tests\/src\/zipios++\/zipfile.cpp",
+          "line": 9
+        },
+        {
+          "name": "TestNonExisting",
+          "file": "\/workspace\/tests\/src\/zipios++\/zipfile.cpp",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "name": "ZipFileTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "TestValid",
+          "file": "\/workspace\/tests\/src\/zipios++\/zipfile.cpp",
+          "line": 78
+        }
+      ]
+    }
+  ]
+}

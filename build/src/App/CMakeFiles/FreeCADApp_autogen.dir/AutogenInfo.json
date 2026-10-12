@@ -1,0 +1,720 @@
+{
+	"BUILD_DIR" : "/workspace/build/src/App/FreeCADApp_autogen",
+	"CMAKE_BINARY_DIR" : "/workspace/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/workspace/build/src/App",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/workspace/src/App",
+	"CMAKE_EXECUTABLE" : "/usr/sbin/cmake",
+	"CMAKE_LIST_FILES" : 
+	[
+		"/workspace/src/App/CMakeLists.txt",
+		"/workspace/build/src/App/Resources/App_translation.qrc"
+	],
+	"CMAKE_SOURCE_DIR" : "/workspace",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "/workspace/build/src/App/FreeCADApp_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "FreeCADApp_autogen/timestamp",
+	"HEADERS" : 
+	[
+		[
+			"/workspace/src/App/Annotation.h",
+			"MU",
+			"EWIEGA46WW/moc_Annotation.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Application.h",
+			"MU",
+			"EWIEGA46WW/moc_Application.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ApplicationDirectories.h",
+			"MU",
+			"EWIEGA46WW/moc_ApplicationDirectories.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ApplicationPy.h",
+			"MU",
+			"EWIEGA46WW/moc_ApplicationPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/AutoTransaction.h",
+			"MU",
+			"EWIEGA46WW/moc_AutoTransaction.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/BackupPolicy.h",
+			"MU",
+			"EWIEGA46WW/moc_BackupPolicy.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Branding.h",
+			"MU",
+			"EWIEGA46WW/moc_Branding.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ByteArray.h",
+			"MU",
+			"EWIEGA46WW/moc_ByteArray.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/CleanupProcess.h",
+			"MU",
+			"EWIEGA46WW/moc_CleanupProcess.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ColorModel.h",
+			"MU",
+			"EWIEGA46WW/moc_ColorModel.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ComplexGeoData.h",
+			"MU",
+			"EWIEGA46WW/moc_ComplexGeoData.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ConsoleQtBridge.h",
+			"MU",
+			"EWIEGA46WW/moc_ConsoleQtBridge.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Datums.h",
+			"MU",
+			"EWIEGA46WW/moc_Datums.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/DepEdge.h",
+			"MU",
+			"EWIEGA46WW/moc_DepEdge.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Document.h",
+			"MU",
+			"EWIEGA46WW/moc_Document.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/DocumentObject.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/DocumentObjectExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentObjectExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/DocumentObjectFileIncluded.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentObjectFileIncluded.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/DocumentObjectGroup.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentObjectGroup.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/DocumentObserver.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentObserver.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/DocumentObserverPython.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentObserverPython.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/DocumentSettings.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentSettings.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/DynamicProperty.h",
+			"MU",
+			"EWIEGA46WW/moc_DynamicProperty.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ElementMap.h",
+			"MU",
+			"EWIEGA46WW/moc_ElementMap.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ElementNamingUtils.h",
+			"MU",
+			"EWIEGA46WW/moc_ElementNamingUtils.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Enumeration.h",
+			"MU",
+			"EWIEGA46WW/moc_Enumeration.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Expression.h",
+			"MU",
+			"EWIEGA46WW/moc_Expression.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ExpressionParser.h",
+			"MU",
+			"EWIEGA46WW/moc_ExpressionParser.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ExpressionTokenizer.h",
+			"MU",
+			"EWIEGA46WW/moc_ExpressionTokenizer.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ExpressionVisitors.h",
+			"MU",
+			"EWIEGA46WW/moc_ExpressionVisitors.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Extension.h",
+			"MU",
+			"EWIEGA46WW/moc_Extension.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ExtensionContainer.h",
+			"MU",
+			"EWIEGA46WW/moc_ExtensionContainer.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/FeatureCustom.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureCustom.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/FeaturePython.h",
+			"MU",
+			"EWIEGA46WW/moc_FeaturePython.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/FeaturePythonPyImp.h",
+			"MU",
+			"EWIEGA46WW/moc_FeaturePythonPyImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/FeatureTest.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureTest.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/GeoFeature.h",
+			"MU",
+			"EWIEGA46WW/moc_GeoFeature.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/GeoFeatureGroupExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_GeoFeatureGroupExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/GroupExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_GroupExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ImagePlane.h",
+			"MU",
+			"EWIEGA46WW/moc_ImagePlane.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/IndexedName.h",
+			"MU",
+			"EWIEGA46WW/moc_IndexedName.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/InventorObject.h",
+			"MU",
+			"EWIEGA46WW/moc_InventorObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/License.h",
+			"MU",
+			"EWIEGA46WW/moc_License.cpp",
+			null
+		],
+		[ "/workspace/src/App/Link.h", "MU", "EWIEGA46WW/moc_Link.cpp", null ],
+		[
+			"/workspace/src/App/MainThreadSignal.h",
+			"MU",
+			"EWIEGA46WW/moc_MainThreadSignal.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/MappedElement.h",
+			"MU",
+			"EWIEGA46WW/moc_MappedElement.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/MappedName.h",
+			"MU",
+			"EWIEGA46WW/moc_MappedName.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Material.h",
+			"MU",
+			"EWIEGA46WW/moc_Material.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/MaterialObject.h",
+			"MU",
+			"EWIEGA46WW/moc_MaterialObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/MeasureManager.h",
+			"MU",
+			"EWIEGA46WW/moc_MeasureManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/MergeDocuments.h",
+			"MU",
+			"EWIEGA46WW/moc_MergeDocuments.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Metadata.h",
+			"MU",
+			"EWIEGA46WW/moc_Metadata.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ObjectIdentifier.h",
+			"MU",
+			"EWIEGA46WW/moc_ObjectIdentifier.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Origin.h",
+			"MU",
+			"EWIEGA46WW/moc_Origin.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/OriginGroupExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_OriginGroupExtension.cpp",
+			null
+		],
+		[ "/workspace/src/App/Part.h", "MU", "EWIEGA46WW/moc_Part.cpp", null ],
+		[ "/workspace/src/App/Path.h", "MU", "EWIEGA46WW/moc_Path.cpp", null ],
+		[
+			"/workspace/src/App/Placement.h",
+			"MU",
+			"EWIEGA46WW/moc_Placement.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/PreCompiled.h",
+			"MU",
+			"EWIEGA46WW/moc_PreCompiled.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ProgramInformation.h",
+			"MU",
+			"EWIEGA46WW/moc_ProgramInformation.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/ProjectFile.h",
+			"MU",
+			"EWIEGA46WW/moc_ProjectFile.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Property.h",
+			"MU",
+			"EWIEGA46WW/moc_Property.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/PropertyContainer.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyContainer.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/PropertyExpressionEngine.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyExpressionEngine.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/PropertyFile.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyFile.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/PropertyGeo.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyGeo.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/PropertyLinks.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyLinks.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/PropertyOverrides.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyOverrides.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/PropertyPythonObject.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyPythonObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/PropertyStandard.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyStandard.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/PropertyUnits.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyUnits.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/QuantityInput.h",
+			"MU",
+			"EWIEGA46WW/moc_QuantityInput.cpp",
+			null
+		],
+		[ "/workspace/src/App/Range.h", "MU", "EWIEGA46WW/moc_Range.cpp", null ],
+		[
+			"/workspace/src/App/RecoverySnapshot.h",
+			"MU",
+			"EWIEGA46WW/moc_RecoverySnapshot.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/SafeMode.h",
+			"MU",
+			"EWIEGA46WW/moc_SafeMode.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Services.h",
+			"MU",
+			"EWIEGA46WW/moc_Services.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/StringHasher.h",
+			"MU",
+			"EWIEGA46WW/moc_StringHasher.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/SuppressibleExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_SuppressibleExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/TextDocument.h",
+			"MU",
+			"EWIEGA46WW/moc_TextDocument.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/TransactionalObject.h",
+			"MU",
+			"EWIEGA46WW/moc_TransactionalObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/Transactions.h",
+			"MU",
+			"EWIEGA46WW/moc_Transactions.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/TranslationQtBridge.h",
+			"MU",
+			"EWIEGA46WW/moc_TranslationQtBridge.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/VRMLObject.h",
+			"MU",
+			"EWIEGA46WW/moc_VRMLObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/App/VarSet.h",
+			"MU",
+			"EWIEGA46WW/moc_VarSet.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "/workspace/build/src/App/FreeCADApp_autogen/include",
+	"MOC_COMPILATION_FILE" : "/workspace/build/src/App/FreeCADApp_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"BOOST_ATOMIC_DYN_LINK",
+		"BOOST_ATOMIC_NO_LIB",
+		"BOOST_CHRONO_DYN_LINK",
+		"BOOST_CHRONO_NO_LIB",
+		"BOOST_CONTAINER_DYN_LINK",
+		"BOOST_CONTAINER_NO_LIB",
+		"BOOST_DATE_TIME_DYN_LINK",
+		"BOOST_DATE_TIME_NO_LIB",
+		"BOOST_PROGRAM_OPTIONS_DYN_LINK",
+		"BOOST_PROGRAM_OPTIONS_NO_LIB",
+		"BOOST_THREAD_DYN_LINK",
+		"BOOST_THREAD_NO_LIB",
+		"CMAKE_BUILD_TYPE=\"Release\"",
+		"DOCDIR=\"share/doc/FreeCAD\"",
+		"FreeCADApp_EXPORTS",
+		"HAVE_CONFIG_H",
+		"HAVE_FREETYPE",
+		"HAVE_OPENGL_EXT",
+		"HAVE_RAPIDJSON",
+		"HAVE_TK",
+		"HAVE_VTK",
+		"HAVE_XLIB",
+		"LIBRARYDIR=\"lib\"",
+		"MINIMUM_CPLUSPLUS_VERSION=202302L",
+		"OCC_CONVERT_SIGNALS",
+		"PYCXX_6_2_COMPATIBILITY",
+		"QT_CORE_LIB",
+		"QT_NO_DEBUG",
+		"QT_NO_KEYWORDS",
+		"QT_XML_LIB",
+		"RESOURCEDIR=\"share\"",
+		"VTK_OPENGL2_BACKEND",
+		"_OCC64"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"/workspace/build",
+		"/workspace/build/src",
+		"/workspace/src",
+		"/workspace/build/src/App",
+		"/workspace/src/App",
+		"/workspace/src/3rdParty/FastSignals/libfastsignals/include",
+		"/usr/include/qt6/QtCore",
+		"/usr/include/qt6",
+		"/usr/include/qt6/QtXml",
+		"/workspace/src/3rdParty/PyCXX",
+		"/usr/include/python3.14",
+		"/workspace/src/3rdParty",
+		"/usr/lib/qt6/mkspecs/linux-g++",
+		"/usr/include",
+		"/usr/include/c++/16",
+		"/usr/include/c++/16/x86_64-pc-linux-gnu",
+		"/usr/include/c++/16/backward",
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/16/include",
+		"/usr/local/include"
+	],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"/usr/sbin/c++",
+		"-std=c++23",
+		"-w",
+		"-dM",
+		"-E",
+		"/usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "/workspace/build/src/App/FreeCADApp_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : 
+	[
+		"/workspace/build/src/App/FreeCADModulePy.cpp",
+		"/workspace/build/src/App/FreeCADModulePy.h",
+		"/workspace/build/src/App/qrc_App_translation.cpp"
+	],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 6,
+	"PARSE_CACHE_FILE" : "/workspace/build/src/App/CMakeFiles/FreeCADApp_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/usr/lib/qt6/moc",
+	"QT_UIC_EXECUTABLE" : "/usr/lib/qt6/uic",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 12,
+	"SETTINGS_FILE" : "/workspace/build/src/App/CMakeFiles/FreeCADApp_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[ "/workspace/src/App/Annotation.cpp", "MU", null ],
+		[ "/workspace/src/App/Application.cpp", "MU", null ],
+		[ "/workspace/src/App/ApplicationDirectories.cpp", "MU", null ],
+		[ "/workspace/src/App/ApplicationDirectoriesPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/ApplicationPy.cpp", "MU", null ],
+		[ "/workspace/src/App/AutoTransaction.cpp", "MU", null ],
+		[ "/workspace/src/App/BackupPolicy.cpp", "MU", null ],
+		[ "/workspace/src/App/Branding.cpp", "MU", null ],
+		[ "/workspace/src/App/ByteArray.cpp", "MU", null ],
+		[ "/workspace/src/App/CleanupProcess.cpp", "MU", null ],
+		[ "/workspace/src/App/ColorModel.cpp", "MU", null ],
+		[ "/workspace/src/App/ComplexGeoData.cpp", "MU", null ],
+		[ "/workspace/src/App/ComplexGeoDataPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/ConsoleQtBridge.cpp", "MU", null ],
+		[ "/workspace/src/App/Datums.cpp", "MU", null ],
+		[ "/workspace/src/App/DepEdgePyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/Document.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentObject.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentObjectExtension.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentObjectExtensionPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentObjectFileIncluded.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentObjectGroup.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentObjectGroupPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentObjectPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentObserver.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentObserverPython.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentSettings.cpp", "MU", null ],
+		[ "/workspace/src/App/DocumentSettingsPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/DynamicProperty.cpp", "MU", null ],
+		[ "/workspace/src/App/ElementMap.cpp", "MU", null ],
+		[ "/workspace/src/App/ElementNamingUtils.cpp", "MU", null ],
+		[ "/workspace/src/App/Enumeration.cpp", "MU", null ],
+		[ "/workspace/src/App/Expression.cpp", "MU", null ],
+		[ "/workspace/src/App/ExpressionTokenizer.cpp", "MU", null ],
+		[ "/workspace/src/App/Extension.cpp", "MU", null ],
+		[ "/workspace/src/App/ExtensionContainer.cpp", "MU", null ],
+		[ "/workspace/src/App/ExtensionContainerPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/ExtensionPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/FeaturePython.cpp", "MU", null ],
+		[ "/workspace/src/App/FeatureTest.cpp", "MU", null ],
+		[ "/workspace/src/App/GeoFeature.cpp", "MU", null ],
+		[ "/workspace/src/App/GeoFeatureGroupExtension.cpp", "MU", null ],
+		[ "/workspace/src/App/GeoFeatureGroupExtensionPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/GeoFeaturePyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/Graphviz.cpp", "MU", null ],
+		[ "/workspace/src/App/GroupExtension.cpp", "MU", null ],
+		[ "/workspace/src/App/GroupExtensionPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/ImagePlane.cpp", "MU", null ],
+		[ "/workspace/src/App/IndexedName.cpp", "MU", null ],
+		[ "/workspace/src/App/InventorObject.cpp", "MU", null ],
+		[ "/workspace/src/App/Link.cpp", "MU", null ],
+		[ "/workspace/src/App/LinkBaseExtensionPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/MappedElement.cpp", "MU", null ],
+		[ "/workspace/src/App/MappedName.cpp", "MU", null ],
+		[ "/workspace/src/App/Material.cpp", "MU", null ],
+		[ "/workspace/src/App/MaterialObject.cpp", "MU", null ],
+		[ "/workspace/src/App/MaterialPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/MeasureManager.cpp", "MU", null ],
+		[ "/workspace/src/App/MeasureManagerPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/MergeDocuments.cpp", "MU", null ],
+		[ "/workspace/src/App/Metadata.cpp", "MU", null ],
+		[ "/workspace/src/App/MetadataPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/ObjectIdentifier.cpp", "MU", null ],
+		[ "/workspace/src/App/Origin.cpp", "MU", null ],
+		[ "/workspace/src/App/OriginGroupExtension.cpp", "MU", null ],
+		[ "/workspace/src/App/OriginGroupExtensionPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/Part.cpp", "MU", null ],
+		[ "/workspace/src/App/PartPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/Path.cpp", "MU", null ],
+		[ "/workspace/src/App/Placement.cpp", "MU", null ],
+		[ "/workspace/src/App/ProgramInformation.cpp", "MU", null ],
+		[ "/workspace/src/App/ProjectFile.cpp", "MU", null ],
+		[ "/workspace/src/App/Property.cpp", "MU", null ],
+		[ "/workspace/src/App/PropertyContainer.cpp", "MU", null ],
+		[ "/workspace/src/App/PropertyContainerPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/PropertyExpressionEngine.cpp", "MU", null ],
+		[ "/workspace/src/App/PropertyFile.cpp", "MU", null ],
+		[ "/workspace/src/App/PropertyGeo.cpp", "MU", null ],
+		[ "/workspace/src/App/PropertyLinks.cpp", "MU", null ],
+		[ "/workspace/src/App/PropertyPythonObject.cpp", "MU", null ],
+		[ "/workspace/src/App/PropertyStandard.cpp", "MU", null ],
+		[ "/workspace/src/App/PropertyUnits.cpp", "MU", null ],
+		[ "/workspace/src/App/QuantityInput.cpp", "MU", null ],
+		[ "/workspace/src/App/Range.cpp", "MU", null ],
+		[ "/workspace/src/App/RecoverySnapshot.cpp", "MU", null ],
+		[ "/workspace/src/App/SafeMode.cpp", "MU", null ],
+		[ "/workspace/src/App/Services.cpp", "MU", null ],
+		[ "/workspace/src/App/StringHasher.cpp", "MU", null ],
+		[ "/workspace/src/App/StringHasherPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/StringIDPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/SuppressibleExtension.cpp", "MU", null ],
+		[ "/workspace/src/App/SuppressibleExtensionPyImp.cpp", "MU", null ],
+		[ "/workspace/src/App/TextDocument.cpp", "MU", null ],
+		[ "/workspace/src/App/TransactionalObject.cpp", "MU", null ],
+		[ "/workspace/src/App/Transactions.cpp", "MU", null ],
+		[ "/workspace/src/App/TranslationQtBridge.cpp", "MU", null ],
+		[ "/workspace/src/App/VRMLObject.cpp", "MU", null ],
+		[ "/workspace/src/App/VarSet.cpp", "MU", null ]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : [],
+	"UIC_SKIP" : 
+	[
+		"/workspace/build/src/App/FreeCADModulePy.cpp",
+		"/workspace/build/src/App/FreeCADModulePy.h",
+		"/workspace/build/src/App/qrc_App_translation.cpp"
+	],
+	"UIC_UI_FILES" : [],
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

@@ -1,0 +1,9 @@
+Mesh_tests_run_autogen/timestamp: \
+	/workspace/tests/src/Mod/Mesh/App/CMakeLists.txt \
+	/workspace/tests/src/Mod/Mesh/App/Core/KDTree.cpp \
+	/workspace/tests/src/Mod/Mesh/App/Core/MeshIO.cpp \
+	/workspace/tests/src/Mod/Mesh/App/Exporter.cpp \
+	/workspace/tests/src/Mod/Mesh/App/Importer.cpp \
+	/workspace/tests/src/Mod/Mesh/App/Mesh.cpp \
+	/workspace/tests/src/Mod/Mesh/App/MeshFeature.cpp \
+	/usr/sbin/cmake

@@ -1,0 +1,4 @@
+MeshPart_tests_run_autogen/timestamp: \
+	/workspace/tests/src/Mod/MeshPart/App/CMakeLists.txt \
+	/workspace/tests/src/Mod/MeshPart/App/MeshPart.cpp \
+	/usr/sbin/cmake

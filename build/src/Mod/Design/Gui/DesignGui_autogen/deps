@@ -1,0 +1,7 @@
+DesignGui_autogen/timestamp: \
+	/workspace/src/Mod/Design/Gui/AppDesignGui.cpp \
+	/workspace/src/Mod/Design/Gui/CMakeLists.txt \
+	/workspace/src/Mod/Design/Gui/Commands.cpp \
+	/workspace/src/Mod/Design/Gui/ViewProviders.cpp \
+	/workspace/src/Mod/Design/Gui/ViewProviders.h \
+	/usr/sbin/cmake

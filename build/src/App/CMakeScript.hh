@@ -1,0 +1,13 @@
+const char CMakeVariables[] ="cmake = [\n"
+"\"BUILD_DYNAMIC_LINK_PYTHON\",\n"
+"\"BUILD_GUI\",\n"
+"\"BUILD_IMPORT\",\n"
+"\"BUILD_MATERIAL\",\n"
+"\"BUILD_MEASURE\",\n"
+"\"BUILD_MESH\",\n"
+"\"BUILD_MESH_PART\",\n"
+"\"BUILD_PART\",\n"
+"\"BUILD_PART_DESIGN\",\n"
+"\"BUILD_SKETCHER\",\n"
+"\"BUILD_TESTING\"]\n" 
+;

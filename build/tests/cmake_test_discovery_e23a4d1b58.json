@@ -1,0 +1,1820 @@
+{
+  "tests": 322,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "AttacherTest",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "TestSetReferences",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/Attacher.cpp",
+          "line": 53
+        },
+        {
+          "name": "TestSuggestMapModes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/Attacher.cpp",
+          "line": 59
+        },
+        {
+          "name": "TestGetShapeType",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/Attacher.cpp",
+          "line": 71
+        },
+        {
+          "name": "TestGetInertialPropsOfShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/Attacher.cpp",
+          "line": 79
+        },
+        {
+          "name": "TestGetRefObjects",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/Attacher.cpp",
+          "line": 90
+        },
+        {
+          "name": "TestCalculateAttachedPlacement",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/Attacher.cpp",
+          "line": 98
+        },
+        {
+          "name": "TestAllStringModesValid",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/Attacher.cpp",
+          "line": 111
+        },
+        {
+          "name": "TestAllModesBoundaries",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/Attacher.cpp",
+          "line": 187
+        }
+      ]
+    },
+    {
+      "name": "AttachExtensionTest",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "testPlanePlane",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/AttachExtension.cpp",
+          "line": 93
+        },
+        {
+          "name": "testMidPlane",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/AttachExtension.cpp",
+          "line": 112
+        },
+        {
+          "name": "testMidPlaneBisectsFaceAngle",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/AttachExtension.cpp",
+          "line": 147
+        },
+        {
+          "name": "testMidPlaneBisectsConnectedFaces",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/AttachExtension.cpp",
+          "line": 189
+        },
+        {
+          "name": "testMidPlaneBisectsObliqueFaceAngle",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/AttachExtension.cpp",
+          "line": 222
+        },
+        {
+          "name": "testAttacherEngineType",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/AttachExtension.cpp",
+          "line": 259
+        },
+        {
+          "name": "testAttacherTypeEngine",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/AttachExtension.cpp",
+          "line": 278
+        },
+        {
+          "name": "testEmptyLegacySupportDoesNotClearAttachmentSupport",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/AttachExtension.cpp",
+          "line": 301
+        },
+        {
+          "name": "testNonEmptyLegacySupportReplacesAttachmentSupport",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/AttachExtension.cpp",
+          "line": 321
+        }
+      ]
+    },
+    {
+      "name": "BRepMeshTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "testNoDomains",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/BRepMesh.cpp",
+          "line": 133
+        },
+        {
+          "name": "testEmptyDomains",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/BRepMesh.cpp",
+          "line": 144
+        },
+        {
+          "name": "testConnectedDomains",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/BRepMesh.cpp",
+          "line": 155
+        },
+        {
+          "name": "testUnconnectedDomains",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/BRepMesh.cpp",
+          "line": 166
+        }
+      ]
+    },
+    {
+      "name": "FaceMakerBullseyeTest",
+      "tests": 16,
+      "testsuite": [
+        {
+          "name": "getWireDirectionCCWRectangle",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 99
+        },
+        {
+          "name": "getWireDirectionCWRectangle",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 107
+        },
+        {
+          "name": "getWireDirectionCCWCircle",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 116
+        },
+        {
+          "name": "getWireDirectionCWCircle",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 124
+        },
+        {
+          "name": "getWireDirectionFlippedPlane",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 133
+        },
+        {
+          "name": "getWireDirectionTiltedPlane",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 143
+        },
+        {
+          "name": "faceDrillerSimpleRectangle",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 175
+        },
+        {
+          "name": "faceDrillerWithOneHole",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 186
+        },
+        {
+          "name": "faceDrillerReversedOuterWire",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 199
+        },
+        {
+          "name": "faceDrillerReversedHoleWire",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 211
+        },
+        {
+          "name": "faceDrillerFlippedPlane",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 226
+        },
+        {
+          "name": "faceDrillerMultipleHoles",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 239
+        },
+        {
+          "name": "buildEssenceOuterWithHole",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 254
+        },
+        {
+          "name": "buildEssenceNestedIslands",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 271
+        },
+        {
+          "name": "buildEssenceTiltedPlane",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 292
+        },
+        {
+          "name": "buildEssenceManyWires",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerBullseye.cpp",
+          "line": 322
+        }
+      ]
+    },
+    {
+      "name": "FaceMakerUnifiedTest",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "singleRectangleNaming",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerUnified.cpp",
+          "line": 173
+        },
+        {
+          "name": "subdivisionNaming",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerUnified.cpp",
+          "line": 182
+        },
+        {
+          "name": "overlappingRectsNaming",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerUnified.cpp",
+          "line": 191
+        },
+        {
+          "name": "selfIntersectingBSplineNaming",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerUnified.cpp",
+          "line": 200
+        },
+        {
+          "name": "singleRectangleStable",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerUnified.cpp",
+          "line": 209
+        },
+        {
+          "name": "subdivisionStable",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerUnified.cpp",
+          "line": 214
+        },
+        {
+          "name": "overlappingRectsStable",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerUnified.cpp",
+          "line": 219
+        },
+        {
+          "name": "selfIntersectingBSplineStable",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FaceMakerUnified.cpp",
+          "line": 224
+        }
+      ]
+    },
+    {
+      "name": "FeatureChamferTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "testOther",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureChamfer.cpp",
+          "line": 58
+        },
+        {
+          "name": "testMost",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureChamfer.cpp",
+          "line": 92
+        },
+        {
+          "name": "testMustExecute",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureChamfer.cpp",
+          "line": 116
+        },
+        {
+          "name": "testGetProviderName",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureChamfer.cpp",
+          "line": 134
+        }
+      ]
+    },
+    {
+      "name": "FeatureCompoundTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "testIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureCompound.cpp",
+          "line": 34
+        },
+        {
+          "name": "testNonIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureCompound.cpp",
+          "line": 49
+        },
+        {
+          "name": "xlinkFromOpenDocumentKeepsMappedNameWhenTargetReopens",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureCompound.cpp",
+          "line": 64
+        },
+        {
+          "name": "xlinkKeepsMappedNameWhenOpenedWithTarget",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureCompound.cpp",
+          "line": 88
+        }
+      ]
+    },
+    {
+      "name": "FeatureExtrusionTest",
+      "tests": 16,
+      "testsuite": [
+        {
+          "name": "testMustExecute",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 42
+        },
+        {
+          "name": "testGetProviderName",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 68
+        },
+        {
+          "name": "testFetchAxisLink",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 79
+        },
+        {
+          "name": "testExtrudeShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 90
+        },
+        {
+          "name": "testComputeFinalParameters",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 95
+        },
+        {
+          "name": "testExecuteSimple",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 100
+        },
+        {
+          "name": "testExecuteSimpleRev",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 113
+        },
+        {
+          "name": "testExecuteSolid",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 129
+        },
+        {
+          "name": "testExecuteReverse",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 143
+        },
+        {
+          "name": "testExecuteSymmetric",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 157
+        },
+        {
+          "name": "testExecuteAngled",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 171
+        },
+        {
+          "name": "testExecuteAngledRev",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 206
+        },
+        {
+          "name": "testExecuteEdge",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 252
+        },
+        {
+          "name": "testExecuteDir",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 277
+        },
+        {
+          "name": "testExecuteFaceMaker",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 295
+        },
+        {
+          "name": "testFaceWithHoles",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureExtrusion.cpp",
+          "line": 309
+        }
+      ]
+    },
+    {
+      "name": "FeatureFilletTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "testOtherEdges",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureFillet.cpp",
+          "line": 52
+        },
+        {
+          "name": "testMostEdges",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureFillet.cpp",
+          "line": 85
+        },
+        {
+          "name": "testMustExecute",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureFillet.cpp",
+          "line": 108
+        },
+        {
+          "name": "testGetProviderName",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureFillet.cpp",
+          "line": 126
+        }
+      ]
+    },
+    {
+      "name": "FeatureMirroringTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "testXMirror",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureMirroring.cpp",
+          "line": 36
+        },
+        {
+          "name": "testYMirrorWithExistingElementMap",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureMirroring.cpp",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "name": "FeatureOffsetTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "testOffset3D",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureOffset.cpp",
+          "line": 37
+        },
+        {
+          "name": "testOffset3DWithExistingElementMap",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureOffset.cpp",
+          "line": 51
+        },
+        {
+          "name": "testOffset2D",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureOffset.cpp",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "name": "FeaturePartCommonTest",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "testIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCommon.cpp",
+          "line": 31
+        },
+        {
+          "name": "testNonIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCommon.cpp",
+          "line": 54
+        },
+        {
+          "name": "testTouching",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCommon.cpp",
+          "line": 71
+        },
+        {
+          "name": "testAlmostTouching",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCommon.cpp",
+          "line": 88
+        },
+        {
+          "name": "testBarelyIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCommon.cpp",
+          "line": 105
+        },
+        {
+          "name": "testMustExecute",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCommon.cpp",
+          "line": 132
+        },
+        {
+          "name": "testGetProviderName",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCommon.cpp",
+          "line": 150
+        },
+        {
+          "name": "testHistory",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCommon.cpp",
+          "line": 159
+        },
+        {
+          "name": "testMapping",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCommon.cpp",
+          "line": 198
+        }
+      ]
+    },
+    {
+      "name": "FeaturePartCutTest",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "testIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCut.cpp",
+          "line": 30
+        },
+        {
+          "name": "testNonIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCut.cpp",
+          "line": 53
+        },
+        {
+          "name": "testTouching",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCut.cpp",
+          "line": 76
+        },
+        {
+          "name": "testAlmostTouching",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCut.cpp",
+          "line": 99
+        },
+        {
+          "name": "testBarelyIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCut.cpp",
+          "line": 122
+        },
+        {
+          "name": "testMustExecute",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCut.cpp",
+          "line": 149
+        },
+        {
+          "name": "testGetProviderName",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCut.cpp",
+          "line": 167
+        },
+        {
+          "name": "testMapping",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartCut.cpp",
+          "line": 176
+        }
+      ]
+    },
+    {
+      "name": "FeaturePartFuseTest",
+      "tests": 10,
+      "testsuite": [
+        {
+          "name": "testIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartFuse.cpp",
+          "line": 34
+        },
+        {
+          "name": "testCompound",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartFuse.cpp",
+          "line": 57
+        },
+        {
+          "name": "testRecursiveCompound",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartFuse.cpp",
+          "line": 82
+        },
+        {
+          "name": "testNonIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartFuse.cpp",
+          "line": 115
+        },
+        {
+          "name": "testTouching",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartFuse.cpp",
+          "line": 138
+        },
+        {
+          "name": "testAlmostTouching",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartFuse.cpp",
+          "line": 161
+        },
+        {
+          "name": "testBarelyIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartFuse.cpp",
+          "line": 184
+        },
+        {
+          "name": "testMustExecute",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartFuse.cpp",
+          "line": 211
+        },
+        {
+          "name": "testGetProviderName",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartFuse.cpp",
+          "line": 229
+        },
+        {
+          "name": "testRefine",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeaturePartFuse.cpp",
+          "line": 238
+        }
+      ]
+    },
+    {
+      "name": "FeatureRevolutionTest",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "testExecute",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureRevolution.cpp",
+          "line": 46
+        },
+        {
+          "name": "testExecuteBase",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureRevolution.cpp",
+          "line": 60
+        },
+        {
+          "name": "testAxis",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureRevolution.cpp",
+          "line": 79
+        },
+        {
+          "name": "testAxisLink",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureRevolution.cpp",
+          "line": 94
+        },
+        {
+          "name": "testSymmetric",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureRevolution.cpp",
+          "line": 115
+        },
+        {
+          "name": "testAngle",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureRevolution.cpp",
+          "line": 130
+        },
+        {
+          "name": "testMustExecute",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureRevolution.cpp",
+          "line": 145
+        },
+        {
+          "name": "testGetProviderName",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FeatureRevolution.cpp",
+          "line": 176
+        }
+      ]
+    },
+    {
+      "name": "FuzzyBooleanTest",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "testLoadedCorrectly",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FuzzyBoolean.cpp",
+          "line": 48
+        },
+        {
+          "name": "testDefaultFuzzy",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FuzzyBoolean.cpp",
+          "line": 55
+        },
+        {
+          "name": "testGoodFuzzy",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FuzzyBoolean.cpp",
+          "line": 82
+        },
+        {
+          "name": "testFailsTooSmallFuzzy",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FuzzyBoolean.cpp",
+          "line": 114
+        },
+        {
+          "name": "testCompletelyFailsTooBigFuzzy",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/FuzzyBoolean.cpp",
+          "line": 142
+        }
+      ]
+    },
+    {
+      "name": "GeometryTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "testTrimBSpline",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/Geometry.cpp",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "name": "LinkArrayPolarTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "objectAxes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/LinkArrayPolar.cpp",
+          "line": 42
+        },
+        {
+          "name": "showElementDefaultsToExpandedAndEditable",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/LinkArrayPolar.cpp",
+          "line": 56
+        },
+        {
+          "name": "expandedElementsFollowPatternPlacementChanges",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/LinkArrayPolar.cpp",
+          "line": 65
+        },
+        {
+          "name": "suppressedExpandedElementIsOmittedFromSubObjects",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/LinkArrayPolar.cpp",
+          "line": 91
+        }
+      ]
+    },
+    {
+      "name": "ModelRefineTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "testRefineKeepsASolidValidWhenAVertexSplitsASeam",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/ModelRefine.cpp",
+          "line": 76
+        },
+        {
+          "name": "testRefinePreservesVolumeWhenAVertexSplitsASeam",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/ModelRefine.cpp",
+          "line": 91
+        },
+        {
+          "name": "testRefineLeavesNoEmptyFaceWhenAVertexSplitsASeam",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/ModelRefine.cpp",
+          "line": 100
+        },
+        {
+          "name": "testRefineIsUnharmedByAVertexOffTheSeam",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/ModelRefine.cpp",
+          "line": 112
+        }
+      ]
+    },
+    {
+      "name": "FeaturePartTest",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "testGetElementName",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeature.cpp",
+          "line": 37
+        },
+        {
+          "name": "create",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeature.cpp",
+          "line": 61
+        },
+        {
+          "name": "getElementHistory",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeature.cpp",
+          "line": 130
+        },
+        {
+          "name": "getRelatedElements",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeature.cpp",
+          "line": 146
+        },
+        {
+          "name": "getElementFromSource",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeature.cpp",
+          "line": 178
+        },
+        {
+          "name": "getSubObject",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeature.cpp",
+          "line": 204
+        },
+        {
+          "name": "getElementTypes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeature.cpp",
+          "line": 220
+        },
+        {
+          "name": "getComplexElementTypes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeature.cpp",
+          "line": 231
+        }
+      ]
+    },
+    {
+      "name": "PartFeaturesTest",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "testRuledSurface",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeatures.cpp",
+          "line": 30
+        },
+        {
+          "name": "testLoft",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeatures.cpp",
+          "line": 65
+        },
+        {
+          "name": "testSweep",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeatures.cpp",
+          "line": 93
+        },
+        {
+          "name": "testThickness",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeatures.cpp",
+          "line": 125
+        },
+        {
+          "name": "testRefine",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeatures.cpp",
+          "line": 147
+        },
+        {
+          "name": "testReverse",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PartFeatures.cpp",
+          "line": 177
+        }
+      ]
+    },
+    {
+      "name": "PreviewExtensionTest",
+      "tests": 10,
+      "testsuite": [
+        {
+          "name": "previewShapeIsOutputTransientAndHidden",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PreviewExtension.cpp",
+          "line": 118
+        },
+        {
+          "name": "updatePreviewRecomputesOnceThenMarksFresh",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PreviewExtension.cpp",
+          "line": 127
+        },
+        {
+          "name": "updatePreviewIsNoOpWhileFresh",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PreviewExtension.cpp",
+          "line": 138
+        },
+        {
+          "name": "changingInputPropertyInvalidates",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PreviewExtension.cpp",
+          "line": 149
+        },
+        {
+          "name": "changingPreviewShapeDoesNotInvalidate",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PreviewExtension.cpp",
+          "line": 160
+        },
+        {
+          "name": "changingOutputPropertyDoesNotInvalidate",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PreviewExtension.cpp",
+          "line": 171
+        },
+        {
+          "name": "changingTypeOnlyOutputPropertyDoesNotInvalidate",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PreviewExtension.cpp",
+          "line": 183
+        },
+        {
+          "name": "invalidatePreviewForcesRecompute",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PreviewExtension.cpp",
+          "line": 195
+        },
+        {
+          "name": "mustRecomputePreviewFollowsMustRecompute",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PreviewExtension.cpp",
+          "line": 207
+        },
+        {
+          "name": "decliningRecomputeKeepsPreviewFreshOnInputChange",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PreviewExtension.cpp",
+          "line": 220
+        }
+      ]
+    },
+    {
+      "name": "PropertyTopoShapeTest",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "testPropertyPartShapeTopoShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PropertyTopoShape.cpp",
+          "line": 107
+        },
+        {
+          "name": "testPropertyPartShapeTopoDSShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PropertyTopoShape.cpp",
+          "line": 124
+        },
+        {
+          "name": "testPropertyPartShapeGetPyObject",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PropertyTopoShape.cpp",
+          "line": 144
+        },
+        {
+          "name": "testShapeHistory",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PropertyTopoShape.cpp",
+          "line": 179
+        },
+        {
+          "name": "testPropertyShapeHistory",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PropertyTopoShape.cpp",
+          "line": 204
+        },
+        {
+          "name": "testPropertyShapeCache",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PropertyTopoShape.cpp",
+          "line": 209
+        },
+        {
+          "name": "testPropertyShapeCachePyObj",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PropertyTopoShape.cpp",
+          "line": 228
+        },
+        {
+          "name": "testRestore",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/PropertyTopoShape.cpp",
+          "line": 255
+        }
+      ]
+    },
+    {
+      "name": "TestTopoDS_Shape",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "TestCastEdgeToVertex",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoDS_Shape.cpp",
+          "line": 25
+        },
+        {
+          "name": "TestCastNullVertex",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoDS_Shape.cpp",
+          "line": 34
+        },
+        {
+          "name": "TestCastNullEdge",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoDS_Shape.cpp",
+          "line": 42
+        },
+        {
+          "name": "TestExploreNullShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoDS_Shape.cpp",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "name": "TopoShapeTest",
+      "tests": 18,
+      "testsuite": [
+        {
+          "name": "TestElementTypeFace1",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 39
+        },
+        {
+          "name": "TestElementTypeEdge12",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 45
+        },
+        {
+          "name": "TestElementTypeVertex3",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 51
+        },
+        {
+          "name": "TestElementTypeFacer",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 57
+        },
+        {
+          "name": "TestElementTypeVertex",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 63
+        },
+        {
+          "name": "TestElementTypeEmpty",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 69
+        },
+        {
+          "name": "TestElementTypeNull",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 75
+        },
+        {
+          "name": "TestElementTypeWithHash",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 81
+        },
+        {
+          "name": "TestElementTypeWithSubelements",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 87
+        },
+        {
+          "name": "TestElementTypeNonMatching",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 93
+        },
+        {
+          "name": "TestTypeFace1",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 102
+        },
+        {
+          "name": "TestTypeEdge12",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 108
+        },
+        {
+          "name": "TestTypeVertex3",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 114
+        },
+        {
+          "name": "TestTypeFacer",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 120
+        },
+        {
+          "name": "TestTypeVertex",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 126
+        },
+        {
+          "name": "TestTypeEmpty",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 132
+        },
+        {
+          "name": "TestTypeNull",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 138
+        },
+        {
+          "name": "TestGetSubshape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShape.cpp",
+          "line": 144
+        }
+      ]
+    },
+    {
+      "name": "ShapeRelationKey",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "HistoryTraceTypeComparison",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "name": "TopoShapeCacheTest",
+      "tests": 12,
+      "testsuite": [
+        {
+          "name": "ConstructionFromTopoDS_Shape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 72
+        },
+        {
+          "name": "InsertRelationIntoEmptyTableCompacts",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 89
+        },
+        {
+          "name": "InsertAlreadyExistsUpdatesExisting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 110
+        },
+        {
+          "name": "IsTouchedNotPartners",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 130
+        },
+        {
+          "name": "IsTouchedArePartners",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 150
+        },
+        {
+          "name": "GetAncestrySHAPE",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 176
+        },
+        {
+          "name": "GetAncestryEDGE",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 189
+        },
+        {
+          "name": "GetAncestryFACE",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 202
+        },
+        {
+          "name": "CountShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 215
+        },
+        {
+          "name": "FindShapeGivenSubshape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 232
+        },
+        {
+          "name": "FindShapeGivenTypeAndIndex",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 247
+        },
+        {
+          "name": "FindAncestor",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeCache.cpp",
+          "line": 279
+        }
+      ]
+    },
+    {
+      "name": "TopoShapeExpansionTest",
+      "tests": 91,
+      "testsuite": [
+        {
+          "name": "makeElementCompoundOneShapeReturnsShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 81
+        },
+        {
+          "name": "makeElementCompoundOneShapeForceReturnsCompound",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 95
+        },
+        {
+          "name": "makeElementCompoundTwoShapesReturnsCompound",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 113
+        },
+        {
+          "name": "makeElementCompoundEmptyShapesReturnsEmptyCompound",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 128
+        },
+        {
+          "name": "makeElementCompoundTwoShapesGeneratesMap",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 144
+        },
+        {
+          "name": "makeElementCompoundTwoCubes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 169
+        },
+        {
+          "name": "MapperMakerModified",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 218
+        },
+        {
+          "name": "MapperMakerGenerated",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 279
+        },
+        {
+          "name": "MapperHistoryModified",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 322
+        },
+        {
+          "name": "MapperHistoryGenerated",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 378
+        },
+        {
+          "name": "resetElementMapTest",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 425
+        },
+        {
+          "name": "flushElementMapTest",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 486
+        },
+        {
+          "name": "cacheRelatedElements",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 537
+        },
+        {
+          "name": "makeElementWiresCombinesAdjacent",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 569
+        },
+        {
+          "name": "makeElementWiresCombinesWires",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 584
+        },
+        {
+          "name": "makeElementFaceNull",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 622
+        },
+        {
+          "name": "makeElementFaceSimple",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 643
+        },
+        {
+          "name": "makeElementFaceParams",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 667
+        },
+        {
+          "name": "makeElementFaceFromFace",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 691
+        },
+        {
+          "name": "makeElementFaceOpenWire",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 716
+        },
+        {
+          "name": "makeElementFaceClosedWire",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 741
+        },
+        {
+          "name": "setElementComboNameNothing",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 772
+        },
+        {
+          "name": "setElementComboNameSimple",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 783
+        },
+        {
+          "name": "setElementComboName",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 800
+        },
+        {
+          "name": "setElementComboNameCompound",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 821
+        },
+        {
+          "name": "splitWires",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 849
+        },
+        {
+          "name": "getSubShapes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 876
+        },
+        {
+          "name": "getSubTopoShapes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 890
+        },
+        {
+          "name": "getOrderedEdges",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 904
+        },
+        {
+          "name": "getOrderedVertexes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 917
+        },
+        {
+          "name": "getSubTopoShapeByEnum",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 928
+        },
+        {
+          "name": "getSubTopoShapeByStringDefaults",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 947
+        },
+        {
+          "name": "getSubTopoShapeByStringNames",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 973
+        },
+        {
+          "name": "mapSubElementInvalidParm",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 993
+        },
+        {
+          "name": "mapSubElementFindShapeByNames",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1010
+        },
+        {
+          "name": "mapSubElementFindShapeByType",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1043
+        },
+        {
+          "name": "mapSubElementFindAncestor",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1065
+        },
+        {
+          "name": "mapSubElementFindAncestors",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1087
+        },
+        {
+          "name": "findSubShapesWithSharedVertexEverything",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1147
+        },
+        {
+          "name": "findSubShapesWithSharedVertexMid",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1201
+        },
+        {
+          "name": "findSubShapesWithSharedVertexClose",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1249
+        },
+        {
+          "name": "makeElementShellInvalid",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1297
+        },
+        {
+          "name": "makeElementShellSingle",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1305
+        },
+        {
+          "name": "makeElementShellOpen",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1322
+        },
+        {
+          "name": "makeElementShellClosed",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1348
+        },
+        {
+          "name": "makeElementShellIntersecting",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1369
+        },
+        {
+          "name": "makeElementShellFromWires",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1392
+        },
+        {
+          "name": "makeElementBooleanImpossibleCommon",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1413
+        },
+        {
+          "name": "makeElementBooleanCommon",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1428
+        },
+        {
+          "name": "makeElementBooleanCommonWithCompoundTool",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1448
+        },
+        {
+          "name": "makeElementBooleanCut",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1471
+        },
+        {
+          "name": "makeElementBooleanFuse",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1533
+        },
+        {
+          "name": "makeElementBooleanAcceptsShapeRejectedByAnalyzer",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1628
+        },
+        {
+          "name": "makeElementDraft",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1687
+        },
+        {
+          "name": "makeElementDraftTopoShapes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1708
+        },
+        {
+          "name": "linearizeEdge",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1748
+        },
+        {
+          "name": "linearizeFace",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1768
+        },
+        {
+          "name": "makeElementRuledSurfaceEdges",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1789
+        },
+        {
+          "name": "makeElementRuledSurfaceWires",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1823
+        },
+        {
+          "name": "makeElementLoft",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1872
+        },
+        {
+          "name": "makeElementLoftAllowsDistinctProfilesWithSameCenter",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1923
+        },
+        {
+          "name": "makeElementLoftRejectsCoincidentProfiles",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1951
+        },
+        {
+          "name": "makeElementPipeShell",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1971
+        },
+        {
+          "name": "makeElementThickSolid",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 1996
+        },
+        {
+          "name": "makeElementGeneralFuse",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2027
+        },
+        {
+          "name": "makeElementFuse",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2125
+        },
+        {
+          "name": "makeElementCut",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2215
+        },
+        {
+          "name": "makeElementChamfer",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2279
+        },
+        {
+          "name": "makeElementFillet",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2399
+        },
+        {
+          "name": "makeElementSlice",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2526
+        },
+        {
+          "name": "makeElementSlices",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2556
+        },
+        {
+          "name": "makeElementMirror",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2611
+        },
+        {
+          "name": "makeElementTransformWithoutMap",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2643
+        },
+        {
+          "name": "makeElementTransformWithMap",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2661
+        },
+        {
+          "name": "makeElementGTransformWithoutMap",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2754
+        },
+        {
+          "name": "makeElementGTransformWithMap",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2772
+        },
+        {
+          "name": "makeElementSolid",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2868
+        },
+        {
+          "name": "makeElementRevolve",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2912
+        },
+        {
+          "name": "makeElementPrism",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 2959
+        },
+        {
+          "name": "makeElementPrismUntil",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3006
+        },
+        {
+          "name": "makeElementFilledFace",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3033
+        },
+        {
+          "name": "makeElementFilledFaceFromLooseEdges",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3069
+        },
+        {
+          "name": "makeElementFilledFaceExplicitBoundaryRange",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3099
+        },
+        {
+          "name": "makeElementBSplineFace",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3127
+        },
+        {
+          "name": "replaceElementShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3176
+        },
+        {
+          "name": "removeElementShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3210
+        },
+        {
+          "name": "makeElementEvolve",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3241
+        },
+        {
+          "name": "traceElement",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3277
+        },
+        {
+          "name": "makeElementOffset",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3358
+        },
+        {
+          "name": "makeElementOffsetFace",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3491
+        },
+        {
+          "name": "makeElementOffset2D",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeExpansion.cpp",
+          "line": 3535
+        }
+      ]
+    },
+    {
+      "name": "FeaturePartMakeElementRefineTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "makeElementRefineBoxes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeElementRefine.cpp",
+          "line": 28
+        }
+      ]
+    },
+    {
+      "name": "TopoShapeMakeShapeWithElementMapTests",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "nullShapeThrows",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShapeWithElementMap.cpp",
+          "line": 65
+        },
+        {
+          "name": "mapCompoundCount",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShapeWithElementMap.cpp",
+          "line": 131
+        },
+        {
+          "name": "emptySourceShapes",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShapeWithElementMap.cpp",
+          "line": 161
+        },
+        {
+          "name": "nonMappableSources",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShapeWithElementMap.cpp",
+          "line": 180
+        },
+        {
+          "name": "findSourceShapesInShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShapeWithElementMap.cpp",
+          "line": 233
+        },
+        {
+          "name": "findSourceSubShapesInElementMap",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShapeWithElementMap.cpp",
+          "line": 317
+        },
+        {
+          "name": "findMakerOpInElementMap",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShapeWithElementMap.cpp",
+          "line": 334
+        }
+      ]
+    },
+    {
+      "name": "TopoShapeMapperTest",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "shapeHasherSingle",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMapper.cpp",
+          "line": 41
+        },
+        {
+          "name": "shapeHasherDual",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMapper.cpp",
+          "line": 62
+        },
+        {
+          "name": "shapeHasherPair",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMapper.cpp",
+          "line": 84
+        },
+        {
+          "name": "shapeHasherPairs",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMapper.cpp",
+          "line": 109
+        },
+        {
+          "name": "shapeMapperTests",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMapper.cpp",
+          "line": 136
+        }
+      ]
+    },
+    {
+      "name": "TopoShapeMakeShapeTests",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "nullShapeThrows",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShape.cpp",
+          "line": 54
+        },
+        {
+          "name": "shapeVertex",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShape.cpp",
+          "line": 68
+        },
+        {
+          "name": "thruSections",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShape.cpp",
+          "line": 82
+        },
+        {
+          "name": "sewing",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/TopoShapeMakeShape.cpp",
+          "line": 119
+        }
+      ]
+    },
+    {
+      "name": "WireJoinerTest",
+      "tests": 12,
+      "testsuite": [
+        {
+          "name": "addShape",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 45
+        },
+        {
+          "name": "setOutline",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 129
+        },
+        {
+          "name": "setTightBound",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 241
+        },
+        {
+          "name": "setSplitEdges",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 311
+        },
+        {
+          "name": "setMergeEdges",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 385
+        },
+        {
+          "name": "setTolerance",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 464
+        },
+        {
+          "name": "getOpenWires",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 593
+        },
+        {
+          "name": "getResultWires",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 699
+        },
+        {
+          "name": "Build",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 777
+        },
+        {
+          "name": "Modified",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 812
+        },
+        {
+          "name": "Generated",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 856
+        },
+        {
+          "name": "IsDeleted",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/App\/WireJoiner.cpp",
+          "line": 892
+        }
+      ]
+    },
+    {
+      "name": "SoBrepEdgeSetMappingTest",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "sparseMapping",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/Gui\/SoBrepEdgeSet.cpp",
+          "line": 35
+        },
+        {
+          "name": "skippedEdgeHasNoRenderedLine",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/Gui\/SoBrepEdgeSet.cpp",
+          "line": 50
+        },
+        {
+          "name": "emptyMappingHasNoRenderedEdges",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/Gui\/SoBrepEdgeSet.cpp",
+          "line": 59
+        },
+        {
+          "name": "edgeBeyondMappingHasNoRenderedLine",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/Gui\/SoBrepEdgeSet.cpp",
+          "line": 66
+        },
+        {
+          "name": "lineBeyondMappingHasNoEdge",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/Gui\/SoBrepEdgeSet.cpp",
+          "line": 75
+        },
+        {
+          "name": "withoutMappingFallsBackToOneLinePerEdge",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/Gui\/SoBrepEdgeSet.cpp",
+          "line": 83
+        },
+        {
+          "name": "mappingRoundTrips",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/Gui\/SoBrepEdgeSet.cpp",
+          "line": 93
+        },
+        {
+          "name": "remappingReplacesThePreviousMapping",
+          "file": "\/workspace\/tests\/src\/Mod\/Part\/Gui\/SoBrepEdgeSet.cpp",
+          "line": 105
+        }
+      ]
+    }
+  ]
+}

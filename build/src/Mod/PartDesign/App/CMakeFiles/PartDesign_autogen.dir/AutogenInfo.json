@@ -1,0 +1,461 @@
+{
+	"BUILD_DIR" : "/workspace/build/src/Mod/PartDesign/App/PartDesign_autogen",
+	"CMAKE_BINARY_DIR" : "/workspace/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/workspace/build/src/Mod/PartDesign/App",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/workspace/src/Mod/PartDesign/App",
+	"CMAKE_EXECUTABLE" : "/usr/sbin/cmake",
+	"CMAKE_LIST_FILES" : [ "/workspace/src/Mod/PartDesign/App/CMakeLists.txt" ],
+	"CMAKE_SOURCE_DIR" : "/workspace",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "/workspace/build/src/Mod/PartDesign/App/PartDesign_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "PartDesign_autogen/timestamp",
+	"HEADERS" : 
+	[
+		[
+			"/workspace/src/Mod/PartDesign/App/Body.h",
+			"MU",
+			"EWIEGA46WW/moc_Body.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/DatumCS.h",
+			"MU",
+			"EWIEGA46WW/moc_DatumCS.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/DatumLine.h",
+			"MU",
+			"EWIEGA46WW/moc_DatumLine.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/DatumPlane.h",
+			"MU",
+			"EWIEGA46WW/moc_DatumPlane.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/DatumPoint.h",
+			"MU",
+			"EWIEGA46WW/moc_DatumPoint.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/Feature.h",
+			"MU",
+			"EWIEGA46WW/moc_Feature.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureAddSub.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureAddSub.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureBase.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureBase.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureBoolean.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureBoolean.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureChamfer.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureChamfer.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureCircularPattern.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureCircularPattern.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureDefeaturing.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureDefeaturing.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureDraft.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureDraft.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureDressUp.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureDressUp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureExtrude.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureExtrude.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureFillet.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureFillet.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureGroove.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureGroove.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureHelix.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureHelix.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureHole.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureHole.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureLinearPattern.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureLinearPattern.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureLoft.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureLoft.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureMirrored.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureMirrored.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureMultiTransform.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureMultiTransform.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeaturePad.h",
+			"MU",
+			"EWIEGA46WW/moc_FeaturePad.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeaturePathPattern.h",
+			"MU",
+			"EWIEGA46WW/moc_FeaturePathPattern.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeaturePipe.h",
+			"MU",
+			"EWIEGA46WW/moc_FeaturePipe.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeaturePocket.h",
+			"MU",
+			"EWIEGA46WW/moc_FeaturePocket.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeaturePointPattern.h",
+			"MU",
+			"EWIEGA46WW/moc_FeaturePointPattern.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeaturePolarPattern.h",
+			"MU",
+			"EWIEGA46WW/moc_FeaturePolarPattern.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeaturePrimitive.h",
+			"MU",
+			"EWIEGA46WW/moc_FeaturePrimitive.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureRefine.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureRefine.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureRevolution.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureRevolution.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureRevolved.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureRevolved.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureScaled.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureScaled.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureSketchBased.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureSketchBased.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureSolid.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureSolid.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureThickness.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureThickness.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureTransformed.h",
+			"MU",
+			"EWIEGA46WW/moc_FeatureTransformed.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/Measure.h",
+			"MU",
+			"EWIEGA46WW/moc_Measure.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/PartDesignParameter.h",
+			"MU",
+			"EWIEGA46WW/moc_PartDesignParameter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/PreCompiled.h",
+			"MU",
+			"EWIEGA46WW/moc_PreCompiled.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/ShapeBinder.h",
+			"MU",
+			"EWIEGA46WW/moc_ShapeBinder.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "/workspace/build/src/Mod/PartDesign/App/PartDesign_autogen/include",
+	"MOC_COMPILATION_FILE" : "/workspace/build/src/Mod/PartDesign/App/PartDesign_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"BOOST_ATOMIC_DYN_LINK",
+		"BOOST_ATOMIC_NO_LIB",
+		"BOOST_CHRONO_DYN_LINK",
+		"BOOST_CHRONO_NO_LIB",
+		"BOOST_CONTAINER_DYN_LINK",
+		"BOOST_CONTAINER_NO_LIB",
+		"BOOST_DATE_TIME_DYN_LINK",
+		"BOOST_DATE_TIME_NO_LIB",
+		"BOOST_PROGRAM_OPTIONS_DYN_LINK",
+		"BOOST_PROGRAM_OPTIONS_NO_LIB",
+		"BOOST_THREAD_DYN_LINK",
+		"BOOST_THREAD_NO_LIB",
+		"HAVE_CONFIG_H",
+		"HAVE_FREETYPE",
+		"HAVE_OPENGL_EXT",
+		"HAVE_RAPIDJSON",
+		"HAVE_TK",
+		"HAVE_VTK",
+		"HAVE_XLIB",
+		"MINIMUM_CPLUSPLUS_VERSION=202302L",
+		"OCC_CONVERT_SIGNALS",
+		"PYCXX_6_2_COMPATIBILITY",
+		"PartDesign_EXPORTS",
+		"QT_CONCURRENT_LIB",
+		"QT_CORE_LIB",
+		"QT_NO_DEBUG",
+		"QT_NO_KEYWORDS",
+		"QT_XML_LIB",
+		"VTK_OPENGL2_BACKEND",
+		"_OCC64"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"/workspace/build",
+		"/workspace/build/src",
+		"/workspace/src",
+		"/workspace/build/src/Mod/PartDesign/App",
+		"/workspace/src/3rdParty/FastSignals/libfastsignals/include",
+		"/workspace/src/3rdParty/json/single_include",
+		"/usr/include/opencascade",
+		"/usr/include/freetype2",
+		"/usr/include/qt6/QtCore",
+		"/usr/include/qt6",
+		"/usr/include/qt6/QtXml",
+		"/workspace/src/3rdParty/PyCXX",
+		"/usr/include/python3.14",
+		"/workspace/src/3rdParty",
+		"/usr/lib/qt6/mkspecs/linux-g++",
+		"/usr/include/qt6/QtConcurrent",
+		"/usr/include/harfbuzz",
+		"/usr/include",
+		"/usr/include/c++/16",
+		"/usr/include/c++/16/x86_64-pc-linux-gnu",
+		"/usr/include/c++/16/backward",
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/16/include",
+		"/usr/local/include"
+	],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"/usr/sbin/c++",
+		"-std=c++23",
+		"-w",
+		"-dM",
+		"-E",
+		"/usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "/workspace/build/src/Mod/PartDesign/App/PartDesign_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : [],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 6,
+	"PARSE_CACHE_FILE" : "/workspace/build/src/Mod/PartDesign/App/CMakeFiles/PartDesign_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/usr/lib/qt6/moc",
+	"QT_UIC_EXECUTABLE" : "/usr/lib/qt6/uic",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 12,
+	"SETTINGS_FILE" : "/workspace/build/src/Mod/PartDesign/App/CMakeFiles/PartDesign_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[ "/workspace/src/Mod/PartDesign/App/AppPartDesign.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/AppPartDesignPy.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/Body.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/BodyPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/DatumCS.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/DatumLine.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/DatumPlane.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/DatumPoint.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/Feature.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureAddSub.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureBase.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureBoolean.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureChamfer.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureCircularPattern.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureDefeaturing.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureDraft.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureDressUp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureExtrude.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureFillet.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureGroove.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureHelix.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureHole.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureLinearPattern.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureLoft.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureMirrored.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureMultiTransform.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/PartDesign/App/FeaturePad.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeaturePathPattern.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/PartDesign/App/FeaturePipe.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeaturePocket.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeaturePointPattern.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeaturePolarPattern.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/PartDesign/App/FeaturePrimitive.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeaturePyImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureRefine.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureRevolution.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureRevolved.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureScaled.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureSketchBased.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureSolid.cpp", "MU", null ],
+		[ "/workspace/src/Mod/PartDesign/App/FeatureThickness.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/PartDesign/App/FeatureTransformed.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/PartDesign/App/Measure.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/PartDesign/App/PartDesignParameter.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/PartDesign/App/ShapeBinder.cpp", "MU", null ]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : [],
+	"UIC_SKIP" : [],
+	"UIC_UI_FILES" : [],
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

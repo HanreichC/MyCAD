@@ -1,0 +1,3065 @@
+{
+  "tests": 565,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "AsyncRecomputeTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "CloseDocumentWaitsForInFlightAsyncRecompute",
+          "file": "\/workspace\/tests\/src\/App\/AsyncRecompute.cpp",
+          "line": 61
+        },
+        {
+          "name": "WorkerSafetyIsCheckedFromRequest",
+          "file": "\/workspace\/tests\/src\/App\/AsyncRecompute.cpp",
+          "line": 94
+        }
+      ]
+    },
+    {
+      "name": "ApplicationTest",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "fCustomSyntaxLookup",
+          "file": "\/workspace\/tests\/src\/App\/Application.cpp",
+          "line": 24
+        },
+        {
+          "name": "fCustomSyntaxMac",
+          "file": "\/workspace\/tests\/src\/App\/Application.cpp",
+          "line": 30
+        },
+        {
+          "name": "fCustomSyntaxWidgetCount",
+          "file": "\/workspace\/tests\/src\/App\/Application.cpp",
+          "line": 36
+        },
+        {
+          "name": "fCustomSyntaxNotFound",
+          "file": "\/workspace\/tests\/src\/App\/Application.cpp",
+          "line": 42
+        },
+        {
+          "name": "fCustomSyntaxAmpersand",
+          "file": "\/workspace\/tests\/src\/App\/Application.cpp",
+          "line": 48
+        },
+        {
+          "name": "fCustomSyntaxEmptyIn",
+          "file": "\/workspace\/tests\/src\/App\/Application.cpp",
+          "line": 54
+        }
+      ]
+    },
+    {
+      "name": "ApplicationDirectoriesTest",
+      "tests": 58,
+      "testsuite": [
+        {
+          "name": "usingCurrentVersionConfigTrueWhenDirMatchesVersion",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 125
+        },
+        {
+          "name": "usingCurrentVersionConfigFalseWhenDirDoesntMatchVersion",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 140
+        },
+        {
+          "name": "isVersionedPathMatchesCurrentMajorAndMinor",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 160
+        },
+        {
+          "name": "isVersionedPathMatchesLowerMinorSameMajor",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 168
+        },
+        {
+          "name": "isVersionedPathMatchesLowerMajorAnyMinor",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 176
+        },
+        {
+          "name": "isVersionedPathMatchesZeroMinorSameMajor",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 184
+        },
+        {
+          "name": "isVersionedPathDoesNotMatchHigherMinorSameMajor",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 192
+        },
+        {
+          "name": "isVersionedPathDoesNotMatchHigherMajorOrRandomName",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 200
+        },
+        {
+          "name": "mostRecentAvailReturnsExactCurrentVersionIfDirectoryExists",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 226
+        },
+        {
+          "name": "mostRecentAvailPrefersSameMajorAndPicksHighestLowerMinor",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 239
+        },
+        {
+          "name": "mostRecentAvailForLowerMajorPicksHighestAvailableMinor",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 254
+        },
+        {
+          "name": "mostRecentAvailSkipsFilesAndFallsBackToNextDirectory",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 268
+        },
+        {
+          "name": "mostRecentAvailIgnoresHigherMinorThanCurrentInSameMajor",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 282
+        },
+        {
+          "name": "mostRecentAvailReturnsEmptyStringWhenNoVersionsPresent",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 295
+        },
+        {
+          "name": "mostRecentConfigReturnsCurrentVersionDirectoryIfPresent",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 303
+        },
+        {
+          "name": "mostRecentConfigFallsBackToMostRecentInSameMajorWhenCurrentMissing",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 313
+        },
+        {
+          "name": "mostRecentConfigSkipsFileAtCurrentVersionAndFallsBack",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 327
+        },
+        {
+          "name": "mostRecentConfigFallsBackToHighestVersionInLowerMajors",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 339
+        },
+        {
+          "name": "mostRecentConfigReturnsStartingPathWhenNoVersionedConfigExists",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 356
+        },
+        {
+          "name": "usingCurrentVersionExactVersionDir",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 364
+        },
+        {
+          "name": "usingCurrentVersionVersionDirWithTrailingSlash",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 373
+        },
+        {
+          "name": "usingCurrentVersionFileInsideVersionDirIsFalse",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 383
+        },
+        {
+          "name": "usingCurrentVersionLowerVersionDirIsFalse",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 393
+        },
+        {
+          "name": "usingCurrentVersionHigherVersionDirIsFalse",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 402
+        },
+        {
+          "name": "usingCurrentVersionNonVersionDirIsFalse",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 411
+        },
+        {
+          "name": "migrateConfigCreatesDestinationAndCopiesFiles",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 433
+        },
+        {
+          "name": "migrateConfigSkipsSelfWhenNewIsSubdirectoryOfOld",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 459
+        },
+        {
+          "name": "migrateConfigEmptyOldPathJustCreatesDestination",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 481
+        },
+        {
+          "name": "migrateConfigRecursivelyCopiesDirectoriesAndFiles",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 498
+        },
+        {
+          "name": "migrateConfigNewPathSubdirRecursivelyCopiesAndSkipsSelf",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 526
+        },
+        {
+          "name": "migrateAllPathsVersionedInputChoosesParentPlusCurrent",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 548
+        },
+        {
+          "name": "migrateAllPathsNonVersionedInputAppendsCurrent",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 566
+        },
+        {
+          "name": "migrateAllPathsIgnoresIfDestinationAlreadyExists_NonVersioned",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 583
+        },
+        {
+          "name": "migrateConfigSkipsBrokenSymlink",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 598
+        },
+        {
+          "name": "migrateConfigCopiesValidSymlink",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 619
+        },
+        {
+          "name": "migrateAllPathsReturnsSkippedPaths",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 638
+        },
+        {
+          "name": "migrateAllPathsProcessesMultipleInputs",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 660
+        },
+        {
+          "name": "appendVecAlreadyVersionedBails",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 683
+        },
+        {
+          "name": "appendVecBaseExistsAppendsCurrentWhenPresent",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 700
+        },
+        {
+          "name": "appendVecPicksHighestLowerMinorInSameMajor",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 716
+        },
+        {
+          "name": "appendVecFallsBackToLowerMajor",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 734
+        },
+        {
+          "name": "appendVecNoVersionedChildrenLeavesVectorUnchanged",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 750
+        },
+        {
+          "name": "appendVecBaseMissingAppendsCurrentSuffix",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 764
+        },
+        {
+          "name": "extractVersionSucceedsWithPlainIntegers",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 778
+        },
+        {
+          "name": "extractVersionSucceedsWithWhitespace",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 788
+        },
+        {
+          "name": "extractVersionMissingMajorThrowsRuntimeError",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 801
+        },
+        {
+          "name": "extractVersionMissingMinorThrowsRuntimeError",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 809
+        },
+        {
+          "name": "extractVersionNonNumericThrowsRuntimeError",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 817
+        },
+        {
+          "name": "extractVersionOverflowThrowsRuntimeError",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 825
+        },
+        {
+          "name": "extractVersionNegativeNumbersPassThrough",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 836
+        },
+        {
+          "name": "sanitizeRemovesNullCharacterAtEnd",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 846
+        },
+        {
+          "name": "sanitizeReturnsUnchangedIfNoNullCharacter",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 855
+        },
+        {
+          "name": "appendCreateBaseExistsAppendsCurrentWhenAlreadyPresent",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 867
+        },
+        {
+          "name": "appendCreateBaseExistsUsesCurrentEvenWhenOlderVersionPresent",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 884
+        },
+        {
+          "name": "appendCreateBaseExistsNoVersionsAppendsAndCreatesDir",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 900
+        },
+        {
+          "name": "appendDoNotAppendBaseExistsNoVersionsLeavesUnchanged",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 917
+        },
+        {
+          "name": "appendCreateBaseMissingAppendsCurrentSuffix",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 933
+        },
+        {
+          "name": "appendCreateAlreadyVersionedBails",
+          "file": "\/workspace\/tests\/src\/App\/ApplicationDirectories.cpp",
+          "line": 947
+        }
+      ]
+    },
+    {
+      "name": "BackupPolicyTest",
+      "tests": 26,
+      "testsuite": [
+        {
+          "name": "StandardSourceDoesNotExist",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 122
+        },
+        {
+          "name": "StandardWithZeroFilesDeletesExisting",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 131
+        },
+        {
+          "name": "StandardWithOneFileNoPreviousBackups",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 146
+        },
+        {
+          "name": "StandardWithOneFileOnePreviousBackup",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 160
+        },
+        {
+          "name": "StandardWithTwoFilesOnePreviousBackup",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 176
+        },
+        {
+          "name": "StandardWithTwoFilesOnePreviousBackupUnexpectedSuffix",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 192
+        },
+        {
+          "name": "StandardWithTwoFilesOnePreviousBackupOutOfSequenceNumber",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 210
+        },
+        {
+          "name": "StandardWithFCBakSet",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 230
+        },
+        {
+          "name": "TimestampSourceDoesNotExist",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 244
+        },
+        {
+          "name": "TimestampNoSourceGiven",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 253
+        },
+        {
+          "name": "TimestampNoTargetGiven",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 263
+        },
+        {
+          "name": "TimestampWithZeroFilesDeletesExisting",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 273
+        },
+        {
+          "name": "TimestampWithOneFileAndNoneExistingNotFCBakCreatesNumberedFile",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 288
+        },
+        {
+          "name": "TimestampSourceHasNoExtension",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 304
+        },
+        {
+          "name": "TimestampTargetHasNoExtension",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 319
+        },
+        {
+          "name": "TimestampWithOneFileAndNoneExistingFCBakCreatesDatedFile",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 334
+        },
+        {
+          "name": "TimestampReplacesDotsWithDashes",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 349
+        },
+        {
+          "name": "DISABLED_TimestampWithInvalidFormatStringThrows",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 364
+        },
+        {
+          "name": "DISABLED_TimestampWithAbsurdlyLongFormatStringThrows",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 378
+        },
+        {
+          "name": "TimestampDetectsOldBackupFormat",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 398
+        },
+        {
+          "name": "TimestampDetectsOldBackupFormatIgnoresOther",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 417
+        },
+        {
+          "name": "TimestampDetectsAndRetainsOldBackupWhenAllowed",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 438
+        },
+        {
+          "name": "TimestampFormatStringEndsWithSpace",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 458
+        },
+        {
+          "name": "TimestampFormatStringEndsWithDash",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 476
+        },
+        {
+          "name": "TimestampFormatFileAlreadyExists",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 494
+        },
+        {
+          "name": "TimestampFormatFileAlreadyExistsMultipleTimes",
+          "file": "\/workspace\/tests\/src\/App\/BackupPolicy.cpp",
+          "line": 514
+        }
+      ]
+    },
+    {
+      "name": "Branding",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "one",
+          "file": "\/workspace\/tests\/src\/App\/Branding.cpp",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "name": "ComplexGeoDataTest",
+      "tests": 31,
+      "testsuite": [
+        {
+          "name": "getIndexedNameNoName",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 98
+        },
+        {
+          "name": "getIndexedNameNoElementMap",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 107
+        },
+        {
+          "name": "getMappedNameNoElement",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 116
+        },
+        {
+          "name": "getMappedNameDisallowUnmappedNoMap",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 125
+        },
+        {
+          "name": "getMappedNameDisallowUnmappedWithMap",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 134
+        },
+        {
+          "name": "getMappedNameDisallowUnmappedMissingFromMap",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 151
+        },
+        {
+          "name": "getMappedNameAllowUnmapped",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 164
+        },
+        {
+          "name": "getElementNameGivenIndexedName",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 173
+        },
+        {
+          "name": "getElementNameGivenMappedName",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 186
+        },
+        {
+          "name": "getElementMappedNamesNoMapNoUnmapped",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 199
+        },
+        {
+          "name": "getElementMappedNamesWithMapNoUnmapped",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 212
+        },
+        {
+          "name": "getElementMappedNamesNoMapWithUnmapped",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 229
+        },
+        {
+          "name": "getElementMappedNamesWithMapWithUnmapped",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 242
+        },
+        {
+          "name": "elementTypeValidIndexName",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 258
+        },
+        {
+          "name": "elementTypeInvalidIndexedName",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 270
+        },
+        {
+          "name": "elementTypeCharEmptyName",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 282
+        },
+        {
+          "name": "elementTypeCharIndexedName",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 291
+        },
+        {
+          "name": "elementTypeCharMappedNameNoPrefix",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 300
+        },
+        {
+          "name": "elementTypeCharMappedNameWithPrefix",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 315
+        },
+        {
+          "name": "resetElementMapNoArgument",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 332
+        },
+        {
+          "name": "resetElementMapWithArgument",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 341
+        },
+        {
+          "name": "setAndGetElementMap",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 356
+        },
+        {
+          "name": "getElementMapSize",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 379
+        },
+        {
+          "name": "flushElementMap",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 395
+        },
+        {
+          "name": "saveWithNoElementMap",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 400
+        },
+        {
+          "name": "saveWithElementMap",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 413
+        },
+        {
+          "name": "saveWithPersistenceFilename",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 429
+        },
+        {
+          "name": "saveDocFileWithNoElementMap",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 444
+        },
+        {
+          "name": "saveDocFileWithElementMap",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 457
+        },
+        {
+          "name": "restoreStream",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 470
+        },
+        {
+          "name": "traceElement",
+          "file": "\/workspace\/tests\/src\/App\/ComplexGeoData.cpp",
+          "line": 473
+        }
+      ]
+    },
+    {
+      "name": "DocumentTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "addStringHasherIndicatesUnwrittenWhenNew",
+          "file": "\/workspace\/tests\/src\/App\/Document.cpp",
+          "line": 61
+        },
+        {
+          "name": "addStringHasherIndicatesAlreadyWritten",
+          "file": "\/workspace\/tests\/src\/App\/Document.cpp",
+          "line": 74
+        },
+        {
+          "name": "getStringHasherGivesExpectedHasher",
+          "file": "\/workspace\/tests\/src\/App\/Document.cpp",
+          "line": 87
+        },
+        {
+          "name": "importObjectsRestoresSourceStringHasher",
+          "file": "\/workspace\/tests\/src\/App\/Document.cpp",
+          "line": 101
+        }
+      ]
+    },
+    {
+      "name": "DocumentObjectTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "getSubObjectList",
+          "file": "\/workspace\/tests\/src\/App\/DocumentObject.cpp",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "name": "DISABLED_DocumentObserverTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "hasSubObject",
+          "file": "\/workspace\/tests\/src\/App\/DocumentObserver.cpp",
+          "line": 43
+        },
+        {
+          "name": "hasSubElement",
+          "file": "\/workspace\/tests\/src\/App\/DocumentObserver.cpp",
+          "line": 86
+        },
+        {
+          "name": "normalize",
+          "file": "\/workspace\/tests\/src\/App\/DocumentObserver.cpp",
+          "line": 130
+        },
+        {
+          "name": "normalized",
+          "file": "\/workspace\/tests\/src\/App\/DocumentObserver.cpp",
+          "line": 313
+        }
+      ]
+    },
+    {
+      "name": "Expression",
+      "tests": 32,
+      "testsuite": [
+        {
+          "name": "tokenize",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 49
+        },
+        {
+          "name": "tokenizeCompletion",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 60
+        },
+        {
+          "name": "tokenizeQuantity",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 69
+        },
+        {
+          "name": "tokenizeFunc",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 81
+        },
+        {
+          "name": "tokenizeOne",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 95
+        },
+        {
+          "name": "tokenizeNum",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 104
+        },
+        {
+          "name": "tokenizeID",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 113
+        },
+        {
+          "name": "tokenizeUnit",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 122
+        },
+        {
+          "name": "tokenizeUSUnit",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 131
+        },
+        {
+          "name": "tokenizeInt",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 140
+        },
+        {
+          "name": "tokenizePi",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 149
+        },
+        {
+          "name": "tokenizeE",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 158
+        },
+        {
+          "name": "tokenizeConstant",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 167
+        },
+        {
+          "name": "tokenizeEqual",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 180
+        },
+        {
+          "name": "tokenizeNotEqual",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 189
+        },
+        {
+          "name": "tokenizeLessThan",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 198
+        },
+        {
+          "name": "tokenizeLessThanEqual",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 207
+        },
+        {
+          "name": "tokenizeGreaterThan",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 216
+        },
+        {
+          "name": "tokenizeGreaterThanEqual",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 225
+        },
+        {
+          "name": "tokenizeMinus",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 234
+        },
+        {
+          "name": "tokenizeCell1",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 243
+        },
+        {
+          "name": "tokenizeCell2",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 252
+        },
+        {
+          "name": "tokenizeCell3",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 261
+        },
+        {
+          "name": "tokenizeString",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 270
+        },
+        {
+          "name": "tokenizeExponent",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 279
+        },
+        {
+          "name": "tokenizeNumAndUnit",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 284
+        },
+        {
+          "name": "tokenizePos",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 289
+        },
+        {
+          "name": "tokenizeNeg",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 294
+        },
+        {
+          "name": "tokenizePi_rad",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 299
+        },
+        {
+          "name": "toString",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 310
+        },
+        {
+          "name": "test_pi_rad",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 316
+        },
+        {
+          "name": "test_e_rad",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 325
+        }
+      ]
+    },
+    {
+      "name": "Evaluate",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "test_evaluate_simple",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 364
+        },
+        {
+          "name": "test_simplify_simple",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 372
+        },
+        {
+          "name": "test_evaluate_function",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 380
+        },
+        {
+          "name": "test_simplify_function",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 388
+        },
+        {
+          "name": "test_evaluate_refer_to_var",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 396
+        },
+        {
+          "name": "test_simplify_refer_to_var",
+          "file": "\/workspace\/tests\/src\/App\/Expression.cpp",
+          "line": 406
+        }
+      ]
+    },
+    {
+      "name": "ExpressionParserTest",
+      "tests": 20,
+      "testsuite": [
+        {
+          "name": "functionPARSEQUANT",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 159
+        },
+        {
+          "name": "isTokenAConstant",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 204
+        },
+        {
+          "name": "simpleExpressionsParse",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 217
+        },
+        {
+          "name": "expressionUserInputKeepsGroupingSeparateFromDecimals",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 245
+        },
+        {
+          "name": "groupedExpressionUsesLocaleGroupingPattern",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 253
+        },
+        {
+          "name": "localizedInputPreservesDigitsInsideIdentifiers",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 263
+        },
+        {
+          "name": "functionArgumentsTakePrecedenceOverGrouping",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 276
+        },
+        {
+          "name": "commaDecimalLocalesUseSemicolonsForArguments",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 285
+        },
+        {
+          "name": "groupedParenthesizedExpressionsUseTheLocalePattern",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 315
+        },
+        {
+          "name": "spaceGroupingAndSemicolonArgumentsRemainDistinct",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 324
+        },
+        {
+          "name": "commaFunctionArgumentsRemainArgumentsWithDecimalText",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 332
+        },
+        {
+          "name": "userInputPreservesOpaqueStringLiterals",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 341
+        },
+        {
+          "name": "badExpressionsDoNotParse",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 353
+        },
+        {
+          "name": "expressionsWithMultiplyDivideParse",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 368
+        },
+        {
+          "name": "expressionsWithUnitsMultipliedDontParse_LikelyBug",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 382
+        },
+        {
+          "name": "dimensionlessExpressionsParseAsLongOrDouble",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 390
+        },
+        {
+          "name": "expressionsWithFunctionsParse",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 398
+        },
+        {
+          "name": "DISABLED_expressionsParseAsPyObjectWrapper",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 414
+        },
+        {
+          "name": "expressionsThatLookValidButDoNotParse",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 427
+        },
+        {
+          "name": "canParseProperties",
+          "file": "\/workspace\/tests\/src\/App\/ExpressionParser.cpp",
+          "line": 438
+        }
+      ]
+    },
+    {
+      "name": "QuantityInput",
+      "tests": 16,
+      "testsuite": [
+        {
+          "name": "QuantityInputUnitUsesDisplayedScaleAndSafeFallbacks",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 60
+        },
+        {
+          "name": "AppliesDisplayedScaleToQuantitiesAndExpressions",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 84
+        },
+        {
+          "name": "EditingAndCommitDistinguishIncompleteNumbers",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 159
+        },
+        {
+          "name": "TrailingGroupingSeparatorFollowsTheInputPhase",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 276
+        },
+        {
+          "name": "ReportsGroupingAndUnitDiagnostics",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 308
+        },
+        {
+          "name": "AcceptsGroupedQuantityAndNormalizesIt",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 355
+        },
+        {
+          "name": "ReportsExpressionEvaluationAndRangeDiagnostics",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 374
+        },
+        {
+          "name": "GrammarSelectionIsExplicit",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 423
+        },
+        {
+          "name": "PositiveSignsAndCompactAdditionRemainExpressionSyntax",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 468
+        },
+        {
+          "name": "DefaultUnitAppliesToBareAdditiveTerms",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 583
+        },
+        {
+          "name": "RejectsMalformedGroupingAfterExpressionOperand",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 691
+        },
+        {
+          "name": "DefaultUnitPreservesExpressionDependencies",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 708
+        },
+        {
+          "name": "DefaultUnitDoesNotRewriteNestedMultiplicativeSubexpressions",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 749
+        },
+        {
+          "name": "DefaultUnitExpressionsRoundTripThroughSerialization",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 785
+        },
+        {
+          "name": "EditingAndCommitExposeTheSameInvalidGrouping",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 825
+        },
+        {
+          "name": "SharedLocalizedInputCorpus",
+          "file": "\/workspace\/tests\/src\/App\/QuantityInput.cpp",
+          "line": 845
+        }
+      ]
+    },
+    {
+      "name": "ElementMapTest",
+      "tests": 16,
+      "testsuite": [
+        {
+          "name": "defaultConstruction",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 72
+        },
+        {
+          "name": "setElementNameDefaults",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 81
+        },
+        {
+          "name": "setElementNameNoOverwrite",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 97
+        },
+        {
+          "name": "setElementNameWithOverwrite",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 120
+        },
+        {
+          "name": "setElementNameWithHashing",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 142
+        },
+        {
+          "name": "eraseMappedName",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 161
+        },
+        {
+          "name": "eraseIndexedName",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 198
+        },
+        {
+          "name": "findMappedName",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 241
+        },
+        {
+          "name": "findIndexedName",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 268
+        },
+        {
+          "name": "findAll",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 296
+        },
+        {
+          "name": "mimicOnePart",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 328
+        },
+        {
+          "name": "mimicSimpleUnion",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 359
+        },
+        {
+          "name": "mimicOperationAgainstSelf",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 433
+        },
+        {
+          "name": "hasChildElementMapTest",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 486
+        },
+        {
+          "name": "hashChildMapsTest",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 506
+        },
+        {
+          "name": "addAndGetChildElementsTest",
+          "file": "\/workspace\/tests\/src\/App\/ElementMap.cpp",
+          "line": 533
+        }
+      ]
+    },
+    {
+      "name": "ElementNamingUtilsTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "findElementName",
+          "file": "\/workspace\/tests\/src\/App\/ElementNamingUtils.cpp",
+          "line": 40
+        },
+        {
+          "name": "indexOfElement",
+          "file": "\/workspace\/tests\/src\/App\/ElementNamingUtils.cpp",
+          "line": 63
+        }
+      ]
+    },
+    {
+      "name": "IndexedNameTest",
+      "tests": 30,
+      "testsuite": [
+        {
+          "name": "defaultConstruction",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 46
+        },
+        {
+          "name": "nameOnlyConstruction",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 56
+        },
+        {
+          "name": "nameAndIndexConstruction",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 66
+        },
+        {
+          "name": "nameAndIndexConstructionWithOverride",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 79
+        },
+        {
+          "name": "constructionInvalidCharInName",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 93
+        },
+        {
+          "name": "constructionNumberInName",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 116
+        },
+        {
+          "name": "nameAndTypeListConstructionWithoutAllowOthers",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 130
+        },
+        {
+          "name": "nameAndTypeListConstructionWithAllowOthers",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 153
+        },
+        {
+          "name": "nameAndTypeListConstructionReusedMemoryCheck",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 164
+        },
+        {
+          "name": "byteArrayConstruction",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 174
+        },
+        {
+          "name": "copyConstruction",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 187
+        },
+        {
+          "name": "streamInsertionOperator",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 199
+        },
+        {
+          "name": "compoundAssignmentOperator",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 212
+        },
+        {
+          "name": "preincrementOperator",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 228
+        },
+        {
+          "name": "predecrementOperator",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 240
+        },
+        {
+          "name": "comparisonOperators",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 252
+        },
+        {
+          "name": "subscriptOperator",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 315
+        },
+        {
+          "name": "getType",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 327
+        },
+        {
+          "name": "setIndex",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 336
+        },
+        {
+          "name": "isNullTrue",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 349
+        },
+        {
+          "name": "isNullFalse",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 360
+        },
+        {
+          "name": "booleanConversionFalse",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 371
+        },
+        {
+          "name": "booleanConversionTrue",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 388
+        },
+        {
+          "name": "fromConst",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 399
+        },
+        {
+          "name": "appendToStringBufferEmptyBuffer",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 412
+        },
+        {
+          "name": "appendToStringBufferNonEmptyBuffer",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 425
+        },
+        {
+          "name": "appendToStringBufferZeroIndex",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 438
+        },
+        {
+          "name": "toString",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 451
+        },
+        {
+          "name": "toStringNoIndex",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 463
+        },
+        {
+          "name": "assignmentOperator",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 475
+        }
+      ]
+    },
+    {
+      "name": "ByteArrayTest",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "QByteArrayConstruction",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 500
+        },
+        {
+          "name": "CopyConstruction",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 512
+        },
+        {
+          "name": "MoveConstruction",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 526
+        },
+        {
+          "name": "ensureUnshared",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 541
+        },
+        {
+          "name": "equalityOperator",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 557
+        },
+        {
+          "name": "assignmentOperator",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 572
+        },
+        {
+          "name": "moveAssignmentOperator",
+          "file": "\/workspace\/tests\/src\/App\/IndexedName.cpp",
+          "line": 588
+        }
+      ]
+    },
+    {
+      "name": "License",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "isLicenseEmpty",
+          "file": "\/workspace\/tests\/src\/App\/License.cpp",
+          "line": 7
+        },
+        {
+          "name": "isLicenseNull",
+          "file": "\/workspace\/tests\/src\/App\/License.cpp",
+          "line": 12
+        },
+        {
+          "name": "isLicenseYesStr",
+          "file": "\/workspace\/tests\/src\/App\/License.cpp",
+          "line": 17
+        },
+        {
+          "name": "UnknownIdentifier",
+          "file": "\/workspace\/tests\/src\/App\/License.cpp",
+          "line": 22
+        },
+        {
+          "name": "direct",
+          "file": "\/workspace\/tests\/src\/App\/License.cpp",
+          "line": 28
+        },
+        {
+          "name": "findLicenseByIdent",
+          "file": "\/workspace\/tests\/src\/App\/License.cpp",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "name": "LinkTest",
+      "tests": 34,
+      "testsuite": [
+        {
+          "name": "getArrayIndexSimpleInteger",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 43
+        },
+        {
+          "name": "getArrayIndexZero",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 48
+        },
+        {
+          "name": "getArrayIndexWithDotSuffix",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 53
+        },
+        {
+          "name": "getArrayIndexMultiDigitWithDot",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 58
+        },
+        {
+          "name": "getArrayIndexTrailingDotOnly",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 63
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForNull",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 68
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForEmptyString",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 73
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForLeadingDot",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 78
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForAlpha",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 84
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForMixedAlphaDigit",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 89
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForAlphaThenDigit",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 94
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForMappedElement",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 99
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForMappedElementWithDigits",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 105
+        },
+        {
+          "name": "getArrayIndexPsubnamePointsPastDot",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 110
+        },
+        {
+          "name": "getArrayIndexPsubnameAtEndWhenNoDot",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 119
+        },
+        {
+          "name": "getArrayIndexPsubnameEmptyAfterTrailingDot",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 128
+        },
+        {
+          "name": "getArrayIndexPsubnameWithNestedDots",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 137
+        },
+        {
+          "name": "getArrayIndexPsubnameUntouchedOnFailure",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 146
+        },
+        {
+          "name": "getArrayIndexPsubnameUntouchedOnNull",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 155
+        },
+        {
+          "name": "getArrayIndexLargeNumber",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 163
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForNegative",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 168
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForSpace",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 174
+        },
+        {
+          "name": "getArrayIndexReturnsMinusOneForDigitWithSpace",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 179
+        },
+        {
+          "name": "getScaleVectorDefaultIsUnity",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 196
+        },
+        {
+          "name": "getScaleVectorReflectsUniformScale",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 205
+        },
+        {
+          "name": "getScaleVectorReflectsNonUniformScale",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 218
+        },
+        {
+          "name": "getTransformNoTransformDefaultIsIdentity",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 228
+        },
+        {
+          "name": "getTransformWithTransformDefaultIsIdentity",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 235
+        },
+        {
+          "name": "getTransformNoTransformAppliesScaleOnly",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 242
+        },
+        {
+          "name": "getTransformNoTransformIgnoresPlacement",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 259
+        },
+        {
+          "name": "getTransformWithTransformIncludesLinkPlacement",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 272
+        },
+        {
+          "name": "getTransformWithTransformAndScale",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 286
+        },
+        {
+          "name": "getTransformUsesLinkPlacementWhenPropertyExists",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 305
+        },
+        {
+          "name": "linkPlacementAndPlacementStayInSync",
+          "file": "\/workspace\/tests\/src\/App\/Link.cpp",
+          "line": 321
+        }
+      ]
+    },
+    {
+      "name": "MappedElementTest",
+      "tests": 18,
+      "testsuite": [
+        {
+          "name": "constructFromNameAndIndex",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 29
+        },
+        {
+          "name": "moveConstructor",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 43
+        },
+        {
+          "name": "assignmentOperator",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 58
+        },
+        {
+          "name": "moveAssignmentOperator",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 72
+        },
+        {
+          "name": "equalityOperatorsWhenNotEqual",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 87
+        },
+        {
+          "name": "equalityOperatorsWhenEqual",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 102
+        },
+        {
+          "name": "lessThanOperator",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 117
+        },
+        {
+          "name": "comparatorBothAreZeroSize",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 136
+        },
+        {
+          "name": "comparatorOneIsZeroSize",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 147
+        },
+        {
+          "name": "comparatorBothStartWithHexDigitsThatDiffer",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 158
+        },
+        {
+          "name": "comparatorBothStartWithTheSameHexDigits",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 169
+        },
+        {
+          "name": "comparatorHexWithoutTerminator",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 180
+        },
+        {
+          "name": "comparatorHexWithoutTerminatorSameLength",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 191
+        },
+        {
+          "name": "comparatorNoHexDigitsLexicalCompare",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 202
+        },
+        {
+          "name": "comparatorNoHexDigitsSameStringNumericCompare",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 213
+        },
+        {
+          "name": "comparatorIntegerWithoutTerminatorIsBroken",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 224
+        },
+        {
+          "name": "comparatorThreeComplexHexNamesInMap",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 235
+        },
+        {
+          "name": "comparatorLargerWorkedExampleWithMap",
+          "file": "\/workspace\/tests\/src\/App\/MappedElement.cpp",
+          "line": 271
+        }
+      ]
+    },
+    {
+      "name": "MappedName",
+      "tests": 51,
+      "testsuite": [
+        {
+          "name": "defaultConstruction",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 12
+        },
+        {
+          "name": "namedConstruction",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 25
+        },
+        {
+          "name": "namedConstructionWithMaxSize",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 38
+        },
+        {
+          "name": "namedConstructionDiscardPrefix",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 51
+        },
+        {
+          "name": "stringNamedConstruction",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 67
+        },
+        {
+          "name": "stringNamedConstructionDiscardPrefix",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 80
+        },
+        {
+          "name": "constructFromIndexedNameNoIndex",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 96
+        },
+        {
+          "name": "constructFromIndexedNameWithIndex",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 109
+        },
+        {
+          "name": "copyConstructor",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 123
+        },
+        {
+          "name": "copyConstructorWithPostfix",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 139
+        },
+        {
+          "name": "copyConstructorStartpos",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 165
+        },
+        {
+          "name": "copyConstructorStartposAndSize",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 181
+        },
+        {
+          "name": "moveConstructor",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 197
+        },
+        {
+          "name": "fromRawData",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 213
+        },
+        {
+          "name": "fromRawDataQByteArray",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 226
+        },
+        {
+          "name": "fromRawDataCopy",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 242
+        },
+        {
+          "name": "fromRawDataCopyStartposAndSize",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 261
+        },
+        {
+          "name": "assignmentOperator",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 280
+        },
+        {
+          "name": "assignmentOperatorString",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 296
+        },
+        {
+          "name": "assignmentOperatorConstCharPtr",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 312
+        },
+        {
+          "name": "assignmentOperatorMove",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 328
+        },
+        {
+          "name": "streamInsertionOperator",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 344
+        },
+        {
+          "name": "comparisonOperators",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 357
+        },
+        {
+          "name": "additionOperators",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 377
+        },
+        {
+          "name": "append",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 414
+        },
+        {
+          "name": "appendMappedNameObj",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 450
+        },
+        {
+          "name": "toString",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 477
+        },
+        {
+          "name": "toConstString",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 489
+        },
+        {
+          "name": "toRawBytes",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 510
+        },
+        {
+          "name": "toIndexedNameASCIIOnly",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 522
+        },
+        {
+          "name": "toIndexedNameInvalid",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 534
+        },
+        {
+          "name": "appendToBuffer",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 546
+        },
+        {
+          "name": "appendToBufferWithPrefix",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 565
+        },
+        {
+          "name": "toPrefixedString",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 593
+        },
+        {
+          "name": "toBytes",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 621
+        },
+        {
+          "name": "compare",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 630
+        },
+        {
+          "name": "subscriptOperator",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 656
+        },
+        {
+          "name": "copy",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 674
+        },
+        {
+          "name": "compact",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 686
+        },
+        {
+          "name": "boolOperator",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 702
+        },
+        {
+          "name": "clear",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 717
+        },
+        {
+          "name": "find",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 729
+        },
+        {
+          "name": "rfind",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 763
+        },
+        {
+          "name": "endswith",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 797
+        },
+        {
+          "name": "startsWith",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 817
+        },
+        {
+          "name": "findTagInElementNameHexPositiveIndexNonrecursive",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 840
+        },
+        {
+          "name": "findTagInElementNameDecPositiveIndexNonrecursive",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 866
+        },
+        {
+          "name": "findTagInElementNameHexNegativeIndexNonrecursive",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 888
+        },
+        {
+          "name": "findTagInElementNameHexExpectedNegativeIndexNonrecursive",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 910
+        },
+        {
+          "name": "findTagInElementNameRecursive",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 932
+        },
+        {
+          "name": "hash",
+          "file": "\/workspace\/tests\/src\/App\/MappedName.cpp",
+          "line": 954
+        }
+      ]
+    },
+    {
+      "name": "ContactTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "ContactDefaultConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 33
+        },
+        {
+          "name": "ContactParameterConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 40
+        },
+        {
+          "name": "ContactNullDomNodeConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 47
+        },
+        {
+          "name": "ContactOperatorEquality",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 54
+        }
+      ]
+    },
+    {
+      "name": "LicenseTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "LicenseDefaultConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 65
+        },
+        {
+          "name": "LicenseParameterConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 72
+        },
+        {
+          "name": "LicenseNullDomNodeConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 79
+        },
+        {
+          "name": "LicenseOperatorEquality",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 86
+        }
+      ]
+    },
+    {
+      "name": "UrlTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "UrlDefaultConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 97
+        },
+        {
+          "name": "UrlParameterConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 104
+        },
+        {
+          "name": "UrlNullDomNodeConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 111
+        },
+        {
+          "name": "UrlOperatorEquality",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 117
+        }
+      ]
+    },
+    {
+      "name": "VersionTest",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "VersionDefaultConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 128
+        },
+        {
+          "name": "VersionParameterConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 137
+        },
+        {
+          "name": "VersionStringConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 146
+        },
+        {
+          "name": "VersionOperatorEqual",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 155
+        },
+        {
+          "name": "VersionOperatorComparison",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 168
+        }
+      ]
+    },
+    {
+      "name": "MetadataTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "MetadataInMemoryConstruction",
+          "file": "\/workspace\/tests\/src\/App\/Metadata.cpp",
+          "line": 232
+        }
+      ]
+    },
+    {
+      "name": "ProjectFileTest",
+      "tests": 10,
+      "testsuite": [
+        {
+          "name": "loadInvalid",
+          "file": "\/workspace\/tests\/src\/App\/ProjectFile.cpp",
+          "line": 43
+        },
+        {
+          "name": "loadDocument",
+          "file": "\/workspace\/tests\/src\/App\/ProjectFile.cpp",
+          "line": 49
+        },
+        {
+          "name": "getObjects",
+          "file": "\/workspace\/tests\/src\/App\/ProjectFile.cpp",
+          "line": 55
+        },
+        {
+          "name": "getPropertyFiles",
+          "file": "\/workspace\/tests\/src\/App\/ProjectFile.cpp",
+          "line": 63
+        },
+        {
+          "name": "getMetadata",
+          "file": "\/workspace\/tests\/src\/App\/ProjectFile.cpp",
+          "line": 71
+        },
+        {
+          "name": "getObjectsOfType",
+          "file": "\/workspace\/tests\/src\/App\/ProjectFile.cpp",
+          "line": 89
+        },
+        {
+          "name": "restoreObject",
+          "file": "\/workspace\/tests\/src\/App\/ProjectFile.cpp",
+          "line": 97
+        },
+        {
+          "name": "getTypeId",
+          "file": "\/workspace\/tests\/src\/App\/ProjectFile.cpp",
+          "line": 106
+        },
+        {
+          "name": "getThumbnailBuffer",
+          "file": "\/workspace\/tests\/src\/App\/ProjectFile.cpp",
+          "line": 114
+        },
+        {
+          "name": "getThumbnailFile",
+          "file": "\/workspace\/tests\/src\/App\/ProjectFile.cpp",
+          "line": 123
+        }
+      ]
+    },
+    {
+      "name": "PropertyFileIncludedTest",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "rejectsParentTraversalInFileAttribute",
+          "file": "\/workspace\/tests\/src\/App\/PropertyFile.cpp",
+          "line": 61
+        },
+        {
+          "name": "rejectsBackslashTraversalInFileAttribute",
+          "file": "\/workspace\/tests\/src\/App\/PropertyFile.cpp",
+          "line": 70
+        },
+        {
+          "name": "rejectsAbsolutePathInFileAttribute",
+          "file": "\/workspace\/tests\/src\/App\/PropertyFile.cpp",
+          "line": 79
+        },
+        {
+          "name": "rejectsSubdirectoryInFileAttribute",
+          "file": "\/workspace\/tests\/src\/App\/PropertyFile.cpp",
+          "line": 88
+        },
+        {
+          "name": "rejectsDotDotInFileAttribute",
+          "file": "\/workspace\/tests\/src\/App\/PropertyFile.cpp",
+          "line": 97
+        },
+        {
+          "name": "rejectsParentTraversalInDataAttribute",
+          "file": "\/workspace\/tests\/src\/App\/PropertyFile.cpp",
+          "line": 103
+        },
+        {
+          "name": "acceptsPlainBasename",
+          "file": "\/workspace\/tests\/src\/App\/PropertyFile.cpp",
+          "line": 112
+        }
+      ]
+    },
+    {
+      "name": "PropertyLink",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "TestSetValues",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "name": "PropertyFloatTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "testWriteRead",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 69
+        }
+      ]
+    },
+    {
+      "name": "RenameProperty",
+      "tests": 14,
+      "testsuite": [
+        {
+          "name": "simple",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 96
+        },
+        {
+          "name": "fromPython",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 110
+        },
+        {
+          "name": "chain",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 125
+        },
+        {
+          "name": "staticProperty",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 149
+        },
+        {
+          "name": "staticPropertyFromPython",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 164
+        },
+        {
+          "name": "lockedProperty",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 183
+        },
+        {
+          "name": "toExistingProperty",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 199
+        },
+        {
+          "name": "toInvalidProperty",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 216
+        },
+        {
+          "name": "updateExpressionSameContainer",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 229
+        },
+        {
+          "name": "updateExpressionDifferentContainer",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 259
+        },
+        {
+          "name": "updateExpressionDifferentDocument",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 293
+        },
+        {
+          "name": "withExpression",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 333
+        },
+        {
+          "name": "undo",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 371
+        },
+        {
+          "name": "redo",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 401
+        }
+      ]
+    },
+    {
+      "name": "MoveProperty",
+      "tests": 22,
+      "testsuite": [
+        {
+          "name": "simple",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 482
+        },
+        {
+          "name": "otherDoc",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 489
+        },
+        {
+          "name": "staticProperty",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 496
+        },
+        {
+          "name": "lockedProperty",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 515
+        },
+        {
+          "name": "toExistingProperty",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 527
+        },
+        {
+          "name": "updateExpressionOriginatingContainer",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 599
+        },
+        {
+          "name": "updateExpressionTargetContainer",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 608
+        },
+        {
+          "name": "updateExpressionOriginatingContainerOtherDoc",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 617
+        },
+        {
+          "name": "updateExpressionTargetContainerOtherDoc",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 626
+        },
+        {
+          "name": "updateExpressionMovedProp",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 634
+        },
+        {
+          "name": "undo",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 704
+        },
+        {
+          "name": "undoOtherDoc",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 711
+        },
+        {
+          "name": "undoExpressionOriginatingContainer",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 765
+        },
+        {
+          "name": "undoExpressionTargetContainer",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 776
+        },
+        {
+          "name": "undoExpressionOriginatingContainerOtherDoc",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 787
+        },
+        {
+          "name": "undoExpressionTargetContainerOtherDoc",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 798
+        },
+        {
+          "name": "redoSimple",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 806
+        },
+        {
+          "name": "redoOtherDoc",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 823
+        },
+        {
+          "name": "redoExpressionOriginatingContainer",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 873
+        },
+        {
+          "name": "redoExpressionTargetContainer",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 884
+        },
+        {
+          "name": "redoExpressionOriginatingContainerOtherDoc",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 895
+        },
+        {
+          "name": "redoExpressionTargetContainerOtherDoc",
+          "file": "\/workspace\/tests\/src\/App\/Property.cpp",
+          "line": 906
+        }
+      ]
+    },
+    {
+      "name": "PropertyExpressionEngineTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "executeCrossPropertyReference",
+          "file": "\/workspace\/tests\/src\/App\/PropertyExpressionEngine.cpp",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "name": "StringIDTest",
+      "tests": 44,
+      "testsuite": [
+        {
+          "name": "stringIDManualConstructionNoFlags",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 27
+        },
+        {
+          "name": "stringIDManualConstructionWithFlag",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 42
+        },
+        {
+          "name": "stringIDDefaultConstruction",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 58
+        },
+        {
+          "name": "value",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 67
+        },
+        {
+          "name": "relatedIDs",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 88
+        },
+        {
+          "name": "isBinary",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 93
+        },
+        {
+          "name": "isHashed",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 104
+        },
+        {
+          "name": "isPostfixed",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 115
+        },
+        {
+          "name": "isPostfixEncoded",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 126
+        },
+        {
+          "name": "isIndexed",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 137
+        },
+        {
+          "name": "isPrefixID",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 148
+        },
+        {
+          "name": "isPrefixIDIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 159
+        },
+        {
+          "name": "isMarked",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 170
+        },
+        {
+          "name": "isPersistent",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 181
+        },
+        {
+          "name": "isFromSameHasher",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 192
+        },
+        {
+          "name": "getHasher",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 197
+        },
+        {
+          "name": "data",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 202
+        },
+        {
+          "name": "postfix",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 215
+        },
+        {
+          "name": "getPyObject",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 220
+        },
+        {
+          "name": "getPyObjectWithIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 235
+        },
+        {
+          "name": "toStringWithoutIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 250
+        },
+        {
+          "name": "toStringWithIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 266
+        },
+        {
+          "name": "fromStringWithEOFAndLengthGood",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 281
+        },
+        {
+          "name": "fromStringExtraData",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 295
+        },
+        {
+          "name": "fromStringLengthUnspecified",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 311
+        },
+        {
+          "name": "fromStringShorterLength",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 325
+        },
+        {
+          "name": "fromStringNoHashtag",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 340
+        },
+        {
+          "name": "fromStringNotHex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 352
+        },
+        {
+          "name": "fromStringQByteArray",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 367
+        },
+        {
+          "name": "dataToTextHashed",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 380
+        },
+        {
+          "name": "dataToTextBinary",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 393
+        },
+        {
+          "name": "dataToTextNoIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 406
+        },
+        {
+          "name": "dataToTextWithIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 419
+        },
+        {
+          "name": "dataToTextWithPostfix",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 434
+        },
+        {
+          "name": "dataToBytesNoIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 449
+        },
+        {
+          "name": "dataToBytesWithIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 462
+        },
+        {
+          "name": "dataToBytesWithPostfix",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 476
+        },
+        {
+          "name": "dataToBytesWithIndexAndPostfix",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 491
+        },
+        {
+          "name": "mark",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 507
+        },
+        {
+          "name": "setPersistent",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 521
+        },
+        {
+          "name": "operatorLessThan",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 535
+        },
+        {
+          "name": "compare",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 540
+        },
+        {
+          "name": "IndexIDBooleanConversion",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 545
+        },
+        {
+          "name": "IndexIDStreamInsertionOperator",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 558
+        }
+      ]
+    },
+    {
+      "name": "StringIDRefTest",
+      "tests": 35,
+      "testsuite": [
+        {
+          "name": "defaultConstructor",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 592
+        },
+        {
+          "name": "constructFromNewStringID",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 601
+        },
+        {
+          "name": "constructFromStringIDAndIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 614
+        },
+        {
+          "name": "copyConstructor",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 631
+        },
+        {
+          "name": "copyConstructorWithIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 647
+        },
+        {
+          "name": "moveConstructor",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 664
+        },
+        {
+          "name": "destructor",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 676
+        },
+        {
+          "name": "reset",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 693
+        },
+        {
+          "name": "resetWithStringID",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 705
+        },
+        {
+          "name": "resetWithStringIDAndIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 719
+        },
+        {
+          "name": "swap",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 734
+        },
+        {
+          "name": "assignmentFromSelf",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 755
+        },
+        {
+          "name": "assignmentToEmptyFromStringID",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 771
+        },
+        {
+          "name": "assignmentFromStringIDRef",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 785
+        },
+        {
+          "name": "moveAssignmentFromStringIDRef",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 801
+        },
+        {
+          "name": "operatorLess",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 815
+        },
+        {
+          "name": "operatorEquality",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 834
+        },
+        {
+          "name": "operatorInequality",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 850
+        },
+        {
+          "name": "booleanConversion",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 866
+        },
+        {
+          "name": "getRefCount",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 877
+        },
+        {
+          "name": "toString",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 893
+        },
+        {
+          "name": "dataToText",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 909
+        },
+        {
+          "name": "constData",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 925
+        },
+        {
+          "name": "deref",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 938
+        },
+        {
+          "name": "value",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 948
+        },
+        {
+          "name": "relatedIDs",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 963
+        },
+        {
+          "name": "isBinary",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 968
+        },
+        {
+          "name": "isHashed",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 981
+        },
+        {
+          "name": "toBytes",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 994
+        },
+        {
+          "name": "getPyObject",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1007
+        },
+        {
+          "name": "mark",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1023
+        },
+        {
+          "name": "isMarked",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1036
+        },
+        {
+          "name": "isFromSameHasher",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1047
+        },
+        {
+          "name": "getHasher",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1052
+        },
+        {
+          "name": "setPersistent",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1057
+        }
+      ]
+    },
+    {
+      "name": "StringHasherTest",
+      "tests": 35,
+      "testsuite": [
+        {
+          "name": "defaultConstructor",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1120
+        },
+        {
+          "name": "getMemSize",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1132
+        },
+        {
+          "name": "Save",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1146
+        },
+        {
+          "name": "Restore",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1153
+        },
+        {
+          "name": "SaveDocFile",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1160
+        },
+        {
+          "name": "RestoreDocFile",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1167
+        },
+        {
+          "name": "setPersistenceFileName",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1174
+        },
+        {
+          "name": "getPersistenceFileName",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1181
+        },
+        {
+          "name": "getIDFromQByteArrayShort",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1188
+        },
+        {
+          "name": "getIDFromQByteArrayLongHashable",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1205
+        },
+        {
+          "name": "getIDFromQByteArrayLongUnhashable",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1221
+        },
+        {
+          "name": "getIDFromQByteArrayNoCopy",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1237
+        },
+        {
+          "name": "getIDFromQByteArrayTwoDifferentStrings",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1252
+        },
+        {
+          "name": "getIDFromQByteArrayTwoIdenticalStrings",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1268
+        },
+        {
+          "name": "getIDFromQByteArrayBinaryFlag",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1284
+        },
+        {
+          "name": "getIDFromCString",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1297
+        },
+        {
+          "name": "getIDFromMappedNameWithoutPostfixWithoutIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1316
+        },
+        {
+          "name": "getIDFromMappedNameWithoutPostfixWithIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1331
+        },
+        {
+          "name": "getIDFromMappedNameWithoutIndexWithPostfix",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1348
+        },
+        {
+          "name": "getIDFromMappedNameWithIndexWithPostfix",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1367
+        },
+        {
+          "name": "getIDFromMappedNameExistingNameNoIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1385
+        },
+        {
+          "name": "getIDFromMappedNameExistingNameWithIndex",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1400
+        },
+        {
+          "name": "getIDFromMappedNameExistingNameWithIndexAndPostfix",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1416
+        },
+        {
+          "name": "getIDFromMappedNameDuplicateWithEncodedPostfix",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1432
+        },
+        {
+          "name": "getIDFromIntegerIDNoSuchID",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1448
+        },
+        {
+          "name": "getIDFromIntegerIDBadID",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1460
+        },
+        {
+          "name": "getIDMap",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1477
+        },
+        {
+          "name": "clear",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1489
+        },
+        {
+          "name": "size",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1501
+        },
+        {
+          "name": "count",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1513
+        },
+        {
+          "name": "getPyObject",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1525
+        },
+        {
+          "name": "setGetSaveAll",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1536
+        },
+        {
+          "name": "setGetThreshold",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1551
+        },
+        {
+          "name": "clearMarks",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1564
+        },
+        {
+          "name": "compact",
+          "file": "\/workspace\/tests\/src\/App\/StringHasher.cpp",
+          "line": 1578
+        }
+      ]
+    },
+    {
+      "name": "VarSet",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "createVarSet",
+          "file": "\/workspace\/tests\/src\/App\/VarSet.cpp",
+          "line": 67
+        },
+        {
+          "name": "addProperty",
+          "file": "\/workspace\/tests\/src\/App\/VarSet.cpp",
+          "line": 81
+        }
+      ]
+    },
+    {
+      "name": "VRMLObjectTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "loadVRMLWithTextures",
+          "file": "\/workspace\/tests\/src\/App\/VRMLObject.cpp",
+          "line": 78
+        }
+      ]
+    },
+    {
+      "name": "VRMLObjectSecurityTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "singleLevelTraversalDoesNotEscapeResourceSubdirectory",
+          "file": "\/workspace\/tests\/src\/App\/VRMLObject.cpp",
+          "line": 183
+        },
+        {
+          "name": "deepTraversalIsRejected",
+          "file": "\/workspace\/tests\/src\/App\/VRMLObject.cpp",
+          "line": 196
+        },
+        {
+          "name": "legitimateResourcesStillLoadAlongsideRejectedEntry",
+          "file": "\/workspace\/tests\/src\/App\/VRMLObject.cpp",
+          "line": 204
+        }
+      ]
+    }
+  ]
+}

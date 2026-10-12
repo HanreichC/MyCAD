@@ -1,0 +1,188 @@
+{
+  "tests": 28,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "BackwardCompatibilityTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "TestOpenV021Model",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/BackwardCompatibility.cpp",
+          "line": 56
+        },
+        {
+          "name": "TestTwoLengthsPadWithExpression",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/BackwardCompatibility.cpp",
+          "line": 132
+        },
+        {
+          "name": "TestTwoLengthsPadCyclicExpression",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/BackwardCompatibility.cpp",
+          "line": 163
+        },
+        {
+          "name": "TestTwoLengthsPadCrossObjectRefExpression",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/BackwardCompatibility.cpp",
+          "line": 193
+        }
+      ]
+    },
+    {
+      "name": "DatumPlaneTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "attachDatumPlane",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/DatumPlane.cpp",
+          "line": 49
+        }
+      ]
+    },
+    {
+      "name": "ShapeBinderTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "shapeBinderExists",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/ShapeBinder.cpp",
+          "line": 61
+        },
+        {
+          "name": "subShapeBinderExists",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/ShapeBinder.cpp",
+          "line": 71
+        }
+      ]
+    },
+    {
+      "name": "PadTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "TestMidPlaneTwoLength",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Pad.cpp",
+          "line": 63
+        }
+      ]
+    },
+    {
+      "name": "FeaturePipeTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "SketchProfileSketchSpine",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Pipe.cpp",
+          "line": 183
+        },
+        {
+          "name": "SketchProfileBinderSpine",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Pipe.cpp",
+          "line": 203
+        },
+        {
+          "name": "BinderProfileSketchSpine",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Pipe.cpp",
+          "line": 227
+        },
+        {
+          "name": "BinderProfileBinderSpine",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Pipe.cpp",
+          "line": 250
+        }
+      ]
+    },
+    {
+      "name": "RevolutionTest",
+      "tests": 14,
+      "testsuite": [
+        {
+          "name": "TwoSidesAngles",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 168
+        },
+        {
+          "name": "TwoSidesSignedAngles",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 193
+        },
+        {
+          "name": "TwoSidesOverlappingAngles",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 212
+        },
+        {
+          "name": "SymmetricAngle",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 230
+        },
+        {
+          "name": "MidplaneMapsToSideType",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 250
+        },
+        {
+          "name": "GrooveTwoSidesThroughAll",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 264
+        },
+        {
+          "name": "GrooveStartOffset",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 293
+        },
+        {
+          "name": "SecondSideUpToFaceWithoutTargetIsAnError",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 315
+        },
+        {
+          "name": "ProjectOffsetAxisAndRestoreOriginalAxis",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 327
+        },
+        {
+          "name": "ProjectAxisRespectsNestedBodyPlacements",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 350
+        },
+        {
+          "name": "ProjectTiltedAxisOntoRotatedProfile",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 374
+        },
+        {
+          "name": "ProjectAxisOntoSelectedFacePlane",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 401
+        },
+        {
+          "name": "ProjectPerpendicularAxisIsAnError",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 419
+        },
+        {
+          "name": "GrooveProjectAxis",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/Revolution.cpp",
+          "line": 435
+        }
+      ]
+    },
+    {
+      "name": "GeoFeatureGroupTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "testDocumentObjectGroupAcceptsBoolean",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/GeoFeatureGroupExtension.cpp",
+          "line": 116
+        },
+        {
+          "name": "testIsLinkValidCrossFailure",
+          "file": "\/workspace\/tests\/src\/Mod\/PartDesign\/App\/GeoFeatureGroupExtension.cpp",
+          "line": 161
+        }
+      ]
+    }
+  ]
+}

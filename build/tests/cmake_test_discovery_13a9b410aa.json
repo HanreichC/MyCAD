@@ -1,0 +1,165 @@
+{
+  "tests": 27,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "MeasureAngle",
+      "tests": 13,
+      "testsuite": [
+        {
+          "name": "EdgeParallelToFaceNormal",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 113
+        },
+        {
+          "name": "testEdgeEdgePerpendicular",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 135
+        },
+        {
+          "name": "testFaceFacePerpendicular",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 150
+        },
+        {
+          "name": "testFaceEdgeLineToPlane",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 165
+        },
+        {
+          "name": "testCylinderAxisToEdge",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 180
+        },
+        {
+          "name": "testSkewCylinderAxes",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 197
+        },
+        {
+          "name": "testObtuseAxisPairFoldsDirections",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 224
+        },
+        {
+          "name": "testParallelCylinderAxes",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 245
+        },
+        {
+          "name": "testConeAxisToEdge",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 262
+        },
+        {
+          "name": "testCylinderAxisToPlane",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 278
+        },
+        {
+          "name": "testValidSelectionAcceptsCylinderAndCone",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 293
+        },
+        {
+          "name": "testPrioritizedSelectionCrossingNotParallel",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 319
+        },
+        {
+          "name": "testPrioritizedSelectionUnreadableDirectionRejected",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureAngle.cpp",
+          "line": 340
+        }
+      ]
+    },
+    {
+      "name": "MeasureDistance",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "testCurvedFaceValidSelection",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureDistance.cpp",
+          "line": 64
+        },
+        {
+          "name": "testCurvedFaceDistance",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureDistance.cpp",
+          "line": 83
+        },
+        {
+          "name": "testCircleCircle",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureDistance.cpp",
+          "line": 103
+        },
+        {
+          "name": "testCircleCircleWithPlacement",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureDistance.cpp",
+          "line": 125
+        },
+        {
+          "name": "testTwoBoxesMovedByContainers",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureDistance.cpp",
+          "line": 151
+        },
+        {
+          "name": "testLinkedCompoundKeepsInternalLocation",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasureDistance.cpp",
+          "line": 180
+        }
+      ]
+    },
+    {
+      "name": "MeasurePosition",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "testVertexNoPlacement",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasurePosition.cpp",
+          "line": 69
+        },
+        {
+          "name": "testVertexWithLocalPlacement",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasurePosition.cpp",
+          "line": 84
+        },
+        {
+          "name": "testVertexInTranslatedContainer",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasurePosition.cpp",
+          "line": 102
+        },
+        {
+          "name": "testVertexInRotatedContainer",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasurePosition.cpp",
+          "line": 127
+        },
+        {
+          "name": "testVertexContainerAndLocalPlacementCombine",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/MeasurePosition.cpp",
+          "line": 153
+        }
+      ]
+    },
+    {
+      "name": "QuickMeasureTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "SingleDiscKeepsDiscType",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/QuickMeasure.cpp",
+          "line": 62
+        },
+        {
+          "name": "ParallelDiscsHaveNominalDistance",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/QuickMeasure.cpp",
+          "line": 70
+        },
+        {
+          "name": "ParallelDiscAndPlaneHaveNominalDistance",
+          "file": "\/workspace\/tests\/src\/Mod\/Measure\/App\/QuickMeasure.cpp",
+          "line": 81
+        }
+      ]
+    }
+  ]
+}

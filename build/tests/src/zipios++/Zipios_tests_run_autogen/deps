@@ -1,0 +1,5 @@
+Zipios_tests_run_autogen/timestamp: \
+	/workspace/tests/src/zipios++/CMakeLists.txt \
+	/workspace/tests/src/zipios++/collectioncollection.cpp \
+	/workspace/tests/src/zipios++/zipfile.cpp \
+	/usr/sbin/cmake

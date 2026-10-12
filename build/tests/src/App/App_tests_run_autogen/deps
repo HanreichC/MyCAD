@@ -1,0 +1,31 @@
+App_tests_run_autogen/timestamp: \
+	/workspace/tests/src/App/Application.cpp \
+	/workspace/tests/src/App/ApplicationDirectories.cpp \
+	/workspace/tests/src/App/AsyncRecompute.cpp \
+	/workspace/tests/src/App/BackupPolicy.cpp \
+	/workspace/tests/src/App/Branding.cpp \
+	/workspace/tests/src/App/CMakeLists.txt \
+	/workspace/tests/src/App/ComplexGeoData.cpp \
+	/workspace/tests/src/App/Document.cpp \
+	/workspace/tests/src/App/DocumentObject.cpp \
+	/workspace/tests/src/App/DocumentObserver.cpp \
+	/workspace/tests/src/App/ElementMap.cpp \
+	/workspace/tests/src/App/ElementNamingUtils.cpp \
+	/workspace/tests/src/App/Expression.cpp \
+	/workspace/tests/src/App/ExpressionParser.cpp \
+	/workspace/tests/src/App/IndexedName.cpp \
+	/workspace/tests/src/App/License.cpp \
+	/workspace/tests/src/App/Link.cpp \
+	/workspace/tests/src/App/MappedElement.cpp \
+	/workspace/tests/src/App/MappedName.cpp \
+	/workspace/tests/src/App/Metadata.cpp \
+	/workspace/tests/src/App/ProjectFile.cpp \
+	/workspace/tests/src/App/Property.cpp \
+	/workspace/tests/src/App/Property.h \
+	/workspace/tests/src/App/PropertyExpressionEngine.cpp \
+	/workspace/tests/src/App/PropertyFile.cpp \
+	/workspace/tests/src/App/QuantityInput.cpp \
+	/workspace/tests/src/App/StringHasher.cpp \
+	/workspace/tests/src/App/VRMLObject.cpp \
+	/workspace/tests/src/App/VarSet.cpp \
+	/usr/sbin/cmake

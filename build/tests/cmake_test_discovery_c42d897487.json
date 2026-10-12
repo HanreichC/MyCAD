@@ -1,0 +1,565 @@
+{
+  "tests": 107,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "ConstraintPointsAccess",
+      "tests": 18,
+      "testsuite": [
+        {
+          "name": "testDefaultGeoElementIdsAreSane",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 48
+        },
+        {
+          "name": "testOldWriteIsReadByNew",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 84
+        },
+        {
+          "name": "testNewWriteIsReadByOld",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 112
+        },
+        {
+          "name": "testThreeElementsByDefault",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 132
+        },
+        {
+          "name": "testFourElementsWhenAddingOne",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 143
+        },
+        {
+          "name": "testElementSerializationWhenAccessingOldWay",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 156
+        },
+        {
+          "name": "testElementSerializationWhenAccessingNewWay",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 185
+        },
+        {
+          "name": "testElementSerializationWhenMixingOldAndNew",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 211
+        },
+        {
+          "name": "testElementsRestoredFromSerialization",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 245
+        },
+        {
+          "name": "testElementsRestoredFromSerializationWithoutNewElementStorage",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 282
+        },
+        {
+          "name": "testLegacyIsPreferedDuringSerializationWithoutLegacyElementStorage",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 349
+        },
+        {
+          "name": "testLegacyIsPreferedDuringSerializationIfContradicting",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 413
+        },
+        {
+          "name": "testSubstituteIndex",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 490
+        },
+        {
+          "name": "testSubstituteIndexAndPos",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 507
+        },
+        {
+          "name": "testInvolvesGeoId",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 524
+        },
+        {
+          "name": "testInvolvesGeoIdAndPosId",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 537
+        },
+        {
+          "name": "testLegacyWriteReflectedInInvolvesAndSubstitute",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 553
+        },
+        {
+          "name": "testSubstituteUpdatesLegacyFieldsToo",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/Constraint.cpp",
+          "line": 574
+        }
+      ]
+    },
+    {
+      "name": "SketchObjectTest",
+      "tests": 87,
+      "testsuite": [
+        {
+          "name": "createSketchObject",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 16
+        },
+        {
+          "name": "testGeoIdFromShapeTypeEdge",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 25
+        },
+        {
+          "name": "testGeoIdFromShapeTypeVertex",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 42
+        },
+        {
+          "name": "testGeoIdFromShapeTypeExternalEdge",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 64
+        },
+        {
+          "name": "testGeoIdFromShapeTypeHAxis",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 81
+        },
+        {
+          "name": "testGeoIdFromShapeTypeVAxis",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 96
+        },
+        {
+          "name": "testGeoIdFromShapeTypeRootPoint",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 111
+        },
+        {
+          "name": "testGetPointFromGeomPoint",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 126
+        },
+        {
+          "name": "testGetPointFromGeomLineSegment",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 148
+        },
+        {
+          "name": "testGetPointFromGeomCircle",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 171
+        },
+        {
+          "name": "testGetPointFromGeomEllipse",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 200
+        },
+        {
+          "name": "testGetPointFromGeomArcOfCircle",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 231
+        },
+        {
+          "name": "testGetPointFromGeomArcOfEllipse",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 259
+        },
+        {
+          "name": "testGetPointFromGeomArcOfHyperbola",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 290
+        },
+        {
+          "name": "testGetPointFromGeomArcOfParabola",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 323
+        },
+        {
+          "name": "testGetPointFromGeomBSplineCurveNonPeriodic",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 354
+        },
+        {
+          "name": "testGetPointFromGeomBSplineCurvePeriodic",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 387
+        },
+        {
+          "name": "testConstraintAfterDeletingGeo",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 422
+        },
+        {
+          "name": "testDeleteExposeInternalGeometryOfEllipse",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 491
+        },
+        {
+          "name": "testDeleteExposeInternalGeometryOfHyperbola",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 539
+        },
+        {
+          "name": "testDeleteExposeInternalGeometryOfParabola",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 586
+        },
+        {
+          "name": "testDeleteExposeInternalGeometryOfBSpline",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 632
+        },
+        {
+          "name": "testDeleteOnlyUnusedInternalGeometryOfBSpline",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 689
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionNoUnits1",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 735
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionNoUnits2",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 742
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionWithUnits1",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 749
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionWithUnits2",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 756
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionWithUnits3",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 763
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionWithUnits4",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 770
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionApplyAndReverse1",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 777
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionApplyAndReverse2",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 785
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionSimple",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 795
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionApplyAndReverse",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 802
+        },
+        {
+          "name": "testReverseAngleConstraintToSupplementaryExpressionFunction",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 810
+        },
+        {
+          "name": "testGetElementName",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObject.cpp",
+          "line": 820
+        },
+        {
+          "name": "testAddExternalIncreasesCount",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 18
+        },
+        {
+          "name": "testDelExternalUndef",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 34
+        },
+        {
+          "name": "testDelExternalWhenEmpty",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 43
+        },
+        {
+          "name": "testDelExternalWhenEmptyWithPositiveId",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 52
+        },
+        {
+          "name": "testDelExternalReducesCount",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 61
+        },
+        {
+          "name": "testReplaceGeometriesOneToOne",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 91
+        },
+        {
+          "name": "testReplaceGeometriesTwoToOne",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 108
+        },
+        {
+          "name": "testReplaceGeometriesOneToTwo",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 129
+        },
+        {
+          "name": "testSplitLineSegment",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 160
+        },
+        {
+          "name": "testSplitCircle",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 189
+        },
+        {
+          "name": "testSplitEllipse",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 215
+        },
+        {
+          "name": "testSplitArcOfCircle",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 242
+        },
+        {
+          "name": "testSplitArcOfConic",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 271
+        },
+        {
+          "name": "testSplitNonPeriodicBSpline",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 305
+        },
+        {
+          "name": "testSplitPeriodicBSpline",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 337
+        },
+        {
+          "name": "testTrimWithoutIntersection",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 367
+        },
+        {
+          "name": "testTrimLineSegmentEnd",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 395
+        },
+        {
+          "name": "testTrimLineSegmentMid",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 430
+        },
+        {
+          "name": "testTrimCircleEnd",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 477
+        },
+        {
+          "name": "testTrimCircleMid",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 509
+        },
+        {
+          "name": "testTrimArcOfCircleEnd",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 557
+        },
+        {
+          "name": "testTrimArcOfCircleMid",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 593
+        },
+        {
+          "name": "testTrimEllipseEnd",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 641
+        },
+        {
+          "name": "testTrimEllipseMid",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 678
+        },
+        {
+          "name": "testTrimPeriodicBSplineEnd",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 734
+        },
+        {
+          "name": "testTrimPeriodicBSplineMid",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 769
+        },
+        {
+          "name": "testTrimNonPeriodicBSplineEnd",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 821
+        },
+        {
+          "name": "testTrimNonPeriodicBSplineMid",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 862
+        },
+        {
+          "name": "testTrimEffectOnConstruction",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 915
+        },
+        {
+          "name": "testTrimEndEffectOnFullLengthConstraints",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 964
+        },
+        {
+          "name": "testTrimEndEffectOnSymmetricConstraints",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1008
+        },
+        {
+          "name": "testTrimEndEffectOnUnrelatedTangent",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1053
+        },
+        {
+          "name": "testModifyKnotMultInNonPeriodicBSplineToZero",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1108
+        },
+        {
+          "name": "testModifyKnotMultInNonPeriodicBSplineToDisallowed",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1127
+        },
+        {
+          "name": "testModifyKnotMultInNonPeriodicBSpline",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1143
+        },
+        {
+          "name": "testModifyKnotMultInPeriodicBSplineToZero",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1180
+        },
+        {
+          "name": "testModifyKnotMultInPeriodicBSplineToDisallowed",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1199
+        },
+        {
+          "name": "testModifyKnotMultInPeriodicBSpline",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1215
+        },
+        {
+          "name": "testInsertKnotInNonPeriodicBSpline",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1252
+        },
+        {
+          "name": "testInsertKnotInPeriodicBSpline",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1303
+        },
+        {
+          "name": "testJoinCurves",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1353
+        },
+        {
+          "name": "testJoinCurvesWhenTangent",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectChanges.cpp",
+          "line": 1384
+        },
+        {
+          "name": "testAddSymmetricCopyWithoutConstraints",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectSymmetric.cpp",
+          "line": 16
+        },
+        {
+          "name": "testAddSymmetricWithConstraintsAddsSymmetric",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectSymmetric.cpp",
+          "line": 32
+        },
+        {
+          "name": "testAddSymmetricPreservesCoincidentTopology",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectSymmetric.cpp",
+          "line": 45
+        },
+        {
+          "name": "testAddSymmetricDowngradesTangentToCoincident",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectSymmetric.cpp",
+          "line": 72
+        },
+        {
+          "name": "testAddSymmetricOnAxisPointGetsCoincident",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectSymmetric.cpp",
+          "line": 103
+        },
+        {
+          "name": "testAddSymmetricOnAxisPointWithLineRef",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectSymmetric.cpp",
+          "line": 118
+        },
+        {
+          "name": "testAddSymmetricSharedVertexNoDuplicateConstraints",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectSymmetric.cpp",
+          "line": 136
+        },
+        {
+          "name": "testAddSymmetricPointSymmetry",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectSymmetric.cpp",
+          "line": 163
+        },
+        {
+          "name": "testAddSymmetricPointSymmetryOnPoint",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectSymmetric.cpp",
+          "line": 177
+        },
+        {
+          "name": "testAddSymmetricCircleGetsCenterSymmetricAndEqual",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/SketchObjectSymmetric.cpp",
+          "line": 190
+        }
+      ]
+    },
+    {
+      "name": "GCSTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "clearConstraints",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/planegcs\/GCS.cpp",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "name": "ConstraintsTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "tangentBSplineAndArc",
+          "file": "\/workspace\/tests\/src\/Mod\/Sketcher\/App\/planegcs\/Constraints.cpp",
+          "line": 43
+        }
+      ]
+    }
+  ]
+}

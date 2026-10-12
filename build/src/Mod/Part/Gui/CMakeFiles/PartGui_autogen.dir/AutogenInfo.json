@@ -1,0 +1,845 @@
+{
+	"BUILD_DIR" : "/workspace/build/src/Mod/Part/Gui/PartGui_autogen",
+	"CMAKE_BINARY_DIR" : "/workspace/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/workspace/build/src/Mod/Part/Gui",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/workspace/src/Mod/Part/Gui",
+	"CMAKE_EXECUTABLE" : "/usr/sbin/cmake",
+	"CMAKE_LIST_FILES" : 
+	[
+		"/workspace/src/Mod/Part/Gui/CMakeLists.txt",
+		"/workspace/src/Mod/Part/Gui/Resources/Part.qrc",
+		"/workspace/build/src/Mod/Part/Gui/Resources/Part_translation.qrc"
+	],
+	"CMAKE_SOURCE_DIR" : "/workspace",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "/workspace/build/src/Mod/Part/Gui/PartGui_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "PartGui_autogen/timestamp",
+	"HEADERS" : 
+	[
+		[
+			"/workspace/src/Mod/Part/Gui/AttacherTexts.h",
+			"MU",
+			"EWIEGA46WW/moc_AttacherTexts.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/BoxSelection.h",
+			"MU",
+			"EWIEGA46WW/moc_BoxSelection.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/CrossSections.h",
+			"MU",
+			"EWIEGA46WW/moc_CrossSections.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgBooleanOperation.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgBooleanOperation.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgExportStep.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgExportStep.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgExtrusion.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgExtrusion.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgFilletEdges.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgFilletEdges.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgImportStep.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgImportStep.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgPartBoxImp.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgPartBoxImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgPartCylinderImp.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgPartCylinderImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgPartImportIgesImp.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgPartImportIgesImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgPartImportStepImp.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgPartImportStepImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgPrimitives.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgPrimitives.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgProjectionOnSurface.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgProjectionOnSurface.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgRevolution.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgRevolution.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgScale.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgScale.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgSettings3DViewPartImp.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgSettings3DViewPartImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgSettingsGeneral.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgSettingsGeneral.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgSettingsObjectColor.h",
+			"MU",
+			"EWIEGA46WW/moc_DlgSettingsObjectColor.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/Mirroring.h",
+			"MU",
+			"EWIEGA46WW/moc_Mirroring.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/PatternCircularParametersWidget.h",
+			"MU",
+			"EWIEGA46WW/moc_PatternCircularParametersWidget.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/PatternInstanceControls.h",
+			"MU",
+			"EWIEGA46WW/moc_PatternInstanceControls.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/PatternParametersWidget.h",
+			"MU",
+			"EWIEGA46WW/moc_PatternParametersWidget.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/PatternPathParametersWidget.h",
+			"MU",
+			"EWIEGA46WW/moc_PatternPathParametersWidget.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/PatternPointParametersWidget.h",
+			"MU",
+			"EWIEGA46WW/moc_PatternPointParametersWidget.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/PatternReferenceWidget.h",
+			"MU",
+			"EWIEGA46WW/moc_PatternReferenceWidget.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/PreCompiled.h",
+			"MU",
+			"EWIEGA46WW/moc_PreCompiled.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/PreviewUpdateScheduler.h",
+			"MU",
+			"EWIEGA46WW/moc_PreviewUpdateScheduler.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/PropertyEnumAttacherItem.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyEnumAttacherItem.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ReferenceHighlighter.h",
+			"MU",
+			"EWIEGA46WW/moc_ReferenceHighlighter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/SectionCutting.h",
+			"MU",
+			"EWIEGA46WW/moc_SectionCutting.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ShapeFromMesh.h",
+			"MU",
+			"EWIEGA46WW/moc_ShapeFromMesh.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/SoBrepEdgeSet.h",
+			"MU",
+			"EWIEGA46WW/moc_SoBrepEdgeSet.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/SoBrepFaceSet.h",
+			"MU",
+			"EWIEGA46WW/moc_SoBrepFaceSet.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/SoBrepPointSet.h",
+			"MU",
+			"EWIEGA46WW/moc_SoBrepPointSet.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/SoFCShapeObject.h",
+			"MU",
+			"EWIEGA46WW/moc_SoFCShapeObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/TaskAttacher.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskAttacher.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/TaskCheckGeometry.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskCheckGeometry.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/TaskFaceAppearances.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskFaceAppearances.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/TaskLinkArrayParameters.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskLinkArrayParameters.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/TaskLoft.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskLoft.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/TaskOffset.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskOffset.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/TaskPatternParameters.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskPatternParameters.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/TaskShapeBuilder.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskShapeBuilder.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/TaskSweep.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskSweep.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/TaskThickness.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskThickness.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProvider.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProvider.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProvider2DObject.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProvider2DObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderAttachExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderAttachExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderBoolean.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderBoolean.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderBox.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderBox.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderCircleParametric.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderCircleParametric.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderCompound.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderCompound.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderConeParametric.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderConeParametric.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderCurveNet.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderCurveNet.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderCylinderParametric.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderCylinderParametric.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderDatum.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderDatum.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderEllipseParametric.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderEllipseParametric.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderExt.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderExt.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderExtrusion.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderExtrusion.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderGridExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderGridExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderHelixParametric.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderHelixParametric.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderImport.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderImport.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderLineParametric.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderLineParametric.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderLinkArray.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderLinkArray.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderMirror.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderMirror.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPlaneParametric.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderPlaneParametric.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPointParametric.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderPointParametric.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPreviewExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderPreviewExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPrimitive.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderPrimitive.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPrism.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderPrism.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderProjectOnSurface.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderProjectOnSurface.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPython.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderPython.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderReference.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderReference.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderRegularPolygon.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderRegularPolygon.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderRuledSurface.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderRuledSurface.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderScale.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderScale.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderSphereParametric.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderSphereParametric.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderSpline.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderSpline.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderTorusParametric.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderTorusParametric.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/Workbench.h",
+			"MU",
+			"EWIEGA46WW/moc_Workbench.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/WorkbenchManipulator.h",
+			"MU",
+			"EWIEGA46WW/moc_WorkbenchManipulator.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "/workspace/build/src/Mod/Part/Gui/PartGui_autogen/include",
+	"MOC_COMPILATION_FILE" : "/workspace/build/src/Mod/Part/Gui/PartGui_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"BOOST_ATOMIC_DYN_LINK",
+		"BOOST_ATOMIC_NO_LIB",
+		"BOOST_CHRONO_DYN_LINK",
+		"BOOST_CHRONO_NO_LIB",
+		"BOOST_CONTAINER_DYN_LINK",
+		"BOOST_CONTAINER_NO_LIB",
+		"BOOST_DATE_TIME_DYN_LINK",
+		"BOOST_DATE_TIME_NO_LIB",
+		"BOOST_PROGRAM_OPTIONS_DYN_LINK",
+		"BOOST_PROGRAM_OPTIONS_NO_LIB",
+		"BOOST_THREAD_DYN_LINK",
+		"BOOST_THREAD_NO_LIB",
+		"HAVE_CONFIG_H",
+		"HAVE_FREETYPE",
+		"HAVE_OPENGL_EXT",
+		"HAVE_RAPIDJSON",
+		"HAVE_TK",
+		"HAVE_VTK",
+		"HAVE_XLIB",
+		"MINIMUM_CPLUSPLUS_VERSION=202302L",
+		"NDEBUG",
+		"OCC_CONVERT_SIGNALS",
+		"PYCXX_6_2_COMPATIBILITY",
+		"PartGui_EXPORTS",
+		"QT_CONCURRENT_LIB",
+		"QT_CORE_LIB",
+		"QT_GUI_LIB",
+		"QT_NETWORK_LIB",
+		"QT_NO_DEBUG",
+		"QT_NO_KEYWORDS",
+		"QT_OPENGLWIDGETS_LIB",
+		"QT_OPENGL_LIB",
+		"QT_PRINTSUPPORT_LIB",
+		"QT_SVGWIDGETS_LIB",
+		"QT_SVG_LIB",
+		"QT_UITOOLS_LIB",
+		"QT_WIDGETS_LIB",
+		"QT_XML_LIB",
+		"VTK_OPENGL2_BACKEND",
+		"_OCC64"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"/workspace/build",
+		"/workspace/build/src",
+		"/workspace/src",
+		"/workspace/build/src/Mod/Part/Gui",
+		"/workspace/src/3rdParty/FastSignals/libfastsignals/include",
+		"/workspace/src/Gui",
+		"/workspace/src/Gui/Quarter",
+		"/workspace/src/Gui/PreferencePages",
+		"/workspace/src/Gui/Selection",
+		"/workspace/src/Gui/StyleParameters",
+		"/workspace/build/src/Gui",
+		"/workspace/src",
+		"/workspace/build/src",
+		"/workspace/build/src/Gui/Language",
+		"/workspace/build/src/Gui/propertyeditor",
+		"/workspace/build/src/Gui/TaskView",
+		"/workspace/build/src/Gui/Quarter",
+		"/workspace/build/src/Gui/DAGView",
+		"/usr/include/qt6/QtConcurrent",
+		"/usr/include/qt6",
+		"/usr/include/opencascade",
+		"/usr/include/freetype2",
+		"/usr/include/qt6/QtCore",
+		"/usr/include/qt6/QtXml",
+		"/workspace/src/3rdParty/PyCXX",
+		"/usr/include/python3.14",
+		"/workspace/src/3rdParty",
+		"/usr/lib/qt6/mkspecs/linux-g++",
+		"/usr/include/harfbuzz",
+		"/usr/include/qt6/QtWidgets",
+		"/usr/include/qt6/QtOpenGL",
+		"/usr/include/qt6/QtOpenGLWidgets",
+		"/usr/include/qt6/QtPrintSupport",
+		"/usr/include/qt6/QtSvg",
+		"/usr/include/qt6/QtSvgWidgets",
+		"/usr/include/qt6/QtNetwork",
+		"/usr/include/qt6/QtUiTools",
+		"/usr/include/shiboken6",
+		"/usr/include/PySide6",
+		"/usr/include/PySide6/QtCore",
+		"/usr/include/PySide6/QtGui",
+		"/usr/include/PySide6/QtWidgets",
+		"/usr/include/qt6/QtGui",
+		"/usr/include",
+		"/usr/include/c++/16",
+		"/usr/include/c++/16/x86_64-pc-linux-gnu",
+		"/usr/include/c++/16/backward",
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/16/include",
+		"/usr/local/include"
+	],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"/usr/sbin/c++",
+		"-std=c++23",
+		"-w",
+		"-dM",
+		"-E",
+		"/usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "/workspace/build/src/Mod/Part/Gui/PartGui_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : 
+	[
+		"/workspace/build/src/Mod/Part/Gui/qrc_Part.cpp",
+		"/workspace/build/src/Mod/Part/Gui/qrc_Part_translation.cpp"
+	],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 6,
+	"PARSE_CACHE_FILE" : "/workspace/build/src/Mod/Part/Gui/CMakeFiles/PartGui_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/usr/lib/qt6/moc",
+	"QT_UIC_EXECUTABLE" : "/usr/lib/qt6/uic",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 12,
+	"SETTINGS_FILE" : "/workspace/build/src/Mod/Part/Gui/CMakeFiles/PartGui_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[ "/workspace/src/Mod/Part/Gui/AppPartGui.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/AttacherTexts.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/BoxSelection.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/Command.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/CommandFilter.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/CommandParametric.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/CommandSimple.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/CrossSections.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgBooleanOperation.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgExportStep.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgExtrusion.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgFilletEdges.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgImportStep.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgPartBoxImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgPartCylinderImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgPartImportIgesImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgPartImportStepImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgPrimitives.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgProjectionOnSurface.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgRevolution.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgScale.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/DlgSettings3DViewPartImp.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/DlgSettingsGeneral.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/DlgSettingsObjectColor.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/Mirroring.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/PatternCircularParametersWidget.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/PatternInstanceControls.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/PatternParametersWidget.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/PatternPathParametersWidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/PatternPointParametersWidget.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/PatternReferenceWidget.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/PreviewUpdateScheduler.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/PropertyEnumAttacherItem.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ReferenceHighlighter.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/SectionCutting.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/ShapeFromMesh.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/SoBrepEdgeSet.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/SoBrepFaceSet.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/SoBrepPointSet.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/SoFCShapeObject.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/TaskAttacher.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/TaskCheckGeometry.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/TaskFaceAppearances.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/TaskLinkArrayParameters.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/TaskLoft.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/TaskOffset.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/TaskPatternParameters.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/TaskShapeBuilder.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/TaskSweep.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/TaskThickness.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/ViewProvider.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/ViewProvider2DObject.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderAttachExtension.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderBoolean.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderBox.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderCircleParametric.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderCompound.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderConeParametric.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderCurveNet.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderCylinderParametric.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderDatum.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderEllipseParametric.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderExt.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderExtrusion.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderGridExtension.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderHelixParametric.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderImport.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderLineParametric.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderLinkArray.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderMirror.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPartExtPyImp.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPlaneParametric.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPointParametric.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPreviewExtension.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderPreviewExtensionPyImp.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderPrimitive.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderPrism.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderProjectOnSurface.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderPython.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderReference.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderRegularPolygon.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderRuledSurface.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderScale.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderSphereParametric.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/ViewProviderSpline.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Part/Gui/ViewProviderTorusParametric.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Part/Gui/Workbench.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Part/Gui/WorkbenchManipulator.cpp", "MU", null ]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : [],
+	"UIC_SKIP" : 
+	[
+		"/workspace/build/src/Mod/Part/Gui/qrc_Part.cpp",
+		"/workspace/build/src/Mod/Part/Gui/qrc_Part_translation.cpp"
+	],
+	"UIC_UI_FILES" : [],
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

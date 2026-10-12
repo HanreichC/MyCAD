@@ -1,0 +1,238 @@
+{
+	"BUILD_DIR" : "/workspace/build/src/Mod/Measure/App/Measure_autogen",
+	"CMAKE_BINARY_DIR" : "/workspace/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/workspace/build/src/Mod/Measure/App",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/workspace/src/Mod/Measure/App",
+	"CMAKE_EXECUTABLE" : "/usr/sbin/cmake",
+	"CMAKE_LIST_FILES" : [ "/workspace/src/Mod/Measure/App/CMakeLists.txt" ],
+	"CMAKE_SOURCE_DIR" : "/workspace",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "/workspace/build/src/Mod/Measure/App/Measure_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "Measure_autogen/timestamp",
+	"HEADERS" : 
+	[
+		[
+			"/workspace/src/Mod/Measure/App/MassPropertiesObject.h",
+			"MU",
+			"EWIEGA46WW/moc_MassPropertiesObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/MassPropertiesResult.h",
+			"MU",
+			"EWIEGA46WW/moc_MassPropertiesResult.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/MeasureAngle.h",
+			"MU",
+			"EWIEGA46WW/moc_MeasureAngle.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/MeasureArea.h",
+			"MU",
+			"EWIEGA46WW/moc_MeasureArea.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/MeasureBase.h",
+			"MU",
+			"EWIEGA46WW/moc_MeasureBase.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/MeasureCOM.h",
+			"MU",
+			"EWIEGA46WW/moc_MeasureCOM.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/MeasureDiameter.h",
+			"MU",
+			"EWIEGA46WW/moc_MeasureDiameter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/MeasureDistance.h",
+			"MU",
+			"EWIEGA46WW/moc_MeasureDistance.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/MeasureLength.h",
+			"MU",
+			"EWIEGA46WW/moc_MeasureLength.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/MeasurePosition.h",
+			"MU",
+			"EWIEGA46WW/moc_MeasurePosition.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/MeasureRadius.h",
+			"MU",
+			"EWIEGA46WW/moc_MeasureRadius.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/Measurement.h",
+			"MU",
+			"EWIEGA46WW/moc_Measurement.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/PreCompiled.h",
+			"MU",
+			"EWIEGA46WW/moc_PreCompiled.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/Preferences.h",
+			"MU",
+			"EWIEGA46WW/moc_Preferences.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/ShapeFinder.h",
+			"MU",
+			"EWIEGA46WW/moc_ShapeFinder.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Measure/App/SubnameHelper.h",
+			"MU",
+			"EWIEGA46WW/moc_SubnameHelper.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "/workspace/build/src/Mod/Measure/App/Measure_autogen/include",
+	"MOC_COMPILATION_FILE" : "/workspace/build/src/Mod/Measure/App/Measure_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"BOOST_ATOMIC_DYN_LINK",
+		"BOOST_ATOMIC_NO_LIB",
+		"BOOST_CHRONO_DYN_LINK",
+		"BOOST_CHRONO_NO_LIB",
+		"BOOST_CONTAINER_DYN_LINK",
+		"BOOST_CONTAINER_NO_LIB",
+		"BOOST_DATE_TIME_DYN_LINK",
+		"BOOST_DATE_TIME_NO_LIB",
+		"BOOST_PROGRAM_OPTIONS_DYN_LINK",
+		"BOOST_PROGRAM_OPTIONS_NO_LIB",
+		"BOOST_THREAD_DYN_LINK",
+		"BOOST_THREAD_NO_LIB",
+		"HAVE_CONFIG_H",
+		"HAVE_FREETYPE",
+		"HAVE_OPENGL_EXT",
+		"HAVE_RAPIDJSON",
+		"HAVE_TK",
+		"HAVE_VTK",
+		"HAVE_XLIB",
+		"MINIMUM_CPLUSPLUS_VERSION=202302L",
+		"Measure_EXPORTS",
+		"OCC_CONVERT_SIGNALS",
+		"PYCXX_6_2_COMPATIBILITY",
+		"QT_CONCURRENT_LIB",
+		"QT_CORE_LIB",
+		"QT_NO_DEBUG",
+		"QT_NO_KEYWORDS",
+		"QT_XML_LIB",
+		"VTK_OPENGL2_BACKEND",
+		"_OCC64"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"/workspace/build",
+		"/workspace/build/src",
+		"/workspace/src",
+		"/workspace/build/src/Mod/Measure/App",
+		"/workspace/src/3rdParty/FastSignals/libfastsignals/include",
+		"/usr/include/opencascade",
+		"/usr/include/freetype2",
+		"/usr/include/qt6/QtCore",
+		"/usr/include/qt6",
+		"/usr/include/qt6/QtXml",
+		"/workspace/src/3rdParty/PyCXX",
+		"/usr/include/python3.14",
+		"/workspace/src/3rdParty",
+		"/usr/lib/qt6/mkspecs/linux-g++",
+		"/usr/include/qt6/QtConcurrent",
+		"/usr/include/harfbuzz",
+		"/usr/include",
+		"/usr/include/c++/16",
+		"/usr/include/c++/16/x86_64-pc-linux-gnu",
+		"/usr/include/c++/16/backward",
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/16/include",
+		"/usr/local/include"
+	],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"/usr/sbin/c++",
+		"-std=c++23",
+		"-w",
+		"-dM",
+		"-E",
+		"/usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "/workspace/build/src/Mod/Measure/App/Measure_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : [],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 6,
+	"PARSE_CACHE_FILE" : "/workspace/build/src/Mod/Measure/App/CMakeFiles/Measure_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/usr/lib/qt6/moc",
+	"QT_UIC_EXECUTABLE" : "/usr/lib/qt6/uic",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 12,
+	"SETTINGS_FILE" : "/workspace/build/src/Mod/Measure/App/CMakeFiles/Measure_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[ "/workspace/src/Mod/Measure/App/AppMeasure.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/AppMeasurePy.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MassPropertiesObject.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MassPropertiesResult.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasureAngle.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasureArea.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasureBase.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasureBasePyImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasureCOM.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasureDiameter.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasureDistance.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasureLength.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasurePosition.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasureRadius.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/Measurement.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/MeasurementPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/Preferences.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/ShapeFinder.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Measure/App/SubnameHelper.cpp", "MU", null ]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : [],
+	"UIC_SKIP" : [],
+	"UIC_UI_FILES" : [],
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

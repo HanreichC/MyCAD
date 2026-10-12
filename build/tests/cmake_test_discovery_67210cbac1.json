@@ -1,0 +1,1903 @@
+{
+  "tests": 347,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "Assistant",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "first",
+          "file": "\/workspace\/tests\/src\/Gui\/Assistant.cpp",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "name": "CameraPrecalculatedQuaternions",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "testIsometric",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 199
+        },
+        {
+          "name": "testDimetric",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 211
+        },
+        {
+          "name": "testTrimetric",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 223
+        }
+      ]
+    },
+    {
+      "name": "CameraRotation",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "testIsometricProjection",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 245
+        },
+        {
+          "name": "testDimetricProjection",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 256
+        },
+        {
+          "name": "testTrimetricProjection",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 278
+        }
+      ]
+    },
+    {
+      "name": "CameraFitToBox",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "aCubeIsFramedWithTheMargin",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 307
+        },
+        {
+          "name": "noCornerIsClipped",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 322
+        },
+        {
+          "name": "theClippingPlanesClearTheScene",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 333
+        },
+        {
+          "name": "theContentReachesTheMargin",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 345
+        },
+        {
+          "name": "aTranslatedBoxFramesIdentically",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 356
+        },
+        {
+          "name": "anElongatedRodBeatsTheSphereFit",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 376
+        },
+        {
+          "name": "theAspectRatioDecidesWhichExtentConstrains",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 391
+        },
+        {
+          "name": "anEmptyBoxLeavesTheCameraAlone",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 406
+        },
+        {
+          "name": "aPointBoxLeavesTheCameraAlone",
+          "file": "\/workspace\/tests\/src\/Gui\/Camera.cpp",
+          "line": 411
+        }
+      ]
+    },
+    {
+      "name": "ColorScaleOverlayTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "buildsGradientSnapshot",
+          "file": "\/workspace\/tests\/src\/Gui\/ColorScaleOverlayTest.cpp",
+          "line": 14
+        },
+        {
+          "name": "usesScientificNotationWhenFixedLabelsCollide",
+          "file": "\/workspace\/tests\/src\/Gui\/ColorScaleOverlayTest.cpp",
+          "line": 37
+        },
+        {
+          "name": "buildsGradientSnapshotForLargeRange",
+          "file": "\/workspace\/tests\/src\/Gui\/ColorScaleOverlayTest.cpp",
+          "line": 53
+        },
+        {
+          "name": "buildsLegendSnapshotAndUsesLegendColors",
+          "file": "\/workspace\/tests\/src\/Gui\/ColorScaleOverlayTest.cpp",
+          "line": 69
+        }
+      ]
+    },
+    {
+      "name": "FileDialog",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "testNormalizeSavePath",
+          "file": "\/workspace\/tests\/src\/Gui\/FileDialog.cpp",
+          "line": 19
+        },
+        {
+          "name": "testFilterFromFilterString",
+          "file": "\/workspace\/tests\/src\/Gui\/FileDialog.cpp",
+          "line": 108
+        },
+        {
+          "name": "testFilterWildcard",
+          "file": "\/workspace\/tests\/src\/Gui\/FileDialog.cpp",
+          "line": 128
+        }
+      ]
+    },
+    {
+      "name": "StyleParametersApplicationTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "ReplaceVariablesInQss",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/StyleParametersApplicationTest.cpp",
+          "line": 64
+        },
+        {
+          "name": "ReplaceVariablesInQssWithUnknownVariable",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/StyleParametersApplicationTest.cpp",
+          "line": 73
+        },
+        {
+          "name": "ReplaceVariablesInQssWithEmptyString",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/StyleParametersApplicationTest.cpp",
+          "line": 82
+        },
+        {
+          "name": "ReplaceVariablesInQssWithMultipleOccurrences",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/StyleParametersApplicationTest.cpp",
+          "line": 91
+        }
+      ]
+    },
+    {
+      "name": "ParserTest",
+      "tests": 133,
+      "testsuite": [
+        {
+          "name": "ParseNumbers",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 83
+        },
+        {
+          "name": "ParseColors",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 107
+        },
+        {
+          "name": "ParseParameterReferences",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 140
+        },
+        {
+          "name": "ParseArithmeticOperations",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 159
+        },
+        {
+          "name": "ParseComplexExpressions",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 203
+        },
+        {
+          "name": "ParseUnaryOperations",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 227
+        },
+        {
+          "name": "ParseFunctionCalls",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 246
+        },
+        {
+          "name": "ParseKeyword",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 274
+        },
+        {
+          "name": "ParseIdentifierWithFunctionName",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 281
+        },
+        {
+          "name": "ParseKeywordInsideTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 288
+        },
+        {
+          "name": "ParseKeywordSurroundedByWhitespace",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 299
+        },
+        {
+          "name": "ParseErrors",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 307
+        },
+        {
+          "name": "ParseWhitespace",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 338
+        },
+        {
+          "name": "ParseEdgeCases",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 357
+        },
+        {
+          "name": "ParseOperatorPrecedence",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 385
+        },
+        {
+          "name": "ParseUnnamedTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 404
+        },
+        {
+          "name": "ParseNamedTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 416
+        },
+        {
+          "name": "ParseMixedTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 428
+        },
+        {
+          "name": "ParseNamedTupleWithNumericNames",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 440
+        },
+        {
+          "name": "ParseSingleNamedElementIsTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 452
+        },
+        {
+          "name": "ParseTupleWithExpressions",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 463
+        },
+        {
+          "name": "ParseTupleWithMixedTypes",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 475
+        },
+        {
+          "name": "ParseNestedTuples",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 487
+        },
+        {
+          "name": "ParseTupleWithComplexExpressions",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 508
+        },
+        {
+          "name": "TupleToString",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 523
+        },
+        {
+          "name": "ValueHoldsAndGet",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 545
+        },
+        {
+          "name": "TupleAtOutOfBounds",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 567
+        },
+        {
+          "name": "TupleFindNonexistent",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 579
+        },
+        {
+          "name": "TupleMissingClosingParen",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 590
+        },
+        {
+          "name": "GroupedExpressionStillWorks",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 596
+        },
+        {
+          "name": "ParseNestedParentheses",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 612
+        },
+        {
+          "name": "MemberAccessNamed",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 626
+        },
+        {
+          "name": "MemberAccessIndexed",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 642
+        },
+        {
+          "name": "MemberAccessInlineTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 658
+        },
+        {
+          "name": "MemberAccessInArithmetic",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 672
+        },
+        {
+          "name": "MemberAccessChained",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 680
+        },
+        {
+          "name": "MemberAccessErrors",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 688
+        },
+        {
+          "name": "TupleElementWiseAdd",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 702
+        },
+        {
+          "name": "TupleElementWiseSubtract",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 714
+        },
+        {
+          "name": "TupleScalarMultiplyTupleFirst",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 726
+        },
+        {
+          "name": "TupleScalarMultiplyScalarFirst",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 739
+        },
+        {
+          "name": "TupleScalarMultiplyUnitOnScalar",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 752
+        },
+        {
+          "name": "TupleScalarDivideUnitOnTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 766
+        },
+        {
+          "name": "TupleScalarDivide",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 778
+        },
+        {
+          "name": "TupleUnaryNegate",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 790
+        },
+        {
+          "name": "TupleAddPreservesNames",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 802
+        },
+        {
+          "name": "TupleAddMatchesByName",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 815
+        },
+        {
+          "name": "TupleParamArithmetic",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 828
+        },
+        {
+          "name": "TupleUnionMixedNamedUnnamed",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 842
+        },
+        {
+          "name": "TupleUnionNamedDifferentSizes",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 858
+        },
+        {
+          "name": "TupleUnionUnnamedDifferentSizes",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 873
+        },
+        {
+          "name": "TupleAddNumericError",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 888
+        },
+        {
+          "name": "TupleNestedScalarMultiply",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 893
+        },
+        {
+          "name": "PaddingShorthand1Arg",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1123
+        },
+        {
+          "name": "PaddingShorthand2Args",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1133
+        },
+        {
+          "name": "PaddingShorthand3Args",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1142
+        },
+        {
+          "name": "PaddingShorthand4Args",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1151
+        },
+        {
+          "name": "PaddingNamedVerticalHorizontal",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1160
+        },
+        {
+          "name": "PaddingNamedExplicitSides",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1168
+        },
+        {
+          "name": "PaddingMixedNamedOverride",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1176
+        },
+        {
+          "name": "MarginsFunction",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1185
+        },
+        {
+          "name": "InsetsConvertsTupleArgToTargetKind",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1192
+        },
+        {
+          "name": "InsetsConvertsGenericTupleArg",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1202
+        },
+        {
+          "name": "InsetsNamedOverrideBeatsTupleArgument",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1212
+        },
+        {
+          "name": "InsetsGroupOverrideBeatsTupleArgument",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1222
+        },
+        {
+          "name": "BorderThicknessFunction",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1231
+        },
+        {
+          "name": "KindPreservedThroughAdd",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1242
+        },
+        {
+          "name": "KindPreservedThroughScalarMultiply",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1250
+        },
+        {
+          "name": "KindPreservedThroughNegate",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1258
+        },
+        {
+          "name": "KindMismatchError",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1266
+        },
+        {
+          "name": "TypedKindPlusGenericKeepsKind",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1271
+        },
+        {
+          "name": "ExtraNamedElementDropsKind",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1279
+        },
+        {
+          "name": "UnmatchedUnnamedElementsDropKind",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1290
+        },
+        {
+          "name": "InsetsPaddingWrapper",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1301
+        },
+        {
+          "name": "InsetsWrongKindCoercedFromNamedElements",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1315
+        },
+        {
+          "name": "BorderRadiusShorthand1Arg",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1331
+        },
+        {
+          "name": "BorderRadiusShorthand2Args",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1341
+        },
+        {
+          "name": "BorderRadiusShorthand3Args",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1351
+        },
+        {
+          "name": "BorderRadiusShorthand4Args",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1361
+        },
+        {
+          "name": "BorderRadiusNamedOverride",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1370
+        },
+        {
+          "name": "BorderRadiusConvertsTupleArg",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1378
+        },
+        {
+          "name": "BorderRadiusNamedOverrideBeatsTupleArgument",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1391
+        },
+        {
+          "name": "BorderRadiusKindPreservedThroughArithmetic",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1401
+        },
+        {
+          "name": "BorderRadiusKindMismatchWithInsetsThrows",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1409
+        },
+        {
+          "name": "CornersWrapper",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1414
+        },
+        {
+          "name": "CornersFromUnrelatedTupleDefaultsToZero",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1426
+        },
+        {
+          "name": "ResolveTypedCorners",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1444
+        },
+        {
+          "name": "LinearGradientMinimal",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1475
+        },
+        {
+          "name": "LinearGradientExplicitStops",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1506
+        },
+        {
+          "name": "LinearGradientCustomGeometry",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1524
+        },
+        {
+          "name": "LinearGradientMixedStops",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1541
+        },
+        {
+          "name": "RadialGradientMinimal",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1558
+        },
+        {
+          "name": "RadialGradientCustomGeometry",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1576
+        },
+        {
+          "name": "RadialGradientExplicitFocalPoint",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1592
+        },
+        {
+          "name": "GradientTooFewStopsDegrades",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1602
+        },
+        {
+          "name": "GradientAcceptsPercentagesAsNormalizedCoordinates",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1629
+        },
+        {
+          "name": "GradientGeometryWithUnitReportsAndDefaults",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1646
+        },
+        {
+          "name": "GradientStopPositionWithUnitReportsAndDegrades",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1660
+        },
+        {
+          "name": "GradientWrapper",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1675
+        },
+        {
+          "name": "RadialGradientWrapper",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1694
+        },
+        {
+          "name": "GradientStopsAccessibleViaMemberAccess",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1712
+        },
+        {
+          "name": "ResolveTypedLinearGradient",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1719
+        },
+        {
+          "name": "LightenGradient",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1770
+        },
+        {
+          "name": "DarkenGradient",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1793
+        },
+        {
+          "name": "BlendGradientWithColor",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1817
+        },
+        {
+          "name": "BlendColorWithGradient",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1836
+        },
+        {
+          "name": "BlendTwoGradientsThrows",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1855
+        },
+        {
+          "name": "CoalesceReturnsFirstDefined",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1865
+        },
+        {
+          "name": "CoalesceReturnsFirstWhenDefined",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1873
+        },
+        {
+          "name": "CoalesceAllUndefinedReturnsFallbackString",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1880
+        },
+        {
+          "name": "CoalesceSkipsMultipleUndefined",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1887
+        },
+        {
+          "name": "ShadeBasicColor",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1896
+        },
+        {
+          "name": "ShadeWithPercentage",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1911
+        },
+        {
+          "name": "ShadeAnchorReturnsOriginal",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1922
+        },
+        {
+          "name": "ShadeLighterPosition",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1933
+        },
+        {
+          "name": "ShadeGradient",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1945
+        },
+        {
+          "name": "ShadesLighterAndDarker",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1970
+        },
+        {
+          "name": "ShadesAnchorExactMatch",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1996
+        },
+        {
+          "name": "ShadesMonotonicLightness",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2011
+        },
+        {
+          "name": "ShadesPreservesHue",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2043
+        },
+        {
+          "name": "ShadesCustomRange",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2063
+        },
+        {
+          "name": "ShadesCustomMinMax",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2084
+        },
+        {
+          "name": "ContentBoxWithSizeTupleAndPadding",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2102
+        },
+        {
+          "name": "ContentBoxWithAsymmetricPadding",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2112
+        },
+        {
+          "name": "ContentBoxWithMultipleInsets",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2126
+        },
+        {
+          "name": "ContentBoxWithSingleNumericInset",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2141
+        },
+        {
+          "name": "ContentBoxWithTwoNumericInsets",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2152
+        },
+        {
+          "name": "ContentBoxWithNumericValue",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2164
+        },
+        {
+          "name": "ContentBoxTooFewArguments",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2175
+        },
+        {
+          "name": "ColorFunctionsRejectNonColorArguments",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2180
+        },
+        {
+          "name": "ColorFunctionsRejectNonNumericOrNonTupleArguments",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2201
+        },
+        {
+          "name": "ColorFunctionTypeErrorsAreContainedByResolve",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2223
+        },
+        {
+          "name": "MalformedGradientConvertsToNoBrush",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 2239
+        }
+      ]
+    },
+    {
+      "name": "ArgumentParserTest",
+      "tests": 17,
+      "testsuite": [
+        {
+          "name": "AllPositional",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 919
+        },
+        {
+          "name": "AllNamed",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 931
+        },
+        {
+          "name": "AllNamedReversedOrder",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 943
+        },
+        {
+          "name": "MixedPositionalThenNamed",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 955
+        },
+        {
+          "name": "NamedThenPositionalFillsRemainingSlot",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 968
+        },
+        {
+          "name": "DefaultValueUsedWhenMissing",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 981
+        },
+        {
+          "name": "DefaultValueOverriddenByPositional",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 995
+        },
+        {
+          "name": "DefaultValueOverriddenByName",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1009
+        },
+        {
+          "name": "ResolvedTupleHasCorrectOrder",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1023
+        },
+        {
+          "name": "MixedTypes",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1036
+        },
+        {
+          "name": "ErrorOnUnknownName",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1048
+        },
+        {
+          "name": "ErrorOnDuplicateName",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1057
+        },
+        {
+          "name": "ErrorOnMissingRequired",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1067
+        },
+        {
+          "name": "ErrorOnExcessPositional",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1076
+        },
+        {
+          "name": "TypedGetSuccess",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1087
+        },
+        {
+          "name": "TypedGetWrongType",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1100
+        },
+        {
+          "name": "TypedGetMissingName",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserTest.cpp",
+          "line": 1112
+        }
+      ]
+    },
+    {
+      "name": "ParserRobustnessTest",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "HugeMemberIndexIsAnExpressionError",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserRobustnessTest.cpp",
+          "line": 51
+        },
+        {
+          "name": "HugeColorComponentIsAParserError",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserRobustnessTest.cpp",
+          "line": 60
+        },
+        {
+          "name": "OverlongNumericLiteralIsAParserError",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserRobustnessTest.cpp",
+          "line": 72
+        },
+        {
+          "name": "NonAsciiInputDoesNotCrash",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserRobustnessTest.cpp",
+          "line": 85
+        },
+        {
+          "name": "EveryFailureThroughResolveIsContained",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserRobustnessTest.cpp",
+          "line": 99
+        },
+        {
+          "name": "ShortHexColorLiteralIsAParserError",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserRobustnessTest.cpp",
+          "line": 125
+        },
+        {
+          "name": "TwoDigitHexColorLiteralIsAParserError",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserRobustnessTest.cpp",
+          "line": 136
+        },
+        {
+          "name": "BareHashIsAParserError",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserRobustnessTest.cpp",
+          "line": 147
+        },
+        {
+          "name": "FullLengthHexColorLiteralStillParses",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParserRobustnessTest.cpp",
+          "line": 159
+        }
+      ]
+    },
+    {
+      "name": "ParameterManagerTest",
+      "tests": 48,
+      "testsuite": [
+        {
+          "name": "BasicParameterResolution",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 78
+        },
+        {
+          "name": "ParameterReferences",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 100
+        },
+        {
+          "name": "Caching",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 114
+        },
+        {
+          "name": "CacheInvalidation",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 132
+        },
+        {
+          "name": "SourcePriority",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 148
+        },
+        {
+          "name": "ParameterListing",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 167
+        },
+        {
+          "name": "ExpressionRetrieval",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 188
+        },
+        {
+          "name": "ParameterRetrieval",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 209
+        },
+        {
+          "name": "SourceManagement",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 225
+        },
+        {
+          "name": "CircularReferenceDetection",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 239
+        },
+        {
+          "name": "ComplexExpressions",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 260
+        },
+        {
+          "name": "ErrorHandling",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 295
+        },
+        {
+          "name": "ResolveParameterDefinition",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 321
+        },
+        {
+          "name": "ResolveParameterDefinitionDefault",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 331
+        },
+        {
+          "name": "QssFormattingNumeric",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 340
+        },
+        {
+          "name": "QssFormattingColor",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 345
+        },
+        {
+          "name": "QssFormattingGenericTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 350
+        },
+        {
+          "name": "QssFormattingInsetsTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 355
+        },
+        {
+          "name": "InlineExpressionSimple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 362
+        },
+        {
+          "name": "InlineExpressionFunctionCall",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 368
+        },
+        {
+          "name": "InlineExpressionWithParameterReference",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 374
+        },
+        {
+          "name": "InlineExpressionArithmetic",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 387
+        },
+        {
+          "name": "InlineExpressionMixedWithToken",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 393
+        },
+        {
+          "name": "InlineExpressionInvalidLogsWarning",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 399
+        },
+        {
+          "name": "InlineExpressionMultiple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 405
+        },
+        {
+          "name": "ExistingTokenUsesToQss",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 411
+        },
+        {
+          "name": "QssFormattingLinearGradient",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 418
+        },
+        {
+          "name": "QssFormattingLinearGradientCustomGeometry",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 427
+        },
+        {
+          "name": "QssFormattingRadialGradient",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 438
+        },
+        {
+          "name": "QssFormattingKeepsStopAlpha",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 448
+        },
+        {
+          "name": "QssFormattingKeepsColorAlpha",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 460
+        },
+        {
+          "name": "QssFormattingMalformedGradientStaysTransparent",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 466
+        },
+        {
+          "name": "ResolvePaddingCoercesEveryEquivalentTokenShape",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 485
+        },
+        {
+          "name": "ResolveDefinitionFallsBackWhenTokenHasWrongShape",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 532
+        },
+        {
+          "name": "ResolveDefinitionOfVariantTypeStillWorks",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 567
+        },
+        {
+          "name": "ReloadClearsDiagnosticState",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 588
+        },
+        {
+          "name": "EvaluateWrapsNonBaseExceptionsAsExpressionError",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 600
+        },
+        {
+          "name": "ReplacePlaceholdersAbsorbsNonBaseExceptions",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 609
+        },
+        {
+          "name": "ReplacePlaceholdersAbsorbsThrowingParameterSource",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 645
+        },
+        {
+          "name": "ResolveAbsorbsThrowingParameterSource",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 659
+        },
+        {
+          "name": "ResolveDefinitionAbsorbsThrowingParameterSource",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 671
+        },
+        {
+          "name": "ResolveAbsorbsThrowFromCyclicFallback",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 724
+        },
+        {
+          "name": "ResolveReportsAreAttributedToTheToken",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 739
+        },
+        {
+          "name": "SameDefectInTwoTokensProducesTwoDistinctMessages",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 754
+        },
+        {
+          "name": "CircularReferenceReportsThroughDiagnostics",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 779
+        },
+        {
+          "name": "UnknownTokenIsDroppedAndNeighboursStillResolve",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 800
+        },
+        {
+          "name": "FailingInlineExpressionIsDroppedAndNeighboursStillResolve",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 812
+        },
+        {
+          "name": "TokenThatFailsToEvaluateSubstitutesItsLiteralText",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ParameterManagerTest.cpp",
+          "line": 823
+        }
+      ]
+    },
+    {
+      "name": "YamlParameterSourceTest",
+      "tests": 10,
+      "testsuite": [
+        {
+          "name": "ScalarStringIsLoadedAsExpression",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/YamlParameterSourceTest.cpp",
+          "line": 71
+        },
+        {
+          "name": "ScalarColorIsLoadedAsExpression",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/YamlParameterSourceTest.cpp",
+          "line": 80
+        },
+        {
+          "name": "SequenceBecomesUnnamedTupleExpression",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/YamlParameterSourceTest.cpp",
+          "line": 89
+        },
+        {
+          "name": "BlockSequenceBecomesUnnamedTupleExpression",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/YamlParameterSourceTest.cpp",
+          "line": 98
+        },
+        {
+          "name": "MapBecomesNamedTupleExpression",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/YamlParameterSourceTest.cpp",
+          "line": 113
+        },
+        {
+          "name": "NestedSequenceBecomesNestedTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/YamlParameterSourceTest.cpp",
+          "line": 128
+        },
+        {
+          "name": "SequenceResolvesToTupleValue",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/YamlParameterSourceTest.cpp",
+          "line": 141
+        },
+        {
+          "name": "MapResolvesToNamedTupleValue",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/YamlParameterSourceTest.cpp",
+          "line": 157
+        },
+        {
+          "name": "MixedFileLoadsAllParameters",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/YamlParameterSourceTest.cpp",
+          "line": 176
+        },
+        {
+          "name": "FlushAndReloadPreservesSequenceValue",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/YamlParameterSourceTest.cpp",
+          "line": 195
+        }
+      ]
+    },
+    {
+      "name": "DiagnosticsTest",
+      "tests": 10,
+      "testsuite": [
+        {
+          "name": "DeliversFormattedMessageToObserver",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/DiagnosticsTest.cpp",
+          "line": 36
+        },
+        {
+          "name": "DropsExactRepeats",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/DiagnosticsTest.cpp",
+          "line": 45
+        },
+        {
+          "name": "ClearAllowsMessageAgain",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/DiagnosticsTest.cpp",
+          "line": 56
+        },
+        {
+          "name": "ObserverStopsReceivingAfterSubscriptionEnds",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/DiagnosticsTest.cpp",
+          "line": 67
+        },
+        {
+          "name": "SupportsMultipleSimultaneousObservers",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/DiagnosticsTest.cpp",
+          "line": 84
+        },
+        {
+          "name": "ThrowingObserverDoesNotPreventOthersFromReceiving",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/DiagnosticsTest.cpp",
+          "line": 95
+        },
+        {
+          "name": "NoActiveResolutionScopeMeansNoPrefix",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/DiagnosticsTest.cpp",
+          "line": 110
+        },
+        {
+          "name": "ResolutionScopePrefixesTheTokenName",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/DiagnosticsTest.cpp",
+          "line": 119
+        },
+        {
+          "name": "SameDefectUnderTwoScopesProducesTwoDistinctMessages",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/DiagnosticsTest.cpp",
+          "line": 131
+        },
+        {
+          "name": "NestedResolutionScopeReportsTheInnermostToken",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/DiagnosticsTest.cpp",
+          "line": 147
+        }
+      ]
+    },
+    {
+      "name": "ValueAccessTest",
+      "tests": 10,
+      "testsuite": [
+        {
+          "name": "StyleDefaultsAreEmptyValues",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ValueAccessTest.cpp",
+          "line": 38
+        },
+        {
+          "name": "ValueGetWrongTypeReturnsDefaultAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ValueAccessTest.cpp",
+          "line": 47
+        },
+        {
+          "name": "ValueGetWithFallbackReturnsFallback",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ValueAccessTest.cpp",
+          "line": 56
+        },
+        {
+          "name": "ValueTryGetReturnsNullOnMismatchAndReportsNothing",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ValueAccessTest.cpp",
+          "line": 63
+        },
+        {
+          "name": "TupleGetMissingNameReturnsDefaultAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ValueAccessTest.cpp",
+          "line": 73
+        },
+        {
+          "name": "TupleGetWrongTypeReturnsDefaultAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ValueAccessTest.cpp",
+          "line": 82
+        },
+        {
+          "name": "TupleGetWithFallbackReturnsFallback",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ValueAccessTest.cpp",
+          "line": 91
+        },
+        {
+          "name": "TupleAtOutOfRangeReturnsDefaultAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ValueAccessTest.cpp",
+          "line": 98
+        },
+        {
+          "name": "ShadesWithNonNumericSpecIsContainedByResolve",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ValueAccessTest.cpp",
+          "line": 110
+        },
+        {
+          "name": "BlendWithNonColorOperandIsContainedByResolve",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ValueAccessTest.cpp",
+          "line": 131
+        }
+      ]
+    },
+    {
+      "name": "EdgesTest",
+      "tests": 13,
+      "testsuite": [
+        {
+          "name": "PaddingFromColorDegradesToZeroAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 57
+        },
+        {
+          "name": "PaddingTryFromColorReturnsNullopt",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 69
+        },
+        {
+          "name": "PaddingFromBorderColorsDegradesToZero",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 74
+        },
+        {
+          "name": "PaddingFromNumericExpandsToAllSides",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 83
+        },
+        {
+          "name": "BorderColorsFromColorExpandsToAllSides",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 94
+        },
+        {
+          "name": "TooManyPositionalArgumentsDegradesToZero",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 104
+        },
+        {
+          "name": "PaddingAcceptsAnExistingPaddingTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 122
+        },
+        {
+          "name": "InsetsAcceptAnyEdgeKind",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 131
+        },
+        {
+          "name": "PaddingOfNestedBorderColorsArgumentDegradesToZero",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 140
+        },
+        {
+          "name": "PaddingTryFromCornersReturnsNulloptWithMessage",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 160
+        },
+        {
+          "name": "InsetsTryFromLinearGradientReturnsNullopt",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 173
+        },
+        {
+          "name": "PaddingFromCornersDegradesToZeroAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 188
+        },
+        {
+          "name": "PaddingFromMarginsTupleCoerces",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/EdgesTest.cpp",
+          "line": 200
+        }
+      ]
+    },
+    {
+      "name": "CornersTest",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "FromColorDegradesToZeroAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/CornersTest.cpp",
+          "line": 35
+        },
+        {
+          "name": "TryFromColorReturnsNullopt",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/CornersTest.cpp",
+          "line": 47
+        },
+        {
+          "name": "DiagonalPairingForTwoValues",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/CornersTest.cpp",
+          "line": 52
+        },
+        {
+          "name": "TooManyPositionalArgumentsDegradesToZero",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/CornersTest.cpp",
+          "line": 66
+        },
+        {
+          "name": "RejectsAPaddingTuple",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/CornersTest.cpp",
+          "line": 83
+        },
+        {
+          "name": "RawArgumentTupleFromColorDegradesToZeroAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/CornersTest.cpp",
+          "line": 101
+        }
+      ]
+    },
+    {
+      "name": "GradientTest",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "TooFewStopsDegradesToTransparentAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/GradientTest.cpp",
+          "line": 47
+        },
+        {
+          "name": "TryFromTooFewStopsReturnsNullopt",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/GradientTest.cpp",
+          "line": 62
+        },
+        {
+          "name": "KindMismatchDegradesAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/GradientTest.cpp",
+          "line": 70
+        },
+        {
+          "name": "NonNumericGeometryParameterDegradesAndReports",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/GradientTest.cpp",
+          "line": 91
+        },
+        {
+          "name": "WellFormedGradientRoundTrips",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/GradientTest.cpp",
+          "line": 116
+        },
+        {
+          "name": "MalformedKindTaggedTupleNeverProducesIllFormedWrapperThroughAnyRoute",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/GradientTest.cpp",
+          "line": 130
+        }
+      ]
+    },
+    {
+      "name": "ColorShadingTest",
+      "tests": 16,
+      "testsuite": [
+        {
+          "name": "AnchorReturnsUnchanged",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 26
+        },
+        {
+          "name": "MonotonicDecrease",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 35
+        },
+        {
+          "name": "SymmetricRangeIsLinear",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 52
+        },
+        {
+          "name": "ClampedRangeRespectsMinMax",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 67
+        },
+        {
+          "name": "NarrowRangeProducesLessVariation",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 87
+        },
+        {
+          "name": "ExtremeLightnessIsHandled",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 108
+        },
+        {
+          "name": "ChromaScalesWithGamutBoundary",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 130
+        },
+        {
+          "name": "LighterShadesReduceChroma",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 145
+        },
+        {
+          "name": "BlackAnchorProducesZeroChroma",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 157
+        },
+        {
+          "name": "WhiteAnchorProducesZeroChroma",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 172
+        },
+        {
+          "name": "GrayStaysNeutral",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 187
+        },
+        {
+          "name": "HueIsPreserved",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 201
+        },
+        {
+          "name": "ExtremePivotsProduceFiniteShades",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 211
+        },
+        {
+          "name": "MaxLightnessAboveOneIsClamped",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 226
+        },
+        {
+          "name": "InvertedBoundsPreserveLightToDarkDirection",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 238
+        },
+        {
+          "name": "OutOfRangePositionSaturatesAtTheCurveEnds",
+          "file": "\/workspace\/tests\/src\/Gui\/StyleParameters\/ColorShadingTest.cpp",
+          "line": 253
+        }
+      ]
+    },
+    {
+      "name": "InputHintTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "LookupHintsSimpleState",
+          "file": "\/workspace\/tests\/src\/Gui\/InputHintTest.cpp",
+          "line": 44
+        },
+        {
+          "name": "LookupHintsPairState",
+          "file": "\/workspace\/tests\/src\/Gui\/InputHintTest.cpp",
+          "line": 64
+        }
+      ]
+    },
+    {
+      "name": "ViewProviderDoubleClick",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "LegacyCallbackRunsOnce",
+          "file": "\/workspace\/tests\/src\/Gui\/ViewProviderDoubleClick.cpp",
+          "line": 65
+        },
+        {
+          "name": "LegacyRejectionIsPreserved",
+          "file": "\/workspace\/tests\/src\/Gui\/ViewProviderDoubleClick.cpp",
+          "line": 72
+        },
+        {
+          "name": "ExplicitRejectionDoesNotFallBackToLegacyCallback",
+          "file": "\/workspace\/tests\/src\/Gui\/ViewProviderDoubleClick.cpp",
+          "line": 80
+        },
+        {
+          "name": "UnhandledOccurrenceUsesLegacyCallbackOnce",
+          "file": "\/workspace\/tests\/src\/Gui\/ViewProviderDoubleClick.cpp",
+          "line": 89
+        },
+        {
+          "name": "KeepsTheCallersOccurrencePath",
+          "file": "\/workspace\/tests\/src\/Gui\/ViewProviderDoubleClick.cpp",
+          "line": 98
+        }
+      ]
+    },
+    {
+      "name": "DefaultEditReference",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "UsesModelContainersInsteadOfIncomingLinks",
+          "file": "\/workspace\/tests\/src\/Gui\/ViewProviderDoubleClick.cpp",
+          "line": 150
+        },
+        {
+          "name": "IncludesLinkGroupContainers",
+          "file": "\/workspace\/tests\/src\/Gui\/ViewProviderDoubleClick.cpp",
+          "line": 168
+        },
+        {
+          "name": "IncomingLinkDoesNotReplaceTopLevelObject",
+          "file": "\/workspace\/tests\/src\/Gui\/ViewProviderDoubleClick.cpp",
+          "line": 182
+        }
+      ]
+    },
+    {
+      "name": "NativeGesturePinch",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "zoomWithoutBeginIsRejected",
+          "file": "\/workspace\/tests\/src\/Gui\/NativeGesturePinchTest.cpp",
+          "line": 9
+        },
+        {
+          "name": "beginActivatesAndRecordsCenter",
+          "file": "\/workspace\/tests\/src\/Gui\/NativeGesturePinchTest.cpp",
+          "line": 17
+        },
+        {
+          "name": "zoomKeepsTheStartCenterFromBegin",
+          "file": "\/workspace\/tests\/src\/Gui\/NativeGesturePinchTest.cpp",
+          "line": 29
+        },
+        {
+          "name": "nonPositiveZoomValueIsClampedToNeutral",
+          "file": "\/workspace\/tests\/src\/Gui\/NativeGesturePinchTest.cpp",
+          "line": 43
+        },
+        {
+          "name": "rotateConvertsDegreesToRadiansAndInvertsDirection",
+          "file": "\/workspace\/tests\/src\/Gui\/NativeGesturePinchTest.cpp",
+          "line": 55
+        },
+        {
+          "name": "endDeactivatesAndFurtherUpdatesAreRejected",
+          "file": "\/workspace\/tests\/src\/Gui\/NativeGesturePinchTest.cpp",
+          "line": 67
+        },
+        {
+          "name": "unhandledGestureTypeIsRejectedWithoutDisturbingState",
+          "file": "\/workspace\/tests\/src\/Gui\/NativeGesturePinchTest.cpp",
+          "line": 79
+        },
+        {
+          "name": "aSecondGestureResetsTheStartCenter",
+          "file": "\/workspace\/tests\/src\/Gui\/NativeGesturePinchTest.cpp",
+          "line": 91
+        }
+      ]
+    },
+    {
+      "name": "NavigationStylePinchAction",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "onlyUpdateEventsMoveTheCamera",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStylePinchTest.cpp",
+          "line": 26
+        },
+        {
+          "name": "aRotateOnlyEventDoesNotZoom",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStylePinchTest.cpp",
+          "line": 42
+        },
+        {
+          "name": "aZoomOnlyEventDoesNotRotate",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStylePinchTest.cpp",
+          "line": 52
+        },
+        {
+          "name": "aNegativeZoomFactorIsIgnored",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStylePinchTest.cpp",
+          "line": 62
+        },
+        {
+          "name": "pinchingOutZoomsIn",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStylePinchTest.cpp",
+          "line": 71
+        },
+        {
+          "name": "pinchingInZoomsOutBySymmetricAmount",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStylePinchTest.cpp",
+          "line": 81
+        },
+        {
+          "name": "aTouchscreenPinchObeysTheTiltPreference",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStylePinchTest.cpp",
+          "line": 92
+        },
+        {
+          "name": "aTrackpadRotateIsNotBlockedByTheTouchscreenTiltPreference",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStylePinchTest.cpp",
+          "line": 102
+        }
+      ]
+    },
+    {
+      "name": "NavigationStyleWheelAction",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "anOrdinaryWheelZoomsWhateverThePreferenceSays",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStyleWheelTest.cpp",
+          "line": 22
+        },
+        {
+          "name": "aTouchpadZoomsWhenScrollPanningIsOff",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStyleWheelTest.cpp",
+          "line": 28
+        },
+        {
+          "name": "aTouchpadPansWhenScrollPanningIsOn",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStyleWheelTest.cpp",
+          "line": 33
+        },
+        {
+          "name": "shiftOrbitsInsteadOfPanning",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStyleWheelTest.cpp",
+          "line": 38
+        },
+        {
+          "name": "ctrlZoomsEvenWhileScrollPanningIsOn",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStyleWheelTest.cpp",
+          "line": 43
+        },
+        {
+          "name": "ctrlWinsOverShift",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStyleWheelTest.cpp",
+          "line": 48
+        },
+        {
+          "name": "modifiersNeverDivertAnOrdinaryWheelFromZooming",
+          "file": "\/workspace\/tests\/src\/Gui\/NavigationStyleWheelTest.cpp",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "name": "SelectionTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "testSelectionAllowsObjectsWhenNoGateIsInstalled",
+          "file": "\/workspace\/tests\/src\/Gui\/SelectionTest.cpp",
+          "line": 93
+        },
+        {
+          "name": "testSelectionUsesActiveGateWithoutKeepingRejectionReason",
+          "file": "\/workspace\/tests\/src\/Gui\/SelectionTest.cpp",
+          "line": 98
+        }
+      ]
+    },
+    {
+      "name": "SelectionPickPolicyTest",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "canFinalizeSinglePickWhenNoGateIsInstalled",
+          "file": "\/workspace\/tests\/src\/Gui\/SelectionTest.cpp",
+          "line": 113
+        },
+        {
+          "name": "continuesSinglePickWhenGateRejectedAllCurrentCandidates",
+          "file": "\/workspace\/tests\/src\/Gui\/SelectionTest.cpp",
+          "line": 123
+        },
+        {
+          "name": "choosesAllowedCandidateWhenPreferredPickIsRejected",
+          "file": "\/workspace\/tests\/src\/Gui\/SelectionTest.cpp",
+          "line": 133
+        },
+        {
+          "name": "preservesPriorityChoiceWithinFirstOwner",
+          "file": "\/workspace\/tests\/src\/Gui\/SelectionTest.cpp",
+          "line": 145
+        },
+        {
+          "name": "keepsPreferredPickWhenNoCandidatePassesGate",
+          "file": "\/workspace\/tests\/src\/Gui\/SelectionTest.cpp",
+          "line": 158
+        }
+      ]
+    },
+    {
+      "name": "SoMouseWheelEvent",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "toGlPixelDeltaScalesByDevicePixelRatioAndFlipsY",
+          "file": "\/workspace\/tests\/src\/Gui\/SoMouseWheelEventTest.cpp",
+          "line": 7
+        },
+        {
+          "name": "onlyAScrollWithAPhaseAndPixelDeltaIsPrecise",
+          "file": "\/workspace\/tests\/src\/Gui\/SoMouseWheelEventTest.cpp",
+          "line": 12
+        }
+      ]
+    }
+  ]
+}

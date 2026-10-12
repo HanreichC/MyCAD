@@ -1,0 +1,3660 @@
+{
+  "tests": 660,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "Axis",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "TestDefault",
+          "file": "\/workspace\/tests\/src\/Base\/Axis.cpp",
+          "line": 18
+        },
+        {
+          "name": "TestCustom",
+          "file": "\/workspace\/tests\/src\/Base\/Axis.cpp",
+          "line": 25
+        },
+        {
+          "name": "TestSetter",
+          "file": "\/workspace\/tests\/src\/Base\/Axis.cpp",
+          "line": 32
+        },
+        {
+          "name": "TestAssign",
+          "file": "\/workspace\/tests\/src\/Base\/Axis.cpp",
+          "line": 41
+        },
+        {
+          "name": "TestReverse",
+          "file": "\/workspace\/tests\/src\/Base\/Axis.cpp",
+          "line": 52
+        },
+        {
+          "name": "TestReversed",
+          "file": "\/workspace\/tests\/src\/Base\/Axis.cpp",
+          "line": 60
+        },
+        {
+          "name": "TestMove",
+          "file": "\/workspace\/tests\/src\/Base\/Axis.cpp",
+          "line": 69
+        },
+        {
+          "name": "TestMult",
+          "file": "\/workspace\/tests\/src\/Base\/Axis.cpp",
+          "line": 77
+        }
+      ]
+    },
+    {
+      "name": "Base64",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "encode",
+          "file": "\/workspace\/tests\/src\/Base\/Base64.cpp",
+          "line": 37
+        },
+        {
+          "name": "exactlyFourBytes",
+          "file": "\/workspace\/tests\/src\/Base\/Base64.cpp",
+          "line": 49
+        },
+        {
+          "name": "twoEqualsSignsPadding",
+          "file": "\/workspace\/tests\/src\/Base\/Base64.cpp",
+          "line": 66
+        },
+        {
+          "name": "oneEqualsSignPadding",
+          "file": "\/workspace\/tests\/src\/Base\/Base64.cpp",
+          "line": 80
+        }
+      ]
+    },
+    {
+      "name": "BitmaskTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "toUnderlyingType",
+          "file": "\/workspace\/tests\/src\/Base\/Bitmask.cpp",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "name": "BoundBox",
+      "tests": 22,
+      "testsuite": [
+        {
+          "name": "TestDefault",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 13
+        },
+        {
+          "name": "TestVoid",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 19
+        },
+        {
+          "name": "TestCopy",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 29
+        },
+        {
+          "name": "TestAssign",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 44
+        },
+        {
+          "name": "TestPoints",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 60
+        },
+        {
+          "name": "TestDistance",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 73
+        },
+        {
+          "name": "TestEmptySpan",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 90
+        },
+        {
+          "name": "TestNonEmptySpan",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 96
+        },
+        {
+          "name": "TestArray",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 113
+        },
+        {
+          "name": "TestIntersect",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 130
+        },
+        {
+          "name": "TestIntersect2D",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 153
+        },
+        {
+          "name": "TestUnite",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 166
+        },
+        {
+          "name": "TestAdd",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 193
+        },
+        {
+          "name": "TestCenter",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 206
+        },
+        {
+          "name": "TestMinimum",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 215
+        },
+        {
+          "name": "TestMaximum",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 224
+        },
+        {
+          "name": "TestDiagonalLength",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 233
+        },
+        {
+          "name": "TestVolume",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 243
+        },
+        {
+          "name": "TestDiagonalEnlarge",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 253
+        },
+        {
+          "name": "TestDiagonalShrink",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 264
+        },
+        {
+          "name": "TestDiagonalMove",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 276
+        },
+        {
+          "name": "TestDiagonalScale",
+          "file": "\/workspace\/tests\/src\/Base\/BoundBox.cpp",
+          "line": 292
+        }
+      ]
+    },
+    {
+      "name": "Builder3D",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "openInventor",
+          "file": "\/workspace\/tests\/src\/Base\/Builder3D.cpp",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "name": "TestColor",
+      "tests": 13,
+      "testsuite": [
+        {
+          "name": "equal",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 6
+        },
+        {
+          "name": "round",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 19
+        },
+        {
+          "name": "packedValue",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 27
+        },
+        {
+          "name": "packedRGB",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 42
+        },
+        {
+          "name": "packedARGB",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 58
+        },
+        {
+          "name": "asPackedRGB",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 132
+        },
+        {
+          "name": "fromPackedRGB",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 145
+        },
+        {
+          "name": "asPackedRGBA",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 160
+        },
+        {
+          "name": "fromPackedRGBA",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 174
+        },
+        {
+          "name": "setValue",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 191
+        },
+        {
+          "name": "asValue",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 206
+        },
+        {
+          "name": "asHexString",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 221
+        },
+        {
+          "name": "fromHexString",
+          "file": "\/workspace\/tests\/src\/Base\/Color.cpp",
+          "line": 232
+        }
+      ]
+    },
+    {
+      "name": "Console",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "DirectModeDeliversToObserver",
+          "file": "\/workspace\/tests\/src\/Base\/Console.cpp",
+          "line": 77
+        },
+        {
+          "name": "QueuedModeFallsBackToDirectWithoutHandler",
+          "file": "\/workspace\/tests\/src\/Base\/Console.cpp",
+          "line": 93
+        },
+        {
+          "name": "QueuedModeCallsPostEventHandlerWhenSet",
+          "file": "\/workspace\/tests\/src\/Base\/Console.cpp",
+          "line": 112
+        },
+        {
+          "name": "RefreshCallsHandlerWhenEnabled",
+          "file": "\/workspace\/tests\/src\/Base\/Console.cpp",
+          "line": 138
+        }
+      ]
+    },
+    {
+      "name": "CoordinateSystem",
+      "tests": 11,
+      "testsuite": [
+        {
+          "name": "TestDefault",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 7
+        },
+        {
+          "name": "TestSetAxisFailure",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 16
+        },
+        {
+          "name": "TestSetAxis",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 23
+        },
+        {
+          "name": "TestSetXDir",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 37
+        },
+        {
+          "name": "TestSetYDir",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 47
+        },
+        {
+          "name": "TestSetZDir",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 57
+        },
+        {
+          "name": "TestTransformPlacement",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 67
+        },
+        {
+          "name": "TestMultTransformPlacement",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 83
+        },
+        {
+          "name": "TestTransformRotation",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 102
+        },
+        {
+          "name": "TestTransformPoint",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 116
+        },
+        {
+          "name": "TestSetPlacement",
+          "file": "\/workspace\/tests\/src\/Base\/CoordinateSystem.cpp",
+          "line": 132
+        }
+      ]
+    },
+    {
+      "name": "CrashReporterTests",
+      "tests": 40,
+      "testsuite": [
+        {
+          "name": "parseMissingFileThrows",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 238
+        },
+        {
+          "name": "parseFileTooSmall",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 244
+        },
+        {
+          "name": "parseFileTooLarge",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 255
+        },
+        {
+          "name": "parseGoodCrashReportLoads",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 268
+        },
+        {
+          "name": "parseDropsFaultAddressForCodeThatHasNone",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 306
+        },
+        {
+          "name": "parseNamesUnrecognizedFaultCodeWithItsHexValue",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 328
+        },
+        {
+          "name": "parseBadMagicNumber",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 354
+        },
+        {
+          "name": "parseBadVersionNumber",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 368
+        },
+        {
+          "name": "parseBadFileSize",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 383
+        },
+        {
+          "name": "parseBadStringTableOffset",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 397
+        },
+        {
+          "name": "parseBadFrameCount",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 414
+        },
+        {
+          "name": "parseBadFrameTableOffset",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 431
+        },
+        {
+          "name": "parseBadCRC",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 449
+        },
+        {
+          "name": "matchingHashAttemptsSymbolication",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 468
+        },
+        {
+          "name": "realCrashCapturesUsableFrames",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 564
+        },
+        {
+          "name": "DISABLED_DeliberateSegfaultRoundTrip",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 620
+        },
+        {
+          "name": "trimLeadingPlumbingFramesLeavesNoPlumbingAlone",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 643
+        },
+        {
+          "name": "trimLeadingPlumbingFramesLeavesEmptyVectorAlone",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 654
+        },
+        {
+          "name": "trimLeadingPlumbingFramesRemovesSingleExpectedSymbolFromTop",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 661
+        },
+        {
+          "name": "trimLeadingPlumbingFramesRemovesAnythingAboveFirstTrampoline",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 673
+        },
+        {
+          "name": "trimLeadingPlumbingFramesKeepsUnsymbolicatedTopFrame",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 687
+        },
+        {
+          "name": "trimLeadingPlumbingFramesKeepsAllWhenTrampolineIsDeepest",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 700
+        },
+        {
+          "name": "scanDetectsAndArchivesGoodReport",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 711
+        },
+        {
+          "name": "scanDetectsAndRenamesBadReport",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 725
+        },
+        {
+          "name": "scanCorrectlyHandlesMixOfGoodAndBadReports",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 738
+        },
+        {
+          "name": "scanReportsIncompleteFiles",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 760
+        },
+        {
+          "name": "clearRemovesEverything",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 784
+        },
+        {
+          "name": "clearBeforeScanDoesNothing",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 806
+        },
+        {
+          "name": "scanSetsOSVersionWhenPresent",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 811
+        },
+        {
+          "name": "scanDoesNotSetOSVersionWhenNotPresent",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 827
+        },
+        {
+          "name": "retentionKeepsAllWhenUnderCountAndYoung",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 857
+        },
+        {
+          "name": "retentionDeletesOldestBeyondCount",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 877
+        },
+        {
+          "name": "retentionKeepsYoungBeyondCount",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 901
+        },
+        {
+          "name": "retentionKeepsOldWithinCount",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 925
+        },
+        {
+          "name": "retentionDeletesOnlyOldAndBeyondCount",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 949
+        },
+        {
+          "name": "retentionDeletesCompanionDump",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 973
+        },
+        {
+          "name": "faultAddressIsMeaningfulReturnsFalseForCodeWithoutAddress",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 994
+        },
+        {
+          "name": "faultAddressIsMeaningfulReturnsTrueForCodeWithAddress",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 999
+        },
+        {
+          "name": "describeFaultCodeGivesValidResultForValidCode",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 1005
+        },
+        {
+          "name": "describeFaultCodeGivesNulloptForBadCode",
+          "file": "\/workspace\/tests\/src\/Base\/CrashReporter_tests.cpp",
+          "line": 1013
+        }
+      ]
+    },
+    {
+      "name": "DualNumber",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "TestDefault",
+          "file": "\/workspace\/tests\/src\/Base\/DualNumber.cpp",
+          "line": 4
+        },
+        {
+          "name": "TestNonDefault",
+          "file": "\/workspace\/tests\/src\/Base\/DualNumber.cpp",
+          "line": 11
+        },
+        {
+          "name": "TestNegate",
+          "file": "\/workspace\/tests\/src\/Base\/DualNumber.cpp",
+          "line": 22
+        },
+        {
+          "name": "TestPlus",
+          "file": "\/workspace\/tests\/src\/Base\/DualNumber.cpp",
+          "line": 29
+        },
+        {
+          "name": "TestMinus",
+          "file": "\/workspace\/tests\/src\/Base\/DualNumber.cpp",
+          "line": 47
+        },
+        {
+          "name": "TestMultiply",
+          "file": "\/workspace\/tests\/src\/Base\/DualNumber.cpp",
+          "line": 65
+        },
+        {
+          "name": "TestDivide",
+          "file": "\/workspace\/tests\/src\/Base\/DualNumber.cpp",
+          "line": 83
+        },
+        {
+          "name": "TestPow",
+          "file": "\/workspace\/tests\/src\/Base\/DualNumber.cpp",
+          "line": 97
+        }
+      ]
+    },
+    {
+      "name": "DualQuaternion",
+      "tests": 19,
+      "testsuite": [
+        {
+          "name": "TestDefault",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 5
+        },
+        {
+          "name": "TestFromDouble",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 18
+        },
+        {
+          "name": "TestFromDoubles",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 31
+        },
+        {
+          "name": "TestFromDual",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 44
+        },
+        {
+          "name": "TestIdentity",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 58
+        },
+        {
+          "name": "TestReal",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 71
+        },
+        {
+          "name": "TestDual",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 84
+        },
+        {
+          "name": "TestConjugate",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 97
+        },
+        {
+          "name": "TestVec",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 110
+        },
+        {
+          "name": "TestLength",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 123
+        },
+        {
+          "name": "TestTheta",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 129
+        },
+        {
+          "name": "TestDot",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 135
+        },
+        {
+          "name": "TestNegate",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 143
+        },
+        {
+          "name": "TestPlus",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 157
+        },
+        {
+          "name": "TestMinus",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 172
+        },
+        {
+          "name": "TestMultiplyQuat",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 187
+        },
+        {
+          "name": "TestMultiplyNumber",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 202
+        },
+        {
+          "name": "TestMultiplyScalar",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 228
+        },
+        {
+          "name": "TestPow",
+          "file": "\/workspace\/tests\/src\/Base\/DualQuaternion.cpp",
+          "line": 253
+        }
+      ]
+    },
+    {
+      "name": "FileException",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "TestWhatCombinesUntranslatedMessageAndPath",
+          "file": "\/workspace\/tests\/src\/Base\/Exception.cpp",
+          "line": 7
+        },
+        {
+          "name": "TestTranslatedMessageFallsBackToSourceAndKeepsPath",
+          "file": "\/workspace\/tests\/src\/Base\/Exception.cpp",
+          "line": 18
+        },
+        {
+          "name": "TestMessagesMatchTheTranslationKeys",
+          "file": "\/workspace\/tests\/src\/Base\/Exception.cpp",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "name": "FileLockTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "TryLockZeroSucceedsWhenAvailable",
+          "file": "\/workspace\/tests\/src\/Base\/FileLock.cpp",
+          "line": 9
+        }
+      ]
+    },
+    {
+      "name": "FileInfoTest",
+      "tests": 14,
+      "testsuite": [
+        {
+          "name": "TestDirectoryPath",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 39
+        },
+        {
+          "name": "TestExistsDirectory",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 46
+        },
+        {
+          "name": "TestCreateDirectory",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 51
+        },
+        {
+          "name": "TestDirectoryContent",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 58
+        },
+        {
+          "name": "TestCheckPermission",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 66
+        },
+        {
+          "name": "TestCheckNoPermission",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 72
+        },
+        {
+          "name": "TestSetPermission",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 80
+        },
+        {
+          "name": "TestCheckFile",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 98
+        },
+        {
+          "name": "TestCheckDirectory",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 108
+        },
+        {
+          "name": "TestSize",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 118
+        },
+        {
+          "name": "TestLastModified",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 128
+        },
+        {
+          "name": "TestDeleteFile",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 137
+        },
+        {
+          "name": "TestRenameFile",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 144
+        },
+        {
+          "name": "TestCopyFile",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 152
+        }
+      ]
+    },
+    {
+      "name": "FileInfoPathConversionTest",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "RoundTripAsciiPath",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 166
+        },
+        {
+          "name": "RoundTripNonAsciiPath",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 174
+        },
+        {
+          "name": "RoundTripChineseCharacters",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 183
+        },
+        {
+          "name": "RoundTripAccentedCharacters",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 192
+        },
+        {
+          "name": "RoundTripEmptyString",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 201
+        },
+        {
+          "name": "PathToStringPreservesUtf8",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 209
+        },
+        {
+          "name": "StringToPathProducesValidPath",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 220
+        }
+      ]
+    },
+    {
+      "name": "FileInfoSafeArchiveEntryPathTest",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "AcceptsNamesWrittenByFreeCAD",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 261
+        },
+        {
+          "name": "RejectsParentDirectoryTraversal",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 274
+        },
+        {
+          "name": "LeadingDoubleSeparatorDoesNotEatAComponent",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 284
+        },
+        {
+          "name": "RejectsBackslashTraversal",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 293
+        },
+        {
+          "name": "RejectsColonNames",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 305
+        },
+        {
+          "name": "RejectsNamesThatNormalizeToNothing",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 314
+        },
+        {
+          "name": "NormalizesRedundantComponents",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 322
+        },
+        {
+          "name": "ContainedDotsAreAllowed",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 329
+        },
+        {
+          "name": "HostileNamesCannotEscapeWhenJoined",
+          "file": "\/workspace\/tests\/src\/Base\/FileInfo.cpp",
+          "line": 336
+        }
+      ]
+    },
+    {
+      "name": "StdInputStream",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "SanitizesNullAndInvalidUtf8",
+          "file": "\/workspace\/tests\/src\/Base\/InputSource.cpp",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "name": "Reference",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "TestNull",
+          "file": "\/workspace\/tests\/src\/Base\/Handle.cpp",
+          "line": 19
+        },
+        {
+          "name": "TestConstructor",
+          "file": "\/workspace\/tests\/src\/Base\/Handle.cpp",
+          "line": 25
+        },
+        {
+          "name": "TestCopy",
+          "file": "\/workspace\/tests\/src\/Base\/Handle.cpp",
+          "line": 31
+        },
+        {
+          "name": "TestAssignRaw",
+          "file": "\/workspace\/tests\/src\/Base\/Handle.cpp",
+          "line": 44
+        },
+        {
+          "name": "TestAssignRef",
+          "file": "\/workspace\/tests\/src\/Base\/Handle.cpp",
+          "line": 51
+        },
+        {
+          "name": "TestRefHandle",
+          "file": "\/workspace\/tests\/src\/Base\/Handle.cpp",
+          "line": 65
+        }
+      ]
+    },
+    {
+      "name": "Matrix",
+      "tests": 41,
+      "testsuite": [
+        {
+          "name": "TestShearing",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 8
+        },
+        {
+          "name": "TestMultLeftRight",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 15
+        },
+        {
+          "name": "TestNoScale",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 25
+        },
+        {
+          "name": "TestUniformScalePlusTwo",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 33
+        },
+        {
+          "name": "TestUniformScaleRight",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 41
+        },
+        {
+          "name": "TestNonUniformScaleRight",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 51
+        },
+        {
+          "name": "TestUniformScaleMinusOne",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 61
+        },
+        {
+          "name": "TestUniformScaleMinusTwo",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 68
+        },
+        {
+          "name": "TestNonUniformScaleLeftOne",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 75
+        },
+        {
+          "name": "TestNonUniformScaleLeftTwo",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 84
+        },
+        {
+          "name": "TestDiagonal",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 92
+        },
+        {
+          "name": "TestColRow",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 100
+        },
+        {
+          "name": "TestColRowMisc",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 111
+        },
+        {
+          "name": "TestUnity",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 125
+        },
+        {
+          "name": "TestNull",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 137
+        },
+        {
+          "name": "TestMultVec",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 146
+        },
+        {
+          "name": "TestMult",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 173
+        },
+        {
+          "name": "TestMultAssign",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 192
+        },
+        {
+          "name": "TestAdd",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 210
+        },
+        {
+          "name": "TestAddAssign",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 228
+        },
+        {
+          "name": "TestSub",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 246
+        },
+        {
+          "name": "TestSubAssign",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 264
+        },
+        {
+          "name": "TestHatOperator",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 282
+        },
+        {
+          "name": "TestHatOperatorFloat",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 297
+        },
+        {
+          "name": "TestDyadic",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 312
+        },
+        {
+          "name": "TestDyadicFloat",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 327
+        },
+        {
+          "name": "TestDecomposeScale",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 342
+        },
+        {
+          "name": "TestDecomposeRotation",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 354
+        },
+        {
+          "name": "TestDecomposeMove",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 368
+        },
+        {
+          "name": "TestDecomposeMoveFloat",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 380
+        },
+        {
+          "name": "TestDecompose",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 392
+        },
+        {
+          "name": "TestRotLine",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 412
+        },
+        {
+          "name": "TestRotAxisFormula",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 427
+        },
+        {
+          "name": "TestTransform",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 461
+        },
+        {
+          "name": "TestTransformFloat",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 476
+        },
+        {
+          "name": "TestInverseOrthogonal",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 491
+        },
+        {
+          "name": "TestTranspose",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 507
+        },
+        {
+          "name": "TestTrace",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 523
+        },
+        {
+          "name": "TestSetAndGetMatrix",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 533
+        },
+        {
+          "name": "TestSetAndGetGLMatrix",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 548
+        },
+        {
+          "name": "TestToAndFromString",
+          "file": "\/workspace\/tests\/src\/Base\/Matrix.cpp",
+          "line": 563
+        }
+      ]
+    },
+    {
+      "name": "NumericFormattingTest",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "createsLocaleSpecificSeparators",
+          "file": "\/workspace\/tests\/src\/Base\/NumericFormatting.cpp",
+          "line": 12
+        },
+        {
+          "name": "formattedNativeDigitsRoundTripThroughScannerAndQuantity",
+          "file": "\/workspace\/tests\/src\/Base\/NumericFormatting.cpp",
+          "line": 38
+        },
+        {
+          "name": "formatsValuesWithEffectiveSeparators",
+          "file": "\/workspace\/tests\/src\/Base\/NumericFormatting.cpp",
+          "line": 69
+        },
+        {
+          "name": "cLocaleUsesDeterministicFallback",
+          "file": "\/workspace\/tests\/src\/Base\/NumericFormatting.cpp",
+          "line": 86
+        },
+        {
+          "name": "normalizesIcuLocaleIdentifiers",
+          "file": "\/workspace\/tests\/src\/Base\/NumericFormatting.cpp",
+          "line": 92
+        },
+        {
+          "name": "rejectsBogusIcuLocaleIdentifiers",
+          "file": "\/workspace\/tests\/src\/Base\/NumericFormatting.cpp",
+          "line": 99
+        },
+        {
+          "name": "publishedStateIsACompleteSnapshot",
+          "file": "\/workspace\/tests\/src\/Base\/NumericFormatting.cpp",
+          "line": 108
+        },
+        {
+          "name": "failedLocaleResolutionDoesNotPublishPartialState",
+          "file": "\/workspace\/tests\/src\/Base\/NumericFormatting.cpp",
+          "line": 119
+        }
+      ]
+    },
+    {
+      "name": "NumericInputTest",
+      "tests": 13,
+      "testsuite": [
+        {
+          "name": "canonicalAndLocalizedDecimals",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 36
+        },
+        {
+          "name": "westernGroupingAndScientificNotation",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 59
+        },
+        {
+          "name": "indianGroupingUsesSecondarySize",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 76
+        },
+        {
+          "name": "malformedGroupingIsInvalid",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 87
+        },
+        {
+          "name": "multipleDecimalsAndIncompleteExponentsAreDiagnosed",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 98
+        },
+        {
+          "name": "DotGroupingAndCanonicalDecimalHaveAnExplicitPolicy",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 119
+        },
+        {
+          "name": "negativeAndLocalizedSigns",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 148
+        },
+        {
+          "name": "InvalidUtf8IsNotALocalizedDigit",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 167
+        },
+        {
+          "name": "positiveSignsAreAcceptedByCanonicalConversion",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 178
+        },
+        {
+          "name": "OutOfRangeScientificNotationIsDiagnosed",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 197
+        },
+        {
+          "name": "exactGroupingSymbolsAreRequired",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 207
+        },
+        {
+          "name": "FunctionArgumentsTakePrecedenceOverCommaGrouping",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 253
+        },
+        {
+          "name": "GroupingPlacementMutationsFollowLocalePattern",
+          "file": "\/workspace\/tests\/src\/Base\/NumericInput.cpp",
+          "line": 277
+        }
+      ]
+    },
+    {
+      "name": "OkLchTest",
+      "tests": 11,
+      "testsuite": [
+        {
+          "name": "RoundTripBlack",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 14
+        },
+        {
+          "name": "RoundTripWhite",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 24
+        },
+        {
+          "name": "RoundTripRed",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 34
+        },
+        {
+          "name": "RoundTripGreen",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 44
+        },
+        {
+          "name": "RoundTripBlue",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 54
+        },
+        {
+          "name": "RoundTripMidGray",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 64
+        },
+        {
+          "name": "BlackHasZeroLightness",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 75
+        },
+        {
+          "name": "WhiteHasFullLightness",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 81
+        },
+        {
+          "name": "GrayHasLowChroma",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 87
+        },
+        {
+          "name": "GamutMappingClampsToValidSrgb",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 94
+        },
+        {
+          "name": "AlphaPreserved",
+          "file": "\/workspace\/tests\/src\/Base\/OkLch.cpp",
+          "line": 107
+        }
+      ]
+    },
+    {
+      "name": "ParameterTest",
+      "tests": 29,
+      "testsuite": [
+        {
+          "name": "TestValid",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 98
+        },
+        {
+          "name": "TestCreate",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 107
+        },
+        {
+          "name": "TestGroup",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 115
+        },
+        {
+          "name": "TestGroupName",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 131
+        },
+        {
+          "name": "TestEmptyGroupName",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 141
+        },
+        {
+          "name": "TestGroupNames",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 149
+        },
+        {
+          "name": "TestPath",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 158
+        },
+        {
+          "name": "TestBool",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 169
+        },
+        {
+          "name": "TestInt",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 189
+        },
+        {
+          "name": "TestUnsigned",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 209
+        },
+        {
+          "name": "TestFloat",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 229
+        },
+        {
+          "name": "TestString",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 249
+        },
+        {
+          "name": "TestColor",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 269
+        },
+        {
+          "name": "TestCopy",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 292
+        },
+        {
+          "name": "TestInsert",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 312
+        },
+        {
+          "name": "TestRevert",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 341
+        },
+        {
+          "name": "TestRemoveGroup",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 361
+        },
+        {
+          "name": "TestRenameGroup",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 375
+        },
+        {
+          "name": "TestSaveRestoreRef",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 391
+        },
+        {
+          "name": "TestSaveRestoreNoRef",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 418
+        },
+        {
+          "name": "TestClear",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 438
+        },
+        {
+          "name": "TestGetSetAttribute",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 460
+        },
+        {
+          "name": "TestGetParameterNames",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 504
+        },
+        {
+          "name": "TestGroupRef",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 519
+        },
+        {
+          "name": "TestGroupNoRef",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 538
+        },
+        {
+          "name": "TestObserverRef",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 557
+        },
+        {
+          "name": "TestNotifyAll",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 588
+        },
+        {
+          "name": "TestObserverNoRef",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 603
+        },
+        {
+          "name": "TestLockFile",
+          "file": "\/workspace\/tests\/src\/Base\/Parameter.cpp",
+          "line": 624
+        }
+      ]
+    },
+    {
+      "name": "ParameterObserverTest",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "TestBool",
+          "file": "\/workspace\/tests\/src\/Base\/ParameterObserver.cpp",
+          "line": 131
+        },
+        {
+          "name": "TestInt",
+          "file": "\/workspace\/tests\/src\/Base\/ParameterObserver.cpp",
+          "line": 145
+        },
+        {
+          "name": "TestUnsigned",
+          "file": "\/workspace\/tests\/src\/Base\/ParameterObserver.cpp",
+          "line": 158
+        },
+        {
+          "name": "TestFloat",
+          "file": "\/workspace\/tests\/src\/Base\/ParameterObserver.cpp",
+          "line": 171
+        },
+        {
+          "name": "TestString",
+          "file": "\/workspace\/tests\/src\/Base\/ParameterObserver.cpp",
+          "line": 184
+        },
+        {
+          "name": "TestHashKey",
+          "file": "\/workspace\/tests\/src\/Base\/ParameterObserver.cpp",
+          "line": 197
+        },
+        {
+          "name": "TestUnknown",
+          "file": "\/workspace\/tests\/src\/Base\/ParameterObserver.cpp",
+          "line": 211
+        },
+        {
+          "name": "TestWrongType",
+          "file": "\/workspace\/tests\/src\/Base\/ParameterObserver.cpp",
+          "line": 221
+        }
+      ]
+    },
+    {
+      "name": "Placement",
+      "tests": 16,
+      "testsuite": [
+        {
+          "name": "TestDefault",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 9
+        },
+        {
+          "name": "TestPosRot",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 17
+        },
+        {
+          "name": "TestPosRotCnt",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 26
+        },
+        {
+          "name": "TestMatrix",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 37
+        },
+        {
+          "name": "TestIdentity",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 53
+        },
+        {
+          "name": "TestInvert",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 63
+        },
+        {
+          "name": "TestMove",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 75
+        },
+        {
+          "name": "TestSame",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 85
+        },
+        {
+          "name": "TestMultiply",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 101
+        },
+        {
+          "name": "TestMultRight",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 112
+        },
+        {
+          "name": "TestMultLeft",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 127
+        },
+        {
+          "name": "TestMultVec",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 142
+        },
+        {
+          "name": "TestDualQuat",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 153
+        },
+        {
+          "name": "TestPow",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 163
+        },
+        {
+          "name": "TestSlerp",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 179
+        },
+        {
+          "name": "TestSclerp",
+          "file": "\/workspace\/tests\/src\/Base\/Placement.cpp",
+          "line": 198
+        }
+      ]
+    },
+    {
+      "name": "Persistence",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "ValidateXmlStringReplacesDisallowed",
+          "file": "\/workspace\/tests\/src\/Base\/Persistence.cpp",
+          "line": 7
+        },
+        {
+          "name": "ValidateXmlStringPreservesValidNonBmp",
+          "file": "\/workspace\/tests\/src\/Base\/Persistence.cpp",
+          "line": 19
+        },
+        {
+          "name": "ValidateXmlStringReplacesDiscouraged",
+          "file": "\/workspace\/tests\/src\/Base\/Persistence.cpp",
+          "line": 28
+        }
+      ]
+    },
+    {
+      "name": "PyExceptionTest",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "goodCallDoesNotThrow",
+          "file": "\/workspace\/tests\/src\/Base\/PyException.cpp",
+          "line": 46
+        },
+        {
+          "name": "pythonExceptionsPropagate",
+          "file": "\/workspace\/tests\/src\/Base\/PyException.cpp",
+          "line": 53
+        },
+        {
+          "name": "outOfRangeMapsToIndexError",
+          "file": "\/workspace\/tests\/src\/Base\/PyException.cpp",
+          "line": 63
+        },
+        {
+          "name": "lengthErrorMapsToIndexError",
+          "file": "\/workspace\/tests\/src\/Base\/PyException.cpp",
+          "line": 73
+        },
+        {
+          "name": "otherLogicErrorsMapToValueError",
+          "file": "\/workspace\/tests\/src\/Base\/PyException.cpp",
+          "line": 83
+        },
+        {
+          "name": "badAllocMapsToMemoryError",
+          "file": "\/workspace\/tests\/src\/Base\/PyException.cpp",
+          "line": 93
+        },
+        {
+          "name": "nonExceptionTypeMapsToRuntimError",
+          "file": "\/workspace\/tests\/src\/Base\/PyException.cpp",
+          "line": 103
+        }
+      ]
+    },
+    {
+      "name": "BaseQuantity",
+      "tests": 21,
+      "testsuite": [
+        {
+          "name": "TestValid",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 14
+        },
+        {
+          "name": "TestParse",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 24
+        },
+        {
+          "name": "TestLocalizedUserInput",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 32
+        },
+        {
+          "name": "TestLocalizedUserInputPreservesComments",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 42
+        },
+        {
+          "name": "TestNoDim",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 59
+        },
+        {
+          "name": "TestPowEQ1",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 67
+        },
+        {
+          "name": "TestPowEQ0",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 74
+        },
+        {
+          "name": "TestPowGT1",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 80
+        },
+        {
+          "name": "TestPowLT1",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 88
+        },
+        {
+          "name": "TestPow3DIV2",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 97
+        },
+        {
+          "name": "TestString",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 106
+        },
+        {
+          "name": "TestCopy",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 128
+        },
+        {
+          "name": "TestEqual",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 135
+        },
+        {
+          "name": "TestNotEqual",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 144
+        },
+        {
+          "name": "TestLessOrGreater",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 155
+        },
+        {
+          "name": "TestAdd",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 172
+        },
+        {
+          "name": "TestSub",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 182
+        },
+        {
+          "name": "TestNeg",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 192
+        },
+        {
+          "name": "TestMult",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 198
+        },
+        {
+          "name": "TestDiv",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 206
+        },
+        {
+          "name": "TestPow",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 214
+        }
+      ]
+    },
+    {
+      "name": "BaseQuantityFormat",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "NumberOptionsAreBaseOwnedBitmask",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 116
+        }
+      ]
+    },
+    {
+      "name": "BaseQuantityLoc",
+      "tests": 11,
+      "testsuite": [
+        {
+          "name": "psi_parse_spaced",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 239
+        },
+        {
+          "name": "psi_parse_no_space",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 245
+        },
+        {
+          "name": "psi_parse_user_str",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 251
+        },
+        {
+          "name": "psi_parse_safe_user_str",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 261
+        },
+        {
+          "name": "psi_parse_unit_type",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 271
+        },
+        {
+          "name": "psi_to_Pa",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 277
+        },
+        {
+          "name": "psi_to_KPa",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 285
+        },
+        {
+          "name": "psi_to_MPa",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 293
+        },
+        {
+          "name": "voltage_unit",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 301
+        },
+        {
+          "name": "voltage_val",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 308
+        },
+        {
+          "name": "voltage_val_smaller",
+          "file": "\/workspace\/tests\/src\/Base\/Quantity.cpp",
+          "line": 315
+        }
+      ]
+    },
+    {
+      "name": "ReaderTest",
+      "tests": 26,
+      "testsuite": [
+        {
+          "name": "beginCharStreamNormal",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 95
+        },
+        {
+          "name": "beginCharStreamOpenClose",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 109
+        },
+        {
+          "name": "beginCharStreamAlreadyBegun",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 123
+        },
+        {
+          "name": "charStreamGood",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 135
+        },
+        {
+          "name": "charStreamBad",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 150
+        },
+        {
+          "name": "endCharStreamGood",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 161
+        },
+        {
+          "name": "endCharStreamBad",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 173
+        },
+        {
+          "name": "readDataSmallerThanBuffer",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 185
+        },
+        {
+          "name": "readDataLargerThanBuffer",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 204
+        },
+        {
+          "name": "readDataLargerThanBufferSecondRead",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 225
+        },
+        {
+          "name": "readDataNotStarted",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 247
+        },
+        {
+          "name": "readNextStartElement",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 264
+        },
+        {
+          "name": "readNextStartEndElement",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 296
+        },
+        {
+          "name": "charStreamBase64Encoded",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 394
+        },
+        {
+          "name": "validDefaults",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 413
+        },
+        {
+          "name": "AsciiUnchanged",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 463
+        },
+        {
+          "name": "AllowedWhitespacePreserved",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 470
+        },
+        {
+          "name": "DisallowedC0ControlsBecomeUnderscore",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 477
+        },
+        {
+          "name": "DelAndC1ControlsBecomeUnderscore",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 489
+        },
+        {
+          "name": "BmpBoundaryAndNoncharacters",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 539
+        },
+        {
+          "name": "NonBmpEmojiPreserved",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 557
+        },
+        {
+          "name": "ZwjSequencePreserved",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 566
+        },
+        {
+          "name": "CombiningMarksPreserved",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 574
+        },
+        {
+          "name": "PrivateUseAreaPreserved",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 581
+        },
+        {
+          "name": "MixedContentSanitization",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 590
+        },
+        {
+          "name": "validateXmlString",
+          "file": "\/workspace\/tests\/src\/Base\/Reader.cpp",
+          "line": 610
+        }
+      ]
+    },
+    {
+      "name": "Rotation",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "TestNonUniformScaleLeft",
+          "file": "\/workspace\/tests\/src\/Base\/Rotation.cpp",
+          "line": 8
+        },
+        {
+          "name": "TestNonUniformScaleRight",
+          "file": "\/workspace\/tests\/src\/Base\/Rotation.cpp",
+          "line": 26
+        },
+        {
+          "name": "TestUniformScaleGT1",
+          "file": "\/workspace\/tests\/src\/Base\/Rotation.cpp",
+          "line": 43
+        },
+        {
+          "name": "TestUniformScaleLT1",
+          "file": "\/workspace\/tests\/src\/Base\/Rotation.cpp",
+          "line": 60
+        },
+        {
+          "name": "TestRotationDecompose",
+          "file": "\/workspace\/tests\/src\/Base\/Rotation.cpp",
+          "line": 70
+        }
+      ]
+    },
+    {
+      "name": "SchemaTest",
+      "tests": 75,
+      "testsuite": [
+        {
+          "name": "meter_decimal_1_mm_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 108
+        },
+        {
+          "name": "meter_decimal_15_mm2_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 116
+        },
+        {
+          "name": "meter_decimal_123456000_mm3_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 124
+        },
+        {
+          "name": "meter_decimal_123456000_W_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 132
+        },
+        {
+          "name": "meter_decimal_123456000_V_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 140
+        },
+        {
+          "name": "meter_decimal_123456000_W_m2_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 149
+        },
+        {
+          "name": "meter_decimal_123456000_m_s_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 157
+        },
+        {
+          "name": "mks_1_mm_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 165
+        },
+        {
+          "name": "mks_15_mm2_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 173
+        },
+        {
+          "name": "mks_123456000_mm3_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 181
+        },
+        {
+          "name": "mks_123456000_W_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 189
+        },
+        {
+          "name": "mks_123456000_V_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 197
+        },
+        {
+          "name": "mks_123456000_W_m2_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 205
+        },
+        {
+          "name": "mks_123456000_m_s_precision_6",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 213
+        },
+        {
+          "name": "internal_1_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 221
+        },
+        {
+          "name": "schema_descriptions_use_translation_handler",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 229
+        },
+        {
+          "name": "internal_100_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 242
+        },
+        {
+          "name": "internal_100_mm_precision_1",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 250
+        },
+        {
+          "name": "internal_20000_mm_precision_2",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 258
+        },
+        {
+          "name": "internal_20nA_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 266
+        },
+        {
+          "name": "internal_100uA_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 274
+        },
+        {
+          "name": "internal_20nW_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 283
+        },
+        {
+          "name": "internal_20uW_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 291
+        },
+        {
+          "name": "internal_1mol_p_l_precision_1",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 299
+        },
+        {
+          "name": "imperial_decimal_1_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 307
+        },
+        {
+          "name": "imperial_decimal_10_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 315
+        },
+        {
+          "name": "imperial_decimal_20_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 324
+        },
+        {
+          "name": "imperial_1_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 332
+        },
+        {
+          "name": "imperial_0_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 340
+        },
+        {
+          "name": "imperial_0_mm_precision_1",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 348
+        },
+        {
+          "name": "imperial_decimal_0_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 356
+        },
+        {
+          "name": "imperial_decimal_0_mm_precision_1",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 364
+        },
+        {
+          "name": "imperial_civil_0_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 372
+        },
+        {
+          "name": "imperial_civil_0_mm_precision_1",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 380
+        },
+        {
+          "name": "imperial_building_0_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 388
+        },
+        {
+          "name": "imperial_building_0_mm_precision_1",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 396
+        },
+        {
+          "name": "imperial_decimal_1_mm_precision_1",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 404
+        },
+        {
+          "name": "imperial_decimal_100_mm_precision_0",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 412
+        },
+        {
+          "name": "imperial_decimal_100_mm_precision_1",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 420
+        },
+        {
+          "name": "imperial_decimal_100_mm_precision_2",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 428
+        },
+        {
+          "name": "imperial_decimal_1_mm_precision_2",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 436
+        },
+        {
+          "name": "imperial_decimal_1_mm_precision_4",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 444
+        },
+        {
+          "name": "imperial_safe_user_str_same",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 452
+        },
+        {
+          "name": "imperial_safe_user_str_more",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 461
+        },
+        {
+          "name": "imperial_safe_user_str_less",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 470
+        },
+        {
+          "name": "imperial_safe_user_str_one_inch",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 479
+        },
+        {
+          "name": "imperial_building_special_function_length_inch",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 488
+        },
+        {
+          "name": "imperial_building_special_function_length_foot",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 497
+        },
+        {
+          "name": "imperial_building_special_function_zero_length",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 506
+        },
+        {
+          "name": "imperial_building_special_function_length_negative_fraction_only",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 514
+        },
+        {
+          "name": "imperial_building_special_function_negative_inches_and_fraction",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 523
+        },
+        {
+          "name": "imperial_building_special_function_high_precision_rounding",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 532
+        },
+        {
+          "name": "imperial_building_special_function_length",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 541
+        },
+        {
+          "name": "imperial_building_special_function_length_neg",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 551
+        },
+        {
+          "name": "imperial_civil_special_function_angle_degrees",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 560
+        },
+        {
+          "name": "imperial_civil_special_function_angle_minutes",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 569
+        },
+        {
+          "name": "imperial_civil_special_function_angle_seconds",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 578
+        },
+        {
+          "name": "imperial_civil_special_function_angle_no_degrees",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 587
+        },
+        {
+          "name": "unknown_schema_name_throws",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 596
+        },
+        {
+          "name": "round_trip_test",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 601
+        },
+        {
+          "name": "sweep_internal",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 765
+        },
+        {
+          "name": "sweep_mks",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1062
+        },
+        {
+          "name": "mks_negative_values_use_magnitude_for_threshold_selection",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1249
+        },
+        {
+          "name": "sweep_imperial",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1267
+        },
+        {
+          "name": "sweep_imperial_decimal",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1295
+        },
+        {
+          "name": "sweep_imperial_building",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1309
+        },
+        {
+          "name": "imperial_building_density_uses_lb_ft3",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1322
+        },
+        {
+          "name": "imperial_building_stress_uses_psi",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1334
+        },
+        {
+          "name": "imperial_density_uses_lb_in3",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1342
+        },
+        {
+          "name": "imperial_civil_density_uses_lb_ft3",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1350
+        },
+        {
+          "name": "sweep_imperial_civil",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1358
+        },
+        {
+          "name": "sweep_centimeter",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1375
+        },
+        {
+          "name": "sweep_fem",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1389
+        },
+        {
+          "name": "sweep_mmmin",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1399
+        },
+        {
+          "name": "sweep_meter_decimal",
+          "file": "\/workspace\/tests\/src\/Base\/SchemaTests.cpp",
+          "line": 1409
+        }
+      ]
+    },
+    {
+      "name": "ServiceProvider",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "provideEmptyImplementation",
+          "file": "\/workspace\/tests\/src\/Base\/ServiceProvider.cpp",
+          "line": 36
+        },
+        {
+          "name": "provideEmptyImplementationList",
+          "file": "\/workspace\/tests\/src\/Base\/ServiceProvider.cpp",
+          "line": 48
+        },
+        {
+          "name": "provideImplementation",
+          "file": "\/workspace\/tests\/src\/Base\/ServiceProvider.cpp",
+          "line": 60
+        },
+        {
+          "name": "provideLatestImplementation",
+          "file": "\/workspace\/tests\/src\/Base\/ServiceProvider.cpp",
+          "line": 75
+        },
+        {
+          "name": "provideAllImplementations",
+          "file": "\/workspace\/tests\/src\/Base\/ServiceProvider.cpp",
+          "line": 91
+        }
+      ]
+    },
+    {
+      "name": "TextOutputStreamTest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "singleLineCharStar",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 24
+        },
+        {
+          "name": "multiLineCharStar",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 38
+        },
+        {
+          "name": "singleLineCharStarWithCarriageReturns",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 52
+        },
+        {
+          "name": "multiLineCharStarWithCarriageReturnsAndNewlines",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 67
+        }
+      ]
+    },
+    {
+      "name": "TextStreamIntegrationTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "OutputThenInputSimpleMultiLine",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 94
+        },
+        {
+          "name": "OutputThenInputMultiLineWithCarriageReturns",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 112
+        }
+      ]
+    },
+    {
+      "name": "StringStreambufTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "OutputOverwritesAndSeeks",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 136
+        },
+        {
+          "name": "RoundTripBinaryData",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 150
+        }
+      ]
+    },
+    {
+      "name": "BufferStreambuf",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "emptyBufferIn",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 178
+        },
+        {
+          "name": "emptyBufferOut",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 209
+        },
+        {
+          "name": "bufferIn",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 235
+        },
+        {
+          "name": "bufferOut",
+          "file": "\/workspace\/tests\/src\/Base\/Stream.cpp",
+          "line": 302
+        }
+      ]
+    },
+    {
+      "name": "StringUtils",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "TestTrimmed",
+          "file": "\/workspace\/tests\/src\/Base\/StringUtils.cpp",
+          "line": 10
+        },
+        {
+          "name": "TestLowercaseAscii",
+          "file": "\/workspace\/tests\/src\/Base\/StringUtils.cpp",
+          "line": 18
+        },
+        {
+          "name": "TestParseLong",
+          "file": "\/workspace\/tests\/src\/Base\/StringUtils.cpp",
+          "line": 25
+        },
+        {
+          "name": "TestParseDouble",
+          "file": "\/workspace\/tests\/src\/Base\/StringUtils.cpp",
+          "line": 39
+        },
+        {
+          "name": "TestParseBool",
+          "file": "\/workspace\/tests\/src\/Base\/StringUtils.cpp",
+          "line": 53
+        },
+        {
+          "name": "TestFormatDouble",
+          "file": "\/workspace\/tests\/src\/Base\/StringUtils.cpp",
+          "line": 70
+        }
+      ]
+    },
+    {
+      "name": "TimeInfo",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "TestDefault",
+          "file": "\/workspace\/tests\/src\/Base\/TimeInfo.cpp",
+          "line": 4
+        },
+        {
+          "name": "TestNull",
+          "file": "\/workspace\/tests\/src\/Base\/TimeInfo.cpp",
+          "line": 10
+        },
+        {
+          "name": "TestCompare",
+          "file": "\/workspace\/tests\/src\/Base\/TimeInfo.cpp",
+          "line": 16
+        },
+        {
+          "name": "TestDiffTime",
+          "file": "\/workspace\/tests\/src\/Base\/TimeInfo.cpp",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "name": "Tools",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "TestIota",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 9
+        },
+        {
+          "name": "TestSignum",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 18
+        },
+        {
+          "name": "TestRadian",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 29
+        },
+        {
+          "name": "TestDegree",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 37
+        },
+        {
+          "name": "TestToggle",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 45
+        },
+        {
+          "name": "TestStateLocker",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 55
+        },
+        {
+          "name": "TestBitsetLocker",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 70
+        }
+      ]
+    },
+    {
+      "name": "BaseToolsSuite",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "TestQuote",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 91
+        },
+        {
+          "name": "TestJoinList",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 96
+        },
+        {
+          "name": "TestEscapeQuotesFromString",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 100
+        },
+        {
+          "name": "TestEscapeEncodeString",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 107
+        },
+        {
+          "name": "TestEscapeEncodeFilename",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 117
+        },
+        {
+          "name": "TestCurrentDateTimeStringUtcIso",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 125
+        },
+        {
+          "name": "TestGetIdentifier",
+          "file": "\/workspace\/tests\/src\/Base\/Tools.cpp",
+          "line": 131
+        }
+      ]
+    },
+    {
+      "name": "Line2D",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "TestLength",
+          "file": "\/workspace\/tests\/src\/Base\/Tools2D.cpp",
+          "line": 33
+        },
+        {
+          "name": "TestPoints",
+          "file": "\/workspace\/tests\/src\/Base\/Tools2D.cpp",
+          "line": 39
+        },
+        {
+          "name": "TestFromPos",
+          "file": "\/workspace\/tests\/src\/Base\/Tools2D.cpp",
+          "line": 46
+        },
+        {
+          "name": "TestContains",
+          "file": "\/workspace\/tests\/src\/Base\/Tools2D.cpp",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "name": "Polygon2D",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "TestDefault",
+          "file": "\/workspace\/tests\/src\/Base\/Tools2D.cpp",
+          "line": 58
+        },
+        {
+          "name": "TestAdd",
+          "file": "\/workspace\/tests\/src\/Base\/Tools2D.cpp",
+          "line": 64
+        },
+        {
+          "name": "TestRemove",
+          "file": "\/workspace\/tests\/src\/Base\/Tools2D.cpp",
+          "line": 71
+        },
+        {
+          "name": "TestClear",
+          "file": "\/workspace\/tests\/src\/Base\/Tools2D.cpp",
+          "line": 81
+        }
+      ]
+    },
+    {
+      "name": "Line3D",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "TestLength",
+          "file": "\/workspace\/tests\/src\/Base\/Tools3D.cpp",
+          "line": 34
+        },
+        {
+          "name": "TestSqrLength",
+          "file": "\/workspace\/tests\/src\/Base\/Tools3D.cpp",
+          "line": 40
+        },
+        {
+          "name": "TestPoints",
+          "file": "\/workspace\/tests\/src\/Base\/Tools3D.cpp",
+          "line": 46
+        },
+        {
+          "name": "TestFromPos",
+          "file": "\/workspace\/tests\/src\/Base\/Tools3D.cpp",
+          "line": 53
+        },
+        {
+          "name": "TestContains",
+          "file": "\/workspace\/tests\/src\/Base\/Tools3D.cpp",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "name": "Polygon3D",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "TestDefault",
+          "file": "\/workspace\/tests\/src\/Base\/Tools3D.cpp",
+          "line": 65
+        },
+        {
+          "name": "TestAdd",
+          "file": "\/workspace\/tests\/src\/Base\/Tools3D.cpp",
+          "line": 71
+        },
+        {
+          "name": "TestRemove",
+          "file": "\/workspace\/tests\/src\/Base\/Tools3D.cpp",
+          "line": 78
+        },
+        {
+          "name": "TestClear",
+          "file": "\/workspace\/tests\/src\/Base\/Tools3D.cpp",
+          "line": 88
+        }
+      ]
+    },
+    {
+      "name": "Translation",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "FallbackReturnsSource",
+          "file": "\/workspace\/tests\/src\/Base\/Translation.cpp",
+          "line": 8
+        },
+        {
+          "name": "TranslateHandlerOverrides",
+          "file": "\/workspace\/tests\/src\/Base\/Translation.cpp",
+          "line": 14
+        },
+        {
+          "name": "InstallRemoveHandlersDefaultToFalse",
+          "file": "\/workspace\/tests\/src\/Base\/Translation.cpp",
+          "line": 30
+        },
+        {
+          "name": "InstallRemoveHandlersCalled",
+          "file": "\/workspace\/tests\/src\/Base\/Translation.cpp",
+          "line": 37
+        }
+      ]
+    },
+    {
+      "name": "TranslateModule",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "TranslateUsesHandlerOrFallback",
+          "file": "\/workspace\/tests\/src\/Base\/Translate.cpp",
+          "line": 51
+        },
+        {
+          "name": "InstallAndRemoveUseHandlers",
+          "file": "\/workspace\/tests\/src\/Base\/Translate.cpp",
+          "line": 82
+        }
+      ]
+    },
+    {
+      "name": "UnlimitedUnsigned",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "Basics",
+          "file": "\/workspace\/tests\/src\/Base\/UnlimitedUnsigned.cpp",
+          "line": 25
+        },
+        {
+          "name": "ToString",
+          "file": "\/workspace\/tests\/src\/Base\/UnlimitedUnsigned.cpp",
+          "line": 32
+        },
+        {
+          "name": "TestSubtraction1",
+          "file": "\/workspace\/tests\/src\/Base\/UnlimitedUnsigned.cpp",
+          "line": 39
+        },
+        {
+          "name": "TestSubtraction2",
+          "file": "\/workspace\/tests\/src\/Base\/UnlimitedUnsigned.cpp",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "name": "UniqueNameManager",
+      "tests": 11,
+      "testsuite": [
+        {
+          "name": "NonconflictingBaseNameReturnsSameName",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 26
+        },
+        {
+          "name": "NonconflictingUniqueNameReturnsBaseName",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 33
+        },
+        {
+          "name": "ManyDigitsInModelNameIgnored",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 40
+        },
+        {
+          "name": "ConflictingBaseNameReturnsUniqueName",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 49
+        },
+        {
+          "name": "ConflictingUniqueNameReturnsNewUniqueName",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 58
+        },
+        {
+          "name": "VerifyUniqueDigitCount",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 68
+        },
+        {
+          "name": "UniqueNameLargerThanAnyName",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 77
+        },
+        {
+          "name": "Issue18504",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 86
+        },
+        {
+          "name": "UniqueNameWithManyDigits",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 110
+        },
+        {
+          "name": "UniqueNameWith9NDigits",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 117
+        },
+        {
+          "name": "NonAsciiNameIsHandled",
+          "file": "\/workspace\/tests\/src\/Base\/UniqueNameManager.cpp",
+          "line": 128
+        }
+      ]
+    },
+    {
+      "name": "Unit",
+      "tests": 28,
+      "testsuite": [
+        {
+          "name": "string_simple_numerator_no_denominator",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 8
+        },
+        {
+          "name": "string_complex_numerator_no_denominator",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 13
+        },
+        {
+          "name": "string_complex_single_denominator",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 18
+        },
+        {
+          "name": "string_no_numerator",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 23
+        },
+        {
+          "name": "string_complex_multi_denominator",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 28
+        },
+        {
+          "name": "type_string",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 33
+        },
+        {
+          "name": "TestEqual",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 38
+        },
+        {
+          "name": "TestNotEqual",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 43
+        },
+        {
+          "name": "multiply_One_is_One",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 48
+        },
+        {
+          "name": "TestMult",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 53
+        },
+        {
+          "name": "div",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 59
+        },
+        {
+          "name": "div_by_One_does_nothing",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 64
+        },
+        {
+          "name": "pow_0_is_One",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 69
+        },
+        {
+          "name": "pow_1_leaves_unit_unchanged",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 74
+        },
+        {
+          "name": "pow_2_is_squared",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 79
+        },
+        {
+          "name": "pow_3_is_cubed",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 84
+        },
+        {
+          "name": "pow_less_than_one",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 89
+        },
+        {
+          "name": "one_still_one_after_pow",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 94
+        },
+        {
+          "name": "square_root",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 99
+        },
+        {
+          "name": "cube_root",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 104
+        },
+        {
+          "name": "zero_root",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 109
+        },
+        {
+          "name": "one_root",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 114
+        },
+        {
+          "name": "TestPow3div2",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 119
+        },
+        {
+          "name": "overflow",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 124
+        },
+        {
+          "name": "underflow",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 130
+        },
+        {
+          "name": "representation_simple",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 136
+        },
+        {
+          "name": "representation_complex",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 143
+        },
+        {
+          "name": "representation_no_name",
+          "file": "\/workspace\/tests\/src\/Base\/Unit.cpp",
+          "line": 150
+        }
+      ]
+    },
+    {
+      "name": "UnitsApi_toUnicodeSuperscript",
+      "tests": 27,
+      "testsuite": [
+        {
+          "name": "no_caret_unchanged",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 6
+        },
+        {
+          "name": "empty_string",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 11
+        },
+        {
+          "name": "digit_0",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 16
+        },
+        {
+          "name": "digit_1",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 21
+        },
+        {
+          "name": "digit_2",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 26
+        },
+        {
+          "name": "digit_3",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 31
+        },
+        {
+          "name": "digit_4",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 36
+        },
+        {
+          "name": "digit_5",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 41
+        },
+        {
+          "name": "digit_6",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 46
+        },
+        {
+          "name": "digit_7",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 51
+        },
+        {
+          "name": "digit_8",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 56
+        },
+        {
+          "name": "digit_9",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 61
+        },
+        {
+          "name": "negative_exponent_2",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 66
+        },
+        {
+          "name": "negative_exponent_3",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 72
+        },
+        {
+          "name": "area_unit_mm_squared",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 78
+        },
+        {
+          "name": "multiple_exponents_in_one_string",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 83
+        },
+        {
+          "name": "inverse_area_unit",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 89
+        },
+        {
+          "name": "complex_unit_with_negative_exponent",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 95
+        },
+        {
+          "name": "caret_at_end_of_string",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 101
+        },
+        {
+          "name": "caret_minus_at_end_of_string",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 106
+        },
+        {
+          "name": "caret_followed_by_non_digit",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 111
+        },
+        {
+          "name": "double_caret_before_digit",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 116
+        },
+        {
+          "name": "multi_digit",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 121
+        },
+        {
+          "name": "negative_multi_digit",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 126
+        },
+        {
+          "name": "minus_inside_exponent",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 131
+        },
+        {
+          "name": "minus_inside_negative_exponent",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 136
+        },
+        {
+          "name": "minus_inside_multi_digit_exponent",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsApi.cpp",
+          "line": 141
+        }
+      ]
+    },
+    {
+      "name": "Uuid",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "CreateUuidFormatAndBits",
+          "file": "\/workspace\/tests\/src\/Base\/Uuid.cpp",
+          "line": 9
+        },
+        {
+          "name": "SetValueAcceptsBracesAndNormalizes",
+          "file": "\/workspace\/tests\/src\/Base\/Uuid.cpp",
+          "line": 26
+        },
+        {
+          "name": "SetValueRejectsInvalidStrings",
+          "file": "\/workspace\/tests\/src\/Base\/Uuid.cpp",
+          "line": 36
+        },
+        {
+          "name": "CreateUuidUniquenessSmoke",
+          "file": "\/workspace\/tests\/src\/Base\/Uuid.cpp",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "name": "UnitsSchemaFormatTest",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "fixed_uses_precision_and_trailing_zeroes",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsSchemaFormat.cpp",
+          "line": 51
+        },
+        {
+          "name": "scientific_uses_exponent_and_precision",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsSchemaFormat.cpp",
+          "line": 61
+        },
+        {
+          "name": "default_matches_qt_general_scientific_thresholds",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsSchemaFormat.cpp",
+          "line": 79
+        },
+        {
+          "name": "omit_group_separator_option_removes_grouping",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsSchemaFormat.cpp",
+          "line": 91
+        },
+        {
+          "name": "formatting_state_overrides_icu_default",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsSchemaFormat.cpp",
+          "line": 108
+        },
+        {
+          "name": "default_translation_uses_current_numeric_formatting_locale",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsSchemaFormat.cpp",
+          "line": 118
+        },
+        {
+          "name": "effective_numeric_separators_override_locale_symbols",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsSchemaFormat.cpp",
+          "line": 128
+        },
+        {
+          "name": "explicit_formatting_state_does_not_use_published_snapshot",
+          "file": "\/workspace\/tests\/src\/Base\/UnitsSchemaFormat.cpp",
+          "line": 146
+        }
+      ]
+    },
+    {
+      "name": "Vector",
+      "tests": 39,
+      "testsuite": [
+        {
+          "name": "TestDefault",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 5
+        },
+        {
+          "name": "TestDefault2",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 13
+        },
+        {
+          "name": "TestCopy",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 21
+        },
+        {
+          "name": "TestMove",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 30
+        },
+        {
+          "name": "TestNull",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 39
+        },
+        {
+          "name": "TestEqual",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 46
+        },
+        {
+          "name": "TestIndex",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 53
+        },
+        {
+          "name": "TestPlus",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 63
+        },
+        {
+          "name": "TestPlusAssign",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 71
+        },
+        {
+          "name": "TestMinus",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 80
+        },
+        {
+          "name": "TestMinusAssign",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 88
+        },
+        {
+          "name": "TestNegative",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 97
+        },
+        {
+          "name": "TestScale",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 105
+        },
+        {
+          "name": "TestScaleAssign",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 114
+        },
+        {
+          "name": "TestDivScale",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 123
+        },
+        {
+          "name": "TestDivScaleAssign",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 132
+        },
+        {
+          "name": "TestScaleXYZ",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 141
+        },
+        {
+          "name": "TestMoveXYZ",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 150
+        },
+        {
+          "name": "TestCopyAssign",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 159
+        },
+        {
+          "name": "TestMoveAssign",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 169
+        },
+        {
+          "name": "TestScalar",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 179
+        },
+        {
+          "name": "TestCross",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 189
+        },
+        {
+          "name": "TestCompare",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 203
+        },
+        {
+          "name": "TestNormalize",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 211
+        },
+        {
+          "name": "TestCSTransform",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 218
+        },
+        {
+          "name": "TestLineSegment",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 231
+        },
+        {
+          "name": "TestDistanceLineSegment",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 237
+        },
+        {
+          "name": "TestProjectToPlane",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 243
+        },
+        {
+          "name": "TestDistanceToPlane",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 253
+        },
+        {
+          "name": "TestAngle",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 260
+        },
+        {
+          "name": "TestIsNormal",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 268
+        },
+        {
+          "name": "TestIsNormalNullVector",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 276
+        },
+        {
+          "name": "TestIsNormalLongVectors",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 282
+        },
+        {
+          "name": "TestIsNormalShortVectors",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 288
+        },
+        {
+          "name": "TestIsParallel",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 294
+        },
+        {
+          "name": "TestIsParallelNullVector",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 303
+        },
+        {
+          "name": "TestIsParallelLongVectors",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 309
+        },
+        {
+          "name": "TestIsParallelShortVectors",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 315
+        },
+        {
+          "name": "TestAngleOriented",
+          "file": "\/workspace\/tests\/src\/Base\/Vector3D.cpp",
+          "line": 321
+        }
+      ]
+    },
+    {
+      "name": "ViewProj",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "TestViewProjMatrix",
+          "file": "\/workspace\/tests\/src\/Base\/ViewProj.cpp",
+          "line": 5
+        },
+        {
+          "name": "TestViewOrthoProjMatrix",
+          "file": "\/workspace\/tests\/src\/Base\/ViewProj.cpp",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "name": "WriterTest",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "insertTextSimple",
+          "file": "\/workspace\/tests\/src\/Base\/Writer.cpp",
+          "line": 21
+        },
+        {
+          "name": "insertTextNeedsEscape",
+          "file": "\/workspace\/tests\/src\/Base\/Writer.cpp",
+          "line": 36
+        },
+        {
+          "name": "insertNonAsciiData",
+          "file": "\/workspace\/tests\/src\/Base\/Writer.cpp",
+          "line": 50
+        },
+        {
+          "name": "beginCharStream",
+          "file": "\/workspace\/tests\/src\/Base\/Writer.cpp",
+          "line": 63
+        },
+        {
+          "name": "beginCharStreamTwice",
+          "file": "\/workspace\/tests\/src\/Base\/Writer.cpp",
+          "line": 72
+        },
+        {
+          "name": "endCharStream",
+          "file": "\/workspace\/tests\/src\/Base\/Writer.cpp",
+          "line": 81
+        },
+        {
+          "name": "endCharStreamTwice",
+          "file": "\/workspace\/tests\/src\/Base\/Writer.cpp",
+          "line": 93
+        },
+        {
+          "name": "charStream",
+          "file": "\/workspace\/tests\/src\/Base\/Writer.cpp",
+          "line": 106
+        },
+        {
+          "name": "charStreamBase64Encoded",
+          "file": "\/workspace\/tests\/src\/Base\/Writer.cpp",
+          "line": 118
+        }
+      ]
+    },
+    {
+      "name": "XMLParserTest",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "TestLoadValidDocument",
+          "file": "\/workspace\/tests\/src\/Base\/XMLParser.cpp",
+          "line": 35
+        },
+        {
+          "name": "TestLoadInvalidDocument",
+          "file": "\/workspace\/tests\/src\/Base\/XMLParser.cpp",
+          "line": 67
+        },
+        {
+          "name": "TestLoadEmptyDocument",
+          "file": "\/workspace\/tests\/src\/Base\/XMLParser.cpp",
+          "line": 74
+        },
+        {
+          "name": "TestLoadInvalidPath",
+          "file": "\/workspace\/tests\/src\/Base\/XMLParser.cpp",
+          "line": 81
+        },
+        {
+          "name": "TestCheckValidFile",
+          "file": "\/workspace\/tests\/src\/Base\/XMLParser.cpp",
+          "line": 89
+        },
+        {
+          "name": "TestCheckInvalidFile",
+          "file": "\/workspace\/tests\/src\/Base\/XMLParser.cpp",
+          "line": 98
+        },
+        {
+          "name": "TestWriteValidDocument",
+          "file": "\/workspace\/tests\/src\/Base\/XMLParser.cpp",
+          "line": 110
+        }
+      ]
+    },
+    {
+      "name": "TestXMLTools",
+      "tests": 10,
+      "testsuite": [
+        {
+          "name": "EscapeXmlEmptyString",
+          "file": "\/workspace\/tests\/src\/Base\/XMLTools.cpp",
+          "line": 11
+        },
+        {
+          "name": "EscapeXmlNoChangesForSafeText",
+          "file": "\/workspace\/tests\/src\/Base\/XMLTools.cpp",
+          "line": 16
+        },
+        {
+          "name": "EscapeXmlEscapesAmpersand",
+          "file": "\/workspace\/tests\/src\/Base\/XMLTools.cpp",
+          "line": 23
+        },
+        {
+          "name": "EscapeXmlEscapesLessThanAndGreaterThan",
+          "file": "\/workspace\/tests\/src\/Base\/XMLTools.cpp",
+          "line": 29
+        },
+        {
+          "name": "EscapeXmlEscapesQuotes",
+          "file": "\/workspace\/tests\/src\/Base\/XMLTools.cpp",
+          "line": 38
+        },
+        {
+          "name": "EscapeXmlEscapesAllFiveInOneString",
+          "file": "\/workspace\/tests\/src\/Base\/XMLTools.cpp",
+          "line": 46
+        },
+        {
+          "name": "EscapeXmlDoesNotDoubleEscapeNewlyInsertedEntities",
+          "file": "\/workspace\/tests\/src\/Base\/XMLTools.cpp",
+          "line": 52
+        },
+        {
+          "name": "EscapeXmlComplexMixedContent",
+          "file": "\/workspace\/tests\/src\/Base\/XMLTools.cpp",
+          "line": 62
+        },
+        {
+          "name": "EscapeXmlMultipleAdjacentCharacters",
+          "file": "\/workspace\/tests\/src\/Base\/XMLTools.cpp",
+          "line": 69
+        },
+        {
+          "name": "EscapeXmlPreservesWhitespaceAndControlCommonInText",
+          "file": "\/workspace\/tests\/src\/Base\/XMLTools.cpp",
+          "line": 76
+        }
+      ]
+    }
+  ]
+}

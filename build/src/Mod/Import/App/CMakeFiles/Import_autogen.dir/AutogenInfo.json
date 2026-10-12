@@ -1,0 +1,238 @@
+{
+	"BUILD_DIR" : "/workspace/build/src/Mod/Import/App/Import_autogen",
+	"CMAKE_BINARY_DIR" : "/workspace/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/workspace/build/src/Mod/Import/App",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/workspace/src/Mod/Import/App",
+	"CMAKE_EXECUTABLE" : "/usr/sbin/cmake",
+	"CMAKE_LIST_FILES" : [ "/workspace/src/Mod/Import/App/CMakeLists.txt" ],
+	"CMAKE_SOURCE_DIR" : "/workspace",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "/workspace/build/src/Mod/Import/App/Import_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "Import_autogen/timestamp",
+	"HEADERS" : 
+	[
+		[
+			"/workspace/src/Mod/Import/App/ExportOCAF.h",
+			"MU",
+			"EWIEGA46WW/moc_ExportOCAF.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/ExportOCAF2.h",
+			"MU",
+			"EWIEGA46WW/moc_ExportOCAF2.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/ImportOCAF.h",
+			"MU",
+			"EWIEGA46WW/moc_ImportOCAF.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/ImportOCAF2.h",
+			"MU",
+			"EWIEGA46WW/moc_ImportOCAF2.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/PreCompiled.h",
+			"MU",
+			"EWIEGA46WW/moc_PreCompiled.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/ReaderGltf.h",
+			"MU",
+			"EWIEGA46WW/moc_ReaderGltf.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/ReaderIges.h",
+			"MU",
+			"EWIEGA46WW/moc_ReaderIges.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/ReaderStep.h",
+			"MU",
+			"EWIEGA46WW/moc_ReaderStep.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/SketchExportHelper.h",
+			"MU",
+			"EWIEGA46WW/moc_SketchExportHelper.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/StepShape.h",
+			"MU",
+			"EWIEGA46WW/moc_StepShape.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/Tools.h",
+			"MU",
+			"EWIEGA46WW/moc_Tools.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/WriterGltf.h",
+			"MU",
+			"EWIEGA46WW/moc_WriterGltf.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/WriterIges.h",
+			"MU",
+			"EWIEGA46WW/moc_WriterIges.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/WriterStep.h",
+			"MU",
+			"EWIEGA46WW/moc_WriterStep.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/dxf/ImpExpDxf.h",
+			"MU",
+			"ZG4MPD67XD/moc_ImpExpDxf.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Import/App/dxf/dxf.h",
+			"MU",
+			"ZG4MPD67XD/moc_dxf.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "/workspace/build/src/Mod/Import/App/Import_autogen/include",
+	"MOC_COMPILATION_FILE" : "/workspace/build/src/Mod/Import/App/Import_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"BOOST_ATOMIC_DYN_LINK",
+		"BOOST_ATOMIC_NO_LIB",
+		"BOOST_CHRONO_DYN_LINK",
+		"BOOST_CHRONO_NO_LIB",
+		"BOOST_CONTAINER_DYN_LINK",
+		"BOOST_CONTAINER_NO_LIB",
+		"BOOST_DATE_TIME_DYN_LINK",
+		"BOOST_DATE_TIME_NO_LIB",
+		"BOOST_PROGRAM_OPTIONS_DYN_LINK",
+		"BOOST_PROGRAM_OPTIONS_NO_LIB",
+		"BOOST_THREAD_DYN_LINK",
+		"BOOST_THREAD_NO_LIB",
+		"HAVE_CONFIG_H",
+		"HAVE_FREETYPE",
+		"HAVE_OPENGL_EXT",
+		"HAVE_RAPIDJSON",
+		"HAVE_TK",
+		"HAVE_VTK",
+		"HAVE_XLIB",
+		"Import_EXPORTS",
+		"MINIMUM_CPLUSPLUS_VERSION=202302L",
+		"OCC_CONVERT_SIGNALS",
+		"PYCXX_6_2_COMPATIBILITY",
+		"QT_CONCURRENT_LIB",
+		"QT_CORE_LIB",
+		"QT_NO_DEBUG",
+		"QT_NO_KEYWORDS",
+		"QT_XML_LIB",
+		"VTK_OPENGL2_BACKEND",
+		"_OCC64"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"/workspace/build",
+		"/workspace/build/src",
+		"/workspace/src",
+		"/workspace/build/src/Mod/Import/App",
+		"/workspace/src/Mod/Import/App",
+		"/workspace/src/3rdParty/FastSignals/libfastsignals/include",
+		"/usr/include/opencascade",
+		"/usr/include/freetype2",
+		"/usr/include/qt6/QtCore",
+		"/usr/include/qt6",
+		"/usr/include/qt6/QtXml",
+		"/workspace/src/3rdParty/PyCXX",
+		"/usr/include/python3.14",
+		"/workspace/src/3rdParty",
+		"/usr/lib/qt6/mkspecs/linux-g++",
+		"/usr/include/qt6/QtConcurrent",
+		"/usr/include/harfbuzz",
+		"/usr/include",
+		"/usr/include/c++/16",
+		"/usr/include/c++/16/x86_64-pc-linux-gnu",
+		"/usr/include/c++/16/backward",
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/16/include",
+		"/usr/local/include"
+	],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"/usr/sbin/c++",
+		"-std=c++23",
+		"-w",
+		"-dM",
+		"-E",
+		"/usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "/workspace/build/src/Mod/Import/App/Import_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : [],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 6,
+	"PARSE_CACHE_FILE" : "/workspace/build/src/Mod/Import/App/CMakeFiles/Import_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/usr/lib/qt6/moc",
+	"QT_UIC_EXECUTABLE" : "/usr/lib/qt6/uic",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 12,
+	"SETTINGS_FILE" : "/workspace/build/src/Mod/Import/App/CMakeFiles/Import_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[ "/workspace/src/Mod/Import/App/AppImport.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/AppImportPy.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/ExportOCAF.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/ExportOCAF2.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/ImportOCAF.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/ImportOCAF2.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/ReaderGltf.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/ReaderIges.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/ReaderStep.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/SketchExportHelper.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/StepShape.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/StepShapePyImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/Tools.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/WriterGltf.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/WriterIges.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/WriterStep.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/dxf/ImpExpDxf.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Import/App/dxf/dxf.cpp", "MU", null ]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : [],
+	"UIC_SKIP" : [],
+	"UIC_UI_FILES" : [],
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

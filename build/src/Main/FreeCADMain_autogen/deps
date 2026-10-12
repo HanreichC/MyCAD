@@ -1,0 +1,6 @@
+FreeCADMain_autogen/timestamp: \
+	/workspace/src/Main/CMakeLists.txt \
+	/workspace/src/Main/MainGui.cpp \
+	/workspace/src/Main/freecad.rc.cmake \
+	/workspace/src/Main/freecadCmd.rc.cmake \
+	/usr/sbin/cmake

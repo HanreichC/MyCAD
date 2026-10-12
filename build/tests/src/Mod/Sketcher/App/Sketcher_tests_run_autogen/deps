@@ -1,0 +1,11 @@
+Sketcher_tests_run_autogen/timestamp: \
+	/workspace/tests/src/Mod/Sketcher/App/CMakeLists.txt \
+	/workspace/tests/src/Mod/Sketcher/App/Constraint.cpp \
+	/workspace/tests/src/Mod/Sketcher/App/SketchObject.cpp \
+	/workspace/tests/src/Mod/Sketcher/App/SketchObjectChanges.cpp \
+	/workspace/tests/src/Mod/Sketcher/App/SketchObjectSymmetric.cpp \
+	/workspace/tests/src/Mod/Sketcher/App/SketcherTestHelpers.cpp \
+	/workspace/tests/src/Mod/Sketcher/App/SketcherTestHelpers.h \
+	/workspace/tests/src/Mod/Sketcher/App/planegcs/Constraints.cpp \
+	/workspace/tests/src/Mod/Sketcher/App/planegcs/GCS.cpp \
+	/usr/sbin/cmake

@@ -1,0 +1,2797 @@
+{
+	"BUILD_DIR" : "/workspace/build/src/Gui/FreeCADGui_autogen",
+	"CMAKE_BINARY_DIR" : "/workspace/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/workspace/build/src/Gui",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/workspace/src/Gui",
+	"CMAKE_EXECUTABLE" : "/usr/sbin/cmake",
+	"CMAKE_LIST_FILES" : 
+	[
+		"/workspace/src/Gui/CMakeLists.txt",
+		"/workspace/src/Gui/Icons/resource.qrc",
+		"/workspace/src/Gui/Shell/icons/icons.qrc",
+		"/workspace/src/Gui/Language/translation.qrc",
+		"/workspace/build/src/Gui/Language/FreeCAD_translation.qrc"
+	],
+	"CMAKE_SOURCE_DIR" : "/workspace",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "/workspace/build/src/Gui/FreeCADGui_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "FreeCADGui_autogen/timestamp",
+	"HEADERS" : 
+	[
+		[
+			"/workspace/src/Gui/3Dconnexion/GuiAbstractNativeEvent.h",
+			"MU",
+			"NLVYVN76PQ/moc_GuiAbstractNativeEvent.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Action.h",
+			"MU",
+			"EWIEGA46WW/moc_Action.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ActionFunction.h",
+			"MU",
+			"EWIEGA46WW/moc_ActionFunction.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ActiveObjectList.h",
+			"MU",
+			"EWIEGA46WW/moc_ActiveObjectList.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Application.h",
+			"MU",
+			"EWIEGA46WW/moc_Application.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ApplicationPy.h",
+			"MU",
+			"EWIEGA46WW/moc_ApplicationPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ArcEngine.h",
+			"MU",
+			"EWIEGA46WW/moc_ArcEngine.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Assistant.h",
+			"MU",
+			"EWIEGA46WW/moc_Assistant.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/AutoSaver.h",
+			"MU",
+			"EWIEGA46WW/moc_AutoSaver.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/AxisOrigin.h",
+			"MU",
+			"EWIEGA46WW/moc_AxisOrigin.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/BitmapFactory.h",
+			"MU",
+			"EWIEGA46WW/moc_BitmapFactory.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/CallTips.h",
+			"MU",
+			"EWIEGA46WW/moc_CallTips.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Camera.h",
+			"MU",
+			"EWIEGA46WW/moc_Camera.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Clipping.h",
+			"MU",
+			"EWIEGA46WW/moc_Clipping.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ColorScaleOverlay.h",
+			"MU",
+			"EWIEGA46WW/moc_ColorScaleOverlay.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ComboLinks.h",
+			"MU",
+			"EWIEGA46WW/moc_ComboLinks.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ComboView.h",
+			"MU",
+			"EWIEGA46WW/moc_ComboView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Command.h",
+			"MU",
+			"EWIEGA46WW/moc_Command.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/CommandActionPy.h",
+			"MU",
+			"EWIEGA46WW/moc_CommandActionPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/CommandCompleter.h",
+			"MU",
+			"EWIEGA46WW/moc_CommandCompleter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/CommandT.h",
+			"MU",
+			"EWIEGA46WW/moc_CommandT.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Control.h",
+			"MU",
+			"EWIEGA46WW/moc_Control.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DAGView/DAGModel.h",
+			"MU",
+			"XTYKMXCNLR/moc_DAGModel.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DAGView/DAGModelGraph.h",
+			"MU",
+			"XTYKMXCNLR/moc_DAGModelGraph.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DAGView/DAGRectItem.h",
+			"MU",
+			"XTYKMXCNLR/moc_DAGRectItem.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DAGView/DAGView.h",
+			"MU",
+			"XTYKMXCNLR/moc_DAGView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DemoMode.h",
+			"MU",
+			"EWIEGA46WW/moc_DemoMode.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgAbout.h",
+			"MU",
+			"UADLAD4D23/moc_DlgAbout.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgActionsImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgActionsImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgActivateWindowImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgActivateWindowImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgAddProperty.h",
+			"MU",
+			"UADLAD4D23/moc_DlgAddProperty.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgCheckableMessageBox.h",
+			"MU",
+			"UADLAD4D23/moc_DlgCheckableMessageBox.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgCreateNewPreferencePackImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgCreateNewPreferencePackImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgCustomizeImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgCustomizeImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgDocumentObject.h",
+			"MU",
+			"UADLAD4D23/moc_DlgDocumentObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgEditFileIncludePropertyExternal.h",
+			"MU",
+			"UADLAD4D23/moc_DlgEditFileIncludePropertyExternal.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgExpressionInput.h",
+			"MU",
+			"UADLAD4D23/moc_DlgExpressionInput.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgInputDialogImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgInputDialogImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgKeyboardImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgKeyboardImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgMacroExecuteImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgMacroExecuteImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgMacroRecordImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgMacroRecordImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgMaterialPropertiesImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgMaterialPropertiesImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgObjectSelection.h",
+			"MU",
+			"UADLAD4D23/moc_DlgObjectSelection.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgOnlineHelpImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgOnlineHelpImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgParameterFind.h",
+			"MU",
+			"UADLAD4D23/moc_DlgParameterFind.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgParameterImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgParameterImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgPreferencePackManagementImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgPreferencePackManagementImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgPreferencesImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgPreferencesImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgProjectInformationImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgProjectInformationImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgProjectUtility.h",
+			"MU",
+			"UADLAD4D23/moc_DlgProjectUtility.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgPropertyLink.h",
+			"MU",
+			"UADLAD4D23/moc_DlgPropertyLink.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgRevertToBackupConfigImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgRevertToBackupConfigImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgRunExternal.h",
+			"MU",
+			"UADLAD4D23/moc_DlgRunExternal.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgSettingsColorGradientImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgSettingsColorGradientImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgSettingsImageImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgSettingsImageImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgThemeEditor.h",
+			"MU",
+			"UADLAD4D23/moc_DlgThemeEditor.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgToolbarsImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgToolbarsImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgUndoRedo.h",
+			"MU",
+			"UADLAD4D23/moc_DlgUndoRedo.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgUnitsCalculatorImp.h",
+			"MU",
+			"UADLAD4D23/moc_DlgUnitsCalculatorImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Dialogs/DlgVersionMigrator.h",
+			"MU",
+			"UADLAD4D23/moc_DlgVersionMigrator.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DockWindow.h",
+			"MU",
+			"EWIEGA46WW/moc_DockWindow.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DockWindowManager.h",
+			"MU",
+			"EWIEGA46WW/moc_DockWindowManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Document.h",
+			"MU",
+			"EWIEGA46WW/moc_Document.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DocumentModel.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentModel.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DocumentObserver.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentObserver.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DocumentObserverPython.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentObserverPython.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DocumentRecovery.h",
+			"MU",
+			"EWIEGA46WW/moc_DocumentRecovery.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DownloadItem.h",
+			"MU",
+			"EWIEGA46WW/moc_DownloadItem.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/DownloadManager.h",
+			"MU",
+			"EWIEGA46WW/moc_DownloadManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/EditableDatumLabel.h",
+			"MU",
+			"EWIEGA46WW/moc_EditableDatumLabel.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/EditorView.h",
+			"MU",
+			"EWIEGA46WW/moc_EditorView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ElideCheckBox.h",
+			"MU",
+			"EWIEGA46WW/moc_ElideCheckBox.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ElideLabel.h",
+			"MU",
+			"EWIEGA46WW/moc_ElideLabel.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ExpressionBinding.h",
+			"MU",
+			"EWIEGA46WW/moc_ExpressionBinding.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ExpressionBindingPy.h",
+			"MU",
+			"EWIEGA46WW/moc_ExpressionBindingPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ExpressionCompleter.h",
+			"MU",
+			"EWIEGA46WW/moc_ExpressionCompleter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/FileDialog.h",
+			"MU",
+			"EWIEGA46WW/moc_FileDialog.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/FileDialogInternal.h",
+			"MU",
+			"EWIEGA46WW/moc_FileDialogInternal.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/FileHandler.h",
+			"MU",
+			"EWIEGA46WW/moc_FileHandler.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/Flag.h", "MU", "EWIEGA46WW/moc_Flag.cpp", null ],
+		[
+			"/workspace/src/Gui/FontScaledSVG.h",
+			"MU",
+			"EWIEGA46WW/moc_FontScaledSVG.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/FreeCADStyle.h",
+			"MU",
+			"EWIEGA46WW/moc_FreeCADStyle.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/FuzzyMatcher.h",
+			"MU",
+			"EWIEGA46WW/moc_FuzzyMatcher.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/GLBuffer.h",
+			"MU",
+			"EWIEGA46WW/moc_GLBuffer.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/GLPainter.h",
+			"MU",
+			"EWIEGA46WW/moc_GLPainter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/GeneralParameter.h",
+			"MU",
+			"EWIEGA46WW/moc_GeneralParameter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/GraphicsViewZoom.h",
+			"MU",
+			"EWIEGA46WW/moc_GraphicsViewZoom.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/GraphvizView.h",
+			"MU",
+			"EWIEGA46WW/moc_GraphvizView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/GuiApplication.h",
+			"MU",
+			"EWIEGA46WW/moc_GuiApplication.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/GuiApplicationNativeEventAware.h",
+			"MU",
+			"EWIEGA46WW/moc_GuiApplicationNativeEventAware.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/GuiConsole.h",
+			"MU",
+			"EWIEGA46WW/moc_GuiConsole.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ImageView.h",
+			"MU",
+			"EWIEGA46WW/moc_ImageView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/InputField.h",
+			"MU",
+			"EWIEGA46WW/moc_InputField.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/InputHint.h",
+			"MU",
+			"EWIEGA46WW/moc_InputHint.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/InputHintPy.h",
+			"MU",
+			"EWIEGA46WW/moc_InputHintPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/InputHintWidget.h",
+			"MU",
+			"EWIEGA46WW/moc_InputHintWidget.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/InputVector.h",
+			"MU",
+			"EWIEGA46WW/moc_InputVector.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/Gizmo.h",
+			"MU",
+			"4ODMVGHJLO/moc_Gizmo.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoLinearDragger.h",
+			"MU",
+			"4ODMVGHJLO/moc_SoLinearDragger.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoLinearDraggerGeometry.h",
+			"MU",
+			"4ODMVGHJLO/moc_SoLinearDraggerGeometry.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoPlanarDragger.h",
+			"MU",
+			"4ODMVGHJLO/moc_SoPlanarDragger.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoRotationDragger.h",
+			"MU",
+			"4ODMVGHJLO/moc_SoRotationDragger.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoRotationDraggerGeometry.h",
+			"MU",
+			"4ODMVGHJLO/moc_SoRotationDraggerGeometry.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoTransformDragger.h",
+			"MU",
+			"4ODMVGHJLO/moc_SoTransformDragger.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/MarkerBitmaps.h",
+			"MU",
+			"O7KPP3LJMT/moc_MarkerBitmaps.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SmSwitchboard.h",
+			"MU",
+			"O7KPP3LJMT/moc_SmSwitchboard.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/So3DAnnotation.h",
+			"MU",
+			"O7KPP3LJMT/moc_So3DAnnotation.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoAutoZoomTranslation.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoAutoZoomTranslation.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoAxisCrossKit.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoAxisCrossKit.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoDrawingGrid.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoDrawingGrid.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoFCBackgroundGradient.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoFCBackgroundGradient.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoFCBoundingBox.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoFCBoundingBox.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoFCPlacementIndicatorKit.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoFCPlacementIndicatorKit.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoFCScreenSpaceGroup.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoFCScreenSpaceGroup.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoFCTransform.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoFCTransform.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoMouseWheelEvent.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoMouseWheelEvent.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoNaviCube.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoNaviCube.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/SoToggleSwitch.h",
+			"MU",
+			"O7KPP3LJMT/moc_SoToggleSwitch.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/InventorAll.h",
+			"MU",
+			"EWIEGA46WW/moc_InventorAll.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Language/Translator.h",
+			"MU",
+			"B4IKPJ6UPQ/moc_Translator.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/MDIView.h",
+			"MU",
+			"EWIEGA46WW/moc_MDIView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/MDIViewPy.h",
+			"MU",
+			"EWIEGA46WW/moc_MDIViewPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/MDIViewPyWrap.h",
+			"MU",
+			"EWIEGA46WW/moc_MDIViewPyWrap.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/MDIViewWithCamera.h",
+			"MU",
+			"EWIEGA46WW/moc_MDIViewWithCamera.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/Macro.h", "MU", "EWIEGA46WW/moc_Macro.cpp", null ],
+		[
+			"/workspace/src/Gui/MainWindow.h",
+			"MU",
+			"EWIEGA46WW/moc_MainWindow.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/MainWindowPy.h",
+			"MU",
+			"EWIEGA46WW/moc_MainWindowPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ManualAlignment.h",
+			"MU",
+			"EWIEGA46WW/moc_ManualAlignment.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/MenuManager.h",
+			"MU",
+			"EWIEGA46WW/moc_MenuManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/MergeDocuments.h",
+			"MU",
+			"EWIEGA46WW/moc_MergeDocuments.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/MetaTypes.h",
+			"MU",
+			"EWIEGA46WW/moc_MetaTypes.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ModuleIO.h",
+			"MU",
+			"EWIEGA46WW/moc_ModuleIO.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/MouseSelection.h",
+			"MU",
+			"EWIEGA46WW/moc_MouseSelection.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Multisample.h",
+			"MU",
+			"EWIEGA46WW/moc_Multisample.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Namespace.h",
+			"MU",
+			"EWIEGA46WW/moc_Namespace.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/NaviCube.h",
+			"MU",
+			"EWIEGA46WW/moc_NaviCube.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/GestureNavigationStyle.h",
+			"MU",
+			"ISL6DFDREN/moc_GestureNavigationStyle.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/NavigationAnimation.h",
+			"MU",
+			"ISL6DFDREN/moc_NavigationAnimation.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/NavigationAnimator.h",
+			"MU",
+			"ISL6DFDREN/moc_NavigationAnimator.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/NavigationStateChart.h",
+			"MU",
+			"ISL6DFDREN/moc_NavigationStateChart.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/NavigationStyle.h",
+			"MU",
+			"ISL6DFDREN/moc_NavigationStyle.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/SiemensNXNavigationStyle.h",
+			"MU",
+			"ISL6DFDREN/moc_SiemensNXNavigationStyle.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/NetworkRetriever.h",
+			"MU",
+			"EWIEGA46WW/moc_NetworkRetriever.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/NotificationArea.h",
+			"MU",
+			"EWIEGA46WW/moc_NotificationArea.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/NotificationBox.h",
+			"MU",
+			"EWIEGA46WW/moc_NotificationBox.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Notifications.h",
+			"MU",
+			"EWIEGA46WW/moc_Notifications.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/NumericLocale.h",
+			"MU",
+			"EWIEGA46WW/moc_NumericLocale.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/OnlineDocumentation.h",
+			"MU",
+			"EWIEGA46WW/moc_OnlineDocumentation.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/OverlayManager.h",
+			"MU",
+			"EWIEGA46WW/moc_OverlayManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/OverlayParams.h",
+			"MU",
+			"EWIEGA46WW/moc_OverlayParams.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/OverlayWidgets.h",
+			"MU",
+			"EWIEGA46WW/moc_OverlayWidgets.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ParamHandler.h",
+			"MU",
+			"EWIEGA46WW/moc_ParamHandler.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Placement.h",
+			"MU",
+			"EWIEGA46WW/moc_Placement.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreCompiled.h",
+			"MU",
+			"EWIEGA46WW/moc_PreCompiled.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PrefWidgets.h",
+			"MU",
+			"EWIEGA46WW/moc_PrefWidgets.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePackManager.h",
+			"MU",
+			"EWIEGA46WW/moc_PreferencePackManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettings3DViewImp.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettings3DViewImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsAdvanced.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsAdvanced.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsCacheDirectory.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsCacheDirectory.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsDocumentImp.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsDocumentImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsEditor.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsEditor.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsGeneral.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsGeneral.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsLightSources.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsLightSources.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsMacroImp.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsMacroImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsNavigation.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsNavigation.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsNotificationArea.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsNotificationArea.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsPDF.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsPDF.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsPythonConsole.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsPythonConsole.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsReportView.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsReportView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsSelection.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsSelection.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsUI.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsUI.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsViewColor.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsViewColor.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsWorkbenchesImp.h",
+			"MU",
+			"M2PMFSLXUI/moc_DlgSettingsWorkbenchesImp.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/ListWidgetDragBugFix.h",
+			"MU",
+			"M2PMFSLXUI/moc_ListWidgetDragBugFix.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ProgramInformation.h",
+			"MU",
+			"EWIEGA46WW/moc_ProgramInformation.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ProgressBar.h",
+			"MU",
+			"EWIEGA46WW/moc_ProgressBar.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ProgressDialog.h",
+			"MU",
+			"EWIEGA46WW/moc_ProgressDialog.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PropertyPage.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyPage.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PropertyView.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PythonConsole.h",
+			"MU",
+			"EWIEGA46WW/moc_PythonConsole.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PythonConsolePy.h",
+			"MU",
+			"EWIEGA46WW/moc_PythonConsolePy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PythonEditor.h",
+			"MU",
+			"EWIEGA46WW/moc_PythonEditor.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PythonTracing.h",
+			"MU",
+			"EWIEGA46WW/moc_PythonTracing.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/PythonWrapper.h",
+			"MU",
+			"EWIEGA46WW/moc_PythonWrapper.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/QSint/actionpanel/actiongroup.h", "mU", "", null ],
+		[ "/workspace/src/Gui/QSint/actionpanel/actionlabel.h", "mU", "", null ],
+		[ "/workspace/src/Gui/QSint/actionpanel/actionpanel.h", "mU", "", null ],
+		[
+			"/workspace/src/Gui/QSint/actionpanel/actionpanelscheme.h",
+			"MU",
+			"UFXXL5K7FQ/moc_actionpanelscheme.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/QSint/actionpanel/taskgroup_p.h",
+			"MU",
+			"UFXXL5K7FQ/moc_taskgroup_p.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/QSint/actionpanel/taskheader_p.h", "mU", "", null ],
+		[ "/workspace/src/Gui/QtAll.h", "MU", "EWIEGA46WW/moc_QtAll.cpp", null ],
+		[
+			"/workspace/src/Gui/QuantitySpinBox.h",
+			"MU",
+			"EWIEGA46WW/moc_QuantitySpinBox.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/QuantitySpinBox_p.h",
+			"MU",
+			"EWIEGA46WW/moc_QuantitySpinBox_p.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/Basic.h",
+			"MU",
+			"3ZMZNS6RDW/moc_Basic.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/Quarter/ContextMenu.h", "mU", "", null ],
+		[
+			"/workspace/src/Gui/Quarter/ImageReader.h",
+			"MU",
+			"3ZMZNS6RDW/moc_ImageReader.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/Quarter/InteractionMode.h", "mU", "", null ],
+		[
+			"/workspace/src/Gui/Quarter/KeyboardP.h",
+			"MU",
+			"3ZMZNS6RDW/moc_KeyboardP.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/NativeEvent.h",
+			"MU",
+			"3ZMZNS6RDW/moc_NativeEvent.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/QtCoinCompatibility.h",
+			"MU",
+			"3ZMZNS6RDW/moc_QtCoinCompatibility.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/Quarter.h",
+			"MU",
+			"3ZMZNS6RDW/moc_Quarter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/QuarterP.h",
+			"MU",
+			"3ZMZNS6RDW/moc_QuarterP.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/Quarter/QuarterWidget.h", "mU", "", null ],
+		[
+			"/workspace/src/Gui/Quarter/QuarterWidgetP.h",
+			"MU",
+			"3ZMZNS6RDW/moc_QuarterWidgetP.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/Quarter/SensorManager.h", "mU", "", null ],
+		[ "/workspace/src/Gui/Quarter/SignalThread.h", "mU", "", null ],
+		[
+			"/workspace/src/Gui/Quarter/SoQTQuarterAdaptor.h",
+			"MU",
+			"3ZMZNS6RDW/moc_SoQTQuarterAdaptor.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/devices/InputDevice.h",
+			"MU",
+			"V6X5LXUAYW/moc_InputDevice.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/devices/Keyboard.h",
+			"MU",
+			"V6X5LXUAYW/moc_Keyboard.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/devices/Mouse.h",
+			"MU",
+			"V6X5LXUAYW/moc_Mouse.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/devices/SpaceNavigatorDevice.h",
+			"MU",
+			"V6X5LXUAYW/moc_SpaceNavigatorDevice.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/eventhandlers/DragDropHandler.h",
+			"mU",
+			"",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/eventhandlers/EventFilter.h",
+			"mU",
+			"",
+			null
+		],
+		[
+			"/workspace/src/Gui/Quarter/eventhandlers/FocusHandler.h",
+			"mU",
+			"",
+			null
+		],
+		[
+			"/workspace/src/Gui/ReportView.h",
+			"MU",
+			"EWIEGA46WW/moc_ReportView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/RubberbandOverlay.h",
+			"MU",
+			"EWIEGA46WW/moc_RubberbandOverlay.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SceneInspector.h",
+			"MU",
+			"EWIEGA46WW/moc_SceneInspector.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/BoxSelection.h",
+			"MU",
+			"GYNTEJ2WNY/moc_BoxSelection.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/Selection.h",
+			"MU",
+			"GYNTEJ2WNY/moc_Selection.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/SelectionFilter.h",
+			"MU",
+			"GYNTEJ2WNY/moc_SelectionFilter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/SelectionFilterPy.h",
+			"MU",
+			"GYNTEJ2WNY/moc_SelectionFilterPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/SelectionObject.h",
+			"MU",
+			"GYNTEJ2WNY/moc_SelectionObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/SelectionObserverPython.h",
+			"MU",
+			"GYNTEJ2WNY/moc_SelectionObserverPython.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/SelectionView.h",
+			"MU",
+			"GYNTEJ2WNY/moc_SelectionView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/SoFCSelection.h",
+			"MU",
+			"GYNTEJ2WNY/moc_SoFCSelection.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/SoFCSelectionAction.h",
+			"MU",
+			"GYNTEJ2WNY/moc_SoFCSelectionAction.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/SoFCSelectionContext.h",
+			"MU",
+			"GYNTEJ2WNY/moc_SoFCSelectionContext.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Selection/SoFCUnifiedSelection.h",
+			"MU",
+			"GYNTEJ2WNY/moc_SoFCUnifiedSelection.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Shell/GlassPanel.h",
+			"MU",
+			"FDDZEJZPQZ/moc_GlassPanel.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Shell/Settings.h",
+			"MU",
+			"FDDZEJZPQZ/moc_Settings.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Shell/Shell.h",
+			"MU",
+			"FDDZEJZPQZ/moc_Shell.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Shell/ViewCube.h",
+			"MU",
+			"FDDZEJZPQZ/moc_ViewCube.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ShortcutManager.h",
+			"MU",
+			"EWIEGA46WW/moc_ShortcutManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoDatumLabel.h",
+			"MU",
+			"EWIEGA46WW/moc_SoDatumLabel.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoDevicePixelRatioElement.h",
+			"MU",
+			"EWIEGA46WW/moc_SoDevicePixelRatioElement.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoFCColorBar.h",
+			"MU",
+			"EWIEGA46WW/moc_SoFCColorBar.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoFCColorBarNotifier.h",
+			"MU",
+			"EWIEGA46WW/moc_SoFCColorBarNotifier.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoFCDB.h",
+			"MU",
+			"EWIEGA46WW/moc_SoFCDB.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoFCInteractiveElement.h",
+			"MU",
+			"EWIEGA46WW/moc_SoFCInteractiveElement.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoFCOffscreenRenderer.h",
+			"MU",
+			"EWIEGA46WW/moc_SoFCOffscreenRenderer.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoFCVectorizeSVGAction.h",
+			"MU",
+			"EWIEGA46WW/moc_SoFCVectorizeSVGAction.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoFCVectorizeU3DAction.h",
+			"MU",
+			"EWIEGA46WW/moc_SoFCVectorizeU3DAction.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoLabelNodes.h",
+			"MU",
+			"EWIEGA46WW/moc_SoLabelNodes.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoQtOffscreenRendererPy.h",
+			"MU",
+			"EWIEGA46WW/moc_SoQtOffscreenRendererPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SoTouchEvents.h",
+			"MU",
+			"EWIEGA46WW/moc_SoTouchEvents.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SpaceMouseParameter.h",
+			"MU",
+			"EWIEGA46WW/moc_SpaceMouseParameter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SpaceballEvent.h",
+			"MU",
+			"EWIEGA46WW/moc_SpaceballEvent.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SpinBox.h",
+			"MU",
+			"EWIEGA46WW/moc_SpinBox.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SplashScreen.h",
+			"MU",
+			"EWIEGA46WW/moc_SplashScreen.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SplitButton.h",
+			"MU",
+			"EWIEGA46WW/moc_SplitButton.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SplitView3DInventor.h",
+			"MU",
+			"EWIEGA46WW/moc_SplitView3DInventor.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StartupProcess.h",
+			"MU",
+			"EWIEGA46WW/moc_StartupProcess.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StatusBarLabel.h",
+			"MU",
+			"EWIEGA46WW/moc_StatusBarLabel.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StyleParameters/ColorShading.h",
+			"MU",
+			"BOES34AB2R/moc_ColorShading.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StyleParameters/Corners.h",
+			"MU",
+			"BOES34AB2R/moc_Corners.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StyleParameters/Diagnostics.h",
+			"MU",
+			"BOES34AB2R/moc_Diagnostics.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StyleParameters/Edges.h",
+			"MU",
+			"BOES34AB2R/moc_Edges.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StyleParameters/Gradient.h",
+			"MU",
+			"BOES34AB2R/moc_Gradient.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StyleParameters/Insets.h",
+			"MU",
+			"BOES34AB2R/moc_Insets.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StyleParameters/ParameterManager.h",
+			"MU",
+			"BOES34AB2R/moc_ParameterManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StyleParameters/Parser.h",
+			"MU",
+			"BOES34AB2R/moc_Parser.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/StyleParameters/Value.h",
+			"MU",
+			"BOES34AB2R/moc_Value.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/SyntaxHighlighter.h",
+			"MU",
+			"EWIEGA46WW/moc_SyntaxHighlighter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskCommandLink.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskCommandLink.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskDlgRelocation.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskDlgRelocation.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskElementColors.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskElementColors.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskTransform.h",
+			"MU",
+			"EWIEGA46WW/moc_TaskTransform.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskView/TaskAppearance.h",
+			"MU",
+			"JPEZ3YQRVV/moc_TaskAppearance.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskView/TaskDialog.h",
+			"MU",
+			"JPEZ3YQRVV/moc_TaskDialog.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskView/TaskDialogPython.h",
+			"MU",
+			"JPEZ3YQRVV/moc_TaskDialogPython.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskView/TaskEditControl.h",
+			"MU",
+			"JPEZ3YQRVV/moc_TaskEditControl.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskView/TaskImage.h",
+			"MU",
+			"JPEZ3YQRVV/moc_TaskImage.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskView/TaskOrientation.h",
+			"MU",
+			"JPEZ3YQRVV/moc_TaskOrientation.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskView/TaskSelectLinkProperty.h",
+			"MU",
+			"JPEZ3YQRVV/moc_TaskSelectLinkProperty.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskView/TaskSolverMessages.h",
+			"MU",
+			"JPEZ3YQRVV/moc_TaskSolverMessages.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskView/TaskView.h",
+			"MU",
+			"JPEZ3YQRVV/moc_TaskView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TaskView/TaskWatcher.h",
+			"MU",
+			"JPEZ3YQRVV/moc_TaskWatcher.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TextDocumentEditorView.h",
+			"MU",
+			"EWIEGA46WW/moc_TextDocumentEditorView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TextEdit.h",
+			"MU",
+			"EWIEGA46WW/moc_TextEdit.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TextureMapping.h",
+			"MU",
+			"EWIEGA46WW/moc_TextureMapping.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Thumbnail.h",
+			"MU",
+			"EWIEGA46WW/moc_Thumbnail.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ToolBarAreaWidget.h",
+			"MU",
+			"EWIEGA46WW/moc_ToolBarAreaWidget.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ToolBarManager.h",
+			"MU",
+			"EWIEGA46WW/moc_ToolBarManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ToolBox.h",
+			"MU",
+			"EWIEGA46WW/moc_ToolBox.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ToolBoxManager.h",
+			"MU",
+			"EWIEGA46WW/moc_ToolBoxManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ToolHandler.h",
+			"MU",
+			"EWIEGA46WW/moc_ToolHandler.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/Tools.h", "MU", "EWIEGA46WW/moc_Tools.cpp", null ],
+		[
+			"/workspace/src/Gui/TransactionObject.h",
+			"MU",
+			"EWIEGA46WW/moc_TransactionObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Transform.h",
+			"MU",
+			"EWIEGA46WW/moc_Transform.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TranslateManip.h",
+			"MU",
+			"EWIEGA46WW/moc_TranslateManip.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/Tree.h", "MU", "EWIEGA46WW/moc_Tree.cpp", null ],
+		[
+			"/workspace/src/Gui/TreeParams.h",
+			"MU",
+			"EWIEGA46WW/moc_TreeParams.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/TreeView.h",
+			"MU",
+			"EWIEGA46WW/moc_TreeView.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/UiLoader.h",
+			"MU",
+			"EWIEGA46WW/moc_UiLoader.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Utilities.h",
+			"MU",
+			"EWIEGA46WW/moc_Utilities.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/VectorListEditor.h",
+			"MU",
+			"EWIEGA46WW/moc_VectorListEditor.cpp",
+			null
+		],
+		[ "/workspace/src/Gui/View.h", "MU", "EWIEGA46WW/moc_View.cpp", null ],
+		[
+			"/workspace/src/Gui/View3DInventor.h",
+			"MU",
+			"EWIEGA46WW/moc_View3DInventor.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/View3DInventorSelection.h",
+			"MU",
+			"EWIEGA46WW/moc_View3DInventorSelection.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/View3DInventorViewer.h",
+			"MU",
+			"EWIEGA46WW/moc_View3DInventorViewer.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/View3DPy.h",
+			"MU",
+			"EWIEGA46WW/moc_View3DPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/View3DSettings.h",
+			"MU",
+			"EWIEGA46WW/moc_View3DSettings.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/View3DViewerPy.h",
+			"MU",
+			"EWIEGA46WW/moc_View3DViewerPy.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewParams.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewParams.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProvider.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProvider.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderAnnotation.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderAnnotation.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderBuilder.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderBuilder.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderCoordinateSystem.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderCoordinateSystem.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderDatum.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderDatum.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderDocumentObject.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderDocumentObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderDocumentObjectGroup.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderDocumentObjectGroup.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderDragger.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderDragger.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderExtern.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderExtern.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderFeature.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderFeature.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderFeaturePython.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderFeaturePython.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderGeoFeatureGroup.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderGeoFeatureGroup.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderGeoFeatureGroupExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderGeoFeatureGroupExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderGeometryObject.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderGeometryObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderGroupExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderGroupExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderImagePlane.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderImagePlane.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderInventorObject.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderInventorObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderLine.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderLine.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderLink.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderLink.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderMaterialObject.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderMaterialObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderOriginGroup.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderOriginGroup.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderOriginGroupExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderOriginGroupExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderPart.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderPart.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderPlacement.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderPlacement.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderPlane.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderPlane.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderPoint.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderPoint.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderSuppressibleExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderSuppressibleExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderTextDocument.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderTextDocument.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderTextureExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderTextureExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderVRMLObject.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderVRMLObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/ViewProviderVarSet.h",
+			"MU",
+			"EWIEGA46WW/moc_ViewProviderVarSet.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/WaitCursor.h",
+			"MU",
+			"EWIEGA46WW/moc_WaitCursor.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/WhatsThis.h",
+			"MU",
+			"EWIEGA46WW/moc_WhatsThis.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/WidgetFactory.h",
+			"MU",
+			"EWIEGA46WW/moc_WidgetFactory.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Widgets.h",
+			"MU",
+			"EWIEGA46WW/moc_Widgets.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Window.h",
+			"MU",
+			"EWIEGA46WW/moc_Window.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/Workbench.h",
+			"MU",
+			"EWIEGA46WW/moc_Workbench.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/WorkbenchFactory.h",
+			"MU",
+			"EWIEGA46WW/moc_WorkbenchFactory.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/WorkbenchManager.h",
+			"MU",
+			"EWIEGA46WW/moc_WorkbenchManager.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/WorkbenchManipulator.h",
+			"MU",
+			"EWIEGA46WW/moc_WorkbenchManipulator.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/WorkbenchManipulatorPython.h",
+			"MU",
+			"EWIEGA46WW/moc_WorkbenchManipulatorPython.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/WorkbenchSelector.h",
+			"MU",
+			"EWIEGA46WW/moc_WorkbenchSelector.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/propertyeditor/PropertyEditor.h",
+			"MU",
+			"PGW74P2MF6/moc_PropertyEditor.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/propertyeditor/PropertyItem.h",
+			"MU",
+			"PGW74P2MF6/moc_PropertyItem.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/propertyeditor/PropertyItemDelegate.h",
+			"MU",
+			"PGW74P2MF6/moc_PropertyItemDelegate.cpp",
+			null
+		],
+		[
+			"/workspace/src/Gui/propertyeditor/PropertyModel.h",
+			"MU",
+			"PGW74P2MF6/moc_PropertyModel.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "/workspace/build/src/Gui/FreeCADGui_autogen/include",
+	"MOC_COMPILATION_FILE" : "/workspace/build/src/Gui/FreeCADGui_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"BOOST_ATOMIC_DYN_LINK",
+		"BOOST_ATOMIC_NO_LIB",
+		"BOOST_CHRONO_DYN_LINK",
+		"BOOST_CHRONO_NO_LIB",
+		"BOOST_CONTAINER_DYN_LINK",
+		"BOOST_CONTAINER_NO_LIB",
+		"BOOST_DATE_TIME_DYN_LINK",
+		"BOOST_DATE_TIME_NO_LIB",
+		"BOOST_PROGRAM_OPTIONS_DYN_LINK",
+		"BOOST_PROGRAM_OPTIONS_NO_LIB",
+		"BOOST_THREAD_DYN_LINK",
+		"BOOST_THREAD_NO_LIB",
+		"CMAKE_BUILD_TYPE=\"Release\"",
+		"FreeCADGui_EXPORTS",
+		"HAVE_CONFIG_H",
+		"HAVE_FREETYPE",
+		"HAVE_OPENGL_EXT",
+		"HAVE_PYSIDE6",
+		"HAVE_RAPIDJSON",
+		"HAVE_SHIBOKEN6",
+		"HAVE_TK",
+		"HAVE_VTK",
+		"HAVE_XLIB",
+		"MINIMUM_CPLUSPLUS_VERSION=202302L",
+		"NDEBUG",
+		"OCC_CONVERT_SIGNALS",
+		"PYCXX_6_2_COMPATIBILITY",
+		"QT_CORE_LIB",
+		"QT_GUI_LIB",
+		"QT_NETWORK_LIB",
+		"QT_NO_DEBUG",
+		"QT_NO_KEYWORDS",
+		"QT_OPENGLWIDGETS_LIB",
+		"QT_OPENGL_LIB",
+		"QT_PRINTSUPPORT_LIB",
+		"QT_SVGWIDGETS_LIB",
+		"QT_SVG_LIB",
+		"QT_UITOOLS_LIB",
+		"QT_WIDGETS_LIB",
+		"QT_XML_LIB",
+		"VTK_OPENGL2_BACKEND",
+		"_OCC64"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"/workspace/build",
+		"/workspace/build/src",
+		"/workspace/src",
+		"/workspace/src/3rdParty/GSL/include",
+		"/workspace/src/Gui",
+		"/workspace/src/Gui/Quarter",
+		"/workspace/src/Gui/PreferencePages",
+		"/workspace/src/Gui/Selection",
+		"/workspace/src/Gui/StyleParameters",
+		"/workspace/build/src/Gui",
+		"/workspace/src",
+		"/workspace/build/src",
+		"/workspace/build/src/Gui/Language",
+		"/workspace/build/src/Gui/propertyeditor",
+		"/workspace/build/src/Gui/TaskView",
+		"/workspace/build/src/Gui/Quarter",
+		"/workspace/build/src/Gui/DAGView",
+		"/workspace/src/3rdParty/FastSignals/libfastsignals/include",
+		"/usr/include/eigen3",
+		"/usr/include/qt6/QtCore",
+		"/usr/include/qt6",
+		"/usr/include/qt6/QtWidgets",
+		"/usr/include/qt6/QtOpenGL",
+		"/usr/include/qt6/QtOpenGLWidgets",
+		"/usr/include/qt6/QtPrintSupport",
+		"/usr/include/qt6/QtSvg",
+		"/usr/include/qt6/QtSvgWidgets",
+		"/usr/include/qt6/QtNetwork",
+		"/usr/include/qt6/QtUiTools",
+		"/usr/include/qt6/QtXml",
+		"/usr/include/shiboken6",
+		"/usr/include/python3.14",
+		"/usr/include/PySide6",
+		"/usr/include/PySide6/QtCore",
+		"/usr/include/PySide6/QtGui",
+		"/usr/include/PySide6/QtWidgets",
+		"/workspace/src/3rdParty/PyCXX",
+		"/workspace/src/3rdParty",
+		"/usr/lib/qt6/mkspecs/linux-g++",
+		"/usr/include/qt6/QtGui",
+		"/usr/include",
+		"/usr/include/c++/16",
+		"/usr/include/c++/16/x86_64-pc-linux-gnu",
+		"/usr/include/c++/16/backward",
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/16/include",
+		"/usr/local/include"
+	],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"/usr/sbin/c++",
+		"-std=c++23",
+		"-w",
+		"-dM",
+		"-E",
+		"/usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "/workspace/build/src/Gui/FreeCADGui_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : 
+	[
+		"/workspace/build/src/Gui/FreeCADGuiModulePy.cpp",
+		"/workspace/build/src/Gui/FreeCADGuiModulePy.h",
+		"/workspace/build/src/Gui/PySideUicModulePy.cpp",
+		"/workspace/build/src/Gui/PySideUicModulePy.h",
+		"/workspace/build/src/Gui/QSint/actionpanel/moc_actiongroup.cpp",
+		"/workspace/build/src/Gui/QSint/actionpanel/moc_actionlabel.cpp",
+		"/workspace/build/src/Gui/QSint/actionpanel/moc_actionpanel.cpp",
+		"/workspace/build/src/Gui/QSint/actionpanel/moc_taskheader_p.cpp",
+		"/workspace/build/src/Gui/Quarter/eventhandlers/moc_DragDropHandler.cpp",
+		"/workspace/build/src/Gui/Quarter/eventhandlers/moc_EventFilter.cpp",
+		"/workspace/build/src/Gui/Quarter/eventhandlers/moc_FocusHandler.cpp",
+		"/workspace/build/src/Gui/Quarter/moc_ContextMenu.cpp",
+		"/workspace/build/src/Gui/Quarter/moc_InteractionMode.cpp",
+		"/workspace/build/src/Gui/Quarter/moc_QuarterWidget.cpp",
+		"/workspace/build/src/Gui/Quarter/moc_SensorManager.cpp",
+		"/workspace/build/src/Gui/Quarter/moc_SignalThread.cpp",
+		"/workspace/build/src/Gui/SelectionModulePy.cpp",
+		"/workspace/build/src/Gui/SelectionModulePy.h",
+		"/workspace/build/src/Gui/qrc_FreeCAD_translation.cpp",
+		"/workspace/build/src/Gui/qrc_icons.cpp",
+		"/workspace/build/src/Gui/qrc_resource.cpp",
+		"/workspace/build/src/Gui/qrc_translation.cpp",
+		"/workspace/src/Gui/QSint/actionpanel/actiongroup.h",
+		"/workspace/src/Gui/QSint/actionpanel/actionlabel.h",
+		"/workspace/src/Gui/QSint/actionpanel/actionpanel.h",
+		"/workspace/src/Gui/QSint/actionpanel/taskheader_p.h",
+		"/workspace/src/Gui/Quarter/ContextMenu.h",
+		"/workspace/src/Gui/Quarter/InteractionMode.h",
+		"/workspace/src/Gui/Quarter/QuarterWidget.h",
+		"/workspace/src/Gui/Quarter/SensorManager.h",
+		"/workspace/src/Gui/Quarter/SignalThread.h",
+		"/workspace/src/Gui/Quarter/eventhandlers/DragDropHandler.h",
+		"/workspace/src/Gui/Quarter/eventhandlers/EventFilter.h",
+		"/workspace/src/Gui/Quarter/eventhandlers/FocusHandler.h"
+	],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 6,
+	"PARSE_CACHE_FILE" : "/workspace/build/src/Gui/CMakeFiles/FreeCADGui_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/usr/lib/qt6/moc",
+	"QT_UIC_EXECUTABLE" : "/usr/lib/qt6/uic",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 12,
+	"SETTINGS_FILE" : "/workspace/build/src/Gui/CMakeFiles/FreeCADGui_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[ "/workspace/src/Gui/Action.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ActionFunction.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ActiveObjectList.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Application.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ApplicationPy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ArcEngine.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Assistant.cpp", "MU", null ],
+		[ "/workspace/src/Gui/AutoSaver.cpp", "MU", null ],
+		[ "/workspace/src/Gui/AxisOrigin.cpp", "MU", null ],
+		[ "/workspace/src/Gui/AxisOriginPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/BitmapFactory.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CallTips.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Camera.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Clipping.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ColorScaleOverlay.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ComboLinks.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ComboView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Command.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandActionPy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandCompleter.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandDoc.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandFeat.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandLink.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandMacro.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandStd.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandStructure.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandTest.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/CommandWindow.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Control.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DAGView/DAGModel.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DAGView/DAGModelGraph.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DAGView/DAGRectItem.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DAGView/DAGView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DemoMode.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgAbout.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgActionsImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgActivateWindowImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgAddProperty.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgCheckableMessageBox.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Dialogs/DlgCreateNewPreferencePackImp.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Dialogs/DlgCustomizeImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgDocumentObject.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Dialogs/DlgEditFileIncludePropertyExternal.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Dialogs/DlgExpressionInput.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgInputDialogImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgKeyboardImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgMacroExecuteImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgMacroRecordImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgMaterialPropertiesImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgObjectSelection.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgOnlineHelpImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgParameterFind.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgParameterImp.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Dialogs/DlgPreferencePackManagementImp.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Dialogs/DlgPreferencesImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgProjectInformationImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgProjectUtility.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgPropertyLink.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Dialogs/DlgRevertToBackupConfigImp.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Dialogs/DlgRunExternal.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Dialogs/DlgSettingsColorGradientImp.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Dialogs/DlgSettingsImageImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgThemeEditor.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgToolbarsImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgUndoRedo.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgUnitsCalculatorImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Dialogs/DlgVersionMigrator.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DockWindow.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DockWindowManager.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Document.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DocumentModel.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DocumentObserver.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DocumentObserverPython.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DocumentPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DocumentRecovery.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DownloadItem.cpp", "MU", null ],
+		[ "/workspace/src/Gui/DownloadManager.cpp", "MU", null ],
+		[ "/workspace/src/Gui/EditableDatumLabel.cpp", "MU", null ],
+		[ "/workspace/src/Gui/EditableDatumLabelPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/EditorView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ElideCheckBox.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ElideLabel.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ExpressionBinding.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ExpressionBindingPy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ExpressionCompleter.cpp", "MU", null ],
+		[ "/workspace/src/Gui/FileDialog.cpp", "MU", null ],
+		[ "/workspace/src/Gui/FileHandler.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Flag.cpp", "MU", null ],
+		[ "/workspace/src/Gui/FontScaledSVG.cpp", "MU", null ],
+		[ "/workspace/src/Gui/FreeCADStyle.cpp", "MU", null ],
+		[ "/workspace/src/Gui/FuzzyMatcher.cpp", "MU", null ],
+		[ "/workspace/src/Gui/GLBuffer.cpp", "MU", null ],
+		[ "/workspace/src/Gui/GLPainter.cpp", "MU", null ],
+		[ "/workspace/src/Gui/GeneralParameter.cpp", "MU", null ],
+		[ "/workspace/src/Gui/GraphicsViewZoom.cpp", "MU", null ],
+		[ "/workspace/src/Gui/GraphvizView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/GuiApplication.cpp", "MU", null ],
+		[ "/workspace/src/Gui/GuiApplicationNativeEventAware.cpp", "MU", null ],
+		[ "/workspace/src/Gui/GuiConsole.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ImageView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/InputField.cpp", "MU", null ],
+		[ "/workspace/src/Gui/InputHintPy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/InputHintWidget.cpp", "MU", null ],
+		[ "/workspace/src/Gui/InputVector.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/Draggers/Gizmo.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoLinearDragger.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoLinearDraggerGeometry.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoPlanarDragger.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoRotationDragger.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoRotationDraggerGeometry.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Inventor/Draggers/SoTransformDragger.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Inventor/MarkerBitmaps.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/SmSwitchboard.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/So3DAnnotation.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/SoAutoZoomTranslation.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/SoAxisCrossKit.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/SoDrawingGrid.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/SoFCBackgroundGradient.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/SoFCBoundingBox.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Inventor/SoFCPlacementIndicatorKit.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Inventor/SoFCScreenSpaceGroup.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/SoFCTransform.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/SoMouseWheelEvent.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/SoNaviCube.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Inventor/SoToggleSwitch.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Language/Translator.cpp", "MU", null ],
+		[ "/workspace/src/Gui/LinkViewPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/MDIView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/MDIViewPy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/MDIViewPyWrap.cpp", "MU", null ],
+		[ "/workspace/src/Gui/MDIViewWithCamera.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Macro.cpp", "MU", null ],
+		[ "/workspace/src/Gui/MainWindow.cpp", "MU", null ],
+		[ "/workspace/src/Gui/MainWindowPy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ManualAlignment.cpp", "MU", null ],
+		[ "/workspace/src/Gui/MenuManager.cpp", "MU", null ],
+		[ "/workspace/src/Gui/MergeDocuments.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ModuleIO.cpp", "MU", null ],
+		[ "/workspace/src/Gui/MouseSelection.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Multisample.cpp", "MU", null ],
+		[ "/workspace/src/Gui/NaviCube.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Navigation/BlenderNavigationStyle.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Navigation/CADNavigationStyle.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Navigation/GestureNavigationStyle.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/InventorNavigationStyle.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/MayaGestureNavigationStyle.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Navigation/NavigationAnimation.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Navigation/NavigationAnimator.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Navigation/NavigationStateChart.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Navigation/NavigationStyle.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Navigation/NavigationStylePyImp.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Navigation/OpenCascadeNavigationStyle.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/OpenSCADNavigationStyle.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Navigation/RevitNavigationStyle.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Navigation/SiemensNXNavigationStyle.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/SolidWorksNavigationStyle.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/TinkerCADNavigationStyle.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/Navigation/TouchpadNavigationStyle.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/NetworkRetriever.cpp", "MU", null ],
+		[ "/workspace/src/Gui/NotificationArea.cpp", "MU", null ],
+		[ "/workspace/src/Gui/NotificationBox.cpp", "MU", null ],
+		[ "/workspace/src/Gui/NumericLocale.cpp", "MU", null ],
+		[ "/workspace/src/Gui/OnlineDocumentation.cpp", "MU", null ],
+		[ "/workspace/src/Gui/OverlayManager.cpp", "MU", null ],
+		[ "/workspace/src/Gui/OverlayParams.cpp", "MU", null ],
+		[ "/workspace/src/Gui/OverlayWidgets.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ParamHandler.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Placement.cpp", "MU", null ],
+		[ "/workspace/src/Gui/PrefWidgets.cpp", "MU", null ],
+		[ "/workspace/src/Gui/PreferencePackManager.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettings3DViewImp.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsAdvanced.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsCacheDirectory.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsDocumentImp.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsEditor.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsGeneral.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsLightSources.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsMacroImp.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsNavigation.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsNotificationArea.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/PreferencePages/DlgSettingsPDF.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsPythonConsole.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsReportView.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsSelection.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/PreferencePages/DlgSettingsUI.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsViewColor.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/DlgSettingsWorkbenchesImp.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Gui/PreferencePages/ListWidgetDragBugFix.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/ProgramInformation.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ProgressBar.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ProgressDialog.cpp", "MU", null ],
+		[ "/workspace/src/Gui/PropertyPage.cpp", "MU", null ],
+		[ "/workspace/src/Gui/PropertyView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/PythonConsole.cpp", "MU", null ],
+		[ "/workspace/src/Gui/PythonConsolePy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/PythonEditor.cpp", "MU", null ],
+		[ "/workspace/src/Gui/PythonTracing.cpp", "MU", null ],
+		[ "/workspace/src/Gui/PythonWorkbenchPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/PythonWrapper.cpp", "MU", null ],
+		[ "/workspace/src/Gui/QSint/actionpanel/actiongroup.cpp", "MU", null ],
+		[ "/workspace/src/Gui/QSint/actionpanel/actionlabel.cpp", "MU", null ],
+		[ "/workspace/src/Gui/QSint/actionpanel/actionpanel.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/QSint/actionpanel/actionpanelscheme.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/QSint/actionpanel/taskgroup_p.cpp", "MU", null ],
+		[ "/workspace/src/Gui/QSint/actionpanel/taskheader_p.cpp", "MU", null ],
+		[ "/workspace/src/Gui/QuantitySpinBox.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/ContextMenu.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/DragDropHandler.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/EventFilter.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/FocusHandler.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/ImageReader.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/InputDevice.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/InteractionMode.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/Keyboard.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/KeyboardP.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/Mouse.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/NativeEvent.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/QtCoinCompatibility.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/Quarter.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/QuarterP.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/QuarterWidget.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/QuarterWidgetP.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/SensorManager.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/SignalThread.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/SoQTQuarterAdaptor.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Quarter/SpaceNavigatorDevice.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ReportView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/RubberbandOverlay.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SceneInspector.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Selection/BoxSelection.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Selection/Selection.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Selection/SelectionFilter.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Selection/SelectionFilterPy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Selection/SelectionObject.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Selection/SelectionObjectPyImp.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/Selection/SelectionObserverPython.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/Selection/SelectionView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Selection/SoFCSelection.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Selection/SoFCSelectionAction.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Selection/SoFCSelectionContext.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Selection/SoFCUnifiedSelection.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Shell/GlassPanel.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Shell/Settings.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Shell/Shell.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Shell/ViewCube.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ShortcutManager.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoDatumLabel.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoDevicePixelRatioElement.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoFCColorBar.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoFCColorBarNotifier.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoFCDB.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoFCInteractiveElement.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoFCOffscreenRenderer.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoFCVectorizeSVGAction.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoFCVectorizeU3DAction.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoLabelNodes.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoQtOffscreenRendererPy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SoTouchEvents.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SpaceMouseParameter.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SpaceballEvent.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SpinBox.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SplashScreen.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SplitButton.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SplitView3DInventor.cpp", "MU", null ],
+		[ "/workspace/src/Gui/StartupProcess.cpp", "MU", null ],
+		[ "/workspace/src/Gui/StatusBarLabel.cpp", "MU", null ],
+		[ "/workspace/src/Gui/StyleParameters/ColorShading.cpp", "MU", null ],
+		[ "/workspace/src/Gui/StyleParameters/Diagnostics.cpp", "MU", null ],
+		[ "/workspace/src/Gui/StyleParameters/ParameterManager.cpp", "MU", null ],
+		[ "/workspace/src/Gui/StyleParameters/Parser.cpp", "MU", null ],
+		[ "/workspace/src/Gui/StyleParameters/Value.cpp", "MU", null ],
+		[ "/workspace/src/Gui/SyntaxHighlighter.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskCommandLink.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskDlgRelocation.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskElementColors.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskTransform.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskView/TaskAppearance.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskView/TaskDialog.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskView/TaskDialogPython.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskView/TaskEditControl.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskView/TaskImage.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskView/TaskOrientation.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskView/TaskSelectLinkProperty.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskView/TaskSolverMessages.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskView/TaskView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TaskView/TaskWatcher.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TextDocumentEditorView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TextEdit.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TextureMapping.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Thumbnail.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ToolBarAreaWidget.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ToolBarManager.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ToolBox.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ToolBoxManager.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ToolHandler.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TransactionObject.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Transform.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TranslateManip.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Tree.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TreeParams.cpp", "MU", null ],
+		[ "/workspace/src/Gui/TreeView.cpp", "MU", null ],
+		[ "/workspace/src/Gui/UiLoader.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Utilities.cpp", "MU", null ],
+		[ "/workspace/src/Gui/VectorListEditor.cpp", "MU", null ],
+		[ "/workspace/src/Gui/View.cpp", "MU", null ],
+		[ "/workspace/src/Gui/View3DInventor.cpp", "MU", null ],
+		[ "/workspace/src/Gui/View3DInventorSelection.cpp", "MU", null ],
+		[ "/workspace/src/Gui/View3DInventorViewer.cpp", "MU", null ],
+		[ "/workspace/src/Gui/View3DPy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/View3DSettings.cpp", "MU", null ],
+		[ "/workspace/src/Gui/View3DViewerPy.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewParams.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProvider.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderAnnotation.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderBuilder.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderCoordinateSystem.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderDatum.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderDocumentObject.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderDocumentObjectGroup.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderDocumentObjectPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderDragger.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderExtension.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderExtensionPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderExtern.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderFeature.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderFeaturePython.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderGeoFeatureGroup.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/ViewProviderGeoFeatureGroupExtension.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/ViewProviderGeometryObject.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderGeometryObjectPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderGroupExtension.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderImagePlane.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderInventorObject.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderLine.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderLink.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderLinkPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderMaterialObject.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderOriginGroup.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderOriginGroupExtension.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderPart.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderPlacement.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderPlane.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderPoint.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderPyImp.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/ViewProviderSuppressibleExtension.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/ViewProviderTextDocument.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderTextureExtension.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderVRMLObject.cpp", "MU", null ],
+		[ "/workspace/src/Gui/ViewProviderVarSet.cpp", "MU", null ],
+		[ "/workspace/src/Gui/WaitCursor.cpp", "MU", null ],
+		[ "/workspace/src/Gui/WhatsThis.cpp", "MU", null ],
+		[ "/workspace/src/Gui/WidgetFactory.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Widgets.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Window.cpp", "MU", null ],
+		[ "/workspace/src/Gui/Workbench.cpp", "MU", null ],
+		[ "/workspace/src/Gui/WorkbenchFactory.cpp", "MU", null ],
+		[ "/workspace/src/Gui/WorkbenchManager.cpp", "MU", null ],
+		[ "/workspace/src/Gui/WorkbenchManipulator.cpp", "MU", null ],
+		[ "/workspace/src/Gui/WorkbenchManipulatorPython.cpp", "MU", null ],
+		[ "/workspace/src/Gui/WorkbenchPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Gui/WorkbenchSelector.cpp", "MU", null ],
+		[ "/workspace/src/Gui/propertyeditor/PropertyEditor.cpp", "MU", null ],
+		[ "/workspace/src/Gui/propertyeditor/PropertyItem.cpp", "MU", null ],
+		[
+			"/workspace/src/Gui/propertyeditor/PropertyItemDelegate.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Gui/propertyeditor/PropertyModel.cpp", "MU", null ],
+		[ "/workspace/src/Gui/resource.cpp", "MU", null ]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : [],
+	"UIC_SKIP" : 
+	[
+		"/workspace/build/src/Gui/FreeCADGuiModulePy.cpp",
+		"/workspace/build/src/Gui/FreeCADGuiModulePy.h",
+		"/workspace/build/src/Gui/PySideUicModulePy.cpp",
+		"/workspace/build/src/Gui/PySideUicModulePy.h",
+		"/workspace/build/src/Gui/QSint/actionpanel/moc_actiongroup.cpp",
+		"/workspace/build/src/Gui/QSint/actionpanel/moc_actionlabel.cpp",
+		"/workspace/build/src/Gui/QSint/actionpanel/moc_actionpanel.cpp",
+		"/workspace/build/src/Gui/QSint/actionpanel/moc_taskheader_p.cpp",
+		"/workspace/build/src/Gui/Quarter/eventhandlers/moc_DragDropHandler.cpp",
+		"/workspace/build/src/Gui/Quarter/eventhandlers/moc_EventFilter.cpp",
+		"/workspace/build/src/Gui/Quarter/eventhandlers/moc_FocusHandler.cpp",
+		"/workspace/build/src/Gui/Quarter/moc_ContextMenu.cpp",
+		"/workspace/build/src/Gui/Quarter/moc_InteractionMode.cpp",
+		"/workspace/build/src/Gui/Quarter/moc_QuarterWidget.cpp",
+		"/workspace/build/src/Gui/Quarter/moc_SensorManager.cpp",
+		"/workspace/build/src/Gui/Quarter/moc_SignalThread.cpp",
+		"/workspace/build/src/Gui/SelectionModulePy.cpp",
+		"/workspace/build/src/Gui/SelectionModulePy.h",
+		"/workspace/build/src/Gui/qrc_FreeCAD_translation.cpp",
+		"/workspace/build/src/Gui/qrc_icons.cpp",
+		"/workspace/build/src/Gui/qrc_resource.cpp",
+		"/workspace/build/src/Gui/qrc_translation.cpp"
+	],
+	"UIC_UI_FILES" : [],
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

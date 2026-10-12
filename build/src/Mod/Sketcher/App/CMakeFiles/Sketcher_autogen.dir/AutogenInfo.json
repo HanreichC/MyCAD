@@ -1,0 +1,359 @@
+{
+	"BUILD_DIR" : "/workspace/build/src/Mod/Sketcher/App/Sketcher_autogen",
+	"CMAKE_BINARY_DIR" : "/workspace/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/workspace/build/src/Mod/Sketcher/App",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/workspace/src/Mod/Sketcher/App",
+	"CMAKE_EXECUTABLE" : "/usr/sbin/cmake",
+	"CMAKE_LIST_FILES" : [ "/workspace/src/Mod/Sketcher/App/CMakeLists.txt" ],
+	"CMAKE_SOURCE_DIR" : "/workspace",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "/workspace/build/src/Mod/Sketcher/App/Sketcher_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "Sketcher_autogen/timestamp",
+	"HEADERS" : 
+	[
+		[
+			"/workspace/src/Mod/Sketcher/App/Analyse.h",
+			"MU",
+			"EWIEGA46WW/moc_Analyse.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/Constraint.h",
+			"MU",
+			"EWIEGA46WW/moc_Constraint.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/ExternalGeometryExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_ExternalGeometryExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/ExternalGeometryFacade.h",
+			"MU",
+			"EWIEGA46WW/moc_ExternalGeometryFacade.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/GeoEnum.h",
+			"MU",
+			"EWIEGA46WW/moc_GeoEnum.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/GeoList.h",
+			"MU",
+			"EWIEGA46WW/moc_GeoList.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/GeometryFacade.h",
+			"MU",
+			"EWIEGA46WW/moc_GeometryFacade.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/Measure.h",
+			"MU",
+			"EWIEGA46WW/moc_Measure.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/PreCompiled.h",
+			"MU",
+			"EWIEGA46WW/moc_PreCompiled.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/PropertyConstraintList.h",
+			"MU",
+			"EWIEGA46WW/moc_PropertyConstraintList.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/PythonConverter.h",
+			"MU",
+			"EWIEGA46WW/moc_PythonConverter.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/Sketch.h",
+			"MU",
+			"EWIEGA46WW/moc_Sketch.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchAnalysis.h",
+			"MU",
+			"EWIEGA46WW/moc_SketchAnalysis.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchGeometry.h",
+			"MU",
+			"EWIEGA46WW/moc_SketchGeometry.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchGeometryExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_SketchGeometryExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchObject.h",
+			"MU",
+			"EWIEGA46WW/moc_SketchObject.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchObjectSF.h",
+			"MU",
+			"EWIEGA46WW/moc_SketchObjectSF.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/SolverGeometryExtension.h",
+			"MU",
+			"EWIEGA46WW/moc_SolverGeometryExtension.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/planegcs/Constraints.h",
+			"MU",
+			"FLGRA5KVB6/moc_Constraints.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/planegcs/GCS.h",
+			"MU",
+			"FLGRA5KVB6/moc_GCS.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/planegcs/Geo.h",
+			"MU",
+			"FLGRA5KVB6/moc_Geo.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/planegcs/SubSystem.h",
+			"MU",
+			"FLGRA5KVB6/moc_SubSystem.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/planegcs/Util.h",
+			"MU",
+			"FLGRA5KVB6/moc_Util.cpp",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/planegcs/qp_eq.h",
+			"MU",
+			"FLGRA5KVB6/moc_qp_eq.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "/workspace/build/src/Mod/Sketcher/App/Sketcher_autogen/include",
+	"MOC_COMPILATION_FILE" : "/workspace/build/src/Mod/Sketcher/App/Sketcher_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"BOOST_ATOMIC_DYN_LINK",
+		"BOOST_ATOMIC_NO_LIB",
+		"BOOST_CHRONO_DYN_LINK",
+		"BOOST_CHRONO_NO_LIB",
+		"BOOST_CONTAINER_DYN_LINK",
+		"BOOST_CONTAINER_NO_LIB",
+		"BOOST_DATE_TIME_DYN_LINK",
+		"BOOST_DATE_TIME_NO_LIB",
+		"BOOST_PROGRAM_OPTIONS_DYN_LINK",
+		"BOOST_PROGRAM_OPTIONS_NO_LIB",
+		"BOOST_THREAD_DYN_LINK",
+		"BOOST_THREAD_NO_LIB",
+		"HAVE_CONFIG_H",
+		"HAVE_FREETYPE",
+		"HAVE_OPENGL_EXT",
+		"HAVE_RAPIDJSON",
+		"HAVE_TK",
+		"HAVE_VTK",
+		"HAVE_XLIB",
+		"MINIMUM_CPLUSPLUS_VERSION=202302L",
+		"OCC_CONVERT_SIGNALS",
+		"PYCXX_6_2_COMPATIBILITY",
+		"QT_CONCURRENT_LIB",
+		"QT_CORE_LIB",
+		"QT_NO_DEBUG",
+		"QT_NO_KEYWORDS",
+		"QT_XML_LIB",
+		"Sketcher_EXPORTS",
+		"VTK_OPENGL2_BACKEND",
+		"_OCC64"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"/workspace/build",
+		"/workspace/build/src",
+		"/workspace/src",
+		"/workspace/src/Mod/Sketcher/App",
+		"/workspace/build/src/Mod/Sketcher/App",
+		"/workspace/src/Mod/Sketcher",
+		"/workspace/build/src/Mod/Sketcher",
+		"/workspace/src/3rdParty/FastSignals/libfastsignals/include",
+		"/workspace/src/3rdParty/json/single_include",
+		"/usr/include/eigen3",
+		"/usr/include/opencascade",
+		"/usr/include/freetype2",
+		"/usr/include/qt6/QtCore",
+		"/usr/include/qt6",
+		"/usr/include/qt6/QtXml",
+		"/workspace/src/3rdParty/PyCXX",
+		"/usr/include/python3.14",
+		"/workspace/src/3rdParty",
+		"/usr/lib/qt6/mkspecs/linux-g++",
+		"/usr/include/qt6/QtConcurrent",
+		"/usr/include/harfbuzz",
+		"/usr/include",
+		"/usr/include/c++/16",
+		"/usr/include/c++/16/x86_64-pc-linux-gnu",
+		"/usr/include/c++/16/backward",
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/16/include",
+		"/usr/local/include"
+	],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"/usr/sbin/c++",
+		"-std=c++23",
+		"-w",
+		"-dM",
+		"-E",
+		"/usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "/workspace/build/src/Mod/Sketcher/App/Sketcher_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : [],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 6,
+	"PARSE_CACHE_FILE" : "/workspace/build/src/Mod/Sketcher/App/CMakeFiles/Sketcher_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/usr/lib/qt6/moc",
+	"QT_UIC_EXECUTABLE" : "/usr/lib/qt6/uic",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 12,
+	"SETTINGS_FILE" : "/workspace/build/src/Mod/Sketcher/App/CMakeFiles/Sketcher_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[ "/workspace/src/Mod/Sketcher/App/AppSketcher.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/AppSketcherPy.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/Constraint.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/ConstraintPyImp.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Sketcher/App/ExternalGeometryExtension.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/ExternalGeometryExtensionPyImp.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/ExternalGeometryFacade.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/ExternalGeometryFacadePyImp.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Sketcher/App/GeoEnum.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/GeoList.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/GeometryFacade.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/GeometryFacadePyImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/Measure.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Sketcher/App/PropertyConstraintList.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Sketcher/App/PythonConverter.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/Sketch.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/SketchAnalysis.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/SketchGeometry.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchGeometryExtension.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchGeometryExtensionPyImp.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Sketcher/App/SketchObject.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchObjectConstraints.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchObjectExternal.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchObjectGeometry.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/SketchObjectOperations.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Sketcher/App/SketchObjectPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/SketchObjectSF.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/SketchObjectSFPyImp.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/SketchPyImp.cpp", "MU", null ],
+		[
+			"/workspace/src/Mod/Sketcher/App/SolverGeometryExtension.cpp",
+			"MU",
+			null
+		],
+		[
+			"/workspace/src/Mod/Sketcher/App/planegcs/Constraints.cpp",
+			"MU",
+			null
+		],
+		[ "/workspace/src/Mod/Sketcher/App/planegcs/GCS.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/planegcs/Geo.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/planegcs/SubSystem.cpp", "MU", null ],
+		[ "/workspace/src/Mod/Sketcher/App/planegcs/qp_eq.cpp", "MU", null ]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : [],
+	"UIC_SKIP" : [],
+	"UIC_UI_FILES" : [],
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

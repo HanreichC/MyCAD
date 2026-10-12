@@ -1,0 +1,20 @@
+include("/usr/share/cmake/Modules/GoogleTestAddTests.cmake")
+gtest_discover_tests_impl(
+  TEST_TARGET [==[PartDesign_tests_run]==]
+  TEST_EXECUTABLE [==[/workspace/build/tests/PartDesign_tests_run]==]
+  TEST_EXECUTOR [==[]==]
+  TEST_WORKING_DIR [==[/workspace/build/tests]==]
+  TEST_EXTRA_ARGS [==[]==]
+  TEST_PROPERTIES [==[]==]
+  TEST_PREFIX [==[]==]
+  TEST_SUFFIX [==[]==]
+  TEST_FILTER [==[]==]
+  NO_PRETTY_TYPES [==[FALSE]==]
+  NO_PRETTY_VALUES [==[FALSE]==]
+  TEST_LIST [==[PartDesign_tests_run_TESTS]==]
+  CTEST_FILE [==[/workspace/build/tests/PartDesign_tests_run_e3b0c442_tests.cmake]==]
+  TEST_DISCOVERY_TIMEOUT [==[5]==]
+  TEST_DISCOVERY_EXTRA_ARGS [==[]==]
+  TEST_XML_OUTPUT_DIR [==[]==]
+  TEST_JSON_OUTPUT_DIR [==[/workspace/build/tests]==]
+)
