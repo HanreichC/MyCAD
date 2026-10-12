@@ -34,6 +34,12 @@ def real_middle():
 def close_settings():
     for d in visible(QtWidgets.QDialog):
         d.grab().save(os.environ["OUT"] + ".dialog.png")
+        style = [c for c in d.findChildren(QtWidgets.QComboBox) if c.findText("Blender") >= 0][0]
+        style.highlighted.emit(style.findText("Blender"))  # Vorschau beim Überfahren der Liste
+        d.grab().save(os.environ["OUT"] + ".hover.png")
+        L("  more preferences button=%s" % any("More" in b.text() for b in d.findChildren(QtWidgets.QPushButton)))
+        seg = [b for b in d.findChildren(QtWidgets.QPushButton) if b.text() == "Keys"][0]
+        seg.click(); d.grab().save(os.environ["OUT"] + ".keys.png")
         d.accept()
 
 

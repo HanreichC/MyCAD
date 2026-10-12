@@ -35,6 +35,10 @@
         <file>Window_Maximize.svg</file>
         <file>Window_Restore.svg</file>
         <file>Window_Close.svg</file>
+        <file>Nav_Rotate.svg</file>
+        <file>Nav_Pan.svg</file>
+        <file>Nav_Zoom.svg</file>
+        <file>Nav_Select.svg</file>
         <file>Design_Import.svg</file>
         <file>Design_Export.svg</file>
         <file>Std_Undo.svg</file>
