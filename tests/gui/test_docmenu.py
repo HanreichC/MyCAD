@@ -3,7 +3,6 @@
 bricht um und überdeckt die Fensterknöpfe nicht."""
 import os
 from harness import *
-from PySide6 import QtGui
 
 FILE = os.environ["OUT"] + ".FCStd"
 
@@ -13,25 +12,33 @@ def tree():
 
 
 def context(label, entry):
+    """Echter Rechtsklick auf den Dokument-Eintrag, echter Klick auf den Menüpunkt und auf "Delete" in der Rückfrage"""
     t = tree()
     item = [t.topLevelItem(i) for i in range(t.topLevelItemCount()) if t.topLevelItem(i).text(0) == label][0]
 
     def pick():
+        QtCore.QTimer.singleShot(600, confirm)  # vorher einplanen: der Klick öffnet die Rückfrage modal und blockiert
         for m in visible(QtWidgets.QMenu):
             L("  menu=%s" % [a.text() for a in m.actions() if a.text()])
-            [a for a in m.actions() if a.text() == entry][0].trigger(); m.close()
-        QtCore.QTimer.singleShot(600, confirm)
+            r = m.actionGeometry([a for a in m.actions() if a.text() == entry][0])
+            QtTest.QTest.mouseMove(m.windowHandle(), r.center())  # wie eine echte Maus: erst hin, dann klicken
+            QtTest.QTest.mouseClick(m.windowHandle(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, r.center())
 
     def confirm(tries=[0]):
         for box in visible(QtWidgets.QMessageBox):
             L("  question: %s" % box.text().replace("\n", " "))
-            [b for b in box.buttons() if b.text() == "Delete"][0].click(); return
+            b = [b for b in box.buttons() if b.text() == "Delete"][0]
+            QtTest.QTest.mouseMove(box.windowHandle(), b.mapTo(box, b.rect().center()))
+            QtTest.QTest.mouseClick(box.windowHandle(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, b.mapTo(box, b.rect().center()))
+            return
         tries[0] += 1
         if tries[0] < 10:
             QtCore.QTimer.singleShot(300, confirm)
-    QtCore.QTimer.singleShot(500, pick)
-    pos = t.visualItemRect(item).center()
-    QtWidgets.QApplication.sendEvent(t.viewport(), QtGui.QContextMenuEvent(QtGui.QContextMenuEvent.Mouse, pos, t.viewport().mapToGlobal(pos)))
+    QtCore.QTimer.singleShot(1500, pick)
+    win, p = mw.windowHandle(), t.viewport().mapTo(mw, t.visualItemRect(item).center())
+    QtTest.QTest.mouseMove(win, p)
+    QtTest.QTest.mousePress(win, QtCore.Qt.RightButton, QtCore.Qt.NoModifier, p)
+    QtTest.QTest.mouseRelease(win, QtCore.Qt.RightButton, QtCore.Qt.NoModifier, p)
 
 
 def panels():
@@ -48,10 +55,12 @@ def panels():
 run([
     ("new", lambda: Gui.runCommand("Std_New")),
     ("delete unsaved", lambda: context(App.ActiveDocument.Label, "Delete…")), ("wait", lambda: None), ("wait", lambda: None),
+    ("wait", lambda: None), ("wait", lambda: None),
     ("after 1", lambda: L("nach Löschen (ungespeichert): documents=%s" % sorted(App.listDocuments()))),
     ("new2", lambda: Gui.runCommand("Std_New")),
     ("save", lambda: App.ActiveDocument.saveAs(FILE)), ("wait", lambda: None),
     ("delete saved", lambda: context(App.ActiveDocument.Label, "Delete…")), ("wait", lambda: None), ("wait", lambda: None),
+    ("wait", lambda: None), ("wait", lambda: None),
     ("after 2", lambda: L("nach Löschen (gespeichert): documents=%s file still there=%s" % (sorted(App.listDocuments()), os.path.exists(FILE)))),
     ("narrow", lambda: (mw.showNormal())), ("wait", lambda: None),
     ("size", lambda: mw.resize(1100, 800)), ("wait", lambda: None), ("wait", lambda: None),

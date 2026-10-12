@@ -1030,10 +1030,21 @@ protected:
         if (!widget) {
             return false;
         }
-        if (auto tree = qobject_cast<QTreeWidget*>(widget->parentWidget());
-            tree && event->type() == QEvent::ContextMenu) {
+        auto tree = qobject_cast<QTreeWidget*>(widget->parentWidget());
+        // Browser: Menü erst beim Loslassen der rechten Taste öffnen. Öffnet es schon beim Drücken (Qt-Standard unter
+        // Linux), schluckt das Menü das Loslassen; Qt hält die Taste dann für gedrückt und Knöpfe in danach geöffneten
+        // Dialogen (z. B. "Delete" in der Rückfrage) reagieren nicht auf Klicks
+        if (tree && event->type() == QEvent::ContextMenu
+            && static_cast<QContextMenuEvent*>(event)->reason() == QContextMenuEvent::Mouse) {
+            return true;
+        }
+        const bool rightRelease = event->type() == QEvent::MouseButtonRelease
+            && static_cast<QMouseEvent*>(event)->button() == Qt::RightButton;
+        if (tree && (event->type() == QEvent::ContextMenu || rightRelease)) {
+            const QPoint pos = rightRelease ? static_cast<QMouseEvent*>(event)->position().toPoint()
+                                            : static_cast<QContextMenuEvent*>(event)->pos();
             // Dokument-Eintrag: speichern, umbenennen, schließen (ein Dokument wird geschlossen, nicht gelöscht)
-            QTreeWidgetItem* item = tree->itemAt(static_cast<QContextMenuEvent*>(event)->pos());
+            QTreeWidgetItem* item = tree->itemAt(pos);
             if (item && item->type() == TreeWidget::DocumentType) {
                 const std::string name = static_cast<DocumentItem*>(item)->document()->getDocument()->getName();
                 auto guiDoc = [name]() -> Gui::Document* {  // Dokument kann inzwischen geschlossen sein
@@ -1115,8 +1126,11 @@ protected:
             });
             return true;
         }
-        if (qobject_cast<QGraphicsView*>(widget->parentWidget())) {
+        if (auto gv = qobject_cast<QGraphicsView*>(widget->parentWidget())) {
             auto me = static_cast<QMouseEvent*>(event);
+            if (event->type() == QEvent::MouseButtonRelease && gv->itemAt(me->position().toPoint())) {
+                return false;  // über einem Glass-Panel (Browser, Toolbar …): dessen eigenes Menü
+            }
             if (event->type() == QEvent::MouseButtonPress && me->button() == Qt::RightButton) {
                 pressPos = me->globalPosition().toPoint();
             }

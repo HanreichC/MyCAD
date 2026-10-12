@@ -2,7 +2,6 @@
 """Rückmeldungen: Dokument im Browser per Rechtsklick schließen; Drehen um die Mitte des Körpers unter dem Cursor."""
 import os
 from harness import *
-from PySide6 import QtGui
 
 
 def tree():
@@ -40,7 +39,7 @@ def context_close():
             QtCore.QTimer.singleShot(300, discard)
     QtCore.QTimer.singleShot(500, pick)
     pos = t.visualItemRect(item).center()
-    QtWidgets.QApplication.sendEvent(t.viewport(), QtGui.QContextMenuEvent(QtGui.QContextMenuEvent.Mouse, pos, t.viewport().mapToGlobal(pos)))
+    QtTest.QTest.mouseClick(t.viewport(), QtCore.Qt.RightButton, QtCore.Qt.NoModifier, pos)  # Menü öffnet beim Loslassen
 
 
 def screen(p):
