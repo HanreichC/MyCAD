@@ -273,7 +273,7 @@ Ziel: Die leere MyCAD-Oberfläche steht komplett, mit Dokument laden/speichern u
 > Skizze: Varianten-Dropdowns, Offset (ganze Kontur), Mirror, Muster, Move/Scale, Text. Einstellungen:
 > Navigation, Kamera, Tasten als Maustasten (cad.helper). Fehlermeldungen im MyCAD-Stil.
 > Plane at Angle, Web, Emboss, Replace/Split Face, Operationen über Komponentengrenzen (Combine, Move,
-> Scale, Mirror, Pattern rechnen in die Koordinaten jeder Komponente um). Offen: Joints (Phase 9).
+> Scale, Mirror, Pattern rechnen in die Koordinaten jeder Komponente um). Joints: Rigid, Revolute, Slider, Cylindrical (ohne Animation).
 Ziel: Mehrere Komponenten und Bodies in einer Datei, globale Timeline, erste Features.
 - [ ] `Component`, `Body`, `Feature`-Basis, `Timeline` inkl. Rollback-Marker, Suppress, Reorder, Gruppen
 - [ ] Algorithmen aus PartDesign in eine Bibliothek auslagern (`Design/Algo`)
