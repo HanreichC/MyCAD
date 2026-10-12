@@ -97,10 +97,9 @@ QFrame#TimelineMarker { background: %3; border-radius: 2px; }
 QToolButton#PaletteRow { border: none; border-radius: 8px; padding: 0 8px; text-align: left; background: transparent; }
 QToolButton#PaletteRow:hover { background: %4; }
 QToolButton#PaletteRow:checked { background: %5; }
-QToolButton#TrafficLight { border: none; border-radius: 6px; }
-QToolButton#TrafficLight[role="close"] { background: #FF5F57; }
-QToolButton#TrafficLight[role="minimize"] { background: #FEBC2E; }
-QToolButton#TrafficLight[role="zoom"] { background: #28C840; }
+QToolButton#WindowClose { border: none; border-radius: 10px; background: transparent; }
+QToolButton#WindowClose:hover { background: #E5484D; }
+QToolButton#WindowClose:pressed { background: #C93A3F; }
 QLabel#WindowTitle { font-weight: 600; }
 QToolButton#GlassButton[popupMode="1"] { padding-right: 10px; }
 QToolButton#GlassButton::menu-button { border: none; width: 12px; }
@@ -540,21 +539,8 @@ public:
     {
         setObjectName(QStringLiteral("GlassContent"));
         auto lay = new QHBoxLayout(this);
-        lay->setContentsMargins(14, 0, 16, 0);
+        lay->setContentsMargins(18, 0, 18, 0);
         lay->setSpacing(8);
-        auto light = [&](const char* role, std::function<void()> action) {
-            auto btn = new QToolButton;
-            btn->setObjectName(QStringLiteral("TrafficLight"));
-            btn->setProperty("role", QString::fromLatin1(role));
-            btn->setFixedSize(12, 12);
-            btn->setCursor(Qt::ArrowCursor);
-            QObject::connect(btn, &QToolButton::clicked, btn, [action] { QTimer::singleShot(0, action); });
-            lay->addWidget(btn);
-        };
-        light("close", [] { getMainWindow()->close(); });
-        light("minimize", [] { getMainWindow()->showMinimized(); });
-        light("zoom", toggleMaximized);
-        lay->addSpacing(8);
         title = new QLabel;
         title->setObjectName(QStringLiteral("WindowTitle"));
         lay->addWidget(title);
@@ -588,6 +574,54 @@ protected:
 
 private:
     QLabel* title;
+};
+
+/// Fensterknöpfe rechts oben wie unter KDE: minimieren, maximieren/wiederherstellen, schließen
+class WindowControls: public QWidget
+{
+public:
+    WindowControls()
+    {
+        setObjectName(QStringLiteral("GlassContent"));
+        auto lay = new QHBoxLayout(this);
+        lay->setContentsMargins(8, 6, 8, 6);
+        lay->setSpacing(2);
+        auto button = [&](const char* icon, const char* name, const QString& tip, std::function<void()> action) {
+            auto btn = new QToolButton;
+            btn->setObjectName(QString::fromLatin1(name));
+            btn->setIcon(designIcon(QString::fromLatin1(icon)));
+            btn->setIconSize(QSize(18, 18));
+            btn->setFixedSize(38, 38);
+            btn->setToolTip(tip);
+            btn->setCursor(Qt::ArrowCursor);
+            QObject::connect(btn, &QToolButton::clicked, btn, [action] { QTimer::singleShot(0, action); });
+            lay->addWidget(btn);
+            return btn;
+        };
+        button("Window_Minimize", "GlassButton", QStringLiteral("Minimize"), [] { getMainWindow()->showMinimized(); });
+        maximize = button("Window_Maximize", "GlassButton", QStringLiteral("Maximize"), TitleBar::toggleMaximized);
+        button("Window_Close", "WindowClose", QStringLiteral("Close"), [] { getMainWindow()->close(); });
+        getMainWindow()->installEventFilter(this);
+        update();
+    }
+
+protected:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        if (event->type() == QEvent::WindowStateChange) {
+            update();
+        }
+        return false;
+    }
+
+private:
+    void update()  // maximiert: "Wiederherstellen"-Symbol
+    {
+        const bool max = getMainWindow()->isMaximized();
+        maximize->setIcon(designIcon(max ? QStringLiteral("Window_Restore") : QStringLiteral("Window_Maximize")));
+        maximize->setToolTip(max ? QStringLiteral("Restore") : QStringLiteral("Maximize"));
+    }
+    QToolButton* maximize;
 };
 
 /// Menüs mit runden Ecken: dafür brauchen sie einen transparenten, rahmenlosen Hintergrund
@@ -844,6 +878,7 @@ struct State
     GlassPanel* inspector = nullptr;
     GlassPanel* timeline = nullptr;
     GlassPanel* titleBar = nullptr;
+    GlassPanel* windowControls = nullptr;
     GlassPanel* palette = nullptr;
     ViewCube* viewCube = nullptr;
     bool sketchMode = false;
@@ -854,7 +889,7 @@ std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
     for (auto p : {state.modelBar, state.sketchBar, state.browser, state.inspector, state.timeline, state.titleBar,
-                   state.palette}) {
+                   state.windowControls, state.palette}) {
         if (p) {
             all.push_back(p);
         }
@@ -893,17 +928,25 @@ void layout()
         const QSizeF ts = state.titleBar->content()->sizeHint();
         state.titleBar->setGeometry(QRectF(m, m, ts.width(), bs.height()));
     }
+    qreal cubeTop = m;
+    if (state.windowControls) {
+        const QSizeF cs = state.windowControls->content()->sizeHint();
+        state.windowControls->setGeometry(QRectF(r.width() - cs.width() - m, m, cs.width(), bs.height()));
+        cubeTop = m + bs.height() + m;
+    }
+    qreal belowCube = 170;
+    if (state.viewCube) {
+        state.viewCube->setPos(r.width() - state.viewCube->boundingRect().width() - m, cubeTop);
+        belowCube = cubeTop + state.viewCube->boundingRect().height() + m;
+    }
     if (state.palette) {
         QSizeF ps = state.palette->content()->sizeHint();
         ps.setWidth(std::max<qreal>(ps.width(), state.palette->content()->minimumWidth()));
         state.palette->setVisible(state.sketchMode);
-        state.palette->setGeometry(QRectF(r.width() - ps.width() - m, 170, ps.width(), ps.height()));
-    }
-    if (state.viewCube) {
-        state.viewCube->setPos(r.width() - state.viewCube->boundingRect().width() - m, m);
+        state.palette->setGeometry(QRectF(r.width() - ps.width() - m, belowCube, ps.width(), ps.height()));
     }
     if (state.inspector) {
-        const qreal itop = 170;  // unter dem ViewCube
+        const qreal itop = belowCube;  // unter dem ViewCube
         QWidget* inspector = state.inspector->content();
         for (auto box : inspector->findChildren<QDialogButtonBox*>()) {
             box->setVisible(!state.sketchMode);
@@ -1292,6 +1335,7 @@ void Gui::Shell::install()
             mw->show();
         }
         state.titleBar = new GlassPanel(new TitleBar, 24);
+        state.windowControls = new GlassPanel(new WindowControls, 24);
         qApp->installEventFilter(new EdgeResizer);
     }
     {
