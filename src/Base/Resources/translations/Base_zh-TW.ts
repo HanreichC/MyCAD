@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="zh-TW" sourcelanguage="en">
+  <context>
+    <name>UnitsApi</name>
+    <message>
+      <location filename="../../UnitsSchemasData.h" line="93"/>
+      <source>Standard (mm, kg, s, °)</source>
+      <translation>標準（mm、kg、s、°）</translation>
+    </message>
+    <message>
+      <location filename="../../UnitsSchemasData.h" line="351"/>
+      <source>MKS (m, kg, s, °)</source>
+      <translation>MKS (m, kg, s, °)</translation>
+    </message>
+    <message>
+      <location filename="../../UnitsSchemasData.h" line="624"/>
+      <source>US customary (in, lb)</source>
+      <translation>美制（in、lb）</translation>
+    </message>
+    <message>
+      <location filename="../../UnitsSchemasData.h" line="681"/>
+      <source>Imperial for Civil Eng (ft, lb, mph)</source>
+      <translation>英制土木工程（ft、lb、mph）</translation>
+    </message>
+    <message>
+      <location filename="../../UnitsSchemasData.h" line="77"/>
+      <source>Imperial decimal (in, lb)</source>
+      <translation>英制（in、lb）</translation>
+    </message>
+    <message>
+      <location filename="../../UnitsSchemasData.h" line="582"/>
+      <source>Building Euro (cm, m², m³)</source>
+      <translation>歐洲建築（cm、m²、m³）</translation>
+    </message>
+    <message>
+      <location filename="../../UnitsSchemasData.h" line="668"/>
+      <source>Building US (ft-in, sqft, cft)</source>
+      <translation>美國建築（ft-in、sqft、cft）</translation>
+    </message>
+    <message>
+      <location filename="../../UnitsSchemasData.h" line="54"/>
+      <source>Metric small parts &amp; CNC (mm, mm/min)</source>
+      <translation>公制小零件 &amp; CNC (mm, mm/min)</translation>
+    </message>
+    <message>
+      <location filename="../../UnitsSchemasData.h" line="612"/>
+      <source>FEM (mm, N, s)</source>
+      <translation>FEM (mm, N, s)</translation>
+    </message>
+    <message>
+      <location filename="../../UnitsSchemasData.h" line="63"/>
+      <source>Meter decimal (m, m², m³)</source>
+      <translation>米十進制（m、m²、m³）</translation>
+    </message>
+  </context>
+  <context>
+    <name>Exceptions</name>
+    <message>
+      <location filename="../../Exception.cpp" line="321"/>
+      <source>File not found</source>
+      <translation>找不到檔案</translation>
+    </message>
+    <message>
+      <location filename="../../Exception.cpp" line="323"/>
+      <source>No permission to read the file</source>
+      <translation>沒有讀取該檔案的權限</translation>
+    </message>
+    <message>
+      <location filename="../../Exception.cpp" line="325"/>
+      <source>No write permission for the file or the file is read-only</source>
+      <translation>沒有寫入該檔案的權限或該檔案唯讀</translation>
+    </message>
+    <message>
+      <location filename="../../Exception.cpp" line="326"/>
+      <source>File format not supported</source>
+      <translation>檔案格式不支援</translation>
+    </message>
+    <message>
+      <location filename="../../Exception.cpp" line="327"/>
+      <source>Error reading from file</source>
+      <translation>自檔案讀取錯誤</translation>
+    </message>
+    <message>
+      <location filename="../../Exception.cpp" line="328"/>
+      <source>Error writing to file</source>
+      <translation>檔案寫入錯誤</translation>
+    </message>
+    <message>
+      <location filename="../../Exception.cpp" line="330"/>
+      <source>Directory does not exist</source>
+      <translation>目錄不存在</translation>
+    </message>
+  </context>
+</TS>

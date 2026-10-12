@@ -1,0 +1,642 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+/******************************************************************************
+ *   Copyright (c) 2012 Jan Rheinländer <jrheinlaender@users.sourceforge.net> *
+ *                                                                            *
+ *   This file is part of the FreeCAD CAx development system.                 *
+ *                                                                            *
+ *   This library is free software; you can redistribute it and/or            *
+ *   modify it under the terms of the GNU Library General Public              *
+ *   License as published by the Free Software Foundation; either             *
+ *   version 2 of the License, or (at your option) any later version.         *
+ *                                                                            *
+ *   This library  is distributed in the hope that it will be useful,         *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            *
+ *   GNU Library General Public License for more details.                     *
+ *                                                                            *
+ *   You should have received a copy of the GNU Library General Public        *
+ *   License along with this library; see the file COPYING.LIB. If not,       *
+ *   write to the Free Software Foundation, Inc., 59 Temple Place,            *
+ *   Suite 330, Boston, MA  02111-1307, USA                                   *
+ *                                                                            *
+ ******************************************************************************/
+
+#include <Bnd_Box.hxx>
+#include <BRep_Builder.hxx>
+#include <Mod/Part/App/FCBRepAlgoAPI_Cut.h>
+#include <Mod/Part/App/FCBRepAlgoAPI_Fuse.h>
+#include <BRepBndLib.hxx>
+#include <BRepBuilderAPI_Copy.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <Precision.hxx>
+#include <TopExp_Explorer.hxx>
+
+
+#include <array>
+#include <unordered_map>
+#include <algorithm>
+
+#include <Base/Console.h>
+#include <Base/Exception.h>
+#include <Base/Reader.h>
+#include <Base/Sequencer.h>
+#include <Mod/Part/App/modelRefine.h>
+
+#include "FeatureTransformed.h"
+#include "Body.h"
+#include "FeatureAddSub.h"
+#include "FeatureMultiTransform.h"
+#include "FeatureMirrored.h"
+#include "FeatureLinearPattern.h"
+#include "FeatureCircularPattern.h"
+#include "FeaturePathPattern.h"
+#include "FeaturePointPattern.h"
+#include "FeaturePolarPattern.h"
+#include "FeatureSketchBased.h"
+#include "Mod/Part/App/TopoShapeOpCode.h"
+
+
+using namespace PartDesign;
+
+namespace PartDesign
+{
+extern bool getPDRefineModelParameter();
+
+PROPERTY_SOURCE(PartDesign::Transformed, PartDesign::FeatureRefine)
+
+std::array<char const*, 3> transformModeEnums = {"Features", "Whole shape", nullptr};
+
+Transformed::Transformed()
+{
+    ADD_PROPERTY(Originals, (nullptr));
+    Originals.setSize(0);
+    Placement.setStatus(App::Property::ReadOnly, true);
+
+    ADD_PROPERTY(TransformMode, (static_cast<long>(Mode::Features)));
+    TransformMode.setEnums(transformModeEnums.data());
+
+    ADD_PROPERTY_TYPE(
+        SuppressedIndices,
+        (std::vector<long>()),
+        "Transformation",
+        App::Prop_None,
+        "Indices of pattern instances that are suppressed."
+    );
+}
+
+void Transformed::positionBySupport()
+{
+    // TODO May be here better to throw exception (silent=false) (2015-07-27, Fat-Zer)
+    Part::Feature* support = getBaseObject(/* silent =*/true);
+    if (support) {
+        this->Placement.setValue(support->Placement.getValue());
+    }
+}
+
+Part::Feature* Transformed::getBaseObject(bool silent) const
+{
+    Part::Feature* rv = Feature::getBaseObject(/* silent = */ true);
+    if (rv) {
+        return rv;
+    }
+
+    const char* err = nullptr;
+    const std::vector<App::DocumentObject*>& originals = getOriginals();
+    // NOTE: may be here supposed to be last origin but in order to keep the old behaviour keep here
+    // first
+    App::DocumentObject* firstOriginal = originals.empty() ? nullptr : originals.front();
+    if (firstOriginal) {
+        rv = freecad_cast<Part::Feature*>(firstOriginal);
+        if (!rv) {
+            err = QT_TRANSLATE_NOOP(
+                "Exception",
+                "Transformation feature Linked object is not a Part object"
+            );
+        }
+    }
+    else {
+        if (isDerivedFrom<Mirrored>()) {
+            err = QT_TRANSLATE_NOOP("Exception", "No features selected to be mirrored.");
+        }
+        else if (
+            isDerivedFrom<LinearPattern>() || isDerivedFrom<CircularPattern>()
+            || isDerivedFrom<PathPattern>() || isDerivedFrom<PointPattern>()
+            || isDerivedFrom<PolarPattern>()
+        ) {
+            err = QT_TRANSLATE_NOOP("Exception", "No features selected to be patterned.");
+        }
+        else {
+            err = QT_TRANSLATE_NOOP("Exception", "No features selected to be transformed.");
+        }
+    }
+
+    if (!silent && err) {
+        throw Base::RuntimeError(err);
+    }
+
+    return rv;
+}
+
+std::vector<App::DocumentObject*> Transformed::getSortedOriginals() const
+{
+    std::vector<DocumentObject*> originals = Originals.getValues();
+
+    // Sort originals in chronological order of the body's group history
+    if (auto body = getFeatureBody()) {
+        const auto& group = body->Group.getValues();
+        std::unordered_map<const DocumentObject*, size_t> indexMap;
+        for (size_t i = 0; i < group.size(); ++i) {
+            indexMap[group[i]] = i;
+        }
+        std::ranges::sort(originals, [&indexMap](const DocumentObject* a, const DocumentObject* b) {
+            auto itA = indexMap.find(a);
+            auto itB = indexMap.find(b);
+            size_t idxA = (itA != indexMap.end()) ? itA->second : std::numeric_limits<size_t>::max();
+            size_t idxB = (itB != indexMap.end()) ? itB->second : std::numeric_limits<size_t>::max();
+            return idxA < idxB;
+        });
+    }
+
+    return originals;
+}
+
+std::vector<App::DocumentObject*> Transformed::getOriginals() const
+{
+    auto const mode = static_cast<Mode>(TransformMode.getValue());
+
+    if (mode == Mode::WholeShape) {
+        return {};
+    }
+
+    std::vector<DocumentObject*> originals = getSortedOriginals();
+
+    const auto isSuppressed = [](const DocumentObject* obj) {
+        auto feature = freecad_cast<Feature*>(obj);
+
+        return feature != nullptr && feature->Suppressed.getValue();
+    };
+
+    // Remove suppressed features from the list so the transformations behave as if they are not
+    // there
+    auto [first, last] = std::ranges::remove_if(originals, isSuppressed);
+    originals.erase(first, last);
+
+    return originals;
+}
+
+App::DocumentObject* Transformed::getSketchObject() const
+{
+    std::vector<DocumentObject*> originals = getOriginals();
+    DocumentObject const* firstOriginal = !originals.empty() ? originals.front() : nullptr;
+
+    if (auto feature = freecad_cast<PartDesign::ProfileBased*>(firstOriginal)) {
+        return feature->getVerifiedSketch(true);
+    }
+    if (freecad_cast<PartDesign::FeatureAddSub*>(firstOriginal)) {
+        return nullptr;
+    }
+    if (auto pattern = freecad_cast<LinearPattern*>(this)) {
+        return pattern->Direction.getValue();
+    }
+    if (auto pattern = freecad_cast<PolarPattern*>(this)) {
+        return pattern->Axis.getValue();
+    }
+    if (auto pattern = freecad_cast<CircularPattern*>(this)) {
+        return pattern->Axis.getValue();
+    }
+    if (auto pattern = freecad_cast<PathPattern*>(this)) {
+        return pattern->Path.getValue();
+    }
+    if (auto pattern = freecad_cast<PointPattern*>(this)) {
+        return pattern->PointObject.getValue();
+    }
+    if (auto pattern = freecad_cast<Mirrored*>(this)) {
+        return pattern->MirrorPlane.getValue();
+    }
+
+    return nullptr;
+}
+
+void Transformed::Restore(Base::XMLReader& reader)
+{
+    PartDesign::Feature::Restore(reader);
+}
+
+bool Transformed::isMultiTransformChild() const
+{
+    // Checking for a MultiTransform in the dependency list is not reliable on initialization
+    // because the dependencies are only established after creation.
+    /*
+    for (auto const* obj : getInList()) {
+        auto mt = freecad_cast<PartDesign::MultiTransform*>(obj);
+        if (!mt) {
+            continue;
+        }
+
+        auto const transfmt = mt->Transformations.getValues();
+        if (std::find(transfmt.begin(), transfmt.end(), this) != transfmt.end()) {
+            return true;
+        }
+    }
+    */
+
+    // instead check for default property values because these are invalid for a standalone
+    // transform feature. This will mislabel standalone features during the initialization phase.
+    if (TransformMode.getValue() == 0 && Originals.getValue().empty()) {
+        return true;
+    }
+
+    return false;
+}
+
+void Transformed::handleChangedPropertyType(
+    Base::XMLReader& reader,
+    const char* TypeName,
+    App::Property* prop
+)
+{
+    // The property 'Angle' of PolarPattern has changed from PropertyFloat
+    // to PropertyAngle and the property 'Length' has changed to PropertyLength.
+    Base::Type inputType = Base::Type::fromName(TypeName);
+    if (auto property = freecad_cast<App::PropertyFloat*>(prop);
+        property != nullptr && inputType.isDerivedFrom(App::PropertyFloat::getClassTypeId())) {
+        // Do not directly call the property's Restore method in case the implementation
+        // has changed. So, create a temporary PropertyFloat object and assign the value.
+        App::PropertyFloat floatProp;
+        floatProp.Restore(reader);
+        property->setValue(floatProp.getValue());
+    }
+    else {
+        PartDesign::Feature::handleChangedPropertyType(reader, TypeName, prop);
+    }
+}
+
+short Transformed::mustExecute() const
+{
+    if (Originals.isTouched() || TransformMode.isTouched() || SuppressedIndices.isTouched()) {
+        return 1;
+    }
+    return PartDesign::Feature::mustExecute();
+}
+
+bool Transformed::isTransformationSuppressed(int index) const
+{
+    if (index < 0) {
+        return false;
+    }
+
+    const auto& suppressed = SuppressedIndices.getValues();
+    return std::ranges::find(suppressed, static_cast<long>(index)) != suppressed.end();
+}
+
+void Transformed::setTransformationSuppressed(int index, bool suppress)
+{
+    if (index < 0 || isTransformationSuppressed(index) == suppress) {
+        return;
+    }
+    auto suppressed = SuppressedIndices.getValues();
+    if (suppress) {
+        suppressed.push_back(index);
+    }
+    else {
+        std::erase(suppressed, static_cast<long>(index));
+    }
+    std::ranges::sort(suppressed);
+    const auto duplicates = std::ranges::unique(suppressed);
+    suppressed.erase(duplicates.begin(), duplicates.end());
+    SuppressedIndices.setValues(suppressed);
+}
+
+const std::list<gp_Trsf> Transformed::getFilteredTransformations(
+    const std::vector<App::DocumentObject*> originals
+)
+{
+    std::list<gp_Trsf> filtered;
+    int index = 0;
+    for (const auto& transformation : getTransformations(originals)) {
+        if (!isTransformationSuppressed(index)) {
+            filtered.push_back(transformation);
+        }
+        ++index;
+    }
+
+    return filtered;
+}
+
+App::DocumentObjectExecReturn* Transformed::recomputePreview()
+{
+    const auto mode = static_cast<Mode>(TransformMode.getValue());
+
+    const Part::Feature* supportFeature = getBaseObject();
+    const Part::TopoShape supportShape = supportFeature->Shape.getShape();
+
+    if (supportShape.isNull()) {
+        return App::DocumentObject::StdReturn;
+    }
+
+    gp_Trsf supportTransform = supportShape.getShape().Location().Transformation();
+
+    const auto makeCompoundOfToolShapes = [this, &supportTransform]() {
+        BRep_Builder builder;
+        TopoDS_Compound compound;
+
+        builder.MakeCompound(compound);
+        for (const auto& original : getOriginals()) {
+            if (auto* feature = freecad_cast<FeatureAddSub*>(original)) {
+                auto shape = feature->AddSubShape.getShape();
+
+                gp_Trsf trsf = supportTransform.Inverted().Multiplied(
+                    feature->getLocation().Transformation()
+                );
+
+                if (shape.isNull()) {
+                    continue;
+                }
+
+                shape = shape.makeElementTransform(trsf);
+
+                builder.Add(compound, shape.getShape());
+            }
+        }
+
+        return compound;
+    };
+
+    switch (mode) {
+        case Mode::Features:
+            PreviewShape.setValue(makeCompoundOfToolShapes());
+            return StdReturn;
+
+        case Mode::WholeShape: {
+            auto shape = getBaseTopoShape();
+            shape = shape.makeElementTransform(supportTransform.Inverted());
+
+            PreviewShape.setValue(shape.getShape());
+
+            return StdReturn;
+        }
+
+        default:
+            return FeatureRefine::recomputePreview();
+    }
+}
+
+void Transformed::onChanged(const App::Property* prop)
+{
+    if (prop == &TransformMode) {
+        auto const mode = static_cast<Mode>(TransformMode.getValue());
+        Originals.setStatus(App::Property::Status::Hidden, mode == Mode::WholeShape);
+    }
+
+    FeatureRefine::onChanged(prop);
+}
+
+App::DocumentObjectExecReturn* Transformed::execute()
+{
+    if (isMultiTransformChild()) {
+        return App::DocumentObject::StdReturn;
+    }
+
+    auto const mode = static_cast<Mode>(TransformMode.getValue());
+
+    std::vector<DocumentObject*> originals = getOriginals();
+
+    if (mode == Mode::Features && originals.empty()) {
+        return App::DocumentObject::StdReturn;
+    }
+
+    if (!this->BaseFeature.getValue()) {
+        if (auto body = getFeatureBody()) {
+            body->setBaseProperty(this);
+        }
+    }
+
+    this->positionBySupport();
+
+    // get transformations from subclass by calling virtual method
+    std::vector<gp_Trsf> transformations;
+    try {
+        std::list<gp_Trsf> t_list = getTransformations(originals);
+        transformations.insert(transformations.end(), t_list.begin(), t_list.end());
+    }
+    catch (Base::Exception& e) {
+        return new App::DocumentObjectExecReturn(e.what());
+    }
+    catch (const Standard_Failure& e) {
+        return new App::DocumentObjectExecReturn(e.GetMessageString());
+    }
+
+    if (transformations.empty()) {
+        return App::DocumentObject::StdReturn;  // No transformations defined, exit silently
+    }
+
+    // Get the support
+    Part::Feature* supportFeature = nullptr;
+
+    try {
+        supportFeature = getBaseObject();
+    }
+    catch (Base::Exception& e) {
+        return new App::DocumentObjectExecReturn(e.what());
+    }
+
+    const Part::TopoShape& supportTopShape = supportFeature->Shape.getShape();
+    if (supportTopShape.getShape().IsNull()) {
+        return new App::DocumentObjectExecReturn(
+            QT_TRANSLATE_NOOP("Exception", "Cannot transform invalid support shape")
+        );
+    }
+
+    // Create an untransformed copy of the support shape. The original occurrence is already part
+    // of this shape, so remove the actual material added or removed by each selected feature when
+    // occurrence zero is suppressed. Computing the delta from the feature's before/after shapes
+    // avoids cutting into the earlier support or restoring tool material that was never removed.
+    Part::TopoShape supportShape(supportTopShape);
+    Part::TopoShape wholeShapeSource(supportTopShape);
+
+    gp_Trsf trsfInv = supportShape.getShape().Location().Transformation().Inverted();
+
+    const auto transformToSupport = [&trsfInv](Part::TopoShape shape) {
+        if (shape.isNull()) {
+            return shape;
+        }
+        const gp_Trsf location = shape.getShape().Location().Transformation();
+        shape.setTransform(Base::Matrix4D());
+        return shape.makeElementTransform(trsfInv.Multiplied(location));
+    };
+
+    supportShape.setTransform(Base::Matrix4D());
+    wholeShapeSource.setTransform(Base::Matrix4D());
+
+    if (!hasOriginalTransformation() || isTransformationSuppressed(0)) {
+        if (mode == Mode::WholeShape) {
+            supportShape.setShape(TopoDS_Shape());
+        }
+        else {
+            const auto sortedOriginals = getSortedOriginals();
+            for (auto it = sortedOriginals.rbegin(); it != sortedOriginals.rend(); ++it) {
+                auto* feature = freecad_cast<FeatureAddSub*>(*it);
+                if (!feature) {
+                    continue;
+                }
+
+                Part::TopoShape before = transformToSupport(feature->getBaseTopoShape(true));
+                Part::TopoShape after = transformToSupport(feature->Shape.getShape());
+
+                Part::TopoShape delta;
+                if (feature->getAddSubType() == FeatureAddSub::Type::Additive) {
+                    if (before.isNull()) {
+                        delta = after;
+                    }
+                    else {
+                        delta.makeElementCut({after, before});
+                    }
+                    if (!delta.isNull() && !supportShape.isNull()) {
+                        supportShape.makeElementCut({supportShape, delta});
+                    }
+                }
+                else if (!before.isNull()) {
+                    delta.makeElementCut({before, after});
+                    if (!delta.isNull()) {
+                        if (supportShape.isNull()) {
+                            supportShape = delta;
+                        }
+                        else {
+                            supportShape.makeElementFuse({supportShape, delta});
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    auto getTransformedCompShape = [&](const auto& supportShape, const auto& origShape) {
+        std::vector<TopoShape> shapes;
+        if (!supportShape.isNull()) {
+            shapes.push_back(supportShape);
+        }
+        TopoShape shape(origShape);
+        int idx = hasOriginalTransformation() ? 1 : 0;
+        auto transformIter = transformations.cbegin();
+        std::advance(transformIter, idx);
+        for (; transformIter != transformations.end(); transformIter++) {
+            if (Base::Sequencer().wasCanceled()) {
+                return std::vector<TopoShape>();
+            }
+            if (isTransformationSuppressed(idx)) {
+                ++idx;
+                continue;
+            }
+            auto opName = Data::indexSuffix(idx++);
+            shapes.emplace_back(shape.makeElementTransform(*transformIter, opName.c_str()));
+        }
+        return shapes;
+    };
+
+    switch (mode) {
+        case Mode::Features:
+            // NOTE: It would be possible to build a compound from all original addShapes/subShapes
+            // and then transform the compounds as a whole. But we choose to apply the
+            // transformations to each Original separately. This way it is easier to discover what
+            // feature causes a fuse/cut to fail. The downside is that performance suffers when
+            // there are many originals. But it seems safe to assume that in most cases there are
+            // few originals and many transformations
+            for (auto original : originals) {
+                // Extract the original shape and determine whether to cut or to fuse
+                Part::TopoShape fuseShape;
+                Part::TopoShape cutShape;
+
+                auto feature = freecad_cast<PartDesign::FeatureAddSub*>(original);
+                if (!feature) {
+                    return new App::DocumentObjectExecReturn(QT_TRANSLATE_NOOP(
+                        "Exception",
+                        "Only additive and subtractive features can be transformed"
+                    ));
+                }
+
+                feature->getAddSubShape(fuseShape, cutShape);
+                if (fuseShape.isNull() && cutShape.isNull()) {
+                    return new App::DocumentObjectExecReturn(
+                        QT_TRANSLATE_NOOP("Exception", "Shape of additive/subtractive feature is empty")
+                    );
+                }
+                gp_Trsf trsf = trsfInv.Multiplied(feature->getLocation().Transformation());
+                if (!fuseShape.isNull()) {
+                    fuseShape = fuseShape.makeElementTransform(trsf);
+                }
+                if (!cutShape.isNull()) {
+                    cutShape = cutShape.makeElementTransform(trsf);
+                }
+                if (!fuseShape.isNull()) {
+                    auto shapes = getTransformedCompShape(supportShape, fuseShape);
+                    if (Base::Sequencer().wasCanceled()) {
+                        return new App::DocumentObjectExecReturn("User aborted");
+                    }
+                    if (!shapes.empty()) {
+                        supportShape.makeElementFuse(shapes);
+                    }
+                }
+                if (!cutShape.isNull()) {
+                    auto shapes = getTransformedCompShape(supportShape, cutShape);
+                    if (Base::Sequencer().wasCanceled()) {
+                        return new App::DocumentObjectExecReturn("User aborted");
+                    }
+                    if (shapes.size() > 1) {
+                        supportShape.makeElementCut(shapes);
+                    }
+                }
+            }
+            break;
+        case Mode::WholeShape: {
+            auto shapes = getTransformedCompShape(supportShape, wholeShapeSource);
+            if (Base::Sequencer().wasCanceled()) {
+                return new App::DocumentObjectExecReturn("User aborted");
+            }
+            if (!shapes.empty()) {
+                supportShape.makeElementFuse(shapes);
+            }
+            break;
+        }
+    }
+
+    if (supportShape.isNull()) {
+        this->Shape.setValue(TopoDS_Shape());
+        rejected.Nullify();
+        return App::DocumentObject::StdReturn;
+    }
+    supportShape = refineShapeIfActive((supportShape));
+
+    this->Shape.setValue(getSolid(supportShape));
+    if (singleSolidRuleMode() == SingleSolidRuleMode::Enforced
+        && supportShape.countSubShapes(TopAbs_SOLID) > 0) {
+        rejected = getRemainingSolids(supportShape.getShape());
+    }
+    else {
+        rejected.Nullify();
+    }
+
+    return App::DocumentObject::StdReturn;
+}
+
+TopoDS_Shape Transformed::getRemainingSolids(const TopoDS_Shape& shape)
+{
+    BRep_Builder builder;
+    TopoDS_Compound compShape;
+    builder.MakeCompound(compShape);
+
+    if (shape.IsNull()) {
+        throw Standard_Failure("Shape is null");
+    }
+    TopExp_Explorer xp;
+    xp.Init(shape, TopAbs_SOLID);
+    xp.Next();  // skip the first
+
+    for (; xp.More(); xp.Next()) {
+        builder.Add(compShape, xp.Current());
+    }
+
+    return {std::move(compShape)};
+}
+
+}  // namespace PartDesign

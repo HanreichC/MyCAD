@@ -1,0 +1,27 @@
+set(ENV{PATH} "${FREECAD_LIBPACK_DIR};$ENV{PATH}")
+set(ENV{CMAKE_PREFIX_PATH} ${FREECAD_LIBPACK_DIR})
+
+set(Boost_INCLUDE_DIR ${FREECAD_LIBPACK_DIR}/include CACHE PATH "" FORCE)
+
+set(OCE_DIR ${FREECAD_LIBPACK_DIR}/lib/cmake CACHE PATH "" FORCE)
+
+set(SWIG_EXECUTABLE ${FREECAD_LIBPACK_DIR}/bin/swig/swig.exe CACHE FILEPATH "Swig" FORCE)
+
+find_library(XercesC_LIBRARY_RELEASE xerces-c_3 "${FREECAD_LIBPACK_DIR}/lib")
+find_library(XercesC_LIBRARY_DEBUG xerces-c_3D "${FREECAD_LIBPACK_DIR}/lib")
+set (XercesC_LIBRARIES debug ${XercesC_LIBRARY_DEBUG} optimized ${XercesC_LIBRARY_RELEASE})
+set(XercesC_FOUND TRUE)
+
+find_library(COIN3D_LIBRARY_RELEASE coin4 "${FREECAD_LIBPACK_DIR}/lib")
+find_library(COIN3D_LIBRARY_DEBUG coin4d "${FREECAD_LIBPACK_DIR}/lib")
+set(COIN3D_LIBRARIES optimized ${COIN3D_LIBRARY_RELEASE}
+                     debug ${COIN3D_LIBRARY_DEBUG})
+set(COIN3D_FOUND TRUE)
+
+set(NETGENDATA ${FREECAD_LIBPACK_DIR}/include/netgen)
+
+if(FREECAD_USE_FREETYPE)
+    set(FREETYPE_INCLUDE_DIR_freetype2 ${FREECAD_LIBPACK_DIR}/include/freetype2)
+endif(FREECAD_USE_FREETYPE)
+
+link_directories(${FREECAD_LIBPACK_DIR}/lib)

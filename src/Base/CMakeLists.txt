@@ -1,0 +1,446 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+add_library(FreeCADBase SHARED)
+add_dependencies(FreeCADBase fc_version)
+
+check_cxx_source_compiles(
+    "#include <charconv>
+int main()
+{
+    double value {};
+    const auto result = std::from_chars(\"\", \"\", value, std::chars_format::general);
+    return result.ec == std::errc {};
+}"
+    FREECAD_HAS_FLOATING_POINT_FROM_CHARS
+)
+
+if(FREECAD_HAS_FLOATING_POINT_FROM_CHARS)
+    target_compile_definitions(FreeCADBase PRIVATE FC_HAS_FLOATING_POINT_FROM_CHARS=1)
+else()
+    target_compile_definitions(FreeCADBase PRIVATE FC_HAS_FLOATING_POINT_FROM_CHARS=0)
+endif()
+
+target_compile_definitions(FreeCADBase PRIVATE FC_BUILD_TYPE="$<CONFIG>")
+
+if(WIN32)
+    add_definitions(-DFCBase)
+    add_definitions(-DPYCXX_DLL)
+    add_definitions(-DBOOST_DYN_LINK)
+    add_definitions(-DZIPIOS_UTF8)
+endif(WIN32)
+
+if(BUILD_TRACY_FRAME_PROFILER)
+    add_definitions(-DBUILD_TRACY_FRAME_PROFILER)
+endif()
+
+if(FREECAD_RELEASE_SEH)
+    add_definitions(-DHAVE_SEH)
+endif(FREECAD_RELEASE_SEH)
+
+target_include_directories(
+    FreeCADBase
+    PRIVATE
+    ${CMAKE_BINARY_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_include_directories(
+    FreeCADBase
+    SYSTEM
+    PUBLIC
+    ${Boost_INCLUDE_DIRS}
+    ${PYCXX_INCLUDE_DIRS}
+    ${Python3_INCLUDE_DIRS}
+    ${XercesC_INCLUDE_DIRS}
+    ${ZLIB_INCLUDE_DIR}
+    ${ZIPIOS_INCLUDES}
+    ${ICU_INCLUDE_DIRS}
+)
+
+if(MSVC)
+    set(FreeCADBase_LIBS
+        ${Boost_LIBRARIES}
+        ${XercesC_LIBRARIES}
+        ${ZLIB_LIBRARIES}
+        ${ICU_LIBRARIES}
+        debug MSVCRTD.LIB
+        debug MSVCPRTD.LIB
+        optimized MSVCRT.LIB
+        optimized MSVCPRT.LIB
+        Rpcrt4.lib
+        version.lib
+        dbghelp.lib
+    )
+
+    #Universal C runtime introduced in VS 2015 (cl version 19)
+    if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19"))
+        list(APPEND FreeCADBase_LIBS
+            debug vcruntimed.lib
+            debug ucrtd.lib
+            debug concrtd.lib
+            optimized vcruntime.lib
+            optimized ucrt.lib
+            optimized concrt.lib
+        )
+    endif()
+elseif(MINGW)
+    set(FreeCADBase_LIBS
+        ${XercesC_LIBRARIES}
+        ${Boost_LIBRARIES}
+        ${ZLIB_LIBRARIES}
+        ${ICU_LIBRARIES}
+        Rpcrt4.lib
+    )
+else(MSVC)
+    set(FreeCADBase_LIBS
+        ${XercesC_LIBRARIES}
+        ${Boost_LIBRARIES}
+        ${ZLIB_LIBRARIES}
+        ${ICU_LIBRARIES}
+    )
+endif(MSVC)
+
+if(BUILD_TRACY_FRAME_PROFILER)
+    list(APPEND FreeCADBase_LIBS TracyClient)
+endif()
+
+list(APPEND FreeCADBase_LIBS libfastsignals)
+
+if(cpptrace_FOUND)
+    list(APPEND FreeCADBase_LIBS cpptrace::cpptrace)
+    target_compile_definitions(FreeCADBase PRIVATE FC_HAVE_CPPTRACE)
+    # The CrashReporter Reader uses this to reduce the absolute source paths recorded in the
+    # debug info to paths relative to the source root, so a crash report cannot leak the
+    # build machine's directory layout.
+    target_compile_definitions(FreeCADBase PRIVATE FC_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+endif()
+
+if (BUILD_DYNAMIC_LINK_PYTHON)
+    list(APPEND FreeCADBase_LIBS ${Python3_LIBRARIES})
+endif (BUILD_DYNAMIC_LINK_PYTHON)
+
+# needed for OpenSUSE
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    list(APPEND FreeCADBase_LIBS -lutil -ldl)
+endif()
+
+generate_from_py(Type)
+generate_from_py(BaseClass)
+generate_from_py(BoundBox)
+generate_from_py(CoordinateSystem)
+generate_from_py(Persistence)
+generate_from_py(Vector)
+generate_from_py(Matrix)
+generate_from_py(Rotation)
+generate_from_py(Placement)
+generate_from_py(Axis)
+generate_from_py(Unit)
+generate_from_py(Quantity)
+generate_from_py(Precision)
+generate_from_py(CrashReporter/CrashFrame)
+generate_from_py(CrashReporter/CrashReport)
+generate_module_from_py(
+    FreeCAD.Qt
+    Qt_MODULE_GENERATED_SRCS
+)
+generate_module_from_py(
+    FreeCAD.Console
+    Console_MODULE_GENERATED_SRCS
+)
+generate_module_from_py(
+    FreeCAD.Units
+    Units_MODULE_GENERATED_SRCS
+)
+generate_from_any(Resources/schemas/Parameter.xsd ParameterSchema.h ParameterSchema)
+
+if(SWIG_FOUND)
+    # Create the file swigpyrun.hh and then compare with the file swigpyrun.h.
+    # If the files are different or if swigpyrun.h doesn't exist then copy swigpyrun.hh.
+    # This is to avoid to having to build the target each time cmake configure is executed.
+    execute_process(COMMAND ${SWIG_EXECUTABLE} -python -external-runtime ${CMAKE_CURRENT_BINARY_DIR}/swigpyrun.hh)
+
+    fc_copy_file_if_different(
+        "${CMAKE_CURRENT_BINARY_DIR}/swigpyrun.hh"
+        "${CMAKE_CURRENT_BINARY_DIR}/swigpyrun.h"
+    )
+    add_definitions(-DHAVE_SWIG=1)
+endif(SWIG_FOUND)
+
+SOURCE_GROUP("pycxx" FILES ${PYCXX_SOURCES})
+
+SET(FreeCADBase_Pyi_SRCS
+    Axis.pyi
+    BaseClass.pyi
+    BoundBox.pyi
+    CoordinateSystem.pyi
+    Matrix.pyi
+    Persistence.pyi
+    Placement.pyi
+    Rotation.pyi
+    Vector.pyi
+    Quantity.pyi
+    Type.pyi
+    Unit.pyi
+    Precision.pyi
+    CrashReporter/CrashFrame.pyi
+    CrashReporter/CrashReport.pyi
+    FreeCAD.Qt.module.pyi
+    FreeCAD.Console.module.pyi
+    FreeCAD.Units.module.pyi
+)
+SOURCE_GROUP("Pyi" FILES ${FreeCADBase_Pyi_SRCS})
+
+SET(FreeCADBase_UNITAPI_SRCS
+    UnitsApi.cpp
+    UnitsApiPy.cpp
+    UnitsApi.h
+    ${Units_MODULE_GENERATED_SRCS}
+    UnitsConvData.h
+    UnitsSchema.h
+    UnitsSchema.cpp
+    UnitsSchemas.cpp
+    UnitsSchemas.h
+    UnitsSchemasData.h
+    UnitsSchemasSpecs.h
+    NumericInput.h
+    NumericInput.cpp
+    NumericInputLocale.h
+    NumericInputLocale.cpp
+    Quantity.h
+    Quantity.cpp
+    QuantityPyImp.cpp
+    Quantity.l
+    Quantity.y
+    Unit.h
+    Unit.cpp
+    UnitPyImp.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/ParameterSchema.h
+)
+SOURCE_GROUP("Units" FILES ${FreeCADBase_UNITAPI_SRCS})
+
+SET(SWIG_SRCS
+    swigpyrun.cpp
+)
+
+SET(FreeCADBase_CPP_SRCS
+    Axis.cpp
+    AxisPyImp.cpp
+    Base64.cpp
+    BaseClass.cpp
+    BaseClassPyImp.cpp
+    BindingManager.cpp
+    BoundBoxPyImp.cpp
+    Builder3D.cpp
+    Console.cpp
+    ${Console_MODULE_GENERATED_SRCS}
+    ConsoleObserver.cpp
+    Color.cpp
+    OkLch.cpp
+    CoordinateSystem.cpp
+    CoordinateSystemPyImp.cpp
+    DualQuaternion.cpp
+    Exception.cpp
+    ExceptionFactory.cpp
+    Factory.cpp
+    FileInfo.cpp
+    FileLock.cpp
+    GeometryPyCXX.cpp
+    Handle.cpp
+    InputSource.cpp
+    Interpreter.cpp
+    Matrix.cpp
+    MatrixPyImp.cpp
+    Observer.cpp
+    Resources/schemas/Parameter.xsd
+    Parameter.cpp
+    ParameterObserver.cpp
+    ParameterPy.cpp
+    Persistence.cpp
+    PersistencePyImp.cpp
+    Placement.cpp
+    PlacementPyImp.cpp
+    PrecisionPyImp.cpp
+    ProgressIndicatorPy.cpp
+    PyException.cpp
+    PyExport.cpp
+    PyObjectBase.cpp
+    PythonTypeExt.cpp
+    Reader.cpp
+    Rotation.cpp
+    RotationPyImp.cpp
+    Sequencer.cpp
+    ServiceProvider.cpp
+    SmartPtrPy.cpp
+    Stream.cpp
+    StringUtils.cpp
+    Swap.cpp
+    NumericFormatting.cpp
+    ${SWIG_SRCS}
+    SystemHandler.cpp
+    Tools.cpp
+    Tools2D.cpp
+    Tools3D.cpp
+    Translation.cpp
+    ${Qt_MODULE_GENERATED_SRCS}
+    Translate.cpp
+    Type.cpp
+    TypePyImp.cpp
+    UniqueNameManager.cpp
+    Uuid.cpp
+    Vector3D.cpp
+    VectorPyImp.cpp
+    Version.cpp
+    ViewProj.cpp
+    Writer.cpp
+    XMLTools.cpp
+    XMLParser.cpp
+    ZipHeader.cpp
+)
+
+SET(SWIG_HEADERS
+    swigpyrun.inl
+)
+
+SET(FreeCADBase_HPP_SRCS
+    Axis.h
+    Base64.h
+    Base64Filter.h
+    BaseClass.h
+    BindingManager.h
+    Bitmask.h
+    BoundBox.h
+    Builder3D.h
+    Console.h
+    ConsoleObserver.h
+    Converter.h
+    Color.h
+    OkLch.h
+    CoordinateSystem.h
+    DualNumber.h
+    DualQuaternion.h
+    Exception.h
+    ExceptionFactory.h
+    Factory.h
+    FileInfo.h
+    FileLock.h
+    GeometryPyCXX.h
+    Handle.h
+    InputSource.h
+    Interpreter.h
+    Matrix.h
+    Maturity.h
+    NumericFormatting.h
+    Observer.h
+    Parameter.h
+    ParameterObserver.h
+    Persistence.h
+    Placement.h
+    Precision.h
+    ProgressIndicatorPy.h
+    PyException.h
+    PyExport.h
+    PyObjectBase.h
+    PyWrapParseTupleAndKeywords.h
+    PythonTypeExt.h
+    Reader.h
+    Rotation.h
+    ServiceProvider.h
+    Sequencer.h
+    SmartPtrPy.h
+    Stream.h
+    StringUtils.h
+    Swap.h
+    ${SWIG_HEADERS}
+    SystemHandler.h
+    TimeInfo.h
+    Tools.h
+    Tools2D.h
+    Tools3D.h
+    Translation.h
+    Translate.h
+    Type.h
+    UnlimitedUnsigned.h
+    UniqueNameManager.h
+    Uuid.h
+    Vector3D.h
+    Version.h
+    ViewProj.h
+    Writer.h
+    XMLTools.h
+    XMLParser.h
+    ZipHeader.h
+)
+
+SET (FreeCADBase_CrashReporter_SRCS
+    CrashReporter/CrashFramePyImp.cpp
+    CrashReporter/CrashReportPyImp.cpp
+    CrashReporter/FaultCodes.h
+    CrashReporter/FaultCodes.cpp
+    CrashReporter/Format.h
+    CrashReporter/Manager.h
+    CrashReporter/Manager.cpp
+    CrashReporter/Reader.h
+    CrashReporter/Reader.cpp
+    CrashReporter/Writer.h
+    CrashReporter/Writer.cpp
+)
+
+SET(FreeCADBase_SRCS
+    ${PYCXX_SOURCES}
+    ${FreeCADBase_CPP_SRCS}
+    ${FreeCADBase_HPP_SRCS}
+    ${FreeCADBase_Pyi_SRCS}
+    ${FreeCADBase_UNITAPI_SRCS}
+    ${FreeCADBase_CrashReporter_SRCS}
+    PyTools.c
+    PyTools.h
+    PreCompiled.h
+)
+
+IF (MSVC)
+    SET(FreeCADBase_SRCS
+        ${FreeCADBase_SRCS}
+        StackWalker.cpp
+        StackWalker.h
+        CrashReporter/WindowsCrashReporter.cpp
+        CrashReporter/WindowsCrashReporter.h
+    )
+
+ENDIF(MSVC)
+
+if(FREECAD_USE_EXTERNAL_ZIPIOS)
+    list(APPEND FreeCADBase_LIBS ${ZIPIOS_LIBRARY})
+else()
+    list(APPEND FreeCADBase_SRCS ${zipios_SRCS})
+    SOURCE_GROUP("zipios" FILES ${zipios_SRCS})
+endif()
+
+if(FREECAD_USE_PCH)
+    target_precompile_headers(FreeCADBase PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:"${CMAKE_CURRENT_LIST_DIR}/PreCompiled.h">
+    )
+endif(FREECAD_USE_PCH)
+
+target_sources(FreeCADBase PRIVATE ${FreeCADBase_SRCS})
+target_link_libraries(FreeCADBase ${FreeCADBase_LIBS})
+
+if (MSVC)
+    target_compile_definitions(FreeCADBase PRIVATE WIN32_LEAN_AND_MEAN)
+endif()
+
+target_compile_warn_error(FreeCADBase)
+
+SET_BIN_DIR(FreeCADBase)
+
+if(WIN32)
+    INSTALL(TARGETS FreeCADBase
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+else(WIN32)
+    INSTALL(TARGETS FreeCADBase
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+endif(WIN32)
