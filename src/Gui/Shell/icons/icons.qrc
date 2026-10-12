@@ -36,6 +36,8 @@
         <file>Window_Maximize.svg</file>
         <file>Window_Restore.svg</file>
         <file>Window_Close.svg</file>
+        <file>Window_Home.svg</file>
+        <file>Window_Back.svg</file>
         <file>Nav_Rotate.svg</file>
         <file>Nav_Pan.svg</file>
         <file>Nav_Zoom.svg</file>

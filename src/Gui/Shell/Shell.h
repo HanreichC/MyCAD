@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <QString>
 #include <vector>
 
 namespace Gui::Shell
@@ -15,5 +16,7 @@ void setToolNames(bool on);
 /// Aussehen der Körper (Einstellung "Body material"): Auswahl und Wahl; färbt Körper mit Standard-Look gleich um
 std::vector<const char*> bodyMaterialNames();
 void setBodyMaterial(int index);
+/// Ordner mit den Designs des Benutzers (Startseite "Projects", Einstellung "Projects folder")
+QString projectsFolder();
 
 }  // namespace Gui::Shell

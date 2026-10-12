@@ -12,6 +12,8 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDir>
+#include <QFileDialog>
 #include <QCursor>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -792,6 +794,24 @@ QPushButton#Remove:hover { color: #FF3B30; }
     }
     addRow(viewCard, QStringLiteral("Body material"),
            segmented(materials, int(myParams()->GetInt("BodyMaterial", 0)), [](int i) { Gui::Shell::setBodyMaterial(i); }));
+    auto folder = new QPushButton;
+    auto showFolder = [folder] {
+        QString path = Gui::Shell::projectsFolder();
+        folder->setText(path.replace(QDir::homePath(), QStringLiteral("~")));
+    };
+    showFolder();
+    folder->setToolTip(QStringLiteral("Designs in this folder appear on the start page; Save starts here"));
+    QObject::connect(folder, &QPushButton::clicked, folder, [folder, showFolder] {
+        const QString dir = QFileDialog::getExistingDirectory(folder->window(), QStringLiteral("Projects Folder"),
+                                                              Gui::Shell::projectsFolder());
+        if (!dir.isEmpty()) {
+            myParams()->SetASCII("ProjectsFolder", dir.toUtf8().constData());
+            App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General")
+                ->SetASCII("FileOpenSavePath", dir.toUtf8().constData());
+            showFolder();
+        }
+    });
+    addRow(viewCard, QStringLiteral("Projects folder"), folder);
 
     auto speedCard = addCard(nav, QStringLiteral("Speed & Zoom"));
     auto slider = [](int lo, int hi, int value) {

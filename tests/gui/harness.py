@@ -125,9 +125,14 @@ def top_face(b):
     return "Face%d" % (1 + max(range(len(b.Shape.Faces)), key=lambda k: b.Shape.Faces[k].CenterOfMass.z))
 
 
+START_PAGE = False  # True: Test beginnt auf der Startseite (ohne Design)
+
+
 def run(steps, delay=1300):
     """Schritte nacheinander ausführen, Fehler protokollieren, am Ende Screenshot + Beenden"""
-    steps = list(steps) + [("shot", lambda: mw.grab().save(os.environ["OUT"] + ".png")), ("done", lambda: os._exit(0))]
+    steps = list(steps) + [("shot", lambda: mw.grab().save(os.environ["OUT"] + ".png")), ("done", lambda: (App.saveParameter(), os._exit(0)))]  # wie beim Beenden: zurückgesetzte Einstellungen speichern
+    if not START_PAGE:  # MyCAD startet mit der Startseite; die meisten Tests brauchen gleich ein Design
+        steps.insert(0, ("design", lambda: App.ActiveDocument or Gui.runCommand("Std_New")))
 
     def step(name, fn):
         L("step " + name)

@@ -65,6 +65,13 @@
 #include <cstring>
 #include <set>
 #include <QFontMetrics>
+#include <QDateTime>
+#include <QLocale>
+#include <QScrollArea>
+#include <QStandardPaths>
+#include <zipios++/zipfile.h>
+#include <iterator>
+#include <memory>
 #include <QToolTip>
 #include <QVBoxLayout>
 
@@ -608,6 +615,7 @@ public:
         QLayout::setGeometry(rect);
         arrange(rect, true);
     }
+    bool left = false;  ///< Reihen linksbündig statt mittig (Kachelraster)
 
 private:
     static bool separator(QLayoutItem* item)
@@ -647,7 +655,7 @@ private:
                 rowHeight = std::max(rowHeight, item->sizeHint().height());
             }
             if (apply) {
-                int px = area.left() + std::max(0, (area.width() - rowWidth) / 2);
+                int px = area.left() + (left ? 0 : std::max(0, (area.width() - rowWidth) / 2));
                 for (QLayoutItem* item : row) {
                     const QSize s = item->sizeHint();
                     item->setGeometry(QRect(QPoint(px, y + (rowHeight - s.height()) / 2), s));
@@ -903,11 +911,13 @@ protected:
     }
 };
 
+void showStartPage();
+
 /// Fensterknöpfe rechts oben wie unter KDE: minimieren, maximieren/wiederherstellen, schließen
 class WindowControls: public QWidget
 {
 public:
-    WindowControls()
+    explicit WindowControls(bool home = true)
     {
         setObjectName(QStringLiteral("GlassContent"));
         auto lay = new QHBoxLayout(this);
@@ -933,6 +943,9 @@ public:
         handle->setCursor(Qt::OpenHandCursor);
         handle->setToolTip(QStringLiteral("Drag to move the window, double-click to maximize"));
         lay->addWidget(handle);
+        if (home) {
+            button("Window_Home", "GlassButton", QStringLiteral("Home"), showStartPage);
+        }
         button("MyCAD_Settings", "GlassButton", QStringLiteral("Settings (Ctrl+,)"), [] {
             Application::Instance->commandManager().runCommandByName("MyCAD_Settings");
         });
@@ -961,6 +974,302 @@ private:
     }
     QToolButton* maximize;
 };
+
+// --- Startseite: neue, zuletzt geöffnete und Projekt-Designs als Kacheln ---------------------------------------
+
+/// echte Designs (keine temporären Dokumente, z. B. beim Import)
+bool anyDesignOpen()
+{
+    return std::ranges::any_of(App::GetApplication().getDocuments(),
+                               [](App::Document* d) { return !d->testStatus(App::Document::TempDoc); });
+}
+
+/// Vorschaubild aus der .FCStd-Datei (ein ZIP mit thumbnails/Thumbnail.png; FreeCAD legt es beim Speichern an)
+QImage thumbnail(const QString& file)
+{
+    try {
+        zipios::ZipFile zip(file.toStdString());
+        std::unique_ptr<std::istream> in(zip.getInputStream("thumbnails/Thumbnail.png"));
+        if (in) {
+            const std::string data((std::istreambuf_iterator<char>(*in)), std::istreambuf_iterator<char>());
+            return QImage::fromData(QByteArray::fromStdString(data));
+        }
+    }
+    catch (...) {  // kaputte oder fremde Datei: Platzhalter
+    }
+    return {};
+}
+
+QString when(const QDateTime& t)
+{
+    const QLocale en(QLocale::English);
+    const qint64 days = t.date().daysTo(QDate::currentDate());
+    if (days == 0 || days == 1) {
+        return (days == 0 ? QStringLiteral("Today, ") : QStringLiteral("Yesterday, ")) + en.toString(t.time(), QStringLiteral("HH:mm"));
+    }
+    return en.toString(t.date(), QStringLiteral("MMM d, yyyy"));
+}
+
+/// Kachel: Bild oben, Name und Datum darunter; Klick führt action aus
+class StartTile: public QFrame
+{
+public:
+    static constexpr QSize Picture {184, 138};
+
+    StartTile(const QPixmap& picture, const QString& title, const QString& subtitle, std::function<void()> action)
+        : action(std::move(action))
+    {
+        setObjectName(QStringLiteral("StartTile"));
+        setAttribute(Qt::WA_Hover);
+        setCursor(Qt::PointingHandCursor);
+        setFixedSize(Picture.width() + 16, Picture.height() + 58);
+        auto lay = new QVBoxLayout(this);
+        lay->setContentsMargins(8, 8, 8, 8);
+        lay->setSpacing(1);
+        auto pic = new QLabel;
+        pic->setPixmap(picture);
+        pic->setFixedSize(Picture);
+        lay->addWidget(pic);
+        lay->addSpacing(6);
+        QFont font = this->font();
+        font.setPixelSize(13);
+        font.setWeight(QFont::DemiBold);
+        auto name = new QLabel(QFontMetrics(font).elidedText(title, Qt::ElideMiddle, Picture.width()));
+        name->setObjectName(QStringLiteral("StartName"));
+        lay->addWidget(name);
+        auto sub = new QLabel(subtitle);
+        sub->setObjectName(QStringLiteral("StartDate"));
+        lay->addWidget(sub);
+        lay->addStretch();
+    }
+
+    /// Vorschaubild auf das Kachelformat zuschneiden, runde Ecken; ohne Bild: Symbol auf ruhiger Fläche
+    static QPixmap picture(const QImage& image, const QIcon& fallback, bool accent = false)
+    {
+        const qreal dpr = qApp->devicePixelRatio();
+        QPixmap result(Picture * dpr);
+        result.setDevicePixelRatio(dpr);
+        result.fill(Qt::transparent);
+        QPainter p(&result);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setRenderHint(QPainter::SmoothPixmapTransform);
+        QPainterPath clip;
+        clip.addRoundedRect(QRectF(QPointF(), QSizeF(Picture)), 10, 10);
+        p.setClipPath(clip);
+        QColor fill = theme().dark ? QColor(58, 58, 60) : QColor(238, 240, 243);
+        if (accent) {  // Hauptaktion ("New Design") in Akzentfarbe getönt
+            fill = QColor(theme().accent);
+            fill.setAlpha(theme().dark ? 60 : 32);
+        }
+        p.fillRect(QRectF(QPointF(), QSizeF(Picture)), fill);
+        if (!image.isNull()) {
+            const QImage scaled = image.scaled(Picture * dpr, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+            p.drawImage(QRectF(QPointF(), QSizeF(Picture)),
+                        scaled.copy((scaled.width() - Picture.width() * dpr) / 2, (scaled.height() - Picture.height() * dpr) / 2,
+                                    Picture.width() * dpr, Picture.height() * dpr));
+        }
+        else {
+            const int s = 44;
+            fallback.paint(&p, QRect((Picture.width() - s) / 2, (Picture.height() - s) / 2, s, s));
+        }
+        return result;
+    }
+
+protected:
+    void mousePressEvent(QMouseEvent* event) override
+    {
+        event->accept();  // nicht zum Fenstergriff durchreichen
+    }
+    void mouseReleaseEvent(QMouseEvent* event) override
+    {
+        if (event->button() == Qt::LeftButton && rect().contains(event->position().toPoint())) {
+            QTimer::singleShot(0, action);
+        }
+    }
+
+private:
+    std::function<void()> action;
+};
+
+/// Startseite über dem ganzen Fenster: ohne offenes Design und über den Home-Knopf
+class StartPage: public QWidget
+{
+public:
+    StartPage()
+        : QWidget(getMainWindow())
+    {
+        setObjectName(QStringLiteral("StartPage"));
+        setAttribute(Qt::WA_StyledBackground);
+        auto outer = new QVBoxLayout(this);
+        outer->setContentsMargins(0, 0, 0, 0);
+        outer->setSpacing(0);
+        auto head = new QWidget;  // freie Fläche = Fenstergriff
+        auto headLay = new QHBoxLayout(head);
+        headLay->setContentsMargins(40, 16, 16, 4);
+        auto title = new QLabel(QStringLiteral("MyCAD"));
+        title->setObjectName(QStringLiteral("StartTitle"));
+        headLay->addWidget(title);
+        headLay->addStretch();
+        back = new QPushButton(QStringLiteral("Back to Design"));
+        back->setObjectName(QStringLiteral("StartBack"));
+        back->setIcon(designIcon(QStringLiteral("Window_Back")));
+        back->setCursor(Qt::PointingHandCursor);
+        QObject::connect(back, &QPushButton::clicked, this, &QWidget::hide);
+        headLay->addWidget(back);
+        headLay->addSpacing(8);
+        auto controls = new WindowControls(false);
+        headLay->addWidget(controls);
+        static WindowGrip grip;
+        head->installEventFilter(&grip);
+        controls->installEventFilter(&grip);
+        outer->addWidget(head);
+        scroll = new QScrollArea;
+        scroll->setWidgetResizable(true);
+        scroll->setFrameShape(QFrame::NoFrame);
+        scroll->viewport()->setAutoFillBackground(false);
+        outer->addWidget(scroll);
+        getMainWindow()->installEventFilter(this);
+        hide();
+    }
+
+    void open()
+    {
+        rebuild();
+        back->setVisible(anyDesignOpen());
+        setGeometry(getMainWindow()->rect());
+        show();
+        raise();
+    }
+
+protected:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        if (event->type() == QEvent::Resize) {
+            setGeometry(getMainWindow()->rect());
+        }
+        return false;
+    }
+    void keyPressEvent(QKeyEvent* event) override
+    {
+        if (event->key() == Qt::Key_Escape && anyDesignOpen()) {
+            hide();
+        }
+    }
+
+private:
+    void rebuild()
+    {
+        const Theme t = theme();
+        setStyleSheet(QStringLiteral(R"(
+#StartPage { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %1, stop:1 %2); }
+#StartTitle { font-size: 26px; font-weight: 700; }
+QScrollArea, #StartContent { background: transparent; }
+QLabel#StartSection { color: %3; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; }
+QLabel#StartDate, QLabel#StartHint { color: %3; font-size: 11px; }
+QLabel#StartName { font-size: 13px; font-weight: 600; }
+QFrame#StartTile { background: %4; border: 1px solid %5; border-radius: 14px; }
+QFrame#StartTile:hover { border: 1px solid %6; background: %7; }
+QPushButton#StartBack { background: %4; border: 1px solid %5; border-radius: 15px; padding: 5px 14px 5px 8px; min-height: 20px; }
+QPushButton#StartBack:hover { border-color: %6; }
+)")
+                          .arg(t.dark ? "#2A2C31" : "#F4F5F7", t.dark ? "#111214" : "#D5D9E0", t.secondary,
+                               t.dark ? "rgba(44,44,46,0.92)" : "rgba(255,255,255,0.86)",
+                               t.dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", t.accent,
+                               t.dark ? "rgba(58,58,62,0.95)" : "rgba(255,255,255,0.98)"));
+
+        auto page = new QWidget;
+        page->setObjectName(QStringLiteral("StartContent"));
+        auto lay = new QVBoxLayout(page);
+        lay->setContentsMargins(40, 0, 32, 40);
+        lay->setSpacing(10);
+        auto section = [&](const QString& caption) {
+            auto label = new QLabel(caption);
+            label->setObjectName(QStringLiteral("StartSection"));
+            lay->addSpacing(12);
+            lay->addWidget(label);
+            auto grid = new QWidget;
+            auto flow = new FlowLayout(grid);
+            flow->left = true;
+            flow->setContentsMargins(0, 0, 0, 0);
+            flow->setSpacing(16);
+            lay->addWidget(grid);
+            return flow;
+        };
+        auto hint = [&](FlowLayout* flow, const QString& text) {
+            auto label = new QLabel(text);
+            label->setObjectName(QStringLiteral("StartHint"));
+            flow->addWidget(label);
+        };
+        auto run = [this](const char* command) {
+            return [this, command] {
+                Application::Instance->commandManager().runCommandByName(command);
+                if (anyDesignOpen()) {
+                    hide();
+                }
+            };
+        };
+        auto openFile = [this](const QString& file) {
+            return [this, file] {
+                Application::Instance->open(file.toUtf8().constData(), "FreeCAD");
+                if (anyDesignOpen()) {
+                    hide();  // auch wenn die Datei schon offen war (dann gibt es kein neues Dokument)
+                }
+            };
+        };
+        auto tile = [&](const QString& file) {
+            const QFileInfo fi(file);
+            return new StartTile(StartTile::picture(thumbnail(file), designIcon(QStringLiteral("Design_Box"))),
+                                 fi.completeBaseName(), when(fi.lastModified()), openFile(fi.absoluteFilePath()));
+        };
+
+        FlowLayout* start = section(QStringLiteral("START"));
+        start->addWidget(new StartTile(StartTile::picture({}, designIcon(QStringLiteral("Std_New")), true),
+                                       QStringLiteral("New Design"), QStringLiteral("Start from scratch"), run("Std_New")));
+        start->addWidget(new StartTile(StartTile::picture({}, designIcon(QStringLiteral("Std_Open"))),
+                                       QStringLiteral("Open…"), QStringLiteral("Browse your files"), run("Std_Open")));
+
+        // zuletzt geöffnet (FreeCAD führt die Liste; Skripte und gelöschte Dateien überspringen)
+        FlowLayout* recent = section(QStringLiteral("RECENT"));
+        auto mru = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/RecentFiles")->GetASCIIs("MRU");
+        int shown = 0;
+        for (const auto& entry : mru) {
+            const QString file = QString::fromUtf8(entry.c_str());
+            if (shown < 8 && file.endsWith(QStringLiteral(".FCStd"), Qt::CaseInsensitive) && QFileInfo::exists(file)) {
+                recent->addWidget(tile(file));
+                ++shown;
+            }
+        }
+        if (!shown) {
+            hint(recent, QStringLiteral("Designs you open or save show up here."));
+        }
+
+        const QString folder = Gui::Shell::projectsFolder();
+        QString pretty = folder;
+        pretty.replace(QDir::homePath(), QStringLiteral("~"));
+        FlowLayout* projects = section(QStringLiteral("PROJECTS  ·  %1").arg(pretty));
+        const QFileInfoList files = QDir(folder).entryInfoList({QStringLiteral("*.FCStd")}, QDir::Files, QDir::Time);
+        for (const QFileInfo& fi : files) {
+            projects->addWidget(tile(fi.absoluteFilePath()));
+        }
+        if (files.isEmpty()) {
+            hint(projects, QStringLiteral("Save designs to %1 and they show up here.").arg(pretty));
+        }
+        lay->addStretch();
+        scroll->setWidget(page);  // ersetzt (und löscht) den alten Inhalt
+    }
+
+    QScrollArea* scroll;
+    QPushButton* back;
+};
+
+StartPage* startPage = nullptr;
+
+void showStartPage()
+{
+    if (startPage) {
+        startPage->open();
+    }
+}
 
 /// Menüs mit runden Ecken: dafür brauchen sie einen transparenten, rahmenlosen Hintergrund
 class MenuPolisher: public QObject
@@ -1902,12 +2211,42 @@ void Gui::Shell::install()
     });
     poll->start(250);
 
-    // Wie in Fusion: es ist immer ein Design offen
-    QTimer::singleShot(0, [] {
-        if (!App::GetApplication().getActiveDocument()) {
-            Application::Instance->commandManager().runCommandByName("Std_New");
+    // Startseite beim Start und nach dem Schließen des letzten Designs; ein neues oder geöffnetes Design blendet sie aus
+    startPage = new StartPage;
+    App::GetApplication().signalNewDocument.connect([](const App::Document& doc, bool) {
+        if (!doc.testStatus(App::Document::TempDoc)) {
+            QTimer::singleShot(0, [] { startPage->hide(); });
         }
     });
+    App::GetApplication().signalDeletedDocument.connect([] {
+        QTimer::singleShot(0, [] {
+            if (!anyDesignOpen() && getMainWindow()->isVisible()) {
+                showStartPage();
+            }
+        });
+    });
+    QTimer::singleShot(0, [] {
+        if (!anyDesignOpen()) {
+            showStartPage();
+        }
+    });
+    // Projektordner anlegen; Öffnen-/Speichern-Dialoge starten dort, damit gespeicherte Designs auf der Startseite landen
+    QDir().mkpath(projectsFolder());
+    App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General")
+        ->SetASCII("FileOpenSavePath", projectsFolder().toUtf8().constData());
+    auto recent = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/RecentFiles");
+    if (recent->GetInt("RecentFiles", 4) < 16) {
+        recent->SetInt("RecentFiles", 16);  // Platz für die Startseite
+    }
+}
+
+QString Gui::Shell::projectsFolder()
+{
+    const QString fallback = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + QStringLiteral("/MyCAD");
+    return QString::fromUtf8(App::GetApplication()
+                                 .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")
+                                 ->GetASCII("ProjectsFolder", fallback.toUtf8().constData())
+                                 .c_str());
 }
 
 std::vector<const char*> Gui::Shell::bodyMaterialNames()
