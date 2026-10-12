@@ -712,6 +712,14 @@ public:
             lay->addWidget(btn);
             return btn;
         };
+        // deutlicher Griff zum Verschieben (die Fläche um die Knöpfe allein ist zu schmal zum Treffen)
+        auto handle = new QLabel;
+        handle->setPixmap(designIcon(QStringLiteral("Window_Grip")).pixmap(18, 18));
+        handle->setFixedSize(26, 38);
+        handle->setAlignment(Qt::AlignCenter);
+        handle->setCursor(Qt::OpenHandCursor);
+        handle->setToolTip(QStringLiteral("Drag to move the window, double-click to maximize"));
+        lay->addWidget(handle);
         button("Window_Minimize", "GlassButton", QStringLiteral("Minimize"), [] { getMainWindow()->showMinimized(); });
         maximize = button("Window_Maximize", "GlassButton", QStringLiteral("Maximize"), toggleMaximized);
         button("Window_Close", "WindowClose", QStringLiteral("Close"), [] { getMainWindow()->close(); });

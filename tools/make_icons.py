@@ -51,6 +51,7 @@ ICONS = {
     "Design_SplitFace": '<path d="M3 17l5-10h13l-5 10z"/><path d="M12 7l-3 10"/>',
     "Design_Emboss": '<rect x="3" y="13" width="18" height="7" rx="1"/><path d="M8 13V7h8v6M8 7l4 3 4-3"/>',
     "Design_Joint": '<circle cx="8" cy="16" r="4.5"/><circle cx="16" cy="8" r="4.5"/><path d="M11.2 12.8l1.6-1.6"/>' + DOT.format(8, 16) + DOT.format(16, 8),
+    "Window_Grip": ''.join(DOT.format(x, y).replace('r="1.7"', 'r="1.4"') for x in (9, 15) for y in (6, 12, 18)),
     "Window_Minimize": '<path d="M6 12h12"/>',
     "Window_Maximize": '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
     "Window_Restore": '<rect x="5" y="9" width="10" height="10" rx="1.5"/><path d="M9 9V6.5A1.5 1.5 0 0 1 10.5 5H17.5A1.5 1.5 0 0 1 19 6.5V13.5A1.5 1.5 0 0 1 17.5 15H15"/>',
