@@ -535,49 +535,30 @@ protected:
     }
 };
 
-/// Rahmenloses Fenster: Knöpfe wie macOS + Dokumentname; Ziehen verschiebt, Doppelklick maximiert
-class TitleBar: public QWidget
+void toggleMaximized()
 {
-public:
-    TitleBar()
-    {
-        setObjectName(QStringLiteral("GlassContent"));
-        auto lay = new QHBoxLayout(this);
-        lay->setContentsMargins(18, 0, 18, 0);
-        lay->setSpacing(8);
-        title = new QLabel;
-        title->setObjectName(QStringLiteral("WindowTitle"));
-        lay->addWidget(title);
-        lay->addStretch();
-        setFixedHeight(50);
-    }
+    MainWindow* mw = getMainWindow();
+    mw->isMaximized() ? mw->showNormal() : mw->showMaximized();
+}
 
-    void setTitle(const QString& text)
-    {
-        title->setText(text);
-        adjustSize();
-    }
-
-    static void toggleMaximized()
-    {
-        MainWindow* mw = getMainWindow();
-        mw->isMaximized() ? mw->showNormal() : mw->showMaximized();
-    }
-
+/// Rahmenloses Fenster: freie Flächen von Toolbar und Fensterknöpfen dienen als Griff
+/// (Ziehen verschiebt, Doppelklick maximiert). Klicks auf Knöpfe kommen hier nicht an.
+class WindowGrip: public QObject
+{
 protected:
-    void mousePressEvent(QMouseEvent* event) override
+    bool eventFilter(QObject*, QEvent* event) override
     {
-        if (event->button() == Qt::LeftButton && getMainWindow()->windowHandle()) {
+        if (event->type() == QEvent::MouseButtonPress && static_cast<QMouseEvent*>(event)->button() == Qt::LeftButton
+            && getMainWindow()->windowHandle()) {
             getMainWindow()->windowHandle()->startSystemMove();
+            return true;
         }
+        if (event->type() == QEvent::MouseButtonDblClick) {
+            QTimer::singleShot(0, toggleMaximized);
+            return true;
+        }
+        return false;
     }
-    void mouseDoubleClickEvent(QMouseEvent*) override
-    {
-        QTimer::singleShot(0, toggleMaximized);
-    }
-
-private:
-    QLabel* title;
 };
 
 /// Fensterknöpfe rechts oben wie unter KDE: minimieren, maximieren/wiederherstellen, schließen
@@ -603,7 +584,7 @@ public:
             return btn;
         };
         button("Window_Minimize", "GlassButton", QStringLiteral("Minimize"), [] { getMainWindow()->showMinimized(); });
-        maximize = button("Window_Maximize", "GlassButton", QStringLiteral("Maximize"), TitleBar::toggleMaximized);
+        maximize = button("Window_Maximize", "GlassButton", QStringLiteral("Maximize"), toggleMaximized);
         button("Window_Close", "WindowClose", QStringLiteral("Close"), [] { getMainWindow()->close(); });
         getMainWindow()->installEventFilter(this);
         update();
@@ -916,7 +897,6 @@ struct State
     GlassPanel* browser = nullptr;
     GlassPanel* inspector = nullptr;
     GlassPanel* timeline = nullptr;
-    GlassPanel* titleBar = nullptr;
     GlassPanel* windowControls = nullptr;
     GlassPanel* palette = nullptr;
     ViewCube* viewCube = nullptr;
@@ -927,7 +907,7 @@ struct State
 std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
-    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.inspector, state.timeline, state.titleBar,
+    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.inspector, state.timeline,
                    state.windowControls, state.palette}) {
         if (p) {
             all.push_back(p);
@@ -947,7 +927,15 @@ void layout()
     state.modelBar->setVisible(!state.sketchMode);
     state.sketchBar->setVisible(state.sketchMode);
     const QSizeF bs = bar->content()->sizeHint();
-    bar->setGeometry(QRectF(r.center().x() - bs.width() / 2, m, bs.width(), bs.height()));
+    // Toolbar mittig zwischen Browser und Fensterknöpfen; passt sie dort hin, beginnt der Browser ganz oben,
+    // sonst (kleiner Bildschirm) rutscht er unter die Toolbar
+    const qreal browserWidth = 290;
+    const qreal left = state.browser ? m + browserWidth + m : m;
+    const qreal right = r.width() - m
+        - (state.windowControls ? state.windowControls->content()->sizeHint().width() + m : 0);
+    const bool besideBrowser = bs.width() <= right - left;
+    const qreal barX = besideBrowser ? left + (right - left - bs.width()) / 2 : r.center().x() - bs.width() / 2;
+    bar->setGeometry(QRectF(barX, m, bs.width(), bs.height()));
 
     qreal bottom = r.height() - m;
     if (state.timeline) {
@@ -959,13 +947,9 @@ void layout()
         );
     }
 
-    const qreal top = m + bs.height() + m;
+    const qreal top = besideBrowser ? m : m + bs.height() + m;
     if (state.browser) {
-        state.browser->setGeometry(QRectF(m, top, 290, bottom - top));
-    }
-    if (state.titleBar) {
-        const QSizeF ts = state.titleBar->content()->sizeHint();
-        state.titleBar->setGeometry(QRectF(m, m, ts.width(), bs.height()));
+        state.browser->setGeometry(QRectF(m, top, browserWidth, bottom - top));
     }
     qreal cubeTop = m;
     if (state.windowControls) {
@@ -1253,10 +1237,6 @@ void rebuildTimeline()
         markerLine();
     }
     box->setProperty("count", count);
-    if (state.titleBar) {
-        static_cast<TitleBar*>(state.titleBar->content())
-            ->setTitle(doc ? QString::fromUtf8(doc->Label.getValue()) : QStringLiteral("MyCAD"));
-    }
     // Knöpfe eines verborgenen Panels gelten sonst als versteckt und zählen nicht zur Größe (Timeline war zu flach)
     for (int i = 0; i < lay->count(); ++i) {
         if (QWidget* w = lay->itemAt(i)->widget()) {
@@ -1384,12 +1364,12 @@ void Gui::Shell::install()
                  "Sketcher_CompCreateConic", "Sketcher_CompCreateArc", "Sketcher_CompSlot",
                  "Sketcher_CompCreateRegularPolygon", "Sketcher_CompCreateBSpline", "Sketcher_CreateConic",
                  "Sketcher_CreatePoint", "Sketcher_CreateText", "Sketcher_CompExternal", "",
-                 "Sketcher_CompCreateFillets", "Sketcher_Trimming", "Sketcher_Extend", "Sketcher_Split",
+                 "Sketcher_CompCreateFillets", "Sketcher_Trimming|Sketcher_Extend|Sketcher_Split",
                  "Sketcher_Offset", "Sketcher_Symmetry", "Sketcher_RectangularArray|Sketcher_Rotate",
                  "Sketcher_Translate|Sketcher_Scale", "Sketcher_ToggleConstruction", "", "Sketcher_Dimension",
-                 "Sketcher_ConstrainCoincidentUnified", "Sketcher_ConstrainHorizontal",
-                 "Sketcher_ConstrainVertical", "Sketcher_ConstrainParallel",
-                 "Sketcher_ConstrainPerpendicular", "Sketcher_ConstrainTangent", "Sketcher_ConstrainEqual",
+                 "Sketcher_ConstrainCoincidentUnified", "Sketcher_ConstrainHorizontal|Sketcher_ConstrainVertical",
+                 "Sketcher_ConstrainParallel|Sketcher_ConstrainPerpendicular", "Sketcher_ConstrainTangent",
+                 "Sketcher_ConstrainEqual",
                  "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock", "", "Sketcher_LeaveSketch"}),
         24);
     state.viewCube = new ViewCube;
@@ -1405,8 +1385,11 @@ void Gui::Shell::install()
         if (wasVisible) {
             mw->show();
         }
-        state.titleBar = new GlassPanel(new TitleBar, 24);
         state.windowControls = new GlassPanel(new WindowControls, 24);
+        static WindowGrip* grip = new WindowGrip;
+        for (GlassPanel* p : {state.modelBar, state.sketchBar, state.windowControls}) {
+            p->content()->installEventFilter(grip);
+        }
         qApp->installEventFilter(new EdgeResizer);
     }
     {
