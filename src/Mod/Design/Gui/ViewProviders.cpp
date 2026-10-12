@@ -71,8 +71,8 @@ PROPERTY_SOURCE(DesignGui::ViewProviderProfiles, PartGui::ViewProviderPartExt)
 ViewProviderProfiles::ViewProviderProfiles()
 {
     ShowInTree.setValue(false);
-    ShapeAppearance.setDiffuseColor(0.55F, 0.72F, 1.0F);
-    Transparency.setValue(65);
+    ShapeAppearance.setDiffuseColor(1.0F, 0.78F, 0.52F);  // helles Orange wie in Fusion, gewählt wird es blau
+    Transparency.setValue(55);
 }
 
 void ViewProviderProfiles::attach(App::DocumentObject* obj)

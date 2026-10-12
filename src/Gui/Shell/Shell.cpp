@@ -193,7 +193,13 @@ void applyTheme()
     view->SetBool("Gradient", true);
     view->SetBool("ShowNaviCube", false);  // eigener ViewCube (Shell/ViewCube)
     view->SetInt("AntiAliasing", 3);       // MSAA 4x: glatte Kanten (8x lässt Coin auf Intel/Mesa Flächen verlieren)
-    view->SetUnsigned("SelectionColor", t.dark ? 0x0A84FFFFUL : 0x007AFFFFUL);
+    // Auswahl in Akzentblau, aufgehellt (volles #007AFF überdeckt die Schattierung), Hover noch heller
+    view->SetUnsigned("SelectionColor", t.dark ? 0x409CFFFFUL : 0x4A9DFFFFUL);
+    view->SetUnsigned("HighlightColor", t.dark ? 0x7DB8FFFFUL : 0xA6CFFFFFUL);
+    // Achsen in Apples Systemfarben
+    view->SetUnsigned("AxisXColor", t.dark ? 0xFF453AFFUL : 0xFF3B30FFUL);
+    view->SetUnsigned("AxisYColor", t.dark ? 0x30D158FFUL : 0x34C759FFUL);
+    view->SetUnsigned("AxisZColor", t.dark ? 0x0A84FFFFUL : 0x007AFFFFUL);
 
     // Skizzenfarben wie in Fusion (FreeCADs Vorgaben sind für dunkle Hintergründe gedacht):
     // unterbestimmt blau, voll bestimmt schwarz/weiß, Konstruktion orange, projiziert lila
@@ -220,9 +226,12 @@ void applyTheme()
     sketcher->SetBool("BSplinePoleWeightVisible", false);
     sketcher->SetBool("BSplineKnotMultiplicityVisible", false);
     sketcher->SetBool("BSplineDegreeVisible", false);
-    view->SetUnsigned("HighlightColor", t.dark ? 0x64B5FFFFUL : 0x66AFFFFFUL);
-    view->SetUnsigned("DefaultShapeColor", t.dark ? 0x9EA3ADFFUL : 0xC8CCD4FFUL);
-    view->SetUnsigned("DefaultShapeLineColor", t.dark ? 0x2A2D33FFUL : 0x6B717CFFUL);
+    // Körper: helles Aluminium mit weichem Satin-Glanz (neue Körper; bestehende behalten ihr Aussehen)
+    view->SetUnsigned("DefaultShapeColor", t.dark ? 0xA4A9B2FFUL : 0xCDD1D8FFUL);
+    view->SetUnsigned("DefaultSpecularColor", 0x4D4D4DFFUL);
+    view->SetUnsigned("DefaultEmissiveColor", 0x161616FFUL);  // Schattenseiten nicht so hart
+    view->SetInt("DefaultShapeShininess", 30);
+    view->SetUnsigned("DefaultShapeLineColor", t.dark ? 0x2A2D33FFUL : 0x50555EFFUL);
     view->SetInt("DefaultShapeLineWidth", 1);
 
     // ViewCube: hell/dunkel wie die Glass-Panels, runde Kanten, Inter, Akzentfarbe beim Überfahren
