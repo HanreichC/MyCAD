@@ -2495,7 +2495,8 @@ void Gui::Shell::install()
         // Panels nicht mitten in einem Event in eine andere Szene umziehen
         QPointer<View3DInventor> view = sub ? qobject_cast<View3DInventor*>(sub->widget()) : nullptr;
         QTimer::singleShot(0, [view] {
-            if (view) {
+            // inzwischen mitgeschlossen (mehrere Designs auf einmal zu, z. B. beim Beenden): Szene ist schon weg
+            if (view && getMainWindow()->windows().contains(view.data())) {
                 attach(view);
             }
         });
