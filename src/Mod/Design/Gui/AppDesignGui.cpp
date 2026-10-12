@@ -9,6 +9,7 @@
 #include <Gui/Document.h>
 #include <Gui/ViewProviderDocumentObject.h>
 #include <Mod/Design/App/Features.h>
+#include <Mod/Sketcher/App/SketchObject.h>
 
 #include "ViewProviders.h"
 
@@ -80,6 +81,21 @@ PyMOD_INIT_FUNC(DesignGui)
     });
     Gui::Application::Instance->signalResetEdit.connect([](const Gui::ViewProviderDocumentObject& vp) {
         DesignGui::setProfilesVisible(vp, true);
+    });
+    // Profile sind sichtbar, solange ihre Skizze sichtbar ist (Auge im Browser, nach Extrude ausgeblendet, …)
+    App::GetApplication().signalChangedObject.connect([](const App::DocumentObject& obj, const App::Property& prop) {
+        if (&prop != &obj.Visibility || !obj.isDerivedFrom<Sketcher::SketchObject>()) {
+            return;
+        }
+        auto gdoc = Gui::Application::Instance->getDocument(obj.getDocument());
+        auto edit = gdoc ? dynamic_cast<Gui::ViewProviderDocumentObject*>(gdoc->getInEdit()) : nullptr;
+        if (edit && edit->getObject() == &obj) {
+            return;  // beim Bearbeiten bleiben die Profile aus
+        }
+        auto profiles = Design::Profiles::forSketch(const_cast<App::DocumentObject*>(&obj));
+        if (profiles && profiles->Visibility.getValue() != obj.Visibility.getValue()) {
+            profiles->Visibility.setValue(obj.Visibility.getValue());
+        }
     });
 
     PyMOD_Return(mod);

@@ -371,6 +371,14 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name,
                                  QStringLiteral("Select one or more profiles (closed areas of a sketch) first."));
         return;
     }
+    // Ganze Skizze bzw. das einzige Profil: die jetzigen Profile fest übernehmen (wie Fusion), sonst
+    // würden später in dieselbe Skizze gezeichnete Formen von diesem Feature mit extrudiert
+    if (faces.empty()) {
+        const int count = profiles->Shape.getShape().countSubShapes(TopAbs_FACE);
+        for (int i = 1; i <= count; ++i) {
+            faces.push_back("Face" + std::to_string(i));
+        }
+    }
 
     doc->openTransaction(name);
     auto feature = static_cast<Design::Feature*>(doc->addObject(type, name));

@@ -90,6 +90,9 @@ void ViewProviderProfiles::finishRestoring()
     if (sketch && sketch->MakeInternals.getValue()) {
         sketch->MakeInternals.setValue(false);
     }
+    if (sketch && profiles->Visibility.getValue() != sketch->Visibility.getValue()) {
+        profiles->Visibility.setValue(sketch->Visibility.getValue());  // sichtbare Skizze = anklickbare Profile
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
