@@ -103,7 +103,8 @@ QToolButton#GlassButton { border: none; border-radius: 10px; background: transpa
 QToolButton#GlassButton:hover { background: %4; }
 QToolButton#GlassButton:pressed { background: %5; }
 QToolButton#GlassButton:disabled { background: transparent; }
-QToolButton#GlassButton[names="true"] { font-size: 10px; padding-top: 3px; }
+QToolButton#GlassButton[names="true"] { font-size: 10px; padding-top: 1px; }
+QToolButton#GlassButton[names="true"]::menu-arrow { subcontrol-position: bottom center; bottom: 9px; }
 #GlassContent QToolButton#GlassProminent { border: none; border-radius: 15px; background: %3; color: white; font-weight: 600; padding: 0 14px; }
 #GlassContent QToolButton#GlassProminent:hover { background: %3; border: 2px solid rgba(255,255,255,0.35); }
 QFrame#TimelineMarker { background: %3; border-radius: 2px; }
@@ -489,7 +490,7 @@ void styleToolButton(QToolButton* btn)
         QFont font = btn->font();
         font.setPixelSize(10);  // wie im Stylesheet für die Beschriftung
         btn->setText(QFontMetrics(font).elidedText(btn->property("label").toString(), Qt::ElideRight, width - 6));
-        btn->setFixedSize(width, 56);
+        btn->setFixedSize(width, 48);
     }
     else {
         btn->setFixedSize(dropdown ? 44 : 34, 38);
@@ -658,7 +659,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         if (row) {
             auto sep = new QFrame;
             sep->setObjectName(QStringLiteral("ToolbarSeparator"));
-            sep->setFixedSize(9, toolNames() ? 70 : 50);  // so hoch wie ein Abschnitt samt Überschrift
+            sep->setFixedSize(9, toolNames() ? 36 : 28);
             lay->addWidget(sep);
         }
         auto group = new QWidget;
@@ -1274,8 +1275,21 @@ void layout()
     const qreal left = state.browser ? m + browserWidth + m : m;
     const qreal right = r.width() - m
         - (state.windowControls ? state.windowControls->content()->sizeHint().width() + m : 0);
-    const qreal barW = std::max<qreal>(100, std::min(bs.width(), right - left));
+    qreal barW = std::max<qreal>(100, std::min(bs.width(), right - left));
     const qreal barH = barW < bs.width() ? bar->content()->heightForWidth(int(barW)) : bs.height();
+    if (barW < bs.width()) {  // Reihen ausgleichen: schmalste Breite mit gleich vielen Reihen
+        int lo = 100, hi = int(barW);
+        while (lo < hi) {
+            const int mid = (lo + hi) / 2;
+            if (bar->content()->heightForWidth(mid) <= barH) {
+                hi = mid;
+            }
+            else {
+                lo = mid + 1;
+            }
+        }
+        barW = hi;
+    }
     bar->setGeometry(QRectF(left + (right - left - barW) / 2, m, barW, barH));
 
     qreal bottom = r.height() - m;
@@ -1851,7 +1865,7 @@ void Gui::Shell::setToolNames(bool on)
             styleToolButton(btn);
         }
         for (auto sep : bar->content()->findChildren<QFrame*>(QStringLiteral("ToolbarSeparator"))) {
-            sep->setFixedSize(9, on ? 70 : 50);
+            sep->setFixedSize(9, on ? 36 : 28);
         }
         // Abschnitte zuerst neu rechnen, sonst misst die Toolbar mit den alten Knopfgrößen (zweite Reihe abgeschnitten)
         for (auto group : bar->content()->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {

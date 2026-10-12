@@ -5,6 +5,7 @@ from harness import *
 
 grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
 old = grp.GetString("MouseKeys", "[]")
+old_names = grp.GetBool("ToolNames", False)
 
 
 def camera():
@@ -59,5 +60,5 @@ run([
     ("sketch", lambda: click(button("Design_CreateSketch"))),
     ("pick XY", lambda: Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XY_Plane")][0])),
     ("shot sketch", lambda: shot("sketchnames")),
-    ("names off", lambda: grp.SetBool("ToolNames", False)),  # Einstellung des Benutzers nicht verändert lassen
+    ("names back", lambda: grp.SetBool("ToolNames", old_names)),  # Einstellung des Benutzers nicht verändert lassen
 ])
