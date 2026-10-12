@@ -318,6 +318,11 @@ void Gui::Shell::registerSettings()
         viewParams()->SetInt("RotationMode", 1);
         myParams()->SetBool("NavigationDefaultSet", true);
     }
+    // Drehen um die Mitte des Körpers unter dem Cursor als Standard (einmalig, eigene Wahl bleibt danach)
+    if (!myParams()->GetBool("RotationDefaultBody", false)) {
+        viewParams()->SetInt("RotationMode", 3);
+        myParams()->SetBool("RotationDefaultBody", true);
+    }
     MouseKeyMapper::instance();
 }
 
@@ -373,7 +378,7 @@ void Gui::Shell::showSettings()
 
     auto center = new QComboBox;
     center->addItems({QStringLiteral("Window center"), QStringLiteral("Point under the cursor"),
-                      QStringLiteral("Center of the model")});
+                      QStringLiteral("Center of all bodies"), QStringLiteral("Center of the body under the cursor")});
     center->setCurrentIndex(static_cast<int>(view->GetInt("RotationMode", 1)));
     QObject::connect(center, &QComboBox::currentIndexChanged, [view](int i) { view->SetInt("RotationMode", i); });
     form->addRow(QStringLiteral("Rotate around"), center);

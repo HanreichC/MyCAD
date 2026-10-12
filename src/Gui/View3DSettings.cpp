@@ -346,6 +346,12 @@ void View3DSettings::OnChange(ParameterGrp::SubjectType& rCaller, ParameterGrp::
                     | NavigationStyle::RotationCenterMode::BoundingBoxCenter
                 );
             }
+            else if (mode == 3) {  // MyCAD: Mitte des Körpers unter dem Cursor
+                _viewer->navigationStyle()->setRotationCenterMode(
+                    NavigationStyle::RotationCenterMode::ObjectCenterAtCursor
+                    | NavigationStyle::RotationCenterMode::BoundingBoxCenter
+                );
+            }
         }
     }
     else if (strcmp(Reason, "EyeDistance") == 0) {

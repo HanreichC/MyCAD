@@ -146,7 +146,8 @@ public:
         ScenePointAtCursor = 1, /**< Find the point in the scene at the cursor position. If there is
                                    no point then the focal plane is used */
         FocalPointAtCursor = 2, /**< Find the point on the focal plane at the cursor position. */
-        BoundingBoxCenter = 4   /**< Find the center point of the bounding box of the scene. */
+        BoundingBoxCenter = 4,  /**< Find the center point of the bounding box of the scene. */
+        ObjectCenterAtCursor = 8 /**< MyCAD: center of the object (body) under the cursor */
     };
     Q_DECLARE_FLAGS(RotationCenterModes, RotationCenterMode)
 

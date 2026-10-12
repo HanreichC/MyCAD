@@ -37,6 +37,10 @@
 #include <QMenu>
 #include <QCursor>
 #include <QMouseEvent>
+#include <QContextMenuEvent>
+#include <QLineEdit>
+#include <QAbstractSpinBox>
+#include <QKeyEvent>
 #include <QTreeWidget>
 #include <QSizePolicy>
 #include <QLabel>
@@ -694,6 +698,41 @@ protected:
         }
         if (auto tree = qobject_cast<QTreeWidget*>(widget->parentWidget());
             tree && event->type() == QEvent::ContextMenu) {
+            // Dokument-Eintrag: speichern, umbenennen, schließen (ein Dokument wird geschlossen, nicht gelöscht)
+            QTreeWidgetItem* item = tree->itemAt(static_cast<QContextMenuEvent*>(event)->pos());
+            if (item && item->type() == TreeWidget::DocumentType) {
+                const std::string name = static_cast<DocumentItem*>(item)->document()->getDocument()->getName();
+                auto guiDoc = [name]() -> Gui::Document* {  // Dokument kann inzwischen geschlossen sein
+                    App::Document* doc = App::GetApplication().getDocument(name.c_str());
+                    return doc ? Application::Instance->getDocument(doc) : nullptr;
+                };
+                QTimer::singleShot(0, [tree, item, guiDoc] {
+                    if (!guiDoc()) {
+                        return;
+                    }
+                    QMenu menu;
+                    auto run = [guiDoc](const char* command) {
+                        if (Gui::Document* gdoc = guiDoc()) {
+                            Application::Instance->setActiveDocument(gdoc);
+                            Application::Instance->commandManager().runCommandByName(command);
+                        }
+                    };
+                    QObject::connect(menu.addAction(QStringLiteral("Save")), &QAction::triggered, [run] { run("Std_Save"); });
+                    QObject::connect(menu.addAction(QStringLiteral("Save As…")), &QAction::triggered, [run] { run("Std_SaveAs"); });
+                    QObject::connect(menu.addAction(QStringLiteral("Rename")), &QAction::triggered, [tree, item] { tree->editItem(item); });
+                    menu.addSeparator();
+                    QObject::connect(menu.addAction(QStringLiteral("Close")), &QAction::triggered, [guiDoc] {
+                        QTimer::singleShot(0, [guiDoc] {
+                            Gui::Document* gdoc = guiDoc();
+                            if (gdoc && gdoc->canClose(true, true)) {  // fragt bei Änderungen nach dem Speichern
+                                App::GetApplication().closeDocument(gdoc->getDocument()->getName());
+                            }
+                        });
+                    });
+                    menu.exec(QCursor::pos());
+                });
+                return true;
+            }
             QTimer::singleShot(0, [tree] {
                 const bool any = !Selection().getSelection().empty();
                 if (!any) {
@@ -981,6 +1020,22 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
         const auto type = event->type();
+        // Esc beendet wie in Fusion das Skizzen-Werkzeug, auch wenn ein Maßfeld den Fokus hat (FreeCAD bricht dort
+        // nur die Eingabe ab, und das nächste Feld holt sich den Fokus zurück)
+        if (type == QEvent::KeyPress && state.sketchMode && static_cast<QKeyEvent*>(event)->key() == Qt::Key_Escape
+            && obj == QApplication::focusWidget() && (qobject_cast<QAbstractSpinBox*>(obj) || qobject_cast<QLineEdit*>(obj))) {
+            auto gdoc = Application::Instance->activeDocument();
+            auto view = gdoc ? dynamic_cast<View3DInventor*>(gdoc->getActiveView()) : nullptr;
+            if (view) {
+                QWidget* viewport = view->getViewer()->viewport();
+                viewport->setFocus();
+                QKeyEvent press(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+                QKeyEvent release(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+                QApplication::sendEvent(viewport, &press);
+                QApplication::sendEvent(viewport, &release);
+                return true;
+            }
+        }
         if (obj->inherits("SketcherGui::TaskSketcherTool")) {
             // *ToParent: kommt auch, solange das Panel noch verborgen ist (Show käme erst danach)
             if (type == QEvent::ShowToParent || type == QEvent::HideToParent) {
@@ -1257,6 +1312,22 @@ void attach(View3DInventor* view)
     layout();
 }
 
+/// Panels aus der Szene nehmen, bevor ihr 3D-Fenster verschwindet: die Szene löscht sonst alle Elemente mit,
+/// samt eingebettetem Browser (Absturz beim Schließen eines Dokuments)
+void detach()
+{
+    if (!state.scene) {
+        return;
+    }
+    for (auto p : panels()) {
+        state.scene->removeItem(p);
+    }
+    if (state.viewCube) {
+        state.scene->removeItem(state.viewCube);
+    }
+    state.scene = nullptr;
+}
+
 void addActionsRecursive(QWidget* target, const QList<QAction*>& actions)
 {
     for (auto a : actions) {
@@ -1381,6 +1452,22 @@ void Gui::Shell::install()
         state.sketchMode = false;
         hideChromeLater();
         QTimer::singleShot(0, layout);
+    });
+
+    // Fenster wird geschlossen (nach "Speichern?"-Abfrage, vor dem Abbau): Panels vorher herausnehmen
+    Application::Instance->signalCloseView.connect([](const Gui::MDIView* view) {
+        auto v3d = dynamic_cast<const View3DInventor*>(view);
+        if (v3d && v3d->getViewer()->scene() == state.scene) {
+            detach();
+        }
+    });
+    Application::Instance->signalDeleteDocument.connect([](const Gui::Document& gdoc) {
+        for (auto view : const_cast<Gui::Document&>(gdoc).getMDIViews()) {
+            auto v3d = dynamic_cast<View3DInventor*>(view);
+            if (v3d && v3d->getViewer()->scene() == state.scene) {
+                detach();
+            }
+        }
     });
 
     QMdiArea* mdi = getMainWindow()->getMdiArea();

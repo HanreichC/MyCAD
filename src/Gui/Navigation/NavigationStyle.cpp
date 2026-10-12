@@ -509,6 +509,12 @@ void NavigationStyle::initialize()
             | NavigationStyle::RotationCenterMode::BoundingBoxCenter
         );
     }
+    else if (mode == 3) {  // MyCAD: Mitte des Körpers unter dem Cursor, sonst Mitte aller Objekte
+        setRotationCenterMode(
+            NavigationStyle::RotationCenterMode::ObjectCenterAtCursor
+            | NavigationStyle::RotationCenterMode::BoundingBoxCenter
+        );
+    }
 
     this->hasDragged = false;
     this->hasPanned = false;
@@ -1564,6 +1570,44 @@ void NavigationStyle::saveCursorPosition(const SoEvent* const ev)
         setRotationCenter(viewer->getFocalPoint());
     }
 
+    // Drehpunkt auf den Bildschirm projizieren: NavigationStyle::spin() braucht ihn für das Ziehen
+    auto rotateAround = [this](SbVec3f center) {
+        setRotationCenter(center);
+        const SbViewportRegion& vp = viewer->getSoRenderManager()->getViewportRegion();
+        SoCamera* cam = viewer->getSoRenderManager()->getCamera();
+        if (!cam) {
+            return;
+        }
+        SbViewVolume vv = cam->getViewVolume(vp.getViewportAspectRatio());
+        vv.projectToScreen(center, center);
+        SbVec2s size = vp.getViewportSizePixels();
+        this->localPos.setValue(static_cast<short>(center[0] * size[0]), static_cast<short>(center[1] * size[1]));
+    };
+
+    // MyCAD: Mitte des Körpers unter dem Cursor (Bounding Box genau dieses Objekts)
+    if (this->rotationCenterMode & NavigationStyle::RotationCenterMode::ObjectCenterAtCursor) {
+        SoRayPickAction rpaction(viewer->getSoRenderManager()->getViewportRegion());
+        rpaction.setPoint(this->localPos);
+        rpaction.setRadius(viewer->getPickRadius());
+        rpaction.apply(viewer->getSoRenderManager()->getSceneGraph());
+        SoPickedPoint* picked = rpaction.getPickedPoint();
+        // innerstes Objekt (der Körper), nicht die Komponente, in der er liegt
+        ViewProvider* vp = picked ? viewer->getViewProviderByPathFromTail(picked->getPath()) : nullptr;
+        const int index = vp ? picked->getPath()->findNode(vp->getRoot()) : -1;
+        if (index >= 0) {
+            SoPath* objectPath = picked->getPath()->copy(0, index + 1);
+            objectPath->ref();
+            SoGetBoundingBoxAction bbox(viewer->getSoRenderManager()->getViewportRegion());
+            bbox.apply(objectPath);
+            objectPath->unref();
+            const SbBox3f box = bbox.getBoundingBox();
+            if (!box.isEmpty()) {
+                rotateAround(box.getCenter());
+                return;
+            }
+        }
+    }
+
     // Option to get point on model (slow) or always on focal plane (fast)
     //
     //  mode is ScenePointAtCursor to get exact point if possible
@@ -1617,18 +1661,8 @@ void NavigationStyle::saveCursorPosition(const SoEvent* const ev)
         if (!getObjectBoundingBoxCenter(boundingBoxCenter)) {
             return;
         }
-
-        setRotationCenter(boundingBoxCenter);
-
-        // To drag around the center point of the bbox we have to determine
-        // its projection on the screen because this information is used in
-        // NavigationStyle::spin() for the panning
-        SbViewVolume vv = cam->getViewVolume(ratio);
-        vv.projectToScreen(boundingBoxCenter, boundingBoxCenter);
-        SbVec2s size = vp.getViewportSizePixels();
-        auto tox = static_cast<short>(boundingBoxCenter[0] * size[0]);
-        auto toy = static_cast<short>(boundingBoxCenter[1] * size[1]);
-        this->localPos.setValue(tox, toy);
+        (void)ratio;
+        rotateAround(boundingBoxCenter);
     }
 }
 
