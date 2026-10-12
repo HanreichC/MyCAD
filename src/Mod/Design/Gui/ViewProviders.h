@@ -38,6 +38,7 @@ class DesignGuiExport ViewProviderProfiles: public PartGui::ViewProviderPartExt
 public:
     ViewProviderProfiles();
     void attach(App::DocumentObject* obj) override;
+    void finishRestoring() override;
 };
 
 /// Timeline-Feature: im 3D unsichtbar (das Ergebnis zeigt der Body), nicht im Browser, Doppelklick bearbeitet.

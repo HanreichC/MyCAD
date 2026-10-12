@@ -395,6 +395,11 @@ void Gui::Shell::registerSettings()
         viewParams()->SetInt("RotationMode", 3);
         myParams()->SetBool("RotationDefaultBody", true);
     }
+    // Skizzen ohne eigene Innenflächen: sonst fangen sie den Klick ab und statt des gewählten Profils
+    // (Design::Profiles) wird die ganze Skizze extrudiert
+    App::GetApplication()
+        .GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher")
+        ->SetBool("MakeInternals", false);
     MouseKeyMapper::instance();
 }
 

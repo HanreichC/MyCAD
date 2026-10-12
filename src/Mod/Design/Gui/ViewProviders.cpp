@@ -81,6 +81,17 @@ void ViewProviderProfiles::attach(App::DocumentObject* obj)
     DisplayMode.setValue("Shaded");  // nur Flächen, die Linien zeigt die Skizze selbst
 }
 
+void ViewProviderProfiles::finishRestoring()
+{
+    ViewProviderPartExt::finishRestoring();
+    // ältere Dokumente: Innenflächen der Skizze fangen sonst den Klick auf die Profile ab
+    auto profiles = static_cast<Design::Profiles*>(getObject());
+    auto sketch = freecad_cast<Sketcher::SketchObject*>(profiles->Sketch.getValue());
+    if (sketch && sketch->MakeInternals.getValue()) {
+        sketch->MakeInternals.setValue(false);
+    }
+}
+
 // ---------------------------------------------------------------------------------------------
 
 namespace
