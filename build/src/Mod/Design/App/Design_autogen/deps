@@ -1,6 +1,0 @@
-Design_autogen/timestamp: \
-	/workspace/src/Mod/Design/App/AppDesign.cpp \
-	/workspace/src/Mod/Design/App/CMakeLists.txt \
-	/workspace/src/Mod/Design/App/Features.cpp \
-	/workspace/src/Mod/Design/App/Features.h \
-	/usr/sbin/cmake

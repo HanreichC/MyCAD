@@ -1,7 +1,0 @@
-Measure_tests_run_autogen/timestamp: \
-	/workspace/tests/src/Mod/Measure/App/CMakeLists.txt \
-	/workspace/tests/src/Mod/Measure/App/MeasureAngle.cpp \
-	/workspace/tests/src/Mod/Measure/App/MeasureDistance.cpp \
-	/workspace/tests/src/Mod/Measure/App/MeasurePosition.cpp \
-	/workspace/tests/src/Mod/Measure/App/QuickMeasure.cpp \
-	/usr/sbin/cmake

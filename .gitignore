@@ -2,3 +2,4 @@ build/
 .ccache/
 *.pyc
 __pycache__/
+.config/
