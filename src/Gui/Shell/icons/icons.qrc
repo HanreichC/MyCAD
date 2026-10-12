@@ -38,6 +38,8 @@
         <file>Window_Close.svg</file>
         <file>Window_Home.svg</file>
         <file>Window_Back.svg</file>
+        <file>Start_Recent.svg</file>
+        <file>Start_Search.svg</file>
         <file>Nav_Rotate.svg</file>
         <file>Nav_Pan.svg</file>
         <file>Nav_Zoom.svg</file>

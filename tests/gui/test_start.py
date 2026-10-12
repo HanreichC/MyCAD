@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Startseite: beim Start ohne Design sichtbar; "New Design" öffnet ein Design; gespeichert und geschlossen erscheint
+"""Startseite: beim Start ohne Design sichtbar; "New Design" (Seitenleiste) öffnet ein Design; gespeichert und geschlossen erscheint
 es unter Recent und Projects (mit Vorschaubild); Kachel öffnet es wieder; Home zeigt die Seite, "Back" schließt sie.
 Projektordner für den Test im Ausgabeordner, danach wieder der des Benutzers."""
 import os
@@ -23,7 +23,7 @@ def page():
 
 
 def tiles():
-    return [w for w in page().findChildren(QtWidgets.QFrame, "StartTile") if w.isVisible()]
+    return [w for w in page().findChildren(QtWidgets.QWidget, "StartTile") if w.isVisible()]
 
 
 def tile_names():
@@ -58,7 +58,7 @@ def store():
 
 run([
     ("start", lambda: report("beim Start")), ("shot empty", lambda: shot("empty")),
-    ("new", lambda: real_click(tile("New Design"))), ("wait", lambda: None),
+    ("new", lambda: real_click(page().findChild(QtWidgets.QPushButton, "StartNew"))), ("wait", lambda: None),
     ("after new", lambda: report("nach New Design")),
     ("body", save), ("save", store),
     ("close", lambda: App.closeDocument(App.ActiveDocument.Name)), ("wait", lambda: None),
@@ -69,5 +69,10 @@ run([
     ("home shown", lambda: (report("Home"), L("  back button visible=%s" % page().findChild(QtWidgets.QPushButton, "StartBack").isVisible()))),
     ("back", lambda: real_click(page().findChild(QtWidgets.QPushButton, "StartBack"))), ("wait", lambda: None),
     ("after back", lambda: report("nach Back")),
+    ("home2", lambda: click([b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Home"][0])), ("wait", lambda: None),
+    ("search", lambda: QtTest.QTest.keyClicks(page().findChild(QtWidgets.QLineEdit, "StartSearch"), "xyz")),
+    ("searched", lambda: report("Suche 'xyz' (keine Kachel)")),
+    ("search2", lambda: (page().findChild(QtWidgets.QLineEdit, "StartSearch").setText("brack"), report("Suche 'brack'"))),
+    ("shot home", lambda: shot("home")), ("back2", lambda: page().hide()),
     ("restore", lambda: grp.SetString("ProjectsFolder", old_folder) if old_folder else grp.RemString("ProjectsFolder")),
 ])

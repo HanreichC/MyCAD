@@ -58,6 +58,8 @@ ICONS = {
     "Window_Close": '<path d="M7 7l10 10M17 7L7 17"/>',
     "Window_Home": '<path d="M4 11.5L12 5l8 6.5"/><path d="M6.5 9.5V19h11V9.5"/><path d="M10 19v-5h4v5"/>',
     "Window_Back": '<path d="M14.5 6l-6 6 6 6"/>',
+    "Start_Recent": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    "Start_Search": '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>',
     "Nav_Rotate": '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/>',
     "Nav_Pan": '<path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
     "Nav_Zoom": '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M8 10.5h5M10.5 8v5"/>',
