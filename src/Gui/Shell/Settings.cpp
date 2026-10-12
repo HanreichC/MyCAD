@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "Settings.h"
+#include "Shell.h"
 
 #include <App/Application.h>
 #include <Gui/Application.h>
@@ -37,6 +38,7 @@
 #include <QSvgRenderer>
 #include <QStackedWidget>
 #include <QPainter>
+#include <QPlainTextEdit>
 #include <QMouseEvent>
 #include <QFile>
 #include <QButtonGroup>
@@ -196,11 +198,19 @@ bool isViewport(QObject* obj)
 }
 
 /// Tippt der Benutzer gerade Text? Dann bleiben Tasten Tasten.
+/// Schreibt der Benutzer gerade Text (Umbenennen, Namen …)? Dann bleiben alle Tasten Tasten, auch Shift.
+/// Zahlenfelder zählen nicht: dort braucht man weder Großbuchstaben noch Leertaste, und Navigieren bei offenem
+/// Dialog soll weiter gehen.
 bool typing()
 {
     QWidget* f = QApplication::focusWidget();
-    return f && f->isVisible()
-        && (qobject_cast<QLineEdit*>(f) || qobject_cast<QAbstractSpinBox*>(f) || qobject_cast<QTextEdit*>(f));
+    if (!f || !f->isVisible()) {
+        return false;
+    }
+    if (qobject_cast<QTextEdit*>(f) || qobject_cast<QPlainTextEdit*>(f)) {
+        return true;
+    }
+    return qobject_cast<QLineEdit*>(f) && !qobject_cast<QAbstractSpinBox*>(f->parentWidget());
 }
 
 /// Modifier-Taste -> Modifier (sonst NoModifier)
@@ -286,8 +296,9 @@ bool MouseKeyMapper::eventFilter(QObject* obj, QEvent* event)
             hoverPos = under->mapFromGlobal(QCursor::pos());
         }
     }
-    // nur über dem 3D-Fenster; tippende Tasten (Leertaste …) nicht, während ein Eingabefeld den Fokus hat
-    if (!m || !hover || QApplication::activeModalWidget() || (modifier == Qt::NoModifier && typing())) {
+    // nur über dem 3D-Fenster und nicht, während Text geschrieben wird
+    const bool releasing = m && event->type() == QEvent::KeyRelease && (held & m->button);  // nie hängen lassen
+    if (!m || !hover || ((QApplication::activeModalWidget() || typing()) && !releasing)) {
         return false;
     }
     if (modifier != Qt::NoModifier) {
@@ -767,6 +778,9 @@ QPushButton#Remove:hover { color: #FF3B30; }
         addRow(c, label, sw);
     };
     toggle(viewCard, QStringLiteral("Animate view changes"), "UseNavigationAnimations", true);
+    auto names = new Switch(myParams()->GetBool("ToolNames", false));
+    QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
+    addRow(viewCard, QStringLiteral("Show tool names"), names);
 
     auto speedCard = addCard(nav, QStringLiteral("Speed & Zoom"));
     auto slider = [](int lo, int hi, int value) {

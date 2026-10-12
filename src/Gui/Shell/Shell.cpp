@@ -59,9 +59,13 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <cstring>
+#include <QFontMetrics>
+#include <QToolTip>
 #include <QVBoxLayout>
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -98,6 +102,7 @@ QToolButton#GlassButton { border: none; border-radius: 10px; background: transpa
 QToolButton#GlassButton:hover { background: %4; }
 QToolButton#GlassButton:pressed { background: %5; }
 QToolButton#GlassButton:disabled { background: transparent; }
+QToolButton#GlassButton[names="true"] { font-size: 10px; padding-top: 3px; }
 #GlassContent QToolButton#GlassProminent { border: none; border-radius: 15px; background: %3; color: white; font-weight: 600; padding: 0 14px; }
 #GlassContent QToolButton#GlassProminent:hover { background: %3; border: 2px solid rgba(255,255,255,0.35); }
 QFrame#TimelineMarker { background: %3; border-radius: 2px; }
@@ -374,6 +379,109 @@ QAction* commandAction(const char* name)
     return action;
 }
 
+/// Tooltips der Toolbar schon nach 0,3 s und direkt unter dem Knopf (Qts Standard wartet rund eine Sekunde)
+class QuickTip: public QObject
+{
+public:
+    static QuickTip* instance()
+    {
+        static QuickTip* tip = new QuickTip;
+        return tip;
+    }
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        auto btn = qobject_cast<QToolButton*>(obj);
+        if (!btn) {
+            return false;
+        }
+        switch (event->type()) {
+            case QEvent::Enter:
+                target = btn;
+                timer.start();
+                return false;
+            case QEvent::Leave:
+            case QEvent::MouseButtonPress:
+            case QEvent::Hide:
+                timer.stop();
+                QToolTip::hideText();
+                return false;
+            case QEvent::ToolTip:
+                return true;  // langsamen Standard-Tooltip unterdrücken
+            default:
+                return false;
+        }
+    }
+
+private:
+    QuickTip()
+    {
+        timer.setSingleShot(true);
+        timer.setInterval(300);
+        QObject::connect(&timer, &QTimer::timeout, this, [this] {
+            if (target && target->underMouse()) {
+                QToolTip::showText(target->mapToGlobal(QPoint(target->width() / 2, target->height() + 6)),
+                                   target->toolTip(), target);
+            }
+        });
+    }
+    QTimer timer;
+    QPointer<QToolButton> target;
+};
+
+/// Kurzer Name für die Beschriftung unter dem Symbol ("&Extrude…" -> "Extrude"); der volle Name steht im Tooltip
+QString shortName(QString text)
+{
+    // kürzere Namen für lange Befehle
+    static const std::map<QString, QString> shorter = {
+        {QStringLiteral("New Document"), QStringLiteral("New")},
+        {QStringLiteral("Change Parameters"), QStringLiteral("Parameters")},
+        {QStringLiteral("Section Analysis"), QStringLiteral("Section")},
+        {QStringLiteral("New Component"), QStringLiteral("Component")},
+    };
+    text.remove(QLatin1Char('&'));
+    if (auto it = shorter.find(text.trimmed()); it != shorter.end()) {
+        return it->second;
+    }
+    text.remove(QLatin1Char('&'));
+    text.remove(QStringLiteral("…"));
+    text.remove(QStringLiteral("..."));
+    for (const char* prefix : {"Constrain ", "Create "}) {
+        if (text.startsWith(QLatin1String(prefix)) && text.size() > int(std::strlen(prefix)) + 3) {
+            text.remove(0, int(std::strlen(prefix)));
+        }
+    }
+    return text.trimmed();
+}
+
+/// Namen unter den Symbolen (Einstellung "Show tool names", MyCAD/ToolNames)
+bool toolNames()
+{
+    return App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool(
+        "ToolNames", false);
+}
+
+void styleToolButton(QToolButton* btn)
+{
+    const bool names = toolNames();
+    const bool dropdown = btn->popupMode() == QToolButton::MenuButtonPopup;
+    btn->setToolButtonStyle(names ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonIconOnly);
+    btn->setProperty("names", names);
+    if (names) {
+        const int width = dropdown ? 82 : 70;
+        QFont font = btn->font();
+        font.setPixelSize(10);  // wie im Stylesheet für die Beschriftung
+        btn->setText(QFontMetrics(font).elidedText(btn->property("label").toString(), Qt::ElideRight, width - 6));
+        btn->setFixedSize(width, 56);
+    }
+    else {
+        btn->setFixedSize(dropdown ? 48 : 38, 38);
+    }
+    btn->style()->unpolish(btn);
+    btn->style()->polish(btn);
+}
+
 /// Knöpfe nebeneinander, bei zu wenig Breite in weiteren Reihen (jede Reihe mittig, Elemente vertikal zentriert)
 class FlowLayout: public QLayout
 {
@@ -537,6 +645,10 @@ QWidget* toolbar(const std::vector<const char*>& commands)
                 *current = a;
                 btn->setIcon(commandIcon(n, a->icon()));
                 btn->setToolTip(a->toolTip().isEmpty() ? a->text() : a->toolTip());
+                btn->setProperty("label", shortName(a->text()));
+                if (btn->property("names").toBool()) {
+                    styleToolButton(btn);
+                }
             };
             auto menu = new QMenu;  // ohne Eltern: sonst bettet Qt das Menü in die 3D-Szene ein
             QObject::connect(btn, &QObject::destroyed, menu, &QObject::deleteLater);
@@ -552,8 +664,9 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             btn->setMenu(menu);
             btn->setPopupMode(QToolButton::MenuButtonPopup);
             btn->setIconSize(QSize(22, 22));
-            btn->setFixedSize(48, 38);
             pick(choices.front().first, action);
+            styleToolButton(btn);
+            btn->installEventFilter(QuickTip::instance());
             btn->setEnabled(action->isEnabled());
             QObject::connect(btn, &QToolButton::clicked, action, [current] {
                 if (*current) {
@@ -581,8 +694,10 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         }
         btn->setIcon(commandIcon(QString::fromLatin1(name), action->icon()));
         btn->setIconSize(QSize(22, 22));
-        btn->setFixedSize(38, 38);
         btn->setToolTip(action->toolTip().isEmpty() ? action->text() : action->toolTip());
+        btn->setProperty("label", shortName(action->text()));
+        styleToolButton(btn);
+        btn->installEventFilter(QuickTip::instance());
         btn->setEnabled(action->isEnabled());
         // Erst nach dem Mausklick auslösen: Befehle bauen die Oberfläche um (neue Ansicht, Dialog, Edit-Modus),
         // während Qt den Klick noch an das Proxy-Widget weiterreicht. Synchron führte das zum Absturz.
@@ -1658,4 +1773,18 @@ void Gui::Shell::install()
             Application::Instance->commandManager().runCommandByName("Std_New");
         }
     });
+}
+
+void Gui::Shell::setToolNames(bool on)
+{
+    App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetBool("ToolNames", on);
+    for (GlassPanel* bar : {state.modelBar, state.sketchBar}) {
+        if (!bar) {
+            continue;
+        }
+        for (auto btn : bar->content()->findChildren<QToolButton*>(QStringLiteral("GlassButton"))) {
+            styleToolButton(btn);
+        }
+    }
+    layout();
 }
