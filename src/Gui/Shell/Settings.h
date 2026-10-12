@@ -44,6 +44,7 @@ private:
     QPointer<QWidget> hover;  ///< 3D-Fenster unter dem Mauszeiger
     QPoint hoverPos;
     Qt::MouseButtons held;
+    Qt::KeyboardModifiers heldModifiers;  ///< gemappte Modifier-Tasten, die gerade gedrückt sind
     bool sending = false;
 };
 

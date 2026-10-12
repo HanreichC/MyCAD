@@ -11,6 +11,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QCursor>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -198,25 +199,33 @@ bool isViewport(QObject* obj)
 bool typing()
 {
     QWidget* f = QApplication::focusWidget();
-    return f && (qobject_cast<QLineEdit*>(f) || qobject_cast<QAbstractSpinBox*>(f) || qobject_cast<QTextEdit*>(f));
+    return f && f->isVisible()
+        && (qobject_cast<QLineEdit*>(f) || qobject_cast<QAbstractSpinBox*>(f) || qobject_cast<QTextEdit*>(f));
+}
+
+/// Modifier-Taste -> Modifier (sonst NoModifier)
+Qt::KeyboardModifier modifierOf(int key)
+{
+    switch (key) {
+        case Qt::Key_Shift:
+            return Qt::ShiftModifier;
+        case Qt::Key_Control:
+            return Qt::ControlModifier;
+        case Qt::Key_Alt:
+            return Qt::AltModifier;
+        case Qt::Key_Meta:
+            return Qt::MetaModifier;
+        default:
+            return Qt::NoModifier;
+    }
 }
 }  // namespace
 
 void MouseKeyMapper::send(int type, Qt::MouseButton button)
 {
-    // Modifier-Tasten, die selbst als Maustaste dienen, nicht mitschicken (sonst deuten Navigationsstile sie um)
-    Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
-    for (const auto& m : mappings) {
-        if (m.key == Qt::Key_Shift) {
-            mods &= ~Qt::ShiftModifier;
-        }
-        else if (m.key == Qt::Key_Control) {
-            mods &= ~Qt::ControlModifier;
-        }
-        else if (m.key == Qt::Key_Alt) {
-            mods &= ~Qt::AltModifier;
-        }
-    }
+    // Wie cad.helper: gehaltene Modifier-Tasten bleiben gedrückt (Shift als Mitte = Shift + Mitte, im Fusion-Stil
+    // also Drehen). Während des Tastendrucks kennt Qt den Modifier noch nicht, daher selbst ergänzen.
+    Qt::KeyboardModifiers mods = QApplication::keyboardModifiers() | heldModifiers;
     QMouseEvent event(QEvent::Type(type), hoverPos, hover->mapToGlobal(hoverPos), button, held, mods);
     sending = true;
     QApplication::sendEvent(hover, &event);
@@ -268,16 +277,37 @@ bool MouseKeyMapper::eventFilter(QObject* obj, QEvent* event)
     }
     auto ke = static_cast<QKeyEvent*>(event);
     const Mapping* m = find(ke->key());
-    // nur über dem 3D-Fenster (hover wird beim Verlassen gelöscht, außer während eine Taste gehalten wird)
-    if (!m || !hover || QApplication::activeModalWidget() || typing()) {
+    const Qt::KeyboardModifier modifier = m ? modifierOf(m->key) : Qt::NoModifier;
+    // Zeiger über dem 3D-Fenster, aber seit dem Verlassen nicht bewegt: aktuelle Position nehmen
+    if (m && !hover) {
+        QWidget* under = QApplication::widgetAt(QCursor::pos());
+        if (under && isViewport(under)) {
+            hover = under;
+            hoverPos = under->mapFromGlobal(QCursor::pos());
+        }
+    }
+    // nur über dem 3D-Fenster; tippende Tasten (Leertaste …) nicht, während ein Eingabefeld den Fokus hat
+    if (!m || !hover || QApplication::activeModalWidget() || (modifier == Qt::NoModifier && typing())) {
         return false;
+    }
+    if (modifier != Qt::NoModifier) {
+        // Modifier wie bei cad.helper nicht verschlucken: das Programm sieht Shift weiterhin
+        if (event->type() == QEvent::KeyPress && !ke->isAutoRepeat()) {
+            heldModifiers |= modifier;
+        }
+        else if (event->type() == QEvent::KeyRelease && !ke->isAutoRepeat()) {
+            heldModifiers &= ~modifier;
+        }
+        if (event->type() == QEvent::ShortcutOverride) {
+            return false;
+        }
     }
     if (event->type() == QEvent::ShortcutOverride) {
         event->accept();  // Taste als KeyPress zustellen statt als Tastenkürzel auslösen
         return true;
     }
     if (ke->isAutoRepeat()) {
-        return true;
+        return modifier == Qt::NoModifier;
     }
     const auto press = [&](int type) {
         held |= m->button;
@@ -306,7 +336,7 @@ bool MouseKeyMapper::eventFilter(QObject* obj, QEvent* event)
     else if (m->mode == QLatin1String("hold") && (held & m->button)) {
         release();
     }
-    return true;
+    return modifier == Qt::NoModifier;  // Modifier weiterreichen, andere Tasten verschlucken
 }
 // ---------------------------------------------------------------------------------------------
 

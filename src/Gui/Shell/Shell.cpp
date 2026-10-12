@@ -52,6 +52,7 @@
 #include <QSvgRenderer>
 #include <QPointer>
 #include <QStatusBar>
+#include <QScreen>
 #include <QStyleHints>
 #include <QTimer>
 #include <QToolBar>
@@ -538,7 +539,27 @@ protected:
 void toggleMaximized()
 {
     MainWindow* mw = getMainWindow();
-    mw->isMaximized() ? mw->showNormal() : mw->showMaximized();
+    if (!mw->isMaximized()) {
+        mw->showMaximized();
+        return;
+    }
+    // Wurde MyCAD immer maximiert gestartet, ist die "normale" Größe der ganze Bildschirm: Wiederherstellen sähe
+    // dann aus, als passiere nichts. Stattdessen ein Fenster mit 75 % der Fläche, mittig.
+    const QRect screen = mw->screen() ? mw->screen()->availableGeometry() : QRect();
+    const QRect normal = mw->normalGeometry();
+    mw->showNormal();
+    if (screen.isValid() && normal.width() >= screen.width() * 0.9 && normal.height() >= screen.height() * 0.9) {
+        // erst nach dem Zustandswechsel setzen: unter Wayland schickt der Compositor danach noch die alte Größe
+        const QRect target(screen.center() - QPoint(screen.width() * 3 / 8, screen.height() * 3 / 8),
+                           QSize(screen.width() * 3 / 4, screen.height() * 3 / 4));
+        for (int delay : {50, 250}) {
+            QTimer::singleShot(delay, mw, [mw, target] {
+                if (!mw->isMaximized() && !mw->isMinimized()) {
+                    mw->setGeometry(target);
+                }
+            });
+        }
+    }
 }
 
 /// Rahmenloses Fenster: freie Flächen von Toolbar und Fensterknöpfen dienen als Griff
