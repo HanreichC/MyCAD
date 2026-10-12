@@ -1466,7 +1466,7 @@ void GridSpaceAction::updateWidget()
 {
     auto* sketchView = getView();
 
-    if (sketchView) {
+    if (sketchView && gridShow) {
 
         auto updateCheckBox = [](QCheckBox* checkbox, bool value) {
             auto checked = checkbox->checkState() == Qt::Checked;
@@ -1497,6 +1497,9 @@ void GridSpaceAction::updateWidget()
 
 void GridSpaceAction::languageChange()
 {
+    if (!gridShow) {
+        return;  // Widget noch nicht angelegt (MyCAD zeigt die FreeCAD-Menüs nicht): Sprachwechsel beim Start ließ es abstürzen
+    }
     gridShow->setText(tr("Display grid"));
     gridShow->setToolTip(tr("Toggles the visibility of the grid in the active sketch"));
     gridShow->setStatusTip(gridAutoSpacing->toolTip());
@@ -1710,7 +1713,9 @@ SnapSpaceAction::SnapSpaceAction(QObject* parent)
 
 void SnapSpaceAction::updateWidget(bool snapenabled)
 {
-
+    if (!snapToObjects) {
+        return;  // Widget noch nicht angelegt
+    }
     auto updateCheckBox = [](QCheckBox* checkbox, bool value) {
         auto checked = checkbox->checkState() == Qt::Checked;
 
@@ -1742,6 +1747,9 @@ void SnapSpaceAction::updateWidget(bool snapenabled)
 
 void SnapSpaceAction::languageChange()
 {
+    if (!snapToObjects) {
+        return;  // Widget noch nicht angelegt
+    }
     snapToObjects->setText(tr("Snap to objects"));
     snapToObjects->setToolTip(tr("New points will snap to the currently preselected object. It "
                                     "will also snap to the middle of lines and arcs."));
@@ -1934,6 +1942,9 @@ RenderingOrderAction::RenderingOrderAction(QObject* parent)
 
 void RenderingOrderAction::updateWidget()
 {
+    if (!list) {
+        return;  // Widget noch nicht angelegt
+    }
     auto hGrp = getParameterPath();
 
     // 1->Normal Geometry, 2->Construction, 3->External

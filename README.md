@@ -21,7 +21,7 @@ Jede Fläche in MyCAD ist aus Glas. Toolbar, Browser, Fensterknöpfe und Inspect
 
 Du willst es noch klarer? Mit **Glass: Clear** lässt das Glas noch mehr von deinem Design durch. Lieber kräftiger? **Tinted** ist für dich da.
 
-Meldungen erscheinen als schwebende Glas-Alerts, ohne Fensterrahmen und mit klaren Kapsel-Knöpfen. Die Ecken sind konzentrisch gerundet, die Symbole einfarbig und klar. Hell und dunkel folgen automatisch deinem System.
+Meldungen erscheinen als schwebende Glas-Alerts, ohne Fensterrahmen und mit klaren Kapsel-Knöpfen. Die Ecken sind konzentrisch gerundet, die Symbole einfarbig und klar. Alles in einem klaren, hellen Look, auch auf einem dunklen Desktop.
 
 <br>
 
@@ -94,7 +94,7 @@ Neue Körper erscheinen in **Space Gray**, satiniert und edel. Lieber **Clay**, 
 | | |
 |---|---|
 | **Plattform** | Linux, entwickelt und getestet auf CachyOS mit KDE Plasma (Wayland) |
-| **Oberfläche** | Liquid Glass mit GPU-Glas-Shader, hell und dunkel nach Systemeinstellung, Sprache Englisch |
+| **Oberfläche** | Liquid Glass mit GPU-Glas-Shader, hell, Sprache Englisch |
 | **Modell** | Parametrisch, mit globaler Timeline, Komponenten und Joints |
 | **Skizze** | 12 Zeichenwerkzeuge, 7 Änderungswerkzeuge, 9 Bedingungen, eine smarte Bemaßung |
 | **Volumen** | 16 Erstell-, 12 Änderungs- und 6 Konstruktionswerkzeuge |
@@ -108,7 +108,18 @@ Neue Körper erscheinen in **Space Gray**, satiniert und edel. Lieber **Clay**, 
 
 <br>
 
-## In zwei Befehlen bereit.
+## Herunterladen. Starten. Fertig.
+
+Die neueste Version liegt immer unter [**Releases**](https://github.com/HanreichC/MyCAD/releases/latest) als AppImage bereit, ganz frisch nach jedem Commit. Kein Installieren, kein Container, eine einzige Datei:
+
+```sh
+chmod +x MyCAD-*-x86_64.AppImage
+./MyCAD-*-x86_64.AppImage
+```
+
+Das AppImage ist für aktuelle Arch-basierte Systeme wie CachyOS gebaut.
+
+## Oder selbst bauen. In zwei Befehlen.
 
 ```sh
 ./install.sh   # baut MyCAD im Podman-Container und legt den Starter `mycad` samt Menüeintrag an

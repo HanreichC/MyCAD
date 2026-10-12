@@ -45,7 +45,7 @@ const Face Faces[6] = {
 
 bool isDark()
 {
-    return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+    return false;  // MyCAD ist immer hell
 }
 
 QColor accent()

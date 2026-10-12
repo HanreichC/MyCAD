@@ -136,8 +136,7 @@ public:
         const double d = get();
         const QPointF from = viewer->toQPoint(viewer->getPointOnViewport(base));
         tip = viewer->toQPoint(viewer->getPointOnViewport(base + dir * float(d)));
-        const bool dark = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
-        const QColor accent = dark ? QColor(10, 132, 255) : QColor(0, 122, 255);
+        const QColor accent(0, 122, 255);  // MyCAD ist immer hell
         p->setRenderHint(QPainter::Antialiasing);
         p->setPen(QPen(accent, 2.5, Qt::SolidLine, Qt::RoundCap));
         p->drawLine(from, tip);
@@ -146,7 +145,7 @@ public:
         p->drawEllipse(from, 3.5, 3.5);
 
         // Griff: Glas-Kreis mit Pfeil in Zugrichtung
-        p->setBrush(hovered || dragging ? accent : (dark ? QColor(44, 44, 48, 235) : QColor(255, 255, 255, 240)));
+        p->setBrush(hovered || dragging ? accent : QColor(255, 255, 255, 240));
         p->setPen(QPen(accent, 2));
         p->drawEllipse(tip, 11, 11);
         QLineF axis(from, tip);
@@ -171,10 +170,10 @@ public:
         p->setFont(font);
         const QString text = QString::fromStdString(Base::Quantity(d, Base::Unit::Length).getUserString());
         const QRectF label(tip + QPointF(18, -12), QSizeF(QFontMetricsF(font).horizontalAdvance(text) + 18, 24));
-        p->setPen(QPen(dark ? QColor(255, 255, 255, 40) : QColor(0, 0, 0, 30), 1));
-        p->setBrush(dark ? QColor(44, 44, 48, 235) : QColor(255, 255, 255, 240));
+        p->setPen(QPen(QColor(0, 0, 0, 30), 1));
+        p->setBrush(QColor(255, 255, 255, 240));
         p->drawRoundedRect(label, 12, 12);
-        p->setPen(dark ? QColor(245, 245, 247) : QColor(29, 29, 31));
+        p->setPen(QColor(29, 29, 31));
         p->drawText(label, Qt::AlignCenter, text);
     }
 

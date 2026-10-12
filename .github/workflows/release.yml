@@ -1,0 +1,58 @@
+# Bei jedem Push auf main: MyCAD im Dev-Container bauen, als AppImage verpacken und als Release veröffentlichen.
+# Version 1.0.N: N = Anzahl Commits seit dem Commit, der diese Datei eingeführt hat (dieser selbst = 1.0.0).
+name: Release AppImage
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  appimage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # ganze Historie, sonst lassen sich die Commits nicht zählen
+
+      - name: Version
+        id: version
+        run: |
+          first=$(git log --diff-filter=A --format=%H -- .github/workflows/release.yml | tail -1)
+          echo "version=1.0.$(( $(git rev-list --count HEAD) - $(git rev-list --count "$first") ))" >> "$GITHUB_OUTPUT"
+
+      - name: Platz schaffen
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
+      - name: Compiler-Cache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ github.sha }}
+          restore-keys: ccache-
+
+      - name: Container bauen
+        run: docker build -t mycad-dev .devcontainer
+
+      - name: MyCAD bauen
+        run: |
+          docker run --rm -v "$PWD:/workspace" -w /workspace -e CCACHE_DIR=/workspace/.ccache \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
+            mycad-dev sh -c "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -Wno-dev && cmake --build build -j$(nproc)"
+
+      - name: AppImage packen
+        run: docker run --rm -v "$PWD:/workspace" -w /workspace mycad-dev tools/appimage.sh "${{ steps.version.outputs.version }}"
+
+      - name: Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${{ steps.version.outputs.version }}"
+          gh release create "v$v" "MyCAD-$v-x86_64.AppImage" --target "$GITHUB_SHA" --title "MyCAD $v" --generate-notes

@@ -66,11 +66,11 @@ private:
     ParameterGrp::handle getParameterPath();
 
 private:
-    QCheckBox* gridShow;
-    QCheckBox* gridAutoSpacing;
-    QCheckBox* snapToGrid;
-    QLabel* sizeLabel;
-    Gui::QuantitySpinBox* gridSizeBox;
+    QCheckBox* gridShow = nullptr;  // erst mit createWidget() vorhanden
+    QCheckBox* gridAutoSpacing = nullptr;
+    QCheckBox* snapToGrid = nullptr;
+    QLabel* sizeLabel = nullptr;
+    Gui::QuantitySpinBox* gridSizeBox = nullptr;
 };
 
 
@@ -91,9 +91,9 @@ private:
     ParameterGrp::handle getParameterPath();
 
 private:
-    QCheckBox* snapToObjects;
-    QLabel* angleLabel;
-    Gui::QuantitySpinBox* snapAngle;
+    QCheckBox* snapToObjects = nullptr;  // erst mit createWidget() vorhanden
+    QLabel* angleLabel = nullptr;
+    Gui::QuantitySpinBox* snapAngle = nullptr;
 };
 
 
@@ -114,7 +114,7 @@ private:
     ParameterGrp::handle getParameterPath();
 
 private:
-    QListWidget* list;
+    QListWidget* list = nullptr;  // erst mit createWidget() vorhanden
 };
 
 }  // namespace SketcherGui

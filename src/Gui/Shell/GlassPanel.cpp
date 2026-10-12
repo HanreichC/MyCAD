@@ -271,7 +271,7 @@ private:
 
 bool isDark()
 {
-    return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+    return false;  // MyCAD ist immer hell
 }
 
 /// Einstellung "Glass": Clear (durchsichtiger) statt Tinted

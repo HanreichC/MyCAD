@@ -95,13 +95,8 @@ struct Theme
     QString text, secondary, accent, hover, pressed, field, fieldBorder, separator;
 };
 
-Theme theme()
+Theme theme()  // MyCAD ist immer hell, auch wenn der Desktop dunkel ist
 {
-    if (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark) {
-        return {true, "#F5F5F7", "rgba(235,235,245,0.6)", "#0A84FF", "rgba(255,255,255,0.10)",
-                "rgba(255,255,255,0.18)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0.12)",
-                "rgba(255,255,255,0.14)"};
-    }
     return {false, "#1D1D1F", "rgba(60,60,67,0.6)", "#007AFF", "rgba(0,0,0,0.06)",
             "rgba(0,0,0,0.12)", "rgba(255,255,255,0.65)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.10)"};
 }
@@ -233,6 +228,10 @@ void setDefaultMaterial()
 void applyTheme()
 {
     const Theme t = theme();
+    if (!QFontDatabase::families().contains(QStringLiteral("Inter"))) {  // AppImage bringt Inter mit
+        QFontDatabase::addApplicationFont(QString::fromStdString(App::Application::getHomePath())
+                                          + QStringLiteral("share/fonts/Inter.ttc"));
+    }
     if (QFontDatabase::families().contains(QStringLiteral("Inter"))) {
         QFont font(QStringLiteral("Inter"));
         font.setPixelSize(13);
@@ -2375,6 +2374,9 @@ void hideChromeLater()
 
 void Gui::Shell::install()
 {
+    // MyCAD ist immer hell, unabhängig vom Farbschema des Desktops (KDE meldet Dunkel sonst über Palette und Portal)
+    QGuiApplication::styleHints()->setColorScheme(Qt::ColorScheme::Light);
+    QApplication::setPalette(QApplication::style()->standardPalette());
     applyTheme();
 
     // Design-Modul laden (Create Sketch, Extrude, …), egal welche Workbench zuletzt aktiv war
