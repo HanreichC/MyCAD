@@ -5,6 +5,7 @@
 #include <App/Document.h>
 #include <App/DocumentObjectGroup.h>
 #include <App/Part.h>
+#include <App/ObjectIdentifier.h>
 #include <App/Origin.h>
 #include <App/GeoFeatureGroupExtension.h>
 #include <App/ElementNamingUtils.h>
@@ -84,6 +85,7 @@ const char* PrimitiveEnums[] = {"Box", "Cylinder", "Sphere", "Torus", "Coil", nu
 const char* CenterEnums[] = {"Origin", "Body center", nullptr};
 const char* RibEnums[] = {"Rib", "Web", nullptr};
 const char* EmbossEnums[] = {"Emboss", "Deboss", nullptr};
+const char* JointEnums[] = {"Rigid", "Revolute", "Slider", "Cylindrical", nullptr};
 const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
@@ -334,9 +336,15 @@ App::Part* Design::newComponent(App::Part* parent)
 
 App::DocumentObjectGroup* Design::folder(App::Part* root, const char* label)
 {
+    // FreeCAD macht Namen eindeutig: in Komponenten heißen die Ordner "Bodies001" usw.
     for (auto obj : root->Group.getValues()) {
         auto group = freecad_cast<App::DocumentObjectGroup*>(obj);
-        if (group && std::string(group->Label.getValue()) == label) {
+        if (!group) {
+            continue;
+        }
+        std::string name = group->Label.getValue();
+        name.erase(name.find_last_not_of("0123456789") + 1);
+        if (name == label) {
             return group;
         }
     }
@@ -2310,4 +2318,137 @@ App::DocumentObjectExecReturn* Emboss::compute()
     }
     setResults({res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched)});
     return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+namespace
+{
+/// Bezugsrahmen eines Elements in den Koordinaten seiner Komponente: Z = Normale (ebene Fläche), Achse
+/// (Zylinderfläche, Kreiskante), Richtung (gerade Kante); Ursprung = Mitte bzw. Achspunkt bzw. Punkt
+bool jointFrame(const App::PropertyLinkSub& link, Base::Placement& frame, bool& planar)
+{
+    App::DocumentObject* obj = link.getValue();
+    if (!obj) {
+        return false;
+    }
+    const auto& subs = link.getSubValues();
+    const std::string sub = subs.empty() ? std::string() : subs.front();
+    const TopoDS_Shape s = Part::Feature::getTopoShape(obj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform
+                                                           | Part::ShapeOption::NeedSubElement,
+                                                       sub.empty() ? nullptr : sub.c_str())
+                               .getShape();
+    if (s.IsNull()) {
+        return false;
+    }
+    gp_Pnt p;
+    gp_Dir d = gp::DZ();
+    planar = false;
+    GProp_GProps props;
+    switch (s.ShapeType()) {
+        case TopAbs_VERTEX:
+            p = BRep_Tool::Pnt(TopoDS::Vertex(s));
+            break;
+        case TopAbs_EDGE: {
+            BRepGProp::LinearProperties(s, props);
+            p = props.CentreOfMass();
+            BRepAdaptor_Curve c(TopoDS::Edge(s));
+            if (c.GetType() == GeomAbs_Line) {
+                d = c.Line().Direction();
+            }
+            else if (c.GetType() == GeomAbs_Circle) {
+                p = c.Circle().Location();
+                d = c.Circle().Axis().Direction();
+            }
+            break;
+        }
+        case TopAbs_FACE: {
+            BRepGProp::SurfaceProperties(s, props);
+            p = props.CentreOfMass();
+            BRepAdaptor_Surface surface(TopoDS::Face(s));
+            if (surface.GetType() == GeomAbs_Plane) {
+                d = surface.Plane().Axis().Direction();
+                if (s.Orientation() == TopAbs_REVERSED) {
+                    d.Reverse();
+                }
+                planar = true;
+            }
+            else if (surface.GetType() == GeomAbs_Cylinder) {
+                const gp_Ax1 axis = surface.Cylinder().Axis();
+                d = axis.Direction();
+                p = axis.Location().Translated(gp_Vec(d) * gp_Vec(axis.Location(), p).Dot(gp_Vec(d)));
+            }
+            break;
+        }
+        default:
+            return false;
+    }
+    frame = Base::Placement(Base::Vector3d(p.X(), p.Y(), p.Z()),
+                            Base::Rotation(Base::Vector3d(0, 0, 1), Base::Vector3d(d.X(), d.Y(), d.Z())));
+    return true;
+}
+
+/// übergeordnete Komponente (App::Part) eines Objekts, sonst nullptr
+App::Part* parentPart(const App::DocumentObject* obj)
+{
+    for (auto in : obj->getInList()) {
+        if (auto part = freecad_cast<App::Part*>(in); part && part->hasObject(obj)) {
+            return part;
+        }
+    }
+    return nullptr;
+}
+}  // namespace
+
+PROPERTY_SOURCE(Design::Joint, App::DocumentObject)
+
+Joint::Joint()
+{
+    ADD_PROPERTY_TYPE(Type, (0L), "Joint", App::Prop_None, "Rigid, revolute, slider or cylindrical");
+    Type.setEnums(JointEnums);
+    ADD_PROPERTY_TYPE(Moving, (nullptr), "Joint", App::Prop_None, "Component moved by this joint");
+    ADD_PROPERTY_TYPE(Origin1, (nullptr), "Joint", App::Prop_None, "Snap point on the moving component");
+    ADD_PROPERTY_TYPE(Origin2, (nullptr), "Joint", App::Prop_None, "Snap point to join to");
+    ADD_PROPERTY_TYPE(Angle, (0.0), "Joint", App::Prop_None, "Rotation around the joint axis");
+    ADD_PROPERTY_TYPE(Offset, (0.0), "Joint", App::Prop_None, "Distance along the joint axis");
+    ADD_PROPERTY_TYPE(Flip, (false), "Joint", App::Prop_None, "Flip the moving component");
+    ADD_PROPERTY_TYPE(Result, (Base::Placement()), "Joint", App::PropertyType(App::Prop_Output | App::Prop_ReadOnly),
+                      "Placement of the moving component");
+    Origin1.setScope(App::LinkScope::Global);
+    Origin2.setScope(App::LinkScope::Global);
+}
+
+App::DocumentObjectExecReturn* Joint::execute()
+{
+    auto moving = freecad_cast<App::Part*>(Moving.getValue());
+    Base::Placement f1, f2;
+    bool planar1 = false, planar2 = false;
+    if (!moving || !jointFrame(Origin1, f1, planar1) || !jointFrame(Origin2, f2, planar2)) {
+        return new App::DocumentObjectExecReturn("Select a snap point on each component");
+    }
+    if (Design::componentOf(Origin1.getValue()) != moving) {
+        return new App::DocumentObjectExecReturn("The first snap point must be on the moving component itself");
+    }
+    // Gegenstelle global: ihre Komponente kann selbst verschoben sein
+    const Base::Placement target = Design::componentOf(Origin2.getValue())->globalPlacement() * f2;
+    // zwei ebene Flächen liegen wie in Fusion aufeinander (Normalen gegenläufig); Flip kehrt das um
+    Base::Placement flip;
+    if ((planar1 && planar2) != Flip.getValue()) {
+        flip = Base::Placement(Base::Vector3d(), Base::Rotation(Base::Vector3d(1, 0, 0), M_PI));
+    }
+    const Base::Placement motion(Base::Vector3d(0, 0, Offset.getValue()),
+                                 Base::Rotation(Base::Vector3d(0, 0, 1), Angle.getValue() * M_PI / 180.0));
+    const Base::Placement global = target * motion * flip * f1.inverse();
+    const App::Part* parent = parentPart(moving);
+    Result.setValue(parent ? parent->globalPlacement().inverse() * global : global);
+    return StdReturn;
+}
+
+void Joint::unsetupObject()
+{
+    // Komponente behält ihre letzte Lage, wird aber nicht mehr vom (gelöschten) Joint gesteuert
+    if (auto moving = freecad_cast<App::Part*>(Moving.getValue())) {
+        moving->setExpression(App::ObjectIdentifier(moving->Placement), nullptr);
+    }
+    App::DocumentObject::unsetupObject();
 }

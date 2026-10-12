@@ -4,10 +4,12 @@
 
 #include <Mod/Design/DesignGlobal.h>
 #include <Mod/Part/Gui/ViewProviderExt.h>
+#include <Gui/ViewProviderDocumentObject.h>
 
 namespace Design
 {
 class Body;
+class Joint;
 }
 
 namespace DesignGui
@@ -54,6 +56,19 @@ public:
     /// vom Befehl gesetzt: der Dialog wählt dann Operation und Ziel-Body selbst (Extrude, Revolve)
     bool createMode = false;
     Design::Body* defaultTarget = nullptr;
+};
+
+/// Joint im Browser (Ordner "Joints"): Doppelklick öffnet den Joint-Dialog
+class DesignGuiExport ViewProviderJoint: public Gui::ViewProviderDocumentObject
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(DesignGui::ViewProviderJoint);
+
+public:
+    QIcon getIcon() const override;
+    bool doubleClicked() override;
+    bool setEdit(int ModNum) override;
+    void unsetEdit(int ModNum) override;
+    bool createMode = false;
 };
 
 }  // namespace DesignGui

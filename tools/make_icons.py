@@ -50,6 +50,7 @@ ICONS = {
     "Design_ReplaceFace": '<path d="M4 14l4-4h12l-4 4z"/><path d="M4 20l4-4h12l-4 4z"' + DASH + '/><path d="M12 6v6M9.5 8.5L12 6l2.5 2.5"/>',
     "Design_SplitFace": '<path d="M3 17l5-10h13l-5 10z"/><path d="M12 7l-3 10"/>',
     "Design_Emboss": '<rect x="3" y="13" width="18" height="7" rx="1"/><path d="M8 13V7h8v6M8 7l4 3 4-3"/>',
+    "Design_Joint": '<circle cx="8" cy="16" r="4.5"/><circle cx="16" cy="8" r="4.5"/><path d="M11.2 12.8l1.6-1.6"/>' + DOT.format(8, 16) + DOT.format(16, 8),
     "Design_Import": '<path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5"/><path d="M12 10.5v7M9 14.5l3 3 3-3"/>',
     "Design_Export": '<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
     "Std_Undo": '<path d="M9 7l-4 4 4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-2"/>',

@@ -1226,3 +1226,128 @@ std::string DesignGui::displayExpression(App::Document* doc, const std::string& 
 {
     return mapParameters(doc, text, false);
 }
+
+// ---------------------------------------------------------------------------------------------
+
+namespace
+{
+/// Joint-Dialog: Typ, Winkel (Revolute/Cylindrical), Abstand (Slider/Cylindrical), Flip; wirkt sofort
+class TaskJoint: public Gui::TaskView::TaskDialog
+{
+public:
+    TaskJoint(Design::Joint* joint, bool create)
+        : joint(joint)
+        , create(create)
+    {
+        auto w = new QWidget;
+        w->setWindowTitle(QStringLiteral("Joint"));
+        form = new QFormLayout(w);
+        form->setLabelAlignment(Qt::AlignRight);
+        type = new QComboBox;
+        for (const auto& item : joint->Type.getEnumVector()) {
+            type->addItem(QString::fromStdString(item));
+        }
+        type->setCurrentIndex(joint->Type.getValue());
+        angle = quantityBox(Base::Unit::Angle, joint->Angle.getValue());
+        offset = quantityBox(Base::Unit::Length, joint->Offset.getValue());
+        flip = new QCheckBox(QStringLiteral("Flip"));
+        flip->setChecked(joint->Flip.getValue());
+        form->addRow(QStringLiteral("Type"), type);
+        form->addRow(QStringLiteral("Angle"), angle);
+        form->addRow(QStringLiteral("Offset"), offset);
+        form->addRow(QString(), flip);
+        status = new QLabel;
+        status->setWordWrap(true);
+        status->setStyleSheet(QStringLiteral("color: #FF3B30;"));
+        form->addRow(status);
+        QObject::connect(type, &QComboBox::currentIndexChanged, [this] { apply(); });
+        QObject::connect(flip, &QCheckBox::toggled, [this] { apply(); });
+        for (auto box : {angle, offset}) {
+            QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
+        }
+        addTaskBox(w, false);
+        apply();
+    }
+    QDialogButtonBox::StandardButtons getStandardButtons() const override
+    {
+        return QDialogButtonBox::Ok | QDialogButtonBox::Cancel;
+    }
+    bool accept() override
+    {
+        App::Document* doc = joint->getDocument();
+        doc->commitTransaction();
+        Gui::Application::Instance->getDocument(doc)->resetEdit();
+        return true;
+    }
+    bool reject() override
+    {
+        App::Document* doc = joint->getDocument();
+        Gui::Application::Instance->getDocument(doc)->resetEdit();
+        doc->abortTransaction();
+        doc->recompute();
+        return true;
+    }
+
+private:
+    void showRow(QWidget* field, bool show)
+    {
+        field->setVisible(show);
+        if (QWidget* label = form->labelForField(field)) {
+            label->setVisible(show);
+        }
+    }
+    void apply()
+    {
+        const int t = type->currentIndex();
+        joint->Type.setValue(t);
+        joint->Angle.setValue(angle->value().getValue());
+        joint->Offset.setValue(offset->value().getValue());
+        joint->Flip.setValue(flip->isChecked());
+        // Rigid: beide Werte als feste Lage; Revolute dreht, Slider schiebt, Cylindrical beides
+        showRow(angle, t != 2);
+        showRow(offset, t != 1);
+        joint->getDocument()->recompute();
+        status->setText(joint->isError() ? QString::fromUtf8(joint->getStatusString()) : QString());
+    }
+    Design::Joint* joint;
+    bool create;
+    QFormLayout* form;
+    QComboBox* type;
+    Gui::QuantitySpinBox* angle;
+    Gui::QuantitySpinBox* offset;
+    QCheckBox* flip;
+    QLabel* status;
+};
+}  // namespace
+
+PROPERTY_SOURCE(DesignGui::ViewProviderJoint, Gui::ViewProviderDocumentObject)
+
+QIcon ViewProviderJoint::getIcon() const
+{
+    return QIcon(Gui::BitmapFactory().pixmapFromSvg(":/mycad/icons/Design_Joint.svg", QSize(32, 32)));
+}
+
+bool ViewProviderJoint::doubleClicked()
+{
+    return Gui::Application::Instance->getDocument(getObject()->getDocument())->setEdit(this);
+}
+
+bool ViewProviderJoint::setEdit(int)
+{
+    auto joint = freecad_cast<Design::Joint*>(getObject());
+    if (!joint || Gui::Control().activeDialog()) {
+        return false;
+    }
+    App::Document* doc = joint->getDocument();
+    if (!doc->hasPendingTransaction()) {
+        doc->openTransaction("Edit Joint");
+    }
+    Gui::Control().showDialog(new TaskJoint(joint, createMode));
+    createMode = false;
+    return true;
+}
+
+void ViewProviderJoint::unsetEdit(int)
+{
+    Gui::Control().closeDialog();
+}

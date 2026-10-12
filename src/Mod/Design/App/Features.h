@@ -492,4 +492,30 @@ public:
     App::DocumentObjectExecReturn* compute() override;
 };
 
+/// Joint wie in Fusion: setzt die bewegliche Komponente so, dass ihr Bezug (Fläche, Kante, Bohrung, Punkt) auf dem der
+/// Gegenstelle liegt. Rigid, Revolute (Angle), Slider (Offset), Cylindrical (beides). Die Komponente übernimmt
+/// Result per Ausdruck; Bezüge auf die Komponenten sind versteckt (sonst Kreis Komponente -> Joint -> Komponente).
+class DesignExport Joint: public App::DocumentObject
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Joint);
+
+public:
+    Joint();
+    App::PropertyEnumeration Type;
+    App::PropertyLinkHidden Moving;  ///< bewegte Komponente
+    App::PropertyLinkSub Origin1;    ///< Bezug an der bewegten Komponente (Body-Element oder Ebene darin)
+    App::PropertyLinkSub Origin2;    ///< Bezug der Gegenstelle
+    App::PropertyAngle Angle;
+    App::PropertyDistance Offset;
+    App::PropertyBool Flip;
+    App::PropertyPlacement Result;  ///< Lage der bewegten Komponente relativ zu ihrer übergeordneten
+
+    App::DocumentObjectExecReturn* execute() override;
+    void unsetupObject() override;
+    const char* getViewProviderName() const override
+    {
+        return "DesignGui::ViewProviderJoint";
+    }
+};
+
 }  // namespace Design

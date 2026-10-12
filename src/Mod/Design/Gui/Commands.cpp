@@ -943,6 +943,58 @@ void startEmboss(App::Document* doc)
     startEditing(feature, false, nullptr);
 }
 
+/// Joint wie in Fusion: zuerst ein Element der Komponente, die sich bewegen soll (Fläche, Kante, Bohrung, Punkt),
+/// dann die Gegenstelle an einer anderen Komponente oder in der Wurzel
+void startJoint(App::Document* doc)
+{
+    std::vector<std::pair<App::DocumentObject*, std::string>> refs;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        const auto& names = sel.getSubNames();
+        if (names.empty()) {
+            refs.emplace_back(sel.getObject(), std::string());
+        }
+        for (const auto& n : names) {
+            refs.emplace_back(sel.getObject(), n);
+        }
+    }
+    App::Part* root = Design::root(doc, true);
+    App::Part* moving = refs.size() == 2 ? Design::componentOf(refs[0].first) : nullptr;
+    QString problem;
+    if (!moving) {
+        problem = QStringLiteral("Select a face, edge, hole or point on the component to move, then the place to join it to.");
+    }
+    else if (moving == root) {
+        problem = QStringLiteral("The first selection must belong to a component (the design itself stays in place).");
+    }
+    else if (Design::componentOf(refs[1].first) == moving) {
+        problem = QStringLiteral("The second selection must be on another component.");
+    }
+    else if (moving->getExpression(App::ObjectIdentifier(moving->Placement)).expression) {
+        problem = QStringLiteral("This component is already positioned by a joint.");
+    }
+    if (!problem.isEmpty()) {
+        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Joint"), problem);
+        return;
+    }
+    doc->openTransaction("Joint");
+    auto joint = static_cast<Design::Joint*>(doc->addObject("Design::Joint", "Joint"));
+    Design::folder(root, "Joints")->addObject(joint);
+    joint->Moving.setValue(moving);
+    auto sub = [](const std::string& s) { return s.empty() ? std::vector<std::string>() : std::vector<std::string> {s}; };
+    joint->Origin1.setValue(refs[0].first, sub(refs[0].second));
+    joint->Origin2.setValue(refs[1].first, sub(refs[1].second));
+    doc->recompute();
+    moving->setExpression(App::ObjectIdentifier(moving->Placement),
+                          std::shared_ptr<App::Expression>(
+                              App::Expression::parse(moving, std::string(joint->getNameInDocument()) + ".Result").release()));
+    doc->recompute();
+    Gui::Selection().clearSelection();
+    Gui::Document* gdoc = Gui::Application::Instance->getDocument(doc);
+    auto vp = static_cast<DesignGui::ViewProviderJoint*>(gdoc->getViewProvider(joint));
+    vp->createMode = true;
+    gdoc->setEdit(vp);
+}
+
 /// Scale: gewählte Bodies
 void startScale(App::Document* doc)
 {
@@ -2418,6 +2470,9 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_Emboss", "Emboss",
                                      "Emboss: select sketch profiles or text and the face to emboss on",
                                      "PartDesign_Pad", "", startEmboss));
+    mgr.addCommand(new DesignCommand("Design_Joint", "Joint",
+                                     "Joint: select a snap point on the component to move, then where to join it",
+                                     "Assembly_CreateJointFixed", "J", startJoint));
     mgr.addCommand(new DesignCommand("Design_NewComponent", "New Component",
                                      "New Component: an empty part with its own origin (double-click to activate)",
                                      "Std_Part", "", startNewComponent));
