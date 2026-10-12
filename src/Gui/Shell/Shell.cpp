@@ -14,6 +14,7 @@
 #include <Gui/Document.h>
 #include <Gui/Selection/Selection.h>
 #include <Gui/ViewProviderDocumentObject.h>
+#include <Gui/ViewProviderGeometryObject.h>
 #include <App/Document.h>
 #include <App/PropertyStandard.h>
 #include <Gui/DockWindowManager.h>
@@ -60,7 +61,9 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
+#include <algorithm>
 #include <cstring>
+#include <set>
 #include <QFontMetrics>
 #include <QToolTip>
 #include <QVBoxLayout>
@@ -172,6 +175,41 @@ Gui--NotificationLabel { background: %9; color: %1; border: 1px solid %7; border
         .arg(t.dark ? QStringLiteral("#2C2C2E") : QStringLiteral("#FBFBFD"));
 }
 
+/// Aussehen der Körper (Einstellung "Body material"), Farben als 0xRRGGBBAA
+struct BodyMaterial
+{
+    const char* name;
+    uint32_t diffuse, specular, emissive, line;
+    int shininess;
+};
+constexpr BodyMaterial bodyMaterials[] = {
+    {"Space Gray", 0x5C6169FF, 0x737373FF, 0x0A0A0BFF, 0x1F1F24FF, 55},
+    {"Clay", 0xE8DED1FF, 0x1A1A1AFF, 0x1A1714FF, 0x73665CFF, 10},
+    {"Sierra Blue", 0x9EBDDBFF, 0x59595FFF, 0x0F1217FF, 0x384D66FF, 45},
+    {"Ceramic", 0xF2F2F5FF, 0x999999FF, 0x0F0F0FFF, 0x8C8F99FF, 75},
+};
+
+const BodyMaterial& bodyMaterial()
+{
+    const long i = App::GetApplication()
+                       .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")
+                       ->GetInt("BodyMaterial", 0);
+    return bodyMaterials[std::clamp(i, 0L, long(std::size(bodyMaterials)) - 1)];
+}
+
+/// Vorgaben für neue Körper
+void setDefaultMaterial()
+{
+    const BodyMaterial& m = bodyMaterial();
+    auto view = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+    view->SetUnsigned("DefaultShapeColor", m.diffuse);
+    view->SetUnsigned("DefaultSpecularColor", m.specular);
+    view->SetUnsigned("DefaultEmissiveColor", m.emissive);
+    view->SetUnsigned("DefaultAmbientColor", 0x333333FF);
+    view->SetInt("DefaultShapeShininess", m.shininess);
+    view->SetUnsigned("DefaultShapeLineColor", m.line);
+}
+
 void applyTheme()
 {
     const Theme t = theme();
@@ -226,12 +264,7 @@ void applyTheme()
     sketcher->SetBool("BSplinePoleWeightVisible", false);
     sketcher->SetBool("BSplineKnotMultiplicityVisible", false);
     sketcher->SetBool("BSplineDegreeVisible", false);
-    // Körper: helles Aluminium mit weichem Satin-Glanz (neue Körper; bestehende behalten ihr Aussehen)
-    view->SetUnsigned("DefaultShapeColor", t.dark ? 0xA4A9B2FFUL : 0xCDD1D8FFUL);
-    view->SetUnsigned("DefaultSpecularColor", 0x4D4D4DFFUL);
-    view->SetUnsigned("DefaultEmissiveColor", 0x161616FFUL);  // Schattenseiten nicht so hart
-    view->SetInt("DefaultShapeShininess", 30);
-    view->SetUnsigned("DefaultShapeLineColor", t.dark ? 0x2A2D33FFUL : 0x50555EFFUL);
+    setDefaultMaterial();
     view->SetInt("DefaultShapeLineWidth", 1);
 
     // ViewCube: hell/dunkel wie die Glass-Panels, runde Kanten, Inter, Akzentfarbe beim Überfahren
@@ -1861,6 +1894,48 @@ void Gui::Shell::install()
             Application::Instance->commandManager().runCommandByName("Std_New");
         }
     });
+}
+
+std::vector<const char*> Gui::Shell::bodyMaterialNames()
+{
+    std::vector<const char*> names;
+    for (const auto& m : bodyMaterials) {
+        names.push_back(m.name);
+    }
+    return names;
+}
+
+void Gui::Shell::setBodyMaterial(int index)
+{
+    App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetInt("BodyMaterial", index);
+    setDefaultMaterial();
+    const BodyMaterial& m = bodyMaterial();
+    App::Material mat;
+    mat.diffuseColor.setPackedValue(m.diffuse);
+    mat.specularColor.setPackedValue(m.specular);
+    mat.emissiveColor.setPackedValue(m.emissive);
+    mat.ambientColor.setPackedValue(0x333333FF);
+    mat.shininess = float(m.shininess) / 100.0F;
+    mat.transparency = 0.0F;
+    // Körper mit einem der Standard-Looks (auch früheren Vorgaben) umfärben, eigene Farben bleiben.
+    // ponytail: erkennt "Standard" an der Grundfarbe; eine eigene Farbe, die zufällig gleich ist, wird mit umgefärbt
+    std::set<uint32_t> presets = {0xCDD1D8, 0xA4A9B2, 0xD5D9DF, 0xAEB3BC, 0xC8CCD4, 0x9EA3AD, 0xCCCCCC};
+    for (const auto& b : bodyMaterials) {
+        presets.insert(b.diffuse >> 8);
+    }
+    const Base::Type body = Base::Type::fromName("Design::Body");
+    for (auto doc : App::GetApplication().getDocuments()) {
+        for (auto obj : doc->getObjects()) {
+            auto vp = dynamic_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(obj));
+            if (!vp || !obj->isDerivedFrom(body) || !presets.contains(vp->ShapeAppearance.getDiffuseColor().getPackedValue() >> 8)) {
+                continue;
+            }
+            vp->ShapeAppearance.setValue(mat);
+            if (auto line = dynamic_cast<App::PropertyColor*>(vp->getPropertyByName("LineColor"))) {
+                line->setValue(Base::Color(m.line));
+            }
+        }
+    }
 }
 
 void Gui::Shell::setToolNames(bool on)

@@ -786,6 +786,12 @@ QPushButton#Remove:hover { color: #FF3B30; }
     auto names = new Switch(myParams()->GetBool("ToolNames", false));
     QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
     addRow(viewCard, QStringLiteral("Show tool names"), names);
+    QStringList materials;
+    for (const char* name : Gui::Shell::bodyMaterialNames()) {
+        materials << QString::fromLatin1(name);
+    }
+    addRow(viewCard, QStringLiteral("Body material"),
+           segmented(materials, int(myParams()->GetInt("BodyMaterial", 0)), [](int i) { Gui::Shell::setBodyMaterial(i); }));
 
     auto speedCard = addCard(nav, QStringLiteral("Speed & Zoom"));
     auto slider = [](int lo, int hi, int value) {

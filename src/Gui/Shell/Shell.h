@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <vector>
+
 namespace Gui::Shell
 {
 
@@ -10,5 +12,8 @@ namespace Gui::Shell
 void install();
 /// Namen unter den Symbolen der Toolbar ein-/ausblenden (Einstellung "Show tool names")
 void setToolNames(bool on);
+/// Aussehen der Körper (Einstellung "Body material"): Auswahl und Wahl; färbt Körper mit Standard-Look gleich um
+std::vector<const char*> bodyMaterialNames();
+void setBodyMaterial(int index);
 
 }  // namespace Gui::Shell
