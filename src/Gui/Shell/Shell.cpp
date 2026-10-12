@@ -119,7 +119,7 @@ QToolButton#GlassButton::menu-button { border: none; width: 12px; }
 QToolButton#GlassButton::menu-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 9px; height: 9px; }
 QToolButton#GlassButton[error="true"] { background: rgba(255,59,48,0.28); }
 QFrame#GlassSeparator { background: %8; border: none; }
-QFrame#ToolbarSeparator { background: %8; border: none; margin: 0 4px; }
+#GlassContent QFrame#ToolbarSeparator { background: %2; border: none; margin: 4px 4px; }
 QLabel#SectionCaption { color: %2; font-size: 9px; font-weight: 600; letter-spacing: 0.6px; padding-top: 1px; }
 #GlassContent, #GlassContent QWidget { background: transparent; }
 #GlassContent QAbstractScrollArea { border: none; }
@@ -567,6 +567,10 @@ public:
     }
 
 private:
+    static bool separator(QLayoutItem* item)
+    {
+        return item->widget() && item->widget()->objectName() == QLatin1String("ToolbarSeparator");
+    }
     int arrange(const QRect& rect, bool apply) const
     {
         const QRect area = rect.marginsRemoved(contentsMargins());
@@ -577,12 +581,20 @@ private:
                 continue;
             }
             const int w = item->sizeHint().width();
-            if (x > 0 && x + w > area.width()) {
+            if (x > 0 && x + w > area.width() && !separator(item)) {
                 rows.emplace_back();
                 x = 0;
             }
             rows.back().push_back(item);
             x += w + spacing();
+        }
+        for (auto& row : rows) {  // Trennlinie am Zeilenende fällt weg
+            if (row.size() > 1 && separator(row.back())) {
+                if (apply) {
+                    row.back()->widget()->move(-100, -100);  // außerhalb des Panels
+                }
+                row.pop_back();
+            }
         }
         int y = area.top();
         for (const auto& row : rows) {
@@ -646,7 +658,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         if (row) {
             auto sep = new QFrame;
             sep->setObjectName(QStringLiteral("ToolbarSeparator"));
-            sep->setFixedSize(9, 40);
+            sep->setFixedSize(9, toolNames() ? 70 : 50);  // so hoch wie ein Abschnitt samt Überschrift
             lay->addWidget(sep);
         }
         auto group = new QWidget;
@@ -1837,6 +1849,9 @@ void Gui::Shell::setToolNames(bool on)
         }
         for (auto btn : bar->content()->findChildren<QToolButton*>(QStringLiteral("GlassButton"))) {
             styleToolButton(btn);
+        }
+        for (auto sep : bar->content()->findChildren<QFrame*>(QStringLiteral("ToolbarSeparator"))) {
+            sep->setFixedSize(9, on ? 70 : 50);
         }
         // Abschnitte zuerst neu rechnen, sonst misst die Toolbar mit den alten Knopfgrößen (zweite Reihe abgeschnitten)
         for (auto group : bar->content()->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
