@@ -35,6 +35,8 @@
 #include <QMdiArea>
 #include <QMdiSubWindow>
 #include <QMenu>
+#include <QPushButton>
+#include <QMessageBox>
 #include <QCursor>
 #include <QMouseEvent>
 #include <QContextMenuEvent>
@@ -111,6 +113,7 @@ QToolButton#GlassButton::menu-button { border: none; width: 12px; }
 QToolButton#GlassButton::menu-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 9px; height: 9px; }
 QToolButton#GlassButton[error="true"] { background: rgba(255,59,48,0.28); }
 QFrame#GlassSeparator { background: %8; border: none; }
+QFrame#ToolbarSeparator { background: %8; border: none; margin: 0 6px; }
 #GlassContent, #GlassContent QWidget { background: transparent; }
 #GlassContent QAbstractScrollArea { border: none; }
 #GlassContent QLineEdit, #GlassContent QAbstractSpinBox, #GlassContent QComboBox {
@@ -371,6 +374,114 @@ QAction* commandAction(const char* name)
     return action;
 }
 
+/// Knöpfe nebeneinander, bei zu wenig Breite in weiteren Reihen (jede Reihe mittig, Elemente vertikal zentriert)
+class FlowLayout: public QLayout
+{
+public:
+    explicit FlowLayout(QWidget* parent)
+        : QLayout(parent)
+    {}
+    ~FlowLayout() override
+    {
+        while (QLayoutItem* item = takeAt(0)) {
+            delete item;
+        }
+    }
+    void addItem(QLayoutItem* item) override
+    {
+        items.append(item);
+    }
+    int count() const override
+    {
+        return int(items.size());
+    }
+    QLayoutItem* itemAt(int i) const override
+    {
+        return items.value(i);
+    }
+    QLayoutItem* takeAt(int i) override
+    {
+        return i >= 0 && i < items.size() ? items.takeAt(i) : nullptr;
+    }
+    Qt::Orientations expandingDirections() const override
+    {
+        return {};
+    }
+    bool hasHeightForWidth() const override
+    {
+        return true;
+    }
+    int heightForWidth(int width) const override
+    {
+        return arrange(QRect(0, 0, width, 0), false);
+    }
+    QSize sizeHint() const override  // alles in einer Reihe
+    {
+        int w = 0, h = 0;
+        for (QLayoutItem* item : items) {
+            if (!item->isEmpty()) {
+                w += item->sizeHint().width() + spacing();
+                h = std::max(h, item->sizeHint().height());
+            }
+        }
+        const QMargins mg = contentsMargins();
+        return {std::max(0, w - spacing()) + mg.left() + mg.right(), h + mg.top() + mg.bottom()};
+    }
+    QSize minimumSize() const override
+    {
+        QSize size;
+        for (QLayoutItem* item : items) {
+            size = size.expandedTo(item->minimumSize());
+        }
+        const QMargins mg = contentsMargins();
+        return size + QSize(mg.left() + mg.right(), mg.top() + mg.bottom());
+    }
+    void setGeometry(const QRect& rect) override
+    {
+        QLayout::setGeometry(rect);
+        arrange(rect, true);
+    }
+
+private:
+    int arrange(const QRect& rect, bool apply) const
+    {
+        const QRect area = rect.marginsRemoved(contentsMargins());
+        std::vector<std::vector<QLayoutItem*>> rows(1);
+        int x = 0;
+        for (QLayoutItem* item : items) {
+            if (item->isEmpty()) {
+                continue;
+            }
+            const int w = item->sizeHint().width();
+            if (x > 0 && x + w > area.width()) {
+                rows.emplace_back();
+                x = 0;
+            }
+            rows.back().push_back(item);
+            x += w + spacing();
+        }
+        int y = area.top();
+        for (const auto& row : rows) {
+            int rowWidth = -spacing(), rowHeight = 0;
+            for (QLayoutItem* item : row) {
+                rowWidth += item->sizeHint().width() + spacing();
+                rowHeight = std::max(rowHeight, item->sizeHint().height());
+            }
+            if (apply) {
+                int px = area.left() + std::max(0, (area.width() - rowWidth) / 2);
+                for (QLayoutItem* item : row) {
+                    const QSize s = item->sizeHint();
+                    item->setGeometry(QRect(QPoint(px, y + (rowHeight - s.height()) / 2), s));
+                    px += s.width() + spacing();
+                }
+            }
+            y += rowHeight + 4;
+        }
+        return y - 4 - area.top() + contentsMargins().top() + contentsMargins().bottom();
+    }
+    QList<QLayoutItem*> items;
+};
+
 /// Varianten eines Knopfs: "A|B" = eigene Gruppe, Gruppenbefehle (z. B. Sketcher_CompCreateArc) bringen ihre mit
 std::vector<std::pair<QString, QAction*>> variants(const QString& entry)
 {
@@ -402,17 +513,15 @@ QWidget* toolbar(const std::vector<const char*>& commands)
 {
 
     auto w = content();
-    auto lay = new QHBoxLayout(w);
+    auto lay = new FlowLayout(w);  // bricht um, wenn das Fenster schmal ist
     lay->setContentsMargins(10, 6, 10, 6);
     lay->setSpacing(2);
     for (const char* name : commands) {
         if (!*name) {
             auto sep = new QFrame;
-            sep->setObjectName(QStringLiteral("GlassSeparator"));
-            sep->setFixedSize(1, 22);
-            lay->addSpacing(6);
+            sep->setObjectName(QStringLiteral("ToolbarSeparator"));
+            sep->setFixedSize(13, 22);
             lay->addWidget(sep);
-            lay->addSpacing(6);
             continue;
         }
         const auto choices = variants(QString::fromLatin1(name));
@@ -467,7 +576,6 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             QObject::connect(btn, &QToolButton::clicked, action, [action] {
                 QTimer::singleShot(0, action, &QAction::trigger);
             });
-            lay->addSpacing(6);
             lay->addWidget(btn);
             continue;
         }
@@ -721,6 +829,8 @@ protected:
                     };
                     QObject::connect(menu.addAction(QStringLiteral("Save")), &QAction::triggered, [run] { run("Std_Save"); });
                     QObject::connect(menu.addAction(QStringLiteral("Save As…")), &QAction::triggered, [run] { run("Std_SaveAs"); });
+                    QObject::connect(menu.addAction(QStringLiteral("Export…")), &QAction::triggered, [run] { run("Design_Export"); });
+                    menu.addSeparator();
                     QObject::connect(menu.addAction(QStringLiteral("Rename")), &QAction::triggered, [tree, item] { tree->editItem(item); });
                     menu.addSeparator();
                     QObject::connect(menu.addAction(QStringLiteral("Close")), &QAction::triggered, [guiDoc] {
@@ -728,6 +838,36 @@ protected:
                             Gui::Document* gdoc = guiDoc();
                             if (gdoc && gdoc->canClose(true, true)) {  // fragt bei Änderungen nach dem Speichern
                                 App::GetApplication().closeDocument(gdoc->getDocument()->getName());
+                            }
+                        });
+                    });
+                    // Löschen: ohne Speichern schließen; eine gespeicherte Datei kommt in den Papierkorb (nicht endgültig weg)
+                    QObject::connect(menu.addAction(QStringLiteral("Delete…")), &QAction::triggered, [guiDoc] {
+                        QTimer::singleShot(0, [guiDoc] {
+                            Gui::Document* gdoc = guiDoc();
+                            if (!gdoc) {
+                                return;
+                            }
+                            App::Document* doc = gdoc->getDocument();
+                            const QString file = QString::fromUtf8(doc->FileName.getValue());
+                            const QString label = QString::fromUtf8(doc->Label.getValue());
+                            QMessageBox box(QMessageBox::Warning, QStringLiteral("Delete Design"),
+                                            file.isEmpty() ? QStringLiteral("Delete “%1”? It has never been saved, "
+                                                                            "so its contents will be gone.")
+                                                                 .arg(label)
+                                                           : QStringLiteral("Delete “%1”? The file is moved to the "
+                                                                            "trash:\n%2")
+                                                                 .arg(label, file),
+                                            QMessageBox::Cancel, getMainWindow());
+                            QPushButton* remove = box.addButton(QStringLiteral("Delete"), QMessageBox::DestructiveRole);
+                            box.setDefaultButton(QMessageBox::Cancel);
+                            box.exec();
+                            if (box.clickedButton() != remove) {
+                                return;
+                            }
+                            App::GetApplication().closeDocument(doc->getName());
+                            if (!file.isEmpty()) {
+                                QFile::moveToTrash(file);
                             }
                         });
                     });
@@ -947,16 +1087,15 @@ void layout()
     GlassPanel* bar = state.sketchMode ? state.sketchBar : state.modelBar;
     state.modelBar->setVisible(!state.sketchMode);
     state.sketchBar->setVisible(state.sketchMode);
-    const QSizeF bs = bar->content()->sizeHint();
-    // Toolbar mittig zwischen Browser und Fensterknöpfen; passt sie dort hin, beginnt der Browser ganz oben,
-    // sonst (kleiner Bildschirm) rutscht er unter die Toolbar
+    const QSizeF bs = bar->content()->sizeHint();  // eine Reihe
+    // Toolbar mittig zwischen Browser und Fensterknöpfen; reicht die Breite nicht, bricht sie in weitere Reihen um
     const qreal browserWidth = 290;
     const qreal left = state.browser ? m + browserWidth + m : m;
     const qreal right = r.width() - m
         - (state.windowControls ? state.windowControls->content()->sizeHint().width() + m : 0);
-    const bool besideBrowser = bs.width() <= right - left;
-    const qreal barX = besideBrowser ? left + (right - left - bs.width()) / 2 : r.center().x() - bs.width() / 2;
-    bar->setGeometry(QRectF(barX, m, bs.width(), bs.height()));
+    const qreal barW = std::max<qreal>(100, std::min(bs.width(), right - left));
+    const qreal barH = barW < bs.width() ? bar->content()->heightForWidth(int(barW)) : bs.height();
+    bar->setGeometry(QRectF(left + (right - left - barW) / 2, m, barW, barH));
 
     qreal bottom = r.height() - m;
     if (state.timeline) {
@@ -968,7 +1107,7 @@ void layout()
         );
     }
 
-    const qreal top = besideBrowser ? m : m + bs.height() + m;
+    const qreal top = m;
     if (state.browser) {
         state.browser->setGeometry(QRectF(m, top, browserWidth, bottom - top));
     }
