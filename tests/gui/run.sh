@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # GUI-Test im Container: startet MyCAD mit einem Testskript (echte Klicks), Protokoll nach <out>.txt
 #   tests/gui/run.sh tests/gui/test_features.py /tmp/out   → /tmp/out.txt, /tmp/out.png, /tmp/out.log
-#   MYCAD_HOME=/tmp/home tests/gui/run.sh …               → eigenes Home (eigene Einstellungen) statt des echten
+#   Läuft mit eigenem Home (build/testhome): Tests hängen nicht von deinen Einstellungen ab und ändern sie nicht.
+#   MYCAD_HOME=/tmp/home tests/gui/run.sh …               → anderes Home (z. B. frisch für Sprachtests)
 #   MYCAD_TIMEOUT=900 tests/gui/run.sh …                  → länger laufen lassen (Standard 180 s)
 set -euo pipefail
-APPHOME="${MYCAD_HOME:-$HOME}"
+ROOTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+APPHOME="${MYCAD_HOME:-$ROOTDIR/build/testhome}"
 mkdir -p "$APPHOME"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SCRIPT="$(realpath "$1")"; OUT="$(realpath -m "$2")"

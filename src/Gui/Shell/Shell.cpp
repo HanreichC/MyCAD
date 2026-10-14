@@ -955,7 +955,8 @@ void showHelp(const QString& id = QString());
 class WindowControls: public QWidget
 {
 public:
-    explicit WindowControls(bool home = true)
+    /// home: Home- und Hilfe-Knopf; back: zusätzlicher Zurück-Knopf vorne (Hilfe)
+    explicit WindowControls(bool home = true, std::function<void()> back = {})
     {
         setObjectName(QStringLiteral("GlassContent"));
         auto lay = new QHBoxLayout(this);
@@ -981,6 +982,9 @@ public:
         handle->setCursor(Qt::OpenHandCursor);
         handle->setToolTip(T("Drag to move the window, double-click to maximize"));
         lay->addWidget(handle);
+        if (back) {
+            button("Window_Back", "GlassButton", T("Back"), back);
+        }
         if (home) {
             button("Window_Home", "GlassButton", T("Home"), showStartPage);
             button("Window_Help", "GlassButton", T("Help (F1)"), [] { showHelp(); });
@@ -1236,6 +1240,7 @@ private:
 };
 
 qreal toolbarRowHeight();
+qreal toolbarLeft(qreal windowWidth);
 
 /// Hintergrund von Startseite und Hilfe: wie der Hintergrund des 3D-Fensters
 void paintBackdrop(QPainter& p, const QRect& r)
@@ -1355,6 +1360,7 @@ public:
         rebuild();
         back->setVisible(anyDesignOpen());
         setGeometry(getMainWindow()->rect());
+        place();
         show();
         raise();
         if (!wasVisible) {  // weich einblenden
@@ -1404,10 +1410,10 @@ private:
         const QSizeF cs = controls->sizeHint();
         const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
         controlsCard->place(ctl);
-        const qreal left = m + browserWidth + m;
-        searchCard->place(QRectF(left, m, std::min<qreal>(380, ctl.left() - m - left), std::min<qreal>(barH, 50)));
+        const qreal left = toolbarLeft(width());  // wie die Toolbar im 3D-Fenster
+        searchCard->place(QRectF(left, m, std::min<qreal>(380, ctl.left() - m - left), barH));  // so hoch wie die Kapsel
         const QSize bs = back->sizeHint();
-        back->setGeometry(int(ctl.left() - m - bs.width()), int(m + (std::min<qreal>(barH, 50) - bs.height()) / 2), bs.width(), bs.height());
+        back->setGeometry(int(ctl.left() - m - bs.width()), int(m + (barH - bs.height()) / 2), bs.width(), bs.height());
         const int top = int(m + barH + m);
         scroll->setGeometry(int(left) - StartTile::Pad, top, int(width() - left - m + StartTile::Pad), height() - top);
     }
@@ -1425,11 +1431,11 @@ private:
         const Theme t = theme();
         setStyleSheet(QStringLiteral(R"(
 QLabel#StartTitle { font-size: 22px; font-weight: 700; }
-QLabel#StartHeading { font-size: 22px; font-weight: 700; }
+QLabel#StartHeading { font-size: 22px; font-weight: 700; padding-left: 10px; }
 QScrollArea, #StartContent { background: transparent; }
 QLabel#StartSection { color: %1; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; padding-left: 8px; }
 QLabel#StartDate, QLabel#StartHint, QLabel#StartCaption { color: %1; font-size: 11px; }
-QLabel#StartCaption { font-size: 12px; }
+QLabel#StartCaption { font-size: 12px; padding-left: 10px; }
 QLabel#StartName { font-size: 13px; font-weight: 600; }
 QPushButton#StartNew { background: %2; color: white; border: none; border-radius: 17px; min-height: 34px;
     font-weight: 600; text-align: left; padding-left: 14px; }
@@ -1444,7 +1450,7 @@ QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px;
         auto page = new QWidget;
         page->setObjectName(QStringLiteral("StartContent"));
         auto lay = new QVBoxLayout(page);
-        lay->setContentsMargins(StartTile::Pad, 0, 12, 40);
+        lay->setContentsMargins(0, 8, 12, 40);  // beginnt mit der Suche, wie die Toolbar
         lay->setSpacing(6);
         sections.clear();
         auto section = [&](const QString& heading, const QString& caption) {
@@ -1675,15 +1681,11 @@ public:
             }
         });
         searchLay->addWidget(search);
-        back = new QPushButton(designIcon(QStringLiteral("Window_Back")), T("Back"), this);
-        back->setObjectName(QStringLiteral("StartBack"));
-        back->setCursor(Qt::PointingHandCursor);
-        QObject::connect(back, &QPushButton::clicked, this, &QWidget::hide);
         controlsCard = new GlassCard(24);
         controlsCard->setParent(this);
         auto controlsLay = new QHBoxLayout(controlsCard);
         controlsLay->setContentsMargins(GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
-        controls = new WindowControls;
+        controls = new WindowControls(true, [this] { hide(); });  // Zurück vorne in der Kapsel
         controls->installEventFilter(&grip);
         controlsLay->addWidget(controls);
 
@@ -1702,7 +1704,7 @@ QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::su
                           .arg(t.secondary));
         view->document()->setDefaultStyleSheet(QStringLiteral(R"(
 h1 { font-size: 26px; font-weight: 700; margin: 0; }
-h3 { font-size: 15px; font-weight: 650; margin-top: 18px; margin-bottom: 6px; }
+h3 { font-size: 15px; font-weight: 650; margin-top: 10px; margin-bottom: 4px; }
 p, li, td { font-size: 14px; line-height: 150%; }
 .summary { font-size: 16px; color: #3C3C43; }
 .caption { font-size: 12px; color: #6E6E73; }
@@ -1728,8 +1730,8 @@ a { color: %1; text-decoration: none; }
             }
         }
         search->clear();
-        back->setVisible(true);
         setGeometry(getMainWindow()->rect());
+        resizeEvent(nullptr);
         show();
         raise();
         showArticle(index);
@@ -1752,10 +1754,8 @@ protected:
         const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
         controlsCard->place(ctl);
         const qreal left = m + browserWidth + m;
-        searchCard->place(QRectF(left, m, std::min<qreal>(420, ctl.left() - m - left), std::min<qreal>(barH, 50)));
-        const QSize bs = back->sizeHint();
-        back->setGeometry(int(ctl.left() - m - bs.width()), int(m + (std::min<qreal>(barH, 50) - bs.height()) / 2),
-                          bs.width(), bs.height());
+        const qreal searchLeft = toolbarLeft(width());  // wie die Toolbar im 3D-Fenster
+        searchCard->place(QRectF(searchLeft, m, std::min<qreal>(420, ctl.left() - m - searchLeft), barH));  // so hoch wie die Kapsel
         const qreal top = m + barH + m;
         articleCard->place(QRectF(left, top, width() - left - m, height() - top - m));
     }
@@ -1792,8 +1792,14 @@ private:
         html += QStringLiteral("<p class=\"summary\">%1</p>").arg(esc(localized(a, "summary").toString()));
         for (const QJsonValue v : a.value(QStringLiteral("images")).toArray()) {
             const QJsonObject img = v.toObject();
-            html += QStringLiteral("<p><img src=\":/mycad/help/images/%1\" width=\"560\"><br><span class=\"caption\">%2</span></p>")
-                        .arg(img.value(QStringLiteral("file")).toString(), esc(localized(img, "caption").toString()));
+            const QString caption = localized(img, "caption").toString();
+            const QString file = QStringLiteral(":/mycad/help/images/") + img.value(QStringLiteral("file")).toString();
+            // selbst auf 560 px skalieren: mit width-Attribut reserviert Qt die Originalhöhe (große Lücke darunter)
+            const QUrl picture(QStringLiteral("picture:%1").arg(file));
+            doc->addResource(QTextDocument::ImageResource, picture, QImage(file).scaledToWidth(560, Qt::SmoothTransformation));
+            html += QStringLiteral("<p style=\"margin-bottom:0; line-height:100%\"><img src=\"%1\">%2</p>")
+                        .arg(picture.toString(),
+                             caption.isEmpty() ? QString() : QStringLiteral("<br><span class=\"caption\">%1</span>").arg(esc(caption)));
         }
         auto list = [&](const char* field, const QString& heading, bool numbered) {
             const QJsonArray items = localized(a, field).toArray();
@@ -1875,7 +1881,6 @@ private:
     WindowControls* controls;
     QTextBrowser* view;
     QLineEdit* search;
-    QPushButton* back;
 };
 
 HelpPage* helpPage = nullptr;
@@ -2326,6 +2331,20 @@ struct State
     bool sketchMode = false;
     QGraphicsScene* scene = nullptr;
 } state;
+
+/// linke Kante der Toolbar im 3D-Fenster (Suche und Inhalt der Startseite beginnen dort)
+qreal toolbarLeft(qreal windowWidth)
+{
+    // schon für diese Fensterbreite angeordnet (auch umgebrochen): genau ihre Position
+    if (state.modelBar && state.scene && std::abs(state.scene->sceneRect().width() - windowWidth) < 2) {
+        return state.modelBar->pos().x();
+    }
+    // sonst wie layout(): Toolbar mittig zwischen Browser und Fensterknöpfen
+    const qreal m = 12, left = m + 290 + m;
+    const qreal right = windowWidth - m - (state.windowControls ? state.windowControls->content()->sizeHint().width() + m : 0);
+    const qreal barW = state.modelBar ? std::min<qreal>(state.modelBar->content()->sizeHint().width(), right - left) : right - left;
+    return left + std::max<qreal>(0, (right - left - barW) / 2);
+}
 
 /// Höhe einer Toolbar-Reihe (so hoch sind auch die Fensterknöpfe)
 qreal toolbarRowHeight()

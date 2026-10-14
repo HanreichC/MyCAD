@@ -12,6 +12,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QToolButton>
 #include <QDir>
 #include <QFileDialog>
 #include <QCursor>
@@ -568,7 +569,8 @@ QComboBox QAbstractItemView { background: %3; border: 1px solid %4; border-radiu
 QSlider::groove:horizontal { height: 4px; background: %5; border-radius: 2px; }
 QSlider::sub-page:horizontal { background: %7; border-radius: 2px; }
 QSlider::handle:horizontal { background: white; border: 1px solid %4; width: 18px; height: 18px; margin: -8px 0; border-radius: 9px; }
-QPushButton#Done { background: %7; color: white; border: none; border-radius: 7px; padding: 6px 22px; font-weight: 600; min-width: 0; }
+QToolButton#CloseSettings { background: %9; border: none; border-radius: 15px; }
+QToolButton#CloseSettings:hover { background: rgba(0,0,0,0.12); }
 QPushButton#Plain { background: %3; border: 1px solid %4; border-radius: 7px; padding: 5px 14px; min-width: 0; }
 QPushButton#Remove { background: transparent; border: none; color: %6; font-size: 15px; padding: 2px 6px; min-width: 0; }
 QPushButton#Remove:hover { color: #FF3B30; }
@@ -630,6 +632,16 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     auto pages = new QStackedWidget;
     headLay->addWidget(segmented({T("Navigation"), T("Keys")}, 0,
                                  [pages](int i) { pages->setCurrentIndex(i); }));
+    headLay->addSpacing(10);
+    auto close = new QToolButton;  // schließen wie bei macOS-Panels; Esc schließt ebenfalls
+    close->setObjectName(QStringLiteral("CloseSettings"));
+    close->setIcon(QIcon(tintedIcon(QStringLiteral("Window_Close"), QColor(dark ? 0xEBEBF0 : 0x3C3C43), 16)));
+    close->setIconSize(QSize(16, 16));
+    close->setFixedSize(30, 30);
+    close->setToolTip(T("Close"));
+    close->setCursor(Qt::PointingHandCursor);
+    QObject::connect(close, &QToolButton::clicked, &dlg, &QDialog::accept);
+    headLay->addWidget(close);
     lay->addWidget(head);
     lay->addSpacing(6);
     lay->addWidget(pages);
@@ -971,15 +983,5 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     keys->addStretch();
     pages->addWidget(keyPage);
 
-    // Fuß: Fertig
-    auto foot = new QHBoxLayout;
-    foot->addStretch();
-    auto done = new QPushButton(T("Done"));
-    done->setObjectName(T("Done"));
-    done->setDefault(true);
-    QObject::connect(done, &QPushButton::clicked, &dlg, &QDialog::accept);
-    foot->addWidget(done);
-    lay->addSpacing(6);
-    lay->addLayout(foot);
     dlg.exec();
 }

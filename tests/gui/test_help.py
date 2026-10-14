@@ -62,7 +62,7 @@ run([
     ("content", content),
     ("help button", lambda: click([b for b in visible(QtWidgets.QToolButton) if b.toolTip().startswith("Help")][0])),
     ("wait", lambda: None), ("opened", lambda: (report("?-Knopf"), shot("help"))),
-    ("search", lambda: search("donut")), ("searched", lambda: report("nach Suche + Enter")),
+    ("search", lambda: search("donut")), ("searched", lambda: (report("nach Suche + Enter"), shot("revolve"))),
     ("hover", f1_over_extrude), ("wait", lambda: None), ("f1", press_f1), ("wait", lambda: None),
     ("after f1", lambda: report("F1 über Extrude")),
     ("esc", lambda: QtTest.QTest.keyClick(page(), QtCore.Qt.Key_Escape)), ("closed", lambda: report("nach Esc")),
