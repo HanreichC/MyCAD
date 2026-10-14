@@ -204,7 +204,26 @@ bool isViewport(QObject* obj)
 }
 
 /// Zoomrichtung getrennt für Maus und Trackpad (Einstellungen). FreeCAD kennt nur eine Richtung ("InvertZoom",
-/// gilt fürs Mausrad); Trackpad-Scrollen und -Spreizen werden hier passend umgedreht und neu zugestellt.
+/// gilt fürs Mausrad); beim Trackpad wird die Richtung im Ereignis selbst umgedreht, bevor das 3D-Fenster es sieht.
+/// (Ein neu zugestelltes Ersatz-Ereignis kam bei echten Trackpads nicht an: Qt bindet Scrollphasen an das Original.)
+struct FlipWheel: QWheelEvent
+{
+    static void flip(QWheelEvent* e)
+    {
+        auto f = static_cast<FlipWheel*>(e);  // nur Zugriff auf die geschützten Felder, keine eigenen Daten
+        f->m_angleDelta = -f->m_angleDelta;
+        f->m_pixelDelta = -f->m_pixelDelta;
+    }
+};
+struct FlipGesture: QNativeGestureEvent
+{
+    static void flip(QNativeGestureEvent* e)
+    {
+        auto f = static_cast<FlipGesture*>(e);
+        f->m_realValue = -f->m_realValue;
+    }
+};
+
 class ZoomDirection: public QObject
 {
 public:
@@ -217,7 +236,7 @@ public:
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
-        if (sending || (event->type() != QEvent::Wheel && event->type() != QEvent::NativeGesture) || !isViewport(obj)) {
+        if ((event->type() != QEvent::Wheel && event->type() != QEvent::NativeGesture) || !isViewport(obj)) {
             return false;
         }
         const bool mouseInvert = viewParams()->GetBool("InvertZoom", true);
@@ -227,31 +246,17 @@ protected:
             // Wayland meldet Maus und Trackpad oft als ein Gerät; Trackpad-Scrollen hat aber Phasen bzw. Pixel-Schritte
             const bool trackpad = (we->pointingDevice() && we->pointingDevice()->type() == QInputDevice::DeviceType::TouchPad)
                 || we->phase() != Qt::NoScrollPhase || !we->pixelDelta().isNull();
-            if (!trackpad || padInvert == mouseInvert) {
-                return false;
+            if (trackpad && padInvert != mouseInvert) {
+                FlipWheel::flip(we);
             }
-            QWheelEvent flipped(we->position(), we->globalPosition(), -we->pixelDelta(), -we->angleDelta(), we->buttons(),
-                                we->modifiers(), we->phase(), we->inverted(), we->source(), we->pointingDevice());
-            return resend(obj, &flipped);
+            return false;
         }
         auto ge = static_cast<QNativeGestureEvent*>(event);
-        if (ge->gestureType() != Qt::ZoomNativeGesture || !padInvert) {
-            return false;  // Spreizen: ohne Umkehr wie gewohnt (auseinander = näher)
+        if (ge->gestureType() == Qt::ZoomNativeGesture && padInvert) {
+            FlipGesture::flip(ge);  // Spreizen: ohne Umkehr wie gewohnt (auseinander = näher)
         }
-        QNativeGestureEvent flipped(ge->gestureType(), ge->pointingDevice(), ge->fingerCount(), ge->position(),
-                                    ge->scenePosition(), ge->globalPosition(), -ge->value(), ge->delta());
-        return resend(obj, &flipped);
+        return false;
     }
-
-private:
-    bool resend(QObject* obj, QEvent* event)
-    {
-        sending = true;
-        QCoreApplication::sendEvent(obj, event);
-        sending = false;
-        return true;
-    }
-    bool sending = false;
 };
 
 /// Tippt der Benutzer gerade Text? Dann bleiben Tasten Tasten.
