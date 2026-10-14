@@ -12,6 +12,9 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QPointingDevice>
+#include <QNativeGestureEvent>
+#include <QWheelEvent>
 #include <QToolButton>
 #include <QDir>
 #include <QFileDialog>
@@ -199,6 +202,57 @@ bool isViewport(QObject* obj)
     auto view = w ? qobject_cast<QGraphicsView*>(w->parentWidget()) : nullptr;
     return view && view->viewport() == w && view->inherits("Gui::View3DInventorViewer");
 }
+
+/// Zoomrichtung getrennt für Maus und Trackpad (Einstellungen). FreeCAD kennt nur eine Richtung ("InvertZoom",
+/// gilt fürs Mausrad); Trackpad-Scrollen und -Spreizen werden hier passend umgedreht und neu zugestellt.
+class ZoomDirection: public QObject
+{
+public:
+    static void install()
+    {
+        static ZoomDirection filter;
+        qApp->installEventFilter(&filter);
+    }
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (sending || (event->type() != QEvent::Wheel && event->type() != QEvent::NativeGesture) || !isViewport(obj)) {
+            return false;
+        }
+        const bool mouseInvert = viewParams()->GetBool("InvertZoom", true);
+        const bool padInvert = myParams()->GetBool("InvertTrackpadZoom", mouseInvert);
+        if (event->type() == QEvent::Wheel) {
+            auto we = static_cast<QWheelEvent*>(event);
+            // Wayland meldet Maus und Trackpad oft als ein Gerät; Trackpad-Scrollen hat aber Phasen bzw. Pixel-Schritte
+            const bool trackpad = (we->pointingDevice() && we->pointingDevice()->type() == QInputDevice::DeviceType::TouchPad)
+                || we->phase() != Qt::NoScrollPhase || !we->pixelDelta().isNull();
+            if (!trackpad || padInvert == mouseInvert) {
+                return false;
+            }
+            QWheelEvent flipped(we->position(), we->globalPosition(), -we->pixelDelta(), -we->angleDelta(), we->buttons(),
+                                we->modifiers(), we->phase(), we->inverted(), we->source(), we->pointingDevice());
+            return resend(obj, &flipped);
+        }
+        auto ge = static_cast<QNativeGestureEvent*>(event);
+        if (ge->gestureType() != Qt::ZoomNativeGesture || !padInvert) {
+            return false;  // Spreizen: ohne Umkehr wie gewohnt (auseinander = näher)
+        }
+        QNativeGestureEvent flipped(ge->gestureType(), ge->pointingDevice(), ge->fingerCount(), ge->position(),
+                                    ge->scenePosition(), ge->globalPosition(), -ge->value(), ge->delta());
+        return resend(obj, &flipped);
+    }
+
+private:
+    bool resend(QObject* obj, QEvent* event)
+    {
+        sending = true;
+        QCoreApplication::sendEvent(obj, event);
+        sending = false;
+        return true;
+    }
+    bool sending = false;
+};
 
 /// Tippt der Benutzer gerade Text? Dann bleiben Tasten Tasten.
 /// Schreibt der Benutzer gerade Text (Umbenennen, Namen …)? Dann bleiben alle Tasten Tasten, auch Shift.
@@ -404,6 +458,7 @@ void Gui::Shell::registerSettings()
         .GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher")
         ->SetBool("MakeInternals", false);
     MouseKeyMapper::instance();
+    ZoomDirection::install();
 }
 
 namespace
@@ -868,7 +923,10 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     QObject::connect(zoomStep, &QSlider::valueChanged, [view](int v) { view->SetFloat("ZoomStep", v / 100.0); });
     addRow(speedCard, T("Zoom & scroll speed"), zoomStep);
     toggle(speedCard, T("Zoom towards the cursor"), "ZoomAtCursor", true);
-    toggle(speedCard, T("Invert zoom direction"), "InvertZoom", true);
+    toggle(speedCard, T("Invert zoom (mouse wheel)"), "InvertZoom", true);
+    auto padZoom = new Switch(myParams()->GetBool("InvertTrackpadZoom", view->GetBool("InvertZoom", true)));
+    QObject::connect(padZoom, &QAbstractButton::toggled, [](bool on) { myParams()->SetBool("InvertTrackpadZoom", on); });
+    addRow(speedCard, T("Invert zoom (trackpad)"), padZoom);
     nav->addStretch();
     pages->addWidget(navPage);
 

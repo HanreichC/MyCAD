@@ -454,6 +454,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Sketch", "Skizze"},
         {"Tangent", "Tangential"},
         {"Trim", "Stutzen"},
+        {"Invert zoom (mouse wheel)", "Zoom umkehren (Mausrad)"},
+        {"Invert zoom (trackpad)", "Zoom umkehren (Trackpad)"},
         // Hilfe
         {"Help", "Hilfe"},
         {"Help (F1)", "Hilfe (F1)"},
