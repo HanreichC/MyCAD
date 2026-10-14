@@ -54,6 +54,9 @@
 #include <functional>
 
 #include <algorithm>
+#include <Gui/Shell/Shell.h>
+
+using Gui::Shell::T;
 
 using namespace DesignGui;
 
@@ -230,64 +233,64 @@ Gui::View3DInventorViewer* activeViewer(App::Document* doc)
 QString featureTitle(const Design::Feature* f)
 {
     if (f->isDerivedFrom<Design::Revolve>()) {
-        return QStringLiteral("Revolve");
+        return T("Revolve");
     }
     if (f->isDerivedFrom<Design::Fillet>()) {
-        return QStringLiteral("Fillet");
+        return T("Fillet");
     }
     if (f->isDerivedFrom<Design::Chamfer>()) {
-        return QStringLiteral("Chamfer");
+        return T("Chamfer");
     }
     if (f->isDerivedFrom<Design::Shell>()) {
-        return QStringLiteral("Shell");
+        return T("Shell");
     }
     if (f->isDerivedFrom<Design::Combine>()) {
-        return QStringLiteral("Combine");
+        return T("Combine");
     }
     if (f->isDerivedFrom<Design::Move>()) {
-        return QStringLiteral("Move");
+        return T("Move");
     }
     if (f->isDerivedFrom<Design::Mirror>()) {
-        return QStringLiteral("Mirror");
+        return T("Mirror");
     }
     if (f->isDerivedFrom<Design::Pattern>()) {
-        return QStringLiteral("Pattern");
+        return T("Pattern");
     }
     if (f->isDerivedFrom<Design::Hole>()) {
-        return QStringLiteral("Hole");
+        return T("Hole");
     }
     if (f->isDerivedFrom<Design::PressPull>()) {
-        return QStringLiteral("Press Pull");
+        return T("Press Pull");
     }
     if (f->isDerivedFrom<Design::Import>()) {
-        return QStringLiteral("Insert");
+        return T("Insert");
     }
     if (f->isDerivedFrom<Design::Sweep>()) {
-        return QStringLiteral("Sweep");
+        return T("Sweep");
     }
     if (f->isDerivedFrom<Design::Loft>()) {
-        return QStringLiteral("Loft");
+        return T("Loft");
     }
     if (auto primitive = freecad_cast<const Design::Primitive*>(f)) {
         return QString::fromLatin1(primitive->Type.getValueAsString());
     }
     if (f->isDerivedFrom<Design::Draft>()) {
-        return QStringLiteral("Draft");
+        return T("Draft");
     }
     if (f->isDerivedFrom<Design::Scale>()) {
-        return QStringLiteral("Scale");
+        return T("Scale");
     }
     if (f->isDerivedFrom<Design::Split>()) {
-        return QStringLiteral("Split Body");
+        return T("Split Body");
     }
     if (f->isDerivedFrom<Design::Thread>()) {
-        return QStringLiteral("Thread");
+        return T("Thread");
     }
     if (f->isDerivedFrom<Design::ReplaceFace>()) {
-        return QStringLiteral("Replace Face");
+        return T("Replace Face");
     }
     if (f->isDerivedFrom<Design::SplitFace>()) {
-        return QStringLiteral("Split Face");
+        return T("Split Face");
     }
     if (auto emboss = freecad_cast<const Design::Emboss*>(f)) {
         return QString::fromLatin1(emboss->Type.getValueAsString());
@@ -295,7 +298,7 @@ QString featureTitle(const Design::Feature* f)
     if (auto rib = freecad_cast<const Design::Rib*>(f)) {
         return QString::fromLatin1(rib->Mode.getValueAsString());
     }
-    return QStringLiteral("Extrude");
+    return T("Extrude");
 }
 
 Gui::QuantitySpinBox* quantityBox(const Base::Unit& unit, double value)
@@ -353,57 +356,57 @@ public:
 
         if (extrude) {
             extent = new QComboBox;
-            extent->addItems({QStringLiteral("One Side"), QStringLiteral("Symmetric"), QStringLiteral("Two Sides")});
+            extent->addItems({T("One Side"), T("Symmetric"), T("Two Sides")});
             extent->setCurrentIndex(extrude->Extent.getValue());
             distance = quantityBox(Base::Unit::Length, extrude->Distance.getValue());
             bindExpression(distance, &extrude->Distance);
             distance2 = quantityBox(Base::Unit::Length, extrude->Distance2.getValue());
             bindExpression(distance2, &extrude->Distance2);
-            form->addRow(QStringLiteral("Direction"), extent);
-            form->addRow(QStringLiteral("Distance"), distance);
-            form->addRow(QStringLiteral("Distance 2"), distance2);
+            form->addRow(T("Direction"), extent);
+            form->addRow(T("Distance"), distance);
+            form->addRow(T("Distance 2"), distance2);
             QObject::connect(extent, &QComboBox::currentIndexChanged, [this] { apply(); });
         }
         if (revolve) {
             axis = new QComboBox;
-            axis->addItems({QStringLiteral("Sketch X axis"), QStringLiteral("Sketch Y axis"),
-                            QStringLiteral("X axis"), QStringLiteral("Y axis"), QStringLiteral("Z axis")});
+            axis->addItems({T("Sketch X axis"), T("Sketch Y axis"),
+                            T("X axis"), T("Y axis"), T("Z axis")});
             axis->setCurrentIndex(revolve->Axis.getValue());
             distance = quantityBox(Base::Unit::Angle, revolve->Angle.getValue());
             bindExpression(distance, &revolve->Angle);
-            form->addRow(QStringLiteral("Axis"), axis);
-            form->addRow(QStringLiteral("Angle"), distance);
+            form->addRow(T("Axis"), axis);
+            form->addRow(T("Angle"), distance);
             QObject::connect(axis, &QComboBox::currentIndexChanged, [this] { apply(); });
         }
         if (auto pull = freecad_cast<Design::PressPull*>(feature)) {
-            form->addRow(QStringLiteral("Faces"), new QLabel(QStringLiteral("%1 selected").arg(pull->Edges.getSize())));
+            form->addRow(QStringLiteral("Faces"), new QLabel(T("%1 selected").arg(pull->Edges.getSize())));
             distance = quantityBox(Base::Unit::Length, pull->Distance.getValue());
             bindExpression(distance, &pull->Distance);
-            form->addRow(QStringLiteral("Distance"), distance);
+            form->addRow(T("Distance"), distance);
         }
         else if (dressUp) {
-            auto edges = new QLabel(QStringLiteral("%1 selected").arg(dressUp->Edges.getSize()));
+            auto edges = new QLabel(T("%1 selected").arg(dressUp->Edges.getSize()));
             distance = quantityBox(Base::Unit::Length, dressUp->Size.getValue());
             bindExpression(distance, &dressUp->Size);
-            form->addRow(shell ? QStringLiteral("Open faces") : QStringLiteral("Edges"), edges);
-            form->addRow(shell                                         ? QStringLiteral("Thickness")
-                             : feature->isDerivedFrom<Design::Fillet>() ? QStringLiteral("Radius")
-                                                                        : QStringLiteral("Distance"),
+            form->addRow(shell ? T("Open faces") : QStringLiteral("Edges"), edges);
+            form->addRow(shell                                         ? T("Thickness")
+                             : feature->isDerivedFrom<Design::Fillet>() ? T("Radius")
+                                                                        : T("Distance"),
                          distance);
         }
         if (shell) {
-            check = new QCheckBox(QStringLiteral("Wall outside"));
+            check = new QCheckBox(T("Wall outside"));
             check->setChecked(shell->Outside.getValue());
             form->addRow(QString(), check);
         }
         if (combine) {
             simpleOp = new QComboBox;
-            simpleOp->addItems({QStringLiteral("Join"), QStringLiteral("Cut"), QStringLiteral("Intersect")});
+            simpleOp->addItems({T("Join"), T("Cut"), QStringLiteral("Intersect")});
             simpleOp->setCurrentIndex(std::max(0L, combine->Operation.getValue() - 1));
-            form->addRow(QStringLiteral("Tools"),
-                         new QLabel(QStringLiteral("%1 bodies").arg(combine->ToolBodies.getSize())));
-            form->addRow(QStringLiteral("Operation"), simpleOp);
-            check = new QCheckBox(QStringLiteral("Keep tools"));
+            form->addRow(T("Tools"),
+                         new QLabel(T("%1 bodies").arg(combine->ToolBodies.getSize())));
+            form->addRow(T("Operation"), simpleOp);
+            check = new QCheckBox(T("Keep tools"));
             check->setChecked(combine->KeepTools.getValue());
             form->addRow(QString(), check);
             QObject::connect(simpleOp, &QComboBox::currentIndexChanged, [this] { apply(); });
@@ -414,15 +417,15 @@ public:
             moveY = quantityBox(Base::Unit::Length, t.y);
             moveZ = quantityBox(Base::Unit::Length, t.z);
             axis = new QComboBox;
-            axis->addItems({QStringLiteral("X axis"), QStringLiteral("Y axis"), QStringLiteral("Z axis")});
+            axis->addItems({T("X axis"), T("Y axis"), T("Z axis")});
             axis->setCurrentIndex(move->RotationAxis.getValue());
             distance = quantityBox(Base::Unit::Angle, move->Angle.getValue());
             bindExpression(distance, &move->Angle);
-            form->addRow(QStringLiteral("X distance"), moveX);
-            form->addRow(QStringLiteral("Y distance"), moveY);
-            form->addRow(QStringLiteral("Z distance"), moveZ);
-            form->addRow(QStringLiteral("Rotate around"), axis);
-            form->addRow(QStringLiteral("Angle"), distance);
+            form->addRow(T("X distance"), moveX);
+            form->addRow(T("Y distance"), moveY);
+            form->addRow(T("Z distance"), moveZ);
+            form->addRow(T("Rotate around"), axis);
+            form->addRow(T("Angle"), distance);
             for (auto box : {moveX, moveY, moveZ}) {
                 QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
             }
@@ -430,20 +433,20 @@ public:
         }
         if (mirror) {
             axis = new QComboBox;
-            axis->addItems({QStringLiteral("XY plane"), QStringLiteral("XZ plane"), QStringLiteral("YZ plane")});
+            axis->addItems({T("XY plane"), T("XZ plane"), T("YZ plane")});
             axis->setCurrentIndex(mirror->Plane.getValue());
-            form->addRow(QStringLiteral("Mirror plane"), axis);
+            form->addRow(T("Mirror plane"), axis);
             QObject::connect(axis, &QComboBox::currentIndexChanged, [this] { apply(); });
         }
         if (hole) {
             holeType = new QComboBox;
-            holeType->addItems({QStringLiteral("Simple"), QStringLiteral("Counterbore"), QStringLiteral("Countersink")});
+            holeType->addItems({T("Simple"), T("Counterbore"), T("Countersink")});
             holeType->setCurrentIndex(hole->HoleType.getValue());
             distance = quantityBox(Base::Unit::Length, hole->Diameter.getValue());
             bindExpression(distance, &hole->Diameter);
             distance2 = quantityBox(Base::Unit::Length, hole->Depth.getValue());
             bindExpression(distance2, &hole->Depth);
-            check = new QCheckBox(QStringLiteral("Through all"));
+            check = new QCheckBox(T("Through all"));
             check->setChecked(hole->ThroughAll.getValue());
             headDiameter = quantityBox(Base::Unit::Length, hole->HeadDiameter.getValue());
             bindExpression(headDiameter, &hole->HeadDiameter);
@@ -451,15 +454,15 @@ public:
             bindExpression(headDepth, &hole->HeadDepth);
             sinkAngle = quantityBox(Base::Unit::Angle, hole->CountersinkAngle.getValue());
             bindExpression(sinkAngle, &hole->CountersinkAngle);
-            flip = new QCheckBox(QStringLiteral("Flip direction"));
+            flip = new QCheckBox(T("Flip direction"));
             flip->setChecked(hole->Reversed.getValue());
-            form->addRow(QStringLiteral("Type"), holeType);
-            form->addRow(QStringLiteral("Diameter"), distance);
-            form->addRow(QStringLiteral("Depth"), distance2);
+            form->addRow(T("Type"), holeType);
+            form->addRow(T("Diameter"), distance);
+            form->addRow(T("Depth"), distance2);
             form->addRow(QString(), check);
-            form->addRow(QStringLiteral("Head diameter"), headDiameter);
-            form->addRow(QStringLiteral("Head depth"), headDepth);
-            form->addRow(QStringLiteral("Countersink angle"), sinkAngle);
+            form->addRow(T("Head diameter"), headDiameter);
+            form->addRow(T("Head depth"), headDepth);
+            form->addRow(T("Countersink angle"), sinkAngle);
             form->addRow(QString(), flip);
             QObject::connect(holeType, &QComboBox::currentIndexChanged, [this] { apply(); });
             QObject::connect(flip, &QCheckBox::toggled, [this] { apply(); });
@@ -469,7 +472,7 @@ public:
         }
         if (pattern) {
             holeType = new QComboBox;
-            holeType->addItems({QStringLiteral("Rectangular"), QStringLiteral("Circular")});
+            holeType->addItems({T("Rectangular"), T("Circular")});
             holeType->setCurrentIndex(pattern->Type.getValue());
             auto xyz = [](long index) {
                 auto box = new QComboBox;
@@ -495,18 +498,18 @@ public:
             sinkAngle = quantityBox(Base::Unit::Angle, pattern->Angle.getValue());
             bindExpression(sinkAngle, &pattern->Angle);
             simpleOp = new QComboBox;
-            simpleOp->addItems({QStringLiteral("Join"), QStringLiteral("Cut"), QStringLiteral("Intersect")});
+            simpleOp->addItems({T("Join"), T("Cut"), QStringLiteral("Intersect")});
             simpleOp->setCurrentIndex(std::max(0L, pattern->Operation.getValue() - 1));
-            form->addRow(QStringLiteral("Type"), holeType);
-            form->addRow(QStringLiteral("Direction"), dir1);
-            form->addRow(QStringLiteral("Count"), count1);
-            form->addRow(QStringLiteral("Spacing"), distance);
-            form->addRow(QStringLiteral("Direction 2"), dir2);
-            form->addRow(QStringLiteral("Count 2"), count2);
-            form->addRow(QStringLiteral("Spacing 2"), distance2);
-            form->addRow(QStringLiteral("Axis"), axis);
-            form->addRow(QStringLiteral("Angle"), sinkAngle);
-            form->addRow(QStringLiteral("Operation"), simpleOp);
+            form->addRow(T("Type"), holeType);
+            form->addRow(T("Direction"), dir1);
+            form->addRow(T("Count"), count1);
+            form->addRow(T("Spacing"), distance);
+            form->addRow(T("Direction 2"), dir2);
+            form->addRow(T("Count 2"), count2);
+            form->addRow(T("Spacing 2"), distance2);
+            form->addRow(T("Axis"), axis);
+            form->addRow(T("Angle"), sinkAngle);
+            form->addRow(T("Operation"), simpleOp);
             for (auto box : {holeType, dir1, dir2, axis, simpleOp}) {
                 QObject::connect(box, &QComboBox::currentIndexChanged, [this] { apply(); });
             }
@@ -522,7 +525,7 @@ public:
             QObject::connect(check, &QCheckBox::toggled, [this] { apply(); });
         }
         if (extrude || revolve) {
-            flip = new QCheckBox(QStringLiteral("Flip direction"));
+            flip = new QCheckBox(T("Flip direction"));
             flip->setChecked(extrude ? extrude->Reversed.getValue() : revolve->Reversed.getValue());
             form->addRow(QString(), flip);
             QObject::connect(flip, &QCheckBox::toggled, [this] { apply(); });
@@ -561,7 +564,7 @@ public:
     bool accept() override
     {
         if (feature->isError()) {
-            QMessageBox::warning(nullptr, featureTitle(feature), QString::fromUtf8(feature->getStatusString()));
+            QMessageBox::warning(nullptr, featureTitle(feature), T(feature->getStatusString()));
             return false;
         }
         // Wie in Fusion: die verwendete Skizze danach ausblenden
@@ -682,15 +685,15 @@ private:
     void setupOperation(Design::Body* target)
     {
         operation = new QComboBox;
-        operation->addItems({QStringLiteral("New Body"), QStringLiteral("Join"), QStringLiteral("Cut"),
+        operation->addItems({T("New Body"), T("Join"), T("Cut"),
                              QStringLiteral("Intersect")});
         if (create) {
-            operation->addItem(QStringLiteral("New Component"));  // wie New Body, aber in einer neuen Komponente
+            operation->addItem(T("New Component"));  // wie New Body, aber in einer neuen Komponente
         }
         operation->setCurrentIndex(feature->Operation.getValue());
         body = new QComboBox;
-        form->addRow(QStringLiteral("Operation"), operation);
-        bodyLabel = new QLabel(QStringLiteral("Body"));
+        form->addRow(T("Operation"), operation);
+        bodyLabel = new QLabel(T("Body"));
         form->addRow(bodyLabel, body);
 
         for (auto obj : feature->getDocument()->getObjectsOfType(Design::Body::getClassTypeId())) {
@@ -841,7 +844,7 @@ private:
                 apply();
             }
             catch (const Base::Exception& e) {
-                status->setText(QStringLiteral("Unknown parameter or invalid expression: %1").arg(text));
+                status->setText(T("Unknown parameter or invalid expression: %1").arg(text));
             }
             return true;
         };
@@ -869,7 +872,7 @@ private:
             }
             label += c;
         }
-        return label;
+        return T(label);
     }
 
     /// Felder für Länge, Winkel, Auswahl, Haken, Anzahl und Zahl; Sichtbarkeit folgt dem Hidden-Status
@@ -896,7 +899,7 @@ private:
             else if (auto e = freecad_cast<App::PropertyEnumeration*>(prop)) {
                 auto box = new QComboBox;
                 for (const auto& item : e->getEnumVector()) {
-                    box->addItem(QString::fromStdString(item));
+                    box->addItem(T(item.c_str()));
                 }
                 box->setCurrentIndex(e->getValue());
                 QObject::connect(box, &QComboBox::currentIndexChanged, [this, e](int i) {
@@ -1044,7 +1047,7 @@ private:
         }
 
         feature->getDocument()->recompute();
-        status->setText(feature->isError() ? QString::fromUtf8(feature->getStatusString()) : QString());
+        status->setText(feature->isError() ? T(feature->getStatusString()) : QString());
     }
 
     Design::Feature* feature;
@@ -1253,21 +1256,21 @@ public:
         , create(create)
     {
         auto w = new QWidget;
-        w->setWindowTitle(QStringLiteral("Joint"));
+        w->setWindowTitle(T("Joint"));
         form = new QFormLayout(w);
         form->setLabelAlignment(Qt::AlignRight);
         type = new QComboBox;
         for (const auto& item : joint->Type.getEnumVector()) {
-            type->addItem(QString::fromStdString(item));
+            type->addItem(T(item.c_str()));
         }
         type->setCurrentIndex(joint->Type.getValue());
         angle = quantityBox(Base::Unit::Angle, joint->Angle.getValue());
         offset = quantityBox(Base::Unit::Length, joint->Offset.getValue());
-        flip = new QCheckBox(QStringLiteral("Flip"));
+        flip = new QCheckBox(T("Flip"));
         flip->setChecked(joint->Flip.getValue());
-        form->addRow(QStringLiteral("Type"), type);
-        form->addRow(QStringLiteral("Angle"), angle);
-        form->addRow(QStringLiteral("Offset"), offset);
+        form->addRow(T("Type"), type);
+        form->addRow(T("Angle"), angle);
+        form->addRow(T("Offset"), offset);
         form->addRow(QString(), flip);
         status = new QLabel;
         status->setWordWrap(true);
@@ -1320,7 +1323,7 @@ private:
         showRow(angle, t != 2);
         showRow(offset, t != 1);
         joint->getDocument()->recompute();
-        status->setText(joint->isError() ? QString::fromUtf8(joint->getStatusString()) : QString());
+        status->setText(joint->isError() ? T(joint->getStatusString()) : QString());
     }
     Design::Joint* joint;
     bool create;

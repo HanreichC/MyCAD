@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <QCoreApplication>
 #include <QString>
 #include <vector>
 
@@ -20,5 +21,20 @@ std::vector<const char*> bodyMaterialNames();
 void setBodyMaterial(int index);
 /// Ordner mit den Designs des Benutzers (Startseite "Projects", Einstellung "Projects folder")
 QString projectsFolder();
+
+/// Sichtbarer Text in der eingestellten Sprache (englischer Originaltext ist der Schlüssel, siehe Translations.cpp)
+inline QString T(const char* english)
+{
+    return QCoreApplication::translate("MyCAD", english);
+}
+inline QString T(const QString& english)
+{
+    return T(english.toUtf8().constData());
+}
+/// Sprache der Oberfläche (Einstellung "Language"): "English" oder "German"; wirkt nach einem Neustart
+QString language();
+void setLanguage(const QString& name);
+/// MyCADs deutsche Texte als Qt-Übersetzer einhängen (FreeCADs eigene lädt FreeCAD selbst)
+void installTranslations();
 
 }  // namespace Gui::Shell

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "ViewCube.h"
+#include "Shell.h"
 
 #include <Gui/Application.h>
 #include <Gui/Command.h>
@@ -139,7 +140,7 @@ void ViewCube::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
                 p->setFont(font);
                 p->setPen(hover == i ? QColor(Qt::white)
                                      : (dark ? QColor(235, 235, 245, 200) : QColor(60, 60, 67, 190)));
-                p->drawText(QRectF(0, 0, 100, 100), Qt::AlignCenter, QString::fromLatin1(f.label));
+                p->drawText(QRectF(0, 0, 100, 100), Qt::AlignCenter, Gui::Shell::T(f.label));
                 p->restore();
             }
         }

@@ -494,6 +494,16 @@ private:
     QPointer<QToolButton> target;
 };
 
+QString shortName(QString text);
+
+/// Beschriftung unter dem Symbol: aus dem englischen Befehlsnamen gekürzt, dann übersetzt
+QString toolLabel(const QString& name, QAction* action)
+{
+    Command* cmd = Application::Instance->commandManager().getCommandByName(name.toLatin1().constData());
+    const QByteArray english = shortName(cmd ? QString::fromUtf8(cmd->getMenuText()) : action->text()).toUtf8();
+    return T(english.constData());
+}
+
 /// Kurzer Name für die Beschriftung unter dem Symbol ("&Extrude…" -> "Extrude"); der volle Name steht im Tooltip
 QString shortName(QString text)
 {
@@ -741,7 +751,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
     };
     for (const char* name : commands) {
         if (*name == '#') {
-            section(QString::fromLatin1(name + 1));
+            section(T(name + 1));
             continue;
         }
         if (!*name) {
@@ -763,7 +773,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
                 *current = a;
                 btn->setIcon(commandIcon(n, a->icon()));
                 btn->setToolTip(a->toolTip().isEmpty() ? a->text() : a->toolTip());
-                btn->setProperty("label", shortName(a->text()));
+                btn->setProperty("label", toolLabel(n, a));
                 if (btn->property("names").toBool()) {
                     styleToolButton(btn);
                 }
@@ -801,8 +811,8 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         btn->setProperty("command", QString::fromLatin1(name));
         if (std::string(name) == "Sketcher_LeaveSketch") {  // wie in Fusion: deutlicher Abschluss-Knopf
             btn->setObjectName(QStringLiteral("GlassProminent"));
-            btn->setText(QStringLiteral("Finish Sketch"));
-            btn->setToolTip(QStringLiteral("Finish Sketch"));
+            btn->setText(T("Finish Sketch"));
+            btn->setToolTip(T("Finish Sketch"));
             btn->setFixedHeight(30);
             QObject::connect(btn, &QToolButton::clicked, action, [action] {
                 QTimer::singleShot(0, action, &QAction::trigger);
@@ -813,7 +823,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         btn->setIcon(commandIcon(QString::fromLatin1(name), action->icon()));
         btn->setIconSize(QSize(22, 22));
         btn->setToolTip(action->toolTip().isEmpty() ? action->text() : action->toolTip());
-        btn->setProperty("label", shortName(action->text()));
+        btn->setProperty("label", toolLabel(QString::fromLatin1(name), action));
         styleToolButton(btn);
         btn->installEventFilter(QuickTip::instance());
         btn->setEnabled(action->isEnabled());
@@ -953,17 +963,17 @@ public:
         handle->setFixedSize(26, 38);
         handle->setAlignment(Qt::AlignCenter);
         handle->setCursor(Qt::OpenHandCursor);
-        handle->setToolTip(QStringLiteral("Drag to move the window, double-click to maximize"));
+        handle->setToolTip(T("Drag to move the window, double-click to maximize"));
         lay->addWidget(handle);
         if (home) {
-            button("Window_Home", "GlassButton", QStringLiteral("Home"), showStartPage);
+            button("Window_Home", "GlassButton", T("Home"), showStartPage);
         }
-        button("MyCAD_Settings", "GlassButton", QStringLiteral("Settings (Ctrl+,)"), [] {
+        button("MyCAD_Settings", "GlassButton", T("Settings (Ctrl+,)"), [] {
             Application::Instance->commandManager().runCommandByName("MyCAD_Settings");
         });
-        button("Window_Minimize", "GlassButton", QStringLiteral("Minimize"), [] { getMainWindow()->showMinimized(); });
-        maximize = button("Window_Maximize", "GlassButton", QStringLiteral("Maximize"), toggleMaximized);
-        button("Window_Close", "WindowClose", QStringLiteral("Close"), [] { getMainWindow()->close(); });
+        button("Window_Minimize", "GlassButton", T("Minimize"), [] { getMainWindow()->showMinimized(); });
+        maximize = button("Window_Maximize", "GlassButton", T("Maximize"), toggleMaximized);
+        button("Window_Close", "WindowClose", T("Close"), [] { getMainWindow()->close(); });
         getMainWindow()->installEventFilter(this);
         update();
     }
@@ -982,7 +992,7 @@ private:
     {
         const bool max = getMainWindow()->isMaximized();
         maximize->setIcon(designIcon(max ? QStringLiteral("Window_Restore") : QStringLiteral("Window_Maximize")));
-        maximize->setToolTip(max ? QStringLiteral("Restore") : QStringLiteral("Maximize"));
+        maximize->setToolTip(max ? T("Restore") : T("Maximize"));
     }
     QToolButton* maximize;
 };
@@ -1014,12 +1024,12 @@ QImage thumbnail(const QString& file)
 
 QString when(const QDateTime& t)
 {
-    const QLocale en(QLocale::English);
+    const QLocale en(language() == QLatin1String("German") ? QLocale::German : QLocale::English);
     const qint64 days = t.date().daysTo(QDate::currentDate());
     if (days == 0 || days == 1) {
-        return (days == 0 ? QStringLiteral("Today, ") : QStringLiteral("Yesterday, ")) + en.toString(t.time(), QStringLiteral("HH:mm"));
+        return (days == 0 ? T("Today, ") : T("Yesterday, ")) + en.toString(t.time(), QStringLiteral("HH:mm"));
     }
-    return en.toString(t.date(), QStringLiteral("MMM d, yyyy"));
+    return en.toString(t.date(), language() == QLatin1String("German") ? QStringLiteral("d. MMM yyyy") : QStringLiteral("MMM d, yyyy"));
 }
 
 /// Glasfläche für die Startseite, gerechnet wie der Glas-Shader der Panels im 3D-Fenster (GlassPanel.cpp):
@@ -1232,7 +1242,7 @@ public:
         title->setObjectName(QStringLiteral("StartTitle"));
         sideLay->addWidget(title);
         sideLay->addSpacing(14);
-        auto create = new QPushButton(designIcon(QStringLiteral("Std_New"), QStringLiteral("#FFFFFF")), QStringLiteral("New Design"));
+        auto create = new QPushButton(designIcon(QStringLiteral("Std_New"), QStringLiteral("#FFFFFF")), T("New Design"));
         create->setObjectName(QStringLiteral("StartNew"));
         create->setCursor(Qt::PointingHandCursor);
         QObject::connect(create, &QPushButton::clicked, this, [this] { runAndHide("Std_New"); });
@@ -1250,15 +1260,15 @@ public:
             sideLay->addWidget(b);
             return b;
         };
-        QObject::connect(row("Std_Open", QStringLiteral("Open…")), &QToolButton::clicked, this, [this] { runAndHide("Std_Open"); });
+        QObject::connect(row("Std_Open", T("Open…")), &QToolButton::clicked, this, [this] { runAndHide("Std_Open"); });
         sideLay->addSpacing(14);
-        auto library = new QLabel(QStringLiteral("LIBRARY"));
+        auto library = new QLabel(T("LIBRARY"));
         library->setObjectName(QStringLiteral("StartSection"));
         sideLay->addWidget(library);
         auto group = new QButtonGroup(this);
-        const std::pair<const char*, QString> filters[] = {{"Window_Home", QStringLiteral("All Designs")},
-                                                           {"Start_Recent", QStringLiteral("Recent")},
-                                                           {"Std_Open", QStringLiteral("Projects")}};
+        const std::pair<const char*, QString> filters[] = {{"Window_Home", T("All Designs")},
+                                                           {"Start_Recent", T("Recent")},
+                                                           {"Std_Open", T("Projects")}};
         for (int i = 0; i < 3; ++i) {
             QToolButton* b = row(filters[i].first, filters[i].second);
             b->setCheckable(true);
@@ -1294,10 +1304,10 @@ public:
         searchLay->addWidget(lens);
         search = new QLineEdit;
         search->setObjectName(QStringLiteral("StartSearch"));
-        search->setPlaceholderText(QStringLiteral("Search designs"));
+        search->setPlaceholderText(T("Search designs"));
         QObject::connect(search, &QLineEdit::textChanged, this, [this] { applyFilter(); });
         searchLay->addWidget(search);
-        back = new QPushButton(designIcon(QStringLiteral("Window_Back")), QStringLiteral("Back to Design"), this);
+        back = new QPushButton(designIcon(QStringLiteral("Window_Back")), T("Back to Design"), this);
         back->setObjectName(QStringLiteral("StartBack"));
         back->setCursor(Qt::PointingHandCursor);
         QObject::connect(back, &QPushButton::clicked, this, &QWidget::hide);
@@ -1459,7 +1469,7 @@ QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px;
         };
 
         // zuletzt geöffnet (FreeCAD führt die Liste; Skripte und gelöschte Dateien überspringen)
-        FlowLayout* recent = section(QStringLiteral("Recent"), QString());
+        FlowLayout* recent = section(T("Recent"), QString());
         auto mru = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/RecentFiles")->GetASCIIs("MRU");
         int shown = 0;
         for (const auto& entry : mru) {
@@ -1470,20 +1480,20 @@ QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px;
             }
         }
         if (!shown) {
-            hint(recent, QStringLiteral("Designs you open or save show up here."));
+            hint(recent, T("Designs you open or save show up here."));
         }
 
         const QString folder = Gui::Shell::projectsFolder();
         QString pretty = folder;
         pretty.replace(QDir::homePath(), QStringLiteral("~"));
-        folderLabel->setText(QStringLiteral("Projects folder\n%1").arg(pretty));
-        FlowLayout* projects = section(QStringLiteral("Projects"), pretty);
+        folderLabel->setText(T("Projects folder\n%1").arg(pretty));
+        FlowLayout* projects = section(T("Projects"), pretty);
         const QFileInfoList files = QDir(folder).entryInfoList({QStringLiteral("*.FCStd")}, QDir::Files, QDir::Time);
         for (const QFileInfo& fi : files) {
             projects->addWidget(tile(fi.absoluteFilePath()));
         }
         if (files.isEmpty()) {
-            hint(projects, QStringLiteral("Save designs to %1 and they show up here.").arg(pretty));
+            hint(projects, T("Save designs to %1 and they show up here.").arg(pretty));
         }
         lay->addStretch();
         scroll->setWidget(page);  // ersetzt (und löscht) den alten Inhalt
@@ -1609,7 +1619,7 @@ void showCommandMenu(const std::vector<std::pair<QString, const char*>>& entries
             const auto items = tree ? tree->selectedItems() : QList<QTreeWidgetItem*>();
             if (items.size() == 1) {
                 QTreeWidgetItem* item = items.front();
-                menu.addAction(QStringLiteral("Rename"), [tree, item] { tree->editItem(item); });
+                menu.addAction(T("Rename"), [tree, item] { tree->editItem(item); });
             }
             continue;
         }
@@ -1674,13 +1684,13 @@ protected:
                             Application::Instance->commandManager().runCommandByName(command);
                         }
                     };
-                    QObject::connect(menu.addAction(QStringLiteral("Save")), &QAction::triggered, [run] { run("Std_Save"); });
-                    QObject::connect(menu.addAction(QStringLiteral("Save As…")), &QAction::triggered, [run] { run("Std_SaveAs"); });
-                    QObject::connect(menu.addAction(QStringLiteral("Export…")), &QAction::triggered, [run] { run("Design_Export"); });
+                    QObject::connect(menu.addAction(T("Save")), &QAction::triggered, [run] { run("Std_Save"); });
+                    QObject::connect(menu.addAction(T("Save As…")), &QAction::triggered, [run] { run("Std_SaveAs"); });
+                    QObject::connect(menu.addAction(T("Export…")), &QAction::triggered, [run] { run("Design_Export"); });
                     menu.addSeparator();
-                    QObject::connect(menu.addAction(QStringLiteral("Rename")), &QAction::triggered, [tree, item] { tree->editItem(item); });
+                    QObject::connect(menu.addAction(T("Rename")), &QAction::triggered, [tree, item] { tree->editItem(item); });
                     menu.addSeparator();
-                    QObject::connect(menu.addAction(QStringLiteral("Close")), &QAction::triggered, [guiDoc] {
+                    QObject::connect(menu.addAction(T("Close")), &QAction::triggered, [guiDoc] {
                         QTimer::singleShot(0, [guiDoc] {
                             Gui::Document* gdoc = guiDoc();
                             if (gdoc && gdoc->canClose(true, true)) {  // fragt bei Änderungen nach dem Speichern
@@ -1689,7 +1699,7 @@ protected:
                         });
                     });
                     // Löschen: ohne Speichern schließen; eine gespeicherte Datei kommt in den Papierkorb (nicht endgültig weg)
-                    QObject::connect(menu.addAction(QStringLiteral("Delete…")), &QAction::triggered, [guiDoc] {
+                    QObject::connect(menu.addAction(T("Delete…")), &QAction::triggered, [guiDoc] {
                         QTimer::singleShot(0, [guiDoc] {
                             Gui::Document* gdoc = guiDoc();
                             if (!gdoc) {
@@ -1698,15 +1708,13 @@ protected:
                             App::Document* doc = gdoc->getDocument();
                             const QString file = QString::fromUtf8(doc->FileName.getValue());
                             const QString label = QString::fromUtf8(doc->Label.getValue());
-                            QMessageBox box(QMessageBox::Warning, QStringLiteral("Delete Design"),
-                                            file.isEmpty() ? QStringLiteral("Delete “%1”? It has never been saved, "
-                                                                            "so its contents will be gone.")
+                            QMessageBox box(QMessageBox::Warning, T("Delete Design"),
+                                            file.isEmpty() ? T("Delete “%1”? It has never been saved, so its contents will be gone.")
                                                                  .arg(label)
-                                                           : QStringLiteral("Delete “%1”? The file is moved to the "
-                                                                            "trash:\n%2")
+                                                           : T("Delete “%1”? The file is moved to the trash:\n%2")
                                                                  .arg(label, file),
                                             QMessageBox::Cancel, getMainWindow());
-                            QPushButton* remove = box.addButton(QStringLiteral("Delete"), QMessageBox::DestructiveRole);
+                            QPushButton* remove = box.addButton(T("Delete"), QMessageBox::DestructiveRole);
                             box.setDefaultButton(QMessageBox::Cancel);
                             box.exec();
                             if (box.clickedButton() != remove) {
@@ -1727,13 +1735,13 @@ protected:
                 if (!any) {
                     return;
                 }
-                showCommandMenu({{QStringLiteral("Show / Hide"), "Std_ToggleVisibility"},
+                showCommandMenu({{T("Show / Hide"), "Std_ToggleVisibility"},
                                  {QString(), "@rename"},
                                  {QString(), ""},
-                                 {QStringLiteral("Move"), "Design_Move"},
-                                 {QStringLiteral("Export"), "Design_Export"},
+                                 {T("Move"), "Design_Move"},
+                                 {T("Export"), "Design_Export"},
                                  {QString(), ""},
-                                 {QStringLiteral("Delete"), "Design_Delete"}},
+                                 {T("Delete"), "Design_Delete"}},
                                 tree);
             });
             return true;
@@ -1752,20 +1760,20 @@ protected:
                     if (Control().activeDialog()) {
                         return;
                     }
-                    showCommandMenu({{QStringLiteral("Undo"), "Std_Undo"},
-                                     {QStringLiteral("Redo"), "Std_Redo"},
+                    showCommandMenu({{T("Undo"), "Std_Undo"},
+                                     {T("Redo"), "Std_Redo"},
                                      {QString(), ""},
-                                     {QStringLiteral("Create Sketch"), "Design_CreateSketch"},
-                                     {QStringLiteral("Extrude"), "Design_Extrude"},
-                                     {QStringLiteral("Press Pull"), "Design_PressPull"},
-                                     {QStringLiteral("Fillet"), "Design_Fillet"},
-                                     {QStringLiteral("Hole"), "Design_Hole"},
-                                     {QStringLiteral("Move"), "Design_Move"},
+                                     {T("Create Sketch"), "Design_CreateSketch"},
+                                     {T("Extrude"), "Design_Extrude"},
+                                     {T("Press Pull"), "Design_PressPull"},
+                                     {T("Fillet"), "Design_Fillet"},
+                                     {T("Hole"), "Design_Hole"},
+                                     {T("Move"), "Design_Move"},
                                      {QString(), ""},
-                                     {QStringLiteral("Show / Hide"), "Std_ToggleVisibility"},
-                                     {QStringLiteral("Delete"), "Design_Delete"},
+                                     {T("Show / Hide"), "Std_ToggleVisibility"},
+                                     {T("Delete"), "Design_Delete"},
                                      {QString(), ""},
-                                     {QStringLiteral("Fit All"), "Std_ViewFitAll"}});
+                                     {T("Fit All"), "Std_ViewFitAll"}});
                 });
             }
         }
@@ -1853,7 +1861,7 @@ QWidget* sketchPalette()
     auto lay = new QVBoxLayout(box);
     lay->setContentsMargins(14, 12, 14, 14);
     lay->setSpacing(4);
-    auto title = new QLabel(QStringLiteral("Sketch Palette"));
+    auto title = new QLabel(T("Sketch Palette"));
     title->setObjectName(QStringLiteral("WindowTitle"));
     lay->addWidget(title);
     lay->addSpacing(4);
@@ -1871,7 +1879,7 @@ QWidget* sketchPalette()
         auto btn = new QToolButton;
         btn->setObjectName(QStringLiteral("PaletteRow"));
         btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        btn->setText(QString::fromLatin1(rows[i].first));
+        btn->setText(T(rows[i].first));
         btn->setIcon(designIcon(QString::fromLatin1(icons[i])));
         btn->setIconSize(QSize(18, 18));
         btn->setCheckable(action->isCheckable());
@@ -1888,7 +1896,7 @@ QWidget* sketchPalette()
     if (QAction* finish = commandAction("Sketcher_LeaveSketch")) {
         auto btn = new QToolButton;
         btn->setObjectName(QStringLiteral("GlassProminent"));
-        btn->setText(QStringLiteral("Finish Sketch"));
+        btn->setText(T("Finish Sketch"));
         btn->setFixedHeight(32);
         btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         QObject::connect(btn, &QToolButton::clicked, finish, [finish] {
@@ -2191,7 +2199,7 @@ void rebuildTimeline()
         btn->setIconSize(QSize(22, 22));
         btn->setFixedSize(36, 36);
         btn->setToolTip(QString::fromUtf8(obj->Label.getValue())
-                        + (obj->isError() ? QStringLiteral("\n") + QString::fromUtf8(obj->getStatusString())
+                        + (obj->isError() ? QStringLiteral("\n") + T(obj->getStatusString())
                                           : QString()));
         btn->setProperty("error", obj->isError());
         auto suppressed = freecad_cast<App::PropertyBool*>(obj->getPropertyByName("Suppressed"));
@@ -2207,14 +2215,14 @@ void rebuildTimeline()
                 return;
             }
             QMenu menu;
-            QAction* edit = menu.addAction(QStringLiteral("Edit"));
-            QAction* rollback = timelineHolder(o->getDocument()) ? menu.addAction(QStringLiteral("Roll Back to Here")) : nullptr;
+            QAction* edit = menu.addAction(T("Edit"));
+            QAction* rollback = timelineHolder(o->getDocument()) ? menu.addAction(T("Roll Back to Here")) : nullptr;
             QAction* suppress = nullptr;
             if (auto prop = freecad_cast<App::PropertyBool*>(o->getPropertyByName("Suppressed"))) {
-                suppress = menu.addAction(prop->getValue() ? QStringLiteral("Unsuppress") : QStringLiteral("Suppress"));
+                suppress = menu.addAction(prop->getValue() ? T("Unsuppress") : T("Suppress"));
             }
             menu.addSeparator();
-            QAction* remove = menu.addAction(QStringLiteral("Delete"));
+            QAction* remove = menu.addAction(T("Delete"));
             QAction* chosen = menu.exec(QCursor::pos());
             // Nach dem Menü ausführen, nicht innerhalb des Maus-Events
             QTimer::singleShot(0, [ref, chosen, edit, rollback, suppress, remove] {
@@ -2377,6 +2385,7 @@ void Gui::Shell::install()
     // MyCAD ist immer hell, unabhängig vom Farbschema des Desktops (KDE meldet Dunkel sonst über Palette und Portal)
     QGuiApplication::styleHints()->setColorScheme(Qt::ColorScheme::Light);
     QApplication::setPalette(QApplication::style()->standardPalette());
+    installTranslations();  // vor dem Aufbau der Oberfläche, damit alle Beschriftungen gleich deutsch sind
     applyTheme();
 
     // Design-Modul laden (Create Sketch, Extrude, …), egal welche Workbench zuletzt aktiv war

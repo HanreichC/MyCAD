@@ -77,13 +77,17 @@ Leg eine Taste als Maustaste fest, zum Beispiel **Shift** als mittlere Maustaste
 
 <br>
 
+## Spricht deine Sprache.
+
+Stell in den Einstellungen auf **Deutsch** um, und MyCAD spricht Deutsch, von der Toolbar bis zur Fehlermeldung. Die Begriffe kennst du aus Fusion 360: Extrudieren, Drehen, Abrunden, Bohrung, Gelenk. Selbst neue Skizzen und Körper heißen dann Skizze1 und Körper1.
+
 ## Materialien mit Charakter.
 
 Neue Körper erscheinen in **Space Gray**, satiniert und edel. Lieber **Clay**, **Sierra Blue** oder **Ceramic**? Eine Einstellung genügt, und deine Körper wechseln sofort ihr Kleid. Mit **Appearance** gibst du jedem Körper seine eigene Farbe.
 
 <br>
 
-## Spricht jede Sprache.
+## Versteht jedes Format.
 
 **Exportiere** nach STL und 3MF für deinen 3D-Drucker oder nach STEP für jedes andere CAD-Programm. **Importiere** STEP-Modelle sowie DXF- und SVG-Zeichnungen direkt in eine Skizze.
 
@@ -94,7 +98,7 @@ Neue Körper erscheinen in **Space Gray**, satiniert und edel. Lieber **Clay**, 
 | | |
 |---|---|
 | **Plattform** | Linux, entwickelt und getestet auf CachyOS mit KDE Plasma (Wayland) |
-| **Oberfläche** | Liquid Glass mit GPU-Glas-Shader, hell, Sprache Englisch |
+| **Oberfläche** | Liquid Glass mit GPU-Glas-Shader, hell, Englisch oder Deutsch |
 | **Modell** | Parametrisch, mit globaler Timeline, Komponenten und Joints |
 | **Skizze** | 12 Zeichenwerkzeuge, 7 Änderungswerkzeuge, 9 Bedingungen, eine smarte Bemaßung |
 | **Volumen** | 16 Erstell-, 12 Änderungs- und 6 Konstruktionswerkzeuge |

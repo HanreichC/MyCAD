@@ -115,7 +115,7 @@ int recordKey(QWidget* parent)
         {
             setWindowTitle(QStringLiteral("Shortcut"));
             auto lay = new QVBoxLayout(this);
-            lay->addWidget(new QLabel(QStringLiteral("Press the key that should act as a mouse button …")));
+            lay->addWidget(new QLabel(T("Press the key that should act as a mouse button …")));
         }
         int key = 0;
 
@@ -503,7 +503,7 @@ QWidget* chips(const QString& spec)
     const QStringList alternatives = spec.split(QStringLiteral(" | "));
     for (int i = 0; i < alternatives.size(); ++i) {
         if (i > 0) {
-            auto orLabel = new QLabel(QStringLiteral("or"));
+            auto orLabel = new QLabel(T("or"));
             orLabel->setObjectName(QStringLiteral("Secondary"));
             lay->addSpacing(2);
             lay->addWidget(orLabel);
@@ -516,7 +516,7 @@ QWidget* chips(const QString& spec)
                 plus->setObjectName(QStringLiteral("Secondary"));
                 lay->addWidget(plus);
             }
-            auto chip = new QLabel(keys[k].trimmed());
+            auto chip = new QLabel(T(keys[k].trimmed()));
             chip->setObjectName(QStringLiteral("Chip"));
             lay->addWidget(chip);
         }
@@ -623,12 +623,12 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     auto head = new DragArea;
     auto headLay = new QHBoxLayout(head);
     headLay->setContentsMargins(0, 0, 0, 0);
-    auto title = new QLabel(QStringLiteral("Settings"));
+    auto title = new QLabel(T("Settings"));
     title->setObjectName(QStringLiteral("Title"));
     headLay->addWidget(title);
     headLay->addStretch();
     auto pages = new QStackedWidget;
-    headLay->addWidget(segmented({QStringLiteral("Navigation"), QStringLiteral("Keys")}, 0,
+    headLay->addWidget(segmented({T("Navigation"), T("Keys")}, 0,
                                  [pages](int i) { pages->setCurrentIndex(i); }));
     lay->addWidget(head);
     lay->addSpacing(6);
@@ -681,17 +681,17 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     nav->setContentsMargins(0, 0, 0, 0);
     nav->setSpacing(6);
 
-    auto styleCard = addCard(nav, QStringLiteral("Mouse & Trackpad"));
+    auto styleCard = addCard(nav, T("Mouse & Trackpad"));
     auto style = new QComboBox;
     style->setMinimumWidth(260);
     const std::string current = view->GetASCII("NavigationStyle", "Gui::RevitNavigationStyle");
     for (const auto& s : Styles) {
-        style->addItem(QString::fromLatin1(s.label), QString::fromLatin1(s.type));
+        style->addItem(T(s.label), QString::fromLatin1(s.type));
         if (current == s.type) {
             style->setCurrentIndex(style->count() - 1);
         }
     }
-    addRow(styleCard, QStringLiteral("Style"), style);
+    addRow(styleCard, T("Style"), style);
 
     // Vorschau: wie gedreht, geschoben, gezoomt und ausgewählt wird; folgt auch dem Überfahren der Liste
     auto help = new QWidget;
@@ -750,8 +750,8 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
             auto glyph = new QLabel;
             glyph->setPixmap(tintedIcon(QString::fromLatin1(icon), iconColor, 18));
             h->addWidget(glyph);
-            auto name = new QLabel(QString::fromLatin1(names[i++]));
-            name->setFixedWidth(52);
+            auto name = new QLabel(T(names[i++]));
+            name->setFixedWidth(86);
             h->addWidget(name);
             h->addWidget(chips(combos), 1);
             helpLay->addWidget(row);
@@ -765,50 +765,50 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
         showHelp(i);
     });
     new EventHook(style->view(), QEvent::Hide, [style, showHelp] { showHelp(style->currentIndex()); });
-    auto trackpadNote = new QLabel(QStringLiteral("On a trackpad, two-finger scrolling acts as the scroll wheel. "
-                                                  "Keys that act as mouse buttons are set up under Keys."));
+    auto trackpadNote = new QLabel(T("On a trackpad, two-finger scrolling acts as the scroll wheel. "
+                                     "Keys that act as mouse buttons are set up under Keys."));
     trackpadNote->setObjectName(QStringLiteral("Hint"));
     trackpadNote->setWordWrap(true);
     trackpadNote->setContentsMargins(4, 0, 4, 0);
     nav->addWidget(trackpadNote);
 
-    auto viewCard = addCard(nav, QStringLiteral("View"));
-    addRow(viewCard, QStringLiteral("Camera"),
-           segmented({QStringLiteral("Orthographic"), QStringLiteral("Perspective")},
+    auto viewCard = addCard(nav, T("View"));
+    addRow(viewCard, T("Camera"),
+           segmented({T("Orthographic"), T("Perspective")},
                      view->GetBool("Orthographic", true) ? 0 : 1, [view](int i) {
                          view->SetBool("Perspective", i == 1);
                          view->SetBool("Orthographic", i == 0);  // wirkt sofort auf alle Ansichten
                      }));
     auto orbit = new QComboBox;
-    orbit->addItems({QStringLiteral("Turntable (Z stays up)"), QStringLiteral("Trackball (free)"),
-                     QStringLiteral("Free turntable"), QStringLiteral("Trackball classic"),
-                     QStringLiteral("Rounded arcball")});
+    orbit->addItems({T("Turntable (Z stays up)"), T("Trackball (free)"),
+                     T("Free turntable"), T("Trackball classic"),
+                     T("Rounded arcball")});
     orbit->setCurrentIndex(static_cast<int>(view->GetInt("OrbitStyle", 0)));
     QObject::connect(orbit, &QComboBox::currentIndexChanged, [view](int i) { view->SetInt("OrbitStyle", i); });
-    addRow(viewCard, QStringLiteral("Rotate"), orbit);
+    addRow(viewCard, T("Rotate"), orbit);
     auto center = new QComboBox;
-    center->addItems({QStringLiteral("Window center"), QStringLiteral("Point under the cursor"),
-                      QStringLiteral("Center of all bodies"), QStringLiteral("Center of the body under the cursor")});
+    center->addItems({T("Window center"), T("Point under the cursor"),
+                      T("Center of all bodies"), T("Center of the body under the cursor")});
     center->setCurrentIndex(static_cast<int>(view->GetInt("RotationMode", 3)));
     QObject::connect(center, &QComboBox::currentIndexChanged, [view](int i) { view->SetInt("RotationMode", i); });
-    addRow(viewCard, QStringLiteral("Rotate around"), center);
+    addRow(viewCard, T("Rotate around"), center);
     auto toggle = [&](const std::shared_ptr<Card>& c, const QString& label, const char* param, bool def) {
         auto sw = new Switch(view->GetBool(param, def));
         QObject::connect(sw, &QAbstractButton::toggled, [view, param](bool on) { view->SetBool(param, on); });
         addRow(c, label, sw);
     };
-    toggle(viewCard, QStringLiteral("Animate view changes"), "UseNavigationAnimations", true);
-    addRow(viewCard, QStringLiteral("Glass"),
-           segmented({QStringLiteral("Tinted"), QStringLiteral("Clear")}, int(myParams()->GetInt("GlassClear", 0)),
+    toggle(viewCard, T("Animate view changes"), "UseNavigationAnimations", true);
+    addRow(viewCard, T("Glass"),
+           segmented({T("Tinted"), T("Clear")}, int(myParams()->GetInt("GlassClear", 0)),
                      [](int i) { Gui::Shell::setGlass(i); }));
     auto names = new Switch(myParams()->GetBool("ToolNames", false));
     QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
-    addRow(viewCard, QStringLiteral("Show tool names"), names);
+    addRow(viewCard, T("Show tool names"), names);
     QStringList materials;
     for (const char* name : Gui::Shell::bodyMaterialNames()) {
-        materials << QString::fromLatin1(name);
+        materials << T(name);
     }
-    addRow(viewCard, QStringLiteral("Body material"),
+    addRow(viewCard, T("Body material"),
            segmented(materials, int(myParams()->GetInt("BodyMaterial", 0)), [](int i) { Gui::Shell::setBodyMaterial(i); }));
     auto folder = new QPushButton;
     auto showFolder = [folder] {
@@ -816,9 +816,9 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
         folder->setText(path.replace(QDir::homePath(), QStringLiteral("~")));
     };
     showFolder();
-    folder->setToolTip(QStringLiteral("Designs in this folder appear on the start page; Save starts here"));
+    folder->setToolTip(T("Designs in this folder appear on the start page; Save starts here"));
     QObject::connect(folder, &QPushButton::clicked, folder, [folder, showFolder] {
-        const QString dir = QFileDialog::getExistingDirectory(folder->window(), QStringLiteral("Projects Folder"),
+        const QString dir = QFileDialog::getExistingDirectory(folder->window(), T("Projects Folder"),
                                                               Gui::Shell::projectsFolder());
         if (!dir.isEmpty()) {
             myParams()->SetASCII("ProjectsFolder", dir.toUtf8().constData());
@@ -827,9 +827,21 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
             showFolder();
         }
     });
-    addRow(viewCard, QStringLiteral("Projects folder"), folder);
+    addRow(viewCard, T("Projects folder"), folder);
 
-    auto speedCard = addCard(nav, QStringLiteral("Speed & Zoom"));
+    // Sprache: FreeCAD lädt seine Übersetzungen beim Start, die Oberfläche wird dabei neu aufgebaut
+    auto restartHint = new QLabel(T("Takes effect after restarting MyCAD."));
+    restartHint->setObjectName(QStringLiteral("Hint"));
+    restartHint->hide();
+    addRow(viewCard, T("Language"),
+           segmented({QStringLiteral("English"), QStringLiteral("Deutsch")}, Gui::Shell::language() == QLatin1String("German") ? 1 : 0,
+                     [restartHint](int i) {
+                         Gui::Shell::setLanguage(i == 1 ? QStringLiteral("German") : QStringLiteral("English"));
+                         restartHint->show();
+                     }));
+    addRow(viewCard, QString(), restartHint, true);
+
+    auto speedCard = addCard(nav, T("Speed & Zoom"));
     auto slider = [](int lo, int hi, int value) {
         auto s = new QSlider(Qt::Horizontal);
         s->setRange(lo, hi);
@@ -839,12 +851,12 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     };
     auto sensitivity = slider(5, 100, int(view->GetFloat("Sensitivity", 2.0) * 10));  // 0.5 … 10
     QObject::connect(sensitivity, &QSlider::valueChanged, [view](int v) { view->SetFloat("Sensitivity", v / 10.0); });
-    addRow(speedCard, QStringLiteral("Rotation speed"), sensitivity);
+    addRow(speedCard, T("Rotation speed"), sensitivity);
     auto zoomStep = slider(2, 50, int(std::max(0.02, view->GetFloat("ZoomStep", 0.2)) * 100));  // 0.02 … 0.5
     QObject::connect(zoomStep, &QSlider::valueChanged, [view](int v) { view->SetFloat("ZoomStep", v / 100.0); });
-    addRow(speedCard, QStringLiteral("Zoom & scroll speed"), zoomStep);
-    toggle(speedCard, QStringLiteral("Zoom towards the cursor"), "ZoomAtCursor", true);
-    toggle(speedCard, QStringLiteral("Invert zoom direction"), "InvertZoom", true);
+    addRow(speedCard, T("Zoom & scroll speed"), zoomStep);
+    toggle(speedCard, T("Zoom towards the cursor"), "ZoomAtCursor", true);
+    toggle(speedCard, T("Invert zoom direction"), "InvertZoom", true);
     nav->addStretch();
     pages->addWidget(navPage);
 
@@ -859,8 +871,8 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     intro->setObjectName(QStringLiteral("Hint"));
     intro->setWordWrap(true);
     keys->addWidget(intro);
-    auto keyCard = addCard(keys, QStringLiteral("Keys as mouse buttons"));
-    auto empty = new QLabel(QStringLiteral("No keys yet. Add one, e.g. Space as the middle mouse button."));
+    auto keyCard = addCard(keys, T("Keys as mouse buttons"));
+    auto empty = new QLabel(T("No keys yet. Add one, e.g. Space as the middle mouse button."));
     empty->setObjectName(QStringLiteral("Secondary"));
     keyCard->rows->addWidget(empty);
 
@@ -890,29 +902,29 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
         auto h = new QHBoxLayout(row);
         h->setContentsMargins(0, 8, 0, 8);
         h->setSpacing(8);
-        auto chip = new QLabel(keyName(key));
+        auto chip = new QLabel(T(keyName(key)));
         chip->setObjectName(QStringLiteral("Chip"));
         chip->setMinimumWidth(56);
         chip->setAlignment(Qt::AlignCenter);
         h->addWidget(chip);
-        auto acts = new QLabel(QStringLiteral("acts as"));
+        auto acts = new QLabel(T("acts as"));
         acts->setObjectName(QStringLiteral("Secondary"));
         h->addWidget(acts);
         auto buttons = new QComboBox;
         for (auto label : ButtonLabels) {
-            buttons->addItem(QString::fromLatin1(label));
+            buttons->addItem(T(label));
         }
         buttons->setCurrentIndex(button);
         h->addWidget(buttons, 1);
         auto modes = new QComboBox;
         for (auto label : ModeLabels) {
-            modes->addItem(QString::fromLatin1(label));
+            modes->addItem(T(label));
         }
         modes->setCurrentIndex(mode);
         h->addWidget(modes, 1);
         auto remove = new QPushButton(QStringLiteral("✕"));
         remove->setObjectName(QStringLiteral("Remove"));
-        remove->setToolTip(QStringLiteral("Remove"));
+        remove->setToolTip(T("Remove"));
         remove->setAutoDefault(false);
         h->addWidget(remove);
         keyCard->rows->addWidget(row);
@@ -944,7 +956,7 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     modesHint->setWordWrap(true);
     keys->addWidget(modesHint);
     auto addRowLay = new QHBoxLayout;
-    auto add = new QPushButton(QStringLiteral("Add Key…"));
+    auto add = new QPushButton(T("Add Key…"));
     add->setObjectName(QStringLiteral("Plain"));
     add->setAutoDefault(false);
     QObject::connect(add, &QPushButton::clicked, &dlg, [&dlg, addEntry, save] {
@@ -962,8 +974,8 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     // Fuß: Fertig
     auto foot = new QHBoxLayout;
     foot->addStretch();
-    auto done = new QPushButton(QStringLiteral("Done"));
-    done->setObjectName(QStringLiteral("Done"));
+    auto done = new QPushButton(T("Done"));
+    done->setObjectName(T("Done"));
     done->setDefault(true);
     QObject::connect(done, &QPushButton::clicked, &dlg, &QDialog::accept);
     foot->addWidget(done);

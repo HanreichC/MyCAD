@@ -336,13 +336,14 @@ App::Part* Design::newComponent(App::Part* parent)
 
 App::DocumentObjectGroup* Design::folder(App::Part* root, const char* label)
 {
+    // über den internen Namen, die Beschriftung ist übersetzt oder umbenannt;
     // FreeCAD macht Namen eindeutig: in Komponenten heißen die Ordner "Bodies001" usw.
     for (auto obj : root->Group.getValues()) {
         auto group = freecad_cast<App::DocumentObjectGroup*>(obj);
         if (!group) {
             continue;
         }
-        std::string name = group->Label.getValue();
+        std::string name = group->getNameInDocument();
         name.erase(name.find_last_not_of("0123456789") + 1);
         if (name == label) {
             return group;

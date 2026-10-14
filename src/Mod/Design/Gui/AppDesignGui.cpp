@@ -6,6 +6,8 @@
 #include <Base/Interpreter.h>
 #include <CXX/Extensions.hxx>
 #include <Gui/Application.h>
+#include <Gui/Shell/Shell.h>
+#include <App/VarSet.h>
 #include <Gui/Document.h>
 #include <Gui/ViewProviderDocumentObject.h>
 #include <Mod/Design/App/Features.h>
@@ -72,6 +74,28 @@ PyMOD_INIT_FUNC(DesignGui)
             d->recompute();
             if (auto gd = Gui::Application::Instance->getDocument(d)) {
                 gd->setModified(false);
+            }
+        });
+    });
+    // Deutsche Oberfläche: neue Objekte heißen deutsch (Skizze1, Extrusion001, Ordner Skizzen …). Erst danach setzen,
+    // weil die Befehle die Beschriftung nach dem Anlegen noch selbst setzen; geöffnete Dateien bleiben unverändert.
+    App::GetApplication().signalNewObject.connect([](const App::DocumentObject& obj) {
+        if (obj.getDocument()->testStatus(App::Document::Restoring) || obj.isDerivedFrom<App::VarSet>()) {
+            return;  // "Parameters" wird über die Beschriftung gefunden
+        }
+        const std::string doc = obj.getDocument()->getName(), name = obj.getNameInDocument();
+        QTimer::singleShot(0, [doc, name] {
+            App::Document* d = App::GetApplication().getDocument(doc.c_str());
+            App::DocumentObject* o = d ? d->getObject(name.c_str()) : nullptr;
+            if (!o) {
+                return;
+            }
+            const std::string label = o->Label.getValue();
+            const size_t digits = label.find_last_not_of("0123456789") + 1;
+            const std::string key = "label:" + label.substr(0, digits);
+            const QString german = Gui::Shell::T(key.c_str());
+            if (german != QString::fromStdString(key)) {
+                o->Label.setValue(german.toStdString() + label.substr(digits));
             }
         });
     });

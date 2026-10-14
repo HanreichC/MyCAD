@@ -81,6 +81,9 @@
 
 #include <functional>
 #include <memory>
+#include <Gui/Shell/Shell.h>
+
+using Gui::Shell::T;
 
 namespace
 {
@@ -217,7 +220,7 @@ public:
             view->setTemporaryVisibility(Gui::DatumElement::Planes);
         }
         Gui::Selection().clearSelection();
-        Gui::getMainWindow()->showMessage(QStringLiteral("Select a plane or a planar face for the sketch"));
+        Gui::getMainWindow()->showMessage(T("Select a plane or a planar face for the sketch"));
     }
 
     ~PlanePicker() override
@@ -367,8 +370,8 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name,
         }
     }
     if (!profiles) {
-        QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name),
-                                 QStringLiteral("Select one or more profiles (closed areas of a sketch) first."));
+        QMessageBox::information(Gui::getMainWindow(), T(name),
+                                 T("Select one or more profiles (closed areas of a sketch) first."));
         return;
     }
     // Ganze Skizze bzw. das einzige Profil: die jetzigen Profile fest übernehmen (wie Fusion), sonst
@@ -434,8 +437,8 @@ bool setSweepPath(Design::Feature* feature)
         static_cast<Design::Sweep*>(feature)->Path.setValue(obj, edges);
         return true;
     }
-    QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Sweep"),
-                             QStringLiteral("Select a profile and the path (sketch lines or body edges)."));
+    QMessageBox::information(Gui::getMainWindow(), T("Sweep"),
+                             T("Select a profile and the path (sketch lines or body edges)."));
     return false;
 }
 
@@ -463,8 +466,8 @@ void startLoft(App::Document* doc)
         }
     }
     if (objs.size() < 2) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Loft"),
-                                 QStringLiteral("Select two or more profiles from different sketches, in order."));
+        QMessageBox::information(Gui::getMainWindow(), T("Loft"),
+                                 T("Select two or more profiles from different sketches, in order."));
         return;
     }
     doc->openTransaction("Loft");
@@ -525,8 +528,8 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
         }
     }
     if (!body || (edges.empty() && !bodyAlone) || !Design::stateAtMarker(body)) {
-        QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name),
-                                 QStringLiteral("Select edges (or faces) of a body first."));
+        QMessageBox::information(Gui::getMainWindow(), T(name),
+                                 T("Select edges (or faces) of a body first."));
         return;
     }
 
@@ -575,8 +578,8 @@ void startCombine(App::Document* doc)
 {
     const auto bodies = selectedBodies();
     if (bodies.size() < 2) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Combine"),
-                                 QStringLiteral("Select the target body first, then one or more tool bodies."));
+        QMessageBox::information(Gui::getMainWindow(), T("Combine"),
+                                 T("Select the target body first, then one or more tool bodies."));
         return;
     }
     auto feature = static_cast<Design::Combine*>(addFeature(doc, "Design::Combine", "Combine", bodies.front()));
@@ -601,7 +604,7 @@ public:
         , start(part->Placement.getValue())
     {
         auto w = new QWidget;
-        w->setWindowTitle(QStringLiteral("Move Component"));
+        w->setWindowTitle(T("Move Component"));
         auto form = new QFormLayout(w);
         auto box = [](const Base::Unit& unit) {
             auto b = new Gui::QuantitySpinBox;
@@ -614,10 +617,10 @@ public:
         y = box(Base::Unit::Length);
         z = box(Base::Unit::Length);
         angle = box(Base::Unit::Angle);
-        form->addRow(QStringLiteral("X distance"), x);
-        form->addRow(QStringLiteral("Y distance"), y);
-        form->addRow(QStringLiteral("Z distance"), z);
-        form->addRow(QStringLiteral("Rotate around Z"), angle);
+        form->addRow(T("X distance"), x);
+        form->addRow(T("Y distance"), y);
+        form->addRow(T("Z distance"), z);
+        form->addRow(T("Rotate around Z"), angle);
         addTaskBox(w, false);
         for (auto b : {x, y, z, angle}) {
             QObject::connect(b, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
@@ -758,7 +761,7 @@ void startAlign(App::Document* doc)
     Frame from, to;
     if (!body || refs[1].first == body || !frameOf(refs[0].first, refs[0].second, from)
         || !frameOf(refs[1].first, refs[1].second, to)) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Align"),
+        QMessageBox::information(Gui::getMainWindow(), T("Align"),
                                  QStringLiteral("Select a face, edge or point of the body to move, "
                                                 "then the face, edge, point or plane to align it to."));
         return;
@@ -798,8 +801,8 @@ void startSplit(App::Document* doc)
         }
     }
     if (!body || !tool || tool == body) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Split Body"),
-                                 QStringLiteral("Select the body to split and a plane or face to split it with."));
+        QMessageBox::information(Gui::getMainWindow(), T("Split Body"),
+                                 T("Select the body to split and a plane or face to split it with."));
         return;
     }
     auto feature = static_cast<Design::Split*>(addFeature(doc, "Design::Split", "Split", body));
@@ -818,8 +821,8 @@ void startSplit(App::Document* doc)
     feature->Bodies.setValues(bodies);
     doc->recompute();
     if (feature->isError()) {
-        QMessageBox::warning(Gui::getMainWindow(), QStringLiteral("Split Body"),
-                             QString::fromUtf8(feature->getStatusString()));
+        QMessageBox::warning(Gui::getMainWindow(), T("Split Body"),
+                             T(feature->getStatusString()));
         doc->abortTransaction();
         doc->recompute();
         return;
@@ -849,8 +852,8 @@ void startRib(App::Document* doc, long mode = 0)
         }
     }
     if (!body || !sketch || !Design::stateAtMarker(body)) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Rib"),
-                                 QStringLiteral("Select the body and the sketch lines of the rib (or the whole sketch)."));
+        QMessageBox::information(Gui::getMainWindow(), T("Rib"),
+                                 T("Select the body and the sketch lines of the rib (or the whole sketch)."));
         return;
     }
     auto feature = static_cast<Design::Rib*>(addFeature(doc, "Design::Rib", mode ? "Web" : "Rib", body));
@@ -883,7 +886,7 @@ void startFaceTool(App::Document* doc, const char* type, const char* name, const
         }
     }
     if (!body || faces.empty() || !Design::stateAtMarker(body)) {
-        QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name), QString::fromLatin1(hint));
+        QMessageBox::information(Gui::getMainWindow(), T(name), T(hint));
         return;
     }
     App::DocumentObject* ref = refs.back().first;
@@ -899,7 +902,7 @@ void startFaceTool(App::Document* doc, const char* type, const char* name, const
     Design::attachToBodies(feature, {body});
     doc->recompute();
     if (feature->isError()) {
-        QMessageBox::warning(Gui::getMainWindow(), QString::fromLatin1(name), QString::fromUtf8(feature->getStatusString()));
+        QMessageBox::warning(Gui::getMainWindow(), T(name), T(feature->getStatusString()));
         doc->abortTransaction();
         doc->recompute();
         return;
@@ -936,8 +939,8 @@ void startEmboss(App::Document* doc)
         }
     }
     if (!profiles || !body || faces.empty() || !Design::stateAtMarker(body)) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Emboss"),
-                                 QStringLiteral("Select the profiles or text of a sketch and the face to emboss on."));
+        QMessageBox::information(Gui::getMainWindow(), T("Emboss"),
+                                 T("Select the profiles or text of a sketch and the face to emboss on."));
         return;
     }
     doc->openTransaction("Emboss");
@@ -969,19 +972,19 @@ void startJoint(App::Document* doc)
     App::Part* moving = refs.size() == 2 ? Design::componentOf(refs[0].first) : nullptr;
     QString problem;
     if (!moving) {
-        problem = QStringLiteral("Select a face, edge, hole or point on the component to move, then the place to join it to.");
+        problem = T("Select a face, edge, hole or point on the component to move, then the place to join it to.");
     }
     else if (moving == root) {
-        problem = QStringLiteral("The first selection must belong to a component (the design itself stays in place).");
+        problem = T("The first selection must belong to a component (the design itself stays in place).");
     }
     else if (Design::componentOf(refs[1].first) == moving) {
-        problem = QStringLiteral("The second selection must be on another component.");
+        problem = T("The second selection must be on another component.");
     }
     else if (moving->getExpression(App::ObjectIdentifier(moving->Placement)).expression) {
-        problem = QStringLiteral("This component is already positioned by a joint.");
+        problem = T("This component is already positioned by a joint.");
     }
     if (!problem.isEmpty()) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Joint"), problem);
+        QMessageBox::information(Gui::getMainWindow(), T("Joint"), problem);
         return;
     }
     doc->openTransaction("Joint");
@@ -1008,8 +1011,8 @@ void startScale(App::Document* doc)
 {
     const auto bodies = selectedBodies();
     if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Scale"),
-                                 QStringLiteral("Select one or more bodies first."));
+        QMessageBox::information(Gui::getMainWindow(), T("Scale"),
+                                 T("Select one or more bodies first."));
         return;
     }
     auto feature = addFeature(doc, "Design::Scale", "Scale", bodies.front());
@@ -1031,8 +1034,8 @@ void startMove(App::Document* doc)
     }
     const auto bodies = selectedBodies();
     if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Move"),
-                                 QStringLiteral("Select one or more bodies or a component first."));
+        QMessageBox::information(Gui::getMainWindow(), T("Move"),
+                                 T("Select one or more bodies or a component first."));
         return;
     }
     auto feature = addFeature(doc, "Design::Move", "Move", bodies.front());
@@ -1045,8 +1048,8 @@ void startMirror(App::Document* doc)
 {
     const auto bodies = selectedBodies();
     if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Mirror"),
-                                 QStringLiteral("Select one or more bodies first."));
+        QMessageBox::information(Gui::getMainWindow(), T("Mirror"),
+                                 T("Select one or more bodies first."));
         return;
     }
     auto feature = static_cast<Design::Mirror*>(addFeature(doc, "Design::Mirror", "Mirror", bodies.front()));
@@ -1315,8 +1318,8 @@ Geometries dxfGeometry(const std::string& file, std::string& error)
 void importFile(App::Document* doc)
 {
     const QString file = QFileDialog::getOpenFileName(
-        Gui::getMainWindow(), QStringLiteral("Insert"), QString(),
-        QStringLiteral("CAD files (*.step *.stp *.dxf *.svg);;STEP (*.step *.stp);;DXF (*.dxf);;SVG (*.svg)")
+        Gui::getMainWindow(), T("Insert"), QString(),
+        T("CAD files (*.step *.stp *.dxf *.svg);;STEP (*.step *.stp);;DXF (*.dxf);;SVG (*.svg)")
     );
     if (file.isEmpty()) {
         return;
@@ -1373,11 +1376,11 @@ void importFile(App::Document* doc)
     }
     catch (const Base::Exception& e) {
         doc->abortTransaction();
-        QMessageBox::warning(Gui::getMainWindow(), QStringLiteral("Insert"), QString::fromUtf8(e.what()));
+        QMessageBox::warning(Gui::getMainWindow(), T("Insert"), QString::fromUtf8(e.what()));
     }
     catch (const Standard_Failure& e) {
         doc->abortTransaction();
-        QMessageBox::warning(Gui::getMainWindow(), QStringLiteral("Insert"), QString::fromUtf8(e.GetMessageString()));
+        QMessageBox::warning(Gui::getMainWindow(), T("Insert"), QString::fromUtf8(e.GetMessageString()));
     }
 }
 
@@ -1396,7 +1399,7 @@ void exportBodies(App::Document* doc)
         }
     }
     if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Export"), QStringLiteral("There is no body to export."));
+        QMessageBox::information(Gui::getMainWindow(), T("Export"), T("There is no body to export."));
         return;
     }
 
@@ -1404,8 +1407,8 @@ void exportBodies(App::Document* doc)
     const QString start = QDir::home().filePath(QString::fromUtf8(doc->Label.getValue()));
     QString filter;
     QString file = QFileDialog::getSaveFileName(
-        Gui::getMainWindow(), QStringLiteral("Export"), start,
-        QStringLiteral("3MF for 3D printing (*.3mf);;STL (*.stl);;STEP (*.step *.stp)"), &filter
+        Gui::getMainWindow(), T("Export"), start,
+        T("3MF for 3D printing (*.3mf);;STL (*.stl);;STEP (*.step *.stp)"), &filter
     );
     if (file.isEmpty()) {
         return;
@@ -1431,10 +1434,10 @@ void exportBodies(App::Document* doc)
         Base::Interpreter().runString(
             ("import FreeCAD as App, " + module + "\n" + module + ".export(" + objs + ", '" + path.toStdString() + "')").c_str()
         );
-        Gui::getMainWindow()->showMessage(QStringLiteral("Exported %1 bodies to %2").arg(bodies.size()).arg(file));
+        Gui::getMainWindow()->showMessage(T("Exported %1 bodies to %2").arg(bodies.size()).arg(file));
     }
     catch (const Base::Exception& e) {
-        QMessageBox::warning(Gui::getMainWindow(), QStringLiteral("Export"), QString::fromUtf8(e.what()));
+        QMessageBox::warning(Gui::getMainWindow(), T("Export"), QString::fromUtf8(e.what()));
     }
 }
 
@@ -1472,8 +1475,8 @@ void startHole(App::Document* doc)
     }
     Design::Body* target = bodyUnderSketch(sketch);
     if (!target) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Hole"),
-                                 QStringLiteral("Create a sketch on a face of a body and place points where the holes go."));
+        QMessageBox::information(Gui::getMainWindow(), T("Hole"),
+                                 T("Create a sketch on a face of a body and place points where the holes go."));
         return;
     }
     auto feature = static_cast<Design::Hole*>(addFeature(doc, "Design::Hole", "Hole", target));
@@ -1516,8 +1519,8 @@ void startPattern(App::Document* doc)
             startEditing(feature, false, nullptr);
             return;
         }
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Pattern"),
-                                 QStringLiteral("Select bodies, or an Extrude, Revolve or Hole in the timeline first."));
+        QMessageBox::information(Gui::getMainWindow(), T("Pattern"),
+                                 T("Select bodies, or an Extrude, Revolve or Hole in the timeline first."));
         return;
     }
     std::vector<Design::Body*> bodies;
@@ -1542,13 +1545,13 @@ public:
         : plane(plane)
     {
         auto w = new QWidget;
-        w->setWindowTitle(QStringLiteral("Offset Plane"));
+        w->setWindowTitle(T("Offset Plane"));
         auto form = new QFormLayout(w);
         auto distance = new Gui::QuantitySpinBox;
         distance->setUnit(Base::Unit::Length);
         distance->setRange(-1e7, 1e7);
         distance->setValue(Base::Quantity(10.0, Base::Unit::Length));
-        form->addRow(QStringLiteral("Distance"), distance);
+        form->addRow(T("Distance"), distance);
         addTaskBox(w, false);
         QObject::connect(distance, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this](double d) {
             setOffset(d);
@@ -1629,7 +1632,7 @@ void startConstruct(App::Document* doc, const char* type, const char* name, cons
     std::vector<std::string> subs;
     selectedRefs(objs, subs);
     if (objs.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name), QString::fromLatin1(hint));
+        QMessageBox::information(Gui::getMainWindow(), T(name), T(hint));
         return;
     }
     doc->openTransaction(name);
@@ -1645,9 +1648,9 @@ void startConstruct(App::Document* doc, const char* type, const char* name, cons
     attach->attacher().suggestMapModes(suggestion);
     if (suggestion.message != Attacher::SuggestResult::srOK) {
         doc->abortTransaction();
-        QMessageBox::information(Gui::getMainWindow(), QString::fromLatin1(name),
-                                 QStringLiteral("This selection does not define a %1. %2")
-                                     .arg(QString::fromLatin1(name).toLower(), QString::fromLatin1(hint)));
+        QMessageBox::information(Gui::getMainWindow(), T(name),
+                                 T("This selection does not define a %1. %2")
+                                     .arg(T(name), T(hint)));
         return;
     }
     attach->MapMode.setValue(Attacher::AttachEngine::getModeName(suggestion.bestFitMode).c_str());
@@ -1682,8 +1685,8 @@ void startMidplane(App::Document* doc)
     };
     gp_Pln a, b;
     if (objs.size() != 2 || !planeOf(0, a) || !planeOf(1, b) || !a.Axis().IsParallel(b.Axis(), 1e-6)) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Midplane"),
-                                 QStringLiteral("Select two parallel planes or planar faces."));
+        QMessageBox::information(Gui::getMainWindow(), T("Midplane"),
+                                 T("Select two parallel planes or planar faces."));
         return;
     }
     doc->openTransaction("Midplane");
@@ -1713,7 +1716,7 @@ public:
     TaskMeasure()
     {
         auto w = new QWidget;
-        w->setWindowTitle(QStringLiteral("Measure"));
+        w->setWindowTitle(T("Measure"));
         auto lay = new QVBoxLayout(w);
         result = new QLabel;
         result->setTextInteractionFlags(Qt::TextSelectableByMouse);
@@ -1783,36 +1786,36 @@ private:
                 }
                 case TopAbs_EDGE: {
                     BRepGProp::LinearProperties(s, p);
-                    row(QStringLiteral("Length"), length(p.Mass()));
+                    row(T("Length"), length(p.Mass()));
                     BRepAdaptor_Curve curve(TopoDS::Edge(s));
                     if (curve.GetType() == GeomAbs_Circle) {
-                        row(QStringLiteral("Radius"), length(curve.Circle().Radius()));
-                        row(QStringLiteral("Diameter"), length(2 * curve.Circle().Radius()));
+                        row(T("Radius"), length(curve.Circle().Radius()));
+                        row(T("Diameter"), length(2 * curve.Circle().Radius()));
                     }
                     break;
                 }
                 case TopAbs_FACE: {
                     BRepGProp::SurfaceProperties(s, p);
-                    row(QStringLiteral("Area"), QStringLiteral("%1 mm²").arg(p.Mass(), 0, 'f', 2));
+                    row(T("Area"), QStringLiteral("%1 mm²").arg(p.Mass(), 0, 'f', 2));
                     BRepAdaptor_Surface surface(TopoDS::Face(s));
                     if (surface.GetType() == GeomAbs_Cylinder) {
-                        row(QStringLiteral("Radius"), length(surface.Cylinder().Radius()));
-                        row(QStringLiteral("Diameter"), length(2 * surface.Cylinder().Radius()));
+                        row(T("Radius"), length(surface.Cylinder().Radius()));
+                        row(T("Diameter"), length(2 * surface.Cylinder().Radius()));
                     }
                     break;
                 }
                 default: {
                     BRepGProp::VolumeProperties(s, p);
-                    row(QStringLiteral("Volume"), QStringLiteral("%1 mm³").arg(p.Mass(), 0, 'f', 2));
+                    row(T("Volume"), QStringLiteral("%1 mm³").arg(p.Mass(), 0, 'f', 2));
                     GProp_GProps area;
                     BRepGProp::SurfaceProperties(s, area);
-                    row(QStringLiteral("Area"), QStringLiteral("%1 mm²").arg(area.Mass(), 0, 'f', 2));
+                    row(T("Area"), QStringLiteral("%1 mm²").arg(area.Mass(), 0, 'f', 2));
                     Bnd_Box box;
                     BRepBndLib::Add(s, box);
                     if (!box.IsVoid()) {
                         double x0, y0, z0, x1, y1, z1;
                         box.Get(x0, y0, z0, x1, y1, z1);
-                        row(QStringLiteral("Size"), QStringLiteral("%1 × %2 × %3")
+                        row(T("Size"), QStringLiteral("%1 × %2 × %3")
                                                         .arg(length(x1 - x0), length(y1 - y0), length(z1 - z0)));
                     }
                     break;
@@ -1822,7 +1825,7 @@ private:
         else if (shapes.size() == 2) {
             BRepExtrema_DistShapeShape dist(shapes[0], shapes[1]);
             if (dist.IsDone()) {
-                row(QStringLiteral("Distance"), length(dist.Value()));
+                row(T("Distance"), length(dist.Value()));
             }
             // Winkel zwischen zwei geraden Kanten oder zwei ebenen Flächen
             auto direction = [](const TopoDS_Shape& s, gp_Dir& d) {
@@ -1846,7 +1849,7 @@ private:
             if (direction(shapes[0], a) && direction(shapes[1], b)) {
                 double angle = a.Angle(b) * 180 / M_PI;
                 angle = std::min(angle, 180 - angle);
-                row(QStringLiteral("Angle"), QStringLiteral("%1°").arg(angle, 0, 'f', 2));
+                row(T("Angle"), QStringLiteral("%1°").arg(angle, 0, 'f', 2));
             }
         }
         result->setText(rows.isEmpty() ? QStringLiteral("Select a point, edge, face or body. "
@@ -1866,17 +1869,17 @@ public:
     {
         doc->openTransaction("Appearance");
         auto w = new QWidget;
-        w->setWindowTitle(QStringLiteral("Appearance"));
+        w->setWindowTitle(T("Appearance"));
         auto lay = new QVBoxLayout(w);
-        lay->addWidget(new QLabel(QStringLiteral("%1 selected").arg(this->bodies.size() == 1
+        lay->addWidget(new QLabel(T("%1 selected").arg(this->bodies.size() == 1
                                                                         ? QString::fromUtf8(this->bodies.front()->Label.getValue())
-                                                                        : QStringLiteral("%1 bodies").arg(this->bodies.size()))));
+                                                                        : T("%1 bodies").arg(this->bodies.size()))));
         auto heading = [lay](const QString& text) {
             auto label = new QLabel(text);
             label->setStyleSheet(QStringLiteral("font-weight: 600; margin-top: 8px;"));
             lay->addWidget(label);
         };
-        heading(QStringLiteral("Material"));
+        heading(T("Material"));
         struct Preset
         {
             const char* name;
@@ -1899,7 +1902,7 @@ public:
             ++i;
         }
         lay->addLayout(grid);
-        heading(QStringLiteral("Color"));
+        heading(T("Color"));
         auto swatches = new QGridLayout;
         swatches->setSpacing(8);
         const char* colors[] = {"#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#00C7BE", "#30B0C7", "#007AFF",
@@ -1960,8 +1963,8 @@ void startAppearance(App::Document* doc)
         bodies.push_back(b);
     }
     if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Appearance"),
-                                 QStringLiteral("Select one or more bodies first."));
+        QMessageBox::information(Gui::getMainWindow(), T("Appearance"),
+                                 T("Select one or more bodies first."));
         return;
     }
     Gui::Selection().clearSelection();
@@ -1975,15 +1978,15 @@ void showParameters(App::Document* doc)
     doc->openTransaction("Parameters");
     App::DocumentObject* set = DesignGui::parameters(doc, true);
     QDialog dlg(Gui::getMainWindow());
-    dlg.setWindowTitle(QStringLiteral("Parameters"));
+    dlg.setWindowTitle(T("Parameters"));
     dlg.setMinimumSize(520, 360);
     auto lay = new QVBoxLayout(&dlg);
     lay->setContentsMargins(24, 20, 24, 20);
-    auto hint = new QLabel(QStringLiteral("Use the names in any dimension field, e.g. “Width * 2”."));
+    auto hint = new QLabel(T("Use the names in any dimension field, e.g. “Width * 2”."));
     hint->setWordWrap(true);
     lay->addWidget(hint);
     auto table = new QTableWidget(0, 4);
-    table->setHorizontalHeaderLabels({QStringLiteral("Name"), QStringLiteral("Expression"), QStringLiteral("Value"), QString()});
+    table->setHorizontalHeaderLabels({T("Name"), T("Expression"), T("Value"), QString()});
     table->verticalHeader()->hide();
     table->setShowGrid(false);
     table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -2027,7 +2030,7 @@ void showParameters(App::Document* doc)
             auto value = new QTableWidgetItem(QString::fromStdString(prop->getQuantityValue().getUserString()));
             value->setFlags(Qt::ItemIsEnabled);
             table->setItem(r, 2, value);
-            auto remove = new QPushButton(QStringLiteral("Remove"));
+            auto remove = new QPushButton(T("Remove"));
             remove->setAutoDefault(false);
             QObject::connect(remove, &QPushButton::clicked, table, [&, set, name] {
                 set->removeDynamicProperty(name.c_str());
@@ -2055,10 +2058,10 @@ void showParameters(App::Document* doc)
 
     auto row = new QHBoxLayout;
     auto nameEdit = new QLineEdit;
-    nameEdit->setPlaceholderText(QStringLiteral("Name, e.g. Width"));
+    nameEdit->setPlaceholderText(T("Name, e.g. Width"));
     auto exprEdit = new QLineEdit;
-    exprEdit->setPlaceholderText(QStringLiteral("Value, e.g. 40 mm"));
-    auto add = new QPushButton(QStringLiteral("Add"));
+    exprEdit->setPlaceholderText(T("Value, e.g. 40 mm"));
+    auto add = new QPushButton(T("Add"));
     add->setAutoDefault(false);
     row->addWidget(nameEdit);
     row->addWidget(exprEdit);
@@ -2071,7 +2074,7 @@ void showParameters(App::Document* doc)
         static const QRegularExpression valid(QStringLiteral("^[A-Za-z_][A-Za-z0-9_]*$"));
         const QString name = nameEdit->text().trimmed();
         if (!valid.match(name).hasMatch() || set->getPropertyByName(name.toLatin1().constData())) {
-            error->setText(QStringLiteral("Use a new name of letters, digits and _ (no spaces)."));
+            error->setText(T("Use a new name of letters, digits and _ (no spaces)."));
             return;
         }
         set->addDynamicProperty("App::PropertyQuantity", name.toLatin1().constData(), "Parameters");
@@ -2138,8 +2141,8 @@ void toggleSection(App::Document* doc)
         }
     }
     if (!found) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Section Analysis"),
-                                 QStringLiteral("Select a plane or a planar face to cut the model at."));
+        QMessageBox::information(Gui::getMainWindow(), T("Section Analysis"),
+                                 T("Select a plane or a planar face to cut the model at."));
         return;
     }
     const gp_Pnt o = pln.Location();
@@ -2161,13 +2164,13 @@ public:
         , dir(axisDir)
     {
         auto w = new QWidget;
-        w->setWindowTitle(QStringLiteral("Plane at Angle"));
+        w->setWindowTitle(T("Plane at Angle"));
         auto form = new QFormLayout(w);
         auto angle = new Gui::QuantitySpinBox;
         angle->setUnit(Base::Unit::Angle);
         angle->setRange(-360, 360);
         angle->setValue(Base::Quantity(45.0, Base::Unit::Angle));
-        form->addRow(QStringLiteral("Angle"), angle);
+        form->addRow(T("Angle"), angle);
         addTaskBox(w, false);
         QObject::connect(angle, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this](double a) { setAngle(a); });
         setAngle(45.0);
@@ -2246,7 +2249,7 @@ void startAnglePlane(App::Document* doc)
         }
     }
     if (!line) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Plane at Angle"),
+        QMessageBox::information(Gui::getMainWindow(), T("Plane at Angle"),
                                  QStringLiteral("Select a straight edge, sketch line or axis (and optionally the "
                                                 "plane or face to measure the angle from)."));
         return;
@@ -2313,8 +2316,8 @@ void startOffsetPlane(App::Document* doc)
         }
     }
     if (!support) {
-        QMessageBox::information(Gui::getMainWindow(), QStringLiteral("Offset Plane"),
-                                 QStringLiteral("Select a plane or a planar face first."));
+        QMessageBox::information(Gui::getMainWindow(), T("Offset Plane"),
+                                 T("Select a plane or a planar face first."));
         return;
     }
     stableRef(support, element);

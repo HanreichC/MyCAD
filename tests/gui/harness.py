@@ -107,11 +107,11 @@ def make_body(geos, z, h, name):
     sk = d.addObject("Sketcher::SketchObject", "Sketch"); sk.Placement.Base.z = z
     for g in geos:
         sk.addGeometry(g)
-    [o for o in d.Objects if o.Label == "Sketches"][0].addObject(sk)
+    d.getObject("Sketches").addObject(sk)
     prof = d.addObject("Design::Profiles", "Profiles"); prof.Sketch = sk; root.addObject(prof)
     ext = d.addObject("Design::Extrude", "Extrude"); ext.Profile = (prof, []); ext.Distance = h; root.addObject(ext)
     b = d.addObject("Design::Body", "Body"); b.Label = name; ext.Bodies = [b]; b.Tip = ext
-    [o for o in d.Objects if o.Label == "Bodies"][0].addObject(b)
+    d.getObject("Bodies").addObject(b)
     sk.Visibility = False; prof.Visibility = False
     d.recompute(); return b
 
