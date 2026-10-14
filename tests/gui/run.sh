@@ -15,6 +15,6 @@ timeout "${MYCAD_TIMEOUT:-180}" podman run --rm --userns=keep-id --group-add kee
     -v "$ROOT:/workspace" -v "$APPHOME:$APPHOME" -v "$(dirname "$OUT"):$(dirname "$OUT")" -v "$(dirname "$SCRIPT"):$(dirname "$SCRIPT")" \
     -v "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:/tmp/runtime/$WAYLAND_DISPLAY" \
     -e HOME="$APPHOME" -e XDG_RUNTIME_DIR=/tmp/runtime -e WAYLAND_DISPLAY="$WAYLAND_DISPLAY" -e QT_QPA_PLATFORM=wayland \
-    -e OUT="$OUT" -e HELP_ONLY="${HELP_ONLY:-}" -e PYTHONPATH="$(dirname "$SCRIPT")" \
+    -e OUT="$OUT" -e LANGWANT="${LANGWANT:-}" -e HELP_ONLY="${HELP_ONLY:-}" -e HELP_DUMP="${HELP_DUMP:-}" -e PYTHONPATH="$(dirname "$SCRIPT")" \
     mycad-dev /workspace/build/bin/FreeCAD "$SCRIPT" > "$OUT.log" 2>&1 || true
 cat "$OUT.txt"

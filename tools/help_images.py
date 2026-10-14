@@ -109,6 +109,30 @@ def accept():
         buttons[0].click()
 
 
+DIALOGS = {}
+
+
+def dump_dialog(cmd):
+    """Felder des offenen Werkzeug-Dialogs (für die Hilfe-Texte): Beschriftungen, Haken, Auswahllisten, Knöpfe"""
+    import json
+    panel = [w for w in QtWidgets.QApplication.allWidgets() if w.metaObject().className() == "Gui::TaskView::TaskView" and w.isVisible()]
+    items = []
+    for root in panel[:1]:
+        for w in root.findChildren(QtWidgets.QWidget):
+            if not w.isVisible():
+                continue
+            if isinstance(w, QtWidgets.QComboBox):
+                items.append(["combo", w.currentText(), [w.itemText(i) for i in range(w.count())]])
+            elif isinstance(w, QtWidgets.QCheckBox):
+                items.append(["check", w.text()])
+            elif isinstance(w, QtWidgets.QLabel) and w.text().strip():
+                items.append(["label", w.text()])
+            elif isinstance(w, QtWidgets.QAbstractButton) and w.text().strip():
+                items.append(["button", w.text()])
+    DIALOGS[cmd] = items
+    json.dump(DIALOGS, open(os.environ["OUT"] + ".dialogs.json", "w"), ensure_ascii=False, indent=1)
+
+
 def feature(cmd, *setup, wait_before=1):
     """Werkzeug-Befehl mit offenem Dialog: Felder setzen, OK"""
     step(cmd, lambda: Gui.runCommand(cmd))
@@ -116,6 +140,8 @@ def feature(cmd, *setup, wait_before=1):
     for s in setup:
         step("set", s)
     wait()
+    if os.environ.get("HELP_DUMP"):
+        step("dump", lambda: dump_dialog(cmd))
     step("ok", accept)
     wait()
     step("check", lambda: L("  %s: errors=%s volumes=%s" % (cmd, errors(), volumes())))

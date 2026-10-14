@@ -762,8 +762,8 @@ void startAlign(App::Document* doc)
     if (!body || refs[1].first == body || !frameOf(refs[0].first, refs[0].second, from)
         || !frameOf(refs[1].first, refs[1].second, to)) {
         QMessageBox::information(Gui::getMainWindow(), T("Align"),
-                                 QStringLiteral("Select a face, edge or point of the body to move, "
-                                                "then the face, edge, point or plane to align it to."));
+                                 T("Select a face, edge or point of the body to move, "
+                                   "then the face, edge, point or plane to align it to."));
         return;
     }
     Base::Rotation rot;
@@ -1852,8 +1852,8 @@ private:
                 row(T("Angle"), QStringLiteral("%1°").arg(angle, 0, 'f', 2));
             }
         }
-        result->setText(rows.isEmpty() ? QStringLiteral("Select a point, edge, face or body. "
-                                                         "Select two to measure distance and angle.")
+        result->setText(rows.isEmpty() ? T("Select a point, edge, face or body. "
+                                           "Select two to measure distance and angle.")
                                        : QStringLiteral("<table>%1</table>").arg(rows.join(QString())));
     }
     QLabel* result;
@@ -1894,7 +1894,7 @@ public:
         auto grid = new QGridLayout;
         int i = 0;
         for (const auto& preset : presets) {
-            auto button = new QPushButton(QString::fromLatin1(preset.name));
+            auto button = new QPushButton(T(preset.name));
             button->setAutoDefault(false);
             const App::Material material(preset.type);
             QObject::connect(button, &QPushButton::clicked, button, [this, material] { apply(material); });
@@ -2250,8 +2250,8 @@ void startAnglePlane(App::Document* doc)
     }
     if (!line) {
         QMessageBox::information(Gui::getMainWindow(), T("Plane at Angle"),
-                                 QStringLiteral("Select a straight edge, sketch line or axis (and optionally the "
-                                                "plane or face to measure the angle from)."));
+                                 T("Select a straight edge, sketch line or axis (and optionally the "
+                                   "plane or face to measure the angle from)."));
         return;
     }
     // Bezugsebene: gewählt, sonst die Skizzenebene, eine ebene Fläche an der Kante oder XY

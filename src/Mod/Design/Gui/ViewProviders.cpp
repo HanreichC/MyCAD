@@ -272,7 +272,7 @@ QString featureTitle(const Design::Feature* f)
         return T("Loft");
     }
     if (auto primitive = freecad_cast<const Design::Primitive*>(f)) {
-        return QString::fromLatin1(primitive->Type.getValueAsString());
+        return T(primitive->Type.getValueAsString());
     }
     if (f->isDerivedFrom<Design::Draft>()) {
         return T("Draft");
@@ -293,10 +293,10 @@ QString featureTitle(const Design::Feature* f)
         return T("Split Face");
     }
     if (auto emboss = freecad_cast<const Design::Emboss*>(f)) {
-        return QString::fromLatin1(emboss->Type.getValueAsString());
+        return T(emboss->Type.getValueAsString());
     }
     if (auto rib = freecad_cast<const Design::Rib*>(f)) {
-        return QString::fromLatin1(rib->Mode.getValueAsString());
+        return T(rib->Mode.getValueAsString());
     }
     return T("Extrude");
 }
@@ -379,7 +379,7 @@ public:
             QObject::connect(axis, &QComboBox::currentIndexChanged, [this] { apply(); });
         }
         if (auto pull = freecad_cast<Design::PressPull*>(feature)) {
-            form->addRow(QStringLiteral("Faces"), new QLabel(T("%1 selected").arg(pull->Edges.getSize())));
+            form->addRow(T("Faces"), new QLabel(T("%1 selected").arg(pull->Edges.getSize())));
             distance = quantityBox(Base::Unit::Length, pull->Distance.getValue());
             bindExpression(distance, &pull->Distance);
             form->addRow(T("Distance"), distance);
@@ -388,7 +388,7 @@ public:
             auto edges = new QLabel(T("%1 selected").arg(dressUp->Edges.getSize()));
             distance = quantityBox(Base::Unit::Length, dressUp->Size.getValue());
             bindExpression(distance, &dressUp->Size);
-            form->addRow(shell ? T("Open faces") : QStringLiteral("Edges"), edges);
+            form->addRow(shell ? T("Open faces") : T("Edges"), edges);
             form->addRow(shell                                         ? T("Thickness")
                              : feature->isDerivedFrom<Design::Fillet>() ? T("Radius")
                                                                         : T("Distance"),
@@ -401,7 +401,7 @@ public:
         }
         if (combine) {
             simpleOp = new QComboBox;
-            simpleOp->addItems({T("Join"), T("Cut"), QStringLiteral("Intersect")});
+            simpleOp->addItems({T("Join"), T("Cut"), T("Intersect")});
             simpleOp->setCurrentIndex(std::max(0L, combine->Operation.getValue() - 1));
             form->addRow(T("Tools"),
                          new QLabel(T("%1 bodies").arg(combine->ToolBodies.getSize())));
@@ -498,7 +498,7 @@ public:
             sinkAngle = quantityBox(Base::Unit::Angle, pattern->Angle.getValue());
             bindExpression(sinkAngle, &pattern->Angle);
             simpleOp = new QComboBox;
-            simpleOp->addItems({T("Join"), T("Cut"), QStringLiteral("Intersect")});
+            simpleOp->addItems({T("Join"), T("Cut"), T("Intersect")});
             simpleOp->setCurrentIndex(std::max(0L, pattern->Operation.getValue() - 1));
             form->addRow(T("Type"), holeType);
             form->addRow(T("Direction"), dir1);
@@ -686,7 +686,7 @@ private:
     {
         operation = new QComboBox;
         operation->addItems({T("New Body"), T("Join"), T("Cut"),
-                             QStringLiteral("Intersect")});
+                             T("Intersect")});
         if (create) {
             operation->addItem(T("New Component"));  // wie New Body, aber in einer neuen Komponente
         }
@@ -909,7 +909,7 @@ private:
                 field = box;
             }
             else if (auto b = freecad_cast<App::PropertyBool*>(prop)) {
-                auto box = new QCheckBox(QString::fromUtf8(prop->getDocumentation()));
+                auto box = new QCheckBox(T(prop->getDocumentation()));
                 box->setChecked(b->getValue());
                 QObject::connect(box, &QCheckBox::toggled, [this, b](bool on) {
                     b->setValue(on);

@@ -2386,8 +2386,8 @@ void layout()
     qreal cubeTop = m;
     if (state.windowControls) {
         const QSizeF cs = state.windowControls->content()->sizeHint();
-        state.windowControls->setGeometry(QRectF(r.width() - cs.width() - m, m, cs.width(), bs.height()));
-        cubeTop = m + bs.height() + m;
+        state.windowControls->setGeometry(QRectF(r.width() - cs.width() - m, m, cs.width(), cs.height()));  // so flach wie die Knöpfe, wie auf Startseite und Hilfe
+        cubeTop = m + cs.height() + m;
     }
     qreal belowCube = 170;
     if (state.viewCube) {
