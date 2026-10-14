@@ -1242,7 +1242,6 @@ private:
     std::function<void()> action;
 };
 
-qreal toolbarRowHeight();
 
 /// Hintergrund von Startseite und Hilfe: wie der Hintergrund des 3D-Fensters
 void paintBackdrop(QPainter& p, const QRect& r)
@@ -1404,7 +1403,7 @@ private:
     void place()
     {
         const qreal m = 12, browserWidth = 290;
-        const qreal barH = toolbarRowHeight();
+        const qreal barH = controls->sizeHint().height();  // so flach wie die Knöpfe selbst
         side->place(QRectF(m, m, browserWidth, height() - 2 * m));
         const QSizeF cs = controls->sizeHint();
         const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
@@ -1741,7 +1740,7 @@ protected:
     void resizeEvent(QResizeEvent*) override
     {
         const qreal m = 12, browserWidth = 290;
-        const qreal barH = toolbarRowHeight();
+        const qreal barH = controls->sizeHint().height();  // so flach wie die Knöpfe selbst
         side->place(QRectF(m, m, browserWidth, height() - 2 * m));
         const QSizeF cs = controls->sizeHint();
         const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
@@ -2324,12 +2323,6 @@ struct State
     bool sketchMode = false;
     QGraphicsScene* scene = nullptr;
 } state;
-
-/// Höhe einer Toolbar-Reihe (so hoch sind auch die Fensterknöpfe)
-qreal toolbarRowHeight()
-{
-    return state.modelBar ? state.modelBar->content()->sizeHint().height() : 50;
-}
 
 std::vector<GlassPanel*> panels()
 {
