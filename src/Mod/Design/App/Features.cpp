@@ -965,9 +965,15 @@ bool Revolve::makeTool(Part::TopoShape& tool, std::string& error) const
     const gp_Ax1 axis(gp_Pnt(origin.x, origin.y, origin.z), gp_Dir(dir.x, dir.y, dir.z));
 
     std::vector<Part::TopoShape> solids;
-    for (const auto& face : faces) {
-        solids.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
-                             .makeElementRevolve(face, axis, angle * M_PI / 180.0));
+    try {
+        for (const auto& face : faces) {
+            solids.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
+                                 .makeElementRevolve(face, axis, angle * M_PI / 180.0));
+        }
+    }
+    catch (...) {  // OpenCascade meldet nur "BRep_API: command not done"
+        error = "The axis passes through the profile. Choose an axis beside it.";
+        return false;
     }
     tool = fuseAll(solids, getDocument()->getStringHasher());
     return true;

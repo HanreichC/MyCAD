@@ -2348,7 +2348,21 @@ void CreateDesignCommands()
                                      }));
     mgr.addCommand(new DesignCommand("Design_Revolve", "Revolve", "Revolve: select one or more sketch profiles",
                                      "PartDesign_Revolution", "", [](App::Document* doc) {
-                                         startProfileFeature(doc, "Design::Revolve", "Revolve");
+                                         startProfileFeature(doc, "Design::Revolve", "Revolve", [](Design::Feature* f) {
+                                             // erste Achse, die den Querschnitt nicht schneidet (Donut: Kreis neben
+                                             // der Achse); Reihenfolge Skizze Y, Skizze X, Z, X, Y
+                                             auto revolve = static_cast<Design::Revolve*>(f);
+                                             Part::TopoShape tool;
+                                             std::string error;
+                                             for (int axis : {1, 0, 4, 2, 3}) {
+                                                 revolve->Axis.setValue(axis);
+                                                 if (revolve->makeTool(tool, error)) {
+                                                     return true;
+                                                 }
+                                             }
+                                             revolve->Axis.setValue(1);
+                                             return true;
+                                         });
                                      }));
     mgr.addCommand(new DesignCommand("Design_Fillet", "Fillet", "Fillet: select edges or faces of a body",
                                      "PartDesign_Fillet", "F", [](App::Document* doc) {
