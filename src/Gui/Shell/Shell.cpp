@@ -1240,7 +1240,6 @@ private:
 };
 
 qreal toolbarRowHeight();
-qreal toolbarLeft(qreal windowWidth);
 
 /// Hintergrund von Startseite und Hilfe: wie der Hintergrund des 3D-Fensters
 void paintBackdrop(QPainter& p, const QRect& r)
@@ -1410,7 +1409,7 @@ private:
         const QSizeF cs = controls->sizeHint();
         const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
         controlsCard->place(ctl);
-        const qreal left = toolbarLeft(width());  // wie die Toolbar im 3D-Fenster
+        const qreal left = m + browserWidth + 32;  // etwas mehr Luft zur Seitenleiste als zwischen den Panels
         searchCard->place(QRectF(left, m, std::min<qreal>(380, ctl.left() - m - left), barH));  // so hoch wie die Kapsel
         const QSize bs = back->sizeHint();
         back->setGeometry(int(ctl.left() - m - bs.width()), int(m + (barH - bs.height()) / 2), bs.width(), bs.height());
@@ -1754,10 +1753,10 @@ protected:
         const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
         controlsCard->place(ctl);
         const qreal left = m + browserWidth + m;
-        const qreal searchLeft = toolbarLeft(width());  // wie die Toolbar im 3D-Fenster
+        const qreal searchLeft = m + browserWidth + 32;  // wie auf der Startseite
         searchCard->place(QRectF(searchLeft, m, std::min<qreal>(420, ctl.left() - m - searchLeft), barH));  // so hoch wie die Kapsel
         const qreal top = m + barH + m;
-        articleCard->place(QRectF(left, top, width() - left - m, height() - top - m));
+        articleCard->place(QRectF(searchLeft, top, width() - searchLeft - m, height() - top - m));  // bündig mit der Suche
     }
     void keyPressEvent(QKeyEvent* event) override
     {
@@ -2331,20 +2330,6 @@ struct State
     bool sketchMode = false;
     QGraphicsScene* scene = nullptr;
 } state;
-
-/// linke Kante der Toolbar im 3D-Fenster (Suche und Inhalt der Startseite beginnen dort)
-qreal toolbarLeft(qreal windowWidth)
-{
-    // schon für diese Fensterbreite angeordnet (auch umgebrochen): genau ihre Position
-    if (state.modelBar && state.scene && std::abs(state.scene->sceneRect().width() - windowWidth) < 2) {
-        return state.modelBar->pos().x();
-    }
-    // sonst wie layout(): Toolbar mittig zwischen Browser und Fensterknöpfen
-    const qreal m = 12, left = m + 290 + m;
-    const qreal right = windowWidth - m - (state.windowControls ? state.windowControls->content()->sizeHint().width() + m : 0);
-    const qreal barW = state.modelBar ? std::min<qreal>(state.modelBar->content()->sizeHint().width(), right - left) : right - left;
-    return left + std::max<qreal>(0, (right - left - barW) / 2);
-}
 
 /// Höhe einer Toolbar-Reihe (so hoch sind auch die Fensterknöpfe)
 qreal toolbarRowHeight()
