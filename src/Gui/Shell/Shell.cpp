@@ -983,7 +983,7 @@ public:
         handle->setToolTip(T("Drag to move the window, double-click to maximize"));
         lay->addWidget(handle);
         if (back) {
-            button("Window_Back", "GlassButton", T("Back"), back);
+            backButton = button("Window_Back", "GlassButton", T("Back"), back);
         }
         if (home) {
             button("Window_Home", "GlassButton", T("Home"), showStartPage);
@@ -1016,6 +1016,9 @@ private:
         maximize->setToolTip(max ? T("Restore") : T("Maximize"));
     }
     QToolButton* maximize;
+
+public:
+    QToolButton* backButton = nullptr;  ///< nur mit back-Funktion
 };
 
 // --- Startseite: neue, zuletzt geöffnete und Projekt-Designs als Kacheln ---------------------------------------
@@ -1337,15 +1340,12 @@ public:
         search->setPlaceholderText(T("Search designs"));
         QObject::connect(search, &QLineEdit::textChanged, this, [this] { applyFilter(); });
         searchLay->addWidget(search);
-        back = new QPushButton(designIcon(QStringLiteral("Window_Back")), T("Back to Design"), this);
-        back->setObjectName(QStringLiteral("StartBack"));
-        back->setCursor(Qt::PointingHandCursor);
-        QObject::connect(back, &QPushButton::clicked, this, &QWidget::hide);
         controlsCard = new GlassCard(24);
         controlsCard->setParent(this);
         auto controlsLay = new QHBoxLayout(controlsCard);
         controlsLay->setContentsMargins(GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
-        controls = new WindowControls;  // wie im 3D-Fenster, mit Home-Knopf
+        controls = new WindowControls(true, [this] { hide(); });  // wie im 3D-Fenster; Zurück vorne wie in der Hilfe
+        controls->backButton->setToolTip(T("Back to Design"));
         controls->installEventFilter(&grip);
         controlsLay->addWidget(controls);
 
@@ -1357,7 +1357,7 @@ public:
     {
         const bool wasVisible = isVisible();
         rebuild();
-        back->setVisible(anyDesignOpen());
+        controls->backButton->setVisible(anyDesignOpen());
         setGeometry(getMainWindow()->rect());
         place();
         show();
@@ -1411,8 +1411,6 @@ private:
         controlsCard->place(ctl);
         const qreal left = m + browserWidth + 32;  // etwas mehr Luft zur Seitenleiste als zwischen den Panels
         searchCard->place(QRectF(left, m, std::min<qreal>(380, ctl.left() - m - left), barH));  // so hoch wie die Kapsel
-        const QSize bs = back->sizeHint();
-        back->setGeometry(int(ctl.left() - m - bs.width()), int(m + (barH - bs.height()) / 2), bs.width(), bs.height());
         const int top = int(m + barH + m);
         scroll->setGeometry(int(left) - StartTile::Pad, top, int(width() - left - m + StartTile::Pad), height() - top);
     }
@@ -1439,7 +1437,6 @@ QLabel#StartName { font-size: 13px; font-weight: 600; }
 QPushButton#StartNew { background: %2; color: white; border: none; border-radius: 17px; min-height: 34px;
     font-weight: 600; text-align: left; padding-left: 14px; }
 QPushButton#StartNew:hover { background: %3; }
-QPushButton#StartBack { background: %4; border: 1px solid %5; border-radius: 15px; min-height: 20px; padding: 5px 14px 5px 8px; }
 QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px; font-size: 13px; }
 )")
                           .arg(t.secondary, t.accent, t.dark ? "#3395FF" : "#1A86FF",
@@ -1544,7 +1541,6 @@ QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px;
     GlassCard* controlsCard;
     WindowControls* controls;
     QScrollArea* scroll;
-    QPushButton* back;
     QLineEdit* search;
     QLabel* folderLabel;
     std::vector<QWidget*> sections;
@@ -1694,8 +1690,6 @@ QLabel#StartTitle { font-size: 22px; font-weight: 700; }
 QScrollArea, #StartContent, QTextBrowser#HelpArticle { background: transparent; border: none; }
 QLabel#StartSection { color: %1; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; padding-left: 8px; }
 QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px; font-size: 13px; }
-QPushButton#StartBack { background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.06); border-radius: 15px;
-    min-height: 20px; padding: 5px 14px 5px 8px; }
 QScrollBar:vertical { background: transparent; width: 8px; margin: 2px; }
 QScrollBar::handle:vertical { background: rgba(0,0,0,0.18); border-radius: 3px; min-height: 30px; }
 QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::sub-page { background: none; height: 0; }
