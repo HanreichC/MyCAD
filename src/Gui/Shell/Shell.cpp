@@ -70,6 +70,11 @@
 #include <QDateTime>
 #include <QLocale>
 #include <QScrollArea>
+#include <QSet>
+#include <QTextBrowser>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QJsonArray>
 #include <QButtonGroup>
 #include <QStandardPaths>
 #include <zipios++/zipfile.h>
@@ -186,7 +191,7 @@ Gui--NotificationLabel { background: %9; color: %1; border: 1px solid %7; border
 QToolButton#GlassButton, QToolButton#WindowClose { border-radius: 17px; }
 QToolButton#PaletteRow { border-radius: 12px; }
 #GlassContent QLineEdit, #GlassContent QAbstractSpinBox, #GlassContent QComboBox { border-radius: 10px; }
-#GlassContent QToolButton#GlassProminent { border-radius: 16px; }
+#GlassContent QToolButton#GlassProminent { border-radius: 15px; }
 )");
 }
 
@@ -452,6 +457,12 @@ public:
         static QuickTip* tip = new QuickTip;
         return tip;
     }
+    /// Hilfe-ID des Werkzeugs unter der Maus (für F1)
+    static QString hoveredHelp()
+    {
+        QToolButton* t = instance()->target;
+        return t && t->underMouse() ? t->property("help").toString() : QString();
+    }
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override
@@ -485,8 +496,9 @@ private:
         timer.setInterval(300);
         QObject::connect(&timer, &QTimer::timeout, this, [this] {
             if (target && target->underMouse()) {
+                const bool help = !target->property("help").toString().isEmpty();
                 QToolTip::showText(target->mapToGlobal(QPoint(target->width() / 2, target->height() + 6)),
-                                   target->toolTip(), target);
+                                   target->toolTip() + (help ? QStringLiteral("\n") + T("F1: Help") : QString()), target);
             }
         });
     }
@@ -771,6 +783,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             auto current = std::make_shared<QPointer<QAction>>(action);
             auto pick = [btn, current](const QString& n, QAction* a) {
                 *current = a;
+                btn->setProperty("help", n);  // F1 erklärt die gewählte Variante
                 btn->setIcon(commandIcon(n, a->icon()));
                 btn->setToolTip(a->toolTip().isEmpty() ? a->text() : a->toolTip());
                 btn->setProperty("label", toolLabel(n, a));
@@ -824,6 +837,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         btn->setIconSize(QSize(22, 22));
         btn->setToolTip(action->toolTip().isEmpty() ? action->text() : action->toolTip());
         btn->setProperty("label", toolLabel(QString::fromLatin1(name), action));
+        btn->setProperty("help", QString::fromLatin1(name));
         styleToolButton(btn);
         btn->installEventFilter(QuickTip::instance());
         btn->setEnabled(action->isEnabled());
@@ -934,6 +948,7 @@ protected:
 };
 
 void showStartPage();
+void showHelp(const QString& id = QString());
 
 /// Fensterknöpfe rechts oben wie unter KDE: minimieren, maximieren/wiederherstellen, schließen
 class WindowControls: public QWidget
@@ -967,6 +982,7 @@ public:
         lay->addWidget(handle);
         if (home) {
             button("Window_Home", "GlassButton", T("Home"), showStartPage);
+            button("Window_Help", "GlassButton", T("Help (F1)"), [] { showHelp(); });
         }
         button("MyCAD_Settings", "GlassButton", T("Settings (Ctrl+,)"), [] {
             Application::Instance->commandManager().runCommandByName("MyCAD_Settings");
@@ -1220,6 +1236,15 @@ private:
 
 qreal toolbarRowHeight();
 
+/// Hintergrund von Startseite und Hilfe: wie der Hintergrund des 3D-Fensters
+void paintBackdrop(QPainter& p, const QRect& r)
+{
+    QLinearGradient base(0, 0, 0, r.height());
+    base.setColorAt(0, QColor(0xF4F5F7));
+    base.setColorAt(1, QColor(0xD5D9E0));
+    p.fillRect(r, base);
+}
+
 /// Startseite im Stil des restlichen MyCAD: Viewport-Hintergrund, links ein Glas-Panel (Neu, Öffnen, Bereiche),
 /// oben Suche und die Fensterknöpfe in einer Glas-Kapsel, rechts die Designs als große Vorschaubilder
 class StartPage: public QWidget
@@ -1362,14 +1387,10 @@ protected:
             hide();
         }
     }
-    void paintEvent(QPaintEvent*) override  // wie der Hintergrund des 3D-Fensters
+    void paintEvent(QPaintEvent*) override
     {
-        const bool dark = theme().dark;
         QPainter p(this);
-        QLinearGradient base(0, 0, 0, height());
-        base.setColorAt(0, dark ? QColor(0x2A2C31) : QColor(0xF4F5F7));
-        base.setColorAt(1, dark ? QColor(0x111214) : QColor(0xD5D9E0));
-        p.fillRect(rect(), base);
+        paintBackdrop(p, rect());
     }
 
 private:
@@ -1526,6 +1547,348 @@ QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px;
 
 StartPage* startPage = nullptr;
 
+// --- Hilfe: jedes Werkzeug erklärt, mit Bildern, Schlagwörtern und Suche (Inhalt: Shell/help/help.json) ----------
+
+/// Text eines Artikel-Felds in der eingestellten Sprache (Englisch als Rückfall)
+QJsonValue localized(const QJsonObject& article, const char* field)
+{
+    const QJsonObject texts = article.value(QLatin1String(field)).toObject();
+    const QString lang = language() == QLatin1String("German") ? QStringLiteral("de") : QStringLiteral("en");
+    return texts.contains(lang) ? texts.value(lang) : texts.value(QStringLiteral("en"));
+}
+
+QIcon helpIcon(const QString& name)
+{
+    if (QAction* a = commandAction(name.toLatin1().constData())) {
+        return commandIcon(name, a->icon());
+    }
+    return designIcon(name);
+}
+
+class HelpPage: public QWidget
+{
+public:
+    HelpPage()
+        : QWidget(getMainWindow())
+    {
+        setObjectName(QStringLiteral("HelpPage"));
+        static WindowGrip grip;
+        installEventFilter(&grip);
+        QFile file(QStringLiteral(":/mycad/help/help.json"));
+        if (file.open(QIODevice::ReadOnly)) {
+            const QJsonObject root = QJsonDocument::fromJson(file.readAll()).object();
+            groups = root.value(QStringLiteral("groups")).toArray();
+            for (const QJsonValue v : root.value(QStringLiteral("articles")).toArray()) {
+                articles.append(v.toObject());
+            }
+        }
+
+        // Seitenleiste mit allen Artikeln, nach Toolbar-Bereichen gruppiert
+        side = new GlassCard(20);
+        side->setParent(this);
+        side->installEventFilter(&grip);
+        auto sideLay = new QVBoxLayout(side);
+        sideLay->setContentsMargins(GlassCard::Shadow + 10, GlassCard::Shadow + 16, GlassCard::Shadow + 10, GlassCard::Shadow + 10);
+        auto title = new QLabel(T("Help"));
+        title->setObjectName(QStringLiteral("StartTitle"));
+        title->setContentsMargins(4, 0, 0, 0);
+        sideLay->addWidget(title);
+        sideLay->addSpacing(8);
+        auto list = new QScrollArea;
+        list->setWidgetResizable(true);
+        list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        list->setFrameShape(QFrame::NoFrame);
+        list->viewport()->setAutoFillBackground(false);
+        auto listWidget = new QWidget;
+        listWidget->setObjectName(QStringLiteral("StartContent"));
+        auto listLay = new QVBoxLayout(listWidget);
+        listLay->setContentsMargins(0, 0, 4, 0);
+        listLay->setSpacing(1);
+        rowGroup = new QButtonGroup(this);
+        for (const QJsonValue g : groups) {
+            const QJsonObject group = g.toObject();
+            auto caption = new QLabel(localized(group, "title").toString().toUpper());
+            caption->setObjectName(QStringLiteral("StartSection"));
+            caption->setContentsMargins(0, 10, 0, 2);
+            listLay->addWidget(caption);
+            captions.append({caption, group.value(QStringLiteral("id")).toString()});
+            for (int i = 0; i < articles.size(); ++i) {
+                if (articles[i].value(QStringLiteral("group")) != group.value(QStringLiteral("id"))) {
+                    continue;
+                }
+                auto b = new QToolButton;
+                b->setObjectName(QStringLiteral("PaletteRow"));
+                b->setIcon(helpIcon(articles[i].value(QStringLiteral("icon")).toString()));
+                b->setIconSize(QSize(18, 18));
+                b->setText(localized(articles[i], "title").toString());
+                b->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+                b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+                b->setFixedHeight(32);
+                b->setCheckable(true);
+                b->setProperty("group", group.value(QStringLiteral("id")).toString());
+                rowGroup->addButton(b, i);
+                listLay->addWidget(b);
+            }
+        }
+        listLay->addStretch();
+        list->setWidget(listWidget);
+        sideLay->addWidget(list);
+        QObject::connect(rowGroup, &QButtonGroup::idClicked, this, [this](int i) { showArticle(i); });
+
+        // Artikel
+        articleCard = new GlassCard(20);
+        articleCard->setParent(this);
+        auto articleLay = new QVBoxLayout(articleCard);
+        articleLay->setContentsMargins(GlassCard::Shadow + 28, GlassCard::Shadow + 20, GlassCard::Shadow + 16, GlassCard::Shadow + 16);
+        view = new QTextBrowser;
+        view->setObjectName(QStringLiteral("HelpArticle"));
+        view->setFrameShape(QFrame::NoFrame);
+        view->setOpenLinks(false);
+        view->viewport()->setAutoFillBackground(false);
+        QObject::connect(view, &QTextBrowser::anchorClicked, this, [this](const QUrl& url) {
+            if (url.scheme() == QLatin1String("help")) {
+                open(url.path());
+            }
+        });
+        articleLay->addWidget(view);
+
+        // oben: Suche an der Stelle der Toolbar, rechts Zurück und Fensterknöpfe wie überall
+        searchCard = new GlassCard(24);
+        searchCard->setParent(this);
+        auto searchLay = new QHBoxLayout(searchCard);
+        searchLay->setContentsMargins(GlassCard::Shadow + 16, GlassCard::Shadow, GlassCard::Shadow + 16, GlassCard::Shadow);
+        auto lens = new QLabel;
+        lens->setPixmap(designIcon(QStringLiteral("Start_Search"), QStringLiteral("#8E8E93")).pixmap(18, 18));
+        lens->setFixedSize(18, 18);
+        searchLay->addWidget(lens);
+        search = new QLineEdit;
+        search->setObjectName(QStringLiteral("StartSearch"));
+        search->setPlaceholderText(T("Search help, e.g. donut, hole, rounded"));
+        QObject::connect(search, &QLineEdit::textChanged, this, [this] { filter(); });
+        QObject::connect(search, &QLineEdit::returnPressed, this, [this] {
+            for (QAbstractButton* b : rowGroup->buttons()) {
+                if (b->isVisible()) {
+                    showArticle(rowGroup->id(b));
+                    return;
+                }
+            }
+        });
+        searchLay->addWidget(search);
+        back = new QPushButton(designIcon(QStringLiteral("Window_Back")), T("Back"), this);
+        back->setObjectName(QStringLiteral("StartBack"));
+        back->setCursor(Qt::PointingHandCursor);
+        QObject::connect(back, &QPushButton::clicked, this, &QWidget::hide);
+        controlsCard = new GlassCard(24);
+        controlsCard->setParent(this);
+        auto controlsLay = new QHBoxLayout(controlsCard);
+        controlsLay->setContentsMargins(GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
+        controls = new WindowControls;
+        controls->installEventFilter(&grip);
+        controlsLay->addWidget(controls);
+
+        const Theme t = theme();
+        setStyleSheet(QStringLiteral(R"(
+QLabel#StartTitle { font-size: 22px; font-weight: 700; }
+QScrollArea, #StartContent, QTextBrowser#HelpArticle { background: transparent; border: none; }
+QLabel#StartSection { color: %1; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; padding-left: 8px; }
+QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px; font-size: 13px; }
+QPushButton#StartBack { background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.06); border-radius: 15px;
+    min-height: 20px; padding: 5px 14px 5px 8px; }
+QScrollBar:vertical { background: transparent; width: 8px; margin: 2px; }
+QScrollBar::handle:vertical { background: rgba(0,0,0,0.18); border-radius: 3px; min-height: 30px; }
+QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::sub-page { background: none; height: 0; }
+)")
+                          .arg(t.secondary));
+        view->document()->setDefaultStyleSheet(QStringLiteral(R"(
+h1 { font-size: 26px; font-weight: 700; margin: 0; }
+h3 { font-size: 15px; font-weight: 650; margin-top: 18px; margin-bottom: 6px; }
+p, li, td { font-size: 14px; line-height: 150%; }
+.summary { font-size: 16px; color: #3C3C43; }
+.caption { font-size: 12px; color: #6E6E73; }
+.keywords { font-size: 12px; color: #8E8E93; }
+.option { font-weight: 600; padding-right: 14px; }
+a { color: %1; text-decoration: none; }
+)")
+                                                    .arg(t.accent));
+        getMainWindow()->installEventFilter(this);
+        hide();
+    }
+
+    /// Artikel zu einem Befehl (z. B. "Design_Extrude") oder einer Artikel-ID öffnen; leer = Übersicht
+    void open(const QString& id)
+    {
+        int index = 0;
+        for (int i = 0; i < articles.size(); ++i) {
+            const QJsonObject& a = articles[i];
+            if (a.value(QStringLiteral("id")).toString() == id
+                || a.value(QStringLiteral("commands")).toArray().contains(QJsonValue(id))) {
+                index = i;
+                break;
+            }
+        }
+        search->clear();
+        back->setVisible(true);
+        setGeometry(getMainWindow()->rect());
+        show();
+        raise();
+        showArticle(index);
+    }
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (obj == getMainWindow() && event->type() == QEvent::Resize) {
+            setGeometry(getMainWindow()->rect());
+        }
+        return false;
+    }
+    void resizeEvent(QResizeEvent*) override
+    {
+        const qreal m = 12, browserWidth = 290;
+        const qreal barH = toolbarRowHeight();
+        side->place(QRectF(m, m, browserWidth, height() - 2 * m));
+        const QSizeF cs = controls->sizeHint();
+        const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
+        controlsCard->place(ctl);
+        const qreal left = m + browserWidth + m;
+        searchCard->place(QRectF(left, m, std::min<qreal>(420, ctl.left() - m - left), std::min<qreal>(barH, 50)));
+        const QSize bs = back->sizeHint();
+        back->setGeometry(int(ctl.left() - m - bs.width()), int(m + (std::min<qreal>(barH, 50) - bs.height()) / 2),
+                          bs.width(), bs.height());
+        const qreal top = m + barH + m;
+        articleCard->place(QRectF(left, top, width() - left - m, height() - top - m));
+    }
+    void keyPressEvent(QKeyEvent* event) override
+    {
+        if (event->key() == Qt::Key_Escape) {
+            hide();
+        }
+    }
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter p(this);
+        paintBackdrop(p, rect());
+    }
+
+private:
+    void showArticle(int index)
+    {
+        if (index < 0 || index >= articles.size()) {
+            return;
+        }
+        if (QAbstractButton* b = rowGroup->button(index)) {
+            b->setChecked(true);
+        }
+        const QJsonObject& a = articles[index];
+        QTextDocument* doc = view->document();
+        const QUrl iconUrl(QStringLiteral("icon:%1").arg(index));
+        doc->addResource(QTextDocument::ImageResource, iconUrl,
+                         helpIcon(a.value(QStringLiteral("icon")).toString()).pixmap(48, 48).toImage());
+        auto esc = [](const QString& s) { return s.toHtmlEscaped(); };
+        QString html = QStringLiteral("<table><tr><td><img src=\"%1\" width=\"40\" height=\"40\"></td>"
+                                      "<td style=\"padding-left:12px; vertical-align:middle\"><h1>%2</h1></td></tr></table>")
+                           .arg(iconUrl.toString(), esc(localized(a, "title").toString()));
+        html += QStringLiteral("<p class=\"summary\">%1</p>").arg(esc(localized(a, "summary").toString()));
+        for (const QJsonValue v : a.value(QStringLiteral("images")).toArray()) {
+            const QJsonObject img = v.toObject();
+            html += QStringLiteral("<p><img src=\":/mycad/help/images/%1\" width=\"560\"><br><span class=\"caption\">%2</span></p>")
+                        .arg(img.value(QStringLiteral("file")).toString(), esc(localized(img, "caption").toString()));
+        }
+        auto list = [&](const char* field, const QString& heading, bool numbered) {
+            const QJsonArray items = localized(a, field).toArray();
+            if (items.isEmpty()) {
+                return;
+            }
+            html += QStringLiteral("<h3>%1</h3>").arg(esc(heading)) + (numbered ? QStringLiteral("<ol>") : QStringLiteral("<ul>"));
+            for (const QJsonValue item : items) {
+                html += QStringLiteral("<li>%1</li>").arg(esc(item.toString()));
+            }
+            html += numbered ? QStringLiteral("</ol>") : QStringLiteral("</ul>");
+        };
+        list("steps", T("How to use it"), true);
+        const QJsonArray options = localized(a, "options").toArray();
+        if (!options.isEmpty()) {
+            html += QStringLiteral("<h3>%1</h3><table cellspacing=\"6\">").arg(esc(T("Options")));
+            for (const QJsonValue o : options) {
+                const QJsonArray pair = o.toArray();
+                html += QStringLiteral("<tr><td class=\"option\">%1</td><td>%2</td></tr>")
+                            .arg(esc(pair.at(0).toString()), esc(pair.at(1).toString()));
+            }
+            html += QStringLiteral("</table>");
+        }
+        list("tips", T("Tips"), false);
+        const QJsonArray see = a.value(QStringLiteral("see")).toArray();
+        if (!see.isEmpty()) {
+            QStringList links;
+            for (const QJsonValue s : see) {
+                for (const QJsonObject& other : std::as_const(articles)) {
+                    if (other.value(QStringLiteral("id")) == s) {
+                        links << QStringLiteral("<a href=\"help:%1\">%2</a>").arg(s.toString(), esc(localized(other, "title").toString()));
+                    }
+                }
+            }
+            html += QStringLiteral("<h3>%1</h3><p>%2</p>").arg(esc(T("See also")), links.join(QStringLiteral(" · ")));
+        }
+        QStringList keywords;
+        for (const QJsonValue k : localized(a, "keywords").toArray()) {
+            keywords << k.toString();
+        }
+        if (!keywords.isEmpty()) {
+            html += QStringLiteral("<p class=\"keywords\">%1: %2</p>").arg(esc(T("Keywords")), esc(keywords.join(QStringLiteral(", "))));
+        }
+        view->setHtml(html);
+    }
+
+    /// Suche in Titel, Schlagwörtern, Kurzbeschreibung und Schritten
+    void filter()
+    {
+        const QStringList words = search->text().simplified().split(QLatin1Char(' '), Qt::SkipEmptyParts);
+        QSet<QString> visibleGroups;
+        for (QAbstractButton* b : rowGroup->buttons()) {
+            const QJsonObject& a = articles[rowGroup->id(b)];
+            QString haystack = localized(a, "title").toString() + QLatin1Char(' ') + localized(a, "summary").toString();
+            for (const char* field : {"keywords", "steps", "tips"}) {
+                for (const QJsonValue v : localized(a, field).toArray()) {
+                    haystack += QLatin1Char(' ') + v.toString();
+                }
+            }
+            const bool match = std::ranges::all_of(words, [&](const QString& w) { return haystack.contains(w, Qt::CaseInsensitive); });
+            b->setVisible(match);
+            if (match) {
+                visibleGroups.insert(b->property("group").toString());
+            }
+        }
+        for (const auto& [caption, group] : captions) {
+            caption->setVisible(visibleGroups.contains(group));
+        }
+    }
+
+    QJsonArray groups;
+    QList<QJsonObject> articles;
+    QList<std::pair<QLabel*, QString>> captions;
+    QButtonGroup* rowGroup;
+    GlassCard* side;
+    GlassCard* articleCard;
+    GlassCard* searchCard;
+    GlassCard* controlsCard;
+    WindowControls* controls;
+    QTextBrowser* view;
+    QLineEdit* search;
+    QPushButton* back;
+};
+
+HelpPage* helpPage = nullptr;
+
+void showHelp(const QString& id)
+{
+    if (!helpPage) {
+        helpPage = new HelpPage;  // erst bei Bedarf: lädt Inhalt und Symbole
+    }
+    helpPage->open(id);
+}
+
+
+
 void showStartPage()
 {
     if (startPage) {
@@ -1577,8 +1940,10 @@ protected:
             if (auto box = qobject_cast<QMessageBox*>(obj); box && !box->property("glass").toBool()) {
                 static AlertPainter painter;
                 box->setProperty("glass", true);
-                box->setWindowFlags(box->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+                // erst durchsichtig, dann die Flags: setWindowFlags erzeugt das Fenster neu, jetzt mit Alphakanal
+                // (umgekehrt bleibt der Schattenrand schwarz)
                 box->setAttribute(Qt::WA_TranslucentBackground);
+                box->setWindowFlags(box->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
                 box->setContentsMargins(AlertPainter::Shadow + 8, AlertPainter::Shadow + 6, AlertPainter::Shadow + 8,
                                         AlertPainter::Shadow + 4);
                 box->installEventFilter(&painter);
@@ -1641,6 +2006,38 @@ void showCommandMenu(const std::vector<std::pair<QString, const char*>>& entries
         menu.exec(QCursor::pos());
     }
 }
+
+/// F1: Hilfe zum Werkzeug unter der Maus, sonst zum gerade bearbeiteten Feature, sonst die Übersicht
+class HelpKey: public QObject
+{
+protected:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        if (event->type() != QEvent::ShortcutOverride && event->type() != QEvent::KeyPress) {
+            return false;
+        }
+        if (static_cast<QKeyEvent*>(event)->key() != Qt::Key_F1) {
+            return false;
+        }
+        if (event->type() == QEvent::ShortcutOverride) {
+            event->accept();  // nicht FreeCADs Online-Hilfe auslösen
+            return true;
+        }
+        QString id = QuickTip::hoveredHelp();
+        if (id.isEmpty()) {
+            Gui::Document* gdoc = Application::Instance->activeDocument();
+            auto edit = gdoc ? dynamic_cast<ViewProviderDocumentObject*>(gdoc->getInEdit()) : nullptr;
+            if (edit) {  // "Design::Extrude" -> "Design_Extrude", Skizze -> Skizzen-Grundlagen
+                id = QString::fromLatin1(edit->getObject()->getTypeId().getName()).replace(QStringLiteral("::"), QStringLiteral("_"));
+                if (id.startsWith(QLatin1String("Sketcher_"))) {
+                    id = QStringLiteral("sketch_basics");
+                }
+            }
+        }
+        QTimer::singleShot(0, [id] { showHelp(id); });
+        return true;
+    }
+};
 
 /// Rechtsklick ohne Ziehen im 3D-Fenster bzw. im Browser: eigene, aufgeräumte Menüs statt der FreeCAD-Menüs
 class ContextMenus: public QObject
@@ -2423,6 +2820,7 @@ void Gui::Shell::install()
     state.viewCube = new ViewCube;
     state.palette = new GlassPanel(sketchPalette(), 20);
     qApp->installEventFilter(new MenuPolisher);
+    qApp->installEventFilter(new HelpKey);
     qApp->installEventFilter(new SketchTaskFilter);
     // Rahmenloses Fenster wie eine macOS-App (abschaltbar: MainWindow/MyCADFrameless = false)
     auto mainGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow");

@@ -454,6 +454,17 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Sketch", "Skizze"},
         {"Tangent", "Tangential"},
         {"Trim", "Stutzen"},
+        // Hilfe
+        {"Help", "Hilfe"},
+        {"Help (F1)", "Hilfe (F1)"},
+        {"F1: Help", "F1: Hilfe"},
+        {"Back", "Zurück"},
+        {"Search help, e.g. donut, hole, rounded", "Hilfe durchsuchen, z. B. Donut, Bohrung, abrunden"},
+        {"How to use it", "So geht's"},
+        {"Options", "Optionen"},
+        {"Tips", "Tipps"},
+        {"See also", "Siehe auch"},
+        {"Keywords", "Schlagwörter"},
         // Namen neuer Objekte (siehe AppDesignGui.cpp)
         {"Look At", "Senkrecht ansehen"},
         {"Slice", "Schnittansicht"},

@@ -402,6 +402,7 @@ qt_create_resource_file_prefix(${FreeCAD_TR_QRC} ${QM_SRCS})
 set(Gui_RES_SRCS
     Icons/resource.qrc
     Shell/icons/icons.qrc
+    Shell/help/help.qrc
     Language/translation.qrc
     ${FreeCAD_TR_QRC}
 )

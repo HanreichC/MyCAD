@@ -58,6 +58,7 @@ ICONS = {
     "Window_Close": '<path d="M7 7l10 10M17 7L7 17"/>',
     "Window_Home": '<path d="M4 11.5L12 5l8 6.5"/><path d="M6.5 9.5V19h11V9.5"/><path d="M10 19v-5h4v5"/>',
     "Window_Back": '<path d="M14.5 6l-6 6 6 6"/>',
+    "Window_Help": '<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.6a2.4 2.4 0 1 1 3.3 2.2c-.6.3-1 .8-1 1.5v.6"/>' + DOT.format(12, 16.6).replace('r="1.7"', 'r="1.1"'),
     "Start_Recent": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     "Start_Search": '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>',
     "Nav_Rotate": '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/>',

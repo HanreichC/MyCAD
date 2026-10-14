@@ -1,0 +1,4816 @@
+{
+ "groups": [
+  {
+   "id": "start",
+   "title": {
+    "en": "Getting Started",
+    "de": "Erste Schritte"
+   }
+  },
+  {
+   "id": "file",
+   "title": {
+    "en": "File",
+    "de": "Datei"
+   }
+  },
+  {
+   "id": "create",
+   "title": {
+    "en": "Create",
+    "de": "Erstellen"
+   }
+  },
+  {
+   "id": "modify",
+   "title": {
+    "en": "Modify",
+    "de": "Ändern"
+   }
+  },
+  {
+   "id": "construct",
+   "title": {
+    "en": "Construct",
+    "de": "Konstruieren"
+   }
+  },
+  {
+   "id": "assemble",
+   "title": {
+    "en": "Assemble",
+    "de": "Zusammenfügen"
+   }
+  },
+  {
+   "id": "inspect",
+   "title": {
+    "en": "Inspect",
+    "de": "Prüfen"
+   }
+  },
+  {
+   "id": "utilities",
+   "title": {
+    "en": "Utilities",
+    "de": "Werkzeuge"
+   }
+  },
+  {
+   "id": "sketch_create",
+   "title": {
+    "en": "Sketch – Create",
+    "de": "Skizze – Erstellen"
+   }
+  },
+  {
+   "id": "sketch_modify",
+   "title": {
+    "en": "Sketch – Modify",
+    "de": "Skizze – Ändern"
+   }
+  },
+  {
+   "id": "sketch_constraints",
+   "title": {
+    "en": "Sketch – Constraints",
+    "de": "Skizze – Abhängigkeiten"
+   }
+  }
+ ],
+ "articles": [
+  {
+   "id": "start_first",
+   "group": "start",
+   "icon": "Std_New",
+   "commands": [],
+   "title": {
+    "en": "Your first design",
+    "de": "Dein erstes Design"
+   },
+   "keywords": {
+    "en": [
+     "start",
+     "beginner",
+     "tutorial",
+     "first steps",
+     "how to"
+    ],
+    "de": [
+     "Start",
+     "Anfänger",
+     "Anleitung",
+     "erste Schritte",
+     "wie"
+    ]
+   },
+   "summary": {
+    "en": "In MyCAD you sketch a shape, then turn it into a body – just like in Fusion 360.",
+    "de": "In MyCAD skizzierst du eine Form und machst daraus einen Körper – genau wie in Fusion 360."
+   },
+   "steps": {
+    "en": [
+     "On the start page click New Design.",
+     "Click Sketch and choose a plane, e.g. the floor (XY).",
+     "Draw a rectangle: click two opposite corners.",
+     "Click Finish Sketch.",
+     "Click inside the rectangle, then Extrude, drag the arrow up and click OK."
+    ],
+    "de": [
+     "Klicke auf der Startseite auf Neues Design.",
+     "Klicke auf Skizze und wähle eine Ebene, z. B. den Boden (XY).",
+     "Zeichne ein Rechteck: klicke zwei gegenüberliegende Ecken.",
+     "Klicke auf Skizze fertig stellen.",
+     "Klicke in das Rechteck, dann auf Extrudieren, ziehe den Pfeil nach oben und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_CreateSketch",
+    "Design_Extrude",
+    "start_navigation"
+   ],
+   "tips": {
+    "en": [
+     "Every step lands in the timeline at the bottom. Double-click it to change it later.",
+     "Press F1 over any tool to open its help page."
+    ],
+    "de": [
+     "Jeder Schritt landet in der Zeitleiste unten. Doppelklick darauf ändert ihn später.",
+     "Drücke F1 über einem Werkzeug, um seine Hilfeseite zu öffnen."
+    ]
+   },
+   "images": [
+    {
+     "file": "start_first.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "start_navigation",
+   "group": "start",
+   "icon": "Nav_Rotate",
+   "commands": [],
+   "title": {
+    "en": "Moving around",
+    "de": "Navigation"
+   },
+   "keywords": {
+    "en": [
+     "navigate",
+     "rotate view",
+     "orbit",
+     "pan",
+     "zoom",
+     "mouse",
+     "trackpad",
+     "view cube"
+    ],
+    "de": [
+     "navigieren",
+     "Ansicht drehen",
+     "Orbit",
+     "verschieben",
+     "zoomen",
+     "Maus",
+     "Trackpad",
+     "ViewCube"
+    ]
+   },
+   "summary": {
+    "en": "Rotate, pan and zoom the view with mouse or trackpad. The exact buttons depend on the style in Settings.",
+    "de": "Drehen, verschieben und zoomen mit Maus oder Trackpad. Welche Tasten genau, hängt vom Stil in den Einstellungen ab."
+   },
+   "steps": {
+    "en": [
+     "Rotate (Fusion 360 style): hold Shift and drag with the middle mouse button.",
+     "Pan: drag with the middle mouse button.",
+     "Zoom: scroll the mouse wheel; it zooms towards the cursor.",
+     "Click a face or corner of the ViewCube (top right) to look from that side; the house button shows the whole model."
+    ],
+    "de": [
+     "Drehen (Stil Fusion 360): Umschalt halten und mit der mittleren Maustaste ziehen.",
+     "Verschieben: mit der mittleren Maustaste ziehen.",
+     "Zoomen: Mausrad drehen; es zoomt zum Cursor hin.",
+     "Klicke eine Fläche oder Ecke des ViewCube (oben rechts), um von dort zu schauen; das Haus zeigt das ganze Modell."
+    ]
+   },
+   "see": [
+    "settings"
+   ],
+   "tips": {
+    "en": [
+     "In Settings you can turn a key, e.g. Space, into a mouse button – handy on a laptop.",
+     "The view rotates around the body under the cursor, so details stay in place."
+    ],
+    "de": [
+     "In den Einstellungen machst du eine Taste, z. B. die Leertaste, zur Maustaste – praktisch am Laptop.",
+     "Die Ansicht dreht um den Körper unter dem Cursor, so bleiben Details an ihrem Platz."
+    ]
+   }
+  },
+  {
+   "id": "sketch_basics",
+   "group": "start",
+   "icon": "Design_CreateSketch",
+   "commands": [],
+   "title": {
+    "en": "Sketching basics",
+    "de": "Skizzen-Grundlagen"
+   },
+   "keywords": {
+    "en": [
+     "sketch",
+     "profile",
+     "closed area",
+     "constraint",
+     "colors",
+     "blue",
+     "black",
+     "construction"
+    ],
+    "de": [
+     "Skizze",
+     "Profil",
+     "geschlossene Fläche",
+     "Abhängigkeit",
+     "Farben",
+     "blau",
+     "schwarz",
+     "Konstruktion"
+    ]
+   },
+   "summary": {
+    "en": "A sketch is a flat drawing on a plane. Every closed area becomes a profile that you can extrude or revolve.",
+    "de": "Eine Skizze ist eine flache Zeichnung auf einer Ebene. Jede geschlossene Fläche wird ein Profil, das du extrudieren oder drehen kannst."
+   },
+   "steps": {
+    "en": [
+     "Draw lines, circles and other shapes; corners snap together.",
+     "Add dimensions and constraints until the drawing is fully defined.",
+     "Press Esc to put the current tool away, then Finish Sketch.",
+     "Outside the sketch, the closed areas appear light orange; click one to select it (it turns blue)."
+    ],
+    "de": [
+     "Zeichne Linien, Kreise und andere Formen; Ecken rasten aneinander ein.",
+     "Füge Bemaßungen und Abhängigkeiten hinzu, bis die Zeichnung voll bestimmt ist.",
+     "Drücke Esc, um das aktuelle Werkzeug wegzulegen, dann Skizze fertig stellen.",
+     "Außerhalb der Skizze erscheinen die geschlossenen Flächen hellorange; ein Klick wählt eine aus (sie wird blau)."
+    ]
+   },
+   "see": [
+    "Design_CreateSketch",
+    "sketch_dimension",
+    "sketch_construction"
+   ],
+   "options": {
+    "en": [
+     [
+      "Blue lines",
+      "Not fully defined yet: they can still move."
+     ],
+     [
+      "Black lines",
+      "Fully defined by dimensions and constraints."
+     ],
+     [
+      "Orange dashed lines",
+      "Construction geometry: helps drawing, never part of a profile."
+     ],
+     [
+      "Purple lines",
+      "Projected from the model."
+     ]
+    ],
+    "de": [
+     [
+      "Blaue Linien",
+      "Noch nicht voll bestimmt: sie können sich noch bewegen."
+     ],
+     [
+      "Schwarze Linien",
+      "Voll bestimmt durch Bemaßungen und Abhängigkeiten."
+     ],
+     [
+      "Orange gestrichelte Linien",
+      "Konstruktionsgeometrie: hilft beim Zeichnen, gehört nie zu einem Profil."
+     ],
+     [
+      "Lila Linien",
+      "Aus dem Modell projiziert."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "Two circles inside each other give two profiles: the ring and the inner disc. Click only the ring to get a tube.",
+     "The Sketch Palette on the right turns grid, snap and the section view on or off."
+    ],
+    "de": [
+     "Zwei Kreise ineinander ergeben zwei Profile: den Ring und die innere Scheibe. Klicke nur den Ring an, um ein Rohr zu bekommen.",
+     "Die Skizzenpalette rechts schaltet Raster, Fangen und Schnittansicht ein oder aus."
+    ]
+   },
+   "images": [
+    {
+     "file": "sketch_basics.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "start_timeline",
+   "group": "start",
+   "icon": "Design_Parameters",
+   "commands": [],
+   "title": {
+    "en": "Timeline and changes",
+    "de": "Zeitleiste und Änderungen"
+   },
+   "keywords": {
+    "en": [
+     "timeline",
+     "history",
+     "edit",
+     "roll back",
+     "suppress",
+     "undo",
+     "change later"
+    ],
+    "de": [
+     "Zeitleiste",
+     "Verlauf",
+     "bearbeiten",
+     "zurücksetzen",
+     "unterdrücken",
+     "rückgängig",
+     "später ändern"
+    ]
+   },
+   "summary": {
+    "en": "Every sketch and feature is a step in the timeline at the bottom. Change any step and everything after it updates.",
+    "de": "Jede Skizze und jedes Feature ist ein Schritt in der Zeitleiste unten. Änderst du einen Schritt, passt sich alles danach an."
+   },
+   "steps": {
+    "en": [
+     "Double-click a step to edit it.",
+     "Right-click a step for Edit, Roll Back to Here, Suppress or Delete.",
+     "Roll Back to Here lets you insert new steps in the middle of the history."
+    ],
+    "de": [
+     "Doppelklick auf einen Schritt bearbeitet ihn.",
+     "Rechtsklick auf einen Schritt bietet Bearbeiten, Bis hierher zurücksetzen, Unterdrücken oder Löschen.",
+     "Bis hierher zurücksetzen lässt dich neue Schritte mitten in den Verlauf einfügen."
+    ]
+   },
+   "see": [
+    "Design_Parameters"
+   ],
+   "tips": {
+    "en": [
+     "A red step has a problem; hover it to read why.",
+     "Suppress hides a step without deleting it."
+    ],
+    "de": [
+     "Ein roter Schritt hat ein Problem; fahre mit der Maus darüber, um den Grund zu lesen.",
+     "Unterdrücken blendet einen Schritt aus, ohne ihn zu löschen."
+    ]
+   }
+  },
+  {
+   "id": "file_basics",
+   "group": "file",
+   "icon": "Std_Save",
+   "commands": [
+    "Std_New",
+    "Std_Open",
+    "Std_Save",
+    "Std_SaveAs",
+    "Std_Undo",
+    "Std_Redo"
+   ],
+   "title": {
+    "en": "Designs and files",
+    "de": "Designs und Dateien"
+   },
+   "keywords": {
+    "en": [
+     "new",
+     "open",
+     "save",
+     "save as",
+     "undo",
+     "redo",
+     "file",
+     "start page",
+     "projects folder"
+    ],
+    "de": [
+     "neu",
+     "öffnen",
+     "speichern",
+     "speichern unter",
+     "rückgängig",
+     "wiederholen",
+     "Datei",
+     "Startseite",
+     "Projektordner"
+    ]
+   },
+   "summary": {
+    "en": "Create, open and save designs; undo and redo every change.",
+    "de": "Designs anlegen, öffnen und speichern; jede Änderung rückgängig machen und wiederholen."
+   },
+   "steps": {
+    "en": [
+     "New creates an empty design, Open loads a design file.",
+     "Save (Ctrl+S) writes the design; the first time you choose a name.",
+     "Undo (Ctrl+Z) and Redo (Ctrl+Y) step through your changes.",
+     "The house button opens the start page with your recent designs and the projects folder."
+    ],
+    "de": [
+     "Neu legt ein leeres Design an, Öffnen lädt eine Design-Datei.",
+     "Speichern (Strg+S) schreibt das Design; beim ersten Mal wählst du einen Namen.",
+     "Rückgängig (Strg+Z) und Wiederholen (Strg+Y) gehen durch deine Änderungen.",
+     "Der Haus-Knopf öffnet die Startseite mit deinen zuletzt verwendeten Designs und dem Projektordner."
+    ]
+   },
+   "see": [
+    "Design_Export",
+    "Design_Import"
+   ],
+   "tips": {
+    "en": [
+     "Designs saved in the projects folder (Settings) appear on the start page with a preview.",
+     "Right-click a design in the browser to rename, close or delete it."
+    ],
+    "de": [
+     "Designs im Projektordner (Einstellungen) erscheinen mit Vorschaubild auf der Startseite.",
+     "Rechtsklick auf ein Design im Browser: umbenennen, schließen oder löschen."
+    ]
+   }
+  },
+  {
+   "id": "Design_Import",
+   "group": "file",
+   "icon": "Design_Import",
+   "commands": [],
+   "title": {
+    "en": "Insert",
+    "de": "Einfügen"
+   },
+   "keywords": {
+    "en": [
+     "import",
+     "step",
+     "dxf",
+     "svg",
+     "insert file",
+     "open cad"
+    ],
+    "de": [
+     "importieren",
+     "STEP",
+     "DXF",
+     "SVG",
+     "Datei einfügen",
+     "CAD öffnen"
+    ]
+   },
+   "summary": {
+    "en": "Brings a STEP model in as bodies, or a DXF/SVG drawing as a sketch.",
+    "de": "Holt ein STEP-Modell als Körper herein oder eine DXF-/SVG-Zeichnung als Skizze."
+   },
+   "steps": {
+    "en": [
+     "Click Insert.",
+     "Choose a STEP, DXF or SVG file.",
+     "STEP files become bodies; DXF and SVG become a sketch on the floor plane."
+    ],
+    "de": [
+     "Klicke auf Einfügen.",
+     "Wähle eine STEP-, DXF- oder SVG-Datei.",
+     "STEP-Dateien werden Körper; DXF und SVG werden eine Skizze auf der Bodenebene."
+    ]
+   },
+   "see": [
+    "Design_Export",
+    "Design_Extrude"
+   ],
+   "tips": {
+    "en": [
+     "Closed areas of an inserted DXF or SVG are profiles – extrude them right away."
+    ],
+    "de": [
+     "Geschlossene Flächen einer eingefügten DXF oder SVG sind Profile – extrudiere sie gleich."
+    ]
+   }
+  },
+  {
+   "id": "Design_Export",
+   "group": "file",
+   "icon": "Design_Export",
+   "commands": [],
+   "title": {
+    "en": "Export",
+    "de": "Exportieren"
+   },
+   "keywords": {
+    "en": [
+     "export",
+     "3mf",
+     "stl",
+     "step",
+     "3d print",
+     "slicer",
+     "save as stl"
+    ],
+    "de": [
+     "exportieren",
+     "3MF",
+     "STL",
+     "STEP",
+     "3D-Druck",
+     "Slicer",
+     "als STL speichern"
+    ]
+   },
+   "summary": {
+    "en": "Saves bodies as 3MF or STL for 3D printing, or as STEP for other CAD programs.",
+    "de": "Speichert Körper als 3MF oder STL für den 3D-Druck oder als STEP für andere CAD-Programme."
+   },
+   "steps": {
+    "en": [
+     "Select the bodies to export (nothing selected = all visible bodies).",
+     "Click Export.",
+     "Choose the format and a file name."
+    ],
+    "de": [
+     "Wähle die Körper zum Exportieren (nichts gewählt = alle sichtbaren Körper).",
+     "Klicke auf Exportieren.",
+     "Wähle Format und Dateinamen."
+    ]
+   },
+   "see": [
+    "Design_Import"
+   ],
+   "tips": {
+    "en": [
+     "3MF keeps units and is the best choice for modern slicers."
+    ],
+    "de": [
+     "3MF behält die Einheiten und ist für moderne Slicer die beste Wahl."
+    ]
+   }
+  },
+  {
+   "id": "Design_CreateSketch",
+   "group": "create",
+   "icon": "Design_CreateSketch",
+   "commands": [],
+   "title": {
+    "en": "Create Sketch",
+    "de": "Skizze erstellen"
+   },
+   "keywords": {
+    "en": [
+     "sketch",
+     "draw",
+     "2d",
+     "plane",
+     "face"
+    ],
+    "de": [
+     "Skizze",
+     "zeichnen",
+     "2D",
+     "Ebene",
+     "Fläche"
+    ]
+   },
+   "summary": {
+    "en": "Starts a new sketch on a plane or on a flat face of a body.",
+    "de": "Beginnt eine neue Skizze auf einer Ebene oder einer flachen Fläche eines Körpers."
+   },
+   "steps": {
+    "en": [
+     "Click Sketch.",
+     "Click one of the origin planes or a flat face of a body.",
+     "Draw with the sketch tools.",
+     "Click Finish Sketch."
+    ],
+    "de": [
+     "Klicke auf Skizze.",
+     "Klicke eine der Ursprungsebenen oder eine flache Fläche eines Körpers an.",
+     "Zeichne mit den Skizzenwerkzeugen.",
+     "Klicke auf Skizze fertig stellen."
+    ]
+   },
+   "see": [
+    "sketch_basics",
+    "Design_Extrude"
+   ],
+   "tips": {
+    "en": [
+     "A sketch on a body face extrudes into that body by default (Join).",
+     "Double-click a sketch in the timeline to change it later; bodies built from it update."
+    ],
+    "de": [
+     "Eine Skizze auf einer Körperfläche wird standardmäßig mit diesem Körper verbunden.",
+     "Doppelklick auf eine Skizze in der Zeitleiste ändert sie später; Körper daraus passen sich an."
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_CreateSketch.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Extrude",
+   "group": "create",
+   "icon": "Design_Extrude",
+   "commands": [],
+   "title": {
+    "en": "Extrude",
+    "de": "Extrudieren"
+   },
+   "keywords": {
+    "en": [
+     "extrude",
+     "pull",
+     "solid",
+     "thickness",
+     "block",
+     "plate",
+     "tube"
+    ],
+    "de": [
+     "extrudieren",
+     "ziehen",
+     "Volumen",
+     "Dicke",
+     "Block",
+     "Platte",
+     "Rohr"
+    ]
+   },
+   "summary": {
+    "en": "Pulls closed areas of a sketch straight out into a body.",
+    "de": "Zieht geschlossene Flächen einer Skizze gerade heraus zu einem Körper."
+   },
+   "steps": {
+    "en": [
+     "Click one or more profiles (closed areas) of a sketch; they turn blue.",
+     "Click Extrude.",
+     "Drag the arrow or type the distance.",
+     "Choose the operation, then click OK."
+    ],
+    "de": [
+     "Klicke ein oder mehrere Profile (geschlossene Flächen) einer Skizze an; sie werden blau.",
+     "Klicke auf Extrudieren.",
+     "Ziehe den Pfeil oder tippe den Abstand ein.",
+     "Wähle den Vorgang und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Revolve",
+    "Design_PressPull",
+    "sketch_basics"
+   ],
+   "options": {
+    "en": [
+     [
+      "Direction",
+      "One Side, Symmetric (both sides equally) or Two Sides (two distances)."
+     ],
+     [
+      "Distance",
+      "How far the profile is pulled."
+     ],
+     [
+      "Flip direction",
+      "Pulls to the other side."
+     ],
+     [
+      "Operation",
+      "New Body, Join, Cut, Intersect or New Component. Join and Cut ask for the body to change."
+     ]
+    ],
+    "de": [
+     [
+      "Richtung",
+      "Eine Seite, Symmetrisch (beidseitig gleich) oder Zwei Seiten (zwei Abstände)."
+     ],
+     [
+      "Abstand",
+      "Wie weit das Profil herausgezogen wird."
+     ],
+     [
+      "Richtung umkehren",
+      "Zieht zur anderen Seite."
+     ],
+     [
+      "Vorgang",
+      "Neuer Körper, Verbinden, Ausschneiden, Schnittmenge oder Neue Komponente. Bei Verbinden und Ausschneiden wählst du den Körper, der verändert wird."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "Click only the ring between two circles to get a tube instead of a solid cylinder.",
+     "Type a parameter name or a formula such as Width * 2 in the distance field."
+    ],
+    "de": [
+     "Klicke nur den Ring zwischen zwei Kreisen an, um ein Rohr statt eines vollen Zylinders zu bekommen.",
+     "Tippe einen Parameternamen oder eine Formel wie Breite * 2 ins Abstandsfeld."
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Extrude.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Revolve",
+   "group": "create",
+   "icon": "Design_Revolve",
+   "commands": [],
+   "title": {
+    "en": "Revolve",
+    "de": "Drehen"
+   },
+   "keywords": {
+    "en": [
+     "revolve",
+     "donut",
+     "turned part",
+     "lathe",
+     "rotate profile",
+     "axis",
+     "torus",
+     "ring",
+     "vase"
+    ],
+    "de": [
+     "drehen",
+     "Donut",
+     "Drehteil",
+     "Drehbank",
+     "Profil rotieren",
+     "Achse",
+     "Torus",
+     "Ring",
+     "Vase"
+    ]
+   },
+   "summary": {
+    "en": "Spins a cross-section around an axis – for donuts, rings, shafts and every turned part.",
+    "de": "Dreht einen Querschnitt um eine Achse – für Donuts, Ringe, Wellen und jedes Drehteil."
+   },
+   "steps": {
+    "en": [
+     "Create a sketch on a vertical plane, e.g. XZ.",
+     "Draw the cross-section beside the axis, e.g. a circle 30 mm to the right of the origin.",
+     "Click Finish Sketch, click the profile and then Revolve.",
+     "MyCAD picks an axis that does not cross the profile; change it if needed and click OK."
+    ],
+    "de": [
+     "Erstelle eine Skizze auf einer senkrechten Ebene, z. B. XZ.",
+     "Zeichne den Querschnitt neben der Achse, z. B. einen Kreis 30 mm rechts vom Ursprung.",
+     "Klicke auf Skizze fertig stellen, dann auf das Profil und auf Drehen.",
+     "MyCAD wählt eine Achse, die das Profil nicht schneidet; ändere sie bei Bedarf und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Extrude",
+    "Design_Sweep"
+   ],
+   "options": {
+    "en": [
+     [
+      "Axis",
+      "Sketch X axis, Sketch Y axis or the origin axes X, Y and Z."
+     ],
+     [
+      "Angle",
+      "360° for a full turn, less for a part of it."
+     ],
+     [
+      "Flip direction",
+      "Turns the other way round."
+     ],
+     [
+      "Operation",
+      "New Body, Join, Cut, Intersect or New Component. Join and Cut ask for the body to change."
+     ]
+    ],
+    "de": [
+     [
+      "Achse",
+      "X- oder Y-Achse der Skizze oder die Ursprungsachsen X, Y und Z."
+     ],
+     [
+      "Winkel",
+      "360° für eine volle Umdrehung, weniger für einen Teil davon."
+     ],
+     [
+      "Richtung umkehren",
+      "Dreht andersherum."
+     ],
+     [
+      "Vorgang",
+      "Neuer Körper, Verbinden, Ausschneiden, Schnittmenge oder Neue Komponente. Bei Verbinden und Ausschneiden wählst du den Körper, der verändert wird."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "The axis must not run through the profile, otherwise MyCAD says so.",
+     "A half circle touching the axis gives a sphere; a rectangle touching it gives a cylinder."
+    ],
+    "de": [
+     "Die Achse darf nicht durch das Profil laufen, sonst meldet MyCAD das.",
+     "Ein Halbkreis an der Achse ergibt eine Kugel, ein Rechteck an der Achse einen Zylinder."
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Revolve.jpg",
+     "caption": {
+      "en": "A circle beside the axis becomes a donut.",
+      "de": "Ein Kreis neben der Achse wird zum Donut."
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Sweep",
+   "group": "create",
+   "icon": "Design_Sweep",
+   "commands": [],
+   "title": {
+    "en": "Sweep",
+    "de": "Sweep"
+   },
+   "keywords": {
+    "en": [
+     "sweep",
+     "path",
+     "pipe",
+     "tube",
+     "rail",
+     "handle",
+     "bent"
+    ],
+    "de": [
+     "Sweep",
+     "Pfad",
+     "Rohr",
+     "Schlauch",
+     "Bahn",
+     "Griff",
+     "gebogen"
+    ]
+   },
+   "summary": {
+    "en": "Moves a profile along a path – for pipes, handles and bent shapes.",
+    "de": "Führt ein Profil an einem Pfad entlang – für Rohre, Griffe und gebogene Formen."
+   },
+   "steps": {
+    "en": [
+     "Sketch the profile, e.g. a circle.",
+     "Sketch the path on another plane: connected lines and arcs.",
+     "Select the profile and the path, then click Sweep and OK."
+    ],
+    "de": [
+     "Skizziere das Profil, z. B. einen Kreis.",
+     "Skizziere den Pfad auf einer anderen Ebene: zusammenhängende Linien und Bögen.",
+     "Wähle Profil und Pfad, klicke auf Sweep und OK."
+    ]
+   },
+   "see": [
+    "Design_Loft",
+    "Design_Revolve"
+   ],
+   "tips": {
+    "en": [
+     "The path must be one connected chain and must not cross itself.",
+     "Edges of a body work as a path, too."
+    ],
+    "de": [
+     "Der Pfad muss eine zusammenhängende Kette sein und darf sich nicht selbst kreuzen.",
+     "Auch Kanten eines Körpers taugen als Pfad."
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Sweep.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Loft",
+   "group": "create",
+   "icon": "Design_Loft",
+   "commands": [],
+   "title": {
+    "en": "Loft",
+    "de": "Erhebung"
+   },
+   "keywords": {
+    "en": [
+     "loft",
+     "blend",
+     "transition",
+     "morph",
+     "funnel"
+    ],
+    "de": [
+     "Erhebung",
+     "Übergang",
+     "überblenden",
+     "Trichter",
+     "Loft"
+    ]
+   },
+   "summary": {
+    "en": "Builds a smooth body through two or more profiles, e.g. from a square to a circle.",
+    "de": "Baut einen glatten Körper durch zwei oder mehr Profile, z. B. vom Quadrat zum Kreis."
+   },
+   "steps": {
+    "en": [
+     "Sketch each profile on its own plane (use Offset Plane for parallel levels).",
+     "Select the profiles in order.",
+     "Click Loft and OK."
+    ],
+    "de": [
+     "Skizziere jedes Profil auf einer eigenen Ebene (mit Versetzte Ebene für parallele Höhen).",
+     "Wähle die Profile der Reihe nach.",
+     "Klicke auf Erhebung und OK."
+    ]
+   },
+   "see": [
+    "Design_OffsetPlane",
+    "Design_Sweep"
+   ],
+   "options": {
+    "en": [
+     [
+      "Ruled",
+      "Straight transitions instead of smooth curves."
+     ],
+     [
+      "Closed",
+      "Connects the last profile back to the first."
+     ],
+     [
+      "Operation",
+      "New Body, Join, Cut, Intersect or New Component. Join and Cut ask for the body to change."
+     ]
+    ],
+    "de": [
+     [
+      "Regelfläche",
+      "Gerade Übergänge statt weicher Kurven."
+     ],
+     [
+      "Geschlossen",
+      "Verbindet das letzte Profil wieder mit dem ersten."
+     ],
+     [
+      "Vorgang",
+      "Neuer Körper, Verbinden, Ausschneiden, Schnittmenge oder Neue Komponente. Bei Verbinden und Ausschneiden wählst du den Körper, der verändert wird."
+     ]
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Loft.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Rib",
+   "group": "create",
+   "icon": "Design_Rib",
+   "commands": [],
+   "title": {
+    "en": "Rib",
+    "de": "Rippe"
+   },
+   "keywords": {
+    "en": [
+     "rib",
+     "stiffener",
+     "support",
+     "gusset"
+    ],
+    "de": [
+     "Rippe",
+     "Versteifung",
+     "Stütze",
+     "Knotenblech"
+    ]
+   },
+   "summary": {
+    "en": "Adds a thin supporting wall along sketch lines between existing walls.",
+    "de": "Fügt entlang von Skizzenlinien eine dünne Stützwand zwischen vorhandenen Wänden ein."
+   },
+   "steps": {
+    "en": [
+     "Sketch the rib lines on a plane through the body; both ends must touch the body.",
+     "Select the body and the sketch lines.",
+     "Click Rib, set the thickness and click OK."
+    ],
+    "de": [
+     "Skizziere die Rippenlinien auf einer Ebene durch den Körper; beide Enden müssen den Körper berühren.",
+     "Wähle den Körper und die Skizzenlinien.",
+     "Klicke auf Rippe, stelle die Dicke ein und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Web",
+    "Design_Shell"
+   ],
+   "options": {
+    "en": [
+     [
+      "Thickness",
+      "Wall thickness of the rib."
+     ]
+    ],
+    "de": [
+     [
+      "Dicke",
+      "Wandstärke der Rippe."
+     ]
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Rib.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Web",
+   "group": "create",
+   "icon": "Design_Web",
+   "commands": [],
+   "title": {
+    "en": "Web",
+    "de": "Steg"
+   },
+   "keywords": {
+    "en": [
+     "web",
+     "grid",
+     "stiffeners",
+     "honeycomb",
+     "inner walls"
+    ],
+    "de": [
+     "Steg",
+     "Gitter",
+     "Versteifungen",
+     "Waben",
+     "Innenwände"
+    ]
+   },
+   "summary": {
+    "en": "Like Rib, but the walls grow perpendicular to the sketch – great for a grid of stiffeners inside a shell.",
+    "de": "Wie Rippe, aber die Wände wachsen senkrecht zur Skizze – ideal für ein Gitter aus Versteifungen in einer Schale."
+   },
+   "steps": {
+    "en": [
+     "Sketch the lines of the web on a plane.",
+     "Select the body and the sketch lines.",
+     "Click Web, set the thickness and click OK."
+    ],
+    "de": [
+     "Skizziere die Linien des Stegs auf einer Ebene.",
+     "Wähle den Körper und die Skizzenlinien.",
+     "Klicke auf Steg, stelle die Dicke ein und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Rib",
+    "Design_Shell"
+   ],
+   "options": {
+    "en": [
+     [
+      "Thickness",
+      "Wall thickness of each web."
+     ]
+    ],
+    "de": [
+     [
+      "Dicke",
+      "Wandstärke jedes Stegs."
+     ]
+    ]
+   }
+  },
+  {
+   "id": "Design_Emboss",
+   "group": "create",
+   "icon": "Design_Emboss",
+   "commands": [],
+   "title": {
+    "en": "Emboss",
+    "de": "Prägen"
+   },
+   "keywords": {
+    "en": [
+     "emboss",
+     "engrave",
+     "text",
+     "logo",
+     "label",
+     "deboss",
+     "lettering"
+    ],
+    "de": [
+     "prägen",
+     "gravieren",
+     "Text",
+     "Logo",
+     "Beschriftung",
+     "vertiefen",
+     "Schrift"
+    ]
+   },
+   "summary": {
+    "en": "Raises or engraves sketch profiles or text on a face of a body.",
+    "de": "Hebt Skizzenprofile oder Text auf einer Körperfläche hervor oder graviert sie ein."
+   },
+   "steps": {
+    "en": [
+     "Sketch the text or shapes on or near the face.",
+     "Select the profiles and the face to emboss on.",
+     "Click Emboss, choose raised or engraved and the depth, then OK."
+    ],
+    "de": [
+     "Skizziere Text oder Formen auf oder nahe der Fläche.",
+     "Wähle die Profile und die Fläche zum Prägen.",
+     "Klicke auf Prägen, wähle erhaben oder vertieft und die Tiefe, dann OK."
+    ]
+   },
+   "see": [
+    "sketch_text"
+   ],
+   "options": {
+    "en": [
+     [
+      "Type",
+      "Emboss (raised) or Deboss (engraved)."
+     ],
+     [
+      "Depth",
+      "Height or depth of the lettering."
+     ]
+    ],
+    "de": [
+     [
+      "Typ",
+      "Prägen (erhaben) oder Vertiefen (graviert)."
+     ],
+     [
+      "Tiefe",
+      "Höhe oder Tiefe der Schrift."
+     ]
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Emboss.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "primitives",
+   "group": "create",
+   "icon": "Design_Box",
+   "commands": [
+    "Design_Box",
+    "Design_Cylinder",
+    "Design_Sphere",
+    "Design_Torus",
+    "Design_Coil"
+   ],
+   "title": {
+    "en": "Box, Cylinder and more",
+    "de": "Quader, Zylinder und mehr"
+   },
+   "keywords": {
+    "en": [
+     "box",
+     "cube",
+     "cylinder",
+     "sphere",
+     "ball",
+     "torus",
+     "coil",
+     "spring",
+     "helix",
+     "primitive"
+    ],
+    "de": [
+     "Quader",
+     "Würfel",
+     "Zylinder",
+     "Kugel",
+     "Ball",
+     "Torus",
+     "Spirale",
+     "Feder",
+     "Helix",
+     "Grundkörper"
+    ]
+   },
+   "summary": {
+    "en": "Creates a ready-made body without a sketch.",
+    "de": "Erstellt einen fertigen Körper ohne Skizze."
+   },
+   "steps": {
+    "en": [
+     "Optionally click a plane or flat face to place it on (otherwise the floor).",
+     "Open the dropdown next to Box and choose the shape.",
+     "Type the sizes and the position, then click OK."
+    ],
+    "de": [
+     "Klicke optional eine Ebene oder flache Fläche zum Platzieren an (sonst der Boden).",
+     "Öffne das Dropdown neben Quader und wähle die Form.",
+     "Tippe Größen und Position ein und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Extrude"
+   ],
+   "options": {
+    "en": [
+     [
+      "Length, Width, Height",
+      "Size of a box; height also for cylinder and coil."
+     ],
+     [
+      "Radius",
+      "Radius of cylinder, sphere, torus and coil."
+     ],
+     [
+      "Tube Radius",
+      "Thickness of torus and coil."
+     ],
+     [
+      "Pitch, Turns",
+      "Height per turn and number of turns of a coil."
+     ],
+     [
+      "Position X, Y",
+      "Where on the plane it sits."
+     ],
+     [
+      "Operation",
+      "New Body, Join, Cut, Intersect or New Component. Join and Cut ask for the body to change."
+     ]
+    ],
+    "de": [
+     [
+      "Länge, Breite, Höhe",
+      "Größe des Quaders; Höhe auch bei Zylinder und Spirale."
+     ],
+     [
+      "Radius",
+      "Radius von Zylinder, Kugel, Torus und Spirale."
+     ],
+     [
+      "Rohrradius",
+      "Dicke von Torus und Spirale."
+     ],
+     [
+      "Steigung, Windungen",
+      "Höhe pro Umdrehung und Anzahl der Windungen einer Spirale."
+     ],
+     [
+      "Position X, Y",
+      "Wo auf der Ebene er sitzt."
+     ],
+     [
+      "Vorgang",
+      "Neuer Körper, Verbinden, Ausschneiden, Schnittmenge oder Neue Komponente. Bei Verbinden und Ausschneiden wählst du den Körper, der verändert wird."
+     ]
+    ]
+   },
+   "images": [
+    {
+     "file": "primitives.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Hole",
+   "group": "create",
+   "icon": "Design_Hole",
+   "commands": [],
+   "title": {
+    "en": "Hole",
+    "de": "Bohrung"
+   },
+   "keywords": {
+    "en": [
+     "hole",
+     "drill",
+     "bore",
+     "counterbore",
+     "countersink",
+     "screw",
+     "through"
+    ],
+    "de": [
+     "Bohrung",
+     "bohren",
+     "Loch",
+     "Senkung",
+     "Senkkopf",
+     "Schraube",
+     "durchgehend"
+    ]
+   },
+   "summary": {
+    "en": "Drills holes at sketch points – simple, counterbored or countersunk.",
+    "de": "Bohrt Löcher an Skizzenpunkten – einfach, mit zylindrischer oder kegeliger Senkung."
+   },
+   "steps": {
+    "en": [
+     "Create a sketch on the face where the holes start.",
+     "Place a point for every hole and click Finish Sketch.",
+     "Select the sketch and click Hole.",
+     "Choose the type and sizes, then click OK."
+    ],
+    "de": [
+     "Erstelle eine Skizze auf der Fläche, an der die Bohrungen beginnen.",
+     "Setze für jede Bohrung einen Punkt und klicke Skizze fertig stellen.",
+     "Wähle die Skizze und klicke auf Bohrung.",
+     "Wähle Typ und Maße und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Thread",
+    "Design_Pattern"
+   ],
+   "options": {
+    "en": [
+     [
+      "Type",
+      "Simple, Counterbore or Countersink."
+     ],
+     [
+      "Diameter, Depth",
+      "Size of the hole; Through all drills all the way."
+     ],
+     [
+      "Head diameter, Head depth",
+      "Size of the counterbore or countersink."
+     ],
+     [
+      "Countersink angle",
+      "Angle of the countersink cone."
+     ]
+    ],
+    "de": [
+     [
+      "Typ",
+      "Einfach, Senkung zylindrisch oder Senkung kegelig."
+     ],
+     [
+      "Durchmesser, Tiefe",
+      "Maß der Bohrung; Durchgehend bohrt ganz durch."
+     ],
+     [
+      "Kopfdurchmesser, Kopftiefe",
+      "Maß der Senkung."
+     ],
+     [
+      "Senkwinkel",
+      "Winkel des Senkkegels."
+     ]
+    ]
+   }
+  },
+  {
+   "id": "Design_Thread",
+   "group": "create",
+   "icon": "Design_Thread",
+   "commands": [],
+   "title": {
+    "en": "Thread",
+    "de": "Gewinde"
+   },
+   "keywords": {
+    "en": [
+     "thread",
+     "screw",
+     "bolt",
+     "nut",
+     "pitch",
+     "m8"
+    ],
+    "de": [
+     "Gewinde",
+     "Schraube",
+     "Bolzen",
+     "Mutter",
+     "Steigung",
+     "M8"
+    ]
+   },
+   "summary": {
+    "en": "Cuts a real thread into a cylindrical face.",
+    "de": "Schneidet ein echtes Gewinde in eine zylindrische Fläche."
+   },
+   "steps": {
+    "en": [
+     "Click the cylindrical face of a bolt or hole.",
+     "Click Thread.",
+     "Set the pitch and click OK."
+    ],
+    "de": [
+     "Klicke die zylindrische Fläche eines Bolzens oder einer Bohrung an.",
+     "Klicke auf Gewinde.",
+     "Stelle die Steigung ein und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Hole"
+   ],
+   "options": {
+    "en": [
+     [
+      "Pitch",
+      "Distance between two threads, e.g. 1.25 mm for M8."
+     ],
+     [
+      "Left Handed",
+      "Left-hand thread."
+     ]
+    ],
+    "de": [
+     [
+      "Steigung",
+      "Abstand zweier Gänge, z. B. 1,25 mm bei M8."
+     ],
+     [
+      "Linksgängig",
+      "Linksgewinde."
+     ]
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Thread.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Pattern",
+   "group": "create",
+   "icon": "Design_Pattern",
+   "commands": [],
+   "title": {
+    "en": "Pattern",
+    "de": "Muster"
+   },
+   "keywords": {
+    "en": [
+     "pattern",
+     "array",
+     "repeat",
+     "copy",
+     "rectangular",
+     "circular",
+     "polar"
+    ],
+    "de": [
+     "Muster",
+     "Anordnung",
+     "wiederholen",
+     "kopieren",
+     "rechteckig",
+     "kreisförmig",
+     "polar"
+    ]
+   },
+   "summary": {
+    "en": "Repeats bodies or a feature in rows or around an axis.",
+    "de": "Wiederholt Körper oder ein Feature in Reihen oder um eine Achse."
+   },
+   "steps": {
+    "en": [
+     "Select bodies, or an Extrude, Revolve or Hole in the timeline.",
+     "Click Pattern.",
+     "Choose rectangular or circular and set count and spacing.",
+     "Click OK."
+    ],
+    "de": [
+     "Wähle Körper oder eine Extrusion, Drehung oder Bohrung in der Zeitleiste.",
+     "Klicke auf Muster.",
+     "Wähle rechteckig oder kreisförmig und stelle Anzahl und Abstand ein.",
+     "Klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Mirror",
+    "Design_Hole"
+   ],
+   "options": {
+    "en": [
+     [
+      "Type",
+      "Rectangular (rows) or Circular (around an axis)."
+     ],
+     [
+      "Direction, Count, Spacing",
+      "First row; Direction 2 adds a second row."
+     ],
+     [
+      "Axis, Angle",
+      "For circular patterns: axis through the origin and total angle."
+     ]
+    ],
+    "de": [
+     [
+      "Typ",
+      "Rechteckig (Reihen) oder Kreisförmig (um eine Achse)."
+     ],
+     [
+      "Richtung, Anzahl, Abstand",
+      "Erste Reihe; Richtung 2 fügt eine zweite Reihe hinzu."
+     ],
+     [
+      "Achse, Winkel",
+      "Bei kreisförmigen Mustern: Achse durch den Ursprung und Gesamtwinkel."
+     ]
+    ]
+   }
+  },
+  {
+   "id": "Design_Mirror",
+   "group": "create",
+   "icon": "Design_Mirror",
+   "commands": [],
+   "title": {
+    "en": "Mirror",
+    "de": "Spiegeln"
+   },
+   "keywords": {
+    "en": [
+     "mirror",
+     "symmetric",
+     "flip copy"
+    ],
+    "de": [
+     "spiegeln",
+     "symmetrisch",
+     "gespiegelte Kopie"
+    ]
+   },
+   "summary": {
+    "en": "Creates a mirrored copy of bodies.",
+    "de": "Erstellt eine gespiegelte Kopie von Körpern."
+   },
+   "steps": {
+    "en": [
+     "Select one or more bodies.",
+     "Click Mirror.",
+     "Choose the mirror plane and click OK."
+    ],
+    "de": [
+     "Wähle einen oder mehrere Körper.",
+     "Klicke auf Spiegeln.",
+     "Wähle die Spiegelebene und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Pattern",
+    "sketch_mirror"
+   ],
+   "options": {
+    "en": [
+     [
+      "Mirror plane",
+      "XY, XZ or YZ plane."
+     ]
+    ],
+    "de": [
+     [
+      "Spiegelebene",
+      "XY-, XZ- oder YZ-Ebene."
+     ]
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Mirror.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_PressPull",
+   "group": "modify",
+   "icon": "Design_PressPull",
+   "commands": [],
+   "title": {
+    "en": "Press Pull",
+    "de": "Drücken/Ziehen"
+   },
+   "keywords": {
+    "en": [
+     "press pull",
+     "push",
+     "pull",
+     "offset face",
+     "thicker",
+     "thinner"
+    ],
+    "de": [
+     "drücken",
+     "ziehen",
+     "Fläche versetzen",
+     "dicker",
+     "dünner"
+    ]
+   },
+   "summary": {
+    "en": "Pushes or pulls flat faces of a body to make it thicker or thinner.",
+    "de": "Drückt oder zieht ebene Flächen eines Körpers, um ihn dicker oder dünner zu machen."
+   },
+   "steps": {
+    "en": [
+     "Click one or more flat faces of a body.",
+     "Click Press Pull.",
+     "Positive distance pulls out, negative pushes in; click OK."
+    ],
+    "de": [
+     "Klicke eine oder mehrere ebene Flächen eines Körpers an.",
+     "Klicke auf Drücken/Ziehen.",
+     "Positiver Abstand zieht heraus, negativer drückt hinein; klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Extrude",
+    "Design_ReplaceFace"
+   ],
+   "images": [
+    {
+     "file": "Design_PressPull.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_ReplaceFace",
+   "group": "modify",
+   "icon": "Design_ReplaceFace",
+   "commands": [],
+   "title": {
+    "en": "Replace Face",
+    "de": "Fläche ersetzen"
+   },
+   "keywords": {
+    "en": [
+     "replace face",
+     "match",
+     "flush",
+     "level",
+     "extend to"
+    ],
+    "de": [
+     "Fläche ersetzen",
+     "angleichen",
+     "bündig",
+     "verlängern bis"
+    ]
+   },
+   "summary": {
+    "en": "Moves faces of a body onto a target plane or face, e.g. to make two parts flush.",
+    "de": "Verschiebt Flächen eines Körpers auf eine Zielebene oder -fläche, z. B. um zwei Teile bündig zu machen."
+   },
+   "steps": {
+    "en": [
+     "Select the faces to replace.",
+     "Add the target plane or face to the selection.",
+     "Click Replace Face and OK."
+    ],
+    "de": [
+     "Wähle die zu ersetzenden Flächen.",
+     "Füge die Zielebene oder -fläche zur Auswahl hinzu.",
+     "Klicke auf Fläche ersetzen und OK."
+    ]
+   },
+   "see": [
+    "Design_PressPull"
+   ],
+   "tips": {
+    "en": [
+     "Works with flat faces; the target must cross their direction."
+    ],
+    "de": [
+     "Funktioniert mit ebenen Flächen; das Ziel muss ihre Richtung kreuzen."
+    ]
+   }
+  },
+  {
+   "id": "Design_SplitFace",
+   "group": "modify",
+   "icon": "Design_SplitFace",
+   "commands": [],
+   "title": {
+    "en": "Split Face",
+    "de": "Fläche teilen"
+   },
+   "keywords": {
+    "en": [
+     "split face",
+     "divide face",
+     "partition"
+    ],
+    "de": [
+     "Fläche teilen",
+     "Fläche aufteilen",
+     "unterteilen"
+    ]
+   },
+   "summary": {
+    "en": "Divides faces of a body along a plane, face or sketch – for example to press-pull only a part of a face.",
+    "de": "Teilt Flächen eines Körpers entlang einer Ebene, Fläche oder Skizze – etwa um nur einen Teil einer Fläche zu drücken oder zu ziehen."
+   },
+   "steps": {
+    "en": [
+     "Select the faces to split.",
+     "Add a plane, face or sketch as the cutting tool.",
+     "Click Split Face and OK."
+    ],
+    "de": [
+     "Wähle die zu teilenden Flächen.",
+     "Füge eine Ebene, Fläche oder Skizze als Schneidwerkzeug hinzu.",
+     "Klicke auf Fläche teilen und OK."
+    ]
+   },
+   "see": [
+    "Design_SplitBody",
+    "Design_PressPull"
+   ],
+   "images": [
+    {
+     "file": "Design_SplitFace.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Fillet",
+   "group": "modify",
+   "icon": "Design_Fillet",
+   "commands": [],
+   "title": {
+    "en": "Fillet",
+    "de": "Abrunden"
+   },
+   "keywords": {
+    "en": [
+     "fillet",
+     "round",
+     "rounded edge",
+     "radius",
+     "smooth corner"
+    ],
+    "de": [
+     "abrunden",
+     "Rundung",
+     "gerundete Kante",
+     "Radius",
+     "weiche Ecke"
+    ]
+   },
+   "summary": {
+    "en": "Rounds edges of a body.",
+    "de": "Rundet Kanten eines Körpers ab."
+   },
+   "steps": {
+    "en": [
+     "Click the edges to round (a face rounds all its edges).",
+     "Click Fillet.",
+     "Type the radius and click OK."
+    ],
+    "de": [
+     "Klicke die zu rundenden Kanten an (eine Fläche rundet alle ihre Kanten).",
+     "Klicke auf Abrunden.",
+     "Tippe den Radius ein und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Chamfer",
+    "sketch_fillet"
+   ],
+   "options": {
+    "en": [
+     [
+      "Radius",
+      "Size of the rounding."
+     ]
+    ],
+    "de": [
+     [
+      "Radius",
+      "Größe der Rundung."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "If it fails, try a smaller radius or round fewer edges at once."
+    ],
+    "de": [
+     "Schlägt es fehl, versuche einen kleineren Radius oder weniger Kanten auf einmal."
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Fillet.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Chamfer",
+   "group": "modify",
+   "icon": "Design_Chamfer",
+   "commands": [],
+   "title": {
+    "en": "Chamfer",
+    "de": "Fase"
+   },
+   "keywords": {
+    "en": [
+     "chamfer",
+     "bevel",
+     "cut corner",
+     "edge break"
+    ],
+    "de": [
+     "Fase",
+     "abschrägen",
+     "Ecke brechen",
+     "Kante brechen"
+    ]
+   },
+   "summary": {
+    "en": "Cuts edges of a body at an angle.",
+    "de": "Schrägt Kanten eines Körpers ab."
+   },
+   "steps": {
+    "en": [
+     "Click the edges (or a face).",
+     "Click Chamfer.",
+     "Type the distance and click OK."
+    ],
+    "de": [
+     "Klicke die Kanten (oder eine Fläche) an.",
+     "Klicke auf Fase.",
+     "Tippe den Abstand ein und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Fillet"
+   ],
+   "options": {
+    "en": [
+     [
+      "Size",
+      "Distance the edge is cut back."
+     ]
+    ],
+    "de": [
+     [
+      "Größe",
+      "Abstand, um den die Kante zurückgeschnitten wird."
+     ]
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Chamfer.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Shell",
+   "group": "modify",
+   "icon": "Design_Shell",
+   "commands": [],
+   "title": {
+    "en": "Shell",
+    "de": "Wandstärke"
+   },
+   "keywords": {
+    "en": [
+     "shell",
+     "hollow",
+     "wall thickness",
+     "box",
+     "case",
+     "enclosure"
+    ],
+    "de": [
+     "Wandstärke",
+     "aushöhlen",
+     "hohl",
+     "Gehäuse",
+     "Schale",
+     "Box"
+    ]
+   },
+   "summary": {
+    "en": "Hollows out a body, leaving walls of the chosen thickness – for cases and boxes.",
+    "de": "Höhlt einen Körper aus und lässt Wände der gewählten Dicke stehen – für Gehäuse und Boxen."
+   },
+   "steps": {
+    "en": [
+     "Click the faces to remove, e.g. the top (or the whole body for a closed hollow).",
+     "Click Shell.",
+     "Set the thickness and click OK."
+    ],
+    "de": [
+     "Klicke die zu entfernenden Flächen an, z. B. die Oberseite (oder den ganzen Körper für einen geschlossenen Hohlkörper).",
+     "Klicke auf Wandstärke.",
+     "Stelle die Dicke ein und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Rib",
+    "Design_Web"
+   ],
+   "options": {
+    "en": [
+     [
+      "Thickness",
+      "Wall thickness."
+     ],
+     [
+      "Wall outside",
+      "Adds the walls outside instead of inside."
+     ]
+    ],
+    "de": [
+     [
+      "Dicke",
+      "Wandstärke."
+     ],
+     [
+      "Wand außen",
+      "Legt die Wände außen statt innen an."
+     ]
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Shell.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Draft",
+   "group": "modify",
+   "icon": "Design_Draft",
+   "commands": [],
+   "title": {
+    "en": "Draft",
+    "de": "Formschräge"
+   },
+   "keywords": {
+    "en": [
+     "draft",
+     "taper",
+     "slope",
+     "mold",
+     "angle faces"
+    ],
+    "de": [
+     "Formschräge",
+     "Konus",
+     "Neigung",
+     "Gussform",
+     "Flächen neigen"
+    ]
+   },
+   "summary": {
+    "en": "Tilts side faces by a small angle, e.g. so a part comes out of a mold.",
+    "de": "Neigt Seitenflächen um einen kleinen Winkel, z. B. damit ein Teil aus der Form kommt."
+   },
+   "steps": {
+    "en": [
+     "Click the side faces.",
+     "Click Draft.",
+     "Set the angle and click OK."
+    ],
+    "de": [
+     "Klicke die Seitenflächen an.",
+     "Klicke auf Formschräge.",
+     "Stelle den Winkel ein und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Shell"
+   ],
+   "options": {
+    "en": [
+     [
+      "Angle",
+      "Tilt angle."
+     ],
+     [
+      "Flip direction",
+      "Tilts the other way."
+     ]
+    ],
+    "de": [
+     [
+      "Winkel",
+      "Neigungswinkel."
+     ],
+     [
+      "Richtung umkehren",
+      "Neigt in die andere Richtung."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "The faces tilt around the bottom of the body unless you pick another plane."
+    ],
+    "de": [
+     "Die Flächen neigen sich um die Unterseite des Körpers, außer du wählst eine andere Ebene."
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Draft.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Combine",
+   "group": "modify",
+   "icon": "Design_Combine",
+   "commands": [],
+   "title": {
+    "en": "Combine",
+    "de": "Kombinieren"
+   },
+   "keywords": {
+    "en": [
+     "combine",
+     "boolean",
+     "join",
+     "union",
+     "cut",
+     "subtract",
+     "intersect",
+     "merge"
+    ],
+    "de": [
+     "kombinieren",
+     "boolesch",
+     "verbinden",
+     "vereinigen",
+     "ausschneiden",
+     "abziehen",
+     "Schnittmenge",
+     "zusammenführen"
+    ]
+   },
+   "summary": {
+    "en": "Joins bodies, cuts one out of another or keeps only where they overlap.",
+    "de": "Verbindet Körper, schneidet einen aus einem anderen aus oder behält nur die Überschneidung."
+   },
+   "steps": {
+    "en": [
+     "Click the target body first, then one or more tool bodies.",
+     "Click Combine.",
+     "Choose Join, Cut or Intersect and click OK."
+    ],
+    "de": [
+     "Klicke zuerst den Zielkörper an, dann einen oder mehrere Werkzeugkörper.",
+     "Klicke auf Kombinieren.",
+     "Wähle Verbinden, Ausschneiden oder Schnittmenge und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_SplitBody"
+   ],
+   "options": {
+    "en": [
+     [
+      "Operation",
+      "Join, Cut or Intersect."
+     ],
+     [
+      "Keep tools",
+      "Keeps the tool bodies visible instead of using them up."
+     ]
+    ],
+    "de": [
+     [
+      "Vorgang",
+      "Verbinden, Ausschneiden oder Schnittmenge."
+     ],
+     [
+      "Werkzeuge behalten",
+      "Lässt die Werkzeugkörper sichtbar, statt sie zu verbrauchen."
+     ]
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Combine.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_SplitBody",
+   "group": "modify",
+   "icon": "Design_SplitBody",
+   "commands": [],
+   "title": {
+    "en": "Split Body",
+    "de": "Körper teilen"
+   },
+   "keywords": {
+    "en": [
+     "split body",
+     "cut in half",
+     "divide",
+     "separate"
+    ],
+    "de": [
+     "Körper teilen",
+     "halbieren",
+     "trennen",
+     "zerteilen"
+    ]
+   },
+   "summary": {
+    "en": "Cuts a body into pieces along a plane or face.",
+    "de": "Schneidet einen Körper entlang einer Ebene oder Fläche in Stücke."
+   },
+   "steps": {
+    "en": [
+     "Select the body and a plane or face to split with.",
+     "Click Split Body and OK."
+    ],
+    "de": [
+     "Wähle den Körper und eine Ebene oder Fläche zum Teilen.",
+     "Klicke auf Körper teilen und OK."
+    ]
+   },
+   "see": [
+    "Design_SplitFace",
+    "Design_Combine"
+   ],
+   "tips": {
+    "en": [
+     "The plane or face must cut all the way through the body."
+    ],
+    "de": [
+     "Die Ebene oder Fläche muss den Körper ganz durchschneiden."
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_SplitBody.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Move",
+   "group": "modify",
+   "icon": "Design_Move",
+   "commands": [],
+   "title": {
+    "en": "Move",
+    "de": "Verschieben"
+   },
+   "keywords": {
+    "en": [
+     "move",
+     "rotate",
+     "translate",
+     "position",
+     "turn body"
+    ],
+    "de": [
+     "verschieben",
+     "drehen",
+     "bewegen",
+     "positionieren",
+     "Körper drehen"
+    ]
+   },
+   "summary": {
+    "en": "Moves and rotates bodies.",
+    "de": "Verschiebt und dreht Körper."
+   },
+   "steps": {
+    "en": [
+     "Select one or more bodies.",
+     "Click Move.",
+     "Type the distances in X, Y, Z and, if needed, a rotation; click OK."
+    ],
+    "de": [
+     "Wähle einen oder mehrere Körper.",
+     "Klicke auf Verschieben.",
+     "Tippe die Abstände in X, Y, Z und bei Bedarf eine Drehung ein; klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Align",
+    "Design_Joint"
+   ],
+   "options": {
+    "en": [
+     [
+      "X, Y, Z distance",
+      "How far to move."
+     ],
+     [
+      "Rotate around, Angle",
+      "Axis through the body center and rotation angle."
+     ]
+    ],
+    "de": [
+     [
+      "X-, Y-, Z-Abstand",
+      "Wie weit verschoben wird."
+     ],
+     [
+      "Drehen um, Winkel",
+      "Achse durch die Körpermitte und Drehwinkel."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "To move a whole component, use Move on the component or a Joint."
+    ],
+    "de": [
+     "Um eine ganze Komponente zu bewegen, verwende Verschieben an der Komponente oder ein Gelenk."
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Move.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Align",
+   "group": "modify",
+   "icon": "Design_Align",
+   "commands": [],
+   "title": {
+    "en": "Align",
+    "de": "Ausrichten"
+   },
+   "keywords": {
+    "en": [
+     "align",
+     "snap",
+     "place on",
+     "put together"
+    ],
+    "de": [
+     "ausrichten",
+     "andocken",
+     "aufsetzen",
+     "zusammensetzen"
+    ]
+   },
+   "summary": {
+    "en": "Moves a body so that one of its faces, edges or points lands on a target.",
+    "de": "Verschiebt einen Körper so, dass eine seiner Flächen, Kanten oder Punkte auf einem Ziel landet."
+   },
+   "steps": {
+    "en": [
+     "Click a face, edge or point of the body to move.",
+     "Then click the target.",
+     "Click Align and OK."
+    ],
+    "de": [
+     "Klicke eine Fläche, Kante oder einen Punkt des zu bewegenden Körpers an.",
+     "Dann klicke das Ziel an.",
+     "Klicke auf Ausrichten und OK."
+    ]
+   },
+   "see": [
+    "Design_Move",
+    "Design_Joint"
+   ]
+  },
+  {
+   "id": "Design_Scale",
+   "group": "modify",
+   "icon": "Design_Scale",
+   "commands": [],
+   "title": {
+    "en": "Scale",
+    "de": "Skalieren"
+   },
+   "keywords": {
+    "en": [
+     "scale",
+     "resize",
+     "bigger",
+     "smaller",
+     "factor"
+    ],
+    "de": [
+     "skalieren",
+     "Größe ändern",
+     "größer",
+     "kleiner",
+     "Faktor"
+    ]
+   },
+   "summary": {
+    "en": "Makes bodies bigger or smaller by a factor.",
+    "de": "Macht Körper um einen Faktor größer oder kleiner."
+   },
+   "steps": {
+    "en": [
+     "Select one or more bodies.",
+     "Click Scale.",
+     "Type the factor (2 = double size) and click OK."
+    ],
+    "de": [
+     "Wähle einen oder mehrere Körper.",
+     "Klicke auf Skalieren.",
+     "Tippe den Faktor ein (2 = doppelte Größe) und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Move"
+   ],
+   "options": {
+    "en": [
+     [
+      "Factor",
+      "Size multiplier."
+     ],
+     [
+      "Center",
+      "Scale around the origin or the body center."
+     ]
+    ],
+    "de": [
+     [
+      "Faktor",
+      "Vergrößerungsfaktor."
+     ],
+     [
+      "Mitte",
+      "Um den Ursprung oder die Körpermitte skalieren."
+     ]
+    ]
+   }
+  },
+  {
+   "id": "Design_Delete",
+   "group": "modify",
+   "icon": "Design_Box",
+   "commands": [],
+   "title": {
+    "en": "Delete",
+    "de": "Löschen"
+   },
+   "keywords": {
+    "en": [
+     "delete",
+     "remove",
+     "erase"
+    ],
+    "de": [
+     "löschen",
+     "entfernen"
+    ]
+   },
+   "summary": {
+    "en": "Removes features, sketches or bodies from the design.",
+    "de": "Entfernt Features, Skizzen oder Körper aus dem Design."
+   },
+   "steps": {
+    "en": [
+     "Select the item in the timeline, the browser or the view.",
+     "Right-click and choose Delete (or press Del)."
+    ],
+    "de": [
+     "Wähle den Eintrag in der Zeitleiste, im Browser oder in der Ansicht.",
+     "Rechtsklick und Löschen wählen (oder Entf drücken)."
+    ]
+   },
+   "see": [
+    "start_timeline"
+   ],
+   "tips": {
+    "en": [
+     "Undo (Ctrl+Z) brings it back."
+    ],
+    "de": [
+     "Rückgängig (Strg+Z) holt es zurück."
+    ]
+   }
+  },
+  {
+   "id": "Design_OffsetPlane",
+   "group": "construct",
+   "icon": "Design_OffsetPlane",
+   "commands": [],
+   "title": {
+    "en": "Offset Plane",
+    "de": "Versetzte Ebene"
+   },
+   "keywords": {
+    "en": [
+     "offset plane",
+     "parallel plane",
+     "work plane",
+     "construction plane"
+    ],
+    "de": [
+     "versetzte Ebene",
+     "parallele Ebene",
+     "Arbeitsebene",
+     "Konstruktionsebene"
+    ]
+   },
+   "summary": {
+    "en": "Creates a plane parallel to a plane or flat face at a distance – for sketches at another height.",
+    "de": "Erstellt eine Ebene parallel zu einer Ebene oder flachen Fläche im Abstand – für Skizzen auf anderer Höhe."
+   },
+   "steps": {
+    "en": [
+     "Click a plane or flat face.",
+     "Click Offset Plane.",
+     "Type the distance and click OK."
+    ],
+    "de": [
+     "Klicke eine Ebene oder flache Fläche an.",
+     "Klicke auf Versetzte Ebene.",
+     "Tippe den Abstand ein und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_Loft",
+    "Design_Plane"
+   ],
+   "images": [
+    {
+     "file": "Design_OffsetPlane.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_AnglePlane",
+   "group": "construct",
+   "icon": "Design_AnglePlane",
+   "commands": [],
+   "title": {
+    "en": "Plane at Angle",
+    "de": "Ebene im Winkel"
+   },
+   "keywords": {
+    "en": [
+     "plane at angle",
+     "tilted plane",
+     "rotated plane"
+    ],
+    "de": [
+     "Ebene im Winkel",
+     "geneigte Ebene",
+     "gedrehte Ebene"
+    ]
+   },
+   "summary": {
+    "en": "Creates a plane through a straight edge or axis, tilted by an angle.",
+    "de": "Erstellt eine Ebene durch eine gerade Kante oder Achse, um einen Winkel geneigt."
+   },
+   "steps": {
+    "en": [
+     "Click a straight edge or axis (and optionally a reference plane).",
+     "Click Plane at Angle.",
+     "Type the angle and click OK."
+    ],
+    "de": [
+     "Klicke eine gerade Kante oder Achse an (optional eine Bezugsebene).",
+     "Klicke auf Ebene im Winkel.",
+     "Tippe den Winkel ein und klicke OK."
+    ]
+   },
+   "see": [
+    "Design_OffsetPlane"
+   ]
+  },
+  {
+   "id": "Design_Midplane",
+   "group": "construct",
+   "icon": "Design_Midplane",
+   "commands": [],
+   "title": {
+    "en": "Midplane",
+    "de": "Mittelebene"
+   },
+   "keywords": {
+    "en": [
+     "midplane",
+     "middle",
+     "center plane",
+     "symmetry plane"
+    ],
+    "de": [
+     "Mittelebene",
+     "Mitte",
+     "mittige Ebene",
+     "Symmetrieebene"
+    ]
+   },
+   "summary": {
+    "en": "Creates a plane exactly between two parallel planes or faces.",
+    "de": "Erstellt eine Ebene genau zwischen zwei parallelen Ebenen oder Flächen."
+   },
+   "steps": {
+    "en": [
+     "Click two parallel planes or flat faces.",
+     "Click Midplane."
+    ],
+    "de": [
+     "Klicke zwei parallele Ebenen oder flache Flächen an.",
+     "Klicke auf Mittelebene."
+    ]
+   },
+   "see": [
+    "Design_Mirror"
+   ],
+   "images": [
+    {
+     "file": "Design_Midplane.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Plane",
+   "group": "construct",
+   "icon": "Design_Plane",
+   "commands": [],
+   "title": {
+    "en": "Plane",
+    "de": "Ebene"
+   },
+   "keywords": {
+    "en": [
+     "plane",
+     "three points",
+     "work plane"
+    ],
+    "de": [
+     "Ebene",
+     "drei Punkte",
+     "Arbeitsebene"
+    ]
+   },
+   "summary": {
+    "en": "Creates a plane through three points, a face and a point, or an edge and a point.",
+    "de": "Erstellt eine Ebene durch drei Punkte, eine Fläche und einen Punkt oder eine Kante und einen Punkt."
+   },
+   "steps": {
+    "en": [
+     "Select the references.",
+     "Click Plane."
+    ],
+    "de": [
+     "Wähle die Bezüge.",
+     "Klicke auf Ebene."
+    ]
+   },
+   "see": [
+    "Design_OffsetPlane"
+   ]
+  },
+  {
+   "id": "Design_Axis",
+   "group": "construct",
+   "icon": "Design_Axis",
+   "commands": [],
+   "title": {
+    "en": "Axis",
+    "de": "Achse"
+   },
+   "keywords": {
+    "en": [
+     "axis",
+     "center line",
+     "rotation axis"
+    ],
+    "de": [
+     "Achse",
+     "Mittellinie",
+     "Drehachse"
+    ]
+   },
+   "summary": {
+    "en": "Creates an axis through a cylindrical face, along a straight edge, through two points or where two planes meet.",
+    "de": "Erstellt eine Achse durch eine zylindrische Fläche, entlang einer geraden Kante, durch zwei Punkte oder wo sich zwei Ebenen treffen."
+   },
+   "steps": {
+    "en": [
+     "Select the references.",
+     "Click Axis."
+    ],
+    "de": [
+     "Wähle die Bezüge.",
+     "Klicke auf Achse."
+    ]
+   },
+   "see": [
+    "Design_AnglePlane",
+    "Design_Pattern"
+   ],
+   "images": [
+    {
+     "file": "Design_Axis.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Design_Point",
+   "group": "construct",
+   "icon": "Design_Point",
+   "commands": [],
+   "title": {
+    "en": "Point",
+    "de": "Punkt"
+   },
+   "keywords": {
+    "en": [
+     "point",
+     "construction point",
+     "vertex",
+     "center"
+    ],
+    "de": [
+     "Punkt",
+     "Konstruktionspunkt",
+     "Eckpunkt",
+     "Mittelpunkt"
+    ]
+   },
+   "summary": {
+    "en": "Creates a construction point at a vertex, the center of a circle, where an edge meets a plane, or where three planes meet.",
+    "de": "Erstellt einen Konstruktionspunkt an einem Eckpunkt, im Mittelpunkt eines Kreises, wo eine Kante eine Ebene trifft oder wo sich drei Ebenen treffen."
+   },
+   "steps": {
+    "en": [
+     "Select the references.",
+     "Click Point."
+    ],
+    "de": [
+     "Wähle die Bezüge.",
+     "Klicke auf Punkt."
+    ]
+   },
+   "see": [
+    "Design_Plane"
+   ]
+  },
+  {
+   "id": "Design_NewComponent",
+   "group": "assemble",
+   "icon": "Design_NewComponent",
+   "commands": [],
+   "title": {
+    "en": "New Component",
+    "de": "Neue Komponente"
+   },
+   "keywords": {
+    "en": [
+     "component",
+     "part",
+     "assembly",
+     "sub-assembly"
+    ],
+    "de": [
+     "Komponente",
+     "Teil",
+     "Baugruppe",
+     "Unterbaugruppe"
+    ]
+   },
+   "summary": {
+    "en": "Creates an empty part with its own origin. Components keep the parts of an assembly apart.",
+    "de": "Erstellt ein leeres Teil mit eigenem Ursprung. Komponenten halten die Teile einer Baugruppe auseinander."
+   },
+   "steps": {
+    "en": [
+     "Click New Component.",
+     "Double-click it in the browser to make it active.",
+     "New sketches and bodies now go into this component."
+    ],
+    "de": [
+     "Klicke auf Neue Komponente.",
+     "Doppelklicke sie im Browser, um sie zu aktivieren.",
+     "Neue Skizzen und Körper landen jetzt in dieser Komponente."
+    ]
+   },
+   "see": [
+    "Design_Joint"
+   ],
+   "tips": {
+    "en": [
+     "Extrude can create a new component directly (Operation: New Component)."
+    ],
+    "de": [
+     "Extrudieren kann direkt eine neue Komponente anlegen (Vorgang: Neue Komponente)."
+    ]
+   }
+  },
+  {
+   "id": "Design_Joint",
+   "group": "assemble",
+   "icon": "Design_Joint",
+   "commands": [],
+   "title": {
+    "en": "Joint",
+    "de": "Gelenk"
+   },
+   "keywords": {
+    "en": [
+     "joint",
+     "connect",
+     "hinge",
+     "slider",
+     "rigid",
+     "assembly",
+     "mate"
+    ],
+    "de": [
+     "Gelenk",
+     "verbinden",
+     "Scharnier",
+     "Schieber",
+     "starr",
+     "Baugruppe",
+     "zusammenbauen"
+    ]
+   },
+   "summary": {
+    "en": "Puts a component in place by joining a snap point on it to a point on another component.",
+    "de": "Setzt eine Komponente an ihren Platz, indem ein Fangpunkt an ihr mit einem Punkt an einer anderen Komponente verbunden wird."
+   },
+   "steps": {
+    "en": [
+     "Click Joint.",
+     "Click a face, edge, hole or point on the component to move.",
+     "Click where it should go on another component.",
+     "Choose the type and, if needed, angle and offset; click OK."
+    ],
+    "de": [
+     "Klicke auf Gelenk.",
+     "Klicke eine Fläche, Kante, Bohrung oder einen Punkt an der zu bewegenden Komponente an.",
+     "Klicke an, wo sie an einer anderen Komponente hin soll.",
+     "Wähle den Typ und bei Bedarf Winkel und Versatz; klicke OK."
+    ]
+   },
+   "see": [
+    "Design_NewComponent"
+   ],
+   "options": {
+    "en": [
+     [
+      "Type",
+      "Rigid, Revolute, Slider or Cylindrical."
+     ],
+     [
+      "Angle, Offset",
+      "Rotation around and distance along the joint axis."
+     ],
+     [
+      "Flip",
+      "Turns the moving component around."
+     ]
+    ],
+    "de": [
+     [
+      "Typ",
+      "Starr, Drehung, Schieberegler oder Zylindrisch."
+     ],
+     [
+      "Winkel, Versatz",
+      "Drehung um und Abstand entlang der Gelenkachse."
+     ],
+     [
+      "Umkehren",
+      "Dreht die bewegte Komponente um."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "The first click must be on the component that moves; the design itself stays in place."
+    ],
+    "de": [
+     "Der erste Klick muss an der Komponente sein, die sich bewegt; das Design selbst bleibt an seinem Platz."
+    ]
+   }
+  },
+  {
+   "id": "Design_Measure",
+   "group": "inspect",
+   "icon": "Design_Measure",
+   "commands": [],
+   "title": {
+    "en": "Measure",
+    "de": "Messen"
+   },
+   "keywords": {
+    "en": [
+     "measure",
+     "distance",
+     "length",
+     "angle",
+     "area",
+     "volume",
+     "radius",
+     "diameter"
+    ],
+    "de": [
+     "messen",
+     "Abstand",
+     "Länge",
+     "Winkel",
+     "Fläche",
+     "Volumen",
+     "Radius",
+     "Durchmesser"
+    ]
+   },
+   "summary": {
+    "en": "Shows lengths, distances, angles, radii, areas and volumes.",
+    "de": "Zeigt Längen, Abstände, Winkel, Radien, Flächen und Volumen."
+   },
+   "steps": {
+    "en": [
+     "Click Measure.",
+     "Click one or two points, edges, faces or bodies.",
+     "Read the values in the panel."
+    ],
+    "de": [
+     "Klicke auf Messen.",
+     "Klicke einen oder zwei Punkte, Kanten, Flächen oder Körper an.",
+     "Lies die Werte im Panel ab."
+    ]
+   },
+   "see": [
+    "Design_Section"
+   ]
+  },
+  {
+   "id": "Design_Section",
+   "group": "inspect",
+   "icon": "Design_Section",
+   "commands": [],
+   "title": {
+    "en": "Section Analysis",
+    "de": "Schnittanalyse"
+   },
+   "keywords": {
+    "en": [
+     "section",
+     "cut view",
+     "inside",
+     "cross section"
+    ],
+    "de": [
+     "Schnitt",
+     "Schnittansicht",
+     "innen",
+     "Querschnitt"
+    ]
+   },
+   "summary": {
+    "en": "Cuts the view open at a plane so you can look inside. The model itself stays unchanged.",
+    "de": "Schneidet die Ansicht an einer Ebene auf, damit du hineinschauen kannst. Das Modell selbst bleibt unverändert."
+   },
+   "steps": {
+    "en": [
+     "Click a plane or flat face.",
+     "Click Section Analysis.",
+     "Click it again to turn the cut off."
+    ],
+    "de": [
+     "Klicke eine Ebene oder flache Fläche an.",
+     "Klicke auf Schnittanalyse.",
+     "Klicke noch einmal darauf, um den Schnitt auszuschalten."
+    ]
+   },
+   "see": [
+    "Design_Measure"
+   ],
+   "images": [
+    {
+     "file": "Design_Section.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "Std_ViewFitAll",
+   "group": "inspect",
+   "icon": "Std_ViewFitAll",
+   "commands": [],
+   "title": {
+    "en": "Fit All",
+    "de": "Alles zeigen"
+   },
+   "keywords": {
+    "en": [
+     "fit",
+     "zoom all",
+     "show everything",
+     "lost model"
+    ],
+    "de": [
+     "einpassen",
+     "alles zoomen",
+     "alles zeigen",
+     "Modell verloren"
+    ]
+   },
+   "summary": {
+    "en": "Zooms so that the whole model fits the window.",
+    "de": "Zoomt so, dass das ganze Modell ins Fenster passt."
+   },
+   "steps": {
+    "en": [
+     "Click Fit All."
+    ],
+    "de": [
+     "Klicke auf Alles zeigen."
+    ]
+   },
+   "see": [
+    "start_navigation"
+   ]
+  },
+  {
+   "id": "Design_Parameters",
+   "group": "utilities",
+   "icon": "Design_Parameters",
+   "commands": [],
+   "title": {
+    "en": "Change Parameters",
+    "de": "Parameter ändern"
+   },
+   "keywords": {
+    "en": [
+     "parameters",
+     "variables",
+     "formula",
+     "expression",
+     "named value"
+    ],
+    "de": [
+     "Parameter",
+     "Variablen",
+     "Formel",
+     "Ausdruck",
+     "benannter Wert"
+    ]
+   },
+   "summary": {
+    "en": "Defines named values such as Width = 40 mm that you can use in any dimension field.",
+    "de": "Legt benannte Werte wie Breite = 40 mm an, die du in jedem Maßfeld verwenden kannst."
+   },
+   "steps": {
+    "en": [
+     "Click Parameters.",
+     "Type a name and a value and click Add.",
+     "Type the name, or a formula like Width * 2, into any dimension field.",
+     "Change the value later and everything that uses it updates."
+    ],
+    "de": [
+     "Klicke auf Parameter.",
+     "Tippe einen Namen und einen Wert ein und klicke Hinzufügen.",
+     "Tippe den Namen oder eine Formel wie Breite * 2 in ein beliebiges Maßfeld.",
+     "Ändere den Wert später, und alles, was ihn nutzt, passt sich an."
+    ]
+   },
+   "see": [
+    "sketch_dimension",
+    "start_timeline"
+   ],
+   "tips": {
+    "en": [
+     "Names use letters, digits and _ only, no spaces."
+    ],
+    "de": [
+     "Namen bestehen nur aus Buchstaben, Ziffern und _, ohne Leerzeichen."
+    ]
+   }
+  },
+  {
+   "id": "Design_Appearance",
+   "group": "utilities",
+   "icon": "Design_Appearance",
+   "commands": [],
+   "title": {
+    "en": "Appearance",
+    "de": "Darstellung"
+   },
+   "keywords": {
+    "en": [
+     "appearance",
+     "color",
+     "colour",
+     "material",
+     "paint"
+    ],
+    "de": [
+     "Darstellung",
+     "Farbe",
+     "Material",
+     "einfärben"
+    ]
+   },
+   "summary": {
+    "en": "Gives bodies a material look or a color.",
+    "de": "Gibt Körpern ein Material-Aussehen oder eine Farbe."
+   },
+   "steps": {
+    "en": [
+     "Select bodies.",
+     "Click Appearance.",
+     "Pick a material or a color."
+    ],
+    "de": [
+     "Wähle Körper.",
+     "Klicke auf Darstellung.",
+     "Wähle ein Material oder eine Farbe."
+    ]
+   },
+   "see": [
+    "settings"
+   ],
+   "tips": {
+    "en": [
+     "The default look of new bodies is set in Settings → Body material."
+    ],
+    "de": [
+     "Das Standard-Aussehen neuer Körper stellst du in den Einstellungen unter Körpermaterial ein."
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_Appearance.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "settings",
+   "group": "utilities",
+   "icon": "MyCAD_Settings",
+   "commands": [
+    "MyCAD_Settings"
+   ],
+   "title": {
+    "en": "Settings",
+    "de": "Einstellungen"
+   },
+   "keywords": {
+    "en": [
+     "settings",
+     "preferences",
+     "language",
+     "german",
+     "mouse",
+     "keys",
+     "glass",
+     "material",
+     "projects folder"
+    ],
+    "de": [
+     "Einstellungen",
+     "Optionen",
+     "Sprache",
+     "Deutsch",
+     "Maus",
+     "Tasten",
+     "Glas",
+     "Material",
+     "Projektordner"
+    ]
+   },
+   "summary": {
+    "en": "Adjusts navigation, keys, look and language. Open it with the gear button or Ctrl+,.",
+    "de": "Passt Navigation, Tasten, Aussehen und Sprache an. Öffnen mit dem Zahnrad oder Strg+,."
+   },
+   "steps": {
+    "en": [
+     "Navigation: pick the mouse style; the preview shows which buttons rotate, pan and zoom.",
+     "Keys: turn keys into mouse buttons, e.g. Shift as the middle button.",
+     "View: camera, rotation center, tool names, body material, glass and language."
+    ],
+    "de": [
+     "Navigation: wähle den Maus-Stil; die Vorschau zeigt, welche Tasten drehen, verschieben und zoomen.",
+     "Tasten: mache Tasten zu Maustasten, z. B. Umschalt als mittlere Taste.",
+     "Ansicht: Kamera, Drehmittelpunkt, Werkzeugnamen, Körpermaterial, Glas und Sprache."
+    ]
+   },
+   "see": [
+    "start_navigation"
+   ],
+   "tips": {
+    "en": [
+     "A new language takes effect after restarting MyCAD."
+    ],
+    "de": [
+     "Eine neue Sprache wirkt nach einem Neustart von MyCAD."
+    ]
+   }
+  },
+  {
+   "id": "sketch_line",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreateLine",
+   "commands": [
+    "Sketcher_CreateLine",
+    "Sketcher_CompLine"
+   ],
+   "title": {
+    "en": "Line",
+    "de": "Linie"
+   },
+   "keywords": {
+    "en": [
+     "line",
+     "straight",
+     "segment"
+    ],
+    "de": [
+     "Linie",
+     "gerade",
+     "Strecke"
+    ]
+   },
+   "summary": {
+    "en": "Draws a straight line between two points.",
+    "de": "Zeichnet eine gerade Linie zwischen zwei Punkten."
+   },
+   "steps": {
+    "en": [
+     "Click Line.",
+     "Click the start point, then the end point.",
+     "Type a length in the field next to the cursor to fix it right away."
+    ],
+    "de": [
+     "Klicke auf Linie.",
+     "Klicke den Startpunkt, dann den Endpunkt.",
+     "Tippe eine Länge ins Feld neben dem Cursor, um sie gleich festzulegen."
+    ]
+   },
+   "see": [
+    "sketch_polyline",
+    "sketch_dimension"
+   ],
+   "tips": {
+    "en": [
+     "Ends snap to existing points and lines; horizontal and vertical lines get their constraint automatically."
+    ],
+    "de": [
+     "Enden rasten an vorhandenen Punkten und Linien ein; waagrechte und senkrechte Linien bekommen ihre Abhängigkeit automatisch."
+    ]
+   },
+   "images": [
+    {
+     "file": "sketch_line.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_polyline",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreatePolyline",
+   "commands": [],
+   "title": {
+    "en": "Polyline",
+    "de": "Polylinie"
+   },
+   "keywords": {
+    "en": [
+     "polyline",
+     "outline",
+     "connected lines",
+     "contour"
+    ],
+    "de": [
+     "Polylinie",
+     "Umriss",
+     "verbundene Linien",
+     "Kontur"
+    ]
+   },
+   "summary": {
+    "en": "Draws connected lines and arcs in one go – ideal for an outline.",
+    "de": "Zeichnet verbundene Linien und Bögen in einem Zug – ideal für einen Umriss."
+   },
+   "steps": {
+    "en": [
+     "Click Polyline.",
+     "Click point after point.",
+     "Press M to switch between line and arc segments.",
+     "Click the start point again to close the outline, or press Esc."
+    ],
+    "de": [
+     "Klicke auf Polylinie.",
+     "Klicke Punkt für Punkt.",
+     "Drücke M, um zwischen Linien- und Bogenstücken zu wechseln.",
+     "Klicke den Startpunkt erneut, um den Umriss zu schließen, oder drücke Esc."
+    ]
+   },
+   "see": [
+    "sketch_line"
+   ],
+   "images": [
+    {
+     "file": "sketch_polyline.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_rectangle",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreateRectangle",
+   "commands": [
+    "Sketcher_CompCreateRectangles",
+    "Sketcher_CreateRectangle",
+    "Sketcher_CreateRectangle_Center",
+    "Sketcher_CreateOblong"
+   ],
+   "title": {
+    "en": "Rectangle",
+    "de": "Rechteck"
+   },
+   "keywords": {
+    "en": [
+     "rectangle",
+     "square",
+     "box",
+     "rounded rectangle",
+     "centered"
+    ],
+    "de": [
+     "Rechteck",
+     "Quadrat",
+     "Kasten",
+     "abgerundetes Rechteck",
+     "mittig"
+    ]
+   },
+   "summary": {
+    "en": "Draws a rectangle from two corners, around a center, or with rounded corners.",
+    "de": "Zeichnet ein Rechteck aus zwei Ecken, um einen Mittelpunkt oder mit abgerundeten Ecken."
+   },
+   "steps": {
+    "en": [
+     "Pick the variant in the dropdown next to Rectangle.",
+     "Click the first corner (or the center).",
+     "Click the opposite corner."
+    ],
+    "de": [
+     "Wähle die Variante im Dropdown neben Rechteck.",
+     "Klicke die erste Ecke (oder den Mittelpunkt).",
+     "Klicke die gegenüberliegende Ecke."
+    ]
+   },
+   "see": [
+    "sketch_dimension"
+   ],
+   "images": [
+    {
+     "file": "sketch_rectangle.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_circle",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreateCircle",
+   "commands": [
+    "Sketcher_CompCreateConic",
+    "Sketcher_CreateCircle",
+    "Sketcher_Create3PointCircle",
+    "Sketcher_CreateEllipseByCenter",
+    "Sketcher_CreateEllipseBy3Points"
+   ],
+   "title": {
+    "en": "Circle and Ellipse",
+    "de": "Kreis und Ellipse"
+   },
+   "keywords": {
+    "en": [
+     "circle",
+     "ellipse",
+     "round",
+     "hole outline",
+     "oval"
+    ],
+    "de": [
+     "Kreis",
+     "Ellipse",
+     "rund",
+     "Bohrungsumriss",
+     "Oval"
+    ]
+   },
+   "summary": {
+    "en": "Draws a circle from its center or through three points, or an ellipse.",
+    "de": "Zeichnet einen Kreis vom Mittelpunkt oder durch drei Punkte, oder eine Ellipse."
+   },
+   "steps": {
+    "en": [
+     "Pick the variant in the dropdown next to Circle.",
+     "Circle from center: click the center, then a point on the circle.",
+     "Type the diameter in the field next to the cursor if you know it."
+    ],
+    "de": [
+     "Wähle die Variante im Dropdown neben Kreis.",
+     "Kreis vom Mittelpunkt: klicke den Mittelpunkt, dann einen Punkt auf dem Kreis.",
+     "Tippe den Durchmesser ins Feld neben dem Cursor, wenn du ihn kennst."
+    ]
+   },
+   "see": [
+    "Design_Revolve",
+    "Design_Extrude"
+   ],
+   "images": [
+    {
+     "file": "sketch_circle.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_arc",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreateArc",
+   "commands": [
+    "Sketcher_CompCreateArc",
+    "Sketcher_CreateArc",
+    "Sketcher_Create3PointArc",
+    "Sketcher_CreateArcOfEllipse",
+    "Sketcher_CreateArcOfHyperbola",
+    "Sketcher_CreateArcOfParabola"
+   ],
+   "title": {
+    "en": "Arc",
+    "de": "Bogen"
+   },
+   "keywords": {
+    "en": [
+     "arc",
+     "curve",
+     "round corner",
+     "elliptical arc"
+    ],
+    "de": [
+     "Bogen",
+     "Kurve",
+     "runde Ecke",
+     "Ellipsenbogen"
+    ]
+   },
+   "summary": {
+    "en": "Draws a circular arc from its center or through three points, or an elliptical, hyperbolic or parabolic arc.",
+    "de": "Zeichnet einen Kreisbogen vom Mittelpunkt oder durch drei Punkte oder einen Ellipsen-, Hyperbel- oder Parabelbogen."
+   },
+   "steps": {
+    "en": [
+     "Pick the variant in the dropdown next to Arc.",
+     "Arc from center: click the center, the start and the end."
+    ],
+    "de": [
+     "Wähle die Variante im Dropdown neben Bogen.",
+     "Bogen vom Mittelpunkt: klicke den Mittelpunkt, den Anfang und das Ende."
+    ]
+   },
+   "see": [
+    "sketch_fillet"
+   ],
+   "images": [
+    {
+     "file": "sketch_arc.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_slot",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreateSlot",
+   "commands": [
+    "Sketcher_CompSlot",
+    "Sketcher_CreateSlot",
+    "Sketcher_CreateArcSlot"
+   ],
+   "title": {
+    "en": "Slot",
+    "de": "Langloch"
+   },
+   "keywords": {
+    "en": [
+     "slot",
+     "oblong hole",
+     "groove",
+     "arc slot"
+    ],
+    "de": [
+     "Langloch",
+     "Schlitz",
+     "Nut",
+     "Bogen-Langloch"
+    ]
+   },
+   "summary": {
+    "en": "Draws a slot: two half circles joined by straight lines, or along an arc.",
+    "de": "Zeichnet ein Langloch: zwei Halbkreise mit geraden Linien verbunden, oder entlang eines Bogens."
+   },
+   "steps": {
+    "en": [
+     "Click Slot.",
+     "Click the first center, then the second.",
+     "Move the mouse for the width and click."
+    ],
+    "de": [
+     "Klicke auf Langloch.",
+     "Klicke den ersten Mittelpunkt, dann den zweiten.",
+     "Bewege die Maus für die Breite und klicke."
+    ]
+   },
+   "see": [
+    "Design_Extrude"
+   ],
+   "images": [
+    {
+     "file": "sketch_slot.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_polygon",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreateHexagon",
+   "commands": [
+    "Sketcher_CompCreateRegularPolygon",
+    "Sketcher_CreateTriangle",
+    "Sketcher_CreateSquare",
+    "Sketcher_CreatePentagon",
+    "Sketcher_CreateHexagon",
+    "Sketcher_CreateHeptagon",
+    "Sketcher_CreateOctagon",
+    "Sketcher_CreateRegularPolygon"
+   ],
+   "title": {
+    "en": "Polygon",
+    "de": "Polygon"
+   },
+   "keywords": {
+    "en": [
+     "polygon",
+     "hexagon",
+     "triangle",
+     "square",
+     "octagon",
+     "nut"
+    ],
+    "de": [
+     "Polygon",
+     "Sechseck",
+     "Dreieck",
+     "Quadrat",
+     "Achteck",
+     "Mutter"
+    ]
+   },
+   "summary": {
+    "en": "Draws a regular polygon – triangle, square, hexagon and more.",
+    "de": "Zeichnet ein regelmäßiges Vieleck – Dreieck, Quadrat, Sechseck und mehr."
+   },
+   "steps": {
+    "en": [
+     "Pick the number of corners in the dropdown.",
+     "Click the center, then a corner."
+    ],
+    "de": [
+     "Wähle die Anzahl der Ecken im Dropdown.",
+     "Klicke den Mittelpunkt, dann eine Ecke."
+    ]
+   },
+   "see": [
+    "sketch_rectangle"
+   ],
+   "images": [
+    {
+     "file": "sketch_polygon.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_bspline",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreateBSpline",
+   "commands": [
+    "Sketcher_CompCreateBSpline",
+    "Sketcher_CreateBSpline",
+    "Sketcher_CreatePeriodicBSpline",
+    "Sketcher_CreateBSplineByInterpolation",
+    "Sketcher_CreatePeriodicBSplineByInterpolation"
+   ],
+   "title": {
+    "en": "B-Spline",
+    "de": "B-Spline"
+   },
+   "keywords": {
+    "en": [
+     "spline",
+     "free curve",
+     "organic",
+     "smooth curve"
+    ],
+    "de": [
+     "Spline",
+     "Freiformkurve",
+     "organisch",
+     "glatte Kurve"
+    ]
+   },
+   "summary": {
+    "en": "Draws a smooth free-form curve through control points or through points on the curve.",
+    "de": "Zeichnet eine glatte Freiformkurve über Kontrollpunkte oder durch Punkte auf der Kurve."
+   },
+   "steps": {
+    "en": [
+     "Pick the variant in the dropdown.",
+     "Click point after point.",
+     "Press Esc or right-click to finish."
+    ],
+    "de": [
+     "Wähle die Variante im Dropdown.",
+     "Klicke Punkt für Punkt.",
+     "Drücke Esc oder klicke rechts zum Beenden."
+    ]
+   },
+   "see": [
+    "sketch_conic"
+   ],
+   "images": [
+    {
+     "file": "sketch_bspline.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_conic",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreateConic",
+   "commands": [
+    "Sketcher_CreateConic"
+   ],
+   "title": {
+    "en": "Conic",
+    "de": "Kegelschnitt"
+   },
+   "keywords": {
+    "en": [
+     "conic",
+     "rho",
+     "curve",
+     "transition"
+    ],
+    "de": [
+     "Kegelschnitt",
+     "Rho",
+     "Kurve",
+     "Übergang"
+    ]
+   },
+   "summary": {
+    "en": "Draws a conic curve between two points whose fullness is set by a rho value.",
+    "de": "Zeichnet einen Kegelschnitt zwischen zwei Punkten, dessen Bauchigkeit ein Rho-Wert bestimmt."
+   },
+   "steps": {
+    "en": [
+     "Click Conic.",
+     "Click start and end point, then the point that sets the tangents.",
+     "Set the rho value and click."
+    ],
+    "de": [
+     "Klicke auf Kegelschnitt.",
+     "Klicke Start- und Endpunkt, dann den Punkt für die Tangenten.",
+     "Stelle den Rho-Wert ein und klicke."
+    ]
+   },
+   "see": [
+    "sketch_bspline"
+   ],
+   "images": [
+    {
+     "file": "sketch_conic.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_point",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreatePoint",
+   "commands": [
+    "Sketcher_CreatePoint"
+   ],
+   "title": {
+    "en": "Point",
+    "de": "Punkt"
+   },
+   "keywords": {
+    "en": [
+     "point",
+     "hole center",
+     "marker"
+    ],
+    "de": [
+     "Punkt",
+     "Bohrungsmittelpunkt",
+     "Markierung"
+    ]
+   },
+   "summary": {
+    "en": "Places a single point – for example where a hole goes.",
+    "de": "Setzt einen einzelnen Punkt – zum Beispiel, wo eine Bohrung hin soll."
+   },
+   "steps": {
+    "en": [
+     "Click Point.",
+     "Click where the point goes."
+    ],
+    "de": [
+     "Klicke auf Punkt.",
+     "Klicke, wo der Punkt hin soll."
+    ]
+   },
+   "see": [
+    "Design_Hole"
+   ],
+   "images": [
+    {
+     "file": "sketch_point.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_text",
+   "group": "sketch_create",
+   "icon": "Sketcher_CreateText",
+   "commands": [
+    "Sketcher_CreateText"
+   ],
+   "title": {
+    "en": "Text",
+    "de": "Text"
+   },
+   "keywords": {
+    "en": [
+     "text",
+     "lettering",
+     "label",
+     "font",
+     "engrave"
+    ],
+    "de": [
+     "Text",
+     "Schrift",
+     "Beschriftung",
+     "Schriftart",
+     "gravieren"
+    ]
+   },
+   "summary": {
+    "en": "Writes text as outlines in the sketch – to emboss or extrude it.",
+    "de": "Schreibt Text als Umrisse in die Skizze – zum Prägen oder Extrudieren."
+   },
+   "steps": {
+    "en": [
+     "Click Text.",
+     "Click where the text starts.",
+     "Type the text, choose font and size, confirm."
+    ],
+    "de": [
+     "Klicke auf Text.",
+     "Klicke, wo der Text beginnt.",
+     "Tippe den Text, wähle Schriftart und Größe, bestätige."
+    ]
+   },
+   "see": [
+    "Design_Emboss"
+   ]
+  },
+  {
+   "id": "sketch_project",
+   "group": "sketch_create",
+   "icon": "Sketcher_Projection",
+   "commands": [
+    "Sketcher_CompExternal",
+    "Sketcher_Projection",
+    "Sketcher_Intersection"
+   ],
+   "title": {
+    "en": "Project",
+    "de": "Projizieren"
+   },
+   "keywords": {
+    "en": [
+     "project",
+     "include",
+     "external",
+     "edge of body",
+     "intersect"
+    ],
+    "de": [
+     "projizieren",
+     "übernehmen",
+     "extern",
+     "Körperkante",
+     "Schnittkante"
+    ]
+   },
+   "summary": {
+    "en": "Brings edges of the model into the sketch so you can draw against them.",
+    "de": "Holt Kanten des Modells in die Skizze, damit du an ihnen entlang zeichnen kannst."
+   },
+   "steps": {
+    "en": [
+     "Click Project.",
+     "Click edges or faces of a body; they appear as purple lines.",
+     "Press Esc when done."
+    ],
+    "de": [
+     "Klicke auf Projizieren.",
+     "Klicke Kanten oder Flächen eines Körpers an; sie erscheinen als lila Linien.",
+     "Drücke Esc, wenn du fertig bist."
+    ]
+   },
+   "see": [
+    "sketch_basics"
+   ],
+   "tips": {
+    "en": [
+     "Projected lines follow the model when it changes."
+    ],
+    "de": [
+     "Projizierte Linien folgen dem Modell, wenn es sich ändert."
+    ]
+   },
+   "images": [
+    {
+     "file": "sketch_project.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_fillet",
+   "group": "sketch_modify",
+   "icon": "Sketcher_CreateFillet",
+   "commands": [
+    "Sketcher_CompCreateFillets",
+    "Sketcher_CreateFillet",
+    "Sketcher_CreateChamfer"
+   ],
+   "title": {
+    "en": "Sketch Fillet and Chamfer",
+    "de": "Skizzen-Rundung und -Fase"
+   },
+   "keywords": {
+    "en": [
+     "fillet",
+     "round corner",
+     "chamfer",
+     "corner"
+    ],
+    "de": [
+     "Rundung",
+     "Ecke runden",
+     "Fase",
+     "Ecke"
+    ]
+   },
+   "summary": {
+    "en": "Rounds or bevels a corner between two lines in the sketch.",
+    "de": "Rundet oder schrägt eine Ecke zwischen zwei Linien in der Skizze ab."
+   },
+   "steps": {
+    "en": [
+     "Pick Fillet or Chamfer in the dropdown.",
+     "Click the corner point (or both lines).",
+     "Move the mouse for the size and click."
+    ],
+    "de": [
+     "Wähle Rundung oder Fase im Dropdown.",
+     "Klicke den Eckpunkt (oder beide Linien) an.",
+     "Bewege die Maus für die Größe und klicke."
+    ]
+   },
+   "see": [
+    "Design_Fillet"
+   ],
+   "images": [
+    {
+     "file": "sketch_fillet.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_trim",
+   "group": "sketch_modify",
+   "icon": "Sketcher_Trimming",
+   "commands": [
+    "Sketcher_CompCurveEdition",
+    "Sketcher_Trimming",
+    "Sketcher_Extend",
+    "Sketcher_Split"
+   ],
+   "title": {
+    "en": "Trim, Extend and Split",
+    "de": "Stutzen, Verlängern und Teilen"
+   },
+   "keywords": {
+    "en": [
+     "trim",
+     "cut",
+     "extend",
+     "split",
+     "remove part"
+    ],
+    "de": [
+     "stutzen",
+     "abschneiden",
+     "verlängern",
+     "teilen",
+     "Teil entfernen"
+    ]
+   },
+   "summary": {
+    "en": "Trim removes a piece of a line up to the next crossing; Extend lengthens a line; Split cuts it in two.",
+    "de": "Stutzen entfernt ein Stück einer Linie bis zur nächsten Kreuzung; Verlängern verlängert eine Linie; Teilen schneidet sie in zwei."
+   },
+   "steps": {
+    "en": [
+     "Pick Trim, Extend or Split in the dropdown.",
+     "Trim: click the piece to remove.",
+     "Extend: click the line, then where it should end.",
+     "Split: click where the line is cut."
+    ],
+    "de": [
+     "Wähle Stutzen, Verlängern oder Teilen im Dropdown.",
+     "Stutzen: klicke das Stück, das weg soll.",
+     "Verlängern: klicke die Linie, dann wo sie enden soll.",
+     "Teilen: klicke, wo die Linie geschnitten wird."
+    ]
+   },
+   "see": [
+    "sketch_fillet"
+   ],
+   "images": [
+    {
+     "file": "sketch_trim.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_offset",
+   "group": "sketch_modify",
+   "icon": "Sketcher_Offset",
+   "commands": [
+    "Sketcher_Offset"
+   ],
+   "title": {
+    "en": "Offset",
+    "de": "Versatz"
+   },
+   "keywords": {
+    "en": [
+     "offset",
+     "parallel copy",
+     "wall",
+     "outline inside"
+    ],
+    "de": [
+     "Versatz",
+     "parallele Kopie",
+     "Wand",
+     "Umriss innen"
+    ]
+   },
+   "summary": {
+    "en": "Draws a parallel copy of lines at a distance – e.g. for a wall.",
+    "de": "Zeichnet eine parallele Kopie von Linien im Abstand – z. B. für eine Wand."
+   },
+   "steps": {
+    "en": [
+     "Select the lines (e.g. a closed outline).",
+     "Click Offset.",
+     "Move the mouse or type the distance and click."
+    ],
+    "de": [
+     "Wähle die Linien (z. B. einen geschlossenen Umriss).",
+     "Klicke auf Versatz.",
+     "Bewege die Maus oder tippe den Abstand ein und klicke."
+    ]
+   },
+   "see": [
+    "Design_Shell"
+   ],
+   "images": [
+    {
+     "file": "sketch_offset.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_mirror",
+   "group": "sketch_modify",
+   "icon": "Sketcher_Symmetry",
+   "commands": [
+    "Sketcher_Symmetry"
+   ],
+   "title": {
+    "en": "Mirror",
+    "de": "Spiegeln"
+   },
+   "keywords": {
+    "en": [
+     "mirror",
+     "symmetric copy",
+     "flip"
+    ],
+    "de": [
+     "spiegeln",
+     "symmetrische Kopie",
+     "umklappen"
+    ]
+   },
+   "summary": {
+    "en": "Mirrors sketch geometry across a line or point.",
+    "de": "Spiegelt Skizzengeometrie an einer Linie oder einem Punkt."
+   },
+   "steps": {
+    "en": [
+     "Select the geometry.",
+     "Click Mirror.",
+     "Click the mirror line or point."
+    ],
+    "de": [
+     "Wähle die Geometrie.",
+     "Klicke auf Spiegeln.",
+     "Klicke die Spiegellinie oder den Punkt an."
+    ]
+   },
+   "see": [
+    "Design_Mirror"
+   ],
+   "images": [
+    {
+     "file": "sketch_mirror.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_pattern",
+   "group": "sketch_modify",
+   "icon": "Sketcher_RectangularArray",
+   "commands": [
+    "Sketcher_RectangularArray",
+    "Sketcher_Rotate"
+   ],
+   "title": {
+    "en": "Pattern",
+    "de": "Muster"
+   },
+   "keywords": {
+    "en": [
+     "pattern",
+     "array",
+     "copies",
+     "polar",
+     "rotate copies"
+    ],
+    "de": [
+     "Muster",
+     "Anordnung",
+     "Kopien",
+     "polar",
+     "gedrehte Kopien"
+    ]
+   },
+   "summary": {
+    "en": "Copies sketch geometry in rows and columns, or rotated around a point.",
+    "de": "Kopiert Skizzengeometrie in Reihen und Spalten oder gedreht um einen Punkt."
+   },
+   "steps": {
+    "en": [
+     "Select the geometry.",
+     "Pick Rectangular Array or Rotate in the dropdown.",
+     "Set the number of copies and spacing (or angle) and click."
+    ],
+    "de": [
+     "Wähle die Geometrie.",
+     "Wähle Rechteckige Anordnung oder Drehen im Dropdown.",
+     "Stelle Anzahl und Abstand (oder Winkel) ein und klicke."
+    ]
+   },
+   "see": [
+    "Design_Pattern"
+   ],
+   "images": [
+    {
+     "file": "sketch_pattern.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_move",
+   "group": "sketch_modify",
+   "icon": "Sketcher_Translate",
+   "commands": [
+    "Sketcher_Translate",
+    "Sketcher_Scale"
+   ],
+   "title": {
+    "en": "Move and Scale",
+    "de": "Verschieben und Skalieren"
+   },
+   "keywords": {
+    "en": [
+     "move",
+     "translate",
+     "copy",
+     "scale",
+     "resize"
+    ],
+    "de": [
+     "verschieben",
+     "bewegen",
+     "kopieren",
+     "skalieren",
+     "Größe ändern"
+    ]
+   },
+   "summary": {
+    "en": "Moves or copies sketch geometry, or scales it around a point.",
+    "de": "Verschiebt oder kopiert Skizzengeometrie oder skaliert sie um einen Punkt."
+   },
+   "steps": {
+    "en": [
+     "Select the geometry.",
+     "Pick Move or Scale in the dropdown.",
+     "Click the base point, then the target point (or the scale factor)."
+    ],
+    "de": [
+     "Wähle die Geometrie.",
+     "Wähle Verschieben oder Skalieren im Dropdown.",
+     "Klicke den Basispunkt, dann den Zielpunkt (oder den Skalierfaktor)."
+    ]
+   },
+   "see": [
+    "sketch_pattern"
+   ],
+   "images": [
+    {
+     "file": "sketch_move.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_construction",
+   "group": "sketch_modify",
+   "icon": "Sketcher_ToggleConstruction",
+   "commands": [
+    "Sketcher_ToggleConstruction"
+   ],
+   "title": {
+    "en": "Construction",
+    "de": "Konstruktion"
+   },
+   "keywords": {
+    "en": [
+     "construction",
+     "helper line",
+     "reference",
+     "dashed"
+    ],
+    "de": [
+     "Konstruktion",
+     "Hilfslinie",
+     "Bezug",
+     "gestrichelt"
+    ]
+   },
+   "summary": {
+    "en": "Turns lines into construction geometry: orange dashed helper lines that are never part of a profile.",
+    "de": "Macht Linien zu Konstruktionsgeometrie: orange gestrichelte Hilfslinien, die nie zu einem Profil gehören."
+   },
+   "steps": {
+    "en": [
+     "Select lines.",
+     "Click Construction. Click again to turn it back into normal geometry."
+    ],
+    "de": [
+     "Wähle Linien.",
+     "Klicke auf Konstruktion. Ein weiterer Klick macht sie wieder zu normaler Geometrie."
+    ]
+   },
+   "see": [
+    "sketch_basics"
+   ],
+   "images": [
+    {
+     "file": "sketch_construction.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_dimension",
+   "group": "sketch_constraints",
+   "icon": "Sketcher_Dimension",
+   "commands": [
+    "Sketcher_Dimension",
+    "Sketcher_CompDimensionTools",
+    "Sketcher_ConstrainDistanceX",
+    "Sketcher_ConstrainDistanceY",
+    "Sketcher_ConstrainDistance",
+    "Sketcher_ConstrainRadiam",
+    "Sketcher_ConstrainRadius",
+    "Sketcher_ConstrainDiameter",
+    "Sketcher_ConstrainAngle",
+    "Sketcher_ConstrainLock"
+   ],
+   "title": {
+    "en": "Dimension",
+    "de": "Bemaßung"
+   },
+   "keywords": {
+    "en": [
+     "dimension",
+     "size",
+     "length",
+     "distance",
+     "radius",
+     "diameter",
+     "angle"
+    ],
+    "de": [
+     "Bemaßung",
+     "Maß",
+     "Länge",
+     "Abstand",
+     "Radius",
+     "Durchmesser",
+     "Winkel"
+    ]
+   },
+   "summary": {
+    "en": "One tool for every size: length, distance, radius, diameter and angle.",
+    "de": "Ein Werkzeug für jedes Maß: Länge, Abstand, Radius, Durchmesser und Winkel."
+   },
+   "steps": {
+    "en": [
+     "Click Dimension.",
+     "Click a line (length), two points (distance), a circle (diameter) or two lines (angle).",
+     "Place the dimension and type the value."
+    ],
+    "de": [
+     "Klicke auf Bemaßung.",
+     "Klicke eine Linie (Länge), zwei Punkte (Abstand), einen Kreis (Durchmesser) oder zwei Linien (Winkel) an.",
+     "Platziere das Maß und tippe den Wert ein."
+    ]
+   },
+   "see": [
+    "Design_Parameters",
+    "sketch_basics"
+   ],
+   "tips": {
+    "en": [
+     "Type a parameter name or a formula instead of a number.",
+     "Double-click a dimension to change it."
+    ],
+    "de": [
+     "Tippe statt einer Zahl einen Parameternamen oder eine Formel ein.",
+     "Doppelklick auf ein Maß ändert es."
+    ]
+   },
+   "images": [
+    {
+     "file": "sketch_dimension.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_coincident",
+   "group": "sketch_constraints",
+   "icon": "Sketcher_ConstrainCoincidentUnified",
+   "commands": [
+    "Sketcher_ConstrainCoincidentUnified"
+   ],
+   "title": {
+    "en": "Coincident",
+    "de": "Koinzident"
+   },
+   "keywords": {
+    "en": [
+     "coincident",
+     "connect points",
+     "point on line",
+     "join"
+    ],
+    "de": [
+     "koinzident",
+     "Punkte verbinden",
+     "Punkt auf Linie",
+     "zusammenfügen"
+    ]
+   },
+   "summary": {
+    "en": "Puts two points on top of each other, or a point onto a line.",
+    "de": "Legt zwei Punkte übereinander oder einen Punkt auf eine Linie."
+   },
+   "steps": {
+    "en": [
+     "Select two points (or a point and a line).",
+     "Click Coincident."
+    ],
+    "de": [
+     "Wähle zwei Punkte (oder einen Punkt und eine Linie).",
+     "Klicke auf Koinzident."
+    ]
+   },
+   "see": [
+    "sketch_basics"
+   ],
+   "tips": {
+    "en": [
+     "Open outlines often just miss a coincident corner – then there is no profile to extrude."
+    ],
+    "de": [
+     "Offenen Umrissen fehlt oft nur eine koinzidente Ecke – dann gibt es kein Profil zum Extrudieren."
+    ]
+   },
+   "images": [
+    {
+     "file": "sketch_coincident.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_horver",
+   "group": "sketch_constraints",
+   "icon": "Sketcher_ConstrainHorizontal",
+   "commands": [
+    "Sketcher_ConstrainHorizontal",
+    "Sketcher_ConstrainVertical",
+    "Sketcher_ConstrainHorVer",
+    "Sketcher_CompHorVer"
+   ],
+   "title": {
+    "en": "Horizontal and Vertical",
+    "de": "Horizontal und Vertikal"
+   },
+   "keywords": {
+    "en": [
+     "horizontal",
+     "vertical",
+     "level",
+     "straight up"
+    ],
+    "de": [
+     "horizontal",
+     "vertikal",
+     "waagrecht",
+     "senkrecht"
+    ]
+   },
+   "summary": {
+    "en": "Makes a line horizontal or vertical.",
+    "de": "Macht eine Linie waagrecht oder senkrecht."
+   },
+   "steps": {
+    "en": [
+     "Select a line (or two points).",
+     "Pick Horizontal or Vertical in the dropdown."
+    ],
+    "de": [
+     "Wähle eine Linie (oder zwei Punkte).",
+     "Wähle Horizontal oder Vertikal im Dropdown."
+    ]
+   },
+   "see": [
+    "sketch_parallel"
+   ],
+   "images": [
+    {
+     "file": "sketch_horver.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_parallel",
+   "group": "sketch_constraints",
+   "icon": "Sketcher_ConstrainParallel",
+   "commands": [
+    "Sketcher_ConstrainParallel",
+    "Sketcher_ConstrainPerpendicular"
+   ],
+   "title": {
+    "en": "Parallel and Perpendicular",
+    "de": "Parallel und Senkrecht"
+   },
+   "keywords": {
+    "en": [
+     "parallel",
+     "perpendicular",
+     "right angle",
+     "90 degrees"
+    ],
+    "de": [
+     "parallel",
+     "senkrecht",
+     "rechter Winkel",
+     "90 Grad"
+    ]
+   },
+   "summary": {
+    "en": "Makes two lines parallel or at a right angle.",
+    "de": "Macht zwei Linien parallel oder rechtwinklig zueinander."
+   },
+   "steps": {
+    "en": [
+     "Select two lines.",
+     "Pick Parallel or Perpendicular in the dropdown."
+    ],
+    "de": [
+     "Wähle zwei Linien.",
+     "Wähle Parallel oder Senkrecht im Dropdown."
+    ]
+   },
+   "see": [
+    "sketch_horver"
+   ],
+   "images": [
+    {
+     "file": "sketch_parallel.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_tangent",
+   "group": "sketch_constraints",
+   "icon": "Sketcher_ConstrainTangent",
+   "commands": [
+    "Sketcher_ConstrainTangent"
+   ],
+   "title": {
+    "en": "Tangent",
+    "de": "Tangential"
+   },
+   "keywords": {
+    "en": [
+     "tangent",
+     "smooth transition",
+     "touch"
+    ],
+    "de": [
+     "tangential",
+     "glatter Übergang",
+     "berühren"
+    ]
+   },
+   "summary": {
+    "en": "Makes a line and an arc (or two curves) touch smoothly.",
+    "de": "Lässt eine Linie und einen Bogen (oder zwei Kurven) glatt ineinander übergehen."
+   },
+   "steps": {
+    "en": [
+     "Select the two curves.",
+     "Click Tangent."
+    ],
+    "de": [
+     "Wähle die beiden Kurven.",
+     "Klicke auf Tangential."
+    ]
+   },
+   "see": [
+    "sketch_arc"
+   ],
+   "images": [
+    {
+     "file": "sketch_tangent.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_equal",
+   "group": "sketch_constraints",
+   "icon": "Sketcher_ConstrainEqual",
+   "commands": [
+    "Sketcher_ConstrainEqual"
+   ],
+   "title": {
+    "en": "Equal",
+    "de": "Gleich"
+   },
+   "keywords": {
+    "en": [
+     "equal",
+     "same size",
+     "same length",
+     "same radius"
+    ],
+    "de": [
+     "gleich",
+     "gleiche Größe",
+     "gleiche Länge",
+     "gleicher Radius"
+    ]
+   },
+   "summary": {
+    "en": "Gives lines the same length, or circles the same radius.",
+    "de": "Gibt Linien die gleiche Länge oder Kreisen den gleichen Radius."
+   },
+   "steps": {
+    "en": [
+     "Select two or more lines or circles.",
+     "Click Equal."
+    ],
+    "de": [
+     "Wähle zwei oder mehr Linien oder Kreise.",
+     "Klicke auf Gleich."
+    ]
+   },
+   "see": [
+    "sketch_dimension"
+   ],
+   "images": [
+    {
+     "file": "sketch_equal.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_symmetric",
+   "group": "sketch_constraints",
+   "icon": "Sketcher_ConstrainSymmetric",
+   "commands": [
+    "Sketcher_ConstrainSymmetric"
+   ],
+   "title": {
+    "en": "Symmetric",
+    "de": "Symmetrisch"
+   },
+   "keywords": {
+    "en": [
+     "symmetric",
+     "centered",
+     "mirror constraint"
+    ],
+    "de": [
+     "symmetrisch",
+     "mittig",
+     "Spiegel-Abhängigkeit"
+    ]
+   },
+   "summary": {
+    "en": "Keeps two points symmetric to a line or point – e.g. a part centered on an axis.",
+    "de": "Hält zwei Punkte symmetrisch zu einer Linie oder einem Punkt – z. B. ein Teil mittig auf einer Achse."
+   },
+   "steps": {
+    "en": [
+     "Select two points and then the symmetry line or point.",
+     "Click Symmetric."
+    ],
+    "de": [
+     "Wähle zwei Punkte und dann die Symmetrielinie oder den Punkt.",
+     "Klicke auf Symmetrisch."
+    ]
+   },
+   "see": [
+    "sketch_mirror"
+   ],
+   "images": [
+    {
+     "file": "sketch_symmetric.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_block",
+   "group": "sketch_constraints",
+   "icon": "Sketcher_ConstrainBlock",
+   "commands": [
+    "Sketcher_ConstrainBlock"
+   ],
+   "title": {
+    "en": "Fix",
+    "de": "Fixieren"
+   },
+   "keywords": {
+    "en": [
+     "fix",
+     "block",
+     "lock",
+     "freeze"
+    ],
+    "de": [
+     "fixieren",
+     "blockieren",
+     "sperren",
+     "einfrieren"
+    ]
+   },
+   "summary": {
+    "en": "Locks geometry in place so it can no longer move.",
+    "de": "Fixiert Geometrie an ihrem Platz, so dass sie sich nicht mehr bewegt."
+   },
+   "steps": {
+    "en": [
+     "Select the geometry.",
+     "Click Fix."
+    ],
+    "de": [
+     "Wähle die Geometrie.",
+     "Klicke auf Fixieren."
+    ]
+   },
+   "see": [
+    "sketch_dimension"
+   ],
+   "images": [
+    {
+     "file": "sketch_block.jpg",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_finish",
+   "group": "sketch_constraints",
+   "icon": "Sketcher_LeaveSketch",
+   "commands": [
+    "Sketcher_LeaveSketch"
+   ],
+   "title": {
+    "en": "Finish Sketch",
+    "de": "Skizze fertig stellen"
+   },
+   "keywords": {
+    "en": [
+     "finish",
+     "leave sketch",
+     "close sketch",
+     "done"
+    ],
+    "de": [
+     "fertig",
+     "Skizze verlassen",
+     "Skizze schließen",
+     "erledigt"
+    ]
+   },
+   "summary": {
+    "en": "Leaves the sketch and goes back to the model; the closed areas become profiles.",
+    "de": "Verlässt die Skizze und kehrt zum Modell zurück; die geschlossenen Flächen werden Profile."
+   },
+   "steps": {
+    "en": [
+     "Click Finish Sketch (blue button), or press Esc twice."
+    ],
+    "de": [
+     "Klicke auf Skizze fertig stellen (blauer Knopf) oder drücke zweimal Esc."
+    ]
+   },
+   "see": [
+    "Design_Extrude",
+    "sketch_basics"
+   ]
+  }
+ ]
+}
