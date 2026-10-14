@@ -137,8 +137,8 @@ def shot(article, view="iso", zoom=0, fixed=False):
     def grab():
         img = mw.grab().toImage()
         w, h = img.width(), img.height()
-        crop = img.copy(330, 120, w - 330 - 190, h - 120 - 80)  # ohne Browser, Toolbar, ViewCube/Palette, Zeitleiste
-        crop.scaledToWidth(720, QtCore.Qt.SmoothTransformation).save(os.path.join(OUT, article + ".jpg"), "JPG", 86)
+        crop = img.copy(330, 170, w - 330 - 280, h - 170 - 80)  # ohne Browser, Toolbar samt Schatten, ViewCube/Palette, Zeitleiste
+        crop.scaledToWidth(674, QtCore.Qt.SmoothTransformation).save(os.path.join(OUT, article + ".jpg"), "JPG", 86)
         L("Bild %s" % article)
     step("grab " + article, grab)
 
