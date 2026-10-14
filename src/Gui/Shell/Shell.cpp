@@ -50,6 +50,7 @@
 #include <QSizePolicy>
 #include <QLabel>
 #include <QWindow>
+#include <QSurfaceFormat>
 #include <QMenuBar>
 #include <QDir>
 #include <QFile>
@@ -1940,10 +1941,16 @@ protected:
             if (auto box = qobject_cast<QMessageBox*>(obj); box && !box->property("glass").toBool()) {
                 static AlertPainter painter;
                 box->setProperty("glass", true);
-                // erst durchsichtig, dann die Flags: setWindowFlags erzeugt das Fenster neu, jetzt mit Alphakanal
-                // (umgekehrt bleibt der Schattenrand schwarz)
                 box->setAttribute(Qt::WA_TranslucentBackground);
                 box->setWindowFlags(box->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+                // Beim Polieren existiert das native Fenster schon ohne Alphakanal (der Schattenrand wäre schwarz):
+                // mit Alphakanal neu anlegen lassen
+                if (QWindow* window = box->windowHandle()) {
+                    QSurfaceFormat format = window->format();
+                    format.setAlphaBufferSize(8);
+                    window->setFormat(format);
+                    window->destroy();
+                }
                 box->setContentsMargins(AlertPainter::Shadow + 8, AlertPainter::Shadow + 6, AlertPainter::Shadow + 8,
                                         AlertPainter::Shadow + 4);
                 box->installEventFilter(&painter);

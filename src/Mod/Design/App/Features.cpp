@@ -2043,6 +2043,7 @@ App::DocumentObjectExecReturn* Rib::compute()
         return new App::DocumentObjectExecReturn("Thickness must be greater than zero");
     }
     Part::TopoShape shape = baseShape(0);
+    const TopoDS_Shape original = shape.getShape();  // jede Rippe gegen den Körper ohne die anderen (sich kreuzende Linien)
     const Base::BoundBox3d bb = shape.getBoundBox();
     const double far = bb.CalcDiagonalLength() * 2 + 10;
     Base::Vector3d sn;
@@ -2084,7 +2085,7 @@ App::DocumentObjectExecReturn* Rib::compute()
             shift.SetTranslation(across * (-t / 2));
             const TopoDS_Shape slab = BRepPrimAPI_MakePrism(BRepBuilderAPI_Transform(face, shift).Shape(), across * t)
                                           .Shape();
-            BRepAlgoAPI_Cut cut(slab, shape.getShape());
+            BRepAlgoAPI_Cut cut(slab, original);
             if (!cut.IsDone()) {
                 continue;
             }

@@ -1138,7 +1138,16 @@
       "Wandstärke jedes Stegs."
      ]
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Web.jpg",
+     "caption": {
+      "en": "Two crossing webs inside a shelled tray.",
+      "de": "Zwei sich kreuzende Stege in einer ausgehöhlten Wanne."
+     }
+    }
+   ]
   },
   {
    "id": "Design_Emboss",
@@ -1432,7 +1441,16 @@
       "Winkel des Senkkegels."
      ]
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Hole.jpg",
+     "caption": {
+      "en": "Three counterbored holes at three sketch points.",
+      "de": "Drei Bohrungen mit Senkung an drei Skizzenpunkten."
+     }
+    }
+   ]
   },
   {
    "id": "Design_Thread",
@@ -1592,7 +1610,16 @@
       "Bei kreisförmigen Mustern: Achse durch den Ursprung und Gesamtwinkel."
      ]
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Pattern.jpg",
+     "caption": {
+      "en": "One peg repeated 4 × 2 times.",
+      "de": "Ein Zapfen, 4 × 2-mal wiederholt."
+     }
+    }
+   ]
   },
   {
    "id": "Design_Mirror",
@@ -1765,7 +1792,16 @@
     "de": [
      "Funktioniert mit ebenen Flächen; das Ziel muss ihre Richtung kreuzen."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_ReplaceFace.jpg",
+     "caption": {
+      "en": "Left: the top face was moved up to the plane. Right: the same box before.",
+      "de": "Links: die Oberseite wurde bis zur Ebene verschoben. Rechts: derselbe Quader vorher."
+     }
+    }
+   ]
   },
   {
    "id": "Design_SplitFace",

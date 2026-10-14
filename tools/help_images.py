@@ -118,6 +118,7 @@ def feature(cmd, *setup, wait_before=1):
     wait()
     step("ok", accept)
     wait()
+    step("check", lambda: L("  %s: errors=%s volumes=%s" % (cmd, errors(), volumes())))
 
 
 # --- Bild aufnehmen -------------------------------------------------------------------------------------------------
@@ -218,7 +219,7 @@ def web():
     step("box", keep("b", lambda: box(0, 0, 60, 40, 20)))
     step("open", lambda: select(st["b"], top(st["b"])))
     feature("Design_Shell", lambda: type_into(0, "2"))
-    step("walls", keep("w", lambda: sketch([Part.LineSegment(V(1, 20, 0), V(59, 20, 0)), Part.LineSegment(V(30, 1, 0), V(30, 39, 0))], z=10, name="WebLines")[0]))
+    step("walls", keep("w", lambda: sketch([Part.LineSegment(V(2, 20, 0), V(58, 20, 0)), Part.LineSegment(V(30, 2, 0), V(30, 38, 0))], z=20, name="WebLines")[0]))
     step("select", lambda: (select(st["b"]), add_select(st["w"], "Edge1", "Edge2")))
     feature("Design_Web", lambda: type_into(0, "3"))
 
@@ -237,11 +238,16 @@ def primitives():
 
 
 def hole():
+    """wie von Hand: Skizze auf der Oberseite, Punkte setzen, Skizze fertig, Bohrung"""
     step("plate", keep("b", lambda: box(0, 0, 70, 40, 12)))
-    step("points", keep("pts", lambda: sketch([Part.Point(V(x, 20, 0)) for x in (15, 35, 55)], z=12, name="HolePoints")[0]))
-    step("select", lambda: select(st["pts"]))
+    step("face", lambda: select(st["b"], top(st["b"])))
+    step("sketch", lambda: Gui.runCommand("Design_CreateSketch"))
+    wait()
+    step("points", lambda: [Gui.ActiveDocument.getInEdit().Object.addGeometry(Part.Point(V(x, 20, 12))) for x in (15, 35, 55)])
+    step("leave", lambda: Gui.runCommand("Sketcher_LeaveSketch"))
+    wait()
+    step("select", lambda: select([o for o in doc().Objects if o.TypeId == "Sketcher::SketchObject"][-1]))
     feature("Design_Hole", lambda: combo("Counterbore"))
-
 
 def thread():
     step("rod", lambda: make_body([circle(0, 0, 6)], 0, 30, "Rod"))
@@ -252,7 +258,11 @@ def thread():
 def pattern():
     step("peg", lambda: make_body([circle(0, 0, 5)], 0, 15, "Peg"))
     step("select", lambda: select(last("Design::Body")))
-    feature("Design_Pattern", lambda: type_into(1, "16"), lambda: type_into(2, "4"))
+    def setup():
+        p = last("Design::Pattern")
+        p.Count1, p.Spacing1, p.Count2, p.Spacing2 = 4, 18, 2, 24
+        doc().recompute()
+    feature("Design_Pattern", setup)
 
 
 def mirror():
@@ -271,7 +281,8 @@ def on_box(cmd, faces_of, *setup, h=20):
 
 
 def replace_face():
-    step("box", keep("b", lambda: box(0, 0, 60, 40, 20)))
+    step("box", keep("b", lambda: box(0, 0, 40, 40, 20)))
+    step("before", lambda: box(60, 0, 100, 40, 20, name="Before"))  # zum Vergleich: so hoch war er vorher
     step("plane", lambda: (select(st["b"], top(st["b"]))))
     feature("Design_OffsetPlane", lambda: type_into(0, "12"))
     step("select", lambda: (select(st["b"], top(st["b"])), add_select([o for o in doc().Objects if "Plane" in o.TypeId and o.TypeId != "App::Plane"][-1])))
@@ -418,7 +429,10 @@ scenario("primitives", primitives)
 scenario("Design_Thread", thread)
 scenario("Design_Mirror", mirror)
 scenario("Design_PressPull", lambda: on_box("Design_PressPull", lambda b: [top(b)], lambda: type_into(0, "15")))
-# ponytail: Bohrung, Muster, Fläche ersetzen und Steg brauchen ein passenderes Beispiel, bis dahin ohne Bild
+scenario("Design_ReplaceFace", replace_face)
+scenario("Design_Hole", hole)
+scenario("Design_Pattern", pattern)
+scenario("Design_Web", web)
 scenario("Design_SplitFace", split_face)
 scenario("Design_Fillet", lambda: on_box("Design_Fillet", lambda b: [top(b)], lambda: type_into(0, "5")))
 scenario("Design_Chamfer", lambda: on_box("Design_Chamfer", lambda b: [top(b)], lambda: type_into(0, "4")))

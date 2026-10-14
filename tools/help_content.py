@@ -220,7 +220,8 @@ A("Design_Web", "create", "Design_Web", ("Web", "Steg"),
    "Wie Rippe, aber die Wände wachsen senkrecht zur Skizze – ideal für ein Gitter aus Versteifungen in einer Schale."),
   (["Sketch the lines of the web on a plane.", "Select the body and the sketch lines.", "Click Web, set the thickness and click OK."],
    ["Skizziere die Linien des Stegs auf einer Ebene.", "Wähle den Körper und die Skizzenlinien.", "Klicke auf Steg, stelle die Dicke ein und klicke OK."]),
-  options=([["Thickness", "Wall thickness of each web."]], [["Dicke", "Wandstärke jedes Stegs."]]), see=["Design_Rib", "Design_Shell"])
+  options=([["Thickness", "Wall thickness of each web."]], [["Dicke", "Wandstärke jedes Stegs."]]), caption=("Two crossing webs inside a shelled tray.", "Zwei sich kreuzende Stege in einer ausgehöhlten Wanne."),
+  see=["Design_Rib", "Design_Shell"])
 A("Design_Emboss", "create", "Design_Emboss", ("Emboss", "Prägen"),
   (["emboss", "engrave", "text", "logo", "label", "deboss", "lettering"], ["prägen", "gravieren", "Text", "Logo", "Beschriftung", "vertiefen", "Schrift"]),
   ("Raises or engraves sketch profiles or text on a face of a body.", "Hebt Skizzenprofile oder Text auf einer Körperfläche hervor oder graviert sie ein."),
@@ -255,6 +256,7 @@ A("Design_Hole", "create", "Design_Hole", ("Hole", "Bohrung"),
             ["Head diameter, Head depth", "Size of the counterbore or countersink."], ["Countersink angle", "Angle of the countersink cone."]],
            [["Typ", "Einfach, Senkung zylindrisch oder Senkung kegelig."], ["Durchmesser, Tiefe", "Maß der Bohrung; Durchgehend bohrt ganz durch."],
             ["Kopfdurchmesser, Kopftiefe", "Maß der Senkung."], ["Senkwinkel", "Winkel des Senkkegels."]]),
+  caption=("Three counterbored holes at three sketch points.", "Drei Bohrungen mit Senkung an drei Skizzenpunkten."),
   see=["Design_Thread", "Design_Pattern"])
 A("Design_Thread", "create", "Design_Thread", ("Thread", "Gewinde"),
   (["thread", "screw", "bolt", "nut", "pitch", "m8"], ["Gewinde", "Schraube", "Bolzen", "Mutter", "Steigung", "M8"]),
@@ -273,6 +275,7 @@ A("Design_Pattern", "create", "Design_Pattern", ("Pattern", "Muster"),
             ["Axis, Angle", "For circular patterns: axis through the origin and total angle."]],
            [["Typ", "Rechteckig (Reihen) oder Kreisförmig (um eine Achse)."], ["Richtung, Anzahl, Abstand", "Erste Reihe; Richtung 2 fügt eine zweite Reihe hinzu."],
             ["Achse, Winkel", "Bei kreisförmigen Mustern: Achse durch den Ursprung und Gesamtwinkel."]]),
+  caption=("One peg repeated 4 × 2 times.", "Ein Zapfen, 4 × 2-mal wiederholt."),
   see=["Design_Mirror", "Design_Hole"])
 A("Design_Mirror", "create", "Design_Mirror", ("Mirror", "Spiegeln"),
   (["mirror", "symmetric", "flip copy"], ["spiegeln", "symmetrisch", "gespiegelte Kopie"]),
@@ -295,6 +298,7 @@ A("Design_ReplaceFace", "modify", "Design_ReplaceFace", ("Replace Face", "Fläch
   (["Select the faces to replace.", "Add the target plane or face to the selection.", "Click Replace Face and OK."],
    ["Wähle die zu ersetzenden Flächen.", "Füge die Zielebene oder -fläche zur Auswahl hinzu.", "Klicke auf Fläche ersetzen und OK."]),
   tips=(["Works with flat faces; the target must cross their direction."], ["Funktioniert mit ebenen Flächen; das Ziel muss ihre Richtung kreuzen."]),
+  caption=("Left: the top face was moved up to the plane. Right: the same box before.", "Links: die Oberseite wurde bis zur Ebene verschoben. Rechts: derselbe Quader vorher."),
   see=["Design_PressPull"])
 A("Design_SplitFace", "modify", "Design_SplitFace", ("Split Face", "Fläche teilen"),
   (["split face", "divide face", "partition"], ["Fläche teilen", "Fläche aufteilen", "unterteilen"]),
