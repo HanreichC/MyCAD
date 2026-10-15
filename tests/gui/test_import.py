@@ -1,17 +1,19 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Insert: STEP mit zwei Quadern -> Timeline-Eintrag mit zwei Bodies; DXF und SVG -> je eine Skizze mit Profilen."""
+"""Insert: STEP mit zwei Quadern -> Timeline-Eintrag mit zwei Bodies; DXF und SVG -> je eine Skizze mit Profilen.
+Export: die DXF-Skizze wieder als DXF schreiben und einfügen -> gleiche Geometrie."""
 import os
 from harness import *
 
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 STEP = os.environ["OUT"] + ".step"
+DXF = os.path.join(os.path.dirname(os.environ["OUT"]), "plate_export.dxf")
 
 
 def make_step():
     Part.makeCompound([Part.makeBox(10, 20, 30), Part.makeBox(5, 5, 5, App.Vector(50, 0, 0))]).exportStep(STEP)
 
 
-def insert(path):
+def insert(path, command="Design_Import"):
     def pick():
         d = visible(QtWidgets.QFileDialog)
         L("  dialog=%s" % bool(d))
@@ -23,7 +25,7 @@ def insert(path):
             L("  message: %s" % m.text()); m.close()
     QtCore.QTimer.singleShot(800, pick)
     QtCore.QTimer.singleShot(1200, boxes)
-    click(button("Design_Import"))
+    click(button(command))
 
 
 def sketch(label):
@@ -46,6 +48,10 @@ run([
     ("dxf", lambda: report_sketch("plate")),
     ("insert svg", lambda: insert(os.path.join(DATA, "logo.svg"))), ("wait", lambda: None),
     ("svg", lambda: report_sketch("logo")),
+    ("select plate", lambda: (Gui.Selection.clearSelection(), Gui.Selection.addSelection(sketch("plate")))),
+    ("export dxf", lambda: insert(DXF, "Design_Export")), ("wait", lambda: None),
+    ("insert export", lambda: (Gui.Selection.clearSelection(), insert(DXF))), ("wait", lambda: None),
+    ("dxf roundtrip", lambda: report_sketch("plate_export")),
     ("errors", lambda: L("errors=%s" % errors())),
     ("shot", lambda: shot("import")),
 ])

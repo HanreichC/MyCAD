@@ -1385,12 +1385,21 @@ void importFile(App::Document* doc)
 }
 
 /// Gewählte Bodies exportieren, ohne Auswahl alle sichtbaren. 3MF/STL über Mesh, STEP über Import.
+/// DXF: gewählte Skizzen, ohne Auswahl alle sichtbaren; jede flach in ihrer eigenen Ebene, eine Ebene (Layer) je Skizze.
 void exportBodies(App::Document* doc)
 {
     std::vector<App::DocumentObject*> bodies;
     for (auto b : selectedBodies()) {
         bodies.push_back(b);
     }
+    std::vector<App::DocumentObject*> sketches;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        auto obj = sel.getObject();
+        if (obj && obj->isDerivedFrom<Sketcher::SketchObject>() && std::ranges::find(sketches, obj) == sketches.end()) {
+            sketches.push_back(obj);
+        }
+    }
+    const bool onlySketches = bodies.empty() && !sketches.empty();
     if (bodies.empty()) {
         for (auto obj : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
             if (obj->Visibility.getValue() && !static_cast<Design::Body*>(obj)->Shape.getShape().isNull()) {
@@ -1398,43 +1407,65 @@ void exportBodies(App::Document* doc)
             }
         }
     }
-    if (bodies.empty()) {
+    if (sketches.empty()) {
+        for (auto obj : doc->getObjectsOfType(Sketcher::SketchObject::getClassTypeId())) {
+            if (obj->Visibility.getValue()) {
+                sketches.push_back(obj);
+            }
+        }
+    }
+    if (bodies.empty() && sketches.empty()) {
         QMessageBox::information(Gui::getMainWindow(), T("Export"), T("There is no body to export."));
         return;
     }
 
-    // Die eingetippte Endung bestimmt das Format; nur ohne Endung kommt die des gewählten Filters dazu
+    // Die eingetippte Endung bestimmt das Format; nur ohne Endung kommt die des gewählten Filters dazu.
+    // Nur Skizzen gewählt: DXF vorauswählen
     const QString start = QDir::home().filePath(QString::fromUtf8(doc->Label.getValue()));
-    QString filter;
+    const QStringList filters = T("3MF for 3D printing (*.3mf);;STL (*.stl);;STEP (*.step *.stp);;DXF sketches (*.dxf)")
+                                    .split(QStringLiteral(";;"));
+    QString filter = onlySketches ? filters.last() : filters.first();
     QString file = QFileDialog::getSaveFileName(
-        Gui::getMainWindow(), T("Export"), start,
-        T("3MF for 3D printing (*.3mf);;STL (*.stl);;STEP (*.step *.stp)"), &filter
+        Gui::getMainWindow(), T("Export"), start, filters.join(QStringLiteral(";;")), &filter
     );
     if (file.isEmpty()) {
         return;
     }
-    static const QStringList known = {QStringLiteral("3mf"), QStringLiteral("stl"), QStringLiteral("step"), QStringLiteral("stp")};
+    static const QStringList known = {QStringLiteral("3mf"), QStringLiteral("stl"), QStringLiteral("step"),
+                                      QStringLiteral("stp"), QStringLiteral("dxf")};
     if (!known.contains(QFileInfo(file).suffix().toLower())) {
         file += filter.startsWith(QLatin1String("STL")) ? QStringLiteral(".stl")
             : filter.startsWith(QLatin1String("STEP")) ? QStringLiteral(".step")
+            : filter.startsWith(QLatin1String("DXF"))  ? QStringLiteral(".dxf")
                                                         : QStringLiteral(".3mf");
+    }
+    const QString suffix = QFileInfo(file).suffix().toLower();
+    const bool dxf = suffix == QLatin1String("dxf");
+    const auto& objects = dxf ? sketches : bodies;
+    if (objects.empty()) {
+        QMessageBox::information(
+            Gui::getMainWindow(), T("Export"), dxf ? T("There is no sketch to export.") : T("There is no body to export.")
+        );
+        return;
     }
 
     // Pfad als Python-String: nur Backslash und Apostroph escapen
     QString path = file;
     path.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('\''), QStringLiteral("\\'"));
     std::string objs = "[";
-    for (auto b : bodies) {
-        objs += "App.getDocument('" + std::string(doc->getName()) + "').getObject('" + b->getNameInDocument() + "'),";
+    for (auto o : objects) {
+        objs += "App.getDocument('" + std::string(doc->getName()) + "').getObject('" + o->getNameInDocument() + "'),";
     }
     objs += "]";
-    const QString suffix = QFileInfo(file).suffix().toLower();
-    const std::string module = (suffix == QLatin1String("step") || suffix == QLatin1String("stp")) ? "Import" : "Mesh";
+    const std::string module = (dxf || suffix == QLatin1String("step") || suffix == QLatin1String("stp")) ? "Import" : "Mesh";
+    const std::string call = dxf ? ".writeDXFObject(" : ".export(";
     try {
         Base::Interpreter().runString(
-            ("import FreeCAD as App, " + module + "\n" + module + ".export(" + objs + ", '" + path.toStdString() + "')").c_str()
+            ("import FreeCAD as App, " + module + "\n" + module + call + objs + ", '" + path.toStdString() + "')").c_str()
         );
-        Gui::getMainWindow()->showMessage(T("Exported %1 bodies to %2").arg(bodies.size()).arg(file));
+        Gui::getMainWindow()->showMessage(
+            (dxf ? T("Exported %1 sketches to %2") : T("Exported %1 bodies to %2")).arg(objects.size()).arg(file)
+        );
     }
     catch (const Base::Exception& e) {
         QMessageBox::warning(Gui::getMainWindow(), T("Export"), QString::fromUtf8(e.what()));
@@ -2384,7 +2415,7 @@ void CreateDesignCommands()
                                      "PartDesign_Mirrored", "", startMirror));
     mgr.addCommand(new DesignCommand("Design_Delete", "Delete", "Delete: remove features or sketches from the timeline",
                                      "edit-delete", "", deleteSelected));
-    mgr.addCommand(new DesignCommand("Design_Export", "Export", "Export bodies as 3MF, STL or STEP",
+    mgr.addCommand(new DesignCommand("Design_Export", "Export", "Export bodies as 3MF, STL or STEP, or sketches as DXF",
                                      "document-save-as", "", exportBodies));
     mgr.addCommand(new DesignCommand("Design_Import", "Insert",
                                      "Insert a STEP file as bodies, or a DXF or SVG file as a sketch",

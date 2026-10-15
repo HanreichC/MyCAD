@@ -18,7 +18,7 @@ Alles andere (FEM, CAM, BIM, TechDraw, Animation, Rendering, Elektronik …) las
 | Plattform | Nur Linux (CachyOS). Systempakete statt LibPack. Kein Windows-/macOS-Code. |
 | Projektmodell | Wie Fusion: **eine Design-Datei**, beliebig viele **Komponenten**. Jede Komponente hat Bodies, Sketches, Construction-Geometrie und einen eigenen Ursprung. Darüber liegt eine **globale Timeline**. |
 | Anordnung | Move/Copy und Align ab sofort. **Joints erst in einer späteren Phase** (Phase 9). |
-| Formate | Export: **STL, 3MF, STEP**. Import: **STEP, DXF, SVG** (in eine Skizze). Nativ: `.mycad` (ZIP, auf Basis von FCStd). |
+| Formate | Export: **STL, 3MF, STEP**, Skizzen als **DXF**. Import: **STEP, DXF, SVG** (in eine Skizze). Nativ: `.mycad` (ZIP, auf Basis von FCStd). |
 | Theme | **Hell + Dunkel**, folgt dem KDE-Farbschema. |
 | Sprache | **Englisch**, gleiche Begriffe wie Fusion. |
 | UI-Technik | **Neue Oberfläche in Qt Quick / QML**. Der 3D-Viewport ist ein Item im Scene Graph, damit die Glass-Panels den Viewport-Inhalt echt weichzeichnen und brechen können. |

@@ -585,38 +585,44 @@
      "3mf",
      "stl",
      "step",
+     "dxf",
      "3d print",
      "slicer",
+     "laser",
      "save as stl",
-     "save as step"
+     "save as step",
+     "save as dxf"
     ],
     "de": [
      "exportieren",
      "3MF",
      "STL",
      "STEP",
+     "DXF",
      "3D-Druck",
      "Slicer",
+     "Laser",
      "als STL speichern",
-     "als STEP speichern"
+     "als STEP speichern",
+     "als DXF speichern"
     ]
    },
    "summary": {
-    "en": "Saves bodies as 3MF or STL for 3D printing, or as STEP for other CAD programs.",
-    "de": "Speichert Körper als 3MF oder STL für den 3D-Druck oder als STEP für andere CAD-Programme."
+    "en": "Saves bodies as 3MF or STL for 3D printing, or as STEP for other CAD programs. Saves sketches as DXF.",
+    "de": "Speichert Körper als 3MF oder STL für den 3D-Druck oder als STEP für andere CAD-Programme. Speichert Skizzen als DXF."
    },
    "steps": {
     "en": [
-     "Optional: select the bodies to export in the view or in the browser (Ctrl+click for several). Without a selection all visible bodies are exported.",
+     "Optional: select the bodies or sketches to export in the view or in the browser (Ctrl+click for several). Without a selection all visible bodies or sketches are exported.",
      "In the toolbar at the top, in the FILE section, click Export.",
-     "In the file dialog pick the type (3MF for 3D printing, STL, or STEP), enter a name and click Save.",
-     "A message confirms how many bodies were written."
+     "In the file dialog pick the type (3MF for 3D printing, STL, STEP, or DXF sketches), enter a name and click Save.",
+     "A message confirms how many bodies or sketches were written."
     ],
     "de": [
-     "Optional: Wähle die zu exportierenden Körper in der Ansicht oder im Browser (Strg+Klick für mehrere). Ohne Auswahl werden alle sichtbaren Körper exportiert.",
+     "Optional: Wähle die zu exportierenden Körper oder Skizzen in der Ansicht oder im Browser (Strg+Klick für mehrere). Ohne Auswahl werden alle sichtbaren Körper oder Skizzen exportiert.",
      "Klicke in der Werkzeugleiste oben im Bereich DATEI auf Exportieren.",
-     "Wähle im Dateidialog den Typ (3MF für den 3D-Druck, STL oder STEP), gib einen Namen ein und klicke Speichern.",
-     "Eine Meldung bestätigt, wie viele Körper geschrieben wurden."
+     "Wähle im Dateidialog den Typ (3MF für den 3D-Druck, STL, STEP oder DXF-Skizzen), gib einen Namen ein und klicke Speichern.",
+     "Eine Meldung bestätigt, wie viele Körper oder Skizzen geschrieben wurden."
     ]
    },
    "see": [
@@ -625,10 +631,12 @@
    "tips": {
     "en": [
      "3MF keeps units and is the best choice for modern slicers. STEP keeps exact curves for other CAD programs.",
+     "DXF writes each sketch flat in its own plane, on a layer named after the sketch. Good for laser cutters and CNC.",
      "You can also right-click bodies in the browser or the design name and choose Export."
     ],
     "de": [
      "3MF behält die Einheiten und ist für moderne Slicer die beste Wahl. STEP behält exakte Rundungen für andere CAD-Programme.",
+     "DXF schreibt jede Skizze flach in ihrer eigenen Ebene, auf einem Layer mit dem Namen der Skizze. Gut für Laserschneider und CNC.",
      "Du kannst auch Körper im Browser oder den Designnamen rechts anklicken und Exportieren wählen."
     ]
    }

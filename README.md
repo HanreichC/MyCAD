@@ -89,7 +89,7 @@ Neue Körper erscheinen in **Space Gray**, satiniert und edel. Lieber **Clay**, 
 
 ## Versteht jedes Format.
 
-**Exportiere** nach STL und 3MF für deinen 3D-Drucker oder nach STEP für jedes andere CAD-Programm. **Importiere** STEP-Modelle sowie DXF- und SVG-Zeichnungen direkt in eine Skizze.
+**Exportiere** nach STL und 3MF für deinen 3D-Drucker oder nach STEP für jedes andere CAD-Programm. Skizzen exportierst du als DXF, etwa für Laserschneider oder CNC-Fräsen. **Importiere** STEP-Modelle sowie DXF- und SVG-Zeichnungen direkt in eine Skizze.
 
 <br>
 
@@ -102,7 +102,7 @@ Neue Körper erscheinen in **Space Gray**, satiniert und edel. Lieber **Clay**, 
 | **Modell** | Parametrisch, mit globaler Timeline, Komponenten und Joints |
 | **Skizze** | 12 Zeichenwerkzeuge, 7 Änderungswerkzeuge, 9 Bedingungen, eine smarte Bemaßung |
 | **Volumen** | 16 Erstell-, 12 Änderungs- und 6 Konstruktionswerkzeuge |
-| **Export** | STL · 3MF · STEP |
+| **Export** | STL · 3MF · STEP · DXF (Skizzen) |
 | **Import** | STEP · DXF · SVG |
 | **Dateiformat** | FCStd (ZIP mit Vorschaubild) |
 | **Navigation** | 12 Stile, Tasten als Maustasten, Drehen um den Körper unter dem Cursor |
