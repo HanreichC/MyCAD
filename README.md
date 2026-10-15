@@ -81,6 +81,8 @@ Lege eine Taste als Maustaste fest, zum Beispiel **Shift** als mittlere Maustast
 
 Stell in den Einstellungen auf **Deutsch** um, und MyCAD spricht Deutsch, von der Toolbar bis zur Fehlermeldung. Die Begriffe kennst du aus Fusion 360: Extrudieren, Drehen, Abrunden, Bohrung, Gelenk. Selbst neue Skizzen und Körper heißen dann Skizze1 und Körper1.
 
+<br>
+
 ## Materialien mit Charakter.
 
 Neue Körper erscheinen in **Space Gray**, satiniert und edel. Lieber **Clay**, **Sierra Blue** oder **Ceramic**? Eine Einstellung genügt, und deine Körper wechseln sofort ihr Kleid. Mit **Appearance** gibst du jedem Körper seine eigene Farbe.
