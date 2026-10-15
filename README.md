@@ -125,6 +125,8 @@ chmod +x MyCAD-*-x86_64.AppImage
 
 Das AppImage ist für aktuelle Arch-basierte Systeme wie CachyOS gebaut.
 
+<br>
+
 ## Oder selbst bauen. In zwei Befehlen.
 
 ```sh
