@@ -5,7 +5,7 @@
 ### Profi-CAD. Federleicht.
 
 Skizzieren. Extrudieren. Fertig.<br>
-Die Arbeitsweise von Fusion 360, die Eleganz von Liquid Glass. Für Linux.
+Die Arbeitsweise von Fusion 360, die Eleganz von Liquid Glass. Gebaut für Linux.
 
 <br>
 
@@ -15,7 +15,7 @@ Die Arbeitsweise von Fusion 360, die Eleganz von Liquid Glass. Für Linux.
 
 <br>
 
-## Liquid Glass. Bis ins letzte Pixel.
+## Liquid Glass. Bis in den letzten Pixel.
 
 Jede Fläche in MyCAD ist aus Glas. Toolbar, Browser, Fensterknöpfe und Inspector schweben über deinem Modell, und das Modell bleibt sichtbar. Ein eigener GPU-Shader zeichnet den Hintergrund weich, bricht ihn am Rand wie eine echte Linse, setzt eine feine Lichtkante und einen sanften Schatten. In Echtzeit, bei jeder Drehung.
 
@@ -25,7 +25,7 @@ Meldungen erscheinen als schwebende Glas-Alerts, ohne Fensterrahmen und mit klar
 
 <br>
 
-## Skizzieren, wie du denkst.
+## Skizziere, wie du denkst.
 
 Wähle eine Ebene und leg los. Linie, Polylinie, Rechteck, Kreis, Bogen, Langloch, Polygon, B-Spline, Kegelschnitt, Punkt, Text. Projiziere Kanten aus deinem Modell direkt in die Skizze.
 
@@ -73,7 +73,7 @@ Die Startseite zeigt dir deine zuletzt geöffneten Designs und alles aus deinem 
 
 Wähle aus zwölf Navigationsstilen, von **Fusion 360** über **SolidWorks** und **Blender** bis **Siemens NX** und **Touchpad**. MyCAD zeigt dir live, welche Taste und welche Geste dreht, schiebt, zoomt und auswählt.
 
-Leg eine Taste als Maustaste fest, zum Beispiel **Shift** als mittlere Maustaste, und navigiere mit einer Hand. Beim Schreiben bleibt Shift natürlich Shift. MyCAD dreht um den Körper unter deinem Cursor, nicht irgendwo in den Raum. Und wer lieber Namen statt Symbole sieht, schaltet einfach **Show tool names** ein.
+Lege eine Taste als Maustaste fest, zum Beispiel **Shift** als mittlere Maustaste, und navigiere mit deinem Touchpad. Beim Schreiben bleibt Shift natürlich Shift. MyCAD dreht um den Körper unter deinem Cursor, nicht irgendwo in den Raum. Und wer lieber Namen statt Symbole sieht, schaltet einfach **Show tool names** ein.
 
 <br>
 
