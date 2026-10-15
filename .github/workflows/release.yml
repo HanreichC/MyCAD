@@ -55,4 +55,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           v="${{ steps.version.outputs.version }}"
-          gh release create "v$v" "MyCAD-$v-x86_64.AppImage" --target "$GITHUB_SHA" --title "MyCAD $v" --generate-notes
+          # GitHub antwortet gelegentlich mit HTTP 500, daher bis zu 3 Versuche statt den ganzen Build zu verwerfen
+          for i in 1 2 3; do
+            gh release create "v$v" "MyCAD-$v-x86_64.AppImage" --target "$GITHUB_SHA" --title "MyCAD $v" --generate-notes && exit 0
+            sleep 30
+          done
+          exit 1
