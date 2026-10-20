@@ -2,162 +2,162 @@
 
 # MyCAD
 
-### Profi-CAD. Federleicht.
+### Pro CAD. Featherlight.
 
-Skizzieren. Extrudieren. Fertig.<br>
-Die Arbeitsweise von Fusion 360, die Eleganz von Liquid Glass. Gebaut für Linux.
+Sketch. Extrude. Done.<br>
+The workflow of Fusion 360 with the look of Liquid Glass. Built for Linux.
 
 <br>
 
-![MyCAD Arbeitsfläche](docs/images/workspace.png)
+![MyCAD workspace](docs/images/workspace.png)
 
 </div>
 
 <br>
 
-## Liquid Glass. Bis in den letzten Pixel.
+## Liquid Glass. Down to the last pixel.
 
-Jede Fläche in MyCAD ist aus Glas. Toolbar, Browser, Fensterknöpfe und Inspector schweben über deinem Modell, und das Modell bleibt sichtbar. Ein eigener GPU-Shader zeichnet den Hintergrund weich, bricht ihn am Rand wie eine echte Linse, setzt eine feine Lichtkante und einen sanften Schatten. In Echtzeit, bei jeder Drehung.
+Every surface in MyCAD is made of glass. The toolbar, browser, window buttons and inspector float above your model, so you can still see the model behind them. A custom GPU shader blurs the background, bends it at the edges like a real lens, and adds a thin highlight and a soft shadow. It all runs in real time while you orbit.
 
-Du willst es noch klarer? Mit **Glass: Clear** lässt das Glas noch mehr von deinem Design durch. Lieber kräftiger? **Tinted** ist für dich da.
+If you want to see more of your design through the glass, switch to **Glass: Clear**. **Tinted** gives the glass a stronger tint.
 
-Meldungen erscheinen als schwebende Glas-Alerts, ohne Fensterrahmen und mit klaren Kapsel-Knöpfen. Die Ecken sind konzentrisch gerundet, die Symbole einfarbig und klar. Alles in einem klaren, hellen Look, auch auf einem dunklen Desktop.
-
-<br>
-
-## Skizziere, wie du denkst.
-
-Wähle eine Ebene und leg los. Linie, Polylinie, Rechteck, Kreis, Bogen, Langloch, Polygon, B-Spline, Kegelschnitt, Punkt, Text. Projiziere Kanten aus deinem Modell direkt in die Skizze.
-
-Runden, trimmen, verlängern, teilen, versetzen, spiegeln, anordnen, verschieben, skalieren, alles einen Klick entfernt. Bemaße mit einem einzigen Werkzeug, das weiß, was du meinst. Lege Bedingungen fest: koinzident, horizontal, vertikal, parallel, senkrecht, tangential, gleich, symmetrisch, fixiert.
-
-**Esc** legt das aktive Werkzeug beiseite. **Finish Sketch** bringt dich zurück zu deinem Modell.
+Messages show up as floating glass alerts with no window frame and capsule-shaped buttons. Corners are rounded concentrically and icons are monochrome. The interface stays light even on a dark desktop.
 
 <br>
 
-## Klick. Und es ist ein Körper.
+## Sketch the way you think.
 
-Jede geschlossene Fläche deiner Skizze ist ein eigenes Profil. Zwei Kreise ineinander? Klick auf den Ring, und **Extrude** macht daraus ein Rohr. Kein Umweg, kein Nachdenken. Genau wie du es von Fusion kennst.
+Pick a plane and start drawing: line, polyline, rectangle, circle, arc, slot, polygon, B-spline, conic, point and text. You can project edges from your model straight into the sketch.
 
-**Erstellen:** Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil · Hole · Thread · Pattern · Mirror
+Fillet, trim, extend, split, offset, mirror, pattern, move and scale are all one click away. A single dimension tool works out from your selection what you want to measure. The available constraints are coincident, horizontal, vertical, parallel, perpendicular, tangent, equal, symmetric and fix.
 
-**Ändern:** Press Pull · Replace Face · Split Face · Fillet · Chamfer · Shell · Draft · Combine · Split Body · Move · Align · Scale
-
-**Konstruieren:** Offset Plane · Plane at Angle · Midplane · Plane · Axis · Point
-
-**Prüfen:** Measure · Section Analysis
-
-Jeder Schritt landet in der **Timeline**. Geh zurück, ändere eine Maßzahl, und dein ganzes Design passt sich an. Mit **Change Parameters** steuerst du alles über benannte Werte und Formeln.
+**Esc** puts the active tool away, and **Finish Sketch** takes you back to your model.
 
 <br>
 
-## Baugruppen, die zusammengehören.
+## Click. And it's a solid.
 
-Lege **Komponenten** an und verbinde sie mit **Joints**. Jede Komponente hat ihre eigenen Körper, Skizzen und ihren eigenen Ursprung, alles in einer einzigen Design-Datei.
+Every closed region in a sketch is its own profile. Draw two circles inside each other, click the ring between them, and **Extrude** turns it into a tube, the same way it works in Fusion.
+
+**Create:** Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil · Hole · Thread · Pattern · Mirror
+
+**Modify:** Press Pull · Replace Face · Split Face · Fillet · Chamfer · Shell · Draft · Combine · Split Body · Move · Align · Scale
+
+**Construct:** Offset Plane · Plane at Angle · Midplane · Plane · Axis · Point
+
+**Inspect:** Measure · Section Analysis
+
+Every step goes into the **Timeline**. Go back, change a dimension, and the rest of the design follows. With **Change Parameters** you can drive the whole model from named values and formulas.
 
 <br>
 
-## Alles auf einen Blick.
+## Parts that fit together.
+
+Create **components** and connect them with **joints**. Each component has its own bodies, sketches and origin, and all of it lives in a single design file.
+
+<br>
+
+## Everything at a glance.
 
 <div align="center">
 
-![MyCAD Startseite](docs/images/start.png)
+![MyCAD start page](docs/images/start.png)
 
 </div>
 
-Die Startseite zeigt dir deine zuletzt geöffneten Designs und alles aus deinem Projektordner, jeweils mit großem Vorschaubild. Tipp ein paar Buchstaben in die Suche, und du hast dein Teil gefunden. Ein Klick, und du arbeitest weiter. Über den Home-Knopf bist du jederzeit wieder hier.
+The start page lists your recent designs and everything in your project folder, each with a large preview. Type a few letters into the search box to find a part, then click it to pick up where you left off. The Home button brings you back here at any time.
 
 <br>
 
-## Deine Hände. Deine Regeln.
+## Your hands. Your rules.
 
-Wähle aus zwölf Navigationsstilen, von **Fusion 360** über **SolidWorks** und **Blender** bis **Siemens NX** und **Touchpad**. MyCAD zeigt dir live, welche Taste und welche Geste dreht, schiebt, zoomt und auswählt.
+Choose from twelve navigation styles, including **Fusion 360**, **SolidWorks**, **Blender**, **Siemens NX** and **Touchpad**. MyCAD shows you which key or gesture orbits, pans, zooms and selects in the style you picked.
 
-Lege eine Taste als Maustaste fest, zum Beispiel **Shift** als mittlere Maustaste, und navigiere mit deinem Touchpad. Beim Schreiben bleibt Shift natürlich Shift. MyCAD dreht um den Körper unter deinem Cursor, nicht irgendwo in den Raum. Und wer lieber Namen statt Symbole sieht, schaltet einfach **Show tool names** ein.
-
-<br>
-
-## Spricht deine Sprache.
-
-Stell in den Einstellungen auf **Deutsch** um, und MyCAD spricht Deutsch, von der Toolbar bis zur Fehlermeldung. Die Begriffe kennst du aus Fusion 360: Extrudieren, Drehen, Abrunden, Bohrung, Gelenk. Selbst neue Skizzen und Körper heißen dann Skizze1 und Körper1.
+You can map a key to a mouse button, for example **Shift** as the middle button, and then navigate with your touchpad. Shift still works as Shift when you type. MyCAD orbits around the body under your cursor. If you'd rather see names than icons, turn on **Show tool names**.
 
 <br>
 
-## Materialien mit Charakter.
+## Speaks your language.
 
-Neue Körper erscheinen in **Space Gray**, satiniert und edel. Lieber **Clay**, **Sierra Blue** oder **Ceramic**? Eine Einstellung genügt, und deine Körper wechseln sofort ihr Kleid. Mit **Appearance** gibst du jedem Körper seine eigene Farbe.
-
-<br>
-
-## Versteht jedes Format.
-
-**Exportiere** nach STL und 3MF für deinen 3D-Drucker oder nach STEP für jedes andere CAD-Programm. Skizzen exportierst du als DXF, etwa für Laserschneider oder CNC-Fräsen. **Importiere** STEP-Modelle sowie DXF- und SVG-Zeichnungen direkt in eine Skizze.
+Switch to **Deutsch** in the settings and MyCAD is in German, from the toolbar down to the error messages. The terms are the ones you know from the German version of Fusion 360 (Extrudieren, Drehen, Abrunden, Bohrung, Gelenk), and new sketches and bodies are called Skizze1 and Körper1.
 
 <br>
 
-## Technische Daten
+## Materials with character.
+
+New bodies come in **Space Gray** with a satin finish. You can pick **Clay**, **Sierra Blue** or **Ceramic** in the settings instead, and existing bodies switch right away. **Appearance** gives a single body its own color.
+
+<br>
+
+## Speaks STEP. And STL. And DXF.
+
+**Export** to STL or 3MF for your 3D printer, or to STEP for any other CAD program. Sketches export as DXF, for example for laser cutters or CNC mills. **Import** STEP models, and bring DXF and SVG drawings straight into a sketch.
+
+<br>
+
+## Tech specs
 
 | | |
 |---|---|
-| **Plattform** | Linux, entwickelt und getestet auf CachyOS mit KDE Plasma (Wayland) |
-| **Oberfläche** | Liquid Glass mit GPU-Glas-Shader, hell, Englisch oder Deutsch |
-| **Modell** | Parametrisch, mit globaler Timeline, Komponenten und Joints |
-| **Skizze** | 12 Zeichenwerkzeuge, 7 Änderungswerkzeuge, 9 Bedingungen, eine smarte Bemaßung |
-| **Volumen** | 16 Erstell-, 12 Änderungs- und 6 Konstruktionswerkzeuge |
-| **Export** | STL · 3MF · STEP · DXF (Skizzen) |
+| **Platform** | Linux, developed and tested on CachyOS with KDE Plasma (Wayland) |
+| **Interface** | Liquid Glass with a GPU glass shader, light theme, English or German |
+| **Model** | Parametric, with a global timeline, components and joints |
+| **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
+| **Solids** | 16 create, 12 modify and 6 construction tools |
+| **Export** | STL · 3MF · STEP · DXF (sketches) |
 | **Import** | STEP · DXF · SVG |
-| **Dateiformat** | FCStd (ZIP mit Vorschaubild) |
-| **Navigation** | 12 Stile, Tasten als Maustasten, Drehen um den Körper unter dem Cursor |
-| **Materialien** | Space Gray · Clay · Sierra Blue · Ceramic |
-| **Kern** | FreeCAD mit OpenCascade |
-| **Lizenz** | LGPL-2.1-or-later |
+| **File format** | FCStd (ZIP with preview image) |
+| **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
+| **Materials** | Space Gray · Clay · Sierra Blue · Ceramic |
+| **Core** | FreeCAD with OpenCascade |
+| **License** | LGPL-2.1-or-later |
 
 <br>
 
-## Herunterladen. Starten. Fertig.
+## Download. Run. Done.
 
-Die neueste Version liegt immer unter [**Releases**](https://github.com/HanreichC/MyCAD/releases/latest) als AppImage bereit, ganz frisch nach jedem Commit. Kein Installieren, kein Container, eine einzige Datei:
+The latest version is always on the [**Releases**](https://github.com/HanreichC/MyCAD/releases/latest) page as an AppImage, rebuilt after every commit. There's nothing to install and no container to set up, just one file:
 
 ```sh
 chmod +x MyCAD-*-x86_64.AppImage
 ./MyCAD-*-x86_64.AppImage
 ```
 
-Das AppImage ist für aktuelle Arch-basierte Systeme wie CachyOS gebaut.
+The AppImage is built for current Arch-based systems such as CachyOS.
 
 <br>
 
-## Oder selbst bauen. In zwei Befehlen.
+## Or build it yourself. In two commands.
 
 ```sh
-./install.sh   # baut MyCAD im Podman-Container und legt den Starter `mycad` samt Menüeintrag an
-mycad          # los geht's
+./install.sh   # builds MyCAD in a Podman container and adds the `mycad` launcher and a menu entry
+mycad          # starts MyCAD
 ```
 
-Nichts landet global auf deinem System. MyCAD baut in einem Podman-Container (`.devcontainer/`). Erneutes Ausführen baut nur, was sich geändert hat. Mit `JOBS=8 ./install.sh` legst du fest, wie viele Kerne mitarbeiten (Standard 6, mit niedrigster Priorität).
+The build runs inside a Podman container (`.devcontainer/`), so the compiler and dependencies stay off your system. Running it again only rebuilds what changed. `JOBS=8 ./install.sh` sets how many cores to use (the default is 6, at lowest priority).
 
-**Du brauchst:** Linux mit Wayland, Podman und eine GPU mit OpenGL.
+**You need** Linux with Wayland, Podman, and a GPU with OpenGL.
 
 <br>
 
-## Für Entwickler.
+## For developers.
 
-Der Kern der Oberfläche liegt in [`src/Gui/Shell/`](src/Gui/Shell), die Fusion-Werkzeuge in [`src/Mod/Design/`](src/Mod/Design). Die Symbole erzeugt [`tools/make_icons.py`](tools/make_icons.py).
+The core of the interface lives in [`src/Gui/Shell/`](src/Gui/Shell) and the Fusion-style tools in [`src/Mod/Design/`](src/Mod/Design). [`tools/make_icons.py`](tools/make_icons.py) generates the icons.
 
-Die GUI-Tests klicken wie ein Mensch, mit echten Maus- und Tastatur-Events:
+The GUI tests click through the app like a person would, with real mouse and keyboard events:
 
 ```sh
-tests/gui/run.sh tests/gui/test_ring.py /tmp/ring   # Protokoll in /tmp/ring.txt, Screenshot in /tmp/ring.png
+tests/gui/run.sh tests/gui/test_ring.py /tmp/ring   # log in /tmp/ring.txt, screenshot in /tmp/ring.png
 ```
 
-Der Fahrplan steht in [`docs/PLAN.md`](docs/PLAN.md).
+The roadmap is in [`docs/PLAN.md`](docs/PLAN.md).
 
 <br>
 
-## Herkunft und Lizenz.
+## Origins and license.
 
-MyCAD baut auf [FreeCAD](https://www.freecad.org) auf, dem freien parametrischen CAD-Programm. Danke an alle, die es möglich machen. Mehr dazu in [`docs/UPSTREAM.md`](docs/UPSTREAM.md).
+MyCAD is built on [FreeCAD](https://www.freecad.org), the free parametric CAD program. Thanks to everyone who works on it. [`docs/UPSTREAM.md`](docs/UPSTREAM.md) has the details.
 
-MyCAD steht wie FreeCAD unter der [LGPL-2.1-or-later](LICENSE).
+Like FreeCAD, MyCAD is licensed under the [LGPL-2.1-or-later](LICENSE).
 
-<sub>MyCAD ist ein unabhängiges Projekt und steht in keiner Verbindung zu Apple Inc. oder Autodesk, Inc. Liquid Glass ist eine Designsprache von Apple, Fusion 360 ist eine Marke von Autodesk. Beide Namen dienen hier nur zur Beschreibung von Stil und Arbeitsweise.</sub>
+<sub>MyCAD is an independent project and is not affiliated with Apple Inc. or Autodesk, Inc. Liquid Glass is a design language by Apple, and Fusion 360 is a trademark of Autodesk. Both names are used here only to describe the style and workflow.</sub>
