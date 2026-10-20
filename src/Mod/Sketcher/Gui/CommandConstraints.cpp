@@ -3947,6 +3947,13 @@ protected:
         bool fixed = GeoId2 == GeoEnum::GeoUndef ? isPointOrSegmentFixed(Obj, GeoId1) : areBothPointsOrSegmentsFixed(Obj, GeoId1, GeoId2);
 
         int index = Obj->Constraints.getValues().size() - 1;
+        // Wie in Fusion: ein Maß, das die Skizze überbestimmt, wird ein getriebenes Maß (Referenz). Als treibendes
+        // Maß lehnt der Solver jeden Wert ab und es verschwindet beim Bestätigen wieder.
+        if (!fixed && constraintCreationMode != Reference) {
+            Obj->solve();
+            const std::vector<int>& redundant = Obj->getLastRedundant();  // 1-basiert
+            fixed = std::ranges::find(redundant, index + 1) != redundant.end();
+        }
         if (fixed || constraintCreationMode == Reference) {
             Gui::cmdAppObjectArgs(Obj, "setDriving(%i,%s)", index, "False");
         }

@@ -782,6 +782,8 @@ protected:
     void deactivateHandler();
     /// get called if a subelement is double clicked while editing
     void editDoubleClicked();
+    /// Doppelklick auf eine Linie: Längenmaß bearbeiten oder anlegen
+    void editLineLength(int geoId);
     /// get called when an edge is double clicked to select/unselect the whole wire
     void toggleWireSelection(int geoId);
     //@}

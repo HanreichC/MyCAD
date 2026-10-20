@@ -25,6 +25,7 @@
 #include <QFormLayout>
 #include <QGraphicsDropShadowEffect>
 #include <QGridLayout>
+#include <QGraphicsProxyWidget>
 #include <QGraphicsView>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -270,6 +271,12 @@ protected:
 bool typing()
 {
     QWidget* f = QApplication::focusWidget();
+    // Browser, Inspector … sind Glass-Panels in der Szene der 3D-Ansicht: Qt meldet dann die Ansicht als Fokus,
+    // geschrieben wird aber im Feld im Panel
+    while (auto view = qobject_cast<QGraphicsView*>(f)) {
+        auto proxy = view->scene() ? dynamic_cast<QGraphicsProxyWidget*>(view->scene()->focusItem()) : nullptr;
+        f = proxy && proxy->widget() ? proxy->widget()->focusWidget() : nullptr;
+    }
     if (!f || !f->isVisible()) {
         return false;
     }

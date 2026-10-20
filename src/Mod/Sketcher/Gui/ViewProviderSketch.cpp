@@ -1640,6 +1640,9 @@ void ViewProviderSketch::editDoubleClicked()
             editTextDialog.exec();
             setSketchMode(STATUS_NONE);
         }
+        else if (geoId >= 0 && isLineSegment(*sketch->getGeometry(geoId))) {
+            editLineLength(geoId);
+        }
         else {
             // We cannot do toggleWireSelection directly here because the released event with
             //STATUS_NONE return false which clears the selection.
@@ -1673,6 +1676,37 @@ void ViewProviderSketch::editDoubleClicked()
             }
         }
     }
+}
+
+/// Doppelklick auf eine Linie: Länge eingeben. Vorhandenes Längenmaß bearbeiten, sonst eines anlegen
+/// (überbestimmt es die Skizze, wird es wie beim Bemaßen ein getriebenes Maß ohne Eingabe).
+void ViewProviderSketch::editLineLength(int geoId)
+{
+    Sketcher::SketchObject* sketch = getSketchObject();
+    const std::vector<Sketcher::Constraint*>& constraints = sketch->Constraints.getValues();
+    for (int i = 0; i < static_cast<int>(constraints.size()); ++i) {
+        const Constraint* c = constraints[i];
+        if ((c->Type == Distance || c->Type == DistanceX || c->Type == DistanceY) && c->First == geoId
+            && (c->Second == GeoEnum::GeoUndef || c->Second == geoId)) {
+            int tid = getDocument()->openCommand(QT_TRANSLATE_NOOP("Command", "Modify sketch constraints"));
+            EditDatumDialog(tid, this, i).exec();
+            return;
+        }
+    }
+    auto line = static_cast<const Part::GeomLineSegment*>(sketch->getGeometry(geoId));
+    int tid = getDocument()->openCommand(QT_TRANSLATE_NOOP("Command", "Add length constraint"));
+    Gui::cmdAppObjectArgs(sketch, "addConstraint(Sketcher.Constraint('Distance',%d,%.8g))", geoId,
+                          (line->getEndPoint() - line->getStartPoint()).Length());
+    const int index = sketch->Constraints.getSize() - 1;
+    sketch->solve();
+    const std::vector<int>& redundant = sketch->getLastRedundant();  // 1-basiert
+    if (std::ranges::find(redundant, index + 1) != redundant.end()) {
+        Gui::cmdAppObjectArgs(sketch, "setDriving(%d,False)", index);
+        getDocument()->commitCommand();
+        tryAutoRecomputeIfNotSolve(sketch);
+        return;
+    }
+    EditDatumDialog(tid, this, index).exec();
 }
 
 void ViewProviderSketch::toggleWireSelection(int clickedGeoId)
