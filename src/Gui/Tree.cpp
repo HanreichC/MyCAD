@@ -6418,13 +6418,9 @@ void DocumentObjectItem::generateIcon(int currentStatus, QIcon::Mode mode, QIcon
 
 QIcon DocumentObjectItem::getVisibilityIcon(int currentStatus, QIcon& original_icon)
 {
-    static QPixmap pxVisible, pxInvisible;
-    if (pxVisible.isNull()) {
-        pxVisible = BitmapFactory().pixmap("TreeItemVisible");
-    }
-    if (pxInvisible.isNull()) {
-        pxInvisible = BitmapFactory().pixmap("TreeItemInvisible");
-    }
+    // MyCAD: jedes Mal aus dem Cache holen, die Shell färbt die Augen beim Wechsel Hell/Dunkel neu
+    const QPixmap pxVisible = BitmapFactory().pixmap("TreeItemVisible");
+    const QPixmap pxInvisible = BitmapFactory().pixmap("TreeItemInvisible");
 
     // Prepend the visibility pixmap to the final icon pixmaps and use these as the icon.
     QIcon new_icon;

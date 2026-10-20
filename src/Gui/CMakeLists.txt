@@ -693,6 +693,7 @@ SET(Dock_Windows_CPP_SRCS
     Shell/ViewCube.cpp
     Shell/Settings.cpp
     Shell/Translations.cpp
+    Shell/Theme.cpp
     ComboView.cpp
     DockWindow.cpp
     PropertyView.cpp
@@ -711,6 +712,7 @@ SET(Dock_Windows_HPP_SRCS
     Shell/Shell.h
     Shell/ViewCube.h
     Shell/Settings.h
+    Shell/Theme.h
     ComboView.h
     DockWindow.h
     PropertyView.h

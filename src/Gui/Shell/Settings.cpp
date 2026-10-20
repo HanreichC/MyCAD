@@ -2,6 +2,7 @@
 
 #include "Settings.h"
 #include "Shell.h"
+#include "Theme.h"
 
 #include <App/Application.h>
 #include <Gui/Application.h>
@@ -22,6 +23,8 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
+#include <QGraphicsDropShadowEffect>
+#include <QGridLayout>
 #include <QGraphicsView>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -36,6 +39,7 @@
 #include <QSlider>
 #include <QTableWidget>
 #include <QTextEdit>
+#include <QVariantAnimation>
 #include <QVBoxLayout>
 #include <memory>
 #include <functional>
@@ -468,7 +472,8 @@ void Gui::Shell::registerSettings()
 
 namespace
 {
-/// Schalter wie in macOS/iOS statt Häkchen
+/// Switch (MyStyle § 9.3): 38 × 22, weißer Knopf 18 mit Schatten, aus fill.secondary, an Grün; der Knopf wird beim
+/// Drücken 22 breit und gleitet mit 280 ms OutBack
 class Switch: public QAbstractButton
 {
 public:
@@ -477,26 +482,90 @@ public:
         setCheckable(true);
         setChecked(on);
         setCursor(Qt::PointingHandCursor);
-        setFixedSize(42, 24);
+        setFocusPolicy(Qt::TabFocus);  // Fokusring nur bei Tastaturbedienung
+        setFixedSize(Token::SwitchWidth + 4, Token::SwitchHeight + 4);  // 2 px rundum für den Fokusring
+        position = on ? 1 : 0;
+        QObject::connect(&anim, &QVariantAnimation::valueChanged, this, [this](const QVariant& v) {
+            position = v.toReal();
+            update();
+        });
+        QObject::connect(this, &QAbstractButton::toggled, this, [this](bool checked) {
+            const Theme& t = theme();
+            anim.stop();
+            anim.setDuration(t.duration(280));
+            QEasingCurve curve(t.reduceMotion ? QEasingCurve::OutCubic : QEasingCurve::OutBack);
+            curve.setOvershoot(1.3);
+            anim.setEasingCurve(curve);
+            anim.setStartValue(position);
+            anim.setEndValue(checked ? 1.0 : 0.0);
+            anim.start();
+        });
     }
 
 protected:
     void paintEvent(QPaintEvent*) override
     {
+        const Theme& t = theme();
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
-        const bool dark = palette().color(QPalette::Window).lightness() < 128;
-        const QColor off = dark ? QColor(0x39, 0x39, 0x3D) : QColor(0xE9, 0xE9, 0xEB);
+        const QRectF track = QRectF(rect()).adjusted(2, 2, -2, -2);
+        if (hasFocus()) {
+            p.setPen(QPen(t.focusRing, 2));
+            p.setBrush(Qt::NoBrush);
+            p.drawRoundedRect(QRectF(rect()).adjusted(1, 1, -1, -1), height() / 2.0 - 1, height() / 2.0 - 1);
+        }
         p.setPen(Qt::NoPen);
-        p.setBrush(isChecked() ? QColor(0x34, 0xC7, 0x59) : off);
-        p.drawRoundedRect(rect(), height() / 2.0, height() / 2.0);
-        const qreal d = height() - 4;
-        const QRectF knob(isChecked() ? width() - d - 2 : 2, 2, d, d);
-        p.setBrush(QColor(0, 0, 0, 40));
-        p.drawEllipse(knob.translated(0, 1));
-        p.setBrush(Qt::white);
-        p.drawEllipse(knob);
+        p.setBrush(isChecked() ? t.green : t.fillSecondary);
+        p.drawRoundedRect(track, track.height() / 2, track.height() / 2);
+        const qreal d = Token::SwitchKnob, w = isDown() ? 22 : d, pad = (track.height() - d) / 2;
+        const qreal x = track.left() + pad + std::clamp(position, -0.1, 1.1) * (track.width() - 2 * pad - w);
+        const QRectF knob(x, track.top() + pad, w, d);
+        p.setBrush(QColor(0, 0, 0, 64));  // elevation.knob (0, 2, 4, 25 %), vereinfacht
+        p.drawRoundedRect(knob.translated(0, 1).adjusted(-0.5, 0, 0.5, 1), d / 2, d / 2);
+        p.setBrush(QColor(Qt::white));
+        p.drawRoundedRect(knob, d / 2, d / 2);
     }
+    void mousePressEvent(QMouseEvent* e) override
+    {
+        QAbstractButton::mousePressEvent(e);
+        update();  // Knopf wird breit
+    }
+
+private:
+    qreal position = 0;
+    QVariantAnimation anim;
+};
+
+/// Segmented Control mit Pfeiltasten (MyStyle A-2)
+class SegmentKeys: public QObject
+{
+public:
+    explicit SegmentKeys(QButtonGroup* group)
+        : QObject(group)
+        , group(group)
+    {}
+
+protected:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        if (event->type() != QEvent::KeyPress) {
+            return false;
+        }
+        const int key = static_cast<QKeyEvent*>(event)->key();
+        if (key != Qt::Key_Left && key != Qt::Key_Right) {
+            return false;
+        }
+        const int n = int(group->buttons().size());
+        const int next = std::clamp(group->checkedId() + (key == Qt::Key_Right ? 1 : -1), 0, n - 1);
+        if (QAbstractButton* b = group->button(next); b && next != group->checkedId()) {
+            b->setFocus(Qt::TabFocusReason);
+            b->click();
+        }
+        return true;
+    }
+
+private:
+    QButtonGroup* group;
 };
 
 /// Ereignis eines anderen Objekts beobachten (z. B. Aufklapp-Liste wird geschlossen)
@@ -537,23 +606,6 @@ protected:
     }
 };
 
-QPixmap tintedIcon(const QString& name, const QColor& color, int size)
-{
-    QFile file(QStringLiteral(":/mycad/icons/%1.svg").arg(name));
-    if (!file.open(QIODevice::ReadOnly)) {
-        return {};
-    }
-    QSvgRenderer renderer(file.readAll().replace("currentColor", color.name().toLatin1()));
-    const qreal dpr = qApp->devicePixelRatio();
-    QPixmap pix(int(size * dpr), int(size * dpr));
-    pix.fill(Qt::transparent);
-    QPainter painter(&pix);
-    renderer.render(&painter);
-    painter.end();
-    pix.setDevicePixelRatio(dpr);
-    return pix;
-}
-
 /// Bedienung als Tasten-Chips: "Shift+Middle drag | Scroll" -> [Shift] + [Middle drag]  or  [Scroll]
 QWidget* chips(const QString& spec)
 {
@@ -579,11 +631,50 @@ QWidget* chips(const QString& spec)
             }
             auto chip = new QLabel(T(keys[k].trimmed()));
             chip->setObjectName(QStringLiteral("Chip"));
+            setTextStyle(chip, Text::Caption);
+            chip->setFixedHeight(Token::Chip);
             lay->addWidget(chip);
         }
     }
     lay->addStretch();
     return w;
+}
+
+/// Stylesheet des Einstellungsfensters (MyStyle § 9): Fenster auf dem Backdrop, Karten aus Material
+QString settingsStyle()
+{
+    return themed(QStringLiteral(R"(
+* { color: @labelPrimary; }
+QDialog#Settings { background: transparent; }
+QFrame#Window { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 @backgroundTop, stop:1 @backgroundBottom);
+    border: 1px solid @glassPopupBorder; border-radius: 32px; }
+QFrame#Card { background: @materialFill; border: 1px solid @materialBorder; border-radius: 20px; }
+QFrame#Separator { background: @separator; border: none; min-height: 1px; max-height: 1px; }
+QLabel#Section, QLabel#Secondary, QLabel#Hint { color: @labelSecondary; }
+QLabel#Chip { background: @fillTertiary; border-radius: 12px; padding: 0 10px; }
+QWidget#Segmented { background: @fillTertiary; border-radius: 22px; }
+QWidget#Segmented[backdrop="true"] { background: @materialFill; border: 1px solid @materialBorder; }
+QPushButton#Segment { background: transparent; border: 2px solid transparent; border-radius: 18px; padding: 0 14px; min-height: 32px; font-weight: 400; }
+QPushButton#Segment:hover { background: @fillTertiary; }
+QPushButton#Segment:checked { background: @materialThumb; font-weight: 600; }
+QPushButton#Segment:focus { border-color: @focusRing; }
+QComboBox { background: transparent; border: 2px solid transparent; border-radius: 8px; padding: 2px 8px; min-height: 22px; color: @labelSecondary; }
+QComboBox:hover { background: @fillTertiary; }
+QComboBox:focus { border-color: @focusRing; }
+QComboBox::drop-down { border: none; width: 20px; }
+QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
+QComboBox QAbstractItemView { background: @glassOpaqueTop; border: 1px solid @glassPopupBorder; padding: 4px; outline: 0;
+    selection-background-color: @accent; selection-color: @labelOnAccent; }
+QSlider { min-height: 24px; }
+QSlider::groove:horizontal { height: 4px; background: @fillSecondary; border-radius: 2px; }
+QSlider::sub-page:horizontal { background: @accent; border-radius: 2px; }
+QSlider::handle:horizontal { background: @knob; border: 1px solid @separator; width: 19px; height: 19px; margin: -9px 0; border-radius: 10px; }
+QSlider::handle:horizontal:focus { border: 2px solid @focusRing; }
+QToolButton#CloseSettings, QToolButton#Remove { background: @fillTertiary; border: 2px solid transparent; border-radius: 14px; }
+QToolButton#Remove { background: transparent; }
+QToolButton#CloseSettings:hover, QToolButton#Remove:hover { background: @fillSecondary; }
+QToolButton#CloseSettings:focus, QToolButton#Remove:focus { border-color: @focusRing; }
+)"));
 }
 }  // namespace
 
@@ -592,64 +683,16 @@ void Gui::Shell::showSettings()
     QDialog dlg(Gui::getMainWindow(), Qt::Dialog | Qt::FramelessWindowHint);
     dlg.setAttribute(Qt::WA_TranslucentBackground);
     dlg.setObjectName(QStringLiteral("Settings"));
-    dlg.setWindowTitle(QStringLiteral("Settings"));
-    dlg.setMinimumWidth(660);
-
-    // Farben wie im Rest von MyCAD (hell/dunkel nach System)
-    const bool dark = qApp->palette().color(QPalette::Window).lightness() < 128;
-    const QString bg = dark ? QStringLiteral("#1C1C1E") : QStringLiteral("#F2F2F7");
-    const QString card = dark ? QStringLiteral("#2C2C2E") : QStringLiteral("#FFFFFF");
-    const QString border = dark ? QStringLiteral("rgba(255,255,255,0.10)") : QStringLiteral("rgba(0,0,0,0.08)");
-    const QString sep = dark ? QStringLiteral("rgba(255,255,255,0.08)") : QStringLiteral("rgba(60,60,67,0.12)");
-    const QString secondary = dark ? QStringLiteral("#98989D") : QStringLiteral("#6E6E73");
-    const QString text = dark ? QStringLiteral("#F5F5F7") : QStringLiteral("#1D1D1F");
-    const QString accent = dark ? QStringLiteral("#0A84FF") : QStringLiteral("#007AFF");
-    const QString chipBg = dark ? QStringLiteral("#3A3A3C") : QStringLiteral("#F5F5F7");
-    const QString segBg = dark ? QStringLiteral("rgba(118,118,128,0.24)") : QStringLiteral("rgba(118,118,128,0.12)");
-    const QString segSel = dark ? QStringLiteral("#636366") : QStringLiteral("#FFFFFF");
-    dlg.setStyleSheet(QStringLiteral(R"(
-* { color: %1; }
-QDialog#Settings { background: transparent; }
-QFrame#Window { background: %2; border: 1px solid %4; border-radius: 14px; }
-QFrame#Card { background: %3; border: 1px solid %4; border-radius: 10px; }
-QFrame#Separator { background: %5; border: none; min-height: 1px; max-height: 1px; }
-QLabel#Title { font-size: 20px; font-weight: 700; }
-QLabel#SectionTitle { color: %6; font-size: 11px; font-weight: 600; padding-left: 4px; }
-QLabel#Secondary { color: %6; }
-QLabel#Hint { color: %6; font-size: 12px; }
-QLabel#Chip { background: %8; border: 1px solid %4; border-radius: 5px; padding: 1px 7px; font-size: 12px; font-weight: 600; }
-QWidget#Segmented { background: %9; border-radius: 8px; }
-QPushButton#Segment { background: transparent; border: none; border-radius: 6px; padding: 4px 16px; min-width: 0; }
-QPushButton#Segment:checked { background: %10; font-weight: 600; }
-QComboBox { background: %3; border: 1px solid %4; border-radius: 7px; padding: 3px 8px; min-height: 22px; }
-QComboBox::drop-down { border: none; width: 20px; }
-QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
-QComboBox QAbstractItemView { background: %3; border: 1px solid %4; border-radius: 8px; padding: 4px; outline: 0;
-    selection-background-color: %7; selection-color: white; }
-QSlider::groove:horizontal { height: 4px; background: %5; border-radius: 2px; }
-QSlider::sub-page:horizontal { background: %7; border-radius: 2px; }
-QSlider::handle:horizontal { background: white; border: 1px solid %4; width: 18px; height: 18px; margin: -8px 0; border-radius: 9px; }
-QToolButton#CloseSettings { background: %9; border: none; border-radius: 15px; }
-QToolButton#CloseSettings:hover { background: rgba(0,0,0,0.12); }
-QPushButton#Plain { background: %3; border: 1px solid %4; border-radius: 7px; padding: 5px 14px; min-width: 0; }
-QPushButton#Remove { background: transparent; border: none; color: %6; font-size: 15px; padding: 2px 6px; min-width: 0; }
-QPushButton#Remove:hover { color: #FF3B30; }
-)")
-                          .arg(text, bg, card, border, sep, secondary, accent, chipBg, segBg)
-                          .arg(segSel)
-                      + QStringLiteral(R"(
-QFrame#Window { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 %1, stop:0.55 %2, stop:1 %3);
-    border: 1px solid %4; border-radius: 26px; }
-QFrame#Card { background: %5; border: 1px solid %6; border-radius: 16px; }
-QWidget#Segmented { border-radius: 10px; }
-QPushButton#Segment { border-radius: 8px; }
-QComboBox { border-radius: 10px; }
-QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
-)")
-                                                                                     .arg(dark ? "#2A2A2E" : "#F7F7F9", dark ? "#222225" : "#EFEFF3",
-                                                                                          dark ? "#1C1C1F" : "#E8E8ED", border,
-                                                                                          dark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.62)",
-                                                                                          dark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.95)"));
+    dlg.setWindowTitle(T("Settings"));
+    // Inhalt höchstens size.contentMaxWidth breit (W-4), Fenster 12 rundum (Fenster r 32 − 12 = Karte r 20)
+    dlg.setMinimumWidth(Token::ContentMaxWidth + 2 * Token::WindowInset);
+    std::vector<std::function<void()>> restyle;  // bei Wechsel Hell/Dunkel/Kontrast: alles neu einfärben
+    auto updateStyle = [&dlg, &restyle] {
+        dlg.setStyleSheet(settingsStyle());
+        for (const auto& fn : restyle) {
+            fn();
+        }
+    };
 
     auto outer = new QVBoxLayout(&dlg);
     outer->setContentsMargins(0, 0, 0, 0);
@@ -657,105 +700,264 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     window->setObjectName(QStringLiteral("Window"));
     outer->addWidget(window);
     auto lay = new QVBoxLayout(window);
-    lay->setContentsMargins(24, 18, 24, 20);
+    lay->setContentsMargins(Token::WindowInset, Token::WindowInset, Token::WindowInset, Token::WindowInset);
     lay->setSpacing(8);
 
     auto segmented = [](const QStringList& items, int current, std::function<void(int)> changed) {
         auto box = new QWidget;
         box->setObjectName(QStringLiteral("Segmented"));
         box->setAttribute(Qt::WA_StyledBackground);
+        box->setFixedHeight(Token::Segmented);
         auto row = new QHBoxLayout(box);
-        row->setContentsMargins(2, 2, 2, 2);
+        row->setContentsMargins(4, 4, 4, 4);
         row->setSpacing(2);
         auto group = new QButtonGroup(box);
+        auto keys = new SegmentKeys(group);
         for (int i = 0; i < items.size(); ++i) {
             auto b = new QPushButton(items[i]);
             b->setObjectName(QStringLiteral("Segment"));
             b->setCheckable(true);
             b->setChecked(i == current);
             b->setAutoDefault(false);
+            b->setFocusPolicy(Qt::TabFocus);
+            b->installEventFilter(keys);
             group->addButton(b, i);
-            row->addWidget(b);
+            row->addWidget(b, 1);  // gleich breite Segmente
         }
+        // so breit wie der längste (fette) Text, sonst schneidet Qt ihn ab; als Stylesheet, weil min-width aus dem
+        // Stylesheet eine gesetzte Mindestbreite überschreibt
+        const QFontMetrics fm(textFont(Text::Callout, 600));
+        int widest = 0;
+        for (const QString& item : items) {
+            widest = std::max(widest, fm.horizontalAdvance(item) + 2);
+        }
+        box->setStyleSheet(QStringLiteral("QPushButton#Segment { min-width: %1px; }").arg(widest));
         QObject::connect(group, &QButtonGroup::idClicked, box, [changed](int id) { changed(id); });
         return box;
     };
 
-    // Kopf: Titel (zum Verschieben) und Bereiche
+    // Kopf: Titel (zum Verschieben), Bereiche, Schließen
     auto head = new DragArea;
     auto headLay = new QHBoxLayout(head);
-    headLay->setContentsMargins(0, 0, 0, 0);
+    headLay->setContentsMargins(Token::WindowInset, 0, 0, 0);
     auto title = new QLabel(T("Settings"));
-    title->setObjectName(QStringLiteral("Title"));
+    setTextStyle(title, Text::Title1);
     headLay->addWidget(title);
     headLay->addStretch();
     auto pages = new QStackedWidget;
-    headLay->addWidget(segmented({T("Navigation"), T("Keys")}, 0,
-                                 [pages](int i) { pages->setCurrentIndex(i); }));
-    headLay->addSpacing(10);
+    auto pageSwitch = segmented({T("General"), T("Navigation"), T("Keys")}, 0, [pages](int i) { pages->setCurrentIndex(i); });
+    pageSwitch->setProperty("backdrop", true);  // steht auf dem Backdrop: Material statt Fill
+    headLay->addWidget(pageSwitch);
+    headLay->addSpacing(8);
     auto close = new QToolButton;  // schließen wie bei macOS-Panels; Esc schließt ebenfalls
     close->setObjectName(QStringLiteral("CloseSettings"));
-    close->setIcon(QIcon(tintedIcon(QStringLiteral("Window_Close"), QColor(dark ? 0xEBEBF0 : 0x3C3C43), 16)));
-    close->setIconSize(QSize(16, 16));
-    close->setFixedSize(30, 30);
+    close->setIcon(designIcon(QStringLiteral("Window_Close"), &Theme::labelSecondary));
+    close->setIconSize(QSize(Token::IconM, Token::IconM));
+    close->setFixedSize(28, 28);
     close->setToolTip(T("Close"));
+    close->setAccessibleName(T("Close"));
     close->setCursor(Qt::PointingHandCursor);
     QObject::connect(close, &QToolButton::clicked, &dlg, &QDialog::accept);
     headLay->addWidget(close);
     lay->addWidget(head);
-    lay->addSpacing(6);
     lay->addWidget(pages);
 
-    // Karten mit Zeilen (Beschriftung links, Bedienelement rechts), Trennlinien dazwischen
+    // Karten (Material, r 20, innen 16/4) mit Zeilen: Label links, Bedienelement rechts, Trennlinie oberhalb
     struct Card
     {
         QVBoxLayout* rows;
         bool first = true;
     };
-    auto addCard = [](QVBoxLayout* page, const QString& heading) {
+    auto addCard = [&restyle](QVBoxLayout* page, const QString& heading) {
         if (!heading.isEmpty()) {
-            auto label = new QLabel(heading.toUpper());
-            label->setObjectName(QStringLiteral("SectionTitle"));
-            page->addSpacing(4);
+            auto label = sectionLabel(heading);
+            label->setContentsMargins(16, 8, 0, 4);
             page->addWidget(label);
         }
         auto frame = new QFrame;
         frame->setObjectName(QStringLiteral("Card"));
         auto rows = new QVBoxLayout(frame);
-        rows->setContentsMargins(14, 4, 14, 4);
+        rows->setContentsMargins(16, 4, 16, 4);
         rows->setSpacing(0);
         page->addWidget(frame);
+        // Kartenschatten elevation.card (0, 4, 24, 5 %) nur hell, im Dunkeln keiner (D-2)
+        restyle.push_back([frame] {
+            if (theme().dark) {
+                frame->setGraphicsEffect(nullptr);
+                return;
+            }
+            auto shadow = new QGraphicsDropShadowEffect;
+            shadow->setBlurRadius(24);
+            shadow->setOffset(0, 4);
+            shadow->setColor(QColor(0, 0, 0, 13));
+            frame->setGraphicsEffect(shadow);
+        });
         return std::make_shared<Card>(Card {rows});
     };
     auto addRow = [](const std::shared_ptr<Card>& c, const QString& label, QWidget* field, bool wide = false) {
-        if (!c->first) {
+        auto row = new QWidget;  // mit eigener Trennlinie oben: eine verborgene Zeile nimmt ihre Linie mit
+        auto v = new QVBoxLayout(row);
+        v->setContentsMargins(0, 0, 0, 0);
+        v->setSpacing(0);
+        if (!c->first) {  // Trennlinie nur unter einer Zeile darüber
             auto line = new QFrame;
             line->setObjectName(QStringLiteral("Separator"));
-            c->rows->addWidget(line);
+            v->addWidget(line);
         }
         c->first = false;
-        auto row = new QWidget;
-        auto h = new QHBoxLayout(row);
+        auto h = new QHBoxLayout;
+        v->addLayout(h);
         h->setContentsMargins(0, 8, 0, 8);
+        h->setSpacing(12);
         if (!label.isEmpty()) {
-            h->addWidget(new QLabel(label));
+            auto text = new QLabel(label);
+            setTextStyle(text, Text::Body);
+            text->setWordWrap(true);  // umbrechen statt abschneiden (T-8, längere deutsche Texte)
+            h->addWidget(text, 1);
+            if (field->accessibleName().isEmpty()) {
+                field->setAccessibleName(label);
+            }
         }
-        h->addStretch(wide ? 0 : 1);
+        else {
+            h->addStretch(wide ? 0 : 1);
+        }
         h->addWidget(field, wide ? 1 : 0);
         c->rows->addWidget(row);
+        return row;
+    };
+    auto hint = [](const QString& text) {
+        auto label = new QLabel(text);
+        label->setObjectName(QStringLiteral("Hint"));
+        label->setWordWrap(true);
+        label->setContentsMargins(16, 0, 16, 0);
+        return label;
+    };
+    auto view = viewParams();
+    auto toggle = [&](const std::shared_ptr<Card>& c, const QString& label, bool on, std::function<void(bool)> changed) {
+        auto sw = new Switch(on);
+        QObject::connect(sw, &QAbstractButton::toggled, sw, changed);
+        addRow(c, label, sw);
+    };
+    auto viewToggle = [&](const std::shared_ptr<Card>& c, const QString& label, const char* param, bool def) {
+        toggle(c, label, view->GetBool(param, def), [view, param](bool on) { view->SetBool(param, on); });
+    };
+    auto myToggle = [&](const std::shared_ptr<Card>& c, const QString& label, const char* param, bool on) {
+        toggle(c, label, on, [param, updateStyle](bool v) {
+            myParams()->SetBool(param, v);
+            Gui::Shell::applyAppearance();
+            updateStyle();
+        });
+    };
+    auto newPage = [pages] {
+        auto page = new QWidget;
+        auto l = new QVBoxLayout(page);
+        l->setContentsMargins(0, 0, 0, 0);
+        l->setSpacing(4);
+        pages->addWidget(page);
+        return l;
     };
 
-    auto view = viewParams();
+    // --- Seite General: Darstellung, Bedienungshilfen, Sprache, Projektordner ---
+    QVBoxLayout* general = newPage();
+    const Theme& t = theme();
+    auto lookCard = addCard(general, T("Display"));
+    addRow(lookCard, T("Color scheme"),
+           segmented({T("Automatic"), T("Light"), T("Dark")}, int(myParams()->GetInt("Appearance", 0)), [updateStyle](int i) {
+               myParams()->SetInt("Appearance", i);
+               Gui::Shell::applyAppearance();
+               updateStyle();
+           }));
+
+    // Liquid Glass (MyStyle GQ-2): stufenlos von Ultra Clear über Default bis Tinted, wirkt sofort
+    auto glass = new QWidget;
+    auto glassLay = new QGridLayout(glass);
+    glassLay->setContentsMargins(0, 0, 0, 0);
+    glassLay->setHorizontalSpacing(0);
+    glassLay->setVerticalSpacing(2);
+    auto level = new QSlider(Qt::Horizontal);
+    level->setRange(0, 100);
+    level->setValue(int(std::lround(t.glassLevel * 100)));
+    level->setFixedWidth(260);
+    level->setAccessibleName(T("Liquid Glass"));
+    glassLay->addWidget(level, 0, 0, 1, 3);
+    const std::pair<QString, Qt::Alignment> stops[] = {{T("Ultra Clear"), Qt::AlignLeft},
+                                                      {T("Default"), Qt::AlignHCenter},
+                                                      {T("Tinted"), Qt::AlignRight}};
+    for (int i = 0; i < 3; ++i) {
+        auto label = new QLabel(stops[i].first);
+        label->setObjectName(QStringLiteral("Secondary"));
+        setTextStyle(label, Text::Caption);
+        glassLay->addWidget(label, 1, i, stops[i].second);
+    }
+    QObject::connect(level, &QSlider::valueChanged, level, [](int v) {
+        // nahe der Mitte rastet der Standard ein
+        myParams()->SetFloat("GlassLevel", std::abs(v - 50) <= 2 ? 0.5 : v / 100.0);
+        reloadTheme();
+        for (QWidget* w : QApplication::allWidgets()) {
+            w->update();
+        }
+        for (auto view : Gui::getMainWindow()->findChildren<QGraphicsView*>()) {
+            if (view->scene()) {
+                view->scene()->update();
+            }
+        }
+    });
+    addRow(lookCard, T("Liquid Glass"), glass);
+    QStringList materials;
+    for (const char* name : Gui::Shell::bodyMaterialNames()) {
+        materials << T(name);
+    }
+    addRow(lookCard, T("Body material"),
+           segmented(materials, int(myParams()->GetInt("BodyMaterial", 0)), [](int i) { Gui::Shell::setBodyMaterial(i); }));
+    auto names = new Switch(myParams()->GetBool("ToolNames", false));
+    QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
+    addRow(lookCard, T("Show tool names"), names);
+
+    auto a11yCard = addCard(general, T("Accessibility"));
+    myToggle(a11yCard, T("Increase contrast"), "IncreaseContrast", t.increaseContrast);
+    myToggle(a11yCard, T("Reduce transparency"), "ReduceTransparency", t.reduceTransparency);
+    myToggle(a11yCard, T("Reduce motion"), "ReduceMotion", t.reduceMotion);
+
+    auto generalCard = addCard(general, T("General"));
+    // Sprache: FreeCAD lädt seine Übersetzungen beim Start, die Oberfläche wird dabei neu aufgebaut
+    auto restartHint = new QLabel(T("Takes effect after restarting MyCAD."));
+    restartHint->setObjectName(QStringLiteral("Hint"));
+    restartHint->setWordWrap(true);
+    // eigene Schreibweise jeder Sprache (S-5)
+    QWidget* restartRow = nullptr;
+    addRow(generalCard, T("Language"),
+           segmented({QStringLiteral("English"), QStringLiteral("Deutsch")}, Gui::Shell::language() == QLatin1String("German") ? 1 : 0,
+                     [&restartRow](int i) {
+                         Gui::Shell::setLanguage(i == 1 ? QStringLiteral("German") : QStringLiteral("English"));
+                         restartRow->show();
+                     }));
+    restartRow = addRow(generalCard, QString(), restartHint, true);
+    restartRow->hide();
+    auto folder = new QPushButton;
+    auto showFolder = [folder] {
+        QString path = Gui::Shell::projectsFolder();
+        folder->setText(path.replace(QDir::homePath(), QStringLiteral("~")));
+    };
+    showFolder();
+    folder->setToolTip(T("Designs in this folder appear on the start page; Save starts here"));
+    folder->setAutoDefault(false);
+    QObject::connect(folder, &QPushButton::clicked, folder, [folder, showFolder] {
+        const QString dir = QFileDialog::getExistingDirectory(folder->window(), T("Projects Folder"),
+                                                              Gui::Shell::projectsFolder());
+        if (!dir.isEmpty()) {
+            myParams()->SetASCII("ProjectsFolder", dir.toUtf8().constData());
+            App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General")
+                ->SetASCII("FileOpenSavePath", dir.toUtf8().constData());
+            showFolder();
+        }
+    });
+    addRow(generalCard, T("Projects folder"), folder);
+    general->addStretch();
 
     // --- Seite Navigation ---
-    auto navPage = new QWidget;
-    auto nav = new QVBoxLayout(navPage);
-    nav->setContentsMargins(0, 0, 0, 0);
-    nav->setSpacing(6);
-
+    QVBoxLayout* nav = newPage();
     auto styleCard = addCard(nav, T("Mouse & Trackpad"));
     auto style = new QComboBox;
-    style->setMinimumWidth(260);
     const std::string current = view->GetASCII("NavigationStyle", "Gui::RevitNavigationStyle");
     for (const auto& s : Styles) {
         style->addItem(T(s.label), QString::fromLatin1(s.type));
@@ -771,8 +973,7 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     helpLay->setContentsMargins(0, 0, 0, 0);
     helpLay->setSpacing(6);
     addRow(styleCard, QString(), help, true);
-    const QColor iconColor(secondary);
-    auto showHelp = [help, helpLay, iconColor](int index) {
+    auto showHelp = [helpLay](int index) {
         if (index < 0 || index >= int(std::size(Styles))) {
             return;
         }
@@ -820,7 +1021,8 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
             h->setContentsMargins(0, 0, 0, 0);
             h->setSpacing(10);
             auto glyph = new QLabel;
-            glyph->setPixmap(tintedIcon(QString::fromLatin1(icon), iconColor, 18));
+            glyph->setPixmap(designIcon(QString::fromLatin1(icon), &Theme::labelSecondary)
+                                 .pixmap(QSize(Token::IconM, Token::IconM), glyph->devicePixelRatioF()));
             h->addWidget(glyph);
             auto name = new QLabel(T(names[i++]));
             name->setFixedWidth(86);
@@ -831,18 +1033,15 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
         }
     };
     showHelp(style->currentIndex());
+    restyle.push_back([style, showHelp] { showHelp(style->currentIndex()); });  // Symbole in der neuen Farbe
     QObject::connect(style, &QComboBox::highlighted, help, showHelp);
     QObject::connect(style, &QComboBox::currentIndexChanged, help, [style, view, showHelp](int i) {
         view->SetASCII("NavigationStyle", style->itemData(i).toString().toStdString());
         showHelp(i);
     });
     new EventHook(style->view(), QEvent::Hide, [style, showHelp] { showHelp(style->currentIndex()); });
-    auto trackpadNote = new QLabel(T("On a trackpad, two-finger scrolling acts as the scroll wheel. "
-                                     "Keys that act as mouse buttons are set up under Keys."));
-    trackpadNote->setObjectName(QStringLiteral("Hint"));
-    trackpadNote->setWordWrap(true);
-    trackpadNote->setContentsMargins(4, 0, 4, 0);
-    nav->addWidget(trackpadNote);
+    nav->addWidget(hint(T("On a trackpad, two-finger scrolling acts as the scroll wheel. "
+                          "Keys that act as mouse buttons are set up under Keys.")));
 
     auto viewCard = addCard(nav, T("View"));
     addRow(viewCard, T("Camera"),
@@ -864,54 +1063,7 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     center->setCurrentIndex(static_cast<int>(view->GetInt("RotationMode", 3)));
     QObject::connect(center, &QComboBox::currentIndexChanged, [view](int i) { view->SetInt("RotationMode", i); });
     addRow(viewCard, T("Rotate around"), center);
-    auto toggle = [&](const std::shared_ptr<Card>& c, const QString& label, const char* param, bool def) {
-        auto sw = new Switch(view->GetBool(param, def));
-        QObject::connect(sw, &QAbstractButton::toggled, [view, param](bool on) { view->SetBool(param, on); });
-        addRow(c, label, sw);
-    };
-    toggle(viewCard, T("Animate view changes"), "UseNavigationAnimations", true);
-    addRow(viewCard, T("Glass"),
-           segmented({T("Tinted"), T("Clear")}, int(myParams()->GetInt("GlassClear", 0)),
-                     [](int i) { Gui::Shell::setGlass(i); }));
-    auto names = new Switch(myParams()->GetBool("ToolNames", false));
-    QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
-    addRow(viewCard, T("Show tool names"), names);
-    QStringList materials;
-    for (const char* name : Gui::Shell::bodyMaterialNames()) {
-        materials << T(name);
-    }
-    addRow(viewCard, T("Body material"),
-           segmented(materials, int(myParams()->GetInt("BodyMaterial", 0)), [](int i) { Gui::Shell::setBodyMaterial(i); }));
-    auto folder = new QPushButton;
-    auto showFolder = [folder] {
-        QString path = Gui::Shell::projectsFolder();
-        folder->setText(path.replace(QDir::homePath(), QStringLiteral("~")));
-    };
-    showFolder();
-    folder->setToolTip(T("Designs in this folder appear on the start page; Save starts here"));
-    QObject::connect(folder, &QPushButton::clicked, folder, [folder, showFolder] {
-        const QString dir = QFileDialog::getExistingDirectory(folder->window(), T("Projects Folder"),
-                                                              Gui::Shell::projectsFolder());
-        if (!dir.isEmpty()) {
-            myParams()->SetASCII("ProjectsFolder", dir.toUtf8().constData());
-            App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General")
-                ->SetASCII("FileOpenSavePath", dir.toUtf8().constData());
-            showFolder();
-        }
-    });
-    addRow(viewCard, T("Projects folder"), folder);
-
-    // Sprache: FreeCAD lädt seine Übersetzungen beim Start, die Oberfläche wird dabei neu aufgebaut
-    auto restartHint = new QLabel(T("Takes effect after restarting MyCAD."));
-    restartHint->setObjectName(QStringLiteral("Hint"));
-    restartHint->hide();
-    addRow(viewCard, T("Language"),
-           segmented({QStringLiteral("English"), QStringLiteral("Deutsch")}, Gui::Shell::language() == QLatin1String("German") ? 1 : 0,
-                     [restartHint](int i) {
-                         Gui::Shell::setLanguage(i == 1 ? QStringLiteral("German") : QStringLiteral("English"));
-                         restartHint->show();
-                     }));
-    addRow(viewCard, QString(), restartHint, true);
+    viewToggle(viewCard, T("Animate view changes"), "UseNavigationAnimations", true);
 
     auto speedCard = addCard(nav, T("Speed & Zoom"));
     auto slider = [](int lo, int hi, int value) {
@@ -927,28 +1079,21 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     auto zoomStep = slider(2, 50, int(std::max(0.02, view->GetFloat("ZoomStep", 0.2)) * 100));  // 0.02 … 0.5
     QObject::connect(zoomStep, &QSlider::valueChanged, [view](int v) { view->SetFloat("ZoomStep", v / 100.0); });
     addRow(speedCard, T("Zoom & scroll speed"), zoomStep);
-    toggle(speedCard, T("Zoom towards the cursor"), "ZoomAtCursor", true);
-    toggle(speedCard, T("Invert zoom (mouse wheel)"), "InvertZoom", true);
-    auto padZoom = new Switch(myParams()->GetBool("InvertTrackpadZoom", view->GetBool("InvertZoom", true)));
-    QObject::connect(padZoom, &QAbstractButton::toggled, [](bool on) { myParams()->SetBool("InvertTrackpadZoom", on); });
-    addRow(speedCard, T("Invert zoom (trackpad)"), padZoom);
+    viewToggle(speedCard, T("Zoom towards the cursor"), "ZoomAtCursor", true);
+    viewToggle(speedCard, T("Invert zoom (mouse wheel)"), "InvertZoom", true);
+    toggle(speedCard, T("Invert zoom (trackpad)"), myParams()->GetBool("InvertTrackpadZoom", view->GetBool("InvertZoom", true)),
+           [](bool on) { myParams()->SetBool("InvertTrackpadZoom", on); });
     nav->addStretch();
-    pages->addWidget(navPage);
 
     // --- Seite Tasten als Maustasten (cad.helper) ---
-    auto keyPage = new QWidget;
-    auto keys = new QVBoxLayout(keyPage);
-    keys->setContentsMargins(0, 0, 0, 0);
-    keys->setSpacing(6);
-    auto intro = new QLabel(QStringLiteral(
-        "Hold a key while moving on the trackpad to pan or rotate, like with a mouse button. "
-        "Works while the pointer is over the 3D view."));
-    intro->setObjectName(QStringLiteral("Hint"));
-    intro->setWordWrap(true);
-    keys->addWidget(intro);
+    QVBoxLayout* keys = newPage();
+    keys->addWidget(hint(T("Hold a key while moving on the trackpad to pan or rotate, like with a mouse button. "
+                           "Works while the pointer is over the 3D view.")));
     auto keyCard = addCard(keys, T("Keys as mouse buttons"));
     auto empty = new QLabel(T("No keys yet. Add one, e.g. Space as the middle mouse button."));
     empty->setObjectName(QStringLiteral("Secondary"));
+    empty->setWordWrap(true);
+    empty->setContentsMargins(0, 12, 0, 12);
     keyCard->rows->addWidget(empty);
 
     struct Entry
@@ -979,6 +1124,8 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
         h->setSpacing(8);
         auto chip = new QLabel(T(keyName(key)));
         chip->setObjectName(QStringLiteral("Chip"));
+        setTextStyle(chip, Text::Caption);
+        chip->setFixedHeight(Token::Chip);
         chip->setMinimumWidth(56);
         chip->setAlignment(Qt::AlignCenter);
         h->addWidget(chip);
@@ -990,23 +1137,28 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
             buttons->addItem(T(label));
         }
         buttons->setCurrentIndex(button);
+        buttons->setAccessibleName(T("Mouse button"));
         h->addWidget(buttons, 1);
         auto modes = new QComboBox;
         for (auto label : ModeLabels) {
             modes->addItem(T(label));
         }
         modes->setCurrentIndex(mode);
+        modes->setAccessibleName(T("Mode"));
         h->addWidget(modes, 1);
-        auto remove = new QPushButton(QStringLiteral("✕"));
+        auto remove = new QToolButton;
         remove->setObjectName(QStringLiteral("Remove"));
+        remove->setIcon(designIcon(QStringLiteral("Window_Close"), &Theme::labelSecondary));
+        remove->setIconSize(QSize(Token::IconM, Token::IconM));
+        remove->setFixedSize(28, 28);
         remove->setToolTip(T("Remove"));
-        remove->setAutoDefault(false);
+        remove->setAccessibleName(T("Remove"));
         h->addWidget(remove);
         keyCard->rows->addWidget(row);
         entries->push_back({key, buttons, modes, row});
         QObject::connect(buttons, &QComboBox::currentIndexChanged, save);
         QObject::connect(modes, &QComboBox::currentIndexChanged, save);
-        QObject::connect(remove, &QPushButton::clicked, row, [entries, row, save] {
+        QObject::connect(remove, &QToolButton::clicked, row, [entries, row, save] {
             std::erase_if(*entries, [row](const Entry& e) { return e.row == row; });
             row->deleteLater();
             save();
@@ -1024,15 +1176,11 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
         addEntry(o.value(QStringLiteral("key")).toInt(), button, mode);
     }
     empty->setVisible(entries->empty());
-    auto modesHint = new QLabel(QStringLiteral(
-        "Hold: the button is pressed while the key is down. Toggle: first press holds, second press releases. "
-        "Click and Double-click send a single click."));
-    modesHint->setObjectName(QStringLiteral("Hint"));
-    modesHint->setWordWrap(true);
-    keys->addWidget(modesHint);
+    keys->addWidget(hint(T("Hold: the button is pressed while the key is down. Toggle: first press holds, second press releases. "
+                           "Click and Double-click send a single click.")));
     auto addRowLay = new QHBoxLayout;
+    addRowLay->setContentsMargins(16, 4, 16, 0);
     auto add = new QPushButton(T("Add Key…"));
-    add->setObjectName(QStringLiteral("Plain"));
     add->setAutoDefault(false);
     QObject::connect(add, &QPushButton::clicked, &dlg, [&dlg, addEntry, save] {
         if (const int key = recordKey(&dlg)) {
@@ -1044,7 +1192,9 @@ QPushButton#Done, QPushButton#Plain { border-radius: 15px; padding: 6px 20px; }
     addRowLay->addStretch();
     keys->addLayout(addRowLay);
     keys->addStretch();
-    pages->addWidget(keyPage);
 
+    updateStyle();
+    window->setFocusPolicy(Qt::ClickFocus);  // kein Fokusring beim Öffnen; Tab führt zu den Bedienelementen
+    window->setFocus();
     dlg.exec();
 }

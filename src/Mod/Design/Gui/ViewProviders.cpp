@@ -55,6 +55,7 @@
 
 #include <algorithm>
 #include <Gui/Shell/Shell.h>
+#include <Gui/Shell/Theme.h>
 
 using Gui::Shell::T;
 
@@ -139,7 +140,8 @@ public:
         const double d = get();
         const QPointF from = viewer->toQPoint(viewer->getPointOnViewport(base));
         tip = viewer->toQPoint(viewer->getPointOnViewport(base + dir * float(d)));
-        const QColor accent(0, 122, 255);  // MyCAD ist immer hell
+        const Gui::Shell::Theme& th = Gui::Shell::theme();
+        const QColor accent = th.accent;
         p->setRenderHint(QPainter::Antialiasing);
         p->setPen(QPen(accent, 2.5, Qt::SolidLine, Qt::RoundCap));
         p->drawLine(from, tip);
@@ -148,7 +150,7 @@ public:
         p->drawEllipse(from, 3.5, 3.5);
 
         // Griff: Glas-Kreis mit Pfeil in Zugrichtung
-        p->setBrush(hovered || dragging ? accent : QColor(255, 255, 255, 240));
+        p->setBrush(hovered || dragging ? accent : th.glassOpaqueTop);
         p->setPen(QPen(accent, 2));
         p->drawEllipse(tip, 11, 11);
         QLineF axis(from, tip);
@@ -163,20 +165,19 @@ public:
         chevron.lineTo(tip + u * 3.5);
         chevron.lineTo(tip - u * 2.5 - n * 4);
         p->setBrush(Qt::NoBrush);
-        p->setPen(QPen(hovered || dragging ? QColor(Qt::white) : accent, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        p->setPen(QPen(hovered || dragging ? th.labelOnAccent : th.accentText, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         p->drawPath(chevron);
 
         // Maß-Kapsel neben dem Griff
-        QFont font(QStringLiteral("Inter"));
-        font.setPixelSize(12);
-        font.setWeight(QFont::DemiBold);
+        QFont font = Gui::Shell::textFont(Gui::Shell::Text::Caption, 600);
+        font.setFeature(QFont::Tag("tnum"), 1);  // Tabellenziffern: der Wert ändert sich beim Ziehen (T-5)
         p->setFont(font);
         const QString text = QString::fromStdString(Base::Quantity(d, Base::Unit::Length).getUserString());
         const QRectF label(tip + QPointF(18, -12), QSizeF(QFontMetricsF(font).horizontalAdvance(text) + 18, 24));
-        p->setPen(QPen(QColor(0, 0, 0, 30), 1));
-        p->setBrush(QColor(255, 255, 255, 240));
+        p->setPen(QPen(th.glassPopupBorder, 1));
+        p->setBrush(th.glassOpaqueTop);
         p->drawRoundedRect(label, 12, 12);
-        p->setPen(QColor(29, 29, 31));
+        p->setPen(th.labelPrimary);
         p->drawText(label, Qt::AlignCenter, text);
     }
 
@@ -544,7 +545,7 @@ public:
         }
         status = new QLabel;
         status->setWordWrap(true);
-        status->setStyleSheet(QStringLiteral("color: #FF3B30;"));
+        status->setStyleSheet(QStringLiteral("color: %1;").arg(Gui::Shell::theme().red.name()));
         form->addRow(status);
         addTaskBox(w, false);
         apply();
@@ -1274,7 +1275,7 @@ public:
         form->addRow(QString(), flip);
         status = new QLabel;
         status->setWordWrap(true);
-        status->setStyleSheet(QStringLiteral("color: #FF3B30;"));
+        status->setStyleSheet(QStringLiteral("color: %1;").arg(Gui::Shell::theme().red.name()));
         form->addRow(status);
         QObject::connect(type, &QComboBox::currentIndexChanged, [this] { apply(); });
         QObject::connect(flip, &QCheckBox::toggled, [this] { apply(); });

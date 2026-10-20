@@ -2,6 +2,7 @@
 
 #include "ViewCube.h"
 #include "Shell.h"
+#include "Theme.h"
 
 #include <Gui/Application.h>
 #include <Gui/Command.h>
@@ -43,16 +44,6 @@ const Face Faces[6] = {
     {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, "RIGHT", "Std_ViewRight"},
     {{-1, 0, 0}, {0, -1, 0}, {0, 0, 1}, "LEFT", "Std_ViewLeft"},
 };
-
-bool isDark()
-{
-    return false;  // MyCAD ist immer hell
-}
-
-QColor accent()
-{
-    return isDark() ? QColor(10, 132, 255) : QColor(0, 122, 255);
-}
 }  // namespace
 
 ViewCube::ViewCube()
@@ -78,7 +69,7 @@ void ViewCube::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
         return;
     }
     p->setRenderHint(QPainter::Antialiasing);
-    const bool dark = isDark();
+    const Theme& th = theme();
     const SbRotation toCamera = viewer->getCameraOrientation().inverse();
     auto project = [&](const SbVec3f& w) {
         SbVec3f c;
@@ -88,7 +79,7 @@ void ViewCube::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
 
     // weicher Schatten unter dem Würfel
     QRadialGradient shadow(QPointF(CenterX, CenterY + 46), 44);
-    shadow.setColorAt(0, QColor(0, 0, 0, dark ? 90 : 38));
+    shadow.setColorAt(0, th.shadow);
     shadow.setColorAt(1, QColor(0, 0, 0, 0));
     p->setPen(Qt::NoPen);
     p->setBrush(shadow);
@@ -106,9 +97,8 @@ void ViewCube::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
     std::iota(order.begin(), order.end(), 0);
     std::ranges::sort(order, [&](int a, int b) { return depth[a] < depth[b]; });
 
-    QFont font(QStringLiteral("Inter"));
+    QFont font = textFont(Text::Headline);  // im 100er-Raster der Seite, wird mit ihr skaliert
     font.setPixelSize(19);
-    font.setWeight(QFont::DemiBold);
     for (int i : order) {
         if (depth[i] < 0.02F) {
             continue;  // abgewandt
@@ -119,17 +109,12 @@ void ViewCube::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
                         project(f.n - f.u - f.v)};
         faces[i] = quad;
 
+        // Seiten wie Frost-Glas (glass.opaqueTop), zur Kamera hin heller; Hover: Akzentfläche
         const qreal light = 0.86 + 0.14 * depth[i];
-        QColor fill = dark ? QColor::fromRgbF(0.24 * light, 0.24 * light, 0.27 * light)
-                           : QColor::fromRgbF(0.97 * light, 0.975 * light, 0.985 * light);
-        if (hover == i) {
-            const QColor a = accent();
-            fill = QColor::fromRgbF(fill.redF() * 0.55 + a.redF() * 0.45, fill.greenF() * 0.55 + a.greenF() * 0.45,
-                                    fill.blueF() * 0.55 + a.blueF() * 0.45);
-        }
+        const QColor base = th.glassOpaqueTop;
+        QColor fill = hover == i ? th.accent : QColor::fromRgbF(base.redF() * light, base.greenF() * light, base.blueF() * light);
         p->setBrush(fill);
-        p->setPen(QPen(dark ? QColor(255, 255, 255, 40) : QColor(0, 0, 0, 38), 1.2, Qt::SolidLine, Qt::RoundCap,
-                       Qt::RoundJoin));
+        p->setPen(QPen(th.separator, 1.2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         p->drawPolygon(quad);
 
         if (depth[i] > 0.35F) {  // nur gut lesbare Seiten beschriften
@@ -138,8 +123,7 @@ void ViewCube::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
                 p->save();
                 p->setTransform(t, true);
                 p->setFont(font);
-                p->setPen(hover == i ? QColor(Qt::white)
-                                     : (dark ? QColor(235, 235, 245, 200) : QColor(60, 60, 67, 190)));
+                p->setPen(hover == i ? th.labelOnAccent : th.labelSecondary);
                 p->drawText(QRectF(0, 0, 100, 100), Qt::AlignCenter, Gui::Shell::T(f.label));
                 p->restore();
             }
@@ -147,8 +131,8 @@ void ViewCube::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
     }
 
     // Home-Knopf (Iso-Ansicht)
-    p->setBrush(hover == Home ? accent() : (dark ? QColor(58, 58, 64, 230) : QColor(255, 255, 255, 230)));
-    p->setPen(QPen(dark ? QColor(255, 255, 255, 40) : QColor(0, 0, 0, 30), 1));
+    p->setBrush(hover == Home ? th.accent : th.glassOpaqueTop);
+    p->setPen(QPen(th.glassPopupBorder, 1));
     p->drawEllipse(HomeRect);
     QPainterPath house;
     const QPointF c = HomeRect.center();
@@ -160,8 +144,7 @@ void ViewCube::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
     house.lineTo(c + QPointF(4, 5));
     house.lineTo(c + QPointF(4, -1.5));
     p->setBrush(Qt::NoBrush);
-    p->setPen(QPen(hover == Home ? QColor(Qt::white) : (dark ? QColor(245, 245, 247) : QColor(29, 29, 31)), 1.6,
-                   Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    p->setPen(QPen(hover == Home ? th.labelOnAccent : th.labelPrimary, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     p->drawPath(house);
 }
 

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "GlassPanel.h"
-
-#include <App/Application.h>
+#include "Theme.h"
 
 #include <QGraphicsProxyWidget>
 #include <QGraphicsSceneMouseEvent>
@@ -16,7 +15,9 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLWidget>
 #include <QPainter>
-#include <QStyleHints>
+#include <QVector3D>
+
+#include <algorithm>
 
 #include <memory>
 
@@ -25,7 +26,10 @@ using namespace Gui::Shell;
 namespace
 {
 
-constexpr qreal ShadowMargin = 28.0;  // logische Pixel um das Panel herum für den Schatten
+// glass.thickness.regular (Bars, Browser, Inspector, Palette) und elevation.glass
+constexpr float LensZone = 20, LensStrength = 18, Chroma = 0.08F, Saturation = 1.5F;
+constexpr qreal ShadowBlur = 28, ShadowY = 6;
+constexpr qreal ShadowMargin = ShadowBlur + ShadowY;  // logische Pixel um das Panel herum für den Schatten
 
 const char* QuadVs = R"(
 #version 120
@@ -55,12 +59,16 @@ void main() {
 }
 )";
 
+// MyStyle glass.frag: zum Rand hin nach innen gezogener Hintergrund mit leichter Farbaufspaltung, Vibrancy,
+// Tönung nach Glas-Stufe, Lichtkante oben links/unten rechts, abgedunkeltes äußerstes Pixel (iOS 27), Glanz von oben
 const char* GlassFs = R"(
 #version 120
 uniform sampler2D uTex;
 uniform float uFbH;
 uniform vec2 uCenter, uHalf, uCapOrigin, uCapSize;
-uniform float uRadius, uShadow, uDpr, uDark, uClear;
+uniform float uRadius, uShadow, uShadowY, uShadowAlpha, uDpr;
+uniform float uTint, uRim, uEdge, uSheen, uLensZone, uLensStrength, uChroma, uSaturation;
+uniform vec3 uTintColor;
 
 float sdRound(vec2 p, vec2 b, float r) {
     vec2 q = abs(p) - b + vec2(r);
@@ -79,31 +87,30 @@ void main() {
     vec2 n = normalize(vec2(sdRound(rel + vec2(e, 0.0), uHalf, uRadius) - sdRound(rel - vec2(e, 0.0), uHalf, uRadius),
                             sdRound(rel + vec2(0.0, e), uHalf, uRadius) - sdRound(rel - vec2(0.0, e), uHalf, uRadius)) + 1e-6);
     float inside = clamp(0.5 - d, 0.0, 1.0);
-    bool dark = uDark > 0.5;
 
     // weicher Schatten, leicht nach unten versetzt
-    float ds = sdRound(rel - vec2(0.0, 6.0 * uDpr), uHalf, uRadius);
-    float shadow = pow(1.0 - smoothstep(-uShadow * 0.3, uShadow, ds), 2.0) * (dark ? 0.45 : 0.16);
+    float ds = sdRound(rel - vec2(0.0, uShadowY), uHalf, uRadius);
+    float shadow = pow(1.0 - smoothstep(-uShadow * 0.3, uShadow, ds), 2.0) * uShadowAlpha;
 
-    // Linse: zum Rand hin wird der Hintergrund nach innen gezogen, mit leichter Farbaufspaltung
-    float t = -d;
-    float bend = 1.0 - smoothstep(0.0, 20.0 * uDpr, t);
-    vec2 off = n * bend * bend * 18.0 * uDpr;
-    vec3 col = vec3(blurred(p - off * 1.08).r, blurred(p - off).g, blurred(p - off * 0.92).b);
+    // Linse (Werte in logischen Pixeln)
+    float t = -d / uDpr;
+    float bend = 1.0 - smoothstep(0.0, uLensZone, t);
+    vec2 off = n * bend * bend * uLensStrength * uDpr;
+    vec3 col = vec3(blurred(p - off * (1.0 + uChroma)).r, blurred(p - off).g, blurred(p - off * (1.0 - uChroma)).b);
 
-    // Vibrancy + Tönung
+    // Vibrancy, dann die Tönung
     float l = dot(col, vec3(0.299, 0.587, 0.114));
-    col = mix(vec3(l), col, 1.4 + 0.15 * uClear);
-    // Tönung: Tinted deckt mehr ab (lesbarer), Clear lässt den Hintergrund stärker durch
-    col = dark ? mix(col, vec3(0.12, 0.12, 0.14), mix(0.42, 0.24, uClear)) : mix(col, vec3(1.0), mix(0.38, 0.17, uClear));
+    col = mix(vec3(l), col, uSaturation);
+    col = mix(col, uTintColor, uTint);
 
-    // Glanzkante: oben-links und unten-rechts heller
-    float rim = 1.0 - smoothstep(0.0, 1.6 * uDpr, t);
-    float spec = rim * (0.3 + 0.7 * abs(dot(n, normalize(vec2(-0.45, -1.0)))));
-    col += spec * (dark ? 0.32 : 0.55) * (1.0 + 0.3 * uClear);
-    // feiner Innenverlauf von oben
-    col += (1.0 - smoothstep(0.0, 2.0 * uHalf.y, rel.y + uHalf.y)) * (dark ? 0.03 : 0.05);
+    // äußerstes Pixel abgedunkelt, die Lichtkante direkt innen
+    float outer = 1.0 - smoothstep(0.0, 1.0, t);
+    float band = (1.0 - outer) * (1.0 - smoothstep(1.0, 2.6, t));
+    col += band * uRim * (0.3 + 0.7 * abs(dot(n, normalize(vec2(-0.45, -1.0)))));
+    col *= 1.0 - outer * uEdge;
 
+    // feiner Glanz von oben
+    col += (1.0 - smoothstep(0.0, 2.0 * uHalf.y, rel.y + uHalf.y)) * uSheen;
     gl_FragColor = vec4(min(col, 1.0), 1.0) * inside + vec4(0.0, 0.0, 0.0, shadow) * (1.0 - inside);
 }
 )";
@@ -138,8 +145,12 @@ public:
     }
 
     /// panel/fb in Gerätepixeln, Ursprung oben links. Gibt false zurück, wenn GL den Blur nicht kann.
-    bool draw(const QRect& panel, const QSize& fb, float radius, float shadow, float dpr, bool dark, bool clear)
+    bool draw(const QRect& panel, const QSize& fb, float radius, float dpr, bool textSurface)
     {
+        const Theme& th = theme();
+        const bool inactive = qApp->applicationState() != Qt::ApplicationActive;  // GM-4: Glas tritt zurück
+        const float shadow = float(ShadowBlur * dpr);
+        const float spread = float(th.glassBlur() / 24.0);  // Blur 12 / 24 / 36 px je Glas-Stufe
         if (!ok) {
             return false;
         }
@@ -184,8 +195,8 @@ public:
                 setupQuad(blur, -1, -1, 1, 1);
                 blur.setUniformValue("uTex", 0);
                 for (int i = 0; i < 2; ++i) {
-                    pass(pingB.get(), pingA->texture(), QVector2D(1.6f / small.width(), 0));
-                    pass(pingA.get(), pingB->texture(), QVector2D(0, 1.6f / small.height()));
+                    pass(pingB.get(), pingA->texture(), QVector2D(1.6f * spread / small.width(), 0));
+                    pass(pingA.get(), pingB->texture(), QVector2D(0, 1.6f * spread / small.height()));
                 }
 
                 glBindFramebuffer(GL_FRAMEBUFFER, prevFbo);
@@ -193,7 +204,8 @@ public:
                 glEnable(GL_BLEND);
                 glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
                 glass.bind();
-                const QRectF q = QRectF(panel).adjusted(-shadow, -shadow, shadow, shadow);
+                const float m = float(ShadowMargin * dpr);
+                const QRectF q = QRectF(panel).adjusted(-m, -m, m, m);
                 setupQuad(glass,
                           float(2 * q.left() / fb.width() - 1), float(1 - 2 * q.bottom() / fb.height()),
                           float(2 * q.right() / fb.width() - 1), float(1 - 2 * q.top() / fb.height()));
@@ -206,9 +218,19 @@ public:
                 glass.setUniformValue("uCapSize", QVector2D(cap.width(), cap.height()));
                 glass.setUniformValue("uRadius", radius);
                 glass.setUniformValue("uShadow", shadow);
+                glass.setUniformValue("uShadowY", float(ShadowY * dpr));
+                glass.setUniformValue("uShadowAlpha", float(th.shadow.alphaF()));
                 glass.setUniformValue("uDpr", dpr);
-                glass.setUniformValue("uDark", dark ? 1.f : 0.f);
-                glass.setUniformValue("uClear", clear ? 1.f : 0.f);
+                glass.setUniformValue("uTint", float(std::min(1.0, th.glassTintAmount(textSurface) + (inactive ? 0.1 : 0.0))));
+                glass.setUniformValue("uTintColor", QVector3D(th.glassTint.redF(), th.glassTint.greenF(), th.glassTint.blueF()));
+                glass.setUniformValue("uRim", float(th.glassRim() * (inactive ? 0.5 : 1.0)));
+                glass.setUniformValue("uEdge", float(th.glassEdge.alphaF()));
+                glass.setUniformValue("uSheen", th.dark ? 0.03f : 0.05f);
+                glass.setUniformValue("uLensZone", LensZone);
+                // Bewegung reduzieren: Linse halbiert
+                glass.setUniformValue("uLensStrength", th.reduceMotion ? LensStrength / 2 : LensStrength);
+                glass.setUniformValue("uChroma", Chroma);
+                glass.setUniformValue("uSaturation", Saturation);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
                 glass.release();
                 vbo.release();
@@ -269,22 +291,11 @@ private:
     std::unique_ptr<QOpenGLFramebufferObject> resolve, pingA, pingB;
 };
 
-bool isDark()
-{
-    return false;  // MyCAD ist immer hell
-}
-
-/// Einstellung "Glass": Clear (durchsichtiger) statt Tinted
-bool clearGlass()
-{
-    static ParameterGrp::handle grp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
-    return grp->GetInt("GlassClear", 0) == 1;
-}
-
 }  // namespace
 
-GlassPanel::GlassPanel(QWidget* content, qreal radius)
+GlassPanel::GlassPanel(QWidget* content, qreal radius, bool textSurface)
     : radius(radius)
+    , textSurface(textSurface)
     , proxy(new QGraphicsProxyWidget(this))
 {
     content->setAttribute(Qt::WA_TranslucentBackground);
@@ -307,6 +318,14 @@ void GlassPanel::setGeometry(const QRectF& rect)
     proxy->resize(size);
 }
 
+void GlassPanel::setRadius(qreal r)
+{
+    if (r != radius) {
+        radius = r;
+        update();
+    }
+}
+
 QRectF GlassPanel::boundingRect() const
 {
     return QRectF(QPointF(0, 0), size).adjusted(-ShadowMargin, -ShadowMargin, ShadowMargin, ShadowMargin);
@@ -315,27 +334,30 @@ QRectF GlassPanel::boundingRect() const
 void GlassPanel::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget* widget)
 {
     const QRectF local(QPointF(0, 0), size);
+    const qreal r = std::min({radius, size.width() / 2, size.height() / 2});  // Kapsel = Höhe / 2
     auto gl = qobject_cast<QOpenGLWidget*>(widget);
     auto view = gl ? qobject_cast<QGraphicsView*>(gl->parentWidget()) : nullptr;
     auto ctx = QOpenGLContext::currentContext();
 
     bool drawn = false;
-    if (view && ctx) {
+    if (view && ctx && !theme().reduceTransparency) {
         const qreal dpr = gl->devicePixelRatioF();
         const QRectF viewRect = view->mapFromScene(mapToScene(local)).boundingRect();
         const QRect px(QPoint(qRound(viewRect.x() * dpr), qRound(viewRect.y() * dpr)),
                        QSize(qRound(size.width() * dpr), qRound(size.height() * dpr)));
         painter->beginNativePainting();
-        drawn = GlassRenderer::forContext(ctx)->draw(px, gl->size() * dpr, float(radius * dpr),
-                                                     float(ShadowMargin * dpr), float(dpr), isDark(), clearGlass());
+        drawn = GlassRenderer::forContext(ctx)->draw(px, gl->size() * dpr, float(r * dpr), float(dpr), textSurface);
         painter->endNativePainting();
     }
 
-    if (!drawn) {  // ponytail: ohne Blur-fähiges GL nur halbtransparente Fläche
-        painter->setRenderHint(QPainter::Antialiasing);
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(isDark() ? QColor(30, 30, 34, 225) : QColor(250, 250, 252, 225));
-        painter->drawRoundedRect(local, radius, radius);
+    painter->setRenderHint(QPainter::Antialiasing);
+    if (!drawn) {  // ohne Blur-fähiges GL oder mit "Transparenz reduzieren"
+        paintGlass(*painter, local, r, textSurface);
+    }
+    else if (theme().increaseContrast) {  // Kontrast erhöhen: sichtbarer Rand um die Linse
+        painter->setPen(QPen(theme().glassBorder, 1));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(local.adjusted(0.5, 0.5, -0.5, -0.5), r, r);
     }
 }
 

@@ -4,6 +4,7 @@
 #include "GlassPanel.h"
 #include "ViewCube.h"
 #include "Settings.h"
+#include "Theme.h"
 
 #include <App/Application.h>
 #include <Gui/Action.h>
@@ -95,105 +96,156 @@ using namespace Gui::Shell;
 namespace
 {
 
-struct Theme
-{
-    bool dark;
-    QString text, secondary, accent, hover, pressed, field, fieldBorder, separator;
-};
+/// Breite von Browser und Seitenleisten. MyStyle-Abweichung von size.sidebarWidth (232): der Modellbaum braucht wie
+/// Fusions Browser Platz für Namen, Sichtbarkeits-Auge und Status-Symbole
+constexpr qreal BrowserWidth = 290;
 
-Theme theme()  // MyCAD ist immer hell, auch wenn der Desktop dunkel ist
-{
-    return {false, "#1D1D1F", "rgba(60,60,67,0.6)", "#007AFF", "rgba(0,0,0,0.06)",
-            "rgba(0,0,0,0.12)", "rgba(255,255,255,0.65)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.10)"};
-}
+void overrideFreeCadIcons();
 
-void overrideFreeCadIcons(const Theme& t);
-
-QString styleSheet(const Theme& t)
+/// Das Stylesheet der ganzen App; "@token" steht für die Farbe aus dem aktuellen Theme (MyStyle § 9).
+/// Schriftgrößen setzt setTextStyle(), nicht das Stylesheet (Qt-Stylesheets kennen keine Laufweite).
+QString styleSheet()
 {
-    return QStringLiteral(R"(
-* { color: %1; }
-QToolButton#GlassButton { border: none; border-radius: 10px; background: transparent; }
-QToolButton#GlassButton:hover { background: %4; }
-QToolButton#GlassButton:pressed { background: %5; }
+    const QString s = QStringLiteral(R"(
+* { color: @labelPrimary; }
+#GlassContent, #GlassContent QWidget { background: transparent; }
+QToolTip { background: @glassOpaqueTop; color: @labelPrimary; border: 1px solid @glassPopupBorder; border-radius: 8px; padding: 4px 8px; }
+
+/* Icon-Buttons in Glas-Bars: rund, Hover fill.tertiary, gedrückt fill.secondary, Tastaturfokus 2-px-Ring */
+QToolButton#GlassButton, QToolButton#WindowClose { border: 2px solid transparent; border-radius: 18px; background: transparent; }
+QToolButton#GlassButton:hover { background: @fillTertiary; }
+QToolButton#GlassButton:pressed, QToolButton#GlassButton:checked { background: @fillSecondary; }
+QToolButton#GlassButton:focus, QToolButton#WindowClose:focus, QToolButton#PaletteRow:focus { border-color: @focusRing; }
 QToolButton#GlassButton:disabled { background: transparent; }
-QToolButton#GlassButton[names="true"] { font-size: 10px; padding-top: 1px; }
+QToolButton#GlassButton[names="true"] { border-radius: 12px; padding-top: 2px; }
 QToolButton#GlassButton[names="true"]::menu-arrow { subcontrol-position: bottom center; bottom: 9px; }
-#GlassContent QToolButton#GlassProminent { border: none; border-radius: 15px; background: %3; color: white; font-weight: 600; padding: 0 14px; }
-#GlassContent QToolButton#GlassProminent:hover { background: %3; border: 2px solid rgba(255,255,255,0.35); }
-QFrame#TimelineMarker { background: %3; border-radius: 2px; }
-QToolButton#PaletteRow { border: none; border-radius: 8px; padding: 0 8px; text-align: left; background: transparent; }
-QToolButton#PaletteRow:hover { background: %4; }
-QToolButton#PaletteRow:checked { background: %5; }
-QToolButton#WindowClose { border: none; border-radius: 10px; background: transparent; }
-QToolButton#WindowClose:hover { background: #E5484D; }
-QToolButton#WindowClose:pressed { background: #C93A3F; }
-QLabel#WindowTitle { font-weight: 600; }
 QToolButton#GlassButton[popupMode="1"] { padding-right: 10px; }
 QToolButton#GlassButton::menu-button { border: none; width: 12px; }
 QToolButton#GlassButton::menu-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 9px; height: 9px; }
-QToolButton#GlassButton[error="true"] { background: rgba(255,59,48,0.28); }
-QFrame#GlassSeparator { background: %8; border: none; }
-#GlassContent QFrame#ToolbarSeparator { background: %2; border: none; margin: 4px 4px; }
-QLabel#SectionCaption { color: %2; font-size: 9px; font-weight: 600; letter-spacing: 0.6px; padding-top: 1px; }
-#GlassContent, #GlassContent QWidget { background: transparent; }
+QToolButton#GlassButton[error="true"] { background: @errorFill; }
+QToolButton#WindowClose:hover { background: @red; }
+QToolButton#WindowClose:pressed { background: @redPressed; }
+
+/* Prominent-Button (Akzentfläche): Kapsel 30 hoch, 16 seitlich, Callout SemiBold, Hover 1 px Weiß 35 %, gedrückt 15 % dunkler */
+QToolButton#GlassProminent, QPushButton#Prominent { border: 1px solid transparent; border-radius: 15px; background: @accent; color: @labelOnAccent;
+    font-weight: 600; padding: 0 15px; min-height: 28px; }
+QToolButton#GlassProminent:hover, QPushButton#Prominent:hover { border-color: @hoverRim; }
+QToolButton#GlassProminent:pressed, QPushButton#Prominent:pressed { background: @accentPressed; }
+QToolButton#GlassProminent:focus, QPushButton#Prominent:focus { border: 2px solid @focusRing; padding: 0 14px; }
+
+QFrame#TimelineMarker { background: @accent; border-radius: 2px; }
+/* Seitenleisten-Zeilen: r 12, Hover fill.tertiary, aktiv fill.secondary + SemiBold */
+QToolButton#PaletteRow { border: 2px solid transparent; border-radius: 12px; padding: 0 8px; text-align: left; background: transparent; }
+QToolButton#PaletteRow:hover { background: @fillTertiary; }
+QToolButton#PaletteRow:checked { background: @fillSecondary; font-weight: 600; }
+QFrame#GlassSeparator, QFrame#ToolbarSeparator { background: @separator; border: none; }
+QFrame#ToolbarSeparator { margin: 4px; }
+QLabel#Section, QLabel#Secondary, QLabel#StartDate, QLabel#StartCaption, QLabel#Hint { color: @labelSecondary; }
+
 #GlassContent QAbstractScrollArea { border: none; }
+/* Textfelder: 30 hoch, r 8, fill.tertiary, 10 seitlich, Fokus 2-px-Ring */
 #GlassContent QLineEdit, #GlassContent QAbstractSpinBox, #GlassContent QComboBox {
-    background: %6; border: 1px solid %7; border-radius: 7px; padding: 3px 6px; min-height: 20px;
+    background: @fillTertiary; border: 2px solid transparent; border-radius: 8px; padding: 2px 8px; min-height: 22px;
 }
-#GlassContent QLineEdit:focus, #GlassContent QAbstractSpinBox:focus { border: 2px solid %3; }
+/* MyStyle-Abweichung: Auswahlfelder in FreeCADs Werkzeug-Formularen als Feld (fill.tertiary) statt randlos,
+   weil dort kein Zeilenlabel links steht, an dem man den Pop-up-Button erkennt */
+#GlassContent QComboBox:hover { background: @fillSecondary; }
+#GlassContent QLineEdit:focus, #GlassContent QAbstractSpinBox:focus, #GlassContent QComboBox:focus { border-color: @focusRing; }
 #GlassContent QAbstractSpinBox::up-button, #GlassContent QAbstractSpinBox::down-button { width: 0; border: none; }
-#GlassContent QComboBox::drop-down { border: none; width: 20px; }
-#GlassContent QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
-#GlassContent QPushButton {
-    background: %6; border: 1px solid %7; border-radius: 7px; padding: 5px 12px;
+QComboBox::drop-down { border: none; width: 20px; }
+QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
+QLineEdit { selection-background-color: @accent; selection-color: @labelOnAccent; }
+
+/* Standard-Buttons: Kapsel, fill.tertiary, gedrückt fill.secondary, Hover 1 px Weiß 35 %; Standard-Aktion = Akzent */
+#GlassContent QPushButton, QDialog QPushButton, QMessageBox QPushButton {
+    background: @fillTertiary; border: 1px solid transparent; border-radius: 15px; min-height: 28px; padding: 0 15px; font-weight: 600; min-width: 48px;
 }
-#GlassContent QPushButton:hover { background: %4; }
-#GlassContent QPushButton:default { background: %3; color: white; border: none; }
-#GlassContent QTreeView::item { min-height: 26px; border-radius: 6px; }
-#GlassContent QTreeView::item:hover { background: %4; }
-#GlassContent QTreeView::item:selected { background: %3; color: white; }
-#GlassContent QHeaderView::section {
-    background: transparent; border: none; color: %2; font-weight: 600; padding: 4px 6px;
-}
+#GlassContent QPushButton:hover, QDialog QPushButton:hover, QMessageBox QPushButton:hover { border-color: @hoverRim; }
+#GlassContent QPushButton:pressed, QDialog QPushButton:pressed, QMessageBox QPushButton:pressed { background: @fillSecondary; }
+#GlassContent QPushButton:focus, QDialog QPushButton:focus, QMessageBox QPushButton:focus { border: 2px solid @focusRing; padding: 0 14px; }
+#GlassContent QPushButton:default, QDialog QPushButton:default, QMessageBox QPushButton:default { background: @accent; color: @labelOnAccent; }
+#GlassContent QPushButton:default:pressed, QDialog QPushButton:default:pressed, QMessageBox QPushButton:default:pressed { background: @accentPressed; }
+#GlassContent QPushButton:disabled, QDialog QPushButton:disabled { color: @labelTertiary; }
+
+#GlassContent QTreeView::item { min-height: 28px; border-radius: 8px; }
+#GlassContent QTreeView::item:hover { background: @fillTertiary; }
+#GlassContent QTreeView::item:selected { background: @accent; color: @labelOnAccent; }
+#GlassContent QTreeView::branch:selected, #GlassContent QTreeView::branch:hover { background: transparent; }
+#GlassContent QHeaderView::section { background: transparent; border: none; color: @labelSecondary; font-weight: 600; padding: 4px 8px; }
 #GlassContent QTabWidget::pane { border: none; }
-#GlassContent QTabBar::tab {
-    background: transparent; border: none; border-radius: 7px; padding: 5px 12px; margin: 2px; color: %2;
-}
-#GlassContent QTabBar::tab:selected { background: %6; color: %1; }
-#GlassContent QScrollBar:vertical { background: transparent; width: 8px; margin: 2px; }
-#GlassContent QScrollBar:horizontal { background: transparent; height: 8px; margin: 2px; }
-#GlassContent QScrollBar::handle { background: %5; border-radius: 3px; min-height: 24px; min-width: 24px; }
-#GlassContent QScrollBar::add-line, #GlassContent QScrollBar::sub-line { width: 0; height: 0; }
-#GlassContent QScrollBar::add-page, #GlassContent QScrollBar::sub-page { background: transparent; }
-#GlassContent QSplitter::handle { background: %8; height: 1px; }
+#GlassContent QTabBar::tab { background: transparent; border: none; border-radius: 8px; padding: 4px 12px; margin: 2px; color: @labelSecondary; }
+#GlassContent QTabBar::tab:selected { background: @fillSecondary; color: @labelPrimary; }
+#GlassContent QSplitter::handle { background: @separator; height: 1px; }
+
+/* Scrollbar: Overlay-Kapsel ohne Spur, 6 breit, beim Überfahren 9 */
+QScrollBar:vertical { background: transparent; width: 9px; margin: 2px 0; }
+QScrollBar:horizontal { background: transparent; height: 9px; margin: 0 2px; }
+QScrollBar::handle { background: @scrollbar; border-radius: 3px; min-height: 24px; min-width: 24px; }
+QScrollBar::handle:vertical { margin: 0 1px 0 2px; }
+QScrollBar::handle:horizontal { margin: 2px 0 1px 0; }
+QScrollBar::handle:hover { margin: 0; border-radius: 4px; }
+QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
+QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
 QDialogButtonBox { dialogbuttonbox-buttons-have-icons: 0; }
-QMenu { background: %9; border: 1px solid %7; border-radius: 10px; padding: 5px; }
-QMenu::item { padding: 6px 22px 6px 12px; border-radius: 6px; margin: 1px 0; }
-QMenu::item:selected { background: %3; color: white; }
-QMenu::item:disabled { color: %2; }
-QMenu::separator { height: 1px; background: %8; margin: 4px 8px; }
+
+/* Menüs: Text-Glas als Frost (eigenes Fenster ohne Blur), r 12, Innenabstand 4, Einträge 30 hoch r 8 */
+QMenu { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 @glassOpaqueTop, stop:1 @glassOpaqueBottom);
+    border: 1px solid @glassPopupBorder; border-radius: 12px; padding: 4px; }
+QMenu::item { padding: 6px 24px 6px 12px; border-radius: 8px; }
+QMenu::item:selected { background: @accent; color: @labelOnAccent; }
+QMenu::item:disabled { color: @labelTertiary; }
+QMenu::separator { height: 1px; background: @separator; margin: 4px 8px; }
 QMenu::icon { padding-left: 8px; }
-QMessageBox, QDialog { background: %9; }
-QMessageBox QPushButton, QDialog QPushButton { background: %6; border: 1px solid %7; border-radius: 7px; padding: 5px 16px; min-width: 64px; }
-QMessageBox QPushButton:default, QDialog QPushButton:default { background: %3; color: white; border: none; }
+QMessageBox, QDialog { background: @glassOpaqueTop; }
 QMessageBox[glass="true"] { background: transparent; }
-QMessageBox[glass="true"] QPushButton { border: none; border-radius: 15px; min-height: 30px; padding: 0 18px; min-width: 76px; background: %5; }
-QMessageBox[glass="true"] QPushButton:default { background: %3; color: white; }
-QCheckBox::indicator { width: 16px; height: 16px; border-radius: 5px; border: 1px solid %7; background: %6; }
-QCheckBox::indicator:checked { background: %3; border: none; image: url(:/mycad/icons/Check.svg); }
-QToolTip { background: %6; color: %1; border: 1px solid %7; border-radius: 6px; padding: 4px 8px; }
-Gui--NotificationLabel { background: %9; color: %1; border: 1px solid %7; border-radius: 12px; padding: 8px 10px; }
-)")
-        .arg(t.text, t.secondary, t.accent, t.hover, t.pressed, t.field, t.fieldBorder, t.separator)
-        .arg(t.dark ? QStringLiteral("#2C2C2E") : QStringLiteral("#FBFBFD"))
-        // Liquid Glass: konzentrische Rundungen (Knopf = Panelradius minus Abstand)
-        + QStringLiteral(R"(
-QToolButton#GlassButton, QToolButton#WindowClose { border-radius: 17px; }
-QToolButton#PaletteRow { border-radius: 12px; }
-#GlassContent QLineEdit, #GlassContent QAbstractSpinBox, #GlassContent QComboBox { border-radius: 10px; }
-#GlassContent QToolButton#GlassProminent { border-radius: 15px; }
+QMessageBox[glass="true"] QLabel#qt_msgbox_informativelabel { color: @labelSecondary; }
+/* Checkbox: 16, r 5, aus fill.secondary, an Akzent mit weißem Häkchen */
+QCheckBox::indicator { width: 16px; height: 16px; border-radius: 5px; border: none; background: @fillSecondary; }
+QCheckBox::indicator:checked { background: @accent; image: url(:/mycad/icons/Check.svg); }
+QCheckBox:focus { color: @accentText; }
+Gui--NotificationLabel { background: @glassOpaqueTop; color: @labelPrimary; border: 1px solid @glassPopupBorder; border-radius: 12px; padding: 8px 12px; }
+
+/* Startseite und Hilfe */
+QScrollArea#StartScroll, #StartContent, QTextBrowser#HelpArticle { background: transparent; border: none; }
+QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px; }
 )");
+    return themed(s);
+}
+
+/// Palette für alles, was das Stylesheet nicht erfasst (FreeCAD-Dialoge, Listen, Tabellen, Aufgaben-Köpfe)
+QPalette palette()
+{
+    const Theme& t = theme();
+    QPalette p = QApplication::style()->standardPalette();
+    const QColor base = t.glassOpaqueTop.rgb(), alternate = t.glassOpaqueBottom.rgb();  // deckend
+    const std::pair<QPalette::ColorRole, QColor> roles[] = {
+        {QPalette::Window, alternate}, {QPalette::Base, base}, {QPalette::AlternateBase, alternate},
+        {QPalette::Button, base}, {QPalette::Light, base}, {QPalette::Midlight, alternate},
+        {QPalette::ToolTipBase, base}, {QPalette::WindowText, t.labelPrimary}, {QPalette::Text, t.labelPrimary},
+        {QPalette::ButtonText, t.labelPrimary}, {QPalette::ToolTipText, t.labelPrimary},
+        {QPalette::BrightText, t.labelOnAccent}, {QPalette::PlaceholderText, t.labelTertiary},
+        {QPalette::Highlight, t.accent}, {QPalette::HighlightedText, t.labelOnAccent}, {QPalette::Link, t.accentText},
+        {QPalette::LinkVisited, t.accentText}, {QPalette::Mid, t.separatorOpaque}, {QPalette::Dark, t.gray},
+        {QPalette::Shadow, t.shadow}};
+    for (const auto& [role, color] : roles) {
+        p.setColor(role, color);
+    }
+    for (auto role : {QPalette::WindowText, QPalette::Text, QPalette::ButtonText}) {
+        p.setColor(QPalette::Disabled, role, t.labelTertiary);
+    }
+    return p;
+}
+
+/// Farbe als 0xRRGGBBAA für FreeCADs Parameter
+unsigned long packed(const QColor& c)
+{
+    return (unsigned long)(c.red()) << 24 | c.green() << 16 | c.blue() << 8 | 0xFF;
+}
+
+QColor mix(const QColor& a, const QColor& b, double f)
+{
+    return QColor::fromRgbF(a.redF() + (b.redF() - a.redF()) * f, a.greenF() + (b.greenF() - a.greenF()) * f,
+                            a.blueF() + (b.blueF() - a.blueF()) * f);
 }
 
 /// Aussehen der Körper (Einstellung "Body material"), Farben als 0xRRGGBBAA
@@ -231,57 +283,56 @@ void setDefaultMaterial()
     view->SetUnsigned("DefaultShapeLineColor", m.line);
 }
 
+/// Farben und Schrift aus dem Theme auf App, Palette, 3D-Ansicht und Skizzen übertragen (FreeCAD beobachtet die
+/// Parameter und färbt offene Ansichten sofort um)
 void applyTheme()
 {
-    const Theme t = theme();
+    reloadTheme();
+    const Theme& t = theme();
     if (!QFontDatabase::families().contains(QStringLiteral("Inter"))) {  // AppImage bringt Inter mit
         QFontDatabase::addApplicationFont(QString::fromStdString(App::Application::getHomePath())
                                           + QStringLiteral("share/fonts/Inter.ttc"));
     }
     if (QFontDatabase::families().contains(QStringLiteral("Inter"))) {
-        QFont font(QStringLiteral("Inter"));
-        font.setPixelSize(13);
-        QApplication::setFont(font);
+        QApplication::setFont(textFont(Text::Callout));
     }
-    qApp->setStyleSheet(styleSheet(t));
-    overrideFreeCadIcons(t);
+    QApplication::setPalette(palette());
+    qApp->setStyleSheet(styleSheet());
+    overrideFreeCadIcons();
     TreeWidget::reloadDocumentPixmap();  // der Baum hat sein Dokument-Icon schon beim Start geladen
 
-    // 3D-Hintergrund: ruhiger Verlauf passend zum Theme (Farben als 0xRRGGBBAA)
+    // 3D-Hintergrund = Backdrop (L0): ruhiger Verlauf, im Dunkeln dunkelgrau statt schwarz
     auto view = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
     view->SetBool("RadialGradient", false);
     view->SetBool("UseBackgroundColorMid", false);
-    view->SetUnsigned("BackgroundColor2", t.dark ? 0x2A2C31FFUL : 0xF4F5F7FFUL);
-    view->SetUnsigned("BackgroundColor3", t.dark ? 0x111214FFUL : 0xD5D9E0FFUL);
+    view->SetUnsigned("BackgroundColor2", packed(t.backgroundTop));
+    view->SetUnsigned("BackgroundColor3", packed(t.backgroundBottom));
     view->SetBool("Gradient", true);
     view->SetBool("ShowNaviCube", false);  // eigener ViewCube (Shell/ViewCube)
     view->SetInt("AntiAliasing", 3);       // MSAA 4x: glatte Kanten (8x lässt Coin auf Intel/Mesa Flächen verlieren)
-    // Auswahl in Akzentblau, aufgehellt (volles #007AFF überdeckt die Schattierung), Hover noch heller
-    view->SetUnsigned("SelectionColor", t.dark ? 0x409CFFFFUL : 0x4A9DFFFFUL);
-    view->SetUnsigned("HighlightColor", t.dark ? 0x7DB8FFFFUL : 0xA6CFFFFFUL);
-    // Achsen in Apples Systemfarben
-    view->SetUnsigned("AxisXColor", t.dark ? 0xFF453AFFUL : 0xFF3B30FFUL);
-    view->SetUnsigned("AxisYColor", t.dark ? 0x30D158FFUL : 0x34C759FFUL);
-    view->SetUnsigned("AxisZColor", t.dark ? 0x0A84FFFFUL : 0x007AFFFFUL);
+    // MyStyle: kein Token für Auswahl/Vorauswahl im 3D-Bild. Akzent aufgehellt (volles Blau überdeckt die
+    // Schattierung), Vorauswahl noch heller
+    view->SetUnsigned("SelectionColor", packed(mix(t.accent, Qt::white, 0.3)));
+    view->SetUnsigned("HighlightColor", packed(mix(t.accent, Qt::white, t.dark ? 0.5 : 0.65)));
+    view->SetUnsigned("AxisXColor", packed(t.red));
+    view->SetUnsigned("AxisYColor", packed(t.green));
+    view->SetUnsigned("AxisZColor", packed(t.blue));
 
-    // Skizzenfarben wie in Fusion (FreeCADs Vorgaben sind für dunkle Hintergründe gedacht):
-    // unterbestimmt blau, voll bestimmt schwarz/weiß, Konstruktion orange, projiziert lila
-    const unsigned long ink = t.dark ? 0xF5F5F7FFUL : 0x1D1D1FFFUL;
-    const unsigned long soft = t.dark ? 0xC7C7CCFFUL : 0x3C3C43FFUL;
-    view->SetUnsigned("EditedEdgeColor", t.dark ? 0x5AA9FFFFUL : 0x1E73E8FFUL);
-    view->SetUnsigned("FullyConstrainedColor", ink);
-    view->SetUnsigned("FullyConstraintElementColor", ink);
-    view->SetUnsigned("ConstructionColor", 0xFF9500FFUL);
-    view->SetUnsigned("FullyConstraintConstructionElementColor", 0xC77700FFUL);
-    view->SetUnsigned("InternalAlignedGeoColor", 0x8E8E93FFUL);
-    view->SetUnsigned("FullyConstraintInternalAlignmentColor", 0x636366FFUL);
-    view->SetUnsigned("ExternalColor", 0xAF52DEFFUL);
-    view->SetUnsigned("ExternalDefiningColor", 0x8944ABFFUL);
-    view->SetUnsigned("SketchEdgeColor", soft);
-    view->SetUnsigned("SketchVertexColor", soft);
-    view->SetUnsigned("ConstrainedDimColor", soft);
-    view->SetUnsigned("ConstrainedIcoColor", soft);
-    view->SetUnsigned("CursorTextColor", soft);
+    // Skizzenfarben wie in Fusion (FreeCADs Vorgaben sind für dunkle Hintergründe gedacht): unterbestimmt blau,
+    // voll bestimmt schwarz (hell) bzw. weiß (dunkel), Konstruktion orange, projiziert lila; "voll bestimmt"
+    // jeweils in der kräftigeren Kontrast-Variante derselben Systemfarbe
+    view->SetUnsigned("EditedEdgeColor", packed(t.accentText));
+    view->SetUnsigned("FullyConstrainedColor", packed(t.labelPrimary));
+    view->SetUnsigned("FullyConstraintElementColor", packed(t.labelPrimary));
+    view->SetUnsigned("ConstructionColor", packed(t.orange));
+    view->SetUnsigned("FullyConstraintConstructionElementColor", packed(t.orangeIC));
+    view->SetUnsigned("InternalAlignedGeoColor", packed(t.gray));
+    view->SetUnsigned("FullyConstraintInternalAlignmentColor", packed(t.labelSecondary));
+    view->SetUnsigned("ExternalColor", packed(t.purple));
+    view->SetUnsigned("ExternalDefiningColor", packed(t.purpleIC));
+    for (const char* soft : {"SketchEdgeColor", "SketchVertexColor", "ConstrainedDimColor", "ConstrainedIcoColor", "CursorTextColor"}) {
+        view->SetUnsigned(soft, packed(t.labelSecondary));
+    }
 
     // B-Splines wie in Fusion: nur das Kontrollpolygon, keine Analyse-Überlagerungen (Kamm, Gewichte, Knoten)
     auto sketcher = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher/General");
@@ -289,113 +340,48 @@ void applyTheme()
     sketcher->SetBool("BSplinePoleWeightVisible", false);
     sketcher->SetBool("BSplineKnotMultiplicityVisible", false);
     sketcher->SetBool("BSplineDegreeVisible", false);
+    // Skizzenraster: feine Linien wie Trennlinien, jede n-te etwas kräftiger
+    sketcher->SetUnsigned("GridLineColor", packed(t.separatorOpaque));
+    sketcher->SetUnsigned("GridDivLineColor", packed(t.gray2));
     setDefaultMaterial();
     view->SetInt("DefaultShapeLineWidth", 1);
-
-    // ViewCube: hell/dunkel wie die Glass-Panels, runde Kanten, Inter, Akzentfarbe beim Überfahren
-    auto cube = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/NaviCube");
-    cube->SetInt("CubeSize", 112);
-    cube->SetFloat("ChamferSize", 0.1);
-    cube->SetFloat("BorderWidth", 0.6);
-    cube->SetFloat("FontZoom", 0.34);
-    cube->SetASCII("FontString", "Inter");
-    cube->SetInt("FontWeight", 600);
-    cube->SetBool("ShowCS", false);
-    cube->SetInt("InactiveOpacity", 90);
-    cube->SetInt("OffsetY", 6);
-    cube->SetUnsigned("BaseColor", t.dark ? 0x3A3B40F0UL : 0xF7F8FAF0UL);
-    cube->SetUnsigned("EmphaseColor", t.dark ? 0xEBEBF0FFUL : 0x3C3C43FFUL);
-    cube->SetUnsigned("HiliteColor", t.dark ? 0x0A84FFFFUL : 0x007AFFFFUL);
-}
-
-/// Bunte FreeCAD-Icons neutral einfärben, Schattierung bleibt erhalten.
-/// ponytail: Übergang bis zum eigenen Icon-Set (Phase 3)
-QIcon neutralIcon(const QIcon& icon, bool dark)
-{
-    QIcon out;
-    for (int s : {22, 44}) {
-        QImage img = icon.pixmap(s, s).toImage().convertToFormat(QImage::Format_ARGB32);
-        for (int y = 0; y < img.height(); ++y) {
-            auto line = reinterpret_cast<QRgb*>(img.scanLine(y));
-            for (int x = 0; x < img.width(); ++x) {
-                const QRgb c = line[x];
-                const double lum = (0.299 * qRed(c) + 0.587 * qGreen(c) + 0.114 * qBlue(c)) / 255.0;
-                const int g = dark ? int(120 + lum * 135) : int(35 + lum * 165);
-                line[x] = qRgba(g, g, g, qAlpha(c));
-            }
-        }
-        out.addPixmap(QPixmap::fromImage(img));
-        // Deaktiviert: deutlich blasser, damit man sieht, was gerade nicht anklickbar ist
-        QImage faded = img;
-        for (int y = 0; y < faded.height(); ++y) {
-            auto line = reinterpret_cast<QRgb*>(faded.scanLine(y));
-            for (int x = 0; x < faded.width(); ++x) {
-                line[x] = qRgba(qRed(line[x]), qGreen(line[x]), qBlue(line[x]), qAlpha(line[x]) * 3 / 10);
-            }
-        }
-        out.addPixmap(QPixmap::fromImage(faded), QIcon::Disabled);
-    }
-    return out;
-}
-
-/// Eigenes MyCAD-Icon (src/Gui/Shell/icons, tools/make_icons.py) in der Textfarbe des Themes, sonst leer
-QIcon designIcon(const QString& name, const QString& color = {})
-{
-    QFile file(QStringLiteral(":/mycad/icons/%1.svg").arg(name));
-    if (!file.open(QIODevice::ReadOnly)) {
-        return {};
-    }
-    const QByteArray svg = file.readAll().replace("currentColor", (color.isEmpty() ? theme().text : color).toLatin1());
-    QSvgRenderer renderer(svg);
-    QIcon icon;
-    for (int s : {22, 44}) {
-        for (bool faded : {false, true}) {
-            QImage img(s, s, QImage::Format_ARGB32_Premultiplied);
-            img.fill(Qt::transparent);
-            QPainter p(&img);
-            p.setOpacity(faded ? 0.3 : 1.0);  // deaktiviert: blass
-            renderer.render(&p);
-            p.end();
-            icon.addPixmap(QPixmap::fromImage(img), faded ? QIcon::Disabled : QIcon::Normal);
-        }
-    }
-    return icon;
 }
 
 /// Icon für einen Befehl: eigenes MyCAD-Icon, sonst das FreeCAD-Icon neutral eingefärbt
 QIcon commandIcon(const QString& name, const QIcon& fallback)
 {
     QIcon icon = designIcon(name);
-    return icon.isNull() ? neutralIcon(fallback, theme().dark) : icon;
+    return icon.isNull() ? neutralIcon(fallback) : icon;
 }
 
 /// FreeCAD-Icons, die im Browser, in Menüs, Meldungen und im Skizzenbild auftauchen, durch eigene ersetzen.
 /// Der BitmapFactory-Cache wird vor jeder Datei gefragt, also gewinnen diese Einträge überall.
-void overrideFreeCadIcons(const Theme& t)
+void overrideFreeCadIcons()
 {
-    const QString grey = t.dark ? QStringLiteral("#AEAEB2") : QStringLiteral("#6E6E73");
+    const Theme& t = theme();
+    const QColor grey = t.labelSecondary, blue = t.accentText;  // Glyphen: Akzent als Vordergrund (C-2)
     struct Override
     {
         QByteArray freecad;
         QByteArray ours;
-        QString color;
+        QColor color;
     };
     std::vector<Override> overrides = {
         {"Document", "Tree_Document", grey},
-        {"Geofeaturegroup.svg", "Tree_Component", t.accent},
-        {"folder", "Tree_Folder", t.accent},
+        {"Geofeaturegroup.svg", "Tree_Component", blue},
+        {"folder", "Tree_Folder", blue},
         {"Std_CoordinateSystem", "Tree_Origin", grey},
         {"Std_Axis", "Tree_Axis", grey},
         {"Std_Plane", "Tree_Plane", grey},
         {"Std_Point", "Tree_Point", grey},
-        {"PartDesign_Body", "Tree_Body", t.accent},
-        {"Sketcher_Sketch", "Tree_Sketch", t.accent},
+        {"PartDesign_Body", "Tree_Body", blue},
+        {"Sketcher_Sketch", "Tree_Sketch", blue},
         {"TreeItemVisible", "Tree_Visible", grey},
         {"TreeItemInvisible", "Tree_Invisible", grey},
-        {"Sketcher_NotFullyConstrained", "Badge_Dot", QStringLiteral("#FF9500")},
-        {":/icons/Warning.svg", "Badge_Warning", QStringLiteral("#FF9500")},
-        {":/icons/info.svg", "Badge_Info", t.accent},
-        {":/icons/critical-info.svg", "Badge_Error", QStringLiteral("#FF3B30")},
+        {"Sketcher_NotFullyConstrained", "Badge_Dot", t.orange},
+        {":/icons/Warning.svg", "Badge_Warning", t.orange},
+        {":/icons/info.svg", "Badge_Info", blue},
+        {":/icons/critical-info.svg", "Badge_Error", t.red},
         {"Constraint_Horizontal", "Sketcher_ConstrainHorizontal", grey},
         {"Constraint_Vertical", "Sketcher_ConstrainVertical", grey},
         {"Constraint_Parallel", "Sketcher_ConstrainParallel", grey},
@@ -409,14 +395,14 @@ void overrideFreeCadIcons(const Theme& t)
     // Sketcher-Befehle heißen wie ihre FreeCAD-Bilder: so passen auch Menüs, Panel-Köpfe und Kontextmenüs
     for (const QString& file : QDir(QStringLiteral(":/mycad/icons")).entryList({QStringLiteral("Sketcher_*.svg")})) {
         const QByteArray name = file.chopped(4).toLatin1();
-        overrides.push_back({name, name, t.text});
+        overrides.push_back({name, name, t.labelPrimary});
     }
     for (const auto& o : overrides) {
         QFile file(QStringLiteral(":/mycad/icons/%1.svg").arg(QString::fromLatin1(o.ours)));
         if (!file.open(QIODevice::ReadOnly)) {
             continue;
         }
-        QSvgRenderer renderer(file.readAll().replace("currentColor", o.color.toLatin1()));
+        QSvgRenderer renderer(file.readAll().replace("currentColor", o.color.name().toLatin1()));
         QImage img(64, 64, QImage::Format_ARGB32_Premultiplied);
         img.fill(Qt::transparent);
         QPainter p(&img);
@@ -425,6 +411,29 @@ void overrideFreeCadIcons(const Theme& t)
         BitmapFactory().addPixmapToCache(o.freecad, QPixmap::fromImage(img));
     }
 }
+
+/// Symbol als Label, das beim Zeichnen die Theme-Farbe nimmt (Lupe, Fenstergriff)
+class IconLabel: public QWidget
+{
+public:
+    IconLabel(const QIcon& icon, int size)
+        : icon(icon)
+        , size(size)
+    {
+        setFixedSize(size, size);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter p(this);
+        icon.paint(&p, rect());
+    }
+
+private:
+    QIcon icon;
+    int size;
+};
 
 QWidget* content()
 {
@@ -569,15 +578,30 @@ void styleToolButton(QToolButton* btn)
     const bool dropdown = btn->popupMode() == QToolButton::MenuButtonPopup;
     btn->setToolButtonStyle(names ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonIconOnly);
     btn->setProperty("names", names);
+    setTextStyle(btn, Text::Caption);
     if (names) {
+        // zu lange Namen in zwei Zeilen umbrechen statt abschneiden (MyStyle T-8)
         const int width = dropdown ? 86 : 74;
-        QFont font = btn->font();
-        font.setPixelSize(10);  // wie im Stylesheet für die Beschriftung
-        btn->setText(QFontMetrics(font).elidedText(btn->property("label").toString(), Qt::ElideRight, width - 6));
-        btn->setFixedSize(width, 48);
+        const QFontMetrics fm(btn->font());
+        QString text = btn->property("label").toString();
+        if (fm.horizontalAdvance(text) > width - 8 && text.contains(QLatin1Char(' '))) {
+            int best = -1;
+            for (int i = text.indexOf(QLatin1Char(' ')); i >= 0; i = text.indexOf(QLatin1Char(' '), i + 1)) {
+                if (best < 0 || std::abs(2 * i - int(text.size())) < std::abs(2 * best - int(text.size()))) {
+                    best = i;
+                }
+            }
+            text = fm.elidedText(text.left(best), Qt::ElideRight, width - 8) + QLatin1Char('\n')
+                + fm.elidedText(text.mid(best + 1), Qt::ElideRight, width - 8);
+        }
+        else {
+            text = fm.elidedText(text, Qt::ElideRight, width - 8);
+        }
+        btn->setText(text);
+        btn->setFixedSize(width, 60);
     }
     else {
-        btn->setFixedSize(dropdown ? 44 : 34, 38);
+        btn->setFixedSize(dropdown ? 46 : Token::WindowButton, Token::WindowButton);
     }
     btn->style()->unpolish(btn);
     btn->style()->polish(btn);
@@ -744,7 +768,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         if (row) {
             auto sep = new QFrame;
             sep->setObjectName(QStringLiteral("ToolbarSeparator"));
-            sep->setFixedSize(9, toolNames() ? 36 : 28);
+            sep->setFixedSize(9, toolNames() ? 44 : 28);
             lay->addWidget(sep);
         }
         auto group = new QWidget;
@@ -755,8 +779,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         row->setSpacing(2);
         column->addLayout(row);
         if (!caption.isEmpty()) {
-            auto label = new QLabel(caption);
-            label->setObjectName(QStringLiteral("SectionCaption"));
+            auto label = sectionLabel(caption);
             label->setAlignment(Qt::AlignCenter);
             column->addWidget(label);
         }
@@ -788,6 +811,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
                 btn->setIcon(commandIcon(n, a->icon()));
                 btn->setToolTip(a->toolTip().isEmpty() ? a->text() : a->toolTip());
                 btn->setProperty("label", toolLabel(n, a));
+                btn->setAccessibleName(btn->property("label").toString());
                 if (btn->property("names").toBool()) {
                     styleToolButton(btn);
                 }
@@ -805,7 +829,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             btn->setProperty("command", QString::fromLatin1(name));
             btn->setMenu(menu);
             btn->setPopupMode(QToolButton::MenuButtonPopup);
-            btn->setIconSize(QSize(22, 22));
+            btn->setIconSize(QSize(Token::IconL, Token::IconL));
             pick(choices.front().first, action);
             styleToolButton(btn);
             btn->installEventFilter(QuickTip::instance());
@@ -827,7 +851,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             btn->setObjectName(QStringLiteral("GlassProminent"));
             btn->setText(T("Finish Sketch"));
             btn->setToolTip(T("Finish Sketch"));
-            btn->setFixedHeight(30);
+            btn->setFixedHeight(Token::ControlDesktop);
             QObject::connect(btn, &QToolButton::clicked, action, [action] {
                 QTimer::singleShot(0, action, &QAction::trigger);
             });
@@ -835,9 +859,10 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             continue;
         }
         btn->setIcon(commandIcon(QString::fromLatin1(name), action->icon()));
-        btn->setIconSize(QSize(22, 22));
+        btn->setIconSize(QSize(Token::IconL, Token::IconL));
         btn->setToolTip(action->toolTip().isEmpty() ? action->text() : action->toolTip());
         btn->setProperty("label", toolLabel(QString::fromLatin1(name), action));
+        btn->setAccessibleName(btn->property("label").toString());
         btn->setProperty("help", QString::fromLatin1(name));
         styleToolButton(btn);
         btn->installEventFilter(QuickTip::instance());
@@ -966,19 +991,21 @@ public:
             auto btn = new QToolButton;
             btn->setObjectName(QString::fromLatin1(name));
             btn->setIcon(designIcon(QString::fromLatin1(icon)));
-            btn->setIconSize(QSize(18, 18));
-            btn->setFixedSize(38, 38);
+            btn->setIconSize(QSize(Token::IconWindow, Token::IconWindow));
+            btn->setFixedSize(Token::WindowButton, Token::WindowButton);
             btn->setToolTip(tip);
+            btn->setAccessibleName(tip);
             btn->setCursor(Qt::ArrowCursor);
             QObject::connect(btn, &QToolButton::clicked, btn, [action] { QTimer::singleShot(0, action); });
             lay->addWidget(btn);
             return btn;
         };
-        // deutlicher Griff zum Verschieben (die Fläche um die Knöpfe allein ist zu schmal zum Treffen)
-        auto handle = new QLabel;
-        handle->setPixmap(designIcon(QStringLiteral("Window_Grip")).pixmap(18, 18));
-        handle->setFixedSize(26, 38);
-        handle->setAlignment(Qt::AlignCenter);
+        // deutlicher Griff zum Verschieben (die Fläche um die Knöpfe allein ist zu schmal zum Treffen), 30 breit
+        auto handle = new QWidget;
+        handle->setFixedSize(30, Token::WindowButton);
+        auto grip = new QHBoxLayout(handle);
+        grip->setContentsMargins(0, 0, 0, 0);
+        grip->addWidget(new IconLabel(designIcon(QStringLiteral("Window_Grip"), &Theme::labelSecondary), Token::IconWindow));
         handle->setCursor(Qt::OpenHandCursor);
         handle->setToolTip(T("Drag to move the window, double-click to maximize"));
         lay->addWidget(handle);
@@ -994,7 +1021,8 @@ public:
         });
         button("Window_Minimize", "GlassButton", T("Minimize"), [] { getMainWindow()->showMinimized(); });
         maximize = button("Window_Maximize", "GlassButton", T("Maximize"), toggleMaximized);
-        button("Window_Close", "WindowClose", T("Close"), [] { getMainWindow()->close(); });
+        // Schließen: rot beim Überfahren, Glyph dann weiß (autoRaise zeichnet das Icon im Zustand Active)
+        button("Window_Close", "WindowClose", T("Close"), [] { getMainWindow()->close(); })->setAutoRaise(true);
         getMainWindow()->installEventFilter(this);
         update();
     }
@@ -1056,68 +1084,16 @@ QString when(const QDateTime& t)
     return en.toString(t.date(), language() == QLatin1String("German") ? QStringLiteral("d. MMM yyyy") : QStringLiteral("MMM d, yyyy"));
 }
 
-/// Glasfläche für die Startseite, gerechnet wie der Glas-Shader der Panels im 3D-Fenster (GlassPanel.cpp):
-/// gleicher Schatten (28 px weich, 6 px nach unten), gleiche Tönung (Tinted/Clear) und Lichtkante.
-/// ponytail: ohne Hintergrund-Blur und Lichtbrechung; auf dem ruhigen Verlauf der Startseite sind beide unsichtbar
-void paintGlass(QPainter& p, const QRectF& r, qreal radius)
-{
-    constexpr qreal S = 28;  // wie ShadowMargin in GlassPanel.cpp
-    const bool dark = theme().dark;
-    const bool clear = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetInt("GlassClear", 0) == 1;
-    p.setRenderHint(QPainter::Antialiasing);
-    QPainterPath panel;
-    panel.addRoundedRect(r, radius, radius);
-
-    // Schatten nur außerhalb des Glases: Ringe, deren Deckkraft sich zur Shader-Kurve aufsummiert
-    auto curve = [&](qreal d) {
-        const qreal t = std::clamp((d + 0.3 * S) / (1.3 * S), 0.0, 1.0);
-        const qreal s = t * t * (3 - 2 * t);
-        return (1 - s) * (1 - s) * (dark ? 0.45 : 0.16);
-    };
-    QPainterPath outside;
-    outside.addRect(r.adjusted(-2 * S, -2 * S, 2 * S, 2 * S));
-    p.save();
-    p.setClipPath(outside.subtracted(panel));
-    p.setPen(Qt::NoPen);
-    qreal carry = 0;  // Rundungsrest weitertragen: die Alphawerte je Ring sind winzig
-    for (qreal k = S; k > -0.3 * S; k -= 1.5) {
-        const qreal a = (curve(k - 1.5) - curve(k)) * 255 + carry;
-        const int alpha = int(std::round(a));
-        carry = a - alpha;
-        p.setBrush(QColor(0, 0, 0, std::clamp(alpha, 0, 255)));
-        const qreal rr = std::max<qreal>(0, radius + k - 1.5);
-        p.drawRoundedRect(r.adjusted(-(k - 1.5), -(k - 1.5) + 6, k - 1.5, k - 1.5 + 6), rr, rr);
-    }
-    p.restore();
-
-    // Tönung wie im Shader: hell = Hintergrund zu 38 % (Clear 17 %) aufgehellt, dunkel = abgedunkelt
-    p.setPen(Qt::NoPen);
-    p.setBrush(dark ? QColor(31, 31, 36, int(255 * (clear ? 0.24 : 0.42))) : QColor(255, 255, 255, int(255 * (clear ? 0.17 : 0.38))));
-    p.drawPath(panel);
-    QLinearGradient top(r.topLeft(), r.bottomLeft());  // feiner Verlauf von oben
-    top.setColorAt(0, QColor(255, 255, 255, dark ? 8 : 13));
-    top.setColorAt(1, QColor(255, 255, 255, 0));
-    p.setBrush(top);
-    p.drawPath(panel);
-    // Lichtkante: oben und unten heller als an den Seiten
-    QLinearGradient rim(r.topLeft(), r.bottomLeft());
-    const int strong = dark ? 80 : 135, weak = dark ? 50 : 80;
-    rim.setColorAt(0, QColor(255, 255, 255, strong));
-    rim.setColorAt(0.5, QColor(255, 255, 255, weak));
-    rim.setColorAt(1, QColor(255, 255, 255, strong));
-    p.setPen(QPen(QBrush(rim), 1.5));
-    p.setBrush(Qt::NoBrush);
-    p.drawRoundedRect(r.adjusted(0.75, 0.75, -0.75, -0.75), radius, radius);
-}
-
 /// Glas-Panel als Widget; der Rand von Shadow Pixeln trägt den Schatten
 class GlassCard: public QWidget
 {
 public:
-    static constexpr int Shadow = 28;
+    static constexpr int Shadow = 34;  // Schatten 28 weich + 6 nach unten
 
-    explicit GlassCard(qreal radius)  // Inhalt: Layout mit mindestens Shadow Pixeln Rand
+    /// Inhalt: Layout mit mindestens Shadow Pixeln Rand; textSurface: Text-Glas (Seitenleiste, Artikel)
+    GlassCard(qreal radius, bool textSurface)
         : radius(radius)
+        , textSurface(textSurface)
     {}
     /// Panel (ohne Schattenrand) an diese Stelle setzen
     void place(const QRectF& panel)
@@ -1129,11 +1105,12 @@ protected:
     void paintEvent(QPaintEvent*) override
     {
         QPainter p(this);
-        paintGlass(p, QRectF(rect()).adjusted(Shadow, Shadow, -Shadow, -Shadow), radius);
+        paintGlass(p, QRectF(rect()).adjusted(Shadow, Shadow, -Shadow, -Shadow), radius, textSurface);
     }
 
 private:
     qreal radius;
+    bool textSurface;
 };
 
 /// Kachel: großes rundes Vorschaubild mit Schatten, darunter Name und Datum; Hover = Akzentring
@@ -1152,18 +1129,20 @@ public:
         setAttribute(Qt::WA_Hover);
         setCursor(Qt::PointingHandCursor);
         setToolTip(title);
+        setFocusPolicy(Qt::StrongFocus);
+        setAccessibleName(title);
         setFixedSize(Picture.width() + 2 * Pad, Picture.height() + 2 * Pad + 40);
         auto lay = new QVBoxLayout(this);
         lay->setContentsMargins(Pad + 2, Picture.height() + 2 * Pad - 2, Pad, 0);
-        lay->setSpacing(1);
-        QFont font = this->font();
-        font.setPixelSize(13);
-        font.setWeight(QFont::DemiBold);
+        lay->setSpacing(2);
+        const QFont font = textFont(Text::Callout, 600);
         auto name = new QLabel(QFontMetrics(font).elidedText(title, Qt::ElideMiddle, Picture.width()));
         name->setObjectName(QStringLiteral("StartName"));
+        name->setFont(font);
         lay->addWidget(name);
         auto sub = new QLabel(subtitle);
         sub->setObjectName(QStringLiteral("StartDate"));
+        setTextStyle(sub, Text::Caption);
         lay->addWidget(sub);
         lay->addStretch();
     }
@@ -1174,7 +1153,7 @@ public:
         const qreal dpr = qApp->devicePixelRatio();
         QPixmap result(Picture * dpr);
         result.setDevicePixelRatio(dpr);
-        result.fill(fill.isValid() ? fill : (theme().dark ? QColor(58, 58, 62) : QColor(236, 238, 242)));
+        result.fill(fill.isValid() ? fill : theme().glassOpaqueTop.rgb());
         QPainter p(&result);
         p.setRenderHint(QPainter::SmoothPixmapTransform);
         if (!image.isNull()) {
@@ -1196,11 +1175,14 @@ protected:
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
         const QRectF r(QPointF(Pad, Pad), QSizeF(Picture));
-        constexpr qreal radius = 14;
+        const Theme& t = theme();
+        constexpr qreal radius = Token::RadiusTile;
         p.setPen(Qt::NoPen);
-        for (int i = 8; i > 0; i -= 2) {  // weicher Schatten
-            p.setBrush(QColor(0, 0, 0, theme().dark ? 14 : 6));
-            p.drawRoundedRect(r.adjusted(-i, -i + 4, i, i + 4), radius + i, radius + i);
+        if (!t.dark) {  // Kartenschatten elevation.card (0, 4, 24, 5 %), im Dunkeln keiner (D-2)
+            for (int i = 8; i > 0; i -= 2) {
+                p.setBrush(QColor(0, 0, 0, 4));
+                p.drawRoundedRect(r.adjusted(-i, -i + 4, i, i + 4), radius + i, radius + i);
+            }
         }
         QPainterPath clip;
         clip.addRoundedRect(r, radius, radius);
@@ -1208,23 +1190,31 @@ protected:
         p.setClipPath(clip);
         p.drawPixmap(r.topLeft(), image);
         p.restore();
-        if (underMouse()) {  // Akzentring
-            p.setPen(QPen(QColor(theme().accent), 2.5));
-            p.setBrush(Qt::NoBrush);
-            p.drawRoundedRect(r.adjusted(-3, -3, 3, 3), radius + 3, radius + 3);
+        p.setBrush(Qt::NoBrush);
+        if (underMouse() || hasFocus()) {  // Auswahl-/Fokusring, konzentrisch 4 px außen
+            p.setPen(QPen(t.focusRing, 2));
+            p.drawRoundedRect(r.adjusted(-4, -4, 4, 4), radius + 4, radius + 4);
         }
         else {
-            p.setPen(QPen(theme().dark ? QColor(255, 255, 255, 26) : QColor(0, 0, 0, 16), 1));
-            p.setBrush(Qt::NoBrush);
+            p.setPen(QPen(t.materialBorder, 1));  // 1-px-Lichtkante wie bei Karten
             p.drawRoundedRect(r.adjusted(0.5, 0.5, -0.5, -0.5), radius, radius);
         }
     }
     bool event(QEvent* e) override
     {
-        if (e->type() == QEvent::HoverEnter || e->type() == QEvent::HoverLeave) {
+        if (e->type() == QEvent::HoverEnter || e->type() == QEvent::HoverLeave || e->type() == QEvent::FocusIn
+            || e->type() == QEvent::FocusOut) {
             update();
         }
         return QWidget::event(e);
+    }
+    void keyPressEvent(QKeyEvent* event) override  // Enter/Leertaste öffnen wie ein Klick
+    {
+        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter || event->key() == Qt::Key_Space) {
+            QTimer::singleShot(0, action);
+            return;
+        }
+        QWidget::keyPressEvent(event);
     }
     void mousePressEvent(QMouseEvent* event) override
     {
@@ -1247,8 +1237,8 @@ private:
 void paintBackdrop(QPainter& p, const QRect& r)
 {
     QLinearGradient base(0, 0, 0, r.height());
-    base.setColorAt(0, QColor(0xF4F5F7));
-    base.setColorAt(1, QColor(0xD5D9E0));
+    base.setColorAt(0, theme().backgroundTop);
+    base.setColorAt(1, theme().backgroundBottom);
     p.fillRect(r, base);
 }
 
@@ -1265,17 +1255,19 @@ public:
         installEventFilter(&grip);  // freie Fläche verschiebt das Fenster
 
         // --- Seitenleiste an der Stelle des Browsers ---
-        side = new GlassCard(20);
+        // Seitenleiste: Text-Glas, innen 8 seitlich, 16 oben, 14 unten
+        side = new GlassCard(Token::RadiusPanel, true);
         side->setParent(this);
         auto sideLay = new QVBoxLayout(side);
-        sideLay->setContentsMargins(GlassCard::Shadow + 14, GlassCard::Shadow + 16, GlassCard::Shadow + 14, GlassCard::Shadow + 14);
-        sideLay->setSpacing(4);
+        sideLay->setContentsMargins(GlassCard::Shadow + 8, GlassCard::Shadow + 16, GlassCard::Shadow + 8, GlassCard::Shadow + 14);
+        sideLay->setSpacing(2);
         auto title = new QLabel(QStringLiteral("MyCAD"));
-        title->setObjectName(QStringLiteral("StartTitle"));
+        setTextStyle(title, Text::Title2);
+        title->setContentsMargins(10, 0, 0, 0);
         sideLay->addWidget(title);
-        sideLay->addSpacing(14);
-        auto create = new QPushButton(designIcon(QStringLiteral("Std_New"), QStringLiteral("#FFFFFF")), T("New Design"));
-        create->setObjectName(QStringLiteral("StartNew"));
+        sideLay->addSpacing(16);
+        auto create = new QPushButton(designIcon(QStringLiteral("Std_New"), &Theme::labelOnAccent), T("New Design"));
+        create->setObjectName(QStringLiteral("Prominent"));
         create->setCursor(Qt::PointingHandCursor);
         QObject::connect(create, &QPushButton::clicked, this, [this] { runAndHide("Std_New"); });
         sideLay->addWidget(create);
@@ -1283,19 +1275,19 @@ public:
         auto row = [&](const char* icon, const QString& text) {
             auto b = new QToolButton;
             b->setObjectName(QStringLiteral("PaletteRow"));
-            b->setIcon(designIcon(QString::fromLatin1(icon)));
-            b->setIconSize(QSize(18, 18));
+            b->setIcon(designIcon(QString::fromLatin1(icon), &Theme::labelSecondary));
+            b->setIconSize(QSize(Token::IconM, Token::IconM));
             b->setText(text);
             b->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
             b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-            b->setFixedHeight(34);
+            b->setFixedHeight(32);
             sideLay->addWidget(b);
             return b;
         };
         QObject::connect(row("Std_Open", T("Open…")), &QToolButton::clicked, this, [this] { runAndHide("Std_Open"); });
-        sideLay->addSpacing(14);
-        auto library = new QLabel(T("LIBRARY"));
-        library->setObjectName(QStringLiteral("StartSection"));
+        sideLay->addSpacing(12);
+        auto library = sectionLabel(T("LIBRARY"));
+        library->setContentsMargins(10, 0, 0, 4);
         sideLay->addWidget(library);
         auto group = new QButtonGroup(this);
         const std::pair<const char*, QString> filters[] = {{"Window_Home", T("All Designs")},
@@ -1313,33 +1305,35 @@ public:
         });
         sideLay->addStretch();
         folderLabel = new QLabel;
-        folderLabel->setObjectName(QStringLiteral("StartHint"));
+        folderLabel->setObjectName(QStringLiteral("Hint"));
+        setTextStyle(folderLabel, Text::Caption);
+        folderLabel->setContentsMargins(10, 0, 0, 0);
         folderLabel->setWordWrap(true);
         sideLay->addWidget(folderLabel);
         side->installEventFilter(&grip);
 
         // --- Designs (unter den Glasflächen, damit deren Schatten sichtbar bleiben) ---
         scroll = new QScrollArea(this);
+        scroll->setObjectName(QStringLiteral("StartScroll"));
         scroll->setWidgetResizable(true);
         scroll->setFrameShape(QFrame::NoFrame);
         scroll->viewport()->setAutoFillBackground(false);
         scroll->lower();
 
         // --- oben: Suche an der Stelle der Toolbar, Fensterknöpfe wie im 3D-Fenster ---
-        searchCard = new GlassCard(24);
+        searchCard = new GlassCard(Token::RadiusCapsule, false);
         searchCard->setParent(this);
         auto searchLay = new QHBoxLayout(searchCard);
-        searchLay->setContentsMargins(GlassCard::Shadow + 16, GlassCard::Shadow, GlassCard::Shadow + 16, GlassCard::Shadow);
-        auto lens = new QLabel;
-        lens->setPixmap(designIcon(QStringLiteral("Start_Search"), QStringLiteral("#8E8E93")).pixmap(18, 18));
-        lens->setFixedSize(18, 18);
-        searchLay->addWidget(lens);
+        searchLay->setContentsMargins(GlassCard::Shadow + 16, GlassCard::Shadow, GlassCard::Shadow + 12, GlassCard::Shadow);
+        searchLay->addWidget(new IconLabel(designIcon(QStringLiteral("Start_Search"), &Theme::labelSecondary), Token::IconM));
         search = new QLineEdit;
         search->setObjectName(QStringLiteral("StartSearch"));
         search->setPlaceholderText(T("Search designs"));
+        search->setAccessibleName(T("Search designs"));
+        search->setClearButtonEnabled(true);  // Löschen-Kreuz rechts
         QObject::connect(search, &QLineEdit::textChanged, this, [this] { applyFilter(); });
         searchLay->addWidget(search);
-        controlsCard = new GlassCard(24);
+        controlsCard = new GlassCard(Token::RadiusCapsule, false);
         controlsCard->setParent(this);
         auto controlsLay = new QHBoxLayout(controlsCard);
         controlsLay->setContentsMargins(GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
@@ -1365,7 +1359,7 @@ public:
             auto fade = new QGraphicsOpacityEffect(this);
             setGraphicsEffect(fade);
             auto anim = new QPropertyAnimation(fade, "opacity", fade);
-            anim->setDuration(220);
+            anim->setDuration(Token::DurationFade);
             anim->setStartValue(0.0);
             anim->setEndValue(1.0);
             anim->setEasingCurve(QEasingCurve::OutCubic);
@@ -1402,13 +1396,13 @@ private:
     /// Glasflächen an dieselben Stellen wie Browser, Toolbar und Fensterknöpfe in layout()
     void place()
     {
-        const qreal m = 12, browserWidth = 290;
+        const qreal m = Token::WindowInset;
         const qreal barH = controls->sizeHint().height();  // so flach wie die Knöpfe selbst
-        side->place(QRectF(m, m, browserWidth, height() - 2 * m));
+        side->place(QRectF(m, m, BrowserWidth, height() - 2 * m));
         const QSizeF cs = controls->sizeHint();
         const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
         controlsCard->place(ctl);
-        const qreal left = m + browserWidth + 32;  // etwas mehr Luft zur Seitenleiste als zwischen den Panels
+        const qreal left = m + BrowserWidth + 32;  // etwas mehr Luft zur Seitenleiste als zwischen den Panels
         searchCard->place(QRectF(left, m, std::min<qreal>(380, ctl.left() - m - left), barH));  // so hoch wie die Kapsel
         const int top = int(m + barH + m);
         scroll->setGeometry(int(left) - StartTile::Pad, top, int(width() - left - m + StartTile::Pad), height() - top);
@@ -1424,24 +1418,6 @@ private:
 
     void rebuild()
     {
-        const Theme t = theme();
-        setStyleSheet(QStringLiteral(R"(
-QLabel#StartTitle { font-size: 22px; font-weight: 700; }
-QLabel#StartHeading { font-size: 22px; font-weight: 700; padding-left: 10px; }
-QScrollArea, #StartContent { background: transparent; }
-QLabel#StartSection { color: %1; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; padding-left: 8px; }
-QLabel#StartDate, QLabel#StartHint, QLabel#StartCaption { color: %1; font-size: 11px; }
-QLabel#StartCaption { font-size: 12px; padding-left: 10px; }
-QLabel#StartName { font-size: 13px; font-weight: 600; }
-QPushButton#StartNew { background: %2; color: white; border: none; border-radius: 17px; min-height: 34px;
-    font-weight: 600; text-align: left; padding-left: 14px; }
-QPushButton#StartNew:hover { background: %3; }
-QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px; font-size: 13px; }
-)")
-                          .arg(t.secondary, t.accent, t.dark ? "#3395FF" : "#1A86FF",
-                               t.dark ? "rgba(64,64,70,0.8)" : "rgba(255,255,255,0.85)",
-                               t.dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)"));
-
         auto page = new QWidget;
         page->setObjectName(QStringLiteral("StartContent"));
         auto lay = new QVBoxLayout(page);
@@ -1454,11 +1430,14 @@ QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px;
             boxLay->setContentsMargins(0, 10, 0, 10);
             boxLay->setSpacing(4);
             auto label = new QLabel(heading);
-            label->setObjectName(QStringLiteral("StartHeading"));
+            setTextStyle(label, Text::Title2);
+            label->setContentsMargins(StartTile::Pad, 0, 0, 0);
             boxLay->addWidget(label);
             if (!caption.isEmpty()) {
                 auto cap = new QLabel(caption);
                 cap->setObjectName(QStringLiteral("StartCaption"));
+                setTextStyle(cap, Text::Caption);
+                cap->setContentsMargins(StartTile::Pad, 0, 0, 0);
                 boxLay->addWidget(cap);
             }
             boxLay->addSpacing(6);
@@ -1475,6 +1454,8 @@ QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px;
         auto hint = [&](FlowLayout* flow, const QString& text) {
             auto label = new QLabel(text);
             label->setObjectName(QStringLiteral("StartCaption"));
+            setTextStyle(label, Text::Callout);
+            label->setContentsMargins(StartTile::Pad, 0, 0, 0);
             flow->addWidget(label);
         };
         auto openFile = [this](const QString& file) {
@@ -1585,17 +1566,18 @@ public:
         }
 
         // Seitenleiste mit allen Artikeln, nach Toolbar-Bereichen gruppiert
-        side = new GlassCard(20);
+        side = new GlassCard(Token::RadiusPanel, true);
         side->setParent(this);
         side->installEventFilter(&grip);
         auto sideLay = new QVBoxLayout(side);
-        sideLay->setContentsMargins(GlassCard::Shadow + 10, GlassCard::Shadow + 16, GlassCard::Shadow + 10, GlassCard::Shadow + 10);
+        sideLay->setContentsMargins(GlassCard::Shadow + 8, GlassCard::Shadow + 16, GlassCard::Shadow + 8, GlassCard::Shadow + 14);
         auto title = new QLabel(T("Help"));
-        title->setObjectName(QStringLiteral("StartTitle"));
-        title->setContentsMargins(4, 0, 0, 0);
+        setTextStyle(title, Text::Title2);
+        title->setContentsMargins(10, 0, 0, 0);
         sideLay->addWidget(title);
         sideLay->addSpacing(8);
         auto list = new QScrollArea;
+        list->setObjectName(QStringLiteral("StartScroll"));
         list->setWidgetResizable(true);
         list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         list->setFrameShape(QFrame::NoFrame);
@@ -1608,9 +1590,8 @@ public:
         rowGroup = new QButtonGroup(this);
         for (const QJsonValue g : groups) {
             const QJsonObject group = g.toObject();
-            auto caption = new QLabel(localized(group, "title").toString().toUpper());
-            caption->setObjectName(QStringLiteral("StartSection"));
-            caption->setContentsMargins(0, 10, 0, 2);
+            auto caption = sectionLabel(localized(group, "title").toString());
+            caption->setContentsMargins(10, 12, 0, 4);
             listLay->addWidget(caption);
             captions.append({caption, group.value(QStringLiteral("id")).toString()});
             for (int i = 0; i < articles.size(); ++i) {
@@ -1620,7 +1601,7 @@ public:
                 auto b = new QToolButton;
                 b->setObjectName(QStringLiteral("PaletteRow"));
                 b->setIcon(helpIcon(articles[i].value(QStringLiteral("icon")).toString()));
-                b->setIconSize(QSize(18, 18));
+                b->setIconSize(QSize(Token::IconM, Token::IconM));
                 b->setText(localized(articles[i], "title").toString());
                 b->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
                 b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -1637,7 +1618,7 @@ public:
         QObject::connect(rowGroup, &QButtonGroup::idClicked, this, [this](int i) { showArticle(i); });
 
         // Artikel
-        articleCard = new GlassCard(20);
+        articleCard = new GlassCard(Token::RadiusPanel, true);
         articleCard->setParent(this);
         auto articleLay = new QVBoxLayout(articleCard);
         articleLay->setContentsMargins(GlassCard::Shadow + 28, GlassCard::Shadow + 20, GlassCard::Shadow + 16, GlassCard::Shadow + 16);
@@ -1645,6 +1626,7 @@ public:
         view->setObjectName(QStringLiteral("HelpArticle"));
         view->setFrameShape(QFrame::NoFrame);
         view->setOpenLinks(false);
+        view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         view->viewport()->setAutoFillBackground(false);
         QObject::connect(view, &QTextBrowser::anchorClicked, this, [this](const QUrl& url) {
             if (url.scheme() == QLatin1String("help")) {
@@ -1654,17 +1636,16 @@ public:
         articleLay->addWidget(view);
 
         // oben: Suche an der Stelle der Toolbar, rechts Zurück und Fensterknöpfe wie überall
-        searchCard = new GlassCard(24);
+        searchCard = new GlassCard(Token::RadiusCapsule, false);
         searchCard->setParent(this);
         auto searchLay = new QHBoxLayout(searchCard);
-        searchLay->setContentsMargins(GlassCard::Shadow + 16, GlassCard::Shadow, GlassCard::Shadow + 16, GlassCard::Shadow);
-        auto lens = new QLabel;
-        lens->setPixmap(designIcon(QStringLiteral("Start_Search"), QStringLiteral("#8E8E93")).pixmap(18, 18));
-        lens->setFixedSize(18, 18);
-        searchLay->addWidget(lens);
+        searchLay->setContentsMargins(GlassCard::Shadow + 16, GlassCard::Shadow, GlassCard::Shadow + 12, GlassCard::Shadow);
+        searchLay->addWidget(new IconLabel(designIcon(QStringLiteral("Start_Search"), &Theme::labelSecondary), Token::IconM));
         search = new QLineEdit;
         search->setObjectName(QStringLiteral("StartSearch"));
         search->setPlaceholderText(T("Search help, e.g. donut, hole, rounded"));
+        search->setAccessibleName(T("Search help, e.g. donut, hole, rounded"));
+        search->setClearButtonEnabled(true);
         QObject::connect(search, &QLineEdit::textChanged, this, [this] { filter(); });
         QObject::connect(search, &QLineEdit::returnPressed, this, [this] {
             for (QAbstractButton* b : rowGroup->buttons()) {
@@ -1675,7 +1656,7 @@ public:
             }
         });
         searchLay->addWidget(search);
-        controlsCard = new GlassCard(24);
+        controlsCard = new GlassCard(Token::RadiusCapsule, false);
         controlsCard->setParent(this);
         auto controlsLay = new QHBoxLayout(controlsCard);
         controlsLay->setContentsMargins(GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
@@ -1683,30 +1664,16 @@ public:
         controls->installEventFilter(&grip);
         controlsLay->addWidget(controls);
 
-        const Theme t = theme();
-        setStyleSheet(QStringLiteral(R"(
-QLabel#StartTitle { font-size: 22px; font-weight: 700; }
-QScrollArea, #StartContent, QTextBrowser#HelpArticle { background: transparent; border: none; }
-QLabel#StartSection { color: %1; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; padding-left: 8px; }
-QLineEdit#StartSearch { background: transparent; border: none; padding: 4px 2px; font-size: 13px; }
-QScrollBar:vertical { background: transparent; width: 8px; margin: 2px; }
-QScrollBar::handle:vertical { background: rgba(0,0,0,0.18); border-radius: 3px; min-height: 30px; }
-QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::sub-page { background: none; height: 0; }
-)")
-                          .arg(t.secondary));
-        view->document()->setDefaultStyleSheet(QStringLiteral(R"(
-h1 { font-size: 26px; font-weight: 700; margin: 0; }
-h3 { font-size: 15px; font-weight: 650; margin-top: 10px; margin-bottom: 4px; }
-p, li, td { font-size: 14px; line-height: 150%; }
-.summary { font-size: 16px; color: #3C3C43; }
-.caption { font-size: 12px; color: #6E6E73; }
-.keywords { font-size: 12px; color: #8E8E93; }
-.option { font-weight: 600; padding-right: 14px; }
-a { color: %1; text-decoration: none; }
-)")
-                                                    .arg(t.accent));
         getMainWindow()->installEventFilter(this);
         hide();
+    }
+
+    /// Artikel in den Farben des aktuellen Themes neu setzen (Wechsel Hell/Dunkel)
+    void refresh()
+    {
+        if (current >= 0) {
+            showArticle(current);
+        }
     }
 
     /// Artikel zu einem Befehl (z. B. "Design_Extrude") oder einer Artikel-ID öffnen; leer = Übersicht
@@ -1739,17 +1706,18 @@ protected:
     }
     void resizeEvent(QResizeEvent*) override
     {
-        const qreal m = 12, browserWidth = 290;
+        const qreal m = Token::WindowInset;
         const qreal barH = controls->sizeHint().height();  // so flach wie die Knöpfe selbst
-        side->place(QRectF(m, m, browserWidth, height() - 2 * m));
+        side->place(QRectF(m, m, BrowserWidth, height() - 2 * m));
         const QSizeF cs = controls->sizeHint();
         const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
         controlsCard->place(ctl);
-        const qreal left = m + browserWidth + m;
-        const qreal searchLeft = m + browserWidth + 32;  // wie auf der Startseite
+        const qreal searchLeft = m + BrowserWidth + 32;  // wie auf der Startseite
         searchCard->place(QRectF(searchLeft, m, std::min<qreal>(420, ctl.left() - m - searchLeft), barH));  // so hoch wie die Kapsel
         const qreal top = m + barH + m;
-        articleCard->place(QRectF(searchLeft, top, width() - searchLeft - m, height() - top - m));  // bündig mit der Suche
+        // Lesebreite höchstens size.contentMaxWidth (560) plus Innenabstand und Scrollbar (W-4)
+        const qreal articleWidth = std::min<qreal>(width() - searchLeft - m, Token::ContentMaxWidth + 28 + 16 + 24);
+        articleCard->place(QRectF(searchLeft, top, articleWidth, height() - top - m));  // bündig mit der Suche
     }
     void keyPressEvent(QKeyEvent* event) override
     {
@@ -1772,8 +1740,21 @@ private:
         if (QAbstractButton* b = rowGroup->button(index)) {
             b->setChecked(true);
         }
+        current = index;
         const QJsonObject& a = articles[index];
         QTextDocument* doc = view->document();
+        // Desktop-Skala: Title 1, Headline, Body, Caption; Kurzbeschreibung als Body in Sekundärfarbe
+        doc->setDefaultStyleSheet(QStringLiteral(R"(
+h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.47px; margin: 0; }
+h3 { font-size: 15px; font-weight: 600; letter-spacing: -0.13px; margin-top: 12px; margin-bottom: 4px; }
+p, li, td { font-size: 14px; letter-spacing: -0.09px; line-height: 150%; }
+.summary { color: %1; }
+.caption { font-size: 12px; font-weight: 500; color: %1; }
+.keywords { font-size: 12px; font-weight: 500; color: %2; }
+.option { font-weight: 600; padding-right: 16px; }
+a { color: %3; text-decoration: none; }
+)")
+                                      .arg(theme().labelSecondary.name(), theme().labelTertiary.name(), theme().accentText.name()));
         const QUrl iconUrl(QStringLiteral("icon:%1").arg(index));
         doc->addResource(QTextDocument::ImageResource, iconUrl,
                          helpIcon(a.value(QStringLiteral("icon")).toString()).pixmap(48, 48).toImage());
@@ -1788,7 +1769,12 @@ private:
             const QString file = QStringLiteral(":/mycad/help/images/") + img.value(QStringLiteral("file")).toString();
             // selbst auf 560 px skalieren: mit width-Attribut reserviert Qt die Originalhöhe (große Lücke darunter)
             const QUrl picture(QStringLiteral("picture:%1").arg(file));
-            doc->addResource(QTextDocument::ImageResource, picture, QImage(file).scaledToWidth(560, Qt::SmoothTransformation));
+            QImage image = QImage(file).scaledToWidth(Token::ContentMaxWidth, Qt::SmoothTransformation);
+            if (theme().dark) {  // helle Bildschirmfotos im Dunkeln leicht abdunkeln (MyStyle D-4)
+                QPainter dim(&image);
+                dim.fillRect(image.rect(), QColor(0, 0, 0, 38));
+            }
+            doc->addResource(QTextDocument::ImageResource, picture, image);
             html += QStringLiteral("<p style=\"margin-bottom:0; line-height:100%\"><img src=\"%1\">%2</p>")
                         .arg(picture.toString(),
                              caption.isEmpty() ? QString() : QStringLiteral("<br><span class=\"caption\">%1</span>").arg(esc(caption)));
@@ -1873,6 +1859,7 @@ private:
     WindowControls* controls;
     QTextBrowser* view;
     QLineEdit* search;
+    int current = -1;
 };
 
 HelpPage* helpPage = nullptr;
@@ -1894,37 +1881,69 @@ void showStartPage()
     }
 }
 
-/// Glas-Alert (Liquid Glass): runde helle Fläche mit weichem Schatten und Lichtkante statt Fenster mit Titelleiste
+/// Glas-Alert (L3): Text-Glas als Frost (eigenes Fenster, kein Blur möglich), r 20, Schatten, statt Titelleiste
 class AlertPainter: public QObject
 {
 public:
-    static constexpr int Shadow = 18;
+    static constexpr int Shadow = 34;  // Schatten 28 weich + 6 nach unten
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
-        if (event->type() != QEvent::Paint) {
-            return false;
+        if (event->type() == QEvent::Paint) {
+            auto box = static_cast<QWidget*>(obj);
+            QPainter p(box);
+            paintGlass(p, QRectF(box->rect()).adjusted(Shadow, Shadow, -Shadow, -Shadow), Token::RadiusPanel, true, true);
         }
-        auto box = static_cast<QWidget*>(obj);
-        const bool dark = theme().dark;
-        QPainter p(box);
-        p.setRenderHint(QPainter::Antialiasing);
-        p.setPen(Qt::NoPen);
-        const QRectF r = QRectF(box->rect()).adjusted(Shadow, Shadow, -Shadow, -Shadow);
-        constexpr qreal radius = 22;
-        for (int i = Shadow; i > 0; i -= 2) {  // weicher Schatten, leicht nach unten
-            p.setBrush(QColor(0, 0, 0, dark ? 9 : 4));
-            p.drawRoundedRect(r.adjusted(-i, -i + 5, i, i + 5), radius + i, radius + i);
-        }
-        QLinearGradient fill(r.topLeft(), r.bottomLeft());
-        fill.setColorAt(0, dark ? QColor(52, 52, 58, 250) : QColor(255, 255, 255, 252));
-        fill.setColorAt(1, dark ? QColor(38, 38, 43, 250) : QColor(244, 245, 248, 252));
-        p.setBrush(fill);
-        p.setPen(QPen(dark ? QColor(255, 255, 255, 34) : QColor(0, 0, 0, 22), 1));
-        p.drawRoundedRect(r.adjusted(0.5, 0.5, -0.5, -0.5), radius, radius);
         return false;  // Text und Knöpfe zeichnet die Box selbst
     }
+};
+
+/// Abdunklung (color.scrim) über dem Hauptfenster, solange ein modaler Dialog oder Alert offen ist (L3)
+class Scrim: public QObject
+{
+public:
+    static Scrim* instance()
+    {
+        static Scrim* scrim = new Scrim;
+        return scrim;
+    }
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        auto dialog = static_cast<QWidget*>(obj);
+        if (event->type() == QEvent::Show && dialog->isWindow() && dialog->windowModality() != Qt::NonModal) {
+            open.insert(obj);
+        }
+        else if (event->type() == QEvent::Hide) {
+            open.remove(obj);
+        }
+        else {
+            return false;
+        }
+        MainWindow* mw = getMainWindow();
+        if (!overlay) {
+            overlay = new Overlay;
+            overlay->setParent(mw);
+            overlay->setAttribute(Qt::WA_TransparentForMouseEvents);
+        }
+        overlay->setGeometry(mw->rect());
+        overlay->setVisible(!open.isEmpty());
+        overlay->raise();
+        return false;
+    }
+
+private:
+    struct Overlay: QWidget
+    {
+        void paintEvent(QPaintEvent*) override
+        {
+            QPainter(this).fillRect(rect(), theme().scrim);
+        }
+    };
+    QPointer<Overlay> overlay;
+    QSet<QObject*> open;
 };
 
 /// Menüs mit runden Ecken: dafür brauchen sie einen transparenten, rahmenlosen Hintergrund.
@@ -1948,17 +1967,29 @@ protected:
                     window->setFormat(format);
                     window->destroy();
                 }
-                box->setContentsMargins(AlertPainter::Shadow + 8, AlertPainter::Shadow + 6, AlertPainter::Shadow + 8,
-                                        AlertPainter::Shadow + 4);
+                // Innenabstand 20 oben, 22 seitlich, 18 unten (MyStyle § 7.1); QMessageBox bringt selbst etwa 10 mit
+                box->setContentsMargins(AlertPainter::Shadow + 12, AlertPainter::Shadow + 10, AlertPainter::Shadow + 12,
+                                        AlertPainter::Shadow + 8);
                 box->installEventFilter(&painter);
+                // Titel Headline, Text Callout in Sekundärfarbe, 6 Abstand
                 if (!box->windowTitle().isEmpty() && !Qt::mightBeRichText(box->text())) {
-                    box->setText(QStringLiteral("<p style='font-size:15px; font-weight:600; margin-bottom:4px'>%1</p>%2")
+                    box->setText(QStringLiteral("<p style='font-size:15px; font-weight:600; letter-spacing:-0.13px; margin-bottom:6px'>%1</p>"
+                                                "<span style='color:%3'>%2</span>")
                                      .arg(box->windowTitle().toHtmlEscaped(),
-                                          box->text().toHtmlEscaped().replace(QLatin1Char('\n'), QStringLiteral("<br>"))));
+                                          box->text().toHtmlEscaped().replace(QLatin1Char('\n'), QStringLiteral("<br>")),
+                                          theme().labelSecondary.name()));
+                }
+                // höchstens 360 breit: Text umbrechen statt das Fenster zu verbreitern
+                if (auto label = box->findChild<QLabel*>(QStringLiteral("qt_msgbox_label"))) {
+                    label->setWordWrap(true);
+                    label->setMaximumWidth(360 - 2 * 22);
                 }
                 box->setIcon(QMessageBox::NoIcon);
                 box->style()->unpolish(box);  // Stylesheet-Regeln für [glass="true"] greifen erst nach neuem Polieren
                 box->style()->polish(box);
+            }
+            if (auto dialog = qobject_cast<QDialog*>(obj); dialog && dialog->parentWidget()) {
+                dialog->installEventFilter(Scrim::instance());
             }
             if (auto menu = qobject_cast<QMenu*>(obj)) {
                 menu->setAttribute(Qt::WA_TranslucentBackground);
@@ -2260,10 +2291,11 @@ QWidget* sketchPalette()
 {
     auto box = content();
     auto lay = new QVBoxLayout(box);
-    lay->setContentsMargins(14, 12, 14, 14);
-    lay->setSpacing(4);
+    lay->setContentsMargins(8, 14, 8, 14);  // wie die Seitenleisten: Zeilen 8 vom Rand (r 20 - 8 = r 12)
+    lay->setSpacing(2);
     auto title = new QLabel(T("Sketch Palette"));
-    title->setObjectName(QStringLiteral("WindowTitle"));
+    setTextStyle(title, Text::Headline);
+    title->setContentsMargins(10, 0, 0, 0);
     lay->addWidget(title);
     lay->addSpacing(4);
     const std::pair<const char*, const char*> rows[] = {
@@ -2281,8 +2313,8 @@ QWidget* sketchPalette()
         btn->setObjectName(QStringLiteral("PaletteRow"));
         btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
         btn->setText(T(rows[i].first));
-        btn->setIcon(designIcon(QString::fromLatin1(icons[i])));
-        btn->setIconSize(QSize(18, 18));
+        btn->setIcon(designIcon(QString::fromLatin1(icons[i]), &Theme::labelSecondary));
+        btn->setIconSize(QSize(Token::IconM, Token::IconM));
         btn->setCheckable(action->isCheckable());
         btn->setChecked(action->isChecked());
         btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -2298,7 +2330,7 @@ QWidget* sketchPalette()
         auto btn = new QToolButton;
         btn->setObjectName(QStringLiteral("GlassProminent"));
         btn->setText(T("Finish Sketch"));
-        btn->setFixedHeight(32);
+        btn->setFixedHeight(Token::ControlDesktop);
         btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         QObject::connect(btn, &QToolButton::clicked, finish, [finish] {
             QTimer::singleShot(0, finish, &QAction::trigger);
@@ -2342,14 +2374,13 @@ void layout()
         return;
     }
     const QRectF r = state.scene->sceneRect();
-    const qreal m = 12;
+    const qreal m = Token::WindowInset;
     GlassPanel* bar = state.sketchMode ? state.sketchBar : state.modelBar;
     state.modelBar->setVisible(!state.sketchMode);
     state.sketchBar->setVisible(state.sketchMode);
     const QSizeF bs = bar->content()->sizeHint();  // eine Reihe
     // Toolbar mittig zwischen Browser und Fensterknöpfen; reicht die Breite nicht, bricht sie in weitere Reihen um
-    const qreal browserWidth = 290;
-    const qreal left = state.browser ? m + browserWidth + m : m;
+    const qreal left = state.browser ? m + BrowserWidth + m : m;
     const qreal right = r.width() - m
         - (state.windowControls ? state.windowControls->content()->sizeHint().width() + m : 0);
     qreal barW = std::max<qreal>(100, std::min(bs.width(), right - left));
@@ -2368,6 +2399,8 @@ void layout()
         barW = hi;
     }
     bar->setGeometry(QRectF(left + (right - left - barW) / 2, m, barW, barH));
+    // eine Reihe: Kapsel; umgebrochen wäre eine Kapsel zu rund für die Knöpfe in den Ecken, dann Panel-Radius
+    bar->setRadius(barH > bs.height() ? Token::RadiusPanel : Token::RadiusCapsule);
 
     qreal bottom = r.height() - m;
     if (state.timeline) {
@@ -2381,7 +2414,7 @@ void layout()
 
     const qreal top = m;
     if (state.browser) {
-        state.browser->setGeometry(QRectF(m, top, browserWidth, bottom - top));
+        state.browser->setGeometry(QRectF(m, top, BrowserWidth, bottom - top));
     }
     qreal cubeTop = m;
     if (state.windowControls) {
@@ -2544,12 +2577,14 @@ void rebuildTimeline()
     // Wiedergabe-Knöpfe wie in Fusion: Anfang, zurück, vor, Ende
     if (gdoc && timelineHolder(doc) && total > 0) {
         const std::string docName = doc->getName();
-        auto play = [&](const char* icon, std::function<int(int)> target) {
+        auto play = [&](const char* icon, const QString& tip, std::function<int(int)> target) {
             auto btn = new QToolButton;
             btn->setObjectName(QStringLiteral("GlassButton"));
             btn->setIcon(designIcon(QString::fromLatin1(icon)));
-            btn->setIconSize(QSize(18, 18));
-            btn->setFixedSize(28, 36);
+            btn->setIconSize(QSize(Token::IconWindow, Token::IconWindow));
+            btn->setFixedSize(Token::WindowButton, Token::WindowButton);
+            btn->setToolTip(tip);
+            btn->setAccessibleName(tip);
             QObject::connect(btn, &QToolButton::clicked, btn, [docName, target] {
                 QTimer::singleShot(0, [docName, target] {
                     if (App::Document* d = App::GetApplication().getDocument(docName.c_str())) {
@@ -2559,10 +2594,10 @@ void rebuildTimeline()
             });
             lay->addWidget(btn);
         };
-        play("Timeline_Start", [](int) { return 0; });
-        play("Timeline_Back", [total](int m) { return std::max(0, (m < 0 ? total : m) - 1); });
-        play("Timeline_Forward", [](int m) { return m < 0 ? -1 : m + 1; });
-        play("Timeline_End", [](int) { return -1; });
+        play("Timeline_Start", T("Go to Start"), [](int) { return 0; });
+        play("Timeline_Back", T("Step Back"), [total](int m) { return std::max(0, (m < 0 ? total : m) - 1); });
+        play("Timeline_Forward", T("Step Forward"), [](int m) { return m < 0 ? -1 : m + 1; });
+        play("Timeline_End", T("Go to End"), [](int) { return -1; });
         auto sep = new QFrame;
         sep->setObjectName(QStringLiteral("GlassSeparator"));
         sep->setFixedSize(1, 22);
@@ -2591,12 +2626,20 @@ void rebuildTimeline()
             type = QStringLiteral("Design_CreateSketch");
         }
         btn->setIcon(commandIcon(type, vp ? vp->getIcon() : QIcon()));
-        btn->setIconSize(QSize(22, 22));
-        btn->setFixedSize(36, 36);
+        btn->setIconSize(QSize(Token::IconL, Token::IconL));
+        btn->setFixedSize(Token::WindowButton, Token::WindowButton);
         btn->setToolTip(QString::fromUtf8(obj->Label.getValue())
                         + (obj->isError() ? QStringLiteral("\n") + T(obj->getStatusString())
                                           : QString()));
+        btn->setAccessibleName(QString::fromUtf8(obj->Label.getValue()));
         btn->setProperty("error", obj->isError());
+        if (obj->isError()) {  // Farbe nie allein (C-5): Fehler-Symbol in die Ecke
+            QPixmap pm = btn->icon().pixmap(QSize(Token::IconL, Token::IconL), btn->devicePixelRatioF());
+            QPainter p(&pm);
+            designIcon(QStringLiteral("Badge_Error"), &Theme::red).paint(&p, QRect(9, 9, 11, 11));
+            p.end();
+            btn->setIcon(pm);
+        }
         auto suppressed = freecad_cast<App::PropertyBool*>(obj->getPropertyByName("Suppressed"));
         const bool rolledBack = marker >= 0 && index >= marker;
         if ((suppressed && suppressed->getValue()) || rolledBack) {
@@ -2777,11 +2820,23 @@ void hideChromeLater()
 
 void Gui::Shell::install()
 {
-    // MyCAD ist immer hell, unabhängig vom Farbschema des Desktops (KDE meldet Dunkel sonst über Palette und Portal)
-    QGuiApplication::styleHints()->setColorScheme(Qt::ColorScheme::Light);
-    QApplication::setPalette(QApplication::style()->standardPalette());
     installTranslations();  // vor dem Aufbau der Oberfläche, damit alle Beschriftungen gleich deutsch sind
-    applyTheme();
+    applyTheme();           // Hell/Dunkel nach Einstellung (Automatic folgt dem System)
+    // Automatic: Wechsel im System sofort übernehmen; Kontrast-Einstellung des Systems ebenso
+    QObject::connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, qApp, [] {
+        const bool dark = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+        if (dark != theme().dark && App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")
+                                            ->GetInt("Appearance", 0) == 0) {
+            QTimer::singleShot(0, applyAppearance);
+        }
+    });
+    // Fenster verliert den Fokus: Glas tritt zurück (MyStyle GM-4)
+    QObject::connect(qApp, &QGuiApplication::applicationStateChanged, qApp, [] {
+        if (state.scene) {
+            state.scene->update();
+        }
+        getMainWindow()->update();
+    });
 
     // Design-Modul laden (Create Sketch, Extrude, …), egal welche Workbench zuletzt aktiv war
     Application::Instance->activateWorkbench("DesignWorkbench");
@@ -2800,7 +2855,7 @@ void Gui::Shell::install()
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",
                  "#INSPECT", "Design_Measure", "Design_Section", "Std_ViewFitAll",
                  "#UTILITIES", "Design_Parameters", "Design_Appearance"}),
-        24);
+        Token::RadiusCapsule);
     state.sketchBar = new GlassPanel(
         toolbar({"#CREATE", "Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
                  "Sketcher_CompCreateConic", "Sketcher_CompCreateArc", "Sketcher_CompSlot",
@@ -2814,9 +2869,9 @@ void Gui::Shell::install()
                  "Sketcher_ConstrainParallel|Sketcher_ConstrainPerpendicular", "Sketcher_ConstrainTangent",
                  "Sketcher_ConstrainEqual", "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock",
                  "#", "Sketcher_LeaveSketch"}),
-        24);
+        Token::RadiusCapsule);
     state.viewCube = new ViewCube;
-    state.palette = new GlassPanel(sketchPalette(), 20);
+    state.palette = new GlassPanel(sketchPalette(), Token::RadiusPanel, true);
     qApp->installEventFilter(new MenuPolisher);
     qApp->installEventFilter(new HelpKey);
     qApp->installEventFilter(new SketchTaskFilter);
@@ -2829,7 +2884,7 @@ void Gui::Shell::install()
         if (wasVisible) {
             mw->show();
         }
-        state.windowControls = new GlassPanel(new WindowControls, 24);
+        state.windowControls = new GlassPanel(new WindowControls, Token::RadiusCapsule);
         static WindowGrip* grip = new WindowGrip;
         for (GlassPanel* p : {state.modelBar, state.sketchBar, state.windowControls}) {
             p->content()->installEventFilter(grip);
@@ -2841,17 +2896,17 @@ void Gui::Shell::install()
         auto lay = new QHBoxLayout(box);
         lay->setContentsMargins(10, 6, 10, 6);
         lay->setSpacing(2);
-        state.timeline = new GlassPanel(box, 24);
+        state.timeline = new GlassPanel(box, Token::RadiusCapsule);
     }
     if (QWidget* tree = takeDockWindow("Std_ComboView")) {
         static ContextMenus* menus = new ContextMenus;
         for (auto t : tree->findChildren<QTreeWidget*>()) {
             t->viewport()->installEventFilter(menus);
         }
-        state.browser = new GlassPanel(tree, 20);
+        state.browser = new GlassPanel(tree, Token::RadiusPanel, true);  // Text-Glas: bunter 3D-Inhalt läuft darunter
     }
     if (QWidget* tasks = takeDockWindow("Std_TaskView")) {
-        state.inspector = new GlassPanel(tasks, 20);
+        state.inspector = new GlassPanel(tasks, Token::RadiusPanel, true);
     }
 
     // Entf löscht Timeline-Einträge mit neu verbundener Kette (Design_Delete fällt sonst auf Std_Delete zurück)
@@ -3009,11 +3064,31 @@ void Gui::Shell::setBodyMaterial(int index)
     }
 }
 
-void Gui::Shell::setGlass(int clear)
+void Gui::Shell::applyAppearance()
 {
-    App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetInt("GlassClear", clear);
+    applyTheme();
+    // Baum: Icons aus dem BitmapFactory-Cache neu holen
+    for (App::Document* doc : App::GetApplication().getDocuments()) {
+        if (Gui::Document* gdoc = Application::Instance->getDocument(doc)) {
+            for (App::DocumentObject* obj : doc->getObjects()) {
+                if (auto vp = dynamic_cast<ViewProviderDocumentObject*>(gdoc->getViewProvider(obj))) {
+                    vp->signalChangeIcon();
+                }
+            }
+        }
+    }
+    rebuildTimeline();  // Fehler-Symbole und blasse Einträge sind fertige Bilder
+    if (startPage && startPage->isVisible()) {
+        startPage->open();  // Vorschaubilder neu
+    }
+    if (helpPage) {
+        helpPage->refresh();
+    }
     if (state.scene) {
         state.scene->update();
+    }
+    for (QWidget* w : QApplication::allWidgets()) {  // Icons und selbst gezeichnete Flächen lesen die Farben beim Zeichnen
+        w->update();
     }
 }
 
@@ -3028,7 +3103,7 @@ void Gui::Shell::setToolNames(bool on)
             styleToolButton(btn);
         }
         for (auto sep : bar->content()->findChildren<QFrame*>(QStringLiteral("ToolbarSeparator"))) {
-            sep->setFixedSize(9, on ? 36 : 28);
+            sep->setFixedSize(9, on ? 44 : 28);
         }
         // Abschnitte zuerst neu rechnen, sonst misst die Toolbar mit den alten Knopfgrößen (zweite Reihe abgeschnitten)
         for (auto group : bar->content()->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {

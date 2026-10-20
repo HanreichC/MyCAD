@@ -58,7 +58,7 @@ def store():
 
 run([
     ("start", lambda: report("beim Start")), ("shot empty", lambda: shot("empty")),
-    ("new", lambda: real_click(page().findChild(QtWidgets.QPushButton, "StartNew"))), ("wait", lambda: None),
+    ("new", lambda: real_click(page().findChild(QtWidgets.QPushButton, "Prominent"))), ("wait", lambda: None),
     ("after new", lambda: report("nach New Design")),
     ("body", save), ("save", store),
     ("close", lambda: App.closeDocument(App.ActiveDocument.Name)), ("wait", lambda: None),

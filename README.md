@@ -19,9 +19,11 @@ The workflow of Fusion 360 with the look of Liquid Glass. Built for Linux.
 
 Every surface in MyCAD is made of glass. The toolbar, browser, window buttons and inspector float above your model, so you can still see the model behind them. A custom GPU shader blurs the background, bends it at the edges like a real lens, and adds a thin highlight and a soft shadow. It all runs in real time while you orbit.
 
-If you want to see more of your design through the glass, switch to **Glass: Clear**. **Tinted** gives the glass a stronger tint.
+The **Liquid Glass** slider in Settings works like the one in iOS 27: slide it from **Ultra Clear** to see more of your design through the glass, or towards **Tinted** for a denser, easier-to-read glass. **Default** sits in the middle.
 
-Messages show up as floating glass alerts with no window frame and capsule-shaped buttons. Corners are rounded concentrically and icons are monochrome. The interface stays light even on a dark desktop.
+MyCAD comes in **Light** and **Dark**. **Automatic** follows your desktop. Dark mode is made for modeling: a calm dark-gray background instead of black, white lines for fully constrained sketches, and a subtle grid. Increase Contrast, Reduce Transparency and Reduce Motion are built in.
+
+Messages show up as floating glass alerts with no window frame and capsule-shaped buttons. Corners are rounded concentrically and icons are monochrome.
 
 <br>
 
@@ -100,7 +102,7 @@ New bodies come in **Space Gray** with a satin finish. You can pick **Clay**, **
 | | |
 |---|---|
 | **Platform** | Linux, developed and tested on CachyOS with KDE Plasma (Wayland) |
-| **Interface** | Liquid Glass with a GPU glass shader, light theme, English or German |
+| **Interface** | Liquid Glass with a GPU glass shader, light and dark mode, English or German |
 | **Model** | Parametric, with a global timeline, components and joints |
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
 | **Solids** | 16 create, 12 modify and 6 construction tools |

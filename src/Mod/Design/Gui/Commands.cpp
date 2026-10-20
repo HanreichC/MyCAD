@@ -82,6 +82,7 @@
 #include <functional>
 #include <memory>
 #include <Gui/Shell/Shell.h>
+#include <Gui/Shell/Theme.h>
 
 using Gui::Shell::T;
 
@@ -1906,8 +1907,8 @@ public:
                                                                         ? QString::fromUtf8(this->bodies.front()->Label.getValue())
                                                                         : T("%1 bodies").arg(this->bodies.size()))));
         auto heading = [lay](const QString& text) {
-            auto label = new QLabel(text);
-            label->setStyleSheet(QStringLiteral("font-weight: 600; margin-top: 8px;"));
+            auto label = Gui::Shell::sectionLabel(text);
+            label->setContentsMargins(0, 8, 0, 4);
             lay->addWidget(label);
         };
         heading(T("Material"));
@@ -1943,10 +1944,12 @@ public:
             auto swatch = new QToolButton;
             swatch->setFixedSize(30, 30);
             swatch->setToolTip(QString::fromLatin1(hex));
-            swatch->setStyleSheet(QStringLiteral("QToolButton { background: %1; border-radius: 15px; "
-                                                 "border: 1px solid rgba(128,128,128,0.35); }"
-                                                 "QToolButton:hover { border: 2px solid #007AFF; }")
+            // Farbfelder sind Inhalt (Körperfarben), nur Rand und Hover-Ring kommen aus dem Theme
+            swatch->setStyleSheet(Gui::Shell::themed(QStringLiteral("QToolButton { background: %1; border-radius: 15px; "
+                                                                     "border: 1px solid @separator; }"
+                                                                     "QToolButton:hover, QToolButton:focus { border: 2px solid @focusRing; }"))
                                       .arg(QString::fromLatin1(hex)));
+            swatch->setAccessibleName(QString::fromLatin1(hex));
             const QColor c(QString::fromLatin1(hex));
             QObject::connect(swatch, &QToolButton::clicked, swatch, [this, c] {
                 App::Material material(App::Material::PLASTIC);
@@ -2099,7 +2102,7 @@ void showParameters(App::Document* doc)
     row->addWidget(add);
     lay->addLayout(row);
     auto error = new QLabel;
-    error->setStyleSheet(QStringLiteral("color: #FF3B30;"));
+    error->setStyleSheet(QStringLiteral("color: %1;").arg(Gui::Shell::theme().red.name()));
     lay->addWidget(error);
     QObject::connect(add, &QPushButton::clicked, &dlg, [&, set] {
         static const QRegularExpression valid(QStringLiteral("^[A-Za-z_][A-Za-z0-9_]*$"));

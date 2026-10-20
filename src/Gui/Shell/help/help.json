@@ -501,10 +501,10 @@
    ],
    "tips": {
     "en": [
-     "Choose the projects folder in Settings → View → Projects folder; Save starts there."
+     "Choose the projects folder in Settings → General → Projects folder; Save starts there."
     ],
     "de": [
-     "Den Projektordner wählst du in Einstellungen → Ansicht → Projektordner; Speichern beginnt dort."
+     "Den Projektordner wählst du in Einstellungen → Allgemein → Projektordner; Speichern beginnt dort."
     ]
    }
   },
@@ -3640,10 +3640,10 @@
    ],
    "tips": {
     "en": [
-     "The default look of new bodies is set in Settings → View → Body material."
+     "The default look of new bodies is set in Settings → General → Body material."
     ],
     "de": [
-     "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Ansicht → Körpermaterial ein."
+     "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Allgemein → Körpermaterial ein."
     ]
    },
    "images": [
@@ -3677,6 +3677,10 @@
      "mouse",
      "keys",
      "glass",
+     "liquid glass",
+     "dark mode",
+     "light mode",
+     "contrast",
      "material",
      "projects folder",
      "zoom direction"
@@ -3690,25 +3694,34 @@
      "Maus",
      "Tasten",
      "Glas",
+     "Liquid Glass",
+     "Dunkelmodus",
+     "dunkel",
+     "hell",
+     "Kontrast",
      "Material",
      "Projektordner",
      "Zoomrichtung"
     ]
    },
    "summary": {
-    "en": "Adjusts navigation, keys, look and language. Open it with the gear button at the top right or Ctrl+,; close it with the ✕ at the top right of the window or Esc.",
-    "de": "Passt Navigation, Tasten, Aussehen und Sprache an. Öffnen mit dem Zahnrad oben rechts oder Strg+,; schließen mit dem ✕ oben rechts im Fenster oder Esc."
+    "en": "Adjusts look, navigation, keys and language. Open it with the gear button at the top right or Ctrl+,; close it with the ✕ at the top right of the window or Esc.",
+    "de": "Passt Aussehen, Navigation, Tasten und Sprache an. Öffnen mit dem Zahnrad oben rechts oder Strg+,; schließen mit dem ✕ oben rechts im Fenster oder Esc."
    },
    "steps": {
     "en": [
+     "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Body material and Show tool names.",
+     "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language and Projects folder.",
      "Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
-     "View: Camera, Rotate, Rotate around, Animate view changes, Glass, Show tool names, Body material, Projects folder and Language.",
+     "View: Camera, Rotate, Rotate around and Animate view changes.",
      "Speed & Zoom: Rotation speed, Zoom & scroll speed, Zoom towards the cursor, Invert zoom (mouse wheel) and Invert zoom (trackpad).",
      "Keys tab: Add Key… turns a key into a mouse button, e.g. Shift as the middle button; choose the button and whether to Hold, Click, Double-click or Toggle."
     ],
     "de": [
+     "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Körpermaterial und Werkzeugnamen anzeigen.",
+     "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache und Projektordner.",
      "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen.",
-     "Ansicht: Kamera, Drehen, Drehen um, Ansichtswechsel animieren, Glas, Werkzeugnamen anzeigen, Körpermaterial, Projektordner und Sprache.",
+     "Ansicht: Kamera, Drehen, Drehen um und Ansichtswechsel animieren.",
      "Tempo & Zoom: Drehgeschwindigkeit, Zoom- & Scrollgeschwindigkeit, Zum Cursor hin zoomen, Zoom umkehren (Mausrad) und Zoom umkehren (Trackpad).",
      "Reiter Tasten: Taste hinzufügen… macht eine Taste zur Maustaste, z. B. Umschalt als mittlere Taste; wähle die Maustaste und ob Halten, Klicken, Doppelklick oder Umschalten."
     ]
