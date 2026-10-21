@@ -484,7 +484,7 @@
      "New (Ctrl+N) creates an empty design. Open (Ctrl+O) loads a design file. Save (Ctrl+S) stores it; the first time you choose name and folder.",
      "Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z) step backwards and forwards through your changes.",
      "The house button in the window buttons at the top right opens the start page: recent designs and your projects folder, with search. The arrow at the front of the same group brings you back to the design.",
-     "The sidebar button (next to the grip in the window buttons) hides the browser on the left for more room and shows it again.",
+     "The sidebar button at the top left of the browser hides the browser for more room; in the same place it shows it again.",
      "Right-click the design name at the top of the browser (left) for Save, Save As…, Export…, Rename, Close and Delete….",
      "Delete… asks first. A saved file goes to the trash, so you can still get it back there."
     ],
@@ -492,7 +492,7 @@
      "Neu (Strg+N) legt ein leeres Design an. Öffnen (Strg+O) lädt eine Design-Datei. Speichern (Strg+S) sichert es; beim ersten Mal wählst du Name und Ordner.",
      "Rückgängig (Strg+Z) und Wiederherstellen (Strg+Umschalt+Z) gehen in deinen Änderungen zurück und vor.",
      "Der Haus-Knopf bei den Fensterknöpfen oben rechts öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Der Pfeil vorne in derselben Gruppe bringt dich zurück zum Design.",
-     "Der Seitenleisten-Knopf (neben dem Griff bei den Fensterknöpfen) blendet den Browser links für mehr Platz aus und wieder ein.",
+     "Der Seitenleisten-Knopf oben links im Browser blendet den Browser für mehr Platz aus; an derselben Stelle blendest du ihn wieder ein.",
      "Rechtsklick auf den Designnamen ganz oben im Browser (links) bietet Speichern, Speichern unter…, Exportieren…, Umbenennen, Schließen und Löschen….",
      "Löschen… fragt vorher nach. Eine gespeicherte Datei kommt in den Papierkorb, du holst sie dort also noch zurück."
     ]

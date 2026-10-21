@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Seitenleiste im Design ein-/ausklappen: Knopf in der Fensterknopf-Kapsel blendet den Browser aus, die Toolbar rückt
-nach links, Tooltip wechselt; erneuter Klick zeigt ihn wieder. Startseite und Hilfe haben keinen solchen Knopf.
+"""Seitenleiste im Design ein-/ausklappen: Knopf oben links im Browser blendet ihn aus, die Toolbar rückt nach links,
+der Knopf bleibt an derselben Stelle (eigene Kapsel), Tooltip wechselt; erneuter Klick zeigt ihn wieder. Startseite und Hilfe haben keinen solchen Knopf.
 Am Ende wieder ausgeklappt (Einstellung MyCAD/BrowserHidden)."""
 import harness
 from harness import *
@@ -28,8 +28,9 @@ def toolbar_x():
 
 
 def report(tag):
-    L("%s: browser shown=%s toolbar x=%d toggle=%s hidden param=%s" % (tag, browser_shown(), toolbar_x(),
-                                                                      [b.toolTip() for b in toggles()], grp.GetBool("BrowserHidden")))
+    L("%s: browser shown=%s toolbar x=%d toggle=%s at=%s hidden param=%s" % (
+        tag, browser_shown(), toolbar_x(), [b.toolTip() for b in toggles()],
+        [(harness._pos(b).x(), harness._pos(b).y()) for b in toggles()], grp.GetBool("BrowserHidden")))
 
 
 def real_click(w):
@@ -41,7 +42,7 @@ run([
     ("start", lambda: report("ausgeklappt")),
     ("hide", lambda: click(toggles()[0])), ("hidden", lambda: report("nach Klick (Browser weg, Toolbar weiter links)")),
     ("shot", lambda: shot("hidden")),
-    ("show", lambda: click(toggles()[0])), ("shown", lambda: report("nach zweitem Klick")),
+    ("show", lambda: click(toggles()[0])), ("shown", lambda: report("nach zweitem Klick")), ("shot shown", lambda: shot("shown")),
     ("home", lambda: click([b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Home"][0])), ("wait", lambda: None),
     ("start page", lambda: L("start page: sidebar toggles=%d (0 expected)" % len(toggles("StartPage")))),
     ("back", lambda: real_click([b for b in mw.findChild(QtWidgets.QWidget, "StartPage").findChildren(QtWidgets.QToolButton)

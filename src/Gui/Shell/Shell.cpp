@@ -1005,9 +1005,8 @@ void toggleBrowser();
 class WindowControls: public QWidget
 {
 public:
-    /// home: Home- und Hilfe-Knopf; back: zusätzlicher Zurück-Knopf vorne (Hilfe); sidebar: Knopf zum Ein-/Ausklappen
-    /// der Seitenleiste (nur im Design: Startseite und Hilfe zeigen ihre Seitenleiste immer)
-    explicit WindowControls(bool home = true, std::function<void()> back = {}, std::function<void()> sidebar = {})
+    /// home: Home- und Hilfe-Knopf; back: zusätzlicher Zurück-Knopf vorne (Hilfe)
+    explicit WindowControls(bool home = true, std::function<void()> back = {})
     {
         setObjectName(QStringLiteral("GlassContent"));
         auto lay = new QHBoxLayout(this);
@@ -1035,9 +1034,6 @@ public:
         handle->setCursor(Qt::OpenHandCursor);
         handle->setToolTip(T("Drag to move the window, double-click to maximize"));
         lay->addWidget(handle);
-        if (sidebar) {
-            sidebarButton = button("Window_Sidebar", "GlassButton", T("Hide sidebar"), sidebar);
-        }
         if (back) {
             backButton = button("Window_Back", "GlassButton", T("Back"), back);
         }
@@ -1075,8 +1071,7 @@ private:
     QToolButton* maximize;
 
 public:
-    QToolButton* backButton = nullptr;     ///< nur mit back-Funktion
-    QToolButton* sidebarButton = nullptr;  ///< nur mit sidebar-Funktion
+    QToolButton* backButton = nullptr;  ///< nur mit back-Funktion
 };
 
 // --- Startseite: neue, zuletzt geöffnete und Projekt-Designs als Kacheln ---------------------------------------
@@ -2396,6 +2391,7 @@ struct State
     GlassPanel* modelBar = nullptr;
     GlassPanel* sketchBar = nullptr;
     GlassPanel* browser = nullptr;
+    GlassPanel* browserToggle = nullptr;  ///< Kapsel mit dem Seitenleisten-Knopf, solange der Browser eingeklappt ist
     GlassPanel* inspector = nullptr;
     GlassPanel* timeline = nullptr;
     GlassPanel* windowControls = nullptr;
@@ -2408,7 +2404,7 @@ struct State
 std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
-    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.inspector, state.timeline,
+    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.browserToggle, state.inspector, state.timeline,
                    state.windowControls, state.palette}) {
         if (p) {
             all.push_back(p);
@@ -2431,7 +2427,13 @@ void layout()
     // Toolbar mittig zwischen Browser und Fensterknöpfen; reicht die Breite nicht, bricht sie in weitere Reihen um
     const bool browser = state.browser
         && !App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("BrowserHidden", false);
-    const qreal left = browser ? m + BrowserWidth + m : m;
+    if (state.browserToggle) {
+        state.browserToggle->setVisible(state.browser && !browser);
+        state.browserToggle->setGeometry(QRectF(QPointF(m, m), state.browserToggle->content()->sizeHint()));
+    }
+    const qreal left = browser                  ? m + BrowserWidth + m
+        : state.browserToggle && state.browser ? m + state.browserToggle->content()->sizeHint().width() + m
+                                                : m;
     const qreal right = r.width() - m
         - (state.windowControls ? state.windowControls->content()->sizeHint().width() + m : 0);
     qreal barW = std::max<qreal>(100, std::min(bs.width(), right - left));
@@ -2468,9 +2470,13 @@ void layout()
         state.browser->setVisible(browser);
         state.browser->setGeometry(QRectF(m, top, BrowserWidth, bottom - top));
     }
-    if (QToolButton* toggle = state.windowControls ? static_cast<WindowControls*>(state.windowControls->content())->sidebarButton : nullptr) {
-        toggle->setToolTip(browser ? T("Hide sidebar") : T("Show sidebar"));
-        toggle->setAccessibleName(toggle->toolTip());
+    for (GlassPanel* panel : {state.browser, state.browserToggle}) {
+        for (auto toggle : panel ? panel->content()->findChildren<QToolButton*>() : QList<QToolButton*>()) {
+            if (toggle->property("sidebarToggle").toBool()) {
+                toggle->setToolTip(browser ? T("Hide sidebar") : T("Show sidebar"));
+                toggle->setAccessibleName(toggle->toolTip());
+            }
+        }
     }
     qreal cubeTop = m;
     if (state.windowControls) {
@@ -3082,7 +3088,7 @@ void Gui::Shell::install()
         if (wasVisible) {
             mw->show();
         }
-        state.windowControls = new GlassPanel(new WindowControls(true, {}, toggleBrowser), Token::RadiusCapsule);
+        state.windowControls = new GlassPanel(new WindowControls, Token::RadiusCapsule);
         static WindowGrip* grip = new WindowGrip;
         for (GlassPanel* p : {state.modelBar, state.sketchBar, state.windowControls}) {
             p->content()->installEventFilter(grip);
@@ -3101,7 +3107,29 @@ void Gui::Shell::install()
         for (auto t : tree->findChildren<QTreeWidget*>()) {
             t->viewport()->installEventFilter(menus);
         }
+        // Seitenleisten-Knopf oben links: ausgeklappt in einer Kopfzeile des Browsers, eingeklappt allein in einer
+        // Kapsel an derselben Stelle (je 8 Innenabstand: der Knopf springt nicht)
+        auto sidebarToggle = [] {
+            auto btn = new QToolButton;
+            btn->setObjectName(QStringLiteral("GlassButton"));
+            btn->setProperty("sidebarToggle", true);
+            btn->setIcon(designIcon(QStringLiteral("Window_Sidebar")));
+            btn->setIconSize(QSize(Token::IconWindow, Token::IconWindow));
+            btn->setFixedSize(Token::WindowButton, Token::WindowButton);
+            btn->setCursor(Qt::ArrowCursor);
+            QObject::connect(btn, &QToolButton::clicked, btn, [] { QTimer::singleShot(0, toggleBrowser); });
+            return btn;
+        };
+        auto header = new QHBoxLayout;
+        header->addWidget(sidebarToggle());
+        header->addStretch();
+        static_cast<QVBoxLayout*>(tree->layout())->insertLayout(0, header);
         state.browser = new GlassPanel(tree, Token::RadiusPanel, true);  // Text-Glas: bunter 3D-Inhalt läuft darunter
+        auto capsule = content();
+        auto capsuleLay = new QHBoxLayout(capsule);
+        capsuleLay->setContentsMargins(8, 8, 8, 8);
+        capsuleLay->addWidget(sidebarToggle());
+        state.browserToggle = new GlassPanel(capsule, Token::RadiusCapsule);
     }
     if (QWidget* tasks = takeDockWindow("Std_TaskView")) {
         state.inspector = new GlassPanel(tasks, Token::RadiusPanel, true);
