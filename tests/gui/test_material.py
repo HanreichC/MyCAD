@@ -26,9 +26,8 @@ def bodies():
 def pick(name):
     def act():
         d = [w for w in visible(QtWidgets.QDialog) if w.windowTitle() == "Settings"][0]
-        seg = [b for b in d.findChildren(QtWidgets.QPushButton) if b.text() == name][0]
-        pos = seg.mapTo(d, seg.rect().center())
-        QtTest.QTest.mouseClick(d.windowHandle(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, pos)
+        combo = [c for c in d.findChildren(QtWidgets.QComboBox) if c.findText(name) >= 0][0]
+        combo.setCurrentIndex(combo.findText(name))  # wie die Wahl im Pop-up
         L("  param BodyMaterial=%d" % grp.GetInt("BodyMaterial"))
         d.grab().save(os.environ["OUT"] + ".settings.png")
         d.accept()
@@ -44,6 +43,8 @@ run([
     ("clay", lambda: pick("Clay")), ("wait", lambda: None),
     ("after", lambda: report("nach Clay (#E8DED1, eigene Farbe bleibt #FF3333)")),
     ("shot", lambda: shot("clay")),
+    ("titanium", lambda: pick("Natural Titanium")), ("wait", lambda: None),
+    ("after titanium", lambda: report("nach Natural Titanium (#B8B2A7)")), ("shot titanium", lambda: shot("titanium")),
     ("back", lambda: pick("Space Gray")), ("wait", lambda: None),
     ("final", lambda: report("zurück")),
     ("restore", lambda: grp.SetInt("BodyMaterial", old)),

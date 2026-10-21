@@ -279,6 +279,11 @@ constexpr BodyMaterial bodyMaterials[] = {
     {"Clay", 0xE8DED1FF, 0x1A1A1AFF, 0x1A1714FF, 0x73665CFF, 10},
     {"Sierra Blue", 0x9EBDDBFF, 0x59595FFF, 0x0F1217FF, 0x384D66FF, 45},
     {"Ceramic", 0xF2F2F5FF, 0x999999FF, 0x0F0F0FFF, 0x8C8F99FF, 75},
+    // weitere Apple-Oberflächen, je etwas heller als das Original, damit die Schattierung lesbar bleibt
+    {"Midnight", 0x3A4250FF, 0x5E6066FF, 0x0A0B0EFF, 0x15181FFF, 50},
+    {"Alpine Green", 0x5F705DFF, 0x5E625EFF, 0x0B0D0BFF, 0x2A3329FF, 50},
+    {"Deep Purple", 0x6A5E78FF, 0x66626BFF, 0x0D0B0FFF, 0x2E2735FF, 50},
+    {"Natural Titanium", 0xB8B2A7FF, 0x8C8A86FF, 0x12110FFF, 0x5C5850FF, 70},
 };
 
 const BodyMaterial& bodyMaterial()
@@ -2773,7 +2778,7 @@ void rebuildTimelineLater()
 }
 
 /// Bodenraster wie in Fusion: Linien auf der XY-Ebene, die beim Zoomen in Zehnerschritten (1, 10, 100 mm …) dichter
-/// oder gröber werden und erst hinter dem Bildrand auslaufen. Ein Knoten für alle Ansichten (attach hängt ihn ein).
+/// oder gröber werden und ganz schmal am Bildrand auslaufen. Ein Knoten für alle Ansichten (attach hängt ihn ein).
 /// Der Shader legt ein Quadrat um den Punkt der Ebene in der Bildmitte, doppelt so groß wie das sichtbare Bild.
 struct GroundGrid
 {
@@ -2795,6 +2800,7 @@ GroundGrid& groundGrid()
             varying vec2 world;   // Punkt auf der Ebene (mm)
             varying vec2 local;   // 1 = Bildrand (längere Seite), für das Auslaufen
             varying float facing; // 0 = Ebene von der Kante gesehen
+            varying vec4 clip;    // Bildschirmposition, für das Auslaufen am Bildrand
             void main()
             {
                 // Bildmitte auf der Ebene: Sehachse (0, 0, z) im Augenraum schneidet die Ebene z = 0
@@ -2808,6 +2814,7 @@ GroundGrid& groundGrid()
                 world = center + local * r;
                 facing = abs(n.z);
                 gl_Position = gl_ModelViewProjectionMatrix * vec4(world, 0.0, 1.0);
+                clip = gl_Position;
             }
         )";
         auto fragment = new SoFragmentShader;
@@ -2818,6 +2825,7 @@ GroundGrid& groundGrid()
             varying vec2 world;
             varying vec2 local;
             varying float facing;
+            varying vec4 clip;
             // Deckung einer Linienschar mit Abstand s: 1 px breit, geglättet
             float lines(float s, vec2 px)
             {
@@ -2835,7 +2843,9 @@ GroundGrid& groundGrid()
                     float strength = 0.5 * clamp(k - lod, 0.0, 1.0) + 0.5 * clamp(k - lod - 1.0, 0.0, 1.0);
                     a = max(a, strength * lines(pow(10.0, k), px));
                 }
-                // erst hinter dem Bildrand auslaufen (perspektivisch: zum Horizont hin), im Bild bleibt es klar
+                // ganz schmal am Bildrand auslaufen (4 % je Seite), perspektivisch außerdem zum Horizont hin
+                vec2 ndc = abs(clip.xy / clip.w);
+                a *= smoothstep(0.0, 0.04, 1.0 - max(ndc.x, ndc.y));
                 a *= (1.0 - smoothstep(1.0, 1.8, length(local))) * smoothstep(0.05, 0.25, facing);
                 if (a < 0.004) {
                     discard;

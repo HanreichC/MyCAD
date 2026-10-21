@@ -87,7 +87,7 @@ Switch to **Deutsch** in the settings and MyCAD is in German, from the toolbar d
 
 ## Materials with character.
 
-New bodies come in **Space Gray** with a satin finish. You can pick **Clay**, **Sierra Blue** or **Ceramic** in the settings instead, and existing bodies switch right away. **Appearance** gives a single body its own color.
+New bodies come in **Space Gray** with a satin finish. You can pick **Clay**, **Sierra Blue**, **Ceramic**, **Midnight**, **Alpine Green**, **Deep Purple** or **Natural Titanium** in the settings instead, and existing bodies switch right away. **Appearance** gives a single body its own color.
 
 <br>
 
@@ -110,7 +110,7 @@ New bodies come in **Space Gray** with a satin finish. You can pick **Clay**, **
 | **Import** | STEP · DXF · SVG |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
-| **Materials** | Space Gray · Clay · Sierra Blue · Ceramic |
+| **Materials** | Space Gray · Clay · Sierra Blue · Ceramic · Midnight · Alpine Green · Deep Purple · Natural Titanium |
 | **Core** | FreeCAD with OpenCascade |
 | **License** | LGPL-2.1-or-later |
 

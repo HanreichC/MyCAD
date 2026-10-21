@@ -910,12 +910,13 @@ void Gui::Shell::showSettings()
         }
     });
     addRow(lookCard, T("Liquid Glass"), glass);
-    QStringList materials;
+    auto material = new QComboBox;  // Pop-up-Button: mehr Materialien, als ein Segmented Control fasst (≤ 7)
     for (const char* name : Gui::Shell::bodyMaterialNames()) {
-        materials << T(name);
+        material->addItem(T(name));
     }
-    addRow(lookCard, T("Body material"),
-           segmented(materials, int(myParams()->GetInt("BodyMaterial", 0)), [](int i) { Gui::Shell::setBodyMaterial(i); }));
+    material->setCurrentIndex(int(myParams()->GetInt("BodyMaterial", 0)));
+    QObject::connect(material, &QComboBox::currentIndexChanged, [](int i) { Gui::Shell::setBodyMaterial(i); });
+    addRow(lookCard, T("Body material"), material);
     auto names = new Switch(myParams()->GetBool("ToolNames", false));
     QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
     addRow(lookCard, T("Show tool names"), names);
