@@ -209,7 +209,7 @@ void Gui::Shell::reloadTheme()
     t.glassOpaqueTop = pick("#FCFFFFFF", "#FA34343A", "#FCFFFFFF", "#FA34343A");
     t.glassOpaqueBottom = pick("#FCF4F5F8", "#FA26262B", "#FCF4F5F8", "#FA26262B");
     t.glassPopupBorder = pick("#17000000", "#21FFFFFF", "#66000000", "#73FFFFFF");
-    t.shadow = pick("#21000000", "#73000000", "#21000000", "#73000000");
+    t.shadow = pick("#21000000", "#40000000", "#21000000", "#40000000");
     t.scrim = pick("#24000000", "#59000000", "#24000000", "#59000000");
     current = t;
     loaded = true;
