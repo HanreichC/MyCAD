@@ -127,7 +127,7 @@ double Theme::glassBlur() const
 
 double Theme::glassRim() const
 {
-    return piecewise(glassLevel, dark ? std::array {0.20, 0.20, 0.04} : std::array {0.70, 0.70, 0.70});
+    return piecewise(glassLevel, dark ? std::array {0.07, 0.07, 0.07} : std::array {0.70, 0.70, 0.70});
 }
 
 int Theme::duration(int ms) const
