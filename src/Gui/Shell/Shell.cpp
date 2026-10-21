@@ -2773,8 +2773,8 @@ void rebuildTimelineLater()
 }
 
 /// Bodenraster wie in Fusion: Linien auf der XY-Ebene, die beim Zoomen in Zehnerschritten (1, 10, 100 mm …) dichter
-/// oder gröber werden und um die Bildmitte herum auslaufen. Ein Knoten für alle Ansichten (attach hängt ihn ein).
-/// Der Shader legt ein Quadrat um den Punkt der Ebene in der Bildmitte, so groß wie das sichtbare Bild.
+/// oder gröber werden und erst hinter dem Bildrand auslaufen. Ein Knoten für alle Ansichten (attach hängt ihn ein).
+/// Der Shader legt ein Quadrat um den Punkt der Ebene in der Bildmitte, doppelt so groß wie das sichtbare Bild.
 struct GroundGrid
 {
     SoSwitch* node;
@@ -2793,7 +2793,7 @@ GroundGrid& groundGrid()
         vertex->sourceProgram = R"(
             #version 120
             varying vec2 world;   // Punkt auf der Ebene (mm)
-            varying vec2 local;   // -1..1 über das sichtbare Bild, für das Auslaufen
+            varying vec2 local;   // 1 = Bildrand (längere Seite), für das Auslaufen
             varying float facing; // 0 = Ebene von der Kante gesehen
             void main()
             {
@@ -2835,7 +2835,8 @@ GroundGrid& groundGrid()
                     float strength = 0.5 * clamp(k - lod, 0.0, 1.0) + 0.5 * clamp(k - lod - 1.0, 0.0, 1.0);
                     a = max(a, strength * lines(pow(10.0, k), px));
                 }
-                a *= (1.0 - smoothstep(0.3, 1.0, length(local))) * smoothstep(0.05, 0.25, facing);
+                // erst hinter dem Bildrand auslaufen (perspektivisch: zum Horizont hin), im Bild bleibt es klar
+                a *= (1.0 - smoothstep(1.0, 1.8, length(local))) * smoothstep(0.05, 0.25, facing);
                 if (a < 0.004) {
                     discard;
                 }
@@ -2870,7 +2871,7 @@ GroundGrid& groundGrid()
         depth->function = SoDepthBuffer::LEQUAL;
         auto offset = new SoPolygonOffset;  // Skizzenprofile auf z = 0 liegen über dem Raster
         auto coords = new SoCoordinate3;
-        coords->point.setValues(0, 4, std::array<SbVec3f, 4> {{{-1, -1, 0}, {1, -1, 0}, {1, 1, 0}, {-1, 1, 0}}}.data());
+        coords->point.setValues(0, 4, std::array<SbVec3f, 4> {{{-2, -2, 0}, {2, -2, 0}, {2, 2, 0}, {-2, 2, 0}}}.data());
         auto sep = new SoSeparator;
         sep->renderCulling = SoSeparator::OFF;  // die echte Lage entsteht erst im Shader
         for (SoNode* n : std::initializer_list<SoNode*> {pick, blend, material, depth, offset, program, coords,

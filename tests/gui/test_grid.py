@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Bodenraster: unter einem Körper sichtbar (Pixel ändern sich gegenüber "aus"), Schalter "Show grid" in den
+"""Bodenraster: unter einem Körper und bis an den Bildrand sichtbar (Pixel ändern sich gegenüber "aus"), Schalter "Show grid" in den
 Einstellungen blendet es aus und wieder ein. Screenshots: iso, perspektivisch, von oben, dunkel, Skizze (ohne Raster)."""
 import os
 from harness import *
@@ -14,10 +14,15 @@ def grab(tag):
     img.save(os.environ["OUT"] + "." + tag + ".png")
 
 
-def differing(a, b):
-    """Anzahl Pixel (jedes 4. in beide Richtungen), die sich zwischen zwei Bildern unterscheiden"""
+def differing(a, b, edge=False):
+    """Anzahl Pixel (jedes 4. in beide Richtungen), die sich zwischen zwei Bildern unterscheiden;
+    edge: nur im äußeren Streifen (10 % je Seite)"""
     a, b = images[a], images[b]
-    return sum(a.pixel(x, y) != b.pixel(x, y) for x in range(0, a.width(), 4) for y in range(0, a.height(), 4))
+    w, h = a.width(), a.height()
+
+    def outer(x, y):
+        return min(x, w - x) < w // 10 or min(y, h - y) < h // 10
+    return sum(a.pixel(x, y) != b.pixel(x, y) for x in range(0, w, 4) for y in range(0, h, 4) if not edge or outer(x, y))
 
 
 def settings(action):
@@ -56,8 +61,9 @@ def top():
 
 run([
     ("setup", lambda: make_body(rect(0, 0, 60, 40), 0, 15, "Box")), ("iso", iso), ("grab on", lambda: grab("on")),
-    ("toggle", lambda: settings(toggle_grid_twice)), ("wait", lambda: None),
+    ("toggle", lambda: settings(toggle_grid_twice)), ("wait", lambda: None), ("wait", lambda: None),
     ("compare", lambda: L("grid visible: %s pixels differ on/off (> 200 expected)" % differing("on", "off"))),
+    ("edges", lambda: L("grid at the view edges: %s pixels differ on/off (> 5000 expected; with fading toward the centre about 700)" % differing("on", "off", True))),
     ("compare2", lambda: L("back on: %s pixels differ from first (0 expected)" % differing("on", "on2"))),
     ("perspective", lambda: (viewgrp.SetBool("Orthographic", False), iso())), ("grab persp", lambda: grab("persp")),
     ("ortho", lambda: (viewgrp.SetBool("Orthographic", True), top())), ("grab top", lambda: grab("top")),
