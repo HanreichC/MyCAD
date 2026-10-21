@@ -2424,7 +2424,8 @@ void layout()
     state.modelBar->setVisible(!state.sketchMode);
     state.sketchBar->setVisible(state.sketchMode);
     const QSizeF bs = bar->content()->sizeHint();  // eine Reihe
-    // Toolbar mittig zwischen Browser und Fensterknöpfen; reicht die Breite nicht, bricht sie in weitere Reihen um
+    // Toolbar mittig im Fenster (bleibt beim Ein-/Ausklappen des Browsers stehen), ohne Browser und Fensterknöpfe zu
+    // überdecken; reicht die Breite dazwischen nicht, bricht sie in weitere Reihen um
     const bool browser = state.browser
         && !App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("BrowserHidden", false);
     if (state.browserToggle) {
@@ -2451,7 +2452,7 @@ void layout()
         }
         barW = hi;
     }
-    bar->setGeometry(QRectF(left + (right - left - barW) / 2, m, barW, barH));
+    bar->setGeometry(QRectF(std::max(left, std::min((r.width() - barW) / 2, right - barW)), m, barW, barH));
     // eine Reihe: Kapsel; umgebrochen wäre eine Kapsel zu rund für die Knöpfe in den Ecken, dann Panel-Radius
     bar->setRadius(barH > bs.height() ? Token::RadiusPanel : Token::RadiusCapsule);
 

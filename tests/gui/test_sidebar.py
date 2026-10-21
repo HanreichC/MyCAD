@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Seitenleiste im Design ein-/ausklappen: Knopf oben links im Browser blendet ihn aus, die Toolbar rückt nach links,
+"""Seitenleiste im Design ein-/ausklappen: Knopf oben links im Browser blendet ihn aus, die Toolbar bleibt in der Mitte,
 der Knopf bleibt an derselben Stelle (eigene Kapsel), Tooltip wechselt; erneuter Klick zeigt ihn wieder. Startseite und Hilfe haben keinen solchen Knopf.
 Am Ende wieder ausgeklappt (Einstellung MyCAD/BrowserHidden)."""
 import harness
@@ -40,7 +40,7 @@ def real_click(w):
 
 run([
     ("start", lambda: report("ausgeklappt")),
-    ("hide", lambda: click(toggles()[0])), ("hidden", lambda: report("nach Klick (Browser weg, Toolbar weiter links)")),
+    ("hide", lambda: click(toggles()[0])), ("hidden", lambda: report("nach Klick (Browser weg, Toolbar an derselben Stelle)")),
     ("shot", lambda: shot("hidden")),
     ("show", lambda: click(toggles()[0])), ("shown", lambda: report("nach zweitem Klick")), ("shot shown", lambda: shot("shown")),
     ("home", lambda: click([b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Home"][0])), ("wait", lambda: None),
