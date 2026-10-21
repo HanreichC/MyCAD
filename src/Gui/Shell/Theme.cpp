@@ -127,7 +127,7 @@ double Theme::glassBlur() const
 
 double Theme::glassRim() const
 {
-    return dark ? 0.42 : 0.70;
+    return dark ? 0.20 : 0.70;
 }
 
 int Theme::duration(int ms) const
