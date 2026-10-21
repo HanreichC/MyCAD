@@ -27,7 +27,7 @@ namespace
 {
 
 // glass.thickness.regular (Bars, Browser, Inspector, Palette) und elevation.glass
-constexpr float LensZone = 20, LensStrength = 18, Chroma = 0.08F, Saturation = 1.5F;
+constexpr float LensZone = 30, LensStrength = 32, Chroma = 0.08F, Saturation = 1.5F;
 constexpr qreal ShadowBlur = 28, ShadowY = 6;
 constexpr qreal ShadowMargin = ShadowBlur + ShadowY;  // logische Pixel um das Panel herum für den Schatten
 
@@ -150,7 +150,11 @@ public:
         const Theme& th = theme();
         const bool inactive = qApp->applicationState() != Qt::ApplicationActive;  // GM-4: Glas tritt zurück
         const float shadow = float(ShadowBlur * dpr);
-        const float spread = float(th.glassBlur() / 24.0);  // Blur 12 / 24 / 36 px je Glas-Stufe
+        // Blur je Glas-Stufe ist ein Radius wie in MyStyles Glass.qml (MultiEffect): Sigma = Radius / 3. Gerechnet wird
+        // verkleinert, je stärker der Blur, desto kleiner; bei wenig Blur bleiben dünne Linien (Raster) so erkennbar
+        const float sigma = float(th.glassBlur() / 3.0 * dpr);
+        const int down = sigma >= 6 ? 4 : sigma >= 3 ? 2 : 1;
+        const float spread = sigma / float(down) / 2.32f;  // zwei H+V-Durchgänge des 9-Tap-Gauß: 2.32 * spread Texel Sigma
         if (!ok) {
             return false;
         }
@@ -171,20 +175,34 @@ public:
         const QRect cap = panel.adjusted(-margin, -margin, margin, margin) & QRect(QPoint(0, 0), fb);
         bool drawn = false;
         if (!cap.isEmpty()) {
-            const QSize small(std::max(1, cap.width() / 4), std::max(1, cap.height() / 4));
+            const QSize half(std::max(1, cap.width() / 2), std::max(1, cap.height() / 2));
+            const QSize small = down == 1 ? cap.size()
+                : down == 2               ? half
+                                          : QSize(std::max(1, half.width() / 2), std::max(1, half.height() / 2));
             ensure(resolve, cap.size());
             ensure(pingA, small);
             ensure(pingB, small);
 
-            // 1:1 auflösen (Quelle kann multisampled sein), dann auf 1/4 verkleinern
+            // 1:1 auflösen (Quelle kann multisampled sein), dann in Halbierungen verkleinern: jede mittelt genau
+            // 2 x 2 Pixel (ein Sprung auf 1/4 läse nur 4 von 16 Pixeln, dünne Linien wie das Raster fielen heraus)
             const int gy0 = fb.height() - (cap.y() + cap.height());
             glBindFramebuffer(GL_READ_FRAMEBUFFER, prevFbo);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolve->handle());
             glBlitFramebuffer(cap.x(), gy0, cap.x() + cap.width(), gy0 + cap.height(),
                               0, 0, cap.width(), cap.height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, resolve->handle());
+            GLuint from = resolve->handle();
+            if (down == 4) {
+                ensure(halved, half);
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, from);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, halved->handle());
+                glBlitFramebuffer(0, 0, half.width() * 2, half.height() * 2,
+                                  0, 0, half.width(), half.height(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
+                from = halved->handle();
+            }
+            const int step = down == 1 ? 1 : 2;
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, from);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, pingA->handle());
-            glBlitFramebuffer(0, 0, cap.width(), cap.height(),
+            glBlitFramebuffer(0, 0, small.width() * step, small.height() * step,
                               0, 0, small.width(), small.height(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
             if (glGetError() == GL_NO_ERROR) {
@@ -195,8 +213,8 @@ public:
                 setupQuad(blur, -1, -1, 1, 1);
                 blur.setUniformValue("uTex", 0);
                 for (int i = 0; i < 2; ++i) {
-                    pass(pingB.get(), pingA->texture(), QVector2D(1.6f * spread / small.width(), 0));
-                    pass(pingA.get(), pingB->texture(), QVector2D(0, 1.6f * spread / small.height()));
+                    pass(pingB.get(), pingA->texture(), QVector2D(spread / small.width(), 0));
+                    pass(pingA.get(), pingB->texture(), QVector2D(0, spread / small.height()));
                 }
 
                 glBindFramebuffer(GL_FRAMEBUFFER, prevFbo);
@@ -288,7 +306,7 @@ private:
     bool ok = false;
     QOpenGLShaderProgram blur, glass;
     QOpenGLBuffer vbo;
-    std::unique_ptr<QOpenGLFramebufferObject> resolve, pingA, pingB;
+    std::unique_ptr<QOpenGLFramebufferObject> resolve, halved, pingA, pingB;
 };
 
 }  // namespace

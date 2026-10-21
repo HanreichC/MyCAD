@@ -40,7 +40,7 @@ struct Theme
     /// Anteil, mit dem glassTint den weichgezeichneten Hintergrund deckt (textSurface = Text-Glas für Browser,
     /// Inspector, Menüs); stückweise linear durch die Stützpunkte bei Stufe 0 / 0.5 / 1
     double glassTintAmount(bool textSurface) const;
-    double glassBlur() const;  ///< px: 12 / 24 / 36
+    double glassBlur() const;  ///< Radius in px (3 Sigma): 12 / 24 / 36
     double glassRim() const;
     int duration(int ms) const;  ///< Bewegung reduzieren: höchstens 150 ms
 };
