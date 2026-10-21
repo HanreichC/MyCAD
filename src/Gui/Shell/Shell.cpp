@@ -52,6 +52,7 @@
 #include <QPropertyAnimation>
 #include <QGraphicsOpacityEffect>
 #include <QGuiApplication>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QMdiArea>
 #include <QMdiSubWindow>
@@ -176,7 +177,7 @@ QLineEdit { selection-background-color: @accent; selection-color: @labelOnAccent
 
 /* Standard-Buttons: Kapsel, fill.tertiary, gedrückt fill.secondary, Hover 1 px Weiß 35 %; Standard-Aktion = Akzent */
 #GlassContent QPushButton, QDialog QPushButton, QMessageBox QPushButton {
-    background: @fillTertiary; border: 1px solid transparent; border-radius: 15px; min-height: 28px; padding: 0 15px; font-weight: 600; min-width: 48px;
+    background: @fillTertiary; border: 1px solid transparent; border-radius: 15px; min-height: 28px; padding: 0 15px; font-weight: 600;
 }
 #GlassContent QPushButton:hover, QDialog QPushButton:hover, QMessageBox QPushButton:hover { border-color: @hoverRim; }
 #GlassContent QPushButton:pressed, QDialog QPushButton:pressed, QMessageBox QPushButton:pressed { background: @fillSecondary; }
@@ -1994,20 +1995,33 @@ protected:
                 box->setContentsMargins(AlertPainter::Shadow + 12, AlertPainter::Shadow + 10, AlertPainter::Shadow + 12,
                                         AlertPainter::Shadow + 8);
                 box->installEventFilter(&painter);
-                // Titel Headline, Text Callout in Sekundärfarbe, 6 Abstand
+                // Titel Headline; Text und Zusatztext Callout in Sekundärfarbe ins Zusatztext-Feld: das bricht in
+                // Fensterbreite um (beim Haupttext schaltet Qt den Umbruch zum Bemessen ab, er würde abgeschnitten)
                 if (!box->windowTitle().isEmpty() && !Qt::mightBeRichText(box->text())) {
-                    box->setText(QStringLiteral("<p style='font-size:15px; font-weight:600; letter-spacing:-0.13px; margin-bottom:6px'>%1</p>"
-                                                "<span style='color:%3'>%2</span>")
-                                     .arg(box->windowTitle().toHtmlEscaped(),
-                                          box->text().toHtmlEscaped().replace(QLatin1Char('\n'), QStringLiteral("<br>")),
-                                          theme().labelSecondary.name()));
-                }
-                // höchstens 360 breit: Text umbrechen statt das Fenster zu verbreitern
-                if (auto label = box->findChild<QLabel*>(QStringLiteral("qt_msgbox_label"))) {
-                    label->setWordWrap(true);
-                    label->setMaximumWidth(360 - 2 * 22);
+                    auto html = [](const QString& s) { return s.toHtmlEscaped().replace(QLatin1Char('\n'), QStringLiteral("<br>")); };
+                    QString body = html(box->text());
+                    if (!box->informativeText().isEmpty()) {
+                        body += QStringLiteral("<br><br>") + html(box->informativeText());
+                    }
+                    box->setText(QStringLiteral("<p style='font-size:15px; font-weight:600; letter-spacing:-0.13px'>%1</p>")
+                                     .arg(box->windowTitle().toHtmlEscaped()));
+                    box->setInformativeText(body);
+                    if (auto info = box->findChild<QLabel*>(QStringLiteral("qt_msgbox_informativelabel"))) {
+                        info->setTextFormat(Qt::RichText);
+                        info->setMinimumWidth(360 - 2 * 22);  // 360 breit, breiter nur wenn die Knöpfe es brauchen
+                    }
                 }
                 box->setIcon(QMessageBox::NoIcon);
+                // Text bündig mit den Knöpfen: ohne Symbol rückt Qt den Text trotzdem ein (Spaltenabstand, Einrückung)
+                if (auto grid = qobject_cast<QGridLayout*>(box->layout())) {
+                    grid->setHorizontalSpacing(0);
+                    grid->setColumnStretch(grid->columnCount() - 1, 1);  // Platz der Knopfzeile geht an den Text
+                    for (int i = 0; i < grid->count(); ++i) {
+                        if (QSpacerItem* indent = grid->itemAt(i)->spacerItem(); indent && indent->sizeHint().height() <= 1) {
+                            indent->changeSize(0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed);
+                        }
+                    }
+                }
                 box->style()->unpolish(box);  // Stylesheet-Regeln für [glass="true"] greifen erst nach neuem Polieren
                 box->style()->polish(box);
             }
