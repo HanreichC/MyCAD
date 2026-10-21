@@ -897,7 +897,11 @@ void QuarterWidget::paintEvent(QPaintEvent* event)
     //start the standard graphics view processing for all widgets and graphic items. As 
     //QGraphicsView initaliizes a QPainter which changes the Opengl context in an unpredictable 
     //manner we need to store the context and recreate it after Qt is done.
-    inherited::paintEvent(event);
+    // actualRedraw() has just redrawn the whole viewport, so every item has to be painted again,
+    // not only those in the event's region: a partial repaint (e.g. of the window's resize border
+    // when the window loses the focus) would otherwise wipe all items outside that region.
+    QPaintEvent fullEvent(this->viewport()->rect());
+    inherited::paintEvent(&fullEvent);
     w->makeCurrent();
 
     if (functions) {
