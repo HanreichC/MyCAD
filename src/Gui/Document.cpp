@@ -1738,17 +1738,18 @@ bool Document::saveAs()
     if (name.isEmpty()) {
         name = QString::fromUtf8(getDocument()->Label.getValue());
     }
-    if (name.endsWith(QStringLiteral(".FCBak"), Qt::CaseInsensitive)) {
-        name.chop(QStringLiteral(".FCBak").size());
-        if (!name.endsWith(QStringLiteral(".FCStd"), Qt::CaseInsensitive)) {
-            name += QStringLiteral(".FCStd");
+    // MyCAD: neu gespeichert wird als .mycad (auch aus Sicherungen und alten .FCStd-Dateien)
+    for (const QString& ext : {QStringLiteral(".FCBak"), QStringLiteral(".FCStd"), QStringLiteral(".mycad")}) {
+        if (name.endsWith(ext, Qt::CaseInsensitive)) {
+            name.chop(ext.size());
         }
     }
+    name += QStringLiteral(".mycad");
     QString fn = FileDialog::getSaveFileName(
         getMainWindow(),
         QObject::tr("Save %1 Document").arg(exe),
         name,
-        FileDialog::FilterList {{QObject::tr("%1 document").arg(exe), {"*.FCStd"}}}
+        FileDialog::FilterList {{QObject::tr("%1 document").arg(exe), {"*.mycad"}}}
     );
 
     if (!fn.isEmpty()) {
@@ -1881,17 +1882,18 @@ bool Document::saveCopy()
 
     QString exe = qApp->applicationName();
     QString name = QString::fromUtf8(getDocument()->FileName.getValue());
-    if (name.endsWith(QStringLiteral(".FCBak"), Qt::CaseInsensitive)) {
-        name.chop(QStringLiteral(".FCBak").size());
-        if (!name.endsWith(QStringLiteral(".FCStd"), Qt::CaseInsensitive)) {
-            name += QStringLiteral(".FCStd");
+    // MyCAD: neu gespeichert wird als .mycad (auch aus Sicherungen und alten .FCStd-Dateien)
+    for (const QString& ext : {QStringLiteral(".FCBak"), QStringLiteral(".FCStd"), QStringLiteral(".mycad")}) {
+        if (name.endsWith(ext, Qt::CaseInsensitive)) {
+            name.chop(ext.size());
         }
     }
+    name += QStringLiteral(".mycad");
     QString fn = FileDialog::getSaveFileName(
         getMainWindow(),
         QObject::tr("Save %1 Document").arg(exe),
         name,
-        FileDialog::FilterList {{QObject::tr("%1 document").arg(exe), {"*.FCStd"}}}
+        FileDialog::FilterList {{QObject::tr("%1 document").arg(exe), {"*.mycad"}}}
     );
     if (!fn.isEmpty()) {
         const char* DocName = App::GetApplication().getDocumentName(getDocument());

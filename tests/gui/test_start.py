@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Startseite: beim Start ohne Design sichtbar; "New Design" (Seitenleiste) öffnet ein Design; gespeichert und geschlossen erscheint
-es unter Recent und Projects (mit Vorschaubild, im eigenen Ordner Bracket/Bracket.FCStd); Kachel öffnet es wieder; Home zeigt die Seite, "Back" schließt sie.
+es unter Recent und Projects (mit Vorschaubild, im eigenen Ordner Bracket/Bracket.mycad, ohne .FCBak-Sicherung; ein
+altes Legacy.FCStd im Projektordner erscheint auch); Kachel öffnet es wieder; Home zeigt die Seite, "Back" schließt sie.
 Projektordner für den Test im Ausgabeordner, danach wieder der des Benutzers."""
 import os
 import re
@@ -13,7 +14,7 @@ harness.START_PAGE = True
 grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
 old_folder = grp.GetString("ProjectsFolder", "")
 FOLDER = os.environ["OUT"] + ".projects"
-FILE = os.path.join(FOLDER, "Bracket", "Bracket.FCStd")  # Speichern direkt in den Projektordner legt den Projektordner Bracket an
+FILE = os.path.join(FOLDER, "Bracket", "Bracket.mycad")  # Speichern direkt in den Projektordner legt den Projektordner Bracket an
 shutil.rmtree(FOLDER, ignore_errors=True)
 os.makedirs(FOLDER)
 grp.SetString("ProjectsFolder", FOLDER)
@@ -54,13 +55,16 @@ def save():
 def store():
     def pick():
         d = visible(QtWidgets.QFileDialog)[0]
-        [e for e in d.findChildren(QtWidgets.QLineEdit) if e.isVisible()][0].setText(os.path.join(FOLDER, "Bracket.FCStd"))
+        [e for e in d.findChildren(QtWidgets.QLineEdit) if e.isVisible()][0].setText(os.path.join(FOLDER, "Bracket"))  # ohne Endung
         d.accept()
     QtCore.QTimer.singleShot(800, pick)
     Gui.runCommand("Std_SaveAs")  # Dialog wie beim Benutzer, Vorschaubild vom Gui-Dokument
-    L("folder: %s" % sorted(os.listdir(FOLDER)))
+    Gui.ActiveDocument.Document.save()  # zweites Speichern: früher entstand hier die .FCBak
+    L("folder: %s, project folder: %s (only Bracket.mycad expected)" % (sorted(os.listdir(FOLDER)),
+                                                                     sorted(os.listdir(os.path.dirname(FILE)))))
     with zipfile.ZipFile(FILE) as z:
         L("saved %s, thumbnail in file=%s" % (os.path.basename(FILE), "thumbnails/Thumbnail.png" in z.namelist()))
+    shutil.copy(FILE, os.path.join(FOLDER, "Legacy.FCStd"))  # Design aus der Zeit vor .mycad
 
 
 run([

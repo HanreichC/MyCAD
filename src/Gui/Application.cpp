@@ -776,7 +776,7 @@ void Application::open(const char* FileName, const char* Module)
 
     if (Module) {
         try {
-            if (File.hasExtension("FCStd")) {
+            if (File.hasExtension("FCStd") || File.hasExtension("mycad")) {
                 bool handled = false;
                 std::string filepath = File.filePath();
                 for (auto& v : d->documents) {
@@ -855,7 +855,7 @@ void Application::importFrom(const char* FileName, const char* DocName, const ch
             Command::doCommand(Command::App, "import %s", Module);
 
             // load the file with the module
-            if (File.hasExtension("FCStd")) {
+            if (File.hasExtension("FCStd") || File.hasExtension("mycad")) {
                 Command::doCommand(Command::App, "%s.open(u\"%s\")", Module, unicodepath.c_str());
                 setStatus(UserInitiatedOpenDocument, false);
                 App::Document* doc = App::GetApplication().getActiveDocument();

@@ -54,7 +54,26 @@ Exec=$BIN %F
 Icon=mycad
 Terminal=false
 Categories=Graphics;Engineering;3DGraphics;
+MimeType=application/x-mycad;
 EOF
+
+# Dateityp .mycad: eigenes Symbol, Doppelklick öffnet MyCAD (Inhalt wie FreeCADs .FCStd)
+MIME="$HOME/.local/share/mime"
+mkdir -p "$MIME/packages"
+cat > "$MIME/packages/mycad.xml" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-mycad">
+    <comment>MyCAD design</comment>
+    <comment xml:lang="de">MyCAD-Design</comment>
+    <icon name="mycad"/>
+    <glob pattern="*.mycad"/>
+  </mime-type>
+</mime-info>
+EOF
+command -v update-mime-database >/dev/null && update-mime-database "$MIME" || true
+command -v update-desktop-database >/dev/null && update-desktop-database "$(dirname "$DESKTOP")" || true
+command -v xdg-mime >/dev/null && xdg-mime default mycad.desktop application/x-mycad || true
 
 # KDE-Cache der Menüeinträge/Icons auffrischen, sonst zeigt die Taskleiste noch das alte Icon
 command -v kbuildsycoca6 >/dev/null && kbuildsycoca6 >/dev/null 2>&1 || true

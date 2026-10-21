@@ -108,7 +108,7 @@ New bodies come in **Space Gray** with a satin finish. You can pick **Clay**, **
 | **Solids** | 16 create, 12 modify and 6 construction tools |
 | **Export** | STL · 3MF · STEP · DXF (sketches) |
 | **Import** | STEP · DXF · SVG |
-| **File format** | FCStd (ZIP with preview image) |
+| **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
 | **Materials** | Space Gray · Clay · Sierra Blue · Ceramic |
 | **Core** | FreeCAD with OpenCascade |

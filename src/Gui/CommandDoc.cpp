@@ -282,7 +282,7 @@ void StdCmdImport::activated(int iMsg)
     FileDialog::Filter allSupportedFormats {QObject::tr("Supported formats"), {}};
     const auto filetypes = App::GetApplication().getImportTypes();
     for (const auto& type : filetypes) {
-        if (type != "FCStd") {
+        if (type != "FCStd" && type != "mycad") {
             allSupportedFormats.patterns.append(QStringLiteral("*.") + QString::fromStdString(type));
         }
     }
@@ -670,7 +670,7 @@ void StdCmdMergeProjects::activated(int iMsg)
         Gui::getMainWindow(),
         QObject::tr("Merge Document"),
         FileDialog::getWorkingDirectory(),
-        FileDialog::FilterList {{QObject::tr("%1 document").arg(exe), {"*.FCStd"}}}
+        FileDialog::FilterList {{QObject::tr("%1 document").arg(exe), {"*.mycad", "*.FCStd"}}}
     );
     if (!project.isEmpty()) {
         FileDialog::setWorkingDirectory(project);

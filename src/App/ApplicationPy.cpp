@@ -88,7 +88,7 @@ PyObject* ApplicationPy::sLoadFile(PyObject* /*self*/, PyObject* args)
 
         std::stringstream str;
         str << "import " << module << std::endl;
-        if (fi.hasExtension("FCStd")) {
+        if (fi.hasExtension("FCStd") || fi.hasExtension("mycad")) {
             str << module << ".openDocument(" << pathRepr << ")" << std::endl;
         }
         else {

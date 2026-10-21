@@ -1077,7 +1077,7 @@ bool anyDesignOpen()
                                [](App::Document* d) { return !d->testStatus(App::Document::TempDoc); });
 }
 
-/// Vorschaubild aus der .FCStd-Datei (ein ZIP mit thumbnails/Thumbnail.png; FreeCAD legt es beim Speichern an)
+/// Vorschaubild aus der Design-Datei (.mycad/.FCStd, ein ZIP mit thumbnails/Thumbnail.png; FreeCAD legt es beim Speichern an)
 QImage thumbnail(const QString& file)
 {
     try {
@@ -1493,11 +1493,12 @@ private:
 
         // zuletzt geöffnet (FreeCAD führt die Liste; Skripte und gelöschte Dateien überspringen)
         FlowLayout* recent = section(T("Recent"), QString());
+        const QStringList designFiles {QStringLiteral("*.mycad"), QStringLiteral("*.FCStd")};  // eigenes Format, ältere Designs
         auto mru = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/RecentFiles")->GetASCIIs("MRU");
         int shown = 0;
         for (const auto& entry : mru) {
             const QString file = QString::fromUtf8(entry.c_str());
-            if (shown < 8 && file.endsWith(QStringLiteral(".FCStd"), Qt::CaseInsensitive) && QFileInfo::exists(file)) {
+            if (shown < 8 && QDir::match(designFiles, QFileInfo(file).fileName()) && QFileInfo::exists(file)) {
                 recent->addWidget(tile(file));
                 ++shown;
             }
@@ -1512,9 +1513,9 @@ private:
         folderLabel->setText(T("Projects folder\n%1").arg(pretty) + QStringLiteral("\n\nMyCAD ") + Gui::Shell::version());
         FlowLayout* projects = section(T("Projects"), pretty);
         // Designs direkt im Ordner und in Projektunterordnern (Speichern legt je Design einen an), neueste zuerst
-        QFileInfoList files = QDir(folder).entryInfoList({QStringLiteral("*.FCStd")}, QDir::Files);
+        QFileInfoList files = QDir(folder).entryInfoList(designFiles, QDir::Files);
         for (const QFileInfo& sub : QDir(folder).entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-            files += QDir(sub.absoluteFilePath()).entryInfoList({QStringLiteral("*.FCStd")}, QDir::Files);
+            files += QDir(sub.absoluteFilePath()).entryInfoList(designFiles, QDir::Files);
         }
         std::sort(files.begin(), files.end(), [](const QFileInfo& a, const QFileInfo& b) { return a.lastModified() > b.lastModified(); });
         for (const QFileInfo& fi : files) {
@@ -3172,6 +3173,9 @@ void Gui::Shell::install()
     });
     // Projektordner anlegen; Öffnen-/Speichern-Dialoge starten dort, damit gespeicherte Designs auf der Startseite landen
     QDir().mkpath(projectsFolder());
+    // keine .FCBak neben dem Design: FreeCAD schreibt erst in eine Temp-Datei und benennt dann um, ein Absturz beim
+    // Speichern lässt die alte Datei also heil
+    App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Document")->SetBool("CreateBackupFiles", false);
     App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General")
         ->SetASCII("FileOpenSavePath", projectsFolder().toUtf8().constData());
     auto recent = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/RecentFiles");

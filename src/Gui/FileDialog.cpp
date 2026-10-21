@@ -1137,7 +1137,7 @@ QIcon FileIconProvider::icon(const QFileInfo& info) const
         return QIcon(QStringLiteral(":/icons/freecad-doc.png"));
     };
 
-    if (info.suffix().toLower() == QLatin1String("fcstd")) {
+    if (info.suffix().toLower() == QLatin1String("fcstd") || info.suffix().toLower() == QLatin1String("mycad")) {
         // Check if a thumbnail is available
         QString fileName = toUrl(info);
         QString thumb = urlToThumbnail(fileName);

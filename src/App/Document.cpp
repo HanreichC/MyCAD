@@ -1873,22 +1873,23 @@ static std::string checkFileName(const char* file)
         constexpr std::size_t backupAndDocExtLen = sizeof(".fcbak.fcstd") - 1;
         if (boost::iends_with(fn, ".fcbak.fcstd")) {
             fn.erase(fn.size() - backupAndDocExtLen);
-            fn += ".FCStd";
+            fn += ".mycad";
             return fn;
         }
         if (boost::iends_with(fn, ".fcbak")) {
             fn.erase(fn.size() - backupExtLen);
-            fn += ".FCStd";
+            fn += ".mycad";
             return fn;
         }
 
+        // MyCAD: eigene Endung .mycad (Inhalt wie .FCStd); vorhandene .FCStd-Dateien behalten ihre
         const char* ext = strrchr(fn.c_str(), '.');
-        if ((ext == nullptr) || !boost::iequals(ext + 1, "fcstd")) {
+        if ((ext == nullptr) || !(boost::iequals(ext + 1, "fcstd") || boost::iequals(ext + 1, "mycad"))) {
             if (ext && ext[1] == 0) {
-                fn += "FCStd";
+                fn += "mycad";
             }
             else {
-                fn += ".FCStd";
+                fn += ".mycad";
             }
         }
     }
