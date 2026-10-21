@@ -22,6 +22,8 @@ std::vector<const char*> bodyMaterialNames();
 void setBodyMaterial(int index);
 /// Ordner mit den Designs des Benutzers (Startseite "Projects", Einstellung "Projects folder")
 QString projectsFolder();
+/// Stand dieses Builds aus Commit-Datum und -Hash, z. B. "2026.10.21 · b9d3cde" (Startseite, Einstellungen)
+QString version();
 
 /// Sichtbarer Text in der eingestellten Sprache (englischer Originaltext ist der Schlüssel, siehe Translations.cpp)
 inline QString T(const char* english)

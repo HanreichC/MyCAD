@@ -3,6 +3,7 @@
 es unter Recent und Projects (mit Vorschaubild, im eigenen Ordner Bracket/Bracket.FCStd); Kachel öffnet es wieder; Home zeigt die Seite, "Back" schließt sie.
 Projektordner für den Test im Ausgabeordner, danach wieder der des Benutzers."""
 import os
+import re
 import shutil
 import zipfile
 import harness
@@ -63,7 +64,10 @@ def store():
 
 
 run([
-    ("start", lambda: report("beim Start")), ("shot empty", lambda: shot("empty")),
+    ("start", lambda: report("beim Start")),
+    ("version", lambda: L("version shown=%s" % bool([l for l in page().findChildren(QtWidgets.QLabel, "Hint")
+                                                    if re.search(r"MyCAD \d{4}\.\d\d\.\d\d · [0-9a-f]{7}", l.text())]))),
+    ("shot empty", lambda: shot("empty")),
     ("new", lambda: real_click(page().findChild(QtWidgets.QPushButton, "Prominent"))), ("wait", lambda: None),
     ("after new", lambda: report("nach New Design")),
     ("body", save), ("save", store),

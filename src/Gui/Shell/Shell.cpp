@@ -1490,7 +1490,7 @@ private:
         const QString folder = Gui::Shell::projectsFolder();
         QString pretty = folder;
         pretty.replace(QDir::homePath(), QStringLiteral("~"));
-        folderLabel->setText(T("Projects folder\n%1").arg(pretty));
+        folderLabel->setText(T("Projects folder\n%1").arg(pretty) + QStringLiteral("\n\nMyCAD ") + Gui::Shell::version());
         FlowLayout* projects = section(T("Projects"), pretty);
         // Designs direkt im Ordner und in Projektunterordnern (Speichern legt je Design einen an), neueste zuerst
         QFileInfoList files = QDir(folder).entryInfoList({QStringLiteral("*.FCStd")}, QDir::Files);
@@ -3025,6 +3025,13 @@ QString Gui::Shell::projectsFolder()
                                  .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")
                                  ->GetASCII("ProjectsFolder", fallback.toUtf8().constData())
                                  .c_str());
+}
+
+QString Gui::Shell::version()
+{
+    auto& cfg = App::Application::Config();
+    return QString::fromStdString(cfg["BuildRevisionDate"]).left(10).replace(QLatin1Char('/'), QLatin1Char('.'))
+        + QStringLiteral(" · ") + QString::fromStdString(cfg["BuildRevisionHash"]).left(7);
 }
 
 std::vector<const char*> Gui::Shell::bodyMaterialNames()

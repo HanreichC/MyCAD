@@ -959,6 +959,9 @@ void Gui::Shell::showSettings()
         }
     });
     addRow(generalCard, T("Projects folder"), folder);
+    auto version = new QLabel(Gui::Shell::version());
+    version->setTextInteractionFlags(Qt::TextSelectableByMouse);  // zum Kopieren in Fehlerberichte
+    addRow(generalCard, T("Version"), version);
     general->addStretch();
 
     // --- Seite Navigation ---
