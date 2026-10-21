@@ -27,7 +27,7 @@ namespace
 {
 
 // glass.thickness.regular (Bars, Browser, Inspector, Palette) und elevation.glass
-constexpr float LensZone = 30, LensStrength = 32, Chroma = 0.08F, Saturation = 1.5F;
+constexpr float LensZone = 30, LensStrength = 32, EdgeBlur = 8, Chroma = 0.08F, Saturation = 1.5F;
 constexpr qreal ShadowBlur = 28, ShadowY = 6;
 constexpr qreal ShadowMargin = ShadowBlur + ShadowY;  // logische Pixel um das Panel herum für den Schatten
 
@@ -67,7 +67,7 @@ uniform sampler2D uTex;
 uniform float uFbH;
 uniform vec2 uCenter, uHalf, uCapOrigin, uCapSize;
 uniform float uRadius, uShadow, uShadowY, uShadowAlpha, uDpr;
-uniform float uTint, uRim, uEdge, uSheen, uLensZone, uLensStrength, uChroma, uSaturation;
+uniform float uTint, uRim, uEdge, uSheen, uLensZone, uLensStrength, uEdgeBlur, uChroma, uSaturation;
 uniform vec3 uTintColor;
 
 float sdRound(vec2 p, vec2 b, float r) {
@@ -78,6 +78,10 @@ vec3 blurred(vec2 p) {
     vec2 uv = (p - uCapOrigin) / uCapSize;
     uv.y = 1.0 - uv.y;
     return texture2D(uTex, clamp(uv, 0.0, 1.0)).rgb;
+}
+// Hintergrund durch das Glas bei p, um off verschoben; Rot und Blau leicht versetzt (Dispersion)
+vec3 refracted(vec2 p, vec2 off) {
+    return vec3(blurred(p - off * (1.0 + uChroma)).r, blurred(p - off).g, blurred(p - off * (1.0 - uChroma)).b);
 }
 void main() {
     vec2 p = vec2(gl_FragCoord.x, uFbH - gl_FragCoord.y);   // oben-links-Koordinaten wie Qt
@@ -92,11 +96,22 @@ void main() {
     float ds = sdRound(rel - vec2(0.0, uShadowY), uHalf, uRadius);
     float shadow = pow(1.0 - smoothstep(-uShadow * 0.3, uShadow, ds), 2.0) * uShadowAlpha;
 
-    // Linse (Werte in logischen Pixeln)
+    // Linse wie eine runde Glaskante (Viertelkreis): die Steigung und damit die Brechung bleibt in der Linsenzone sanft
+    // und wird ganz außen steil; dort streut das gewölbte Glas auch, der Hintergrund verschwimmt mehr
+    // (Werte in logischen Pixeln)
     float t = -d / uDpr;
-    float bend = 1.0 - smoothstep(0.0, uLensZone, t);
-    vec2 off = n * bend * bend * uLensStrength * uDpr;
-    vec3 col = vec3(blurred(p - off * (1.0 + uChroma)).r, blurred(p - off).g, blurred(p - off * (1.0 - uChroma)).b);
+    float u = clamp(1.0 - t / uLensZone, 0.0, 1.0);
+    float k = 0.97 * u;
+    vec2 off = n * (k / sqrt(1.0 - k * k) / 3.99) * uLensStrength * uDpr;
+    vec3 col = refracted(p, off);
+    float scatter = u * u * uEdgeBlur * uDpr;
+    if (scatter > 0.5) {
+        for (int i = 0; i < 8; ++i) {
+            float a = float(i) * 0.7853982;
+            col += refracted(p + scatter * vec2(cos(a), sin(a)), off);
+        }
+        col /= 9.0;
+    }
 
     // Vibrancy, dann die Tönung
     float l = dot(col, vec3(0.299, 0.587, 0.114));
@@ -248,6 +263,7 @@ public:
                 glass.setUniformValue("uLensZone", LensZone);
                 // Bewegung reduzieren: Linse halbiert
                 glass.setUniformValue("uLensStrength", th.reduceMotion ? LensStrength / 2 : LensStrength);
+                glass.setUniformValue("uEdgeBlur", EdgeBlur);
                 glass.setUniformValue("uChroma", Chroma);
                 glass.setUniformValue("uSaturation", Saturation);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
