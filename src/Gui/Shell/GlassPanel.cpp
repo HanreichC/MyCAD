@@ -150,9 +150,10 @@ public:
         const Theme& th = theme();
         const bool inactive = qApp->applicationState() != Qt::ApplicationActive;  // GM-4: Glas tritt zurück
         const float shadow = float(ShadowBlur * dpr);
-        // Blur je Glas-Stufe ist ein Radius wie in MyStyles Glass.qml (MultiEffect): Sigma = Radius / 3. Gerechnet wird
-        // verkleinert, je stärker der Blur, desto kleiner; bei wenig Blur bleiben dünne Linien (Raster) so erkennbar
-        const float sigma = float(th.glassBlur() / 3.0 * dpr);
+        // Blur je Glas-Stufe ist MultiEffect.blurMax wie in MyStyles Glass.qml: ein leichter Weichzeichner, Text darunter
+        // bleibt fast lesbar (an MyPods abgeglichen: Sigma etwa Radius / 8). Gerechnet wird verkleinert, je stärker der
+        // Blur, desto kleiner; bei wenig Blur in voller Auflösung, damit dünne Linien (Raster) scharf durchscheinen
+        const float sigma = float(th.glassBlur() / 8.0 * dpr);
         const int down = sigma >= 6 ? 4 : sigma >= 3 ? 2 : 1;
         const float spread = sigma / float(down) / 2.32f;  // zwei H+V-Durchgänge des 9-Tap-Gauß: 2.32 * spread Texel Sigma
         if (!ok) {

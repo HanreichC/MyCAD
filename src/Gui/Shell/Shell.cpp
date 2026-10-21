@@ -3125,7 +3125,7 @@ void Gui::Shell::install()
         header->addWidget(sidebarToggle());
         header->addStretch();
         static_cast<QVBoxLayout*>(tree->layout())->insertLayout(0, header);
-        state.browser = new GlassPanel(tree, Token::RadiusPanel, true);  // Text-Glas: bunter 3D-Inhalt läuft darunter
+        state.browser = new GlassPanel(tree, Token::RadiusPanel);  // normales Glas wie MyPods' Seitenleiste: das Design scheint durch
         auto capsule = content();
         auto capsuleLay = new QHBoxLayout(capsule);
         capsuleLay->setContentsMargins(8, 8, 8, 8);
