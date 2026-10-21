@@ -32,6 +32,7 @@
 #include <mutex>
 #include <QApplication>
 #include <QCheckBox>
+#include <QDir>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QOpenGLWidget>
@@ -70,6 +71,7 @@
 #include "ViewProviderDocumentObject.h"
 #include "ViewProviderDocumentObjectGroup.h"
 #include "WaitCursor.h"
+#include "Shell/Shell.h"
 
 
 FC_LOG_LEVEL_INIT("Gui", true, true)
@@ -1752,6 +1754,19 @@ bool Document::saveAs()
     if (!fn.isEmpty()) {
         QFileInfo fi;
         fi.setFile(fn);
+        // MyCAD: direkt in den Projektordner gespeichert -> eigener Ordner je Design (Projekte/Spritze/Spritze.FCStd)
+        if (QDir(fi.absolutePath()) == QDir(Shell::projectsFolder())) {
+            const QString dir = fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName();
+            fn = dir + QLatin1Char('/') + fi.fileName();
+            fi.setFile(fn);
+            if (fi.exists()
+                && QMessageBox::question(getMainWindow(), Shell::T("Save"), Shell::T("%1 already exists. Replace it?").arg(fn))
+                    != QMessageBox::Yes) {
+                getMainWindow()->showMessage(QObject::tr("Saving aborted"), 2000);
+                return false;
+            }
+            QDir().mkpath(dir);
+        }
 
         const char* DocName = App::GetApplication().getDocumentName(getDocument());
 

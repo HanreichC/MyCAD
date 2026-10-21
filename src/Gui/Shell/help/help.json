@@ -501,10 +501,10 @@
    ],
    "tips": {
     "en": [
-     "Choose the projects folder in Settings → General → Projects folder; Save starts there."
+     "Choose the projects folder in Settings → General → Projects folder; Save starts there and gives each design its own folder."
     ],
     "de": [
-     "Den Projektordner wählst du in Einstellungen → Allgemein → Projektordner; Speichern beginnt dort."
+     "Den Projektordner wählst du in Einstellungen → Allgemein → Projektordner; Speichern beginnt dort und legt für jedes Design einen eigenen Ordner an."
     ]
    }
   },

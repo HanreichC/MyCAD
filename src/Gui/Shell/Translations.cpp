@@ -40,6 +40,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Save designs to %1 and they show up here.", "Speichere Designs in %1, dann erscheinen sie hier."},
         {"Rename", "Umbenennen"},
         {"Save", "Speichern"},
+        {"%1 already exists. Replace it?", "%1 gibt es schon. Ersetzen?"},
         {"Save As…", "Speichern unter…"},
         {"Export…", "Exportieren…"},
         {"Delete…", "Löschen…"},

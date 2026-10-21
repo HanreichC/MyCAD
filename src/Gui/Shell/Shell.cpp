@@ -1492,7 +1492,12 @@ private:
         pretty.replace(QDir::homePath(), QStringLiteral("~"));
         folderLabel->setText(T("Projects folder\n%1").arg(pretty));
         FlowLayout* projects = section(T("Projects"), pretty);
-        const QFileInfoList files = QDir(folder).entryInfoList({QStringLiteral("*.FCStd")}, QDir::Files, QDir::Time);
+        // Designs direkt im Ordner und in Projektunterordnern (Speichern legt je Design einen an), neueste zuerst
+        QFileInfoList files = QDir(folder).entryInfoList({QStringLiteral("*.FCStd")}, QDir::Files);
+        for (const QFileInfo& sub : QDir(folder).entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+            files += QDir(sub.absoluteFilePath()).entryInfoList({QStringLiteral("*.FCStd")}, QDir::Files);
+        }
+        std::sort(files.begin(), files.end(), [](const QFileInfo& a, const QFileInfo& b) { return a.lastModified() > b.lastModified(); });
         for (const QFileInfo& fi : files) {
             projects->addWidget(tile(fi.absoluteFilePath()));
         }
