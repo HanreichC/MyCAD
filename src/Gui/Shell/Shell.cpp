@@ -999,13 +999,15 @@ protected:
 
 void showStartPage();
 void showHelp(const QString& id = QString());
+void toggleBrowser();
 
 /// Fensterknöpfe rechts oben wie unter KDE: minimieren, maximieren/wiederherstellen, schließen
 class WindowControls: public QWidget
 {
 public:
-    /// home: Home- und Hilfe-Knopf; back: zusätzlicher Zurück-Knopf vorne (Hilfe)
-    explicit WindowControls(bool home = true, std::function<void()> back = {})
+    /// home: Home- und Hilfe-Knopf; back: zusätzlicher Zurück-Knopf vorne (Hilfe); sidebar: Knopf zum Ein-/Ausklappen
+    /// der Seitenleiste (nur im Design: Startseite und Hilfe zeigen ihre Seitenleiste immer)
+    explicit WindowControls(bool home = true, std::function<void()> back = {}, std::function<void()> sidebar = {})
     {
         setObjectName(QStringLiteral("GlassContent"));
         auto lay = new QHBoxLayout(this);
@@ -1033,6 +1035,9 @@ public:
         handle->setCursor(Qt::OpenHandCursor);
         handle->setToolTip(T("Drag to move the window, double-click to maximize"));
         lay->addWidget(handle);
+        if (sidebar) {
+            sidebarButton = button("Window_Sidebar", "GlassButton", T("Hide sidebar"), sidebar);
+        }
         if (back) {
             backButton = button("Window_Back", "GlassButton", T("Back"), back);
         }
@@ -1070,7 +1075,8 @@ private:
     QToolButton* maximize;
 
 public:
-    QToolButton* backButton = nullptr;  ///< nur mit back-Funktion
+    QToolButton* backButton = nullptr;     ///< nur mit back-Funktion
+    QToolButton* sidebarButton = nullptr;  ///< nur mit sidebar-Funktion
 };
 
 // --- Startseite: neue, zuletzt geöffnete und Projekt-Designs als Kacheln ---------------------------------------
@@ -2423,7 +2429,9 @@ void layout()
     state.sketchBar->setVisible(state.sketchMode);
     const QSizeF bs = bar->content()->sizeHint();  // eine Reihe
     // Toolbar mittig zwischen Browser und Fensterknöpfen; reicht die Breite nicht, bricht sie in weitere Reihen um
-    const qreal left = state.browser ? m + BrowserWidth + m : m;
+    const bool browser = state.browser
+        && !App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("BrowserHidden", false);
+    const qreal left = browser ? m + BrowserWidth + m : m;
     const qreal right = r.width() - m
         - (state.windowControls ? state.windowControls->content()->sizeHint().width() + m : 0);
     qreal barW = std::max<qreal>(100, std::min(bs.width(), right - left));
@@ -2457,7 +2465,12 @@ void layout()
 
     const qreal top = m;
     if (state.browser) {
+        state.browser->setVisible(browser);
         state.browser->setGeometry(QRectF(m, top, BrowserWidth, bottom - top));
+    }
+    if (QToolButton* toggle = state.windowControls ? static_cast<WindowControls*>(state.windowControls->content())->sidebarButton : nullptr) {
+        toggle->setToolTip(browser ? T("Hide sidebar") : T("Show sidebar"));
+        toggle->setAccessibleName(toggle->toolTip());
     }
     qreal cubeTop = m;
     if (state.windowControls) {
@@ -2503,6 +2516,14 @@ void layout()
             }
         }
     }
+}
+
+/// Browser (Seitenleiste links) ein-/ausklappen; der Zustand bleibt über Neustarts (MyCAD/BrowserHidden)
+void toggleBrowser()
+{
+    auto grp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+    grp->SetBool("BrowserHidden", !grp->GetBool("BrowserHidden", false));
+    layout();
 }
 
 /// Sketcher-Panel: im Skizzenmodus nur "Tool Parameters" zeigen, bei jedem Werkzeugwechsel neu anordnen
@@ -3061,7 +3082,7 @@ void Gui::Shell::install()
         if (wasVisible) {
             mw->show();
         }
-        state.windowControls = new GlassPanel(new WindowControls, Token::RadiusCapsule);
+        state.windowControls = new GlassPanel(new WindowControls(true, {}, toggleBrowser), Token::RadiusCapsule);
         static WindowGrip* grip = new WindowGrip;
         for (GlassPanel* p : {state.modelBar, state.sketchBar, state.windowControls}) {
             p->content()->installEventFilter(grip);
