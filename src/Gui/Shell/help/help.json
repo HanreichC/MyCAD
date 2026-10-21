@@ -3710,7 +3710,7 @@
    },
    "steps": {
     "en": [
-     "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Body material and Show tool names.",
+     "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Body material, Show tool names and Show grid (the grid on the ground plane under the bodies).",
      "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language and Projects folder.",
      "Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
      "View: Camera, Rotate, Rotate around and Animate view changes.",
@@ -3718,7 +3718,7 @@
      "Keys tab: Add Key… turns a key into a mouse button, e.g. Shift as the middle button; choose the button and whether to Hold, Click, Double-click or Toggle."
     ],
     "de": [
-     "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Körpermaterial und Werkzeugnamen anzeigen.",
+     "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Körpermaterial, Werkzeugnamen anzeigen und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
      "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache und Projektordner.",
      "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen.",
      "Ansicht: Kamera, Drehen, Drehen um und Ansichtswechsel animieren.",

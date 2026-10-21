@@ -519,6 +519,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Look At", "Senkrecht ansehen"},
         {"Slice", "Schnittansicht"},
         {"Grid", "Raster"},
+        {"Show grid", "Raster anzeigen"},
         {"Snap", "Fangen"},
         {"Construction", "Konstruktion"},
         {"On a trackpad, two-finger scrolling acts as the scroll wheel. Keys that act as mouse buttons are set up under Keys.", "Auf dem Trackpad wirkt Scrollen mit zwei Fingern wie das Mausrad. Tasten als Maustasten richtest du unter Tasten ein."},

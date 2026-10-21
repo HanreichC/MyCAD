@@ -919,6 +919,7 @@ void Gui::Shell::showSettings()
     auto names = new Switch(myParams()->GetBool("ToolNames", false));
     QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
     addRow(lookCard, T("Show tool names"), names);
+    myToggle(lookCard, T("Show grid"), "GroundGrid", myParams()->GetBool("GroundGrid", true));
 
     auto a11yCard = addCard(general, T("Accessibility"));
     myToggle(a11yCard, T("Increase contrast"), "IncreaseContrast", t.increaseContrast);

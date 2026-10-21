@@ -23,6 +23,23 @@
 #include <Gui/Tree.h>
 #include <Gui/View3DInventor.h>
 #include <Gui/View3DInventorViewer.h>
+#include <Gui/Inventor/SoFCBoundingBox.h>
+#include <Inventor/actions/SoGLRenderAction.h>
+#include <Inventor/nodes/SoCallback.h>
+#include <Inventor/nodes/SoCoordinate3.h>
+#include <Inventor/nodes/SoDepthBuffer.h>
+#include <Inventor/nodes/SoFaceSet.h>
+#include <Inventor/nodes/SoFragmentShader.h>
+#include <Inventor/nodes/SoMaterial.h>
+#include <Inventor/nodes/SoPickStyle.h>
+#include <Inventor/nodes/SoPolygonOffset.h>
+#include <Inventor/nodes/SoShaderParameter.h>
+#include <Inventor/nodes/SoShaderProgram.h>
+#include <Inventor/nodes/SoSwitch.h>
+#include <Inventor/nodes/SoTransparencyType.h>
+#include <Inventor/nodes/SoVertexShader.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
 
 #include <QAbstractScrollArea>
 #include <QActionGroup>
@@ -66,6 +83,7 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <set>
 #include <QFontMetrics>
@@ -2739,12 +2757,140 @@ void rebuildTimelineLater()
     timer->start();
 }
 
+/// Bodenraster wie in Fusion: Linien auf der XY-Ebene, die beim Zoomen in Zehnerschritten (1, 10, 100 mm …) dichter
+/// oder gröber werden und um die Bildmitte herum auslaufen. Ein Knoten für alle Ansichten (attach hängt ihn ein).
+/// Der Shader legt ein Quadrat um den Punkt der Ebene in der Bildmitte, so groß wie das sichtbare Bild.
+struct GroundGrid
+{
+    SoSwitch* node;
+    SoShaderParameter4f* color;
+};
+
+GroundGrid& groundGrid()
+{
+    static GroundGrid g = [] {
+        GroundGrid g {new SoSwitch, new SoShaderParameter4f};
+        g.node->ref();
+        g.color->name = "lineColor";
+
+        auto vertex = new SoVertexShader;
+        vertex->sourceType = SoShaderObject::GLSL_PROGRAM;
+        vertex->sourceProgram = R"(
+            #version 120
+            varying vec2 world;   // Punkt auf der Ebene (mm)
+            varying vec2 local;   // -1..1 über das sichtbare Bild, für das Auslaufen
+            varying float facing; // 0 = Ebene von der Kante gesehen
+            void main()
+            {
+                // Bildmitte auf der Ebene: Sehachse (0, 0, z) im Augenraum schneidet die Ebene z = 0
+                vec3 n = gl_NormalMatrix * vec3(0.0, 0.0, 1.0);
+                vec3 o = (gl_ModelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+                float z = dot(n, o) / (abs(n.z) > 1e-3 ? n.z : 1e-3);
+                float h = (gl_ProjectionMatrix[3][3] == 1.0 ? 1.0 : abs(z)) / gl_ProjectionMatrix[1][1];
+                float r = h * max(1.0, gl_ProjectionMatrix[1][1] / gl_ProjectionMatrix[0][0]);
+                vec2 center = (gl_ModelViewMatrixInverse * vec4(0.0, 0.0, z, 1.0)).xy;
+                local = gl_Vertex.xy;
+                world = center + local * r;
+                facing = abs(n.z);
+                gl_Position = gl_ModelViewProjectionMatrix * vec4(world, 0.0, 1.0);
+            }
+        )";
+        auto fragment = new SoFragmentShader;
+        fragment->sourceType = SoShaderObject::GLSL_PROGRAM;
+        fragment->sourceProgram = R"(
+            #version 120
+            uniform vec4 lineColor;
+            varying vec2 world;
+            varying vec2 local;
+            varying float facing;
+            // Deckung einer Linienschar mit Abstand s: 1 px breit, geglättet
+            float lines(float s, vec2 px)
+            {
+                vec2 d = abs(fract(world / s + 0.5) - 0.5) * s / px;
+                return 1.0 - min(min(d.x, d.y), 1.0);
+            }
+            void main()
+            {
+                vec2 px = max(fwidth(world), vec2(1e-6));                  // mm je Pixel
+                float lod = log(max(px.x, px.y) * 2.0) / log(10.0);        // Abstand, der 2 px wäre
+                // Linien mit Abstand 10^k: ab 2 px blendet die feine Stufe ein (50 %), zehnmal gröber die Hauptlinie (100 %)
+                float a = 0.0;
+                for (int i = 1; i <= 3; ++i) {
+                    float k = floor(lod) + float(i);
+                    float strength = 0.5 * clamp(k - lod, 0.0, 1.0) + 0.5 * clamp(k - lod - 1.0, 0.0, 1.0);
+                    a = max(a, strength * lines(pow(10.0, k), px));
+                }
+                a *= (1.0 - smoothstep(0.3, 1.0, length(local))) * smoothstep(0.05, 0.25, facing);
+                if (a < 0.004) {
+                    discard;
+                }
+                gl_FragColor = vec4(lineColor.rgb, lineColor.a * a);
+            }
+        )";
+        fragment->parameter.set1Value(0, g.color);
+        auto program = new SoShaderProgram;
+        program->shaderObject.set1Value(0, vertex);
+        program->shaderObject.set1Value(1, fragment);
+
+        // Ebenenteile vor oder hinter dem Bereich der Körper nicht abschneiden (Clipping richtet sich nach den Körpern)
+        auto depthClamp = [](bool on) {
+            auto cb = new SoCallback;
+            cb->setCallback(
+                [](void* on, SoAction* action) {
+                    if (action->isOfType(SoGLRenderAction::getClassTypeId())) {
+                        on ? glEnable(GL_DEPTH_CLAMP) : glDisable(GL_DEPTH_CLAMP);
+                    }
+                },
+                on ? cb : nullptr);
+            return cb;
+        };
+        auto pick = new SoPickStyle;
+        pick->style = SoPickStyle::UNPICKABLE;
+        auto blend = new SoTransparencyType;  // gleich in Reihenfolge zeichnen (nach den Körpern), nicht verzögert
+        blend->value = SoTransparencyType::BLEND;
+        auto material = new SoMaterial;
+        material->transparency = 0.5F;  // schaltet Blending ein; die Deckkraft kommt aus dem Shader
+        auto depth = new SoDepthBuffer;  // verdeckt nichts, Körper verdecken das Raster
+        depth->write = FALSE;
+        depth->function = SoDepthBuffer::LEQUAL;
+        auto offset = new SoPolygonOffset;  // Skizzenprofile auf z = 0 liegen über dem Raster
+        auto coords = new SoCoordinate3;
+        coords->point.setValues(0, 4, std::array<SbVec3f, 4> {{{-1, -1, 0}, {1, -1, 0}, {1, 1, 0}, {-1, 1, 0}}}.data());
+        auto sep = new SoSeparator;
+        sep->renderCulling = SoSeparator::OFF;  // die echte Lage entsteht erst im Shader
+        for (SoNode* n : std::initializer_list<SoNode*> {pick, blend, material, depth, offset, program, coords,
+                                                         depthClamp(true), new SoFaceSet, depthClamp(false)}) {
+            sep->addChild(n);
+        }
+        auto skip = new SoSkipBoundingGroup;  // Einpassen und Clipping richten sich nur nach den Körpern
+        skip->mode = SoSkipBoundingGroup::EXCLUDE_BBOX;
+        skip->addChild(sep);
+        g.node->addChild(skip);
+        return g;
+    }();
+    return g;
+}
+
+/// Raster an Einstellung (MyCAD/GroundGrid), Skizzenmodus (dort zeigt die Skizze ihr eigenes) und Theme anpassen
+void updateGroundGrid()
+{
+    const bool on = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("GroundGrid", true);
+    const QColor c = theme().separator;  // MyStyle-Diagrammraster: separator, Hauptlinien voll, sonst 50 %
+    groundGrid().color->value.setValue(c.redF(), c.greenF(), c.blueF(), c.alphaF());
+    groundGrid().node->whichChild = on && !state.sketchMode ? 0 : SO_SWITCH_NONE;
+}
+
 void attach(View3DInventor* view)
 {
     QGraphicsScene* scene = view->getViewer()->scene();
     if (scene == state.scene) {
         return;
     }
+    auto root = static_cast<SoSeparator*>(view->getViewer()->getSceneGraph());
+    if (root->findChild(groundGrid().node) < 0) {
+        root->addChild(groundGrid().node);
+    }
+    updateGroundGrid();
     state.scene = scene;
     for (auto p : panels()) {
         scene->addItem(p);  // entfernt es automatisch aus der vorherigen Szene
@@ -2932,11 +3078,13 @@ void Gui::Shell::install()
         // Nur Skizzen schalten auf Sketch-Toolbar und Palette; Feature-Dialoge brauchen den Inspector
         static const Base::Type sketch = Base::Type::fromName("Sketcher::SketchObject");
         state.sketchMode = !sketch.isBad() && vp.getObject()->getTypeId().isDerivedFrom(sketch);
+        updateGroundGrid();
         hideChromeLater();
         QTimer::singleShot(0, layout);
     });
     Application::Instance->signalResetEdit.connect([](const ViewProviderDocumentObject&) {
         state.sketchMode = false;
+        updateGroundGrid();
         hideChromeLater();
         QTimer::singleShot(0, layout);
     });
@@ -3090,6 +3238,7 @@ void Gui::Shell::applyAppearance()
         }
     }
     rebuildTimeline();  // Fehler-Symbole und blasse Einträge sind fertige Bilder
+    updateGroundGrid();
     if (startPage && startPage->isVisible()) {
         startPage->open();  // Vorschaubilder neu
     }
