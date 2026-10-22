@@ -1147,7 +1147,7 @@ void NotificationArea::showConfirmationDialog(const QString& notifiername, const
 void NotificationArea::showInNotificationArea()
 {
     // guard to avoid modifying the notification list and indices while creating the tooltip
-    lock_guard<std::mutex> g(pImp->mutexNotification);
+    std::unique_lock<std::mutex> g(pImp->mutexNotification);
 
     // NOLINTNEXTLINE
     NotificationsAction* na = static_cast<NotificationsAction*>(pImp->notificationaction);
@@ -1270,6 +1270,8 @@ void NotificationArea::showInNotificationArea()
         }
 
         msgw += QStringLiteral("</table>");
+
+        g.unlock();
 
         NotificationBox::Options options = NotificationBox::Options::RestrictAreaToReference;
 
