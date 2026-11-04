@@ -48,7 +48,7 @@ struct Theme
 /// Maße aus den Tokens (radius.*, size.*, space.*)
 namespace Token
 {
-constexpr int RadiusWindow = 32, RadiusPanel = 20, RadiusTile = 12, RadiusControl = 8, RadiusCheckbox = 5;
+constexpr int RadiusWindow = 24, RadiusPanel = 20, RadiusTile = 12, RadiusControl = 8, RadiusCheckbox = 5;
 constexpr int RadiusCapsule = 9999;  ///< Höhe / 2
 constexpr int WindowInset = 12, WindowButton = 36, ControlDesktop = 30, Segmented = 44, Chip = 24;
 constexpr int SwitchWidth = 38, SwitchHeight = 22, SwitchKnob = 18, SliderKnob = 21;

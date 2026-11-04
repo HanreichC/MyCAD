@@ -48,6 +48,7 @@
 #include <QDockWidget>
 #include <QFontDatabase>
 #include <QFrame>
+#include <QGraphicsRectItem>
 #include <QGraphicsScene>
 #include <QPropertyAnimation>
 #include <QGraphicsOpacityEffect>
@@ -73,8 +74,13 @@
 #include <QMenuBar>
 #include <QDir>
 #include <QFile>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
 #include <QPainter>
+#include <QPainterPath>
 #include <QSvgRenderer>
+#include <QtMath>
+#include <tuple>
 #include <QPointer>
 #include <QStatusBar>
 #include <QRegularExpression>
@@ -1253,6 +1259,80 @@ private:
 };
 
 
+/// Gerundete Fensterecken (MyStyle radius.window) mit Haarlinie, nur rahmenlos und nicht maximiert. Das Fenster hat dann
+/// einen Alphakanal: was hier ausgestanzt wird, ist durchsichtig. Die Ecken sind vorgerenderte Bilder, weil QPainter im
+/// 3D-Fenster (OpenGL ohne Multisampling) Kurven nicht glättet.
+void paintWindowCorners(QPainter& p, const QSize& size, qreal dpr)
+{
+    MainWindow* mw = getMainWindow();
+    if (!mw->testAttribute(Qt::WA_TranslucentBackground) || mw->isMaximized() || mw->isFullScreen()) {
+        return;
+    }
+    const int r = Token::RadiusWindow;
+    const QColor rim = theme().increaseContrast ? theme().glassBorder : theme().glassPopupBorder;
+    static QImage cut, line;
+    static QColor builtRim;
+    static qreal builtDpr = 0;
+    if (builtDpr != dpr || builtRim != rim) {
+        builtDpr = dpr;
+        builtRim = rim;
+        const int px = qCeil(r * dpr);
+        for (QImage* image : {&cut, &line}) {
+            *image = QImage(px, px, QImage::Format_ARGB32_Premultiplied);
+            image->setDevicePixelRatio(dpr);
+            image->fill(Qt::transparent);
+        }
+        QPainterPath corner, disc, arc;
+        corner.addRect(0, 0, r, r);
+        disc.addEllipse(0, 0, 2 * r, 2 * r);
+        QPainter c(&cut);
+        c.setRenderHint(QPainter::Antialiasing);
+        c.fillPath(corner.subtracted(disc), Qt::black);
+        c.end();
+        arc.moveTo(0.5, r);
+        arc.arcTo(0.5, 0.5, 2 * r - 1, 2 * r - 1, 180, -90);
+        QPainter l(&line);
+        l.setRenderHint(QPainter::Antialiasing);
+        l.setPen(QPen(rim, 1));
+        l.drawPath(arc);
+    }
+    const int w = size.width(), h = size.height();
+    p.save();
+    for (const auto& [x, y, sx, sy] : {std::tuple(0, 0, 1, 1), std::tuple(w, 0, -1, 1), std::tuple(0, h, 1, -1), std::tuple(w, h, -1, -1)}) {
+        p.save();
+        p.translate(x, y);
+        p.scale(sx, sy);
+        p.setCompositionMode(QPainter::CompositionMode_DestinationOut);
+        p.drawImage(0, 0, cut);
+        p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        p.drawImage(0, 0, line);
+        p.restore();
+    }
+    p.fillRect(QRect(r, 0, w - 2 * r, 1), rim);
+    p.fillRect(QRect(r, h - 1, w - 2 * r, 1), rim);
+    p.fillRect(QRect(0, r, 1, h - 2 * r), rim);
+    p.fillRect(QRect(w - 1, r, 1, h - 2 * r), rim);
+    p.restore();
+}
+
+/// Ecken über Startseite und Hilfe: liegt über den Glasflächen, deren Schatten sonst in die Ausschnitte fielen
+class WindowEdge: public QWidget
+{
+public:
+    explicit WindowEdge(QWidget* parent)
+        : QWidget(parent)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter p(this);
+        paintWindowCorners(p, size(), devicePixelRatioF());
+    }
+};
+
 /// Hintergrund von Startseite und Hilfe: wie der Hintergrund des 3D-Fensters
 void paintBackdrop(QPainter& p, const QRect& r)
 {
@@ -1360,6 +1440,7 @@ public:
         controls->installEventFilter(&grip);
         barLay->addWidget(controls);
         side->raise();  // der durchsichtige Schattenrand der Leiste darf die ersten Zeilen der Seitenleiste nicht verdecken
+        edge = new WindowEdge(this);
 
         getMainWindow()->installEventFilter(this);
         hide();
@@ -1416,6 +1497,7 @@ private:
     void place()
     {
         const qreal m = Token::WindowInset;
+        edge->setGeometry(rect());
         const qreal barH = controls->sizeHint().height();  // so flach wie die Knöpfe selbst
         const qreal left = m + BrowserWidth + 32;  // etwas mehr Luft zur Seitenleiste als zwischen den Panels
         barCard->place(QRectF(m, m, width() - 2 * m, barH));
@@ -1542,6 +1624,7 @@ private:
     GlassCard* side;
     GlassCard* barCard;
     QLabel* barTitle;
+    WindowEdge* edge;
     WindowControls* controls;
     QScrollArea* scroll;
     QLineEdit* search;
@@ -1685,6 +1768,7 @@ public:
         controls->installEventFilter(&grip);
         barLay->addWidget(controls);
         side->raise();  // der durchsichtige Schattenrand der Leiste darf die ersten Zeilen der Seitenleiste nicht verdecken
+        edge = new WindowEdge(this);
 
         getMainWindow()->installEventFilter(this);
         hide();
@@ -1729,6 +1813,7 @@ protected:
     void resizeEvent(QResizeEvent*) override
     {
         const qreal m = Token::WindowInset;
+        edge->setGeometry(rect());
         const qreal barH = controls->sizeHint().height();  // so flach wie die Knöpfe selbst
         const qreal searchLeft = m + BrowserWidth + 32;  // wie auf der Startseite
         barCard->place(QRectF(m, m, width() - 2 * m, barH));
@@ -1876,6 +1961,7 @@ a { color: %3; text-decoration: none; }
     GlassCard* articleCard;
     GlassCard* barCard;
     QLabel* barTitle;
+    WindowEdge* edge;
     WindowControls* controls;
     QTextBrowser* view;
     QLineEdit* search;
@@ -2375,6 +2461,39 @@ QWidget* sketchPalette()
     return box;
 }
 
+/// Fensterecken über der 3D-Ansicht: liegt über allem und nimmt keine Mausereignisse an
+class WindowCorners: public QGraphicsRectItem
+{
+public:
+    WindowCorners()
+    {
+        setZValue(1000);
+        setPen(Qt::NoPen);
+        setAcceptedMouseButtons(Qt::NoButton);
+    }
+    QPainterPath shape() const override
+    {
+        return {};
+    }
+    void paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget* widget) override
+    {
+        auto ctx = QOpenGLContext::currentContext();
+        if (!ctx) {
+            return;
+        }
+        // Durchsichtiges im 3D-Bild (Ursprungsebenen, Glas) hinterlässt Alpha < 1: das Fenster wäre dort durchsichtig
+        p->beginNativePainting();
+        QOpenGLFunctions* f = ctx->functions();
+        f->glDisable(GL_SCISSOR_TEST);
+        f->glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+        f->glClearColor(0, 0, 0, 1);
+        f->glClear(GL_COLOR_BUFFER_BIT);
+        f->glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        p->endNativePainting();
+        paintWindowCorners(*p, rect().size().toSize(), widget->devicePixelRatioF());
+    }
+};
+
 struct State
 {
     GlassPanel* header = nullptr;  ///< Kopfleiste über die ganze Fensterbreite: Seitenleisten-Knopf, Toolbar, Fensterknöpfe
@@ -2388,6 +2507,7 @@ struct State
     GlassPanel* timeline = nullptr;
     GlassPanel* palette = nullptr;
     ViewCube* viewCube = nullptr;
+    WindowCorners* corners = nullptr;  ///< nur rahmenlos
     bool sketchMode = false;
     QGraphicsScene* scene = nullptr;
 } state;
@@ -2410,6 +2530,9 @@ void layout()
     }
     const QRectF r = state.scene->sceneRect();
     const qreal m = Token::WindowInset;
+    if (state.corners) {
+        state.corners->setRect(r);
+    }
     QWidget* bar = state.sketchMode ? state.sketchBar : state.modelBar;
     state.modelBar->setVisible(!state.sketchMode);
     state.sketchBar->setVisible(state.sketchMode);
@@ -2938,6 +3061,9 @@ void attach(View3DInventor* view)
         scene->addItem(state.viewCube);
         state.viewCube->setViewer(view->getViewer());
     }
+    if (state.corners) {
+        scene->addItem(state.corners);
+    }
     static ContextMenus* menus = new ContextMenus;
     view->getViewer()->setPopupMenuEnabled(false);  // FreeCAD-Menü aus, eigenes Menü über ContextMenus
     view->getViewer()->viewport()->installEventFilter(menus);
@@ -2969,6 +3095,9 @@ void detach()
     }
     if (state.viewCube) {
         state.scene->removeItem(state.viewCube);
+    }
+    if (state.corners) {
+        state.scene->removeItem(state.corners);
     }
     state.scene = nullptr;
 }
@@ -3006,7 +3135,22 @@ void hideChromeLater()
     QTimer::singleShot(0, hideChrome);
 }
 
+/// Rahmenloses Fenster wie eine macOS-App (abschaltbar: MainWindow/MyCADFrameless = false)
+bool frameless()
+{
+    return App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow")->GetBool("MyCADFrameless", true);
+}
+
 }  // namespace
+
+void Gui::Shell::prepareWindow()
+{
+    if (frameless()) {
+        // Der Alphakanal lässt sich nur setzen, bevor Qt das native Fenster anlegt
+        getMainWindow()->setAttribute(Qt::WA_TranslucentBackground);
+        getMainWindow()->setWindowFlag(Qt::FramelessWindowHint, true);
+    }
+}
 
 void Gui::Shell::install()
 {
@@ -3069,15 +3213,8 @@ void Gui::Shell::install()
     qApp->installEventFilter(new MenuPolisher);
     qApp->installEventFilter(new HelpKey);
     qApp->installEventFilter(new SketchTaskFilter);
-    // Rahmenloses Fenster wie eine macOS-App (abschaltbar: MainWindow/MyCADFrameless = false)
-    auto mainGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MainWindow");
-    if (mainGrp->GetBool("MyCADFrameless", true)) {
-        MainWindow* mw = getMainWindow();
-        const bool wasVisible = mw->isVisible();
-        mw->setWindowFlag(Qt::FramelessWindowHint, true);
-        if (wasVisible) {
-            mw->show();
-        }
+    if (frameless()) {
+        state.corners = new WindowCorners;
         state.windowControls = new WindowControls;
         state.windowControls->setParent(header);
         state.windowControls->show();

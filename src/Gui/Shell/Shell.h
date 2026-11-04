@@ -12,6 +12,8 @@ namespace Gui::Shell
 /// Ersetzt die klassische FreeCAD-Oberfläche durch die MyCAD-Oberfläche:
 /// 3D-Ansicht über das ganze Fenster, darüber schwebende Liquid-Glass-Panels.
 void install();
+/// Vor dem ersten Anzeigen des Hauptfensters: rahmenlos und mit Alphakanal für die gerundeten Ecken
+void prepareWindow();
 /// Namen unter den Symbolen der Toolbar ein-/ausblenden (Einstellung "Show tool names")
 void setToolNames(bool on);
 /// Erscheinungsbild neu anwenden, nachdem die Einstellungen (MyCAD/Appearance, GlassLevel, IncreaseContrast,

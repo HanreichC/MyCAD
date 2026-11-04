@@ -654,7 +654,7 @@ QString settingsStyle()
 * { color: @labelPrimary; }
 QDialog#Settings { background: transparent; }
 QFrame#Window { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 @backgroundTop, stop:1 @backgroundBottom);
-    border: 1px solid @glassPopupBorder; border-radius: 32px; }
+    border: 1px solid @glassPopupBorder; border-radius: 24px; }
 QFrame#Card { background: @materialFill; border: 1px solid @materialBorder; border-radius: 20px; }
 QFrame#Separator { background: @separator; border: none; min-height: 1px; max-height: 1px; }
 QLabel#Section, QLabel#Secondary, QLabel#Hint { color: @labelSecondary; }

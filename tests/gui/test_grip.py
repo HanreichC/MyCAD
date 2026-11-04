@@ -19,6 +19,8 @@ def check():
         b = [b for b in visible(QtWidgets.QToolButton) if b.toolTip() == tip][0]
         L("%s size=%s icon=%s, tool size=%s icon=%s" % (tip, b.size().toTuple(), b.iconSize().toTuple(), tool.size().toTuple(), tool.iconSize().toTuple()))
         assert b.size() == tool.size() and b.iconSize() == tool.iconSize(), tip + " anders groß als die Toolbar-Knöpfe"
+    # gerundete Ecken gehen nur, wenn das native Fenster seinen Alphakanal von Anfang an hat (Shell::prepareWindow)
+    assert mw.windowHandle().format().alphaBufferSize() == 8, "Fenster ohne Alphakanal: Ecken wären schwarz"
     L("OK")
 
 

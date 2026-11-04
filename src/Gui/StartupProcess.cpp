@@ -224,6 +224,7 @@ void StartupPostProcess::execute()
     checkOpenGL();
     loadOpenInventor();
     setBranding();
+    Shell::prepareWindow();
     showMainWindow();
     activateWorkbench();
     checkParameters();
