@@ -30,7 +30,7 @@ namespace
 constexpr float LensZone = 30, LensStrength = 32, EdgeBlur = 8, Chroma = 0.08F, Saturation = 1.5F;
 constexpr qreal ShadowBlur = 28, ShadowY = 6;
 constexpr qreal ShadowMargin = ShadowBlur + ShadowY;  // logische Pixel um das Panel herum für den Schatten
-// Abweichung von MyStyle C-8 (Glas hat keine eigene Farbe), zum Ausprobieren an den Post-its; noch kein Token
+// glass.noteTint: Anteil Gelb in der Glas-Tönung der Post-its, die Ausnahme in MyStyle C-8
 constexpr double TintLight = 0.30, TintDark = 0.15;
 
 const char* QuadVs = R"(
