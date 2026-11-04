@@ -50,6 +50,7 @@ ICONS = {
     "Design_ReplaceFace": '<path d="M4 14l4-4h12l-4 4z"/><path d="M4 20l4-4h12l-4 4z"' + DASH + '/><path d="M12 6v6M9.5 8.5L12 6l2.5 2.5"/>',
     "Design_SplitFace": '<path d="M3 17l5-10h13l-5 10z"/><path d="M12 7l-3 10"/>',
     "Design_Emboss": '<rect x="3" y="13" width="18" height="7" rx="1"/><path d="M8 13V7h8v6M8 7l4 3 4-3"/>',
+    "Design_Note": '<path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/>',
     "Design_Joint": '<circle cx="8" cy="16" r="4.5"/><circle cx="16" cy="8" r="4.5"/><path d="M11.2 12.8l1.6-1.6"/>' + DOT.format(8, 16) + DOT.format(16, 8),
     "Window_Minimize": '<path d="M4 12h16"/>',
     "Window_Maximize": '<rect x="4.5" y="4.5" width="15" height="15" rx="2"/>',

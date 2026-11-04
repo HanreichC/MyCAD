@@ -2,12 +2,15 @@
 
 #pragma once
 
+#include <QColor>
 #include <QGraphicsObject>
 
 class QGraphicsProxyWidget;
 
 namespace Gui::Shell
 {
+
+struct Theme;
 
 /// Liquid-Glass-Fläche in der Szene des 3D-Viewers.
 /// Zeichnet die bereits gerenderten 3D-Pixel unter sich weich (GPU-Blur), mit Lichtbrechung am Rand,
@@ -23,6 +26,7 @@ public:
 
     void setGeometry(const QRectF& rect);  ///< in Szenen-/View-Koordinaten
     void setRadius(qreal radius);          ///< Token::RadiusCapsule = Höhe / 2
+    void setTint(QColor Theme::*color);    ///< Glas leicht in dieser Theme-Farbe tönen (Post-its)
     QWidget* content() const;
 
     QRectF boundingRect() const override;
@@ -35,6 +39,7 @@ private:
     QSizeF size;
     qreal radius;
     bool textSurface;
+    QColor Theme::*tint = nullptr;
     QGraphicsProxyWidget* proxy;
 };
 

@@ -30,6 +30,8 @@ namespace
 constexpr float LensZone = 30, LensStrength = 32, EdgeBlur = 8, Chroma = 0.08F, Saturation = 1.5F;
 constexpr qreal ShadowBlur = 28, ShadowY = 6;
 constexpr qreal ShadowMargin = ShadowBlur + ShadowY;  // logische Pixel um das Panel herum für den Schatten
+// Abweichung von MyStyle C-8 (Glas hat keine eigene Farbe), zum Ausprobieren an den Post-its; noch kein Token
+constexpr double TintLight = 0.30, TintDark = 0.15;
 
 const char* QuadVs = R"(
 #version 120
@@ -160,7 +162,7 @@ public:
     }
 
     /// panel/fb in Gerätepixeln, Ursprung oben links. Gibt false zurück, wenn GL den Blur nicht kann.
-    bool draw(const QRect& panel, const QSize& fb, float radius, float dpr, bool textSurface)
+    bool draw(const QRect& panel, const QSize& fb, float radius, float dpr, bool textSurface, const QColor& tint)
     {
         const Theme& th = theme();
         const bool inactive = qApp->applicationState() != Qt::ApplicationActive;  // GM-4: Glas tritt zurück
@@ -256,7 +258,7 @@ public:
                 glass.setUniformValue("uShadowAlpha", float(th.shadow.alphaF()));
                 glass.setUniformValue("uDpr", dpr);
                 glass.setUniformValue("uTint", float(std::min(1.0, th.glassTintAmount(textSurface) + (inactive ? 0.1 : 0.0))));
-                glass.setUniformValue("uTintColor", QVector3D(th.glassTint.redF(), th.glassTint.greenF(), th.glassTint.blueF()));
+                glass.setUniformValue("uTintColor", QVector3D(tint.redF(), tint.greenF(), tint.blueF()));
                 glass.setUniformValue("uRim", float(th.glassRim() * (inactive ? 0.5 : 1.0)));
                 glass.setUniformValue("uEdge", float(th.glassEdge.alphaF()));
                 glass.setUniformValue("uSheen", th.dark ? 0.03f : 0.05f);
@@ -351,6 +353,13 @@ void GlassPanel::setGeometry(const QRectF& rect)
     setPos(rect.topLeft());
     proxy->setPos(0, 0);
     proxy->resize(size);
+    proxy->sceneTransform();  // Lage gleich aktualisieren: die Szene nimmt sonst für die nächste Mausbewegung die alte (Ziehen)
+}
+
+void GlassPanel::setTint(QColor Theme::*color)
+{
+    tint = color;
+    update();
 }
 
 void GlassPanel::setRadius(qreal r)
@@ -374,6 +383,8 @@ void GlassPanel::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidg
     auto view = gl ? qobject_cast<QGraphicsView*>(gl->parentWidget()) : nullptr;
     auto ctx = QOpenGLContext::currentContext();
 
+    const double share = !tint ? 0 : theme().dark ? TintDark : TintLight;
+    const QColor color = tint ? theme().*tint : QColor();
     bool drawn = false;
     if (view && ctx && !theme().reduceTransparency) {
         const qreal dpr = gl->devicePixelRatioF();
@@ -381,13 +392,25 @@ void GlassPanel::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidg
         const QRect px(QPoint(qRound(viewRect.x() * dpr), qRound(viewRect.y() * dpr)),
                        QSize(qRound(size.width() * dpr), qRound(size.height() * dpr)));
         painter->beginNativePainting();
-        drawn = GlassRenderer::forContext(ctx)->draw(px, gl->size() * dpr, float(r * dpr), float(dpr), textSurface);
+        const QColor base = theme().glassTint;
+        const QColor mixed = !tint ? base
+                                   : QColor::fromRgbF(float(base.redF() + (color.redF() - base.redF()) * share),
+                                                      float(base.greenF() + (color.greenF() - base.greenF()) * share),
+                                                      float(base.blueF() + (color.blueF() - base.blueF()) * share));
+        drawn = GlassRenderer::forContext(ctx)->draw(px, gl->size() * dpr, float(r * dpr), float(dpr), textSurface, mixed);
         painter->endNativePainting();
     }
 
     painter->setRenderHint(QPainter::Antialiasing);
     if (!drawn) {  // ohne Blur-fähiges GL oder mit "Transparenz reduzieren"
         paintGlass(*painter, local, r, textSurface);
+        if (tint) {
+            QColor overlay = color;
+            overlay.setAlphaF(float(share));
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(overlay);
+            painter->drawRoundedRect(local, r, r);
+        }
     }
     else if (theme().increaseContrast) {  // Kontrast erhöhen: sichtbarer Rand um die Linse
         painter->setPen(QPen(theme().glassBorder, 1));

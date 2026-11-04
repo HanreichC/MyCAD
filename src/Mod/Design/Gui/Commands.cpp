@@ -307,6 +307,49 @@ private:
     std::function<void(App::Document*)> run;
 };
 
+/// Neues Post-it. Auch mitten in der Skizze (man rechnet oft beim Zeichnen), aber nicht in einem Werkzeug-Dialog:
+/// dessen Abbrechen nähme das neue Post-it mit zurück.
+class NoteCommand: public DesignCommand
+{
+public:
+    NoteCommand()
+        : DesignCommand("Design_Note", "Note", "Note: stays on screen, also in sketches. A line ending in = is calculated",
+                        "TextDocument", "", run)
+    {}
+
+protected:
+    bool isActive() override
+    {
+        if (!hasActiveDocument()) {
+            return false;
+        }
+        auto edit = dynamic_cast<Gui::ViewProviderDocumentObject*>(getActiveGuiDocument()->getInEdit());
+        return !Gui::Control().activeDialog() || (edit && edit->getObject()->isDerivedFrom<Sketcher::SketchObject>());
+    }
+
+private:
+    static void run(App::Document* doc)
+    {
+        const bool own = !doc->hasPendingTransaction();
+        if (own) {
+            doc->openTransaction("New Note");
+        }
+        // leicht versetzt, damit ein neues Post-it das vorige nicht genau verdeckt
+        const int shift = 24 * (int(doc->getObjectsOfType(Design::Note::getClassTypeId()).size()) % 6);
+        auto note = static_cast<Design::Note*>(doc->addObject("Design::Note", "Note"));
+        Design::folder(Design::root(doc, true), "Notes")->addObject(note);
+        note->OffsetX.setValue(note->OffsetX.getValue() + shift);
+        note->OffsetY.setValue(note->OffsetY.getValue() + shift);
+        if (own) {
+            doc->recompute();
+            doc->commitTransaction();
+        }
+        else {
+            note->purgeTouched();  // in der Skizze kein Neuberechnen: kein "veraltet"-Abzeichen im Browser
+        }
+    }
+};
+
 void createSketchCommand(App::Document* doc)
 {
     App::Part* root = activeContainer(doc);
@@ -2514,6 +2557,7 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_Parameters", "Change Parameters",
                                      "Parameters: named values to use in any dimension field", "Std_VarSet", "",
                                      showParameters));
+    mgr.addCommand(new NoteCommand);
     mgr.addCommand(new DesignCommand("Design_ReplaceFace", "Replace Face",
                                      "Replace Face: select faces of a body, then the target plane or face",
                                      "Part_Extrude", "", [](App::Document* doc) {

@@ -61,6 +61,7 @@ PyMOD_INIT_FUNC(DesignGui)
     DesignGui::ViewProviderProfiles::init();
     DesignGui::ViewProviderFeature::init();
     DesignGui::ViewProviderJoint::init();
+    DesignGui::ViewProviderNote::init();
 
     // Jedes neue Design bekommt sofort seine Root-Komponente (Origin, Bodies, Sketches)
     App::GetApplication().signalNewDocument.connect([](const App::Document& doc, bool) {

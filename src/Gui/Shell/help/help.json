@@ -118,7 +118,7 @@
      "Three planes appear in the view. Click the flat one lying on the floor (XY). The view turns so you look straight onto it and the sketch toolbar appears.",
      "In the sketch toolbar at the top, in the CREATE section, click Rectangle.",
      "Click once for the first corner, move the mouse and click again for the opposite corner. You can also type width and height into the small fields next to the cursor and press Enter.",
-     "Press Esc to put the rectangle tool away, then click the blue Finish Sketch button at the right end of the sketch toolbar.",
+     "Press Esc to put the rectangle tool away, then click the blue Finish Sketch button in the Sketch Palette on the right.",
      "Outside a sketch, its closed areas (profiles) are shown light orange. Click one to select it – it turns blue.",
      "In the toolbar at the top, in the CREATE section, click Extrude.",
      "Drag the blue arrow upwards, or type a value into Distance in the panel on the right, e.g. 20 mm.",
@@ -132,7 +132,7 @@
      "In der Ansicht erscheinen drei Ebenen. Klicke die flach liegende Bodenebene (XY) an. Die Ansicht dreht sich, sodass du direkt darauf schaust, und die Skizzen-Werkzeugleiste erscheint.",
      "Klicke in der Skizzen-Werkzeugleiste oben im Bereich ERSTELLEN auf Rechteck.",
      "Klicke einmal für die erste Ecke, bewege die Maus und klicke erneut für die gegenüberliegende Ecke. Du kannst Breite und Höhe auch in die kleinen Felder neben dem Cursor tippen und Enter drücken.",
-     "Drücke Esc, um das Rechteck-Werkzeug wegzulegen, und klicke dann ganz rechts in der Skizzen-Werkzeugleiste auf den blauen Knopf Skizze fertig stellen.",
+     "Drücke Esc, um das Rechteck-Werkzeug wegzulegen, und klicke dann in der Skizzenpalette rechts auf den blauen Knopf Skizze fertig stellen.",
      "Außerhalb einer Skizze sind ihre geschlossenen Flächen (Profile) hellorange. Ein Klick wählt eine aus – sie wird blau.",
      "Klicke in der Werkzeugleiste oben im Bereich ERSTELLEN auf Extrudieren.",
      "Ziehe den blauen Pfeil nach oben oder tippe im Panel rechts bei Abstand einen Wert ein, z. B. 20 mm.",
@@ -679,13 +679,13 @@
      "In the toolbar at the top, in the CREATE section, click Sketch (key S).",
      "The three origin planes appear. Click one of them – XY is the floor, XZ the front, YZ the side – or click a flat face of a body.",
      "The view turns to look straight at the plane and the toolbar switches to the sketch tools (CREATE, MODIFY, CONSTRAINTS).",
-     "Draw your shapes, then click the blue Finish Sketch button at the right end of the toolbar (or press Esc twice)."
+     "Draw your shapes, then click the blue Finish Sketch button in the Sketch Palette on the right (or press Esc twice)."
     ],
     "de": [
      "Klicke in der Werkzeugleiste oben im Bereich ERSTELLEN auf Skizze (Taste S).",
      "Die drei Ursprungsebenen erscheinen. Klicke eine davon an – XY ist der Boden, XZ die Vorderseite, YZ die Seite – oder eine flache Körperfläche.",
      "Die Ansicht dreht sich direkt auf die Ebene, und die Werkzeugleiste zeigt die Skizzenwerkzeuge (ERSTELLEN, ÄNDERN, ABHÄNGIGKEITEN).",
-     "Zeichne deine Formen und klicke dann ganz rechts in der Werkzeugleiste auf den blauen Knopf Skizze fertig stellen (oder zweimal Esc)."
+     "Zeichne deine Formen und klicke dann in der Skizzenpalette rechts auf den blauen Knopf Skizze fertig stellen (oder zweimal Esc)."
     ]
    },
    "see": [
@@ -3594,6 +3594,67 @@
    }
   },
   {
+   "id": "Design_Note",
+   "group": "utilities",
+   "icon": "Design_Note",
+   "commands": [],
+   "title": {
+    "en": "Note",
+    "de": "Notiz"
+   },
+   "keywords": {
+    "en": [
+     "note",
+     "post-it",
+     "sticky note",
+     "calculator",
+     "calculate",
+     "memo"
+    ],
+    "de": [
+     "Notiz",
+     "Post-it",
+     "Haftnotiz",
+     "Taschenrechner",
+     "rechnen",
+     "Merkzettel"
+    ]
+   },
+   "summary": {
+    "en": "A note that floats over the view and stays open in sketches too. It is saved in the design, and a line ending in = is calculated.",
+    "de": "Eine Notiz, die über der Ansicht schwebt und auch in Skizzen offen bleibt. Sie wird im Design gespeichert, und eine Zeile mit = am Ende wird berechnet."
+   },
+   "steps": {
+    "en": [
+     "In the toolbar at the top, in the UTILITIES section, click Note.",
+     "Type your text. To calculate, end a line with =, e.g. 120 / 4 = and the result appears behind it.",
+     "Drag the note by its title to any place. It stays in the nearest window corner, also when the window changes size.",
+     "Click the x to close the note. It stays in the browser under Notes; double-click it there to open it again.",
+     "To remove a note for good, select it in the browser and press Delete."
+    ],
+    "de": [
+     "Klicke in der Werkzeugleiste oben im Bereich WERKZEUGE auf Notiz.",
+     "Tippe deinen Text. Zum Rechnen beende eine Zeile mit =, z. B. 120 / 4 =, dann erscheint dahinter das Ergebnis.",
+     "Zieh die Notiz an ihrem Titel an einen beliebigen Platz. Sie bleibt in der nächsten Fensterecke, auch wenn sich die Fenstergröße ändert.",
+     "Klicke auf das x, um die Notiz zu schließen. Sie bleibt im Browser unter Notizen; ein Doppelklick dort öffnet sie wieder.",
+     "Um eine Notiz endgültig zu entfernen, wähle sie im Browser aus und drücke Entf."
+    ]
+   },
+   "see": [
+    "Design_Parameters"
+   ],
+   "tips": {
+    "en": [
+     "Calculations understand + - * / and brackets, units such as 10 mm + 1 in, and your parameter names.",
+     "Undo does not change notes: while typing, Ctrl+Z only takes back your text."
+    ],
+    "de": [
+     "Rechnungen verstehen + - * / und Klammern, Einheiten wie 10 mm + 1 in und deine Parameternamen.",
+     "Rückgängig ändert keine Notizen: Beim Tippen nimmt Strg+Z nur deinen Text zurück."
+    ]
+   }
+  },
+  {
    "id": "Design_Appearance",
    "group": "utilities",
    "icon": "Design_Appearance",
@@ -5478,11 +5539,11 @@
    },
    "steps": {
     "en": [
-     "Click the blue Finish Sketch button at the right end of the sketch toolbar – or in the Sketch Palette on the right – or press Esc twice.",
+     "Click the blue Finish Sketch button in the Sketch Palette on the right, or press Esc twice.",
      "Outside a sketch, its closed areas (profiles) are shown light orange. Click one to select it – it turns blue."
     ],
     "de": [
-     "Klicke den blauen Knopf Skizze fertig stellen ganz rechts in der Skizzen-Werkzeugleiste – oder in der Skizzenpalette rechts – oder drücke zweimal Esc.",
+     "Klicke den blauen Knopf Skizze fertig stellen in der Skizzenpalette rechts oder drücke zweimal Esc.",
      "Außerhalb einer Skizze sind ihre geschlossenen Flächen (Profile) hellorange. Ein Klick wählt eine aus – sie wird blau."
     ]
    },

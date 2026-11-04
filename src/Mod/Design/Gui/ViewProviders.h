@@ -72,4 +72,19 @@ public:
     bool createMode = false;
 };
 
+/// Post-it im Browser (Ordner "Notes"): Doppelklick öffnet es wieder
+class DesignGuiExport ViewProviderNote: public Gui::ViewProviderDocumentObject
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(DesignGui::ViewProviderNote);
+
+public:
+    QIcon getIcon() const override;
+    bool doubleClicked() override;
+    /// Ohne 3D-Darstellung gälte es sonst immer als ausgeblendet (Auge im Browser)
+    bool isShow() const override
+    {
+        return Visibility.getValue();
+    }
+};
+
 }  // namespace DesignGui

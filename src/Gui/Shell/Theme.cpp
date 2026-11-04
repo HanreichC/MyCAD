@@ -186,6 +186,7 @@ void Gui::Shell::reloadTheme()
     t.focusRing = t.accentText;
     t.red = pick("#FF383C", "#FF4245", "#E9152D", "#FF6165");
     t.orange = pick("#FF8D28", "#FF9230", "#C55300", "#FFA056");
+    t.yellow = pick("#FFCC00", "#FFD600", "#A16A00", "#FEDF43");
     t.green = pick("#34C759", "#30D158", "#008932", "#4AD968");
     t.blue = pick("#0088FF", "#0091FF", "#1E6EF4", "#5CB8FF");
     t.purple = pick("#CB30E0", "#DB34F2", "#B02FC2", "#EA8DFF");

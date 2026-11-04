@@ -60,6 +60,7 @@ PyMOD_INIT_FUNC(Design)
     Design::SplitFace::init();
     Design::Emboss::init();
     Design::Joint::init();
+    Design::Note::init();
 
     PyMOD_Return(mod);
 }

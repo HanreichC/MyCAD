@@ -17,7 +17,9 @@
 #include <Gui/ViewProviderDocumentObject.h>
 #include <Gui/ViewProviderGeometryObject.h>
 #include <App/Document.h>
+#include <App/ExpressionParser.h>
 #include <App/PropertyStandard.h>
+#include <App/VarSet.h>
 #include <Gui/DockWindowManager.h>
 #include <Gui/MainWindow.h>
 #include <Gui/Tree.h>
@@ -66,6 +68,10 @@
 #include <QLineEdit>
 #include <QAbstractSpinBox>
 #include <QKeyEvent>
+#include <QPlainTextEdit>
+#include <QTextBlock>
+#include <QTextCursor>
+#include <QTextDocument>
 #include <QTreeWidget>
 #include <QSizePolicy>
 #include <QLabel>
@@ -150,6 +156,10 @@ QToolButton#GlassButton::menu-arrow { image: url(:/mycad/icons/Chevron_Down.svg)
 QToolButton#GlassButton[error="true"] { background: @errorFill; }
 QToolButton#WindowClose:hover { background: @red; }
 QToolButton#WindowClose:pressed { background: @redPressed; }
+/* Schließen-Knopf der Post-its wie beim Hinweis-Popup (MyStyle § 9.4): 28 rund, fill.tertiary */
+QToolButton#NoteClose { border: 2px solid transparent; border-radius: 14px; background: @fillTertiary; }
+QToolButton#NoteClose:hover { background: @fillSecondary; }
+QToolButton#NoteClose:focus { border-color: @focusRing; }
 
 /* Prominent-Button (Akzentfläche): Kapsel 30 hoch, 16 seitlich, Callout SemiBold, Hover 1 px Weiß 35 %, gedrückt 15 % dunkler */
 QToolButton#GlassProminent, QPushButton#Prominent { border: 1px solid transparent; border-radius: 15px; background: @accent; color: @labelOnAccent;
@@ -176,6 +186,9 @@ QLabel#Section, QLabel#Secondary, QLabel#StartDate, QLabel#StartCaption, QLabel#
    weil dort kein Zeilenlabel links steht, an dem man den Pop-up-Button erkennt */
 #GlassContent QComboBox:hover { background: @fillSecondary; }
 #GlassContent QLineEdit:focus, #GlassContent QAbstractSpinBox:focus, #GlassContent QComboBox:focus { border-color: @focusRing; }
+#GlassContent QPlainTextEdit#NoteText { background: transparent; border: 2px solid transparent; border-radius: 12px;
+    selection-background-color: @accent; selection-color: @labelOnAccent; }
+#GlassContent QPlainTextEdit#NoteText:focus { border-color: @focusRing; }
 #GlassContent QAbstractSpinBox::up-button, #GlassContent QAbstractSpinBox::down-button { width: 0; border: none; }
 QComboBox::drop-down { border: none; width: 20px; }
 QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
@@ -877,17 +890,6 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         }
         btn->setObjectName(QStringLiteral("GlassButton"));
         btn->setProperty("command", QString::fromLatin1(name));
-        if (std::string(name) == "Sketcher_LeaveSketch") {  // wie in Fusion: deutlicher Abschluss-Knopf
-            btn->setObjectName(QStringLiteral("GlassProminent"));
-            btn->setText(T("Finish Sketch"));
-            btn->setToolTip(T("Finish Sketch"));
-            btn->setFixedHeight(Token::ControlDesktop);
-            QObject::connect(btn, &QToolButton::clicked, action, [action] {
-                QTimer::singleShot(0, action, &QAction::trigger);
-            });
-            row->addWidget(btn);
-            continue;
-        }
         btn->setIcon(commandIcon(QString::fromLatin1(name), action->icon()));
         btn->setIconSize(QSize(Token::IconL, Token::IconL));
         btn->setToolTip(action->toolTip().isEmpty() ? action->text() : action->toolTip());
@@ -2448,6 +2450,7 @@ QWidget* sketchPalette()
     if (QAction* finish = commandAction("Sketcher_LeaveSketch")) {
         auto btn = new QToolButton;
         btn->setObjectName(QStringLiteral("GlassProminent"));
+        btn->setProperty("command", QStringLiteral("Sketcher_LeaveSketch"));
         btn->setText(T("Finish Sketch"));
         btn->setFixedHeight(Token::ControlDesktop);
         btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -2494,6 +2497,21 @@ public:
     }
 };
 
+/// Post-it auf dem Bildschirm; das Objekt dahinter (Design::Note) wird über doc/name gesucht, es kann weg sein
+struct NotePanel
+{
+    GlassPanel* panel = nullptr;
+    QLabel* title = nullptr;
+    QPlainTextEdit* edit = nullptr;
+    std::string doc, name;
+
+    App::DocumentObject* object() const
+    {
+        App::Document* d = App::GetApplication().getDocument(doc.c_str());
+        return d ? d->getObject(name.c_str()) : nullptr;
+    }
+};
+
 struct State
 {
     GlassPanel* header = nullptr;  ///< Kopfleiste über die ganze Fensterbreite: Seitenleisten-Knopf, Toolbar, Fensterknöpfe
@@ -2510,6 +2528,8 @@ struct State
     WindowCorners* corners = nullptr;  ///< nur rahmenlos
     bool sketchMode = false;
     QGraphicsScene* scene = nullptr;
+    std::vector<NotePanel> notes;  ///< offene Post-its des aktiven Designs
+    std::string notesDocument;
 } state;
 
 std::vector<GlassPanel*> panels()
@@ -2520,7 +2540,41 @@ std::vector<GlassPanel*> panels()
             all.push_back(p);
         }
     }
+    for (const NotePanel& note : state.notes) {
+        all.push_back(note.panel);
+    }
     return all;
+}
+
+constexpr int NoteWidth = 248, NoteHeight = 200;  // Breite wie das Hinweis-Popup (MyStyle § 9.4)
+
+int noteValue(App::DocumentObject* note, const char* prop)
+{
+    return static_cast<int>(static_cast<App::PropertyInteger*>(note->getPropertyByName(prop))->getValue());
+}
+
+/// Lage im Fenster aus Ecke und Abstand; bleibt immer ganz sichtbar, auch nach dem Verkleinern des Fensters
+QRectF noteRect(App::DocumentObject* note, const QRectF& r)
+{
+    const int corner = noteValue(note, "Corner");
+    const qreal x = corner & 1 ? r.width() - noteValue(note, "OffsetX") - NoteWidth : noteValue(note, "OffsetX");
+    const qreal y = corner & 2 ? r.height() - noteValue(note, "OffsetY") - NoteHeight : noteValue(note, "OffsetY");
+    const qreal m = Token::WindowInset;
+    return QRectF(std::max(m, std::min(x, r.width() - NoteWidth - m)), std::max(m, std::min(y, r.height() - NoteHeight - m)),
+                  NoteWidth, NoteHeight);
+}
+
+/// Neue Lage merken: als Abstand zur nächsten Fensterecke
+void setNotePosition(App::DocumentObject* note, const QPointF& pos, const QRectF& r)
+{
+    const bool right = pos.x() + NoteWidth / 2.0 > r.center().x();
+    const bool bottom = pos.y() + NoteHeight / 2.0 > r.center().y();
+    const auto set = [note](const char* prop, int value) {
+        static_cast<App::PropertyInteger*>(note->getPropertyByName(prop))->setValue(value);
+    };
+    set("Corner", (right ? 1 : 0) | (bottom ? 2 : 0));
+    set("OffsetX", qRound(right ? r.width() - pos.x() - NoteWidth : pos.x()));
+    set("OffsetY", qRound(bottom ? r.height() - pos.y() - NoteHeight : pos.y()));
 }
 
 void layout()
@@ -2576,6 +2630,12 @@ void layout()
     }
     if (state.windowControls) {
         state.windowControls->setGeometry(QRectF(QPointF(right, 0), cs).toRect());
+    }
+
+    for (const NotePanel& note : state.notes) {
+        if (App::DocumentObject* obj = note.object()) {
+            note.panel->setGeometry(noteRect(obj, r));
+        }
     }
 
     qreal bottom = r.height() - m;
@@ -2648,6 +2708,15 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
         const auto type = event->type();
+        // In der Skizze schluckt der 3D-Viewer Tasten, bevor die Szene sie bekommt: an das Post-it mit Fokus durchreichen
+        if ((type == QEvent::KeyPress || type == QEvent::KeyRelease) && qobject_cast<QGraphicsView*>(obj)) {
+            for (const NotePanel& note : state.notes) {
+                if (note.edit->hasFocus()) {
+                    QApplication::sendEvent(note.edit, event);
+                    return true;
+                }
+            }
+        }
         // Esc beendet wie in Fusion das Skizzen-Werkzeug, auch wenn ein Maßfeld den Fokus hat (FreeCAD bricht dort
         // nur die Eingabe ab, und das nächste Feld holt sich den Fokus zurück)
         if (type == QEvent::KeyPress && state.sketchMode && static_cast<QKeyEvent*>(event)->key() == Qt::Key_Escape
@@ -2733,12 +2802,242 @@ void setTimelineMarker(App::Document* doc, int n)
     doc->commitTransaction();
 }
 
+/// Rechenzeile eines Post-its ("120 / 4 =", ohne Text davor oder mit "Breite: 120 / 4 =", weitergerechnet
+/// "120 / 4 = 30 * 2 ="). Rechnet mit FreeCADs Formel-Parser, also auch mit Einheiten und den Namen aus
+/// "Change Parameters". Leer, wenn die Zeile keine Rechnung ist: dann bleibt das "=" einfach Text.
+QString calculateLine(const NotePanel& note, QString line)
+{
+    App::DocumentObject* owner = note.object();
+    if (!owner) {
+        return {};
+    }
+    line.chop(1);  // das eben getippte "="
+    line = line.mid(std::max(line.lastIndexOf(QLatin1Char(':')), line.lastIndexOf(QLatin1Char('='))) + 1).trimmed();
+    static const QRegularExpression decimalComma(QStringLiteral(R"((\d),(\d))"));
+    line.replace(decimalComma, QStringLiteral(R"(\1.\2)"));
+    if (line.isEmpty()) {
+        return {};
+    }
+    // Der Parser sucht bloße Namen am Besitzer: mit dem Parameter-Objekt als Besitzer gelten die Parameternamen
+    for (auto obj : owner->getDocument()->getObjectsOfType(App::VarSet::getClassTypeId())) {
+        if (std::strcmp(obj->Label.getValue(), "Parameters") == 0) {
+            owner = obj;
+        }
+    }
+    try {
+        const App::ExpressionPtr result = App::Expression::parse(owner, line.toStdString())->eval();
+        auto number = freecad_cast<App::NumberExpression*>(result.get());
+        if (!number) {
+            return {};
+        }
+        const Base::Quantity quantity = number->getQuantity();
+        QString text = quantity.isDimensionless() ? QString::number(quantity.getValue(), 'g', 10)
+                                                  : QString::fromStdString(quantity.getUserString());
+        return language() == QLatin1String("German") ? text.replace(QLatin1Char('.'), QLatin1Char(',')) : text;
+    }
+    catch (const Base::Exception&) {
+        return {};  // keine Rechnung, z. B. "Breite = " ohne so einen Parameter
+    }
+    catch (const std::exception&) {
+        return {};
+    }
+}
+
+/// Textfeld im Post-it: "=" am Zeilenende rechnet, Esc gibt die Tastatur an die 3D-Ansicht zurück
+class NoteEdit: public QPlainTextEdit
+{
+public:
+    std::function<QString(const QString&)> calculate;
+
+protected:
+    void keyPressEvent(QKeyEvent* event) override
+    {
+        if (event->key() == Qt::Key_Escape) {
+            if (state.scene) {
+                state.scene->clearFocus();
+            }
+            return;
+        }
+        QPlainTextEdit::keyPressEvent(event);
+        QTextCursor cursor = textCursor();
+        if (event->text() == QLatin1String("=") && cursor.atBlockEnd()) {
+            const QString result = calculate(cursor.block().text());
+            if (!result.isEmpty()) {
+                cursor.insertText(QLatin1Char(' ') + result);
+            }
+        }
+    }
+};
+
+/// Post-it am Titel ziehen
+class NoteGrip: public QObject
+{
+public:
+    NoteGrip(GlassPanel* panel, std::function<App::DocumentObject*()> object, QObject* parent)
+        : QObject(parent)
+        , panel(panel)
+        , object(std::move(object))
+    {}
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        const auto type = event->type();
+        if (type != QEvent::MouseButtonPress && type != QEvent::MouseMove && type != QEvent::MouseButtonRelease) {
+            return false;
+        }
+        // Griffpunkt im Panel; bleibt beim Ziehen gleich, die Maus in der Szene ist Panel-Lage + dieser Punkt
+        const QPointF inPanel = static_cast<QMouseEvent*>(event)->position() + static_cast<QWidget*>(obj)->pos();
+        const QPointF scene = panel->pos() + inPanel;
+        if (type == QEvent::MouseButtonPress) {
+            grab = inPanel;
+            dragging = true;
+        }
+        else if (type == QEvent::MouseButtonRelease) {
+            dragging = false;
+        }
+        else if (dragging && state.scene) {
+            if (App::DocumentObject* note = object()) {
+                setNotePosition(note, scene - grab, state.scene->sceneRect());
+                panel->setGeometry(noteRect(note, state.scene->sceneRect()));
+            }
+        }
+        return true;
+    }
+
+private:
+    GlassPanel* panel;
+    std::function<App::DocumentObject*()> object;
+    QPointF grab;
+    bool dragging = false;
+};
+
+NotePanel makeNotePanel(App::DocumentObject* obj)
+{
+    NotePanel note;
+    note.doc = obj->getDocument()->getName();
+    note.name = obj->getNameInDocument();
+    const auto find = [note] { return note.object(); };
+
+    auto box = content();
+    auto lay = new QVBoxLayout(box);
+    lay->setContentsMargins(8, 8, 8, 8);  // Panel r 20 - 8 = Textfeld r 12
+    lay->setSpacing(0);
+    auto head = new QWidget;
+    auto headLay = new QHBoxLayout(head);
+    headLay->setContentsMargins(0, 0, 0, 0);
+    note.title = new QLabel;
+    setTextStyle(note.title, Text::Headline);
+    note.title->setContentsMargins(10, 0, 0, 0);
+    note.title->setAttribute(Qt::WA_TransparentForMouseEvents);
+    headLay->addWidget(note.title, 1);
+    auto close = new QToolButton;
+    close->setObjectName(QStringLiteral("NoteClose"));
+    close->setIcon(designIcon(QStringLiteral("Window_Close")));
+    close->setIconSize(QSize(Token::IconM, Token::IconM));
+    close->setFixedSize(28, 28);
+    close->setToolTip(T("Close Note"));
+    close->setAccessibleName(T("Close Note"));
+    QObject::connect(close, &QToolButton::clicked, close, [find] {
+        QTimer::singleShot(0, [find] {  // nicht mitten im Klick das Panel abbauen
+            if (App::DocumentObject* obj = find()) {
+                obj->Visibility.setValue(false);
+            }
+        });
+    });
+    headLay->addWidget(close);
+    lay->addWidget(head);
+
+    auto edit = new NoteEdit;
+    edit->calculate = [note](const QString& line) { return calculateLine(note, line); };
+    edit->setObjectName(QStringLiteral("NoteText"));
+    edit->setPlaceholderText(T("Write here or calculate: 120 / 4 ="));
+    edit->setTabChangesFocus(true);
+    edit->document()->setDocumentMargin(8);
+    setTextStyle(edit, Text::Body);
+    note.edit = edit;
+    lay->addWidget(edit, 1);
+    box->setFixedSize(NoteWidth, NoteHeight);
+
+    note.panel = new GlassPanel(box, Token::RadiusPanel, true);  // mehrzeiliger Text steht auf Text-Glas (GV-2)
+    note.panel->setTint(&Theme::yellow);
+    note.panel->setZValue(20);  // über den anderen Panels
+    head->installEventFilter(new NoteGrip(note.panel, find, head));
+
+    // Text direkt ins Objekt: ohne Speicher-Schritt, das Design gilt dadurch als geändert
+    QObject::connect(edit, &QPlainTextEdit::textChanged, edit, [find, edit] {
+        if (App::DocumentObject* obj = find()) {
+            auto text = static_cast<App::PropertyString*>(obj->getPropertyByName("Text"));
+            const std::string value = edit->toPlainText().toStdString();
+            if (value != text->getValue()) {
+                text->setValue(value);
+            }
+        }
+    });
+    return note;
+}
+
+bool isNote(const App::DocumentObject* obj)
+{
+    // nicht als static: die Shell startet vor dem Design-Modul
+    const Base::Type type = Base::Type::fromName("Design::Note");
+    return !type.isBad() && obj->getTypeId().isDerivedFrom(type);
+}
+
+/// Post-its auf dem Bildschirm an das aktive Design anpassen: offene zeigen, alle anderen abbauen
+void syncNotes()
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    const std::string docName = doc ? doc->getName() : std::string();
+    const bool sameDesign = docName == state.notesDocument;
+    state.notesDocument = docName;
+    std::erase_if(state.notes, [&docName](const NotePanel& note) {
+        App::DocumentObject* obj = note.doc == docName ? note.object() : nullptr;
+        if (obj && obj->Visibility.getValue()) {
+            return false;
+        }
+        if (QGraphicsScene* scene = note.panel->scene()) {
+            scene->removeItem(note.panel);
+        }
+        note.panel->deleteLater();
+        return true;
+    });
+    for (auto obj : doc ? doc->getObjects() : std::vector<App::DocumentObject*>()) {
+        if (!isNote(obj) || !obj->Visibility.getValue()) {
+            continue;
+        }
+        const std::string name = obj->getNameInDocument();
+        auto note = std::find_if(state.notes.begin(), state.notes.end(), [&name](const NotePanel& n) { return n.name == name; });
+        const bool created = note == state.notes.end();
+        if (created) {
+            state.notes.push_back(makeNotePanel(obj));
+            note = std::prev(state.notes.end());
+            if (state.scene) {
+                state.scene->addItem(note->panel);
+            }
+        }
+        note->title->setText(QString::fromUtf8(obj->Label.getValue()));
+        const QString text = QString::fromUtf8(static_cast<App::PropertyString*>(obj->getPropertyByName("Text"))->getValue());
+        if (note->edit->toPlainText() != text) {
+            note->edit->setPlainText(text);
+        }
+        if (created && sameDesign) {  // eben geöffnet (nicht: Design gewechselt oder Datei geladen): gleich lostippen
+            // erst wenn das Panel in der Szene liegt und seine Lage hat; die Szene gibt den Fokus nur so weiter
+            QTimer::singleShot(0, note->edit, [panel = note->panel, edit = note->edit] {
+                panel->setFocus();
+                edit->setFocus();
+            });
+        }
+    }
+}
+
 /// Timeline-Leiste neu aufbauen (nach jeder Änderung am Dokument, gebündelt)
 void rebuildTimeline()
 {
     if (!state.timeline) {
         return;
     }
+    syncNotes();
     QWidget* box = state.timeline->content();
     auto lay = static_cast<QHBoxLayout*>(box->layout());
     while (QLayoutItem* item = lay->takeAt(0)) {
@@ -3188,7 +3487,7 @@ void Gui::Shell::install()
                  "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",
                  "#INSPECT", "Design_Measure", "Design_Section", "Std_ViewFitAll",
-                 "#UTILITIES", "Design_Parameters", "Design_Appearance"});
+                 "#UTILITIES", "Design_Parameters", "Design_Appearance", "Design_Note"});
     state.sketchBar =
         toolbar({"#CREATE", "Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
                  "Sketcher_CompCreateConic", "Sketcher_CompCreateArc", "Sketcher_CompSlot",
@@ -3201,7 +3500,7 @@ void Gui::Shell::install()
                  "Sketcher_ConstrainHorizontal|Sketcher_ConstrainVertical",
                  "Sketcher_ConstrainParallel|Sketcher_ConstrainPerpendicular", "Sketcher_ConstrainTangent",
                  "Sketcher_ConstrainEqual", "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock",
-                 "#", "Sketcher_LeaveSketch"});
+                 "#UTILITIES", "Design_Note"});
     QWidget* header = content();
     state.headerTitle = new QLabel(QStringLiteral("MyCAD"), header);
     setTextStyle(state.headerTitle, Text::Title2);
@@ -3316,6 +3615,12 @@ void Gui::Shell::install()
     App::GetApplication().signalRelabelObject.connect([](const App::DocumentObject&) { rebuildTimelineLater(); });
     App::GetApplication().signalRecomputed.connect([](const App::Document&) { rebuildTimelineLater(); });
     App::GetApplication().signalActiveDocument.connect([](const App::Document&) { rebuildTimelineLater(); });
+    App::GetApplication().signalDeletedDocument.connect([] { rebuildTimelineLater(); });
+    App::GetApplication().signalChangedObject.connect([](const App::DocumentObject& obj, const App::Property& prop) {
+        if (&prop == &obj.Visibility && isNote(&obj)) {  // Post-it geschlossen oder (Auge, Doppelklick) geöffnet
+            rebuildTimelineLater();
+        }
+    });
 
     // Inspector ein-/ausblenden, wenn ein Werkzeug-Dialog startet oder endet
     // ponytail: Polling, weil ControlSingleton kein Signal hat; 4 Hz reicht fürs Auge

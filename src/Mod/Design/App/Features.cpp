@@ -2460,3 +2460,20 @@ void Joint::unsetupObject()
     }
     App::DocumentObject::unsetupObject();
 }
+
+PROPERTY_SOURCE(Design::Note, App::DocumentObject)
+
+Note::Note()
+{
+    ADD_PROPERTY_TYPE(Text, (""), "Note", App::Prop_NoRecompute, "Text of the note");
+    ADD_PROPERTY_TYPE(Corner, (3L), "Note", App::Prop_NoRecompute, "Window corner it stays in: bit 0 right, bit 1 bottom");
+    ADD_PROPERTY_TYPE(OffsetX, (12L), "Note", App::Prop_NoRecompute, "Horizontal distance to that corner");
+    ADD_PROPERTY_TYPE(OffsetY, (12L), "Note", App::Prop_NoRecompute, "Vertical distance to that corner");
+}
+
+void Note::onBeforeChange(const App::Property* prop)
+{
+    if (prop != &Text && prop != &Corner && prop != &OffsetX && prop != &OffsetY && prop != &Visibility) {
+        App::DocumentObject::onBeforeChange(prop);
+    }
+}

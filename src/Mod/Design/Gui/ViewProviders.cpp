@@ -1337,6 +1337,19 @@ private:
 };
 }  // namespace
 
+PROPERTY_SOURCE(DesignGui::ViewProviderNote, Gui::ViewProviderDocumentObject)
+
+QIcon ViewProviderNote::getIcon() const
+{
+    return QIcon(Gui::BitmapFactory().pixmapFromSvg(":/mycad/icons/Design_Note.svg", QSize(32, 32)));
+}
+
+bool ViewProviderNote::doubleClicked()
+{
+    getObject()->Visibility.setValue(true);
+    return true;
+}
+
 PROPERTY_SOURCE(DesignGui::ViewProviderJoint, Gui::ViewProviderDocumentObject)
 
 QIcon ViewProviderJoint::getIcon() const

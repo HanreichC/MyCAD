@@ -518,4 +518,28 @@ public:
     }
 };
 
+/// Post-it (Ordner "Notes"): schwebt über der Ansicht, die Shell zeichnet es. Offen = Visibility (Auge im Browser).
+/// Position: Abstand zur nächsten Fensterecke, damit es beim Ändern der Fenstergröße in dieser Ecke bleibt.
+class DesignExport Note: public App::DocumentObject
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Note);
+
+public:
+    Note();
+    App::PropertyString Text;
+    App::PropertyInteger Corner;  ///< Bit 0: rechts, Bit 1: unten
+    App::PropertyInteger OffsetX;
+    App::PropertyInteger OffsetY;
+
+    const char* getViewProviderName() const override
+    {
+        return "DesignGui::ViewProviderNote";
+    }
+
+protected:
+    /// Inhalt, Position und Offen-Zustand laufen nicht über Undo: Strg+Z in der Konstruktion oder ein abgebrochener
+    /// Werkzeug-Dialog darf keine Notiz zurückdrehen
+    void onBeforeChange(const App::Property* prop) override;
+};
+
 }  // namespace Design
