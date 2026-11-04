@@ -1016,7 +1016,7 @@ public:
             auto btn = new QToolButton;
             btn->setObjectName(QString::fromLatin1(name));
             btn->setIcon(designIcon(QString::fromLatin1(icon)));
-            btn->setIconSize(QSize(Token::IconWindow, Token::IconWindow));
+            btn->setIconSize(QSize(Token::IconL, Token::IconL));  // so groß wie die Toolbar-Knöpfe daneben
             btn->setFixedSize(Token::WindowButton, Token::WindowButton);
             btn->setToolTip(tip);
             btn->setAccessibleName(tip);
@@ -1025,15 +1025,6 @@ public:
             lay->addWidget(btn);
             return btn;
         };
-        // deutlicher Griff zum Verschieben (die Fläche um die Knöpfe allein ist zu schmal zum Treffen), 30 breit
-        auto handle = new QWidget;
-        handle->setFixedSize(30, Token::WindowButton);
-        auto grip = new QHBoxLayout(handle);
-        grip->setContentsMargins(0, 0, 0, 0);
-        grip->addWidget(new IconLabel(designIcon(QStringLiteral("Window_Grip"), &Theme::labelSecondary), Token::IconWindow));
-        handle->setCursor(Qt::OpenHandCursor);
-        handle->setToolTip(T("Drag to move the window, double-click to maximize"));
-        lay->addWidget(handle);
         if (back) {
             backButton = button("Window_Back", "GlassButton", T("Back"), back);
         }
@@ -1108,6 +1099,10 @@ QString when(const QDateTime& t)
     }
     return en.toString(t.date(), language() == QLatin1String("German") ? QStringLiteral("d. MMM yyyy") : QStringLiteral("MMM d, yyyy"));
 }
+
+// Kopfleiste von Startseite und Hilfe: Name auf Höhe der Seitenleisten-Texte (8 + 10), Abstand der Elemente
+constexpr int BarTitleInset = 18;
+constexpr int BarSpacing = 8;
 
 /// Glas-Panel als Widget; der Rand von Shadow Pixeln trägt den Schatten
 class GlassCard: public QWidget
@@ -1267,8 +1262,8 @@ void paintBackdrop(QPainter& p, const QRect& r)
     p.fillRect(r, base);
 }
 
-/// Startseite im Stil des restlichen MyCAD: Viewport-Hintergrund, links ein Glas-Panel (Neu, Öffnen, Bereiche),
-/// oben Suche und die Fensterknöpfe in einer Glas-Kapsel, rechts die Designs als große Vorschaubilder
+/// Startseite im Stil des restlichen MyCAD: Viewport-Hintergrund, oben die Kopfleiste (Name, Suche, Fensterknöpfe),
+/// links ein Glas-Panel (Neu, Öffnen, Bereiche), rechts die Designs als große Vorschaubilder
 class StartPage: public QWidget
 {
 public:
@@ -1286,11 +1281,6 @@ public:
         auto sideLay = new QVBoxLayout(side);
         sideLay->setContentsMargins(GlassCard::Shadow + 8, GlassCard::Shadow + 16, GlassCard::Shadow + 8, GlassCard::Shadow + 14);
         sideLay->setSpacing(2);
-        auto title = new QLabel(QStringLiteral("MyCAD"));
-        setTextStyle(title, Text::Title2);
-        title->setContentsMargins(10, 0, 0, 0);
-        sideLay->addWidget(title);
-        sideLay->addSpacing(16);
         auto create = new QPushButton(designIcon(QStringLiteral("Std_New"), &Theme::labelOnAccent), T("New Design"));
         create->setObjectName(QStringLiteral("Prominent"));
         create->setCursor(Qt::PointingHandCursor);
@@ -1345,27 +1335,31 @@ public:
         scroll->viewport()->setAutoFillBackground(false);
         scroll->lower();
 
-        // --- oben: Suche an der Stelle der Toolbar, Fensterknöpfe wie im 3D-Fenster ---
-        searchCard = new GlassCard(Token::RadiusCapsule, false);
-        searchCard->setParent(this);
-        auto searchLay = new QHBoxLayout(searchCard);
-        searchLay->setContentsMargins(GlassCard::Shadow + 16, GlassCard::Shadow, GlassCard::Shadow + 12, GlassCard::Shadow);
-        searchLay->addWidget(new IconLabel(designIcon(QStringLiteral("Start_Search"), &Theme::labelSecondary), Token::IconM));
+        // --- oben: Kopfleiste über die ganze Breite: Name über der Seitenleiste, Suche über den Designs, Fensterknöpfe ---
+        barCard = new GlassCard(Token::RadiusCapsule, false);
+        barCard->setParent(this);
+        barCard->installEventFilter(&grip);
+        auto barLay = new QHBoxLayout(barCard);
+        barLay->setContentsMargins(GlassCard::Shadow + BarTitleInset, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
+        barLay->setSpacing(BarSpacing);
+        barTitle = new QLabel(QStringLiteral("MyCAD"));
+        setTextStyle(barTitle, Text::Title2);
+        barLay->addWidget(barTitle);
+        barLay->addWidget(new IconLabel(designIcon(QStringLiteral("Start_Search"), &Theme::labelSecondary), Token::IconM));
         search = new QLineEdit;
         search->setObjectName(QStringLiteral("StartSearch"));
         search->setPlaceholderText(T("Search designs"));
         search->setAccessibleName(T("Search designs"));
         search->setClearButtonEnabled(true);  // Löschen-Kreuz rechts
+        search->setMaximumWidth(380);
         QObject::connect(search, &QLineEdit::textChanged, this, [this] { applyFilter(); });
-        searchLay->addWidget(search);
-        controlsCard = new GlassCard(Token::RadiusCapsule, false);
-        controlsCard->setParent(this);
-        auto controlsLay = new QHBoxLayout(controlsCard);
-        controlsLay->setContentsMargins(GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
+        barLay->addWidget(search);
+        barLay->addStretch();
         controls = new WindowControls(true, [this] { hide(); });  // wie im 3D-Fenster; Zurück vorne wie in der Hilfe
         controls->backButton->setToolTip(T("Back to Design"));
         controls->installEventFilter(&grip);
-        controlsLay->addWidget(controls);
+        barLay->addWidget(controls);
+        side->raise();  // der durchsichtige Schattenrand der Leiste darf die ersten Zeilen der Seitenleiste nicht verdecken
 
         getMainWindow()->installEventFilter(this);
         hide();
@@ -1423,13 +1417,11 @@ private:
     {
         const qreal m = Token::WindowInset;
         const qreal barH = controls->sizeHint().height();  // so flach wie die Knöpfe selbst
-        side->place(QRectF(m, m, BrowserWidth, height() - 2 * m));
-        const QSizeF cs = controls->sizeHint();
-        const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
-        controlsCard->place(ctl);
         const qreal left = m + BrowserWidth + 32;  // etwas mehr Luft zur Seitenleiste als zwischen den Panels
-        searchCard->place(QRectF(left, m, std::min<qreal>(380, ctl.left() - m - left), barH));  // so hoch wie die Kapsel
+        barCard->place(QRectF(m, m, width() - 2 * m, barH));
+        barTitle->setFixedWidth(int(left - m - BarTitleInset - BarSpacing));  // die Suche beginnt bündig mit den Designs
         const int top = int(m + barH + m);
+        side->place(QRectF(m, top, BrowserWidth, height() - top - m));
         scroll->setGeometry(int(left) - StartTile::Pad, top, int(width() - left - m + StartTile::Pad), height() - top);
     }
 
@@ -1548,8 +1540,8 @@ private:
     }
 
     GlassCard* side;
-    GlassCard* searchCard;
-    GlassCard* controlsCard;
+    GlassCard* barCard;
+    QLabel* barTitle;
     WindowControls* controls;
     QScrollArea* scroll;
     QLineEdit* search;
@@ -1602,11 +1594,6 @@ public:
         side->installEventFilter(&grip);
         auto sideLay = new QVBoxLayout(side);
         sideLay->setContentsMargins(GlassCard::Shadow + 8, GlassCard::Shadow + 16, GlassCard::Shadow + 8, GlassCard::Shadow + 14);
-        auto title = new QLabel(T("Help"));
-        setTextStyle(title, Text::Title2);
-        title->setContentsMargins(10, 0, 0, 0);
-        sideLay->addWidget(title);
-        sideLay->addSpacing(8);
         auto list = new QScrollArea;
         list->setObjectName(QStringLiteral("StartScroll"));
         list->setWidgetResizable(true);
@@ -1666,17 +1653,23 @@ public:
         });
         articleLay->addWidget(view);
 
-        // oben: Suche an der Stelle der Toolbar, rechts Zurück und Fensterknöpfe wie überall
-        searchCard = new GlassCard(Token::RadiusCapsule, false);
-        searchCard->setParent(this);
-        auto searchLay = new QHBoxLayout(searchCard);
-        searchLay->setContentsMargins(GlassCard::Shadow + 16, GlassCard::Shadow, GlassCard::Shadow + 12, GlassCard::Shadow);
-        searchLay->addWidget(new IconLabel(designIcon(QStringLiteral("Start_Search"), &Theme::labelSecondary), Token::IconM));
+        // oben: Kopfleiste wie auf der Startseite: Name, Suche über dem Artikel, rechts Zurück und Fensterknöpfe
+        barCard = new GlassCard(Token::RadiusCapsule, false);
+        barCard->setParent(this);
+        barCard->installEventFilter(&grip);
+        auto barLay = new QHBoxLayout(barCard);
+        barLay->setContentsMargins(GlassCard::Shadow + BarTitleInset, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
+        barLay->setSpacing(BarSpacing);
+        barTitle = new QLabel(T("Help"));
+        setTextStyle(barTitle, Text::Title2);
+        barLay->addWidget(barTitle);
+        barLay->addWidget(new IconLabel(designIcon(QStringLiteral("Start_Search"), &Theme::labelSecondary), Token::IconM));
         search = new QLineEdit;
         search->setObjectName(QStringLiteral("StartSearch"));
         search->setPlaceholderText(T("Search help, e.g. donut, hole, rounded"));
         search->setAccessibleName(T("Search help, e.g. donut, hole, rounded"));
         search->setClearButtonEnabled(true);
+        search->setMaximumWidth(420);
         QObject::connect(search, &QLineEdit::textChanged, this, [this] { filter(); });
         QObject::connect(search, &QLineEdit::returnPressed, this, [this] {
             for (QAbstractButton* b : rowGroup->buttons()) {
@@ -1686,14 +1679,12 @@ public:
                 }
             }
         });
-        searchLay->addWidget(search);
-        controlsCard = new GlassCard(Token::RadiusCapsule, false);
-        controlsCard->setParent(this);
-        auto controlsLay = new QHBoxLayout(controlsCard);
-        controlsLay->setContentsMargins(GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
-        controls = new WindowControls(true, [this] { hide(); });  // Zurück vorne in der Kapsel
+        barLay->addWidget(search);
+        barLay->addStretch();
+        controls = new WindowControls(true, [this] { hide(); });  // Zurück vorne bei den Fensterknöpfen
         controls->installEventFilter(&grip);
-        controlsLay->addWidget(controls);
+        barLay->addWidget(controls);
+        side->raise();  // der durchsichtige Schattenrand der Leiste darf die ersten Zeilen der Seitenleiste nicht verdecken
 
         getMainWindow()->installEventFilter(this);
         hide();
@@ -1739,13 +1730,11 @@ protected:
     {
         const qreal m = Token::WindowInset;
         const qreal barH = controls->sizeHint().height();  // so flach wie die Knöpfe selbst
-        side->place(QRectF(m, m, BrowserWidth, height() - 2 * m));
-        const QSizeF cs = controls->sizeHint();
-        const QRectF ctl(width() - cs.width() - m, m, cs.width(), barH);
-        controlsCard->place(ctl);
         const qreal searchLeft = m + BrowserWidth + 32;  // wie auf der Startseite
-        searchCard->place(QRectF(searchLeft, m, std::min<qreal>(420, ctl.left() - m - searchLeft), barH));  // so hoch wie die Kapsel
+        barCard->place(QRectF(m, m, width() - 2 * m, barH));
+        barTitle->setFixedWidth(int(searchLeft - m - BarTitleInset - BarSpacing));  // die Suche beginnt bündig mit dem Artikel
         const qreal top = m + barH + m;
+        side->place(QRectF(m, top, BrowserWidth, height() - top - m));
         // Lesebreite höchstens size.contentMaxWidth (560) plus Innenabstand und Scrollbar (W-4)
         const qreal articleWidth = std::min<qreal>(width() - searchLeft - m, Token::ContentMaxWidth + 28 + 16 + 24);
         articleCard->place(QRectF(searchLeft, top, articleWidth, height() - top - m));  // bündig mit der Suche
@@ -1885,8 +1874,8 @@ a { color: %3; text-decoration: none; }
     QButtonGroup* rowGroup;
     GlassCard* side;
     GlassCard* articleCard;
-    GlassCard* searchCard;
-    GlassCard* controlsCard;
+    GlassCard* barCard;
+    QLabel* barTitle;
     WindowControls* controls;
     QTextBrowser* view;
     QLineEdit* search;
@@ -2388,13 +2377,15 @@ QWidget* sketchPalette()
 
 struct State
 {
-    GlassPanel* modelBar = nullptr;
-    GlassPanel* sketchBar = nullptr;
+    GlassPanel* header = nullptr;  ///< Kopfleiste über die ganze Fensterbreite: Seitenleisten-Knopf, Toolbar, Fensterknöpfe
+    QWidget* modelBar = nullptr;
+    QWidget* sketchBar = nullptr;
+    QLabel* headerTitle = nullptr;
+    QToolButton* sidebarToggle = nullptr;
+    WindowControls* windowControls = nullptr;
     GlassPanel* browser = nullptr;
-    GlassPanel* browserToggle = nullptr;  ///< Kapsel mit dem Seitenleisten-Knopf, solange der Browser eingeklappt ist
     GlassPanel* inspector = nullptr;
     GlassPanel* timeline = nullptr;
-    GlassPanel* windowControls = nullptr;
     GlassPanel* palette = nullptr;
     ViewCube* viewCube = nullptr;
     bool sketchMode = false;
@@ -2404,8 +2395,7 @@ struct State
 std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
-    for (auto p : {state.modelBar, state.sketchBar, state.browser, state.browserToggle, state.inspector, state.timeline,
-                   state.windowControls, state.palette}) {
+    for (auto p : {state.header, state.browser, state.inspector, state.timeline, state.palette}) {
         if (p) {
             all.push_back(p);
         }
@@ -2420,30 +2410,27 @@ void layout()
     }
     const QRectF r = state.scene->sceneRect();
     const qreal m = Token::WindowInset;
-    GlassPanel* bar = state.sketchMode ? state.sketchBar : state.modelBar;
+    QWidget* bar = state.sketchMode ? state.sketchBar : state.modelBar;
     state.modelBar->setVisible(!state.sketchMode);
     state.sketchBar->setVisible(state.sketchMode);
-    const QSizeF bs = bar->content()->sizeHint();  // eine Reihe
-    // Toolbar mittig im Fenster (bleibt beim Ein-/Ausklappen des Browsers stehen), ohne Browser und Fensterknöpfe zu
-    // überdecken; reicht die Breite dazwischen nicht, bricht sie in weitere Reihen um
+    const QSizeF bs = bar->sizeHint();  // eine Reihe
+    const QSizeF cs = state.windowControls ? QSizeF(state.windowControls->sizeHint()) : QSizeF();
+    const qreal headerW = r.width() - 2 * m;
+    const QSize ts = state.headerTitle->sizeHint();
+    const int toggleX = BarTitleInset + ts.width() + BarSpacing;
+    // Toolbar mittig im Fenster (bleibt beim Ein-/Ausklappen des Browsers stehen), ohne Name, Seitenleisten-Knopf und
+    // Fensterknöpfe zu überdecken; reicht die Breite dazwischen nicht, bricht sie in weitere Reihen um
     const bool browser = state.browser
         && !App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("BrowserHidden", false);
-    if (state.browserToggle) {
-        state.browserToggle->setVisible(state.browser && !browser);
-        state.browserToggle->setGeometry(QRectF(QPointF(m, m), state.browserToggle->content()->sizeHint()));
-    }
-    const qreal left = browser                  ? m + BrowserWidth + m
-        : state.browserToggle && state.browser ? m + state.browserToggle->content()->sizeHint().width() + m
-                                                : m;
-    const qreal right = r.width() - m
-        - (state.windowControls ? state.windowControls->content()->sizeHint().width() + m : 0);
+    const qreal left = state.sidebarToggle ? toggleX + Token::WindowButton : toggleX;
+    const qreal right = headerW - cs.width();
     qreal barW = std::max<qreal>(100, std::min(bs.width(), right - left));
-    const qreal barH = barW < bs.width() ? bar->content()->heightForWidth(int(barW)) : bs.height();
+    const qreal barH = barW < bs.width() ? bar->heightForWidth(int(barW)) : bs.height();
     if (barW < bs.width()) {  // Reihen ausgleichen: schmalste Breite mit gleich vielen Reihen
         int lo = 100, hi = int(barW);
         while (lo < hi) {
             const int mid = (lo + hi) / 2;
-            if (bar->content()->heightForWidth(mid) <= barH) {
+            if (bar->heightForWidth(mid) <= barH) {
                 hi = mid;
             }
             else {
@@ -2452,9 +2439,21 @@ void layout()
         }
         barW = hi;
     }
-    bar->setGeometry(QRectF(std::max(left, std::min((r.width() - barW) / 2, right - barW)), m, barW, barH));
+    const qreal headerH = std::max<qreal>(barH, Token::WindowButton + 2 * 6);
+    state.header->setGeometry(QRectF(m, m, headerW, headerH));
+    bar->setGeometry(QRectF(std::max(left, std::min((r.width() - barW) / 2 - m, right - barW)), (headerH - barH) / 2, barW, barH).toRect());
     // eine Reihe: Kapsel; umgebrochen wäre eine Kapsel zu rund für die Knöpfe in den Ecken, dann Panel-Radius
-    bar->setRadius(barH > bs.height() ? Token::RadiusPanel : Token::RadiusCapsule);
+    state.header->setRadius(barH > bs.height() ? Token::RadiusPanel : Token::RadiusCapsule);
+    // Name wie auf Startseite und Hilfe, Knöpfe auf einer Linie mit den Symbolen der ersten Toolbar-Reihe (je 6 Rand oben)
+    state.headerTitle->setGeometry(BarTitleInset, (Token::WindowButton + 2 * 6 - ts.height()) / 2, ts.width(), ts.height());
+    if (state.sidebarToggle) {
+        state.sidebarToggle->move(toggleX, 6);
+        state.sidebarToggle->setToolTip(browser ? T("Hide sidebar") : T("Show sidebar"));
+        state.sidebarToggle->setAccessibleName(state.sidebarToggle->toolTip());
+    }
+    if (state.windowControls) {
+        state.windowControls->setGeometry(QRectF(QPointF(right, 0), cs).toRect());
+    }
 
     qreal bottom = r.height() - m;
     if (state.timeline) {
@@ -2466,29 +2465,15 @@ void layout()
         );
     }
 
-    const qreal top = m;
+    const qreal top = m + headerH + m;  // alles andere beginnt unter der Kopfleiste
     if (state.browser) {
         state.browser->setVisible(browser);
         state.browser->setGeometry(QRectF(m, top, BrowserWidth, bottom - top));
     }
-    for (GlassPanel* panel : {state.browser, state.browserToggle}) {
-        for (auto toggle : panel ? panel->content()->findChildren<QToolButton*>() : QList<QToolButton*>()) {
-            if (toggle->property("sidebarToggle").toBool()) {
-                toggle->setToolTip(browser ? T("Hide sidebar") : T("Show sidebar"));
-                toggle->setAccessibleName(toggle->toolTip());
-            }
-        }
-    }
-    qreal cubeTop = m;
-    if (state.windowControls) {
-        const QSizeF cs = state.windowControls->content()->sizeHint();
-        state.windowControls->setGeometry(QRectF(r.width() - cs.width() - m, m, cs.width(), cs.height()));  // so flach wie die Knöpfe, wie auf Startseite und Hilfe
-        cubeTop = m + cs.height() + m;
-    }
     qreal belowCube = 170;
     if (state.viewCube) {
-        state.viewCube->setPos(r.width() - state.viewCube->boundingRect().width() - m, cubeTop);
-        belowCube = cubeTop + state.viewCube->boundingRect().height() + m;
+        state.viewCube->setPos(r.width() - state.viewCube->boundingRect().width() - m, top);
+        belowCube = top + state.viewCube->boundingRect().height() + m;
     }
     if (state.palette) {
         QSizeF ps = state.palette->content()->sizeHint();
@@ -3047,7 +3032,7 @@ void Gui::Shell::install()
     Application::Instance->activateWorkbench("DesignWorkbench");
     registerSettings();
 
-    state.modelBar = new GlassPanel(
+    state.modelBar =
         toolbar({"#FILE", "Std_New", "Std_Open", "Std_Save", "Design_Import", "Design_Export",
                  "Std_Undo", "Std_Redo",
                  "#CREATE", "Design_CreateSketch", "Design_Extrude", "Design_Revolve",
@@ -3059,9 +3044,8 @@ void Gui::Shell::install()
                  "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",
                  "#INSPECT", "Design_Measure", "Design_Section", "Std_ViewFitAll",
-                 "#UTILITIES", "Design_Parameters", "Design_Appearance"}),
-        Token::RadiusCapsule);
-    state.sketchBar = new GlassPanel(
+                 "#UTILITIES", "Design_Parameters", "Design_Appearance"});
+    state.sketchBar =
         toolbar({"#CREATE", "Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
                  "Sketcher_CompCreateConic", "Sketcher_CompCreateArc", "Sketcher_CompSlot",
                  "Sketcher_CompCreateRegularPolygon", "Sketcher_CompCreateBSpline", "Sketcher_CreateConic",
@@ -3073,8 +3057,13 @@ void Gui::Shell::install()
                  "Sketcher_ConstrainHorizontal|Sketcher_ConstrainVertical",
                  "Sketcher_ConstrainParallel|Sketcher_ConstrainPerpendicular", "Sketcher_ConstrainTangent",
                  "Sketcher_ConstrainEqual", "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock",
-                 "#", "Sketcher_LeaveSketch"}),
-        Token::RadiusCapsule);
+                 "#", "Sketcher_LeaveSketch"});
+    QWidget* header = content();
+    state.headerTitle = new QLabel(QStringLiteral("MyCAD"), header);
+    setTextStyle(state.headerTitle, Text::Title2);
+    state.modelBar->setParent(header);
+    state.sketchBar->setParent(header);
+    state.header = new GlassPanel(header, Token::RadiusCapsule);
     state.viewCube = new ViewCube;
     state.palette = new GlassPanel(sketchPalette(), Token::RadiusPanel, true);
     qApp->installEventFilter(new MenuPolisher);
@@ -3089,10 +3078,12 @@ void Gui::Shell::install()
         if (wasVisible) {
             mw->show();
         }
-        state.windowControls = new GlassPanel(new WindowControls, Token::RadiusCapsule);
+        state.windowControls = new WindowControls;
+        state.windowControls->setParent(header);
+        state.windowControls->show();
         static WindowGrip* grip = new WindowGrip;
-        for (GlassPanel* p : {state.modelBar, state.sketchBar, state.windowControls}) {
-            p->content()->installEventFilter(grip);
+        for (QWidget* w : {header, state.modelBar, state.sketchBar, static_cast<QWidget*>(state.windowControls)}) {
+            w->installEventFilter(grip);
         }
         qApp->installEventFilter(new EdgeResizer);
     }
@@ -3108,29 +3099,17 @@ void Gui::Shell::install()
         for (auto t : tree->findChildren<QTreeWidget*>()) {
             t->viewport()->installEventFilter(menus);
         }
-        // Seitenleisten-Knopf oben links: ausgeklappt in einer Kopfzeile des Browsers, eingeklappt allein in einer
-        // Kapsel an derselben Stelle (je 8 Innenabstand: der Knopf springt nicht)
-        auto sidebarToggle = [] {
-            auto btn = new QToolButton;
-            btn->setObjectName(QStringLiteral("GlassButton"));
-            btn->setProperty("sidebarToggle", true);
-            btn->setIcon(designIcon(QStringLiteral("Window_Sidebar")));
-            btn->setIconSize(QSize(Token::IconWindow, Token::IconWindow));
-            btn->setFixedSize(Token::WindowButton, Token::WindowButton);
-            btn->setCursor(Qt::ArrowCursor);
-            QObject::connect(btn, &QToolButton::clicked, btn, [] { QTimer::singleShot(0, toggleBrowser); });
-            return btn;
-        };
-        auto header = new QHBoxLayout;
-        header->addWidget(sidebarToggle());
-        header->addStretch();
-        static_cast<QVBoxLayout*>(tree->layout())->insertLayout(0, header);
         state.browser = new GlassPanel(tree, Token::RadiusPanel);  // normales Glas wie MyPods' Seitenleiste: das Design scheint durch
-        auto capsule = content();
-        auto capsuleLay = new QHBoxLayout(capsule);
-        capsuleLay->setContentsMargins(8, 8, 8, 8);
-        capsuleLay->addWidget(sidebarToggle());
-        state.browserToggle = new GlassPanel(capsule, Token::RadiusCapsule);
+        // Seitenleisten-Knopf links in der Kopfleiste: bleibt beim Ein- und Ausklappen stehen
+        auto btn = new QToolButton(header);
+        btn->setObjectName(QStringLiteral("GlassButton"));
+        btn->setIcon(designIcon(QStringLiteral("Window_Sidebar")));
+        btn->setIconSize(QSize(Token::IconL, Token::IconL));
+        btn->setFixedSize(Token::WindowButton, Token::WindowButton);
+        btn->setCursor(Qt::ArrowCursor);
+        QObject::connect(btn, &QToolButton::clicked, btn, [] { QTimer::singleShot(0, toggleBrowser); });
+        btn->show();
+        state.sidebarToggle = btn;
     }
     if (QWidget* tasks = takeDockWindow("Std_TaskView")) {
         state.inspector = new GlassPanel(tasks, Token::RadiusPanel, true);
@@ -3335,23 +3314,23 @@ void Gui::Shell::applyAppearance()
 void Gui::Shell::setToolNames(bool on)
 {
     App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetBool("ToolNames", on);
-    for (GlassPanel* bar : {state.modelBar, state.sketchBar}) {
+    for (QWidget* bar : {state.modelBar, state.sketchBar}) {
         if (!bar) {
             continue;
         }
-        for (auto btn : bar->content()->findChildren<QToolButton*>(QStringLiteral("GlassButton"))) {
+        for (auto btn : bar->findChildren<QToolButton*>(QStringLiteral("GlassButton"))) {
             styleToolButton(btn);
         }
-        for (auto sep : bar->content()->findChildren<QFrame*>(QStringLiteral("ToolbarSeparator"))) {
+        for (auto sep : bar->findChildren<QFrame*>(QStringLiteral("ToolbarSeparator"))) {
             sep->setFixedSize(9, on ? 44 : 28);
         }
         // Abschnitte zuerst neu rechnen, sonst misst die Toolbar mit den alten Knopfgrößen (zweite Reihe abgeschnitten)
-        for (auto group : bar->content()->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
+        for (auto group : bar->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
             if (group->layout()) {
                 group->layout()->activate();
             }
         }
-        bar->content()->layout()->invalidate();
+        bar->layout()->invalidate();
     }
     layout();
 }

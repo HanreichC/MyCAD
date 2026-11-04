@@ -35,7 +35,11 @@ def context(label, entry):
         if tries[0] < 10:
             QtCore.QTimer.singleShot(300, confirm)
     QtCore.QTimer.singleShot(1500, pick)
-    win, p = mw.windowHandle(), t.viewport().mapTo(mw, t.visualItemRect(item).center())
+    top = t  # der Baum liegt in einem Glas-Panel der 3D-Szene: über die Szene ins Fenster umrechnen
+    while top.parentWidget():
+        top = top.parentWidget()
+    inner = t.viewport().mapTo(top, t.visualItemRect(item).center())
+    win, p = mw.windowHandle(), view().viewport().mapTo(mw, view().mapFromScene(top.graphicsProxyWidget().mapToScene(QtCore.QPointF(inner))))
     QtTest.QTest.mouseMove(win, p)
     QtTest.QTest.mousePress(win, QtCore.Qt.RightButton, QtCore.Qt.NoModifier, p)
     QtTest.QTest.mouseRelease(win, QtCore.Qt.RightButton, QtCore.Qt.NoModifier, p)

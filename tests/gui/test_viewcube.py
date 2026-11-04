@@ -3,8 +3,9 @@
 from harness import *
 
 
-def cube_click(x, y):  # Koordinaten relativ zum ViewCube (120x150, rechts unter den Fensterknöpfen: 12 + 50 + 12)
-    v = view(); p = QtCore.QPoint(int(v.width() - 132 + x), int(74 + y))
+def cube_click(x, y):  # Koordinaten relativ zum ViewCube (120x150, rechts unter der Kopfleiste: 12 + Höhe + 12)
+    close = [b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Close"][0]
+    v = view(); p = QtCore.QPoint(int(v.width() - 132 + x), int(12 + close.parentWidget().parentWidget().height() + 12 + y))
     QtTest.QTest.mouseMove(v.viewport(), p)
     QtTest.QTest.mouseClick(v.viewport(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, p)
 

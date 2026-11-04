@@ -18,7 +18,6 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
 {
     static const std::unordered_map<std::string_view, const char*> table = {
         {"Finish Sketch", "Skizze fertig stellen"},
-        {"Drag to move the window, double-click to maximize", "Ziehen verschiebt das Fenster, Doppelklick maximiert"},
         {"Home", "Start"},
         {"Settings (Ctrl+,)", "Einstellungen (Strg+,)"},
         {"Minimize", "Minimieren"},
