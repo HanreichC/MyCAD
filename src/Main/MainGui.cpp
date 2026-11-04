@@ -34,7 +34,12 @@
 
 #include <Base/Version.h>
 
+#include <dlfcn.h>
+#include <unistd.h>
+
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <format>
 #include <map>
 #include <stdexcept>
@@ -145,8 +150,47 @@ static void displayCritical(const QString& msg, bool preformatted = true)
     }
 }
 
+#if defined(FC_OS_LINUX)
+/// Rechner mit zwei GPUs: die 3D-Ansicht auf der dedizierten rechnen, sonst läuft sie auf der im Prozessor.
+/// Muss vor dem ersten OpenGL-Aufruf gesetzt sein; schon gesetzte Variablen bleiben, so lässt es sich auch abschalten.
+static void preferDedicatedGpu()
+{
+    // Nvidia: nur wenn der Treiber wirklich da ist (im Container reicht ihn der Starter von install.sh hinein)
+    if (access("/dev/nvidiactl", R_OK | W_OK) == 0) {
+        if (void* driver = dlopen("libEGL_nvidia.so.0", RTLD_LAZY)) {
+            dlclose(driver);
+            setenv("__NV_PRIME_RENDER_OFFLOAD", "1", 0);
+            setenv("__GLX_VENDOR_LIBRARY_NAME", "nvidia", 0);
+            return;
+        }
+    }
+    // AMD und Intel laufen über Mesa: DRI_PRIME=1 nimmt die GPU, die nicht den Bildschirm treibt
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    int cards = 0;
+    bool dedicated = false;
+    for (const auto& entry : fs::directory_iterator("/sys/class/drm", ec)) {
+        const std::string name = entry.path().filename().string();
+        if (name.rfind("card", 0) != 0 || name.find('-') != std::string::npos) {
+            continue;  // card1-HDMI-A-1 usw. sind Anschlüsse
+        }
+        ++cards;
+        char bootVga = '1';
+        std::ifstream(entry.path() / "device/boot_vga") >> bootVga;
+        const std::string driver = fs::read_symlink(entry.path() / "device/driver", ec).filename().string();
+        dedicated = dedicated || (bootVga == '0' && driver != "nvidia");
+    }
+    if (cards > 1 && dedicated) {
+        setenv("DRI_PRIME", "1", 0);
+    }
+}
+#endif
+
 int main(int argc, char** argv)
 {
+#if defined(FC_OS_LINUX)
+    preferDedicatedGpu();
+#endif
 #if defined(FC_OS_LINUX) || defined(FC_OS_BSD)
     setlocale(LC_ALL, "");       // use native environment settings
     setlocale(LC_NUMERIC, "C");  // except for numbers to not break XML import

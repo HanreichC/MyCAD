@@ -150,3 +150,32 @@ def shot(name):
     subs = mw.findChildren(QtWidgets.QMdiSubWindow)
     L("  window visible=%s minimized=%s views=%d %s" % (mw.isVisible(), mw.isMinimized(), len(subs),
                                                     [(s.isVisible(), s.isMaximized()) for s in subs]))
+
+
+def check(name, ok, detail=""):
+    """Prüfung fürs Protokoll; Fehler stehen als FAIL darin"""
+    L("%s %s %s" % ("ok  " if ok else "FAIL", name, detail))
+
+
+def activate():
+    """Das Testfenster ist auf dem Desktop oft nicht aktiv; dann vergibt Qt keinen Tastaturfokus"""
+    QtWidgets.QApplication.setActiveWindow(mw)
+    QtWidgets.QApplication.sendEvent(view().scene(), QtCore.QEvent(QtCore.QEvent.WindowActivate))
+    view().viewport().setFocus()
+
+
+def in_order(steps, delay=1200):
+    """Schritte nacheinander statt im festen Takt von run(): nötig, wenn ein Schritt länger dauert (Tippen)"""
+    steps = [("design", lambda: App.ActiveDocument or Gui.runCommand("Std_New"))] + list(steps)
+
+    def next_step():
+        if not steps:
+            App.saveParameter(); os._exit(0)
+        name, fn = steps.pop(0)
+        L("step " + name)
+        try:
+            fn()
+        except Exception as e:
+            L("FAIL exception in %s: %s: %s" % (name, type(e).__name__, e))
+        QtCore.QTimer.singleShot(delay, next_step)
+    QtCore.QTimer.singleShot(5000, next_step)

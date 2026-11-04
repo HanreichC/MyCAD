@@ -451,7 +451,7 @@ private:
     {
         if (constructionMethod() == ConstructionMethod::Center
             && (state() == SelectMode::SeekSecond || state() == SelectMode::SeekThird)) {
-            setAngleSnapping(true, centerPoint);
+            setAngleSnapping(true, centerPoint, true);
         }
         else {
             setAngleSnapping(false);

@@ -172,7 +172,7 @@ QFrame#TimelineMarker { background: @accent; border-radius: 2px; }
 /* Seitenleisten-Zeilen: r 12, Hover fill.tertiary, aktiv fill.secondary + SemiBold */
 QToolButton#PaletteRow { border: 2px solid transparent; border-radius: 12px; padding: 0 8px; text-align: left; background: transparent; }
 QToolButton#PaletteRow:hover { background: @fillTertiary; }
-QToolButton#PaletteRow:checked { background: @fillSecondary; font-weight: 600; }
+QToolButton#PaletteRow:checked { background: @fillSecondary; font-weight: 600; color: @accentText; }
 QFrame#GlassSeparator, QFrame#ToolbarSeparator { background: @separator; border: none; }
 QFrame#ToolbarSeparator { margin: 4px; }
 QLabel#Section, QLabel#Secondary, QLabel#StartDate, QLabel#StartCaption, QLabel#Hint { color: @labelSecondary; }
@@ -186,9 +186,9 @@ QLabel#Section, QLabel#Secondary, QLabel#StartDate, QLabel#StartCaption, QLabel#
    weil dort kein Zeilenlabel links steht, an dem man den Pop-up-Button erkennt */
 #GlassContent QComboBox:hover { background: @fillSecondary; }
 #GlassContent QLineEdit:focus, #GlassContent QAbstractSpinBox:focus, #GlassContent QComboBox:focus { border-color: @focusRing; }
-#GlassContent QPlainTextEdit#NoteText { background: transparent; border: 2px solid transparent; border-radius: 12px;
+/* Post-it: ohne Rahmen, auch mit Fokus (ausdrücklicher Wunsch; den Fokus zeigt die Einfügemarke) */
+#GlassContent QPlainTextEdit#NoteText { background: transparent; border: none;
     selection-background-color: @accent; selection-color: @labelOnAccent; }
-#GlassContent QPlainTextEdit#NoteText:focus { border-color: @focusRing; }
 #GlassContent QAbstractSpinBox::up-button, #GlassContent QAbstractSpinBox::down-button { width: 0; border: none; }
 QComboBox::drop-down { border: none; width: 20px; }
 QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
@@ -906,6 +906,8 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         });
         QObject::connect(action, &QAction::changed, btn, [btn, action] {
             btn->setEnabled(action->isEnabled());
+            btn->setCheckable(action->isCheckable());
+            btn->setChecked(action->isChecked());
         });
         row->addWidget(btn);
     }
@@ -2443,7 +2445,10 @@ QWidget* sketchPalette()
         QObject::connect(btn, &QToolButton::clicked, action, [action] {
             QTimer::singleShot(0, action, &QAction::trigger);
         });
-        QObject::connect(action, &QAction::changed, btn, [btn, action] { btn->setChecked(action->isChecked()); });
+        QObject::connect(action, &QAction::changed, btn, [btn, action] {
+            btn->setCheckable(action->isCheckable());
+            btn->setChecked(action->isChecked());
+        });
         lay->addWidget(btn);
     }
     lay->addSpacing(8);
@@ -2701,6 +2706,26 @@ void toggleBrowser()
     layout();
 }
 
+/// Klick in ein Zahlen- oder Textfeld wählt den ganzen Inhalt, Tippen überschreibt ihn. Erst danach auswählen: der
+/// Mausklick selbst, der nach dem Fokus kommt, hebt die Auswahl sonst wieder auf.
+class SelectFieldOnClick: public QObject
+{
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (event->type() != QEvent::FocusIn || static_cast<QFocusEvent*>(event)->reason() != Qt::MouseFocusReason) {
+            return false;
+        }
+        if (auto box = qobject_cast<QAbstractSpinBox*>(obj)) {
+            QTimer::singleShot(0, box, &QAbstractSpinBox::selectAll);
+        }
+        else if (auto line = qobject_cast<QLineEdit*>(obj); line && !line->isReadOnly()) {
+            QTimer::singleShot(0, line, &QLineEdit::selectAll);
+        }
+        return false;
+    }
+};
+
 /// Sketcher-Panel: im Skizzenmodus nur "Tool Parameters" zeigen, bei jedem Werkzeugwechsel neu anordnen
 class SketchTaskFilter: public QObject
 {
@@ -2921,7 +2946,7 @@ NotePanel makeNotePanel(App::DocumentObject* obj)
 
     auto box = content();
     auto lay = new QVBoxLayout(box);
-    lay->setContentsMargins(8, 8, 8, 8);  // Panel r 20 - 8 = Textfeld r 12
+    lay->setContentsMargins(8, 8, 8, 8);
     lay->setSpacing(0);
     auto head = new QWidget;
     auto headLay = new QHBoxLayout(head);
@@ -2953,7 +2978,7 @@ NotePanel makeNotePanel(App::DocumentObject* obj)
     edit->setObjectName(QStringLiteral("NoteText"));
     edit->setPlaceholderText(T("Write here or calculate: 120 / 4 ="));
     edit->setTabChangesFocus(true);
-    edit->document()->setDocumentMargin(8);
+    edit->document()->setDocumentMargin(10);  // Text beginnt bündig mit dem Titel
     setTextStyle(edit, Text::Body);
     note.edit = edit;
     lay->addWidget(edit, 1);
@@ -3512,6 +3537,7 @@ void Gui::Shell::install()
     qApp->installEventFilter(new MenuPolisher);
     qApp->installEventFilter(new HelpKey);
     qApp->installEventFilter(new SketchTaskFilter);
+    qApp->installEventFilter(new SelectFieldOnClick);
     if (frameless()) {
         state.corners = new WindowCorners;
         state.windowControls = new WindowControls;

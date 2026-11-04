@@ -24,6 +24,8 @@
 
 #include <algorithm>
 #include <cmath>
+
+#include <QApplication>
 #include <iterator>
 #include <ranges>
 #include <tuple>
@@ -214,10 +216,11 @@ inline int ViewProviderSketchDrawSketchHandlerAttorney::getPreselectCross(const 
 inline void ViewProviderSketchDrawSketchHandlerAttorney::setAngleSnapping(
     ViewProviderSketch& vp,
     bool enable,
-    Base::Vector2d referencePoint
+    Base::Vector2d referencePoint,
+    bool commonAngles
 )
 {
-    vp.setAngleSnapping(enable, referencePoint);
+    vp.setAngleSnapping(enable, referencePoint, commonAngles);
 }
 
 inline void ViewProviderSketchDrawSketchHandlerAttorney::moveConstraint(
@@ -1254,7 +1257,8 @@ int DrawSketchHandler::seekAutoConstraint(
     updateTangentAutoConstraintHint();
     parallelPerpendicularActiveHintLine = -1;
 
-    if (!sketchgui->Autoconstraints.getValue()) {
+    // Shift: ganz frei zeichnen, auch ohne automatische Abhängigkeiten
+    if (!sketchgui->Autoconstraints.getValue() || (QApplication::keyboardModifiers() & Qt::ShiftModifier)) {
         return 0;  // If Autoconstraints property is not set quit
     }
 
@@ -2206,9 +2210,9 @@ Sketcher::SketchObject* DrawSketchHandler::getSketchObject()
     return sketchgui->getSketchObject();
 }
 
-void DrawSketchHandler::setAngleSnapping(bool enable, Base::Vector2d referencePoint)
+void DrawSketchHandler::setAngleSnapping(bool enable, Base::Vector2d referencePoint, bool commonAngles)
 {
-    ViewProviderSketchDrawSketchHandlerAttorney::setAngleSnapping(*sketchgui, enable, referencePoint);
+    ViewProviderSketchDrawSketchHandlerAttorney::setAngleSnapping(*sketchgui, enable, referencePoint, commonAngles);
 }
 
 void DrawSketchHandler::moveConstraint(int constNum, const Base::Vector2d& toPos, OffsetMode offset)

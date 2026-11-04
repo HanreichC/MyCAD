@@ -186,6 +186,9 @@ void CmdSketcherToggleConstruction::updateAction(int mode)
                 act->setIcon(Gui::BitmapFactory().iconFromTheme("Sketcher_ToggleConstruction_Constr"));
                 break;
         }
+        // Zustand am Knopf zeigen (Sketch Palette, Toolbar)
+        act->action()->setCheckable(true);
+        act->action()->setChecked(creationMode == GeometryCreationMode::Construction);
     }
 }
 
@@ -218,6 +221,10 @@ void CmdSketcherToggleConstruction::activated(int iMsg)
     }
     else  // there was a selection, so operate in toggle mode.
     {
+        // Das hat die Auswahl geändert, nicht den Modus: der Klick darf den Knopf nicht umschalten
+        if (auto doc = getActiveGuiDocument()) {
+            updateToggleConstructionCommands(*doc);
+        }
         // get the selection
         std::vector<Gui::SelectionObject> selection;
         selection = getSelection().getSelectionEx(nullptr, Sketcher::SketchObject::getClassTypeId());

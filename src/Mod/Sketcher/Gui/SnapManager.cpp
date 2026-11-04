@@ -22,6 +22,8 @@
  *                                                                         *
  ***************************************************************************/
 
+#include <cmath>
+
 #include <QApplication>
 
 #include <Base/Tools.h>
@@ -176,7 +178,8 @@ SnapManager::~SnapManager()
 
 Base::Vector2d SnapManager::snap(Base::Vector2d inputPos, SnapType mask)
 {
-    if (!snapRequested) {
+    // Shift: ganz frei zeichnen, jeder Winkel und jedes Maß
+    if (!snapRequested || (QApplication::keyboardModifiers() & Qt::ShiftModifier)) {
         return inputPos;
     }
 
@@ -204,6 +207,12 @@ Base::Vector2d SnapManager::snap(Base::Vector2d inputPos, SnapType mask)
             return snapPos;  // Full snap (point or curve) - done
         }
         // if false was returned but snapPos was modified (axis case), continue to grid snap
+    }
+
+    // Winkel rasten, solange nichts anderes den Punkt bestimmt (Objekt, Achse, Raster)
+    if (commonAnglesRequested && !snapToGridRequested && (static_cast<int>(mask) & static_cast<int>(SnapType::Angle))
+        && (snapPos - inputPos).Length() < Precision::Confusion() && snapToCommonAngle(inputPos, snapPos)) {
+        return snapPos;
     }
 
     // 3 - Snap to grid (will work on coordinates not already locked by axis snap)
@@ -235,6 +244,21 @@ bool SnapManager::snapAtAngle(Base::Vector2d inputPos, Base::Vector2d& snapPos)
     double angle = round(lastMouseAngle / snapAngle) * snapAngle;
     snapPos = referencePoint + length * Base::Vector2d(cos(angle), sin(angle));
 
+    return true;
+}
+
+bool SnapManager::snapToCommonAngle(Base::Vector2d inputPos, Base::Vector2d& snapPos)
+{
+    const Base::Vector2d direction = inputPos - referencePoint;
+    const double length = direction.Length();
+    if (length < Precision::Confusion()) {
+        return false;
+    }
+    constexpr double CommonStep = 15., CommonRange = 2.;  // Grad
+    const double degrees = Base::toDegrees(direction.Angle());
+    const double common = std::round(degrees / CommonStep) * CommonStep;
+    const double angle = Base::toRadians(fabs(degrees - common) <= CommonRange ? common : std::round(degrees));
+    snapPos = referencePoint + length * Base::Vector2d(cos(angle), sin(angle));
     return true;
 }
 
@@ -394,9 +418,10 @@ bool SnapManager::snapToArcMiddle(Base::Vector3d& pointToOverride, const Part::G
     return false;
 }
 
-void SnapManager::setAngleSnapping(bool enable, Base::Vector2d referencepoint)
+void SnapManager::setAngleSnapping(bool enable, Base::Vector2d referencepoint, bool commonAngles)
 {
     angleSnapRequested = enable;
+    commonAnglesRequested = enable && commonAngles;
     referencePoint = referencepoint;
 }
 

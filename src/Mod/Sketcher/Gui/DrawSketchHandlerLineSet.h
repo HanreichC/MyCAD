@@ -1161,7 +1161,7 @@ private:
             calculatePreviousDirectionAngle();
 
             if (!isClosed) {
-                setAngleSnapping(true, getLastPoint());
+                setAngleSnapping(true, getLastPoint(), true);
                 resetSeekSecond = true;
                 resetEdge = true;
                 // redraw the OVPs
@@ -1235,7 +1235,7 @@ private:
     void angleSnappingControl() override
     {
         if (state() == SelectMode::SeekSecond) {
-            setAngleSnapping(true, getLastPoint());
+            setAngleSnapping(true, getLastPoint(), true);
         }
         else {
             setAngleSnapping(false);
@@ -1373,7 +1373,7 @@ private:
 
             calculatePreviousDirectionAngle();
 
-            setAngleSnapping(true, getLastPoint());
+            setAngleSnapping(true, getLastPoint(), true);
 
             auto snapHandle = std::make_unique<SnapManager::SnapHandle>(nullptr, prevCursorPos);
             mouseMove(*snapHandle);

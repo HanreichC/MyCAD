@@ -587,6 +587,31 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
     startEditing(feature, false, nullptr);
 }
 
+/// Extrude: Skizzenprofile, oder wie in Fusion eine ebene Körperfläche (zieht sie wie Press Pull heraus)
+void startExtrude(App::Document* doc)
+{
+    bool profile = false, faceOfBody = false, otherPartOfBody = false;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        App::DocumentObject* obj = sel.getObject();
+        profile = profile || obj->isDerivedFrom<Design::Profiles>() || obj->isDerivedFrom<Sketcher::SketchObject>();
+        if (obj->isDerivedFrom<Design::Body>()) {
+            const auto& subs = sel.getSubNames();
+            const bool flat = !subs.empty() && std::ranges::all_of(subs, [obj](const std::string& s) { return isPlanarFace(obj, s); });
+            faceOfBody = faceOfBody || flat;
+            otherPartOfBody = otherPartOfBody || !flat;
+        }
+    }
+    if (!profile && faceOfBody && !otherPartOfBody) {
+        startDressUp(doc, "Design::PressPull", "PressPull");
+    }
+    else if (!profile && otherPartOfBody) {
+        QMessageBox::information(Gui::getMainWindow(), T("Extrude"), T("Click a flat face of the body to extrude it."));
+    }
+    else {
+        startProfileFeature(doc, "Design::Extrude", "Extrude");
+    }
+}
+
 /// Gewählte Bodies in Auswahlreihenfolge (ohne Doppelte)
 std::vector<Design::Body*> selectedBodies()
 {
@@ -2422,10 +2447,9 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_CreateSketch", "Create Sketch",
                                      "Create Sketch: click a plane or planar face to sketch on",
                                      "Sketcher_NewSketch", "S", createSketchCommand));
-    mgr.addCommand(new DesignCommand("Design_Extrude", "Extrude", "Extrude: select one or more sketch profiles",
-                                     "PartDesign_Pad", "E", [](App::Document* doc) {
-                                         startProfileFeature(doc, "Design::Extrude", "Extrude");
-                                     }));
+    mgr.addCommand(new DesignCommand("Design_Extrude", "Extrude",
+                                     "Extrude: select sketch profiles or a flat face of a body",
+                                     "PartDesign_Pad", "E", startExtrude));
     mgr.addCommand(new DesignCommand("Design_Revolve", "Revolve", "Revolve: select one or more sketch profiles",
                                      "PartDesign_Revolution", "", [](App::Document* doc) {
                                          startProfileFeature(doc, "Design::Revolve", "Revolve", [](Design::Feature* f) {

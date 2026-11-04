@@ -281,7 +281,7 @@
     "en": [
      "Start a sketch: toolbar at the top → CREATE → Sketch, then click a plane or a flat face of a body.",
      "While sketching, the toolbar shows the sketch tools in three sections: CREATE (shapes), MODIFY (change shapes) and CONSTRAINTS (dimensions and rules). The Sketch Palette on the right holds Look At, Slice, Grid, Snap and Construction.",
-     "Draw shapes; ends and corners snap onto existing points and lines. Many tools show small input fields next to the cursor – type a value and press Tab to go to the next field, Enter to confirm.",
+     "Draw shapes; ends and corners snap onto existing points and lines, and lines snap to whole degrees and common angles. Hold Shift to draw completely freely. Many tools show small input fields next to the cursor – type a value and press Tab to go to the next field, Enter to confirm.",
      "Add sizes with Dimension and rules with the constraint tools until all lines turn black (fully defined).",
      "Esc puts the current tool away; a second Esc (or the blue Finish Sketch button) leaves the sketch.",
      "Outside a sketch, its closed areas (profiles) are shown light orange. Click one to select it – it turns blue."
@@ -289,7 +289,7 @@
     "de": [
      "Skizze beginnen: Werkzeugleiste oben → ERSTELLEN → Skizze, dann eine Ebene oder eine flache Körperfläche anklicken.",
      "Beim Skizzieren zeigt die Werkzeugleiste die Skizzenwerkzeuge in drei Bereichen: ERSTELLEN (Formen), ÄNDERN (Formen bearbeiten) und ABHÄNGIGKEITEN (Maße und Regeln). Die Skizzenpalette rechts enthält Senkrecht ansehen, Schnittansicht, Raster, Fangen und Konstruktion.",
-     "Zeichne Formen; Enden und Ecken rasten an vorhandenen Punkten und Linien ein. Viele Werkzeuge zeigen kleine Eingabefelder neben dem Cursor – Wert eintippen, mit Tab zum nächsten Feld, Enter bestätigt.",
+     "Zeichne Formen; Enden und Ecken rasten an vorhandenen Punkten und Linien ein, Linien außerdem an vollen Grad und gängigen Winkeln. Halte Umschalt, um ganz frei zu zeichnen. Viele Werkzeuge zeigen kleine Eingabefelder neben dem Cursor – Wert eintippen, mit Tab zum nächsten Feld, Enter bestätigt.",
      "Lege Maße mit Bemaßung und Regeln mit den Abhängigkeiten fest, bis alle Linien schwarz sind (voll bestimmt).",
      "Esc legt das aktuelle Werkzeug weg; ein zweites Esc (oder der blaue Knopf Skizze fertig stellen) verlässt die Skizze.",
      "Außerhalb einer Skizze sind ihre geschlossenen Flächen (Profile) hellorange. Ein Klick wählt eine aus – sie wird blau."
@@ -819,12 +819,14 @@
    },
    "tips": {
     "en": [
+     "Click a flat face of a body and then Extrude to pull that face out directly, without a sketch.",
      "Two circles inside each other: click only the ring to get a tube instead of a solid cylinder.",
      "To cut a pocket: sketch on the body face, extrude into the body and set Operation to Cut.",
      "Every number field also takes units (e.g. 1 in) and formulas or parameter names such as Width * 2.",
      "Everything you create appears as a step in the timeline at the bottom of the window. Double-click the step to open the same panel again and change the values later."
     ],
     "de": [
+     "Klicke eine ebene Fläche eines Körpers an und dann Extrudieren, um sie direkt ohne Skizze herauszuziehen.",
      "Zwei Kreise ineinander: Klicke nur den Ring an, dann entsteht ein Rohr statt eines vollen Zylinders.",
      "Für eine Tasche: auf der Körperfläche skizzieren, in den Körper hinein extrudieren und Vorgang auf Ausschneiden stellen.",
      "Jedes Zahlenfeld nimmt auch Einheiten (z. B. 1 in) sowie Formeln oder Parameternamen wie Breite * 2.",

@@ -631,7 +631,7 @@ public:
     /** @name Toggle angle snapping and set the reference point */
     //@{
     /// Toggle angle snapping and set the reference point
-    void setAngleSnapping(bool enable, Base::Vector2d referencePoint = Base::Vector2d(0., 0.));
+    void setAngleSnapping(bool enable, Base::Vector2d referencePoint = Base::Vector2d(0., 0.), bool commonAngles = false);
 
     /** @name Access to Sketch and Solver objects */
     //@{

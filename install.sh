@@ -30,8 +30,21 @@ mkdir -p "$(dirname "$BIN")" "$(dirname "$DESKTOP")"
 cat > "$BIN" <<EOF
 #!/usr/bin/env bash
 # MyCAD im Container starten: Wayland + GPU durchgereicht, Home gemountet (Dateien öffnen/speichern, Einstellungen).
+# Nvidia: im Image ist nur Mesa, und der Treiber muss exakt zum Kernelmodul passen, also den vom Rechner hineinreichen.
+# AMD und Intel laufen über Mesa aus dem Image. Welche GPU genutzt wird, entscheidet MyCAD beim Start.
+NVIDIA=()
+if [ -e /dev/nvidiactl ]; then
+    for dev in /dev/nvidia0 /dev/nvidiactl /dev/nvidia-modeset /dev/nvidia-uvm; do
+        [ -e "\$dev" ] && NVIDIA+=(--device "\$dev")
+    done
+    shopt -s nullglob
+    for file in /usr/lib/lib{GLX,EGL,GLESv2,GLESv1_CM}_nvidia.so* /usr/lib/libnvidia-*.so* /usr/lib/gbm/nvidia-drm_gbm.so \\
+                /usr/share/glvnd/egl_vendor.d/10_nvidia.json /usr/share/egl/egl_external_platform.d/*; do
+        NVIDIA+=(-v "\$file:\$file:ro")
+    done
+fi
 exec podman run --rm --userns=keep-id --group-add keep-groups \\
-    --device /dev/dri \\
+    --device /dev/dri "\${NVIDIA[@]}" \\
     -v "$ROOT:/workspace" -v "\$HOME:\$HOME" -w "\$PWD" \\
     -v "\$XDG_RUNTIME_DIR/\$WAYLAND_DISPLAY:/tmp/runtime/\$WAYLAND_DISPLAY" \\
     -e HOME="\$HOME" -e XDG_RUNTIME_DIR=/tmp/runtime -e WAYLAND_DISPLAY="\$WAYLAND_DISPLAY" \\

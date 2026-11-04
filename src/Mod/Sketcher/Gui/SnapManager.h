@@ -113,13 +113,15 @@ public:
 
     Base::Vector2d snap(Base::Vector2d inputPos, SnapType mask);
     bool snapAtAngle(Base::Vector2d inputPos, Base::Vector2d& snapPos);
+    /// Linien ohne Ctrl: rastet an gängigen Winkeln (alle 15°) und sonst an vollen Grad, Länge bleibt
+    bool snapToCommonAngle(Base::Vector2d inputPos, Base::Vector2d& snapPos);
     bool snapToObject(Base::Vector2d inputPos, Base::Vector2d& snapPos, SnapType mask);
     bool snapToGrid(Base::Vector2d inputPos, Base::Vector2d& snapPos);
 
     bool snapToLineMiddle(Base::Vector3d& pointToOverride, const Part::GeomLineSegment* line);
     bool snapToArcMiddle(Base::Vector3d& pointToOverride, const Part::GeomArcOfCircle* arc);
 
-    void setAngleSnapping(bool enable, Base::Vector2d referencepoint);
+    void setAngleSnapping(bool enable, Base::Vector2d referencepoint, bool commonAngles = false);
 
     struct SnapHandle
     {
@@ -139,6 +141,7 @@ private:
     ViewProviderSketch& viewProvider;
 
     bool angleSnapRequested;
+    bool commonAnglesRequested = false;
     bool snapRequested;
     bool snapToObjectsRequested;
     bool snapToGridRequested;

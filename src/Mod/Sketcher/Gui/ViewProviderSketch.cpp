@@ -886,6 +886,8 @@ void ViewProviderSketch::setSketchMode(SketchMode mode)
     Gui::Application::Instance->commandManager().testActive();
 }
 
+constexpr float DrawingPickFactor = 2.5F;
+
 SoPickedPointList ViewProviderSketch::getPickedPointsOnRay(
     const SbVec2s& pos,
     const Gui::View3DInventorViewer* viewer
@@ -909,7 +911,8 @@ SoPickedPointList ViewProviderSketch::getPickedPointsOnRay(
     SoRayPickAction rp(viewer->getSoRenderManager()->getViewportRegion());
     rp.setPickAll(true);
     rp.setPoint(pos);
-    rp.setRadius(viewer->getPickRadius());
+    // Beim Zeichnen weiter fangen: das Ende einer Linie soll schon aus etwas Abstand exakt auf dem Kreis landen
+    rp.setRadius(viewer->getPickRadius() * (sketchHandler ? DrawingPickFactor : 1.F));
     rp.apply(root);
 
     const SoPickedPointList& pickedPoints = rp.getPickedPointList();
@@ -967,7 +970,7 @@ EditModeCoinManager::PreselectionResult ViewProviderSketch::resolveClickPreselec
 
     float distanceSquared = static_cast<float>(dx) * static_cast<float>(dx)
         + static_cast<float>(dy) * static_cast<float>(dy);
-    float pickRadius = viewer->getPickRadius();
+    float pickRadius = viewer->getPickRadius() * (sketchHandler ? DrawingPickFactor : 1.F);
     if (distanceSquared > pickRadius * pickRadius) {
         return clickResult;
     }
@@ -1085,10 +1088,10 @@ bool ViewProviderSketch::keyPressed(bool pressed, int key)
     return true;// handle all other key events
 }
 
-void ViewProviderSketch::setAngleSnapping(bool enable, Base::Vector2d referencePoint)
+void ViewProviderSketch::setAngleSnapping(bool enable, Base::Vector2d referencePoint, bool commonAngles)
 {
     assert(snapManager);
-    snapManager->setAngleSnapping(enable, referencePoint);
+    snapManager->setAngleSnapping(enable, referencePoint, commonAngles);
 }
 
 bool ViewProviderSketch::getProjectingLine(const SbVec2s& pnt,

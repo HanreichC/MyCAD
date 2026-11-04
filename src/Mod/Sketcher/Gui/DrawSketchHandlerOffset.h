@@ -27,6 +27,7 @@
 
 #include <FCConfig.h>
 
+#include <algorithm>
 #include <limits>
 
 #include <QApplication>
@@ -42,7 +43,9 @@
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRep_Builder.hxx>
 #include <TopoDS.hxx>
+#include <TopoDS_Compound.hxx>
 #include <TopExp_Explorer.hxx>
 #include <gp_Pln.hxx>
 
@@ -228,12 +231,56 @@ private:
     double offsetLength;
     int firstCurveCreated;
 
+    /// Offene Linienzüge (auch eine einzelne Linie): eine Kopie auf der Seite der Maus statt eines Rings darum.
+    /// Mit fester Ebene legt OCC die Seite über die Wire-Richtung fest (das Vorzeichen allein reicht bei einer einzelnen
+    /// Linie nicht): beide Richtungen rechnen, die Kopie näher an der Maus nehmen.
+    TopoDS_Shape makeOpenOffsetShape(short joinType)
+    {
+        BRep_Builder builder;
+        TopoDS_Compound result;
+        builder.MakeCompound(result);
+        const TopoDS_Vertex mouse = BRepBuilderAPI_MakeVertex(gp_Pnt(endpoint.x, endpoint.y, 0.)).Vertex();
+        const TopoDS_Face plane = BRepBuilderAPI_MakeFace(gp_Pln(gp::Origin(), gp::DZ())).Face();
+        for (const TopoDS_Wire& wire : sourceWires) {
+            TopoDS_Shape nearest;
+            double nearestDistance = std::numeric_limits<double>::max();
+            for (const TopoDS_Wire& direction : {wire, TopoDS::Wire(wire.Reversed())}) {
+                try {
+                    BRepOffsetAPI_MakeOffset mkOffset(plane);
+                    mkOffset.Init(GeomAbs_JoinType(joinType), true);
+                    mkOffset.AddWire(direction);
+                    mkOffset.Perform(fabs(offsetLength));
+                    if (!mkOffset.IsDone() || mkOffset.Shape().IsNull()) {
+                        continue;
+                    }
+                    const TopoDS_Shape shape = BRepBuilderAPI_Copy(mkOffset.Shape()).Shape();
+                    BRepExtrema_DistShapeShape distance(shape, mouse);
+                    if (distance.IsDone() && distance.Value() < nearestDistance) {
+                        nearestDistance = distance.Value();
+                        nearest = shape;
+                    }
+                }
+                catch (Standard_Failure&) {
+                    // diese Seite geht nicht (z. B. größer als der Bogenradius), die andere kann trotzdem gehen
+                }
+            }
+            if (!nearest.IsNull()) {
+                builder.Add(result, nearest);
+            }
+        }
+        return result;
+    }
+
     TopoDS_Shape makeOffsetShape(bool allowOpenResult = false)
     {
         // in OCC the JointTypes are : Arc(0), Tangent(1), Intersection(2)
         short joinType = constructionMethod() == DrawSketchHandlerOffset::ConstructionMethod::Arc
             ? 0
             : 2;
+
+        if (std::ranges::none_of(sourceWires, [](const TopoDS_Wire& wire) { return BRep_Tool::IsClosed(wire); })) {
+            return makeOpenOffsetShape(joinType);
+        }
 
         // Offset will fail for single lines if we don't set a plane in ctor.
         // But if we set a plane, then the direction of offset is forced...

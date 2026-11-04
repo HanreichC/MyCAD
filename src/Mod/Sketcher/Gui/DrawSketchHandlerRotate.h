@@ -299,7 +299,7 @@ private:
     void angleSnappingControl() override
     {
         if (state() == SelectMode::SeekSecond || state() == SelectMode::SeekThird) {
-            setAngleSnapping(true, centerPoint);
+            setAngleSnapping(true, centerPoint, true);
         }
 
         else {

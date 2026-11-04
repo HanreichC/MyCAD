@@ -136,7 +136,8 @@ private:
     static inline void setAngleSnapping(
         ViewProviderSketch& vp,
         bool enable,
-        Base::Vector2d referencePoint = Base::Vector2d(0., 0.)
+        Base::Vector2d referencePoint = Base::Vector2d(0., 0.),
+        bool commonAngles = false
     );
 
     static inline int getPreselectPoint(const ViewProviderSketch& vp);
@@ -348,7 +349,7 @@ protected:
         const std::vector<std::unique_ptr<Sketcher::Constraint>>& autoConstraints
     );
 
-    void setAngleSnapping(bool enable, Base::Vector2d referencePoint = Base::Vector2d(0., 0.));
+    void setAngleSnapping(bool enable, Base::Vector2d referencePoint = Base::Vector2d(0., 0.), bool commonAngles = false);
 
     void moveConstraint(int constNum, const Base::Vector2d& toPos, OffsetMode offset = NoOffset);
 
