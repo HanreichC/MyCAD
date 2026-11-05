@@ -15,6 +15,7 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLWidget>
 #include <QPainter>
+#include <QPainterPath>
 #include <QVector3D>
 
 #include <algorithm>
@@ -385,6 +386,14 @@ void GlassPanel::setRadius(qreal r)
 QRectF GlassPanel::boundingRect() const
 {
     return QRectF(QPointF(0, 0), size).adjusted(-ShadowMargin, -ShadowMargin, ShadowMargin, ShadowMargin);
+}
+
+QPainterPath GlassPanel::shape() const
+{
+    QPainterPath path;
+    const qreal r = std::min({radius, size.width() / 2, size.height() / 2});
+    path.addRoundedRect(QRectF(QPointF(0, 0), size), r, r);
+    return path;
 }
 
 void GlassPanel::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget* widget)

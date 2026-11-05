@@ -150,12 +150,12 @@
     "en": [
      "Everything you create appears as a step in the timeline at the bottom of the window. Double-click the step to open the same panel again and change the values later.",
      "Hold the mouse over any tool for its name, and press F1 to open its help page.",
-     "Settings (gear button at the top right) can show the tool names under the icons: Show tool names."
+     "Settings (bottom of the sidebar) can show the tool names under the icons: Show tool names."
     ],
     "de": [
      "Alles, was du erstellst, erscheint als Schritt in der Zeitleiste unten im Fenster. Doppelklick auf den Schritt öffnet dasselbe Panel wieder, dort änderst du die Werte später.",
      "Halte die Maus über ein Werkzeug, um seinen Namen zu sehen, und drücke F1 für seine Hilfeseite.",
-     "In den Einstellungen (Zahnrad oben rechts) kannst du die Namen unter den Symbolen einblenden: Werkzeugnamen anzeigen."
+     "In den Einstellungen (unten in der Seitenleiste) kannst du die Namen unter den Symbolen einblenden: Werkzeugnamen anzeigen."
     ]
    },
    "images": [
@@ -212,7 +212,7 @@
      "Zoom: turn the scroll wheel; it zooms towards the cursor. On a trackpad, scroll with two fingers.",
      "View cube (top right, below the window buttons): click a face such as TOP or FRONT to look from that side, or a corner for an angled view. The small house below it shows the whole model.",
      "Lost the model? INSPECT → Fit All (keys V, F) zooms so everything fits.",
-     "To see the exact buttons of your style: open Settings (gear button at the top right) → Navigation; the box below Style lists Rotate, Pan, Zoom and Select."
+     "To see the exact buttons of your style: open Settings (bottom of the sidebar) → Navigation; the box below Style lists Rotate, Pan, Zoom and Select."
     ],
     "de": [
      "Drehen (Stil Fusion 360): Umschalt gedrückt halten und mit der mittleren Maustaste (dem gedrückten Mausrad) ziehen.",
@@ -220,7 +220,7 @@
      "Zoomen: Mausrad drehen; es zoomt zum Cursor hin. Auf dem Trackpad mit zwei Fingern scrollen.",
      "ViewCube (oben rechts, unter den Fensterknöpfen): Klicke eine Seite wie OBEN oder VORNE an, um von dort zu schauen, oder eine Ecke für eine Schrägansicht. Das kleine Haus darunter zeigt das ganze Modell.",
      "Modell verloren? PRÜFEN → Alles zeigen (Tasten V, F) zoomt so, dass alles hineinpasst.",
-     "Die genauen Tasten deines Stils: Einstellungen öffnen (Zahnrad oben rechts) → Navigation; der Kasten unter Stil zeigt Drehen, Verschieben, Zoomen und Auswählen."
+     "Die genauen Tasten deines Stils: Einstellungen öffnen (unten in der Seitenleiste) → Navigation; der Kasten unter Stil zeigt Drehen, Verschieben, Zoomen und Auswählen."
     ]
    },
    "see": [
@@ -483,16 +483,16 @@
     "en": [
      "New (Ctrl+N) creates an empty design. Open (Ctrl+O) loads a design file. Save (Ctrl+S) stores it; the first time you choose name and folder.",
      "Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z) step backwards and forwards through your changes.",
-     "The house button in the window buttons at the top right opens the start page: recent designs and your projects folder, with search. The arrow at the front of the same group brings you back to the design.",
-     "The sidebar button at the top left of the browser hides the browser for more room; in the same place it shows it again.",
+     "Home at the bottom of the sidebar opens the start page: recent designs and your projects folder, with search. Back to Design in the same place brings you back.",
+     "The sidebar button next to the name MyCAD hides the browser for more room; it then moves to the top left corner and shows it again.",
      "Right-click the design name at the top of the browser (left) for Save, Save As…, Export…, Rename, Close and Delete….",
      "Delete… asks first. A saved file goes to the trash, so you can still get it back there."
     ],
     "de": [
      "Neu (Strg+N) legt ein leeres Design an. Öffnen (Strg+O) lädt eine Design-Datei. Speichern (Strg+S) sichert es; beim ersten Mal wählst du Name und Ordner.",
      "Rückgängig (Strg+Z) und Wiederherstellen (Strg+Umschalt+Z) gehen in deinen Änderungen zurück und vor.",
-     "Der Haus-Knopf bei den Fensterknöpfen oben rechts öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Der Pfeil vorne in derselben Gruppe bringt dich zurück zum Design.",
-     "Der Seitenleisten-Knopf oben links im Browser blendet den Browser für mehr Platz aus; an derselben Stelle blendest du ihn wieder ein.",
+     "Start unten in der Seitenleiste öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Zurück zum Design an derselben Stelle bringt dich zurück.",
+     "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus; er rückt dann in die Ecke oben links und blendet ihn dort wieder ein.",
      "Rechtsklick auf den Designnamen ganz oben im Browser (links) bietet Speichern, Speichern unter…, Exportieren…, Umbenennen, Schließen und Löschen….",
      "Löschen… fragt vorher nach. Eine gespeicherte Datei kommt in den Papierkorb, du holst sie dort also noch zurück."
     ]
@@ -3770,8 +3770,8 @@
     ]
    },
    "summary": {
-    "en": "Adjusts look, navigation, keys and language. Open it with the gear button at the top right or Ctrl+,; close it with the ✕ at the top right of the window or Esc.",
-    "de": "Passt Aussehen, Navigation, Tasten und Sprache an. Öffnen mit dem Zahnrad oben rechts oder Strg+,; schließen mit dem ✕ oben rechts im Fenster oder Esc."
+    "en": "Adjusts look, navigation, keys and language. Open it with Settings at the bottom of the sidebar or Ctrl+,; close it with the ✕ at the top right of the window or Esc.",
+    "de": "Passt Aussehen, Navigation, Tasten und Sprache an. Öffnen mit Einstellungen unten in der Seitenleiste oder Strg+,; schließen mit dem ✕ oben rechts im Fenster oder Esc."
    },
    "steps": {
     "en": [

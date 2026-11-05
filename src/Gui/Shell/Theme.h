@@ -52,7 +52,7 @@ namespace Token
 {
 constexpr int RadiusWindow = 24, RadiusPanel = 20, RadiusTile = 12, RadiusControl = 8, RadiusCheckbox = 5;
 constexpr int RadiusCapsule = 9999;  ///< Höhe / 2
-constexpr int WindowInset = 12, WindowButton = 36, ControlDesktop = 30, Segmented = 44, Chip = 24;
+constexpr int WindowInset = 12, BarHeight = 44, WindowButton = 36, ControlDesktop = 30, Segmented = 44, Chip = 24;
 constexpr int SwitchWidth = 38, SwitchHeight = 22, SwitchKnob = 18, SliderKnob = 21;
 constexpr int IconM = 16, IconWindow = 18, IconL = 20;
 constexpr int ContentMaxWidth = 560;

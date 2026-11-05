@@ -30,6 +30,7 @@ public:
     QWidget* content() const;
 
     QRectF boundingRect() const override;
+    QPainterPath shape() const override;  ///< nur das Glas: der Schattenrand darum nimmt keine Klicks an
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
 protected:

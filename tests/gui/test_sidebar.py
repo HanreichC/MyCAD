@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Seitenleiste im Design ein-/ausklappen: Knopf links in der Kopfleiste blendet den Browser aus, die Toolbar bleibt in der Mitte,
-der Knopf bleibt an derselben Stelle, Tooltip wechselt; erneuter Klick zeigt ihn wieder. Startseite und Hilfe haben keinen solchen Knopf.
+"""Seitenleiste im Design ein-/ausklappen: Knopf neben dem Namen blendet den Browser aus, Name und Knopf wandern als Kapsel
+an den Anfang der Titelzeile, die Toolbar bleibt in der Fenstermitte; erneuter Klick zeigt ihn wieder. Startseite und Hilfe haben keinen solchen Knopf.
 Am Ende wieder ausgeklappt (Einstellung MyCAD/BrowserHidden)."""
 import harness
 from harness import *
