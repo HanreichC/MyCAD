@@ -3672,31 +3672,35 @@
      "colour",
      "material",
      "paint",
-     "look"
+     "look",
+     "wood",
+     "texture"
     ],
     "de": [
      "Darstellung",
      "Farbe",
      "Material",
      "einfärben",
-     "Aussehen"
+     "Aussehen",
+     "Holz",
+     "Textur"
     ]
    },
    "summary": {
-    "en": "Gives bodies a material look such as Steel or Brass, or a colour.",
-    "de": "Gibt Körpern ein Material-Aussehen wie Stahl oder Messing oder eine Farbe."
+    "en": "Gives bodies a textured surface such as Oak, Marble or Carbon Fiber, a material look such as Steel or Brass, or a colour.",
+    "de": "Gibt Körpern eine Oberfläche mit Textur wie Eiche, Marmor oder Carbon, ein Material-Aussehen wie Stahl oder Messing oder eine Farbe."
    },
    "steps": {
     "en": [
      "Select one or more bodies (Ctrl+click for several).",
      "In the toolbar at the top, in the UTILITIES section, click Appearance (key A). The panel opens on the right.",
-     "Click a button under Material (e.g. Steel, Aluminum, Brass, Plastic) or a colour dot under Color – the bodies change right away.",
+     "Click a tile under Wood or Textures, a button under Material (e.g. Steel, Aluminum, Brass, Plastic) or a colour dot under Color – the bodies change right away.",
      "Click OK at the top of the panel. Cancel (next to it) or Esc discards the tool without changing anything."
     ],
     "de": [
      "Wähle einen oder mehrere Körper (Strg+Klick für mehrere).",
      "Klicke in der Werkzeugleiste oben im Bereich WERKZEUGE auf Darstellung (Taste A). Rechts öffnet sich das Panel.",
-     "Klicke unter Material einen Knopf (z. B. Stahl, Aluminium, Messing, Kunststoff) oder unter Farbe einen Farbpunkt – die Körper ändern sich sofort.",
+     "Klicke eine Kachel unter Holz oder Texturen, unter Material einen Knopf (z. B. Stahl, Aluminium, Messing, Kunststoff) oder unter Farbe einen Farbpunkt – die Körper ändern sich sofort.",
      "Klicke oben im Panel auf OK. Abbrechen (daneben) oder Esc verwirft das Werkzeug, ohne etwas zu ändern."
     ]
    },

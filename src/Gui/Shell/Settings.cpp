@@ -913,8 +913,12 @@ void Gui::Shell::showSettings()
     });
     addRow(lookCard, T("Liquid Glass"), glass);
     auto material = new QComboBox;  // Pop-up-Button: mehr Materialien, als ein Segmented Control fasst (≤ 7)
-    for (const char* name : Gui::Shell::bodyMaterialNames()) {
-        material->addItem(T(name));
+    for (const auto& entry : Gui::Shell::bodyMaterialList()) {
+        material->addItem(T(entry.name));
+        if (entry.texture) {
+            const QSize thumb(Token::IconL, Token::IconL);
+            material->setItemIcon(material->count() - 1, Gui::Shell::materialThumbnail(entry.texture, thumb, material->devicePixelRatioF()));
+        }
     }
     material->setCurrentIndex(int(myParams()->GetInt("BodyMaterial", 0)));
     QObject::connect(material, &QComboBox::currentIndexChanged, [](int i) { Gui::Shell::setBodyMaterial(i); });

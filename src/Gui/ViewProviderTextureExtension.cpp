@@ -22,6 +22,9 @@
  **************************************************************************/
 
 
+#include <map>
+#include <string>
+
 #include <Inventor/nodes/SoCoordinate3.h>
 #include <Inventor/nodes/SoIndexedFaceSet.h>
 #include <Inventor/nodes/SoMaterial.h>
@@ -36,6 +39,34 @@
 
 
 using namespace Gui;
+
+namespace
+{
+/// Mitgelieferte Textur. Alle Körper teilen sich einen Knoten, sonst läge das Bild je Körper im Speicher und auf der GPU.
+SoTexture2* bundledTexture(const std::string& path)
+{
+    // Der Pfad kommt aus der geöffneten Datei: nur eigene Ressourcen laden, keine beliebigen Dateien
+    if (!path.starts_with(":/mycad/textures/")) {
+        return nullptr;
+    }
+    static std::map<std::string, SoTexture2*> textures;  // lebt bis zum Programmende
+    auto known = textures.find(path);
+    if (known != textures.end()) {
+        return known->second;
+    }
+    SoTexture2* texture = nullptr;
+    const QImage image(QString::fromStdString(path));
+    if (!image.isNull()) {
+        SoSFImage pixels;
+        Gui::BitmapFactory().convert(image, pixels);
+        texture = new SoTexture2;
+        texture->ref();
+        texture->image = pixels;
+    }
+    textures[path] = texture;  // auch den Fehlschlag merken: Der Körper bleibt dann einfach einfarbig
+    return texture;
+}
+}  // namespace
 
 
 EXTENSION_PROPERTY_SOURCE(Gui::ViewProviderTextureExtension, Gui::ViewProviderExtension)
@@ -56,6 +87,14 @@ ViewProviderTextureExtension::ViewProviderTextureExtension()
     pcShapeTexture2D->ref();
     pcShapeTexture2D->setName("ShapeTexture2D");
 
+    pcTextureMaterial = new SoMaterial;
+    pcTextureMaterial->ref();
+    pcTextureMaterial->setName("TextureMaterial");
+    pcTexture2D = new SoGroup;
+    pcTexture2D->ref();
+    pcTexture2D->addChild(pcTextureMaterial);
+    pcTexture2D->addChild(pcShapeTexture2D);
+
     pcTextureGroup3D = new SoGroup;
     pcTextureGroup3D->ref();
     pcTextureGroup3D->setName("TextureGroup3D");
@@ -66,7 +105,7 @@ void ViewProviderTextureExtension::setup(SoMaterial* pcShapeMaterial)
     // Materials go first, with textured faces drawing over them
     pcSwitchAppearance->addChild(pcShapeMaterial);
     pcSwitchAppearance->addChild(pcSwitchTexture);
-    pcSwitchTexture->addChild(pcShapeTexture2D);
+    pcSwitchTexture->addChild(pcTexture2D);
     pcSwitchTexture->addChild(pcTextureGroup3D);
     pcSwitchAppearance->whichChild.setValue(0);
     pcSwitchTexture->whichChild.setValue(SO_SWITCH_NONE);
@@ -77,6 +116,8 @@ ViewProviderTextureExtension::~ViewProviderTextureExtension()
     pcSwitchAppearance->unref();
     pcSwitchTexture->unref();
     pcShapeTexture2D->unref();
+    pcTextureMaterial->unref();
+    pcTexture2D->unref();
     pcTextureGroup3D->unref();
 }
 
@@ -95,7 +136,12 @@ void ViewProviderTextureExtension::setCoinAppearance(
     const App::Material& source
 )
 {
-    if (!source.image.empty()) {
+    if (SoTexture2* bundled = bundledTexture(source.imagePath)) {
+        pcTexture2D->replaceChild(1, bundled);
+        activateTexture2D();
+    }
+    else if (!source.image.empty()) {
+        pcTexture2D->replaceChild(1, pcShapeTexture2D);
         activateTexture2D();
 
         QByteArray by = QByteArray::fromBase64(QString::fromStdString(source.image).toUtf8());
@@ -108,6 +154,14 @@ void ViewProviderTextureExtension::setCoinAppearance(
     else {
         activateMaterial();
     }
+
+    // Mit Textur kommt die Farbe aus dem Bild, das Material liefert nur Glanz und Licht
+    pcTextureMaterial->diffuseColor.setValue(1.0F, 1.0F, 1.0F);
+    pcTextureMaterial->ambientColor.setValue(source.ambientColor.r, source.ambientColor.g, source.ambientColor.b);
+    pcTextureMaterial->specularColor.setValue(source.specularColor.r, source.specularColor.g, source.specularColor.b);
+    pcTextureMaterial->emissiveColor.setValue(source.emissiveColor.r, source.emissiveColor.g, source.emissiveColor.b);
+    pcTextureMaterial->shininess.setValue(source.shininess);
+    pcTextureMaterial->transparency.setValue(source.transparency);
 
     // Always set the material for items such as lines that don't support textures
     pcShapeMaterial->ambientColor

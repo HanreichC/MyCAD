@@ -1979,6 +1979,49 @@ public:
             label->setContentsMargins(0, 8, 0, 4);
             lay->addWidget(label);
         };
+        // Texturen als Kacheln mit Vorschau: der Name steht darunter und bricht um, statt abgeschnitten zu werden
+        auto tiles = [&](const QString& title, bool wood) {
+            heading(title);
+            auto tileGrid = new QGridLayout;
+            tileGrid->setSpacing(8);
+            for (int column = 0; column < 3; ++column) {
+                tileGrid->setColumnStretch(column, 1);  // gleich breite Spalten: Holz und Texturen stehen untereinander
+            }
+            int index = -1, cell = 0;
+            for (const auto& entry : Gui::Shell::bodyMaterialList()) {
+                ++index;
+                if (!entry.texture || entry.wood != wood) {
+                    continue;
+                }
+                auto tile = new QToolButton;
+                const QSize size(76, 44);
+                tile->setIcon(Gui::Shell::materialThumbnail(entry.texture, size, w->devicePixelRatioF()));
+                tile->setIconSize(size);
+                tile->setToolTip(T(entry.name));
+                tile->setAccessibleName(T(entry.name));
+                // Rand und Hover-Ring aus dem Theme, wie bei den Farbfeldern
+                tile->setStyleSheet(Gui::Shell::themed(QStringLiteral("QToolButton { padding: 0; background: transparent; border-radius: %1px; "
+                                                                      "border: 1px solid @separator; }"
+                                                                      "QToolButton:hover, QToolButton:focus { border: 2px solid @focusRing; }"))
+                                        .arg(Gui::Shell::Token::RadiusControl));
+                const App::Material material = Gui::Shell::bodyMaterialAppearance(index);
+                QObject::connect(tile, &QToolButton::clicked, tile, [this, material] { apply(material); });
+                auto caption = new QLabel(T(entry.name));
+                caption->setWordWrap(true);
+                caption->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
+                caption->setFont(Gui::Shell::textFont(Gui::Shell::Text::Caption));
+                auto column = new QVBoxLayout;
+                column->setSpacing(4);
+                column->addWidget(tile, 0, Qt::AlignHCenter);
+                column->addWidget(caption);
+                column->addStretch();
+                tileGrid->addLayout(column, cell / 3, cell % 3);
+                ++cell;
+            }
+            lay->addLayout(tileGrid);
+        };
+        tiles(T("Wood"), true);
+        tiles(T("Textures"), false);
         heading(T("Material"));
         struct Preset
         {
@@ -1990,7 +2033,10 @@ public:
                                   {"Copper", App::Material::COPPER},     {"Gold", App::Material::GOLD},
                                   {"Plastic", App::Material::PLASTIC},   {"Glossy", App::Material::SHINY_PLASTIC},
                                   {"Satin", App::Material::SATIN},       {"Stone", App::Material::STONE},
-                                  {"Plaster", App::Material::PLASTER},   {"Default", App::Material::DEFAULT}};
+                                  {"Plaster", App::Material::PLASTER},   {"Bronze", App::Material::BRONZE},
+                                  {"Silver", App::Material::SILVER},     {"Obsidian", App::Material::OBSIDIAN},
+                                  {"Jade", App::Material::JADE},         {"Ruby", App::Material::RUBY},
+                                  {"Emerald", App::Material::EMERALD},   {"Default", App::Material::DEFAULT}};
         auto grid = new QGridLayout;
         int i = 0;
         for (const auto& preset : presets) {

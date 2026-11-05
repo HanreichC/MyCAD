@@ -63,6 +63,16 @@ using namespace DesignGui;
 
 PROPERTY_SOURCE(DesignGui::ViewProviderBody, PartGui::ViewProviderPartExt)
 
+ViewProviderBody::ViewProviderBody()
+{
+    // Farben kommen über die View-Parameter, die Textur der Vorgabe hier. Beim Laden überschreibt die Datei beides.
+    if (const char* texture = Gui::Shell::defaultBodyTexture()) {
+        App::Material material = ShapeAppearance[0];
+        material.imagePath = texture;
+        ShapeAppearance.setValue(material);
+    }
+}
+
 QIcon ViewProviderBody::getIcon() const
 {
     return Gui::BitmapFactory().pixmap("PartDesign_Body");

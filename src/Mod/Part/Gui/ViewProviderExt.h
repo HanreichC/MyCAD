@@ -55,6 +55,7 @@ class SoCoordinate3;
 class SoIndexedFaceSet;
 class SoNormal;
 class SoNormalBinding;
+class SoTextureCoordinate2;
 class SoMaterialBinding;
 class SoIndexedLineSet;
 
@@ -189,7 +190,8 @@ public:
         SoBrepPointSet* nodeset,
         double deviation,
         double angularDeflection,
-        bool normalsFromUV = false
+        bool normalsFromUV = false,
+        SoTextureCoordinate2* texCoords = nullptr
     );
 
     static void setupCoinGeometry(
@@ -230,6 +232,7 @@ protected:
     SoBrepFaceSet* faceset;
     SoNormal* norm;
     SoNormalBinding* normb;
+    SoTextureCoordinate2* texCoords;
     SoBrepEdgeSet* lineset;
     SoBrepPointSet* nodeset;
 

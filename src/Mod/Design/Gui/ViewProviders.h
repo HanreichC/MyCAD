@@ -27,6 +27,7 @@ class DesignGuiExport ViewProviderBody: public PartGui::ViewProviderPartExt
     PROPERTY_HEADER_WITH_OVERRIDE(DesignGui::ViewProviderBody);
 
 public:
+    ViewProviderBody();
     QIcon getIcon() const override;
 };
 

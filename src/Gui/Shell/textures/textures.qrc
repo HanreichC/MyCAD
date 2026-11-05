@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/mycad/textures">
+        <file>oak.jpg</file>
+        <file>walnut.jpg</file>
+        <file>maple.jpg</file>
+        <file>cherry.jpg</file>
+        <file>pine.jpg</file>
+        <file>bamboo.jpg</file>
+        <file>brushed_aluminum.jpg</file>
+        <file>brushed_steel.jpg</file>
+        <file>carbon.jpg</file>
+        <file>concrete.jpg</file>
+        <file>marble.jpg</file>
+        <file>granite.jpg</file>
+        <file>leather.jpg</file>
+        <file>cork.jpg</file>
+    </qresource>
+</RCC>

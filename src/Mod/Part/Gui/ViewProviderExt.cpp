@@ -34,7 +34,13 @@
 #include <Poly_Array1OfTriangle.hxx>
 #include <Poly_Polygon3D.hxx>
 #include <Poly_PolygonOnTriangulation.hxx>
+#include <BRepAdaptor_Surface.hxx>
 #include <Poly_Triangulation.hxx>
+#include <gp.hxx>
+#include <gp_Pnt2d.hxx>
+
+#include <algorithm>
+#include <cmath>
 #include <Standard_Version.hxx>
 #include <TColgp_Array1OfDir.hxx>
 #include <TColgp_Array1OfPnt.hxx>
@@ -58,6 +64,7 @@
 #include <Inventor/details/SoPointDetail.h>
 #include <Inventor/errors/SoDebugError.h>
 #include <Inventor/nodes/SoCoordinate3.h>
+#include <Inventor/nodes/SoTextureCoordinate2.h>
 #include <Inventor/nodes/SoDrawStyle.h>
 #include <Inventor/nodes/SoMaterial.h>
 #include <Inventor/nodes/SoMaterialBinding.h>
@@ -229,6 +236,8 @@ ViewProviderPartExt::ViewProviderPartExt()
     normb = new SoNormalBinding;
     normb->value = SoNormalBinding::PER_VERTEX_INDEXED;
     normb->ref();
+    texCoords = new SoTextureCoordinate2;
+    texCoords->ref();
     lineset = new SoBrepEdgeSet();
     lineset->setViewProvider(this);
     lineset->ref();
@@ -292,6 +301,7 @@ ViewProviderPartExt::~ViewProviderPartExt()
     faceset->unref();
     norm->unref();
     normb->unref();
+    texCoords->unref();
     lineset->unref();
     nodeset->unref();
 }
@@ -514,6 +524,7 @@ void ViewProviderPartExt::attach(App::DocumentObject* pcFeat)
     pcFlatRoot->addChild(pcFaceStyle);
     pcFlatRoot->addChild(norm);
     pcFlatRoot->addChild(normb);
+    pcFlatRoot->addChild(texCoords);
     pcFlatRoot->addChild(faceset);
 
     // edges and points
@@ -750,7 +761,7 @@ void ViewProviderPartExt::setHighlightedFaces(const std::vector<App::Material>& 
     }
     else if (size == 1) {
         pcFaceBind->value = SoMaterialBinding::OVERALL;
-        setCoinAppearance(materials[0]);
+        texture.setCoinAppearance(pcShapeMaterial, materials[0]);
     }
 }
 
@@ -1048,6 +1059,52 @@ void ViewProviderPartExt::unsetEdit(int ModNum)
     }
 }
 
+namespace
+{
+constexpr double TextureTileMM = 200.0;  // eine Kachel auf dem Körper, siehe tools/make_textures.py
+
+/// Texturkoordinaten einer Fläche. Ebenen werden auf die Achsebene projiziert, zu der sie am besten passt: Die Maserung
+/// läuft so auf allen Seiten eines Körpers gleich. Gekrümmte Flächen nutzen ihre UV-Parameter, umgerechnet in mm.
+// ponytail: Die Umrechnung gilt in der Flächenmitte, stark veränderliche Freiformflächen verzerren etwas. Besser wäre eine
+// echte Abwicklung; an Zylindern, Kegeln und Verrundungen fällt es nicht auf.
+void faceTextureCoordinates(
+    const TopoDS_Face& face,
+    const Handle(Poly_Triangulation) & mesh,
+    const gp_Trsf& transform,
+    SbVec2f* out
+)
+{
+    BRepAdaptor_Surface surface(face);
+    if (surface.GetType() != GeomAbs_Plane && mesh->HasUVNodes()) {
+        gp_Pnt point;
+        gp_Vec du, dv;
+        surface.D1(
+            (surface.FirstUParameter() + surface.LastUParameter()) / 2,
+            (surface.FirstVParameter() + surface.LastVParameter()) / 2,
+            point,
+            du,
+            dv
+        );
+        for (int i = 1; i <= mesh->NbNodes(); i++) {
+            const gp_Pnt2d uv = mesh->UVNode(i);
+            out[i - 1].setValue(
+                float(uv.X() * du.Magnitude() / TextureTileMM),
+                float(uv.Y() * dv.Magnitude() / TextureTileMM)
+            );
+        }
+        return;
+    }
+    const gp_Dir normal = surface.GetType() == GeomAbs_Plane ? surface.Plane().Axis().Direction() : gp::DZ();
+    const double nx = std::abs(normal.X()), ny = std::abs(normal.Y()), nz = std::abs(normal.Z());
+    for (int i = 1; i <= mesh->NbNodes(); i++) {
+        const gp_Pnt p = mesh->Node(i).Transformed(transform);
+        const double u = nx >= ny && nx >= nz ? p.Y() : p.X();
+        const double v = nz >= nx && nz >= ny ? p.Y() : p.Z();
+        out[i - 1].setValue(float(u / TextureTileMM), float(v / TextureTileMM));
+    }
+}
+}  // namespace
+
 void ViewProviderPartExt::setupCoinGeometry(
     TopoDS_Shape shape,
     SoCoordinate3* coords,
@@ -1057,10 +1114,14 @@ void ViewProviderPartExt::setupCoinGeometry(
     SoBrepPointSet* nodeset,
     double deviation,
     double angularDeflection,
-    bool normalsFromUV
+    bool normalsFromUV,
+    SoTextureCoordinate2* texCoords
 )
 {
     if (Part::Tools::isShapeEmpty(shape)) {
+        if (texCoords) {
+            texCoords->point.setNum(0);
+        }
         coords->point.setNum(0);
         norm->vector.setNum(0);
         faceset->coordIndex.setNum(0);
@@ -1200,6 +1261,13 @@ void ViewProviderPartExt::setupCoinGeometry(
         norms[i] = SbVec3f(0.0, 0.0, 0.0);
     }
 
+    SbVec2f* tex = nullptr;
+    if (texCoords) {
+        texCoords->point.setNum(numNodes);
+        tex = texCoords->point.startEditing();
+        std::fill_n(tex, numNodes, SbVec2f(0.0F, 0.0F));
+    }
+
     int ii = 0, faceNodeOffset = 0, faceTriaOffset = 0;
     for (int i = 1; i <= faceMap.Extent(); i++, ii++) {
         TopLoc_Location aLoc;
@@ -1312,6 +1380,9 @@ void ViewProviderPartExt::setupCoinGeometry(
         }
 
         parts[ii] = nbTriInFace;  // new part
+        if (tex) {
+            faceTextureCoordinates(actFace, mesh, myTransf, tex + faceNodeOffset);
+        }
 
         // handling the edges lying on this face
         TopExp_Explorer Exp;
@@ -1469,6 +1540,9 @@ void ViewProviderPartExt::setupCoinGeometry(
 
     // end the editing of the nodes
     coords->point.finishEditing();
+    if (texCoords) {
+        texCoords->point.finishEditing();
+    }
     norm->vector.finishEditing();
     faceset->coordIndex.finishEditing();
     faceset->partIndex.finishEditing();
@@ -1553,7 +1627,8 @@ void ViewProviderPartExt::updateVisual()
             nodeset,
             Deviation.getValue(),
             AngularDeflection.getValue(),
-            NormalsFromUV
+            NormalsFromUV,
+            texCoords
         );
 
         lastRenderedShape = shape;

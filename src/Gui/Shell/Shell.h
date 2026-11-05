@@ -3,8 +3,15 @@
 #pragma once
 
 #include <QCoreApplication>
+#include <QPixmap>
+#include <QSize>
 #include <QString>
 #include <vector>
+
+namespace App
+{
+class Material;
+}
 
 namespace Gui::Shell
 {
@@ -20,7 +27,16 @@ void setToolNames(bool on);
 /// ReduceTransparency, ReduceMotion) geändert wurden; wirkt sofort auf alle Fenster
 void applyAppearance();
 /// Aussehen der Körper (Einstellung "Body material"): Auswahl und Wahl; färbt Körper mit Standard-Look gleich um
-std::vector<const char*> bodyMaterialNames();
+struct BodyMaterialEntry
+{
+    const char* name;     ///< englisch, über T() anzeigen
+    const char* texture;  ///< Ressource der Textur oder nullptr
+    bool wood;
+};
+std::vector<BodyMaterialEntry> bodyMaterialList();
+App::Material bodyMaterialAppearance(int index);
+const char* defaultBodyTexture();  ///< Textur neuer Körper oder nullptr
+QPixmap materialThumbnail(const char* texture, QSize size, qreal ratio);
 void setBodyMaterial(int index);
 /// Ordner mit den Designs des Benutzers (Startseite "Projects", Einstellung "Projects folder")
 QString projectsFolder();

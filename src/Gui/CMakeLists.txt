@@ -403,6 +403,7 @@ set(Gui_RES_SRCS
     Icons/resource.qrc
     Shell/icons/icons.qrc
     Shell/help/help.qrc
+    Shell/textures/textures.qrc
     Language/translation.qrc
     ${FreeCAD_TR_QRC}
 )

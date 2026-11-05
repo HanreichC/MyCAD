@@ -736,13 +736,13 @@ A("Design_Note", "utilities", "Design_Note", ("Note", "Notiz"),
   see=["Design_Parameters"])
 
 A("Design_Appearance", "utilities", "Design_Appearance", ("Appearance", "Darstellung"),
-  (["appearance", "color", "colour", "material", "paint", "look"], ["Darstellung", "Farbe", "Material", "einfärben", "Aussehen"]),
-  ("Gives bodies a material look such as Steel or Brass, or a colour.", "Gibt Körpern ein Material-Aussehen wie Stahl oder Messing oder eine Farbe."),
+  (["appearance", "color", "colour", "material", "paint", "look", "wood", "texture"], ["Darstellung", "Farbe", "Material", "einfärben", "Aussehen", "Holz", "Textur"]),
+  ("Gives bodies a textured surface such as Oak, Marble or Carbon Fiber, a material look such as Steel or Brass, or a colour.", "Gibt Körpern eine Oberfläche mit Textur wie Eiche, Marmor oder Carbon, ein Material-Aussehen wie Stahl oder Messing oder eine Farbe."),
   [("Select one or more bodies (Ctrl+click for several).", "Wähle einen oder mehrere Körper (Strg+Klick für mehrere)."),
    ("In the toolbar at the top, in the UTILITIES section, click Appearance (key A). The panel opens on the right.",
     "Klicke in der Werkzeugleiste oben im Bereich WERKZEUGE auf Darstellung (Taste A). Rechts öffnet sich das Panel."),
-   ("Click a button under Material (e.g. Steel, Aluminum, Brass, Plastic) or a colour dot under Color – the bodies change right away.",
-    "Klicke unter Material einen Knopf (z. B. Stahl, Aluminium, Messing, Kunststoff) oder unter Farbe einen Farbpunkt – die Körper ändern sich sofort."),
+   ("Click a tile under Wood or Textures, a button under Material (e.g. Steel, Aluminum, Brass, Plastic) or a colour dot under Color – the bodies change right away.",
+    "Klicke eine Kachel unter Holz oder Texturen, unter Material einen Knopf (z. B. Stahl, Aluminium, Messing, Kunststoff) oder unter Farbe einen Farbpunkt – die Körper ändern sich sofort."),
    OK],
   tips=[("The default look of new bodies is set in Settings → View → Body material.", "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Ansicht → Körpermaterial ein.")],
   see=["settings"])

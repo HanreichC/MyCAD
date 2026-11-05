@@ -83,6 +83,7 @@
 #include <QFile>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QImageReader>
 #include <QPainter>
 #include <QPainterPath>
 #include <QSvgRenderer>
@@ -301,6 +302,8 @@ struct BodyMaterial
     const char* name;
     uint32_t diffuse, specular, emissive, line;
     int shininess;
+    const char* texture = nullptr;  ///< diffuse ist dann die mittlere Bildfarbe, für Exporte und als Rückfall
+    bool wood = false;
 };
 constexpr BodyMaterial bodyMaterials[] = {
     {"Space Gray", 0x5C6169FF, 0x737373FF, 0x0A0A0BFF, 0x1F1F24FF, 55},
@@ -312,6 +315,26 @@ constexpr BodyMaterial bodyMaterials[] = {
     {"Alpine Green", 0x5F705DFF, 0x5E625EFF, 0x0B0D0BFF, 0x2A3329FF, 50},
     {"Deep Purple", 0x6A5E78FF, 0x66626BFF, 0x0D0B0FFF, 0x2E2735FF, 50},
     {"Natural Titanium", 0xB8B2A7FF, 0x8C8A86FF, 0x12110FFF, 0x5C5850FF, 70},
+    // Neue Materialien nur anhängen: Der Index steht in den Einstellungen des Benutzers
+    {"Silver", 0xD5D6D8FF, 0x8C8C8CFF, 0x101010FF, 0x6B6D72FF, 70},
+    {"Graphite", 0x47484DFF, 0x66666BFF, 0x0A0A0BFF, 0x1A1A1DFF, 55},
+    {"Rose Gold", 0xD8B0A2FF, 0x8C7D78FF, 0x121010FF, 0x7A5C52FF, 70},
+    {"Matte Black", 0x2C2D30FF, 0x2B2B2BFF, 0x050505FF, 0x0D0D0EFF, 15},
+    // Texturen aus tools/make_textures.py
+    {"Oak", 0xB48E5EFF, 0x262626FF, 0x000000FF, 0x5C4325FF, 20, ":/mycad/textures/oak.jpg", true},
+    {"Walnut", 0x5E402AFF, 0x262626FF, 0x000000FF, 0x241710FF, 25, ":/mycad/textures/walnut.jpg", true},
+    {"Maple", 0xDFC69DFF, 0x262626FF, 0x000000FF, 0x8A7350FF, 20, ":/mycad/textures/maple.jpg", true},
+    {"Cherry", 0xA56744FF, 0x262626FF, 0x000000FF, 0x552D18FF, 25, ":/mycad/textures/cherry.jpg", true},
+    {"Pine", 0xD0AD77FF, 0x1A1A1AFF, 0x000000FF, 0x7D5D2EFF, 15, ":/mycad/textures/pine.jpg", true},
+    {"Bamboo", 0xD2B77FFF, 0x262626FF, 0x000000FF, 0x7F6A3FFF, 25, ":/mycad/textures/bamboo.jpg", true},
+    {"Brushed Aluminum", 0xC6C9CCFF, 0x8C8C8CFF, 0x000000FF, 0x62656AFF, 60, ":/mycad/textures/brushed_aluminum.jpg"},
+    {"Brushed Steel", 0x8D9094FF, 0x8C8C8CFF, 0x000000FF, 0x3A3C40FF, 60, ":/mycad/textures/brushed_steel.jpg"},
+    {"Carbon Fiber", 0x252525FF, 0x737373FF, 0x000000FF, 0x0D0D0DFF, 70, ":/mycad/textures/carbon.jpg"},
+    {"Concrete", 0x93928DFF, 0x141414FF, 0x000000FF, 0x4D4C49FF, 5, ":/mycad/textures/concrete.jpg"},
+    {"Marble", 0xE2E0DDFF, 0x808080FF, 0x000000FF, 0x7D7B78FF, 70, ":/mycad/textures/marble.jpg"},
+    {"Granite", 0x8E8582FF, 0x4D4D4DFF, 0x000000FF, 0x3D3937FF, 50, ":/mycad/textures/granite.jpg"},
+    {"Leather", 0x643C24FF, 0x262626FF, 0x000000FF, 0x2A180EFF, 20, ":/mycad/textures/leather.jpg"},
+    {"Cork", 0xA77E54FF, 0x141414FF, 0x000000FF, 0x523D28FF, 5, ":/mycad/textures/cork.jpg"},
 };
 
 const BodyMaterial& bodyMaterial()
@@ -3844,20 +3867,18 @@ QString Gui::Shell::version()
         + QStringLiteral(" · ") + QString::fromStdString(cfg["BuildRevisionHash"]).left(7);
 }
 
-std::vector<const char*> Gui::Shell::bodyMaterialNames()
+std::vector<Gui::Shell::BodyMaterialEntry> Gui::Shell::bodyMaterialList()
 {
-    std::vector<const char*> names;
+    std::vector<BodyMaterialEntry> list;
     for (const auto& m : bodyMaterials) {
-        names.push_back(m.name);
+        list.push_back({m.name, m.texture, m.wood});
     }
-    return names;
+    return list;
 }
 
-void Gui::Shell::setBodyMaterial(int index)
+App::Material Gui::Shell::bodyMaterialAppearance(int index)
 {
-    App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetInt("BodyMaterial", index);
-    setDefaultMaterial();
-    const BodyMaterial& m = bodyMaterial();
+    const BodyMaterial& m = bodyMaterials[index];
     App::Material mat;
     mat.diffuseColor.setPackedValue(m.diffuse);
     mat.specularColor.setPackedValue(m.specular);
@@ -3865,17 +3886,59 @@ void Gui::Shell::setBodyMaterial(int index)
     mat.ambientColor.setPackedValue(0x333333FF);
     mat.shininess = float(m.shininess) / 100.0F;
     mat.transparency = 0.0F;
-    // Körper mit einem der Standard-Looks (auch früheren Vorgaben) umfärben, eigene Farben bleiben.
-    // ponytail: erkennt "Standard" an der Grundfarbe; eine eigene Farbe, die zufällig gleich ist, wird mit umgefärbt
+    mat.imagePath = m.texture ? m.texture : "";
+    return mat;
+}
+
+const char* Gui::Shell::defaultBodyTexture()
+{
+    return bodyMaterial().texture;
+}
+
+QPixmap Gui::Shell::materialThumbnail(const char* texture, QSize size, qreal ratio)
+{
+    // Nur einen Ausschnitt in passender Größe dekodieren: Die Vorschauen entstehen beim Öffnen von Panel und Einstellungen
+    QImageReader reader{QString::fromLatin1(texture)};
+    const int full = reader.size().width();
+    reader.setClipRect(QRect(0, 0, full, full * size.height() / size.width()));
+    reader.setScaledSize(size * ratio);
+    QPixmap rounded(size * ratio);
+    rounded.setDevicePixelRatio(ratio);
+    rounded.fill(Qt::transparent);
+    QPainter p(&rounded);
+    p.setRenderHint(QPainter::Antialiasing);
+    QPainterPath path;
+    path.addRoundedRect(QRectF(QPointF(0, 0), QSizeF(size)), Token::RadiusControl, Token::RadiusControl);
+    p.setClipPath(path);
+    p.drawImage(QRectF(QPointF(0, 0), QSizeF(size)), reader.read());
+    return rounded;
+}
+
+void Gui::Shell::setBodyMaterial(int index)
+{
+    const BodyMaterial& previous = bodyMaterial();
+    App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetInt("BodyMaterial", index);
+    setDefaultMaterial();
+    const BodyMaterial& m = bodyMaterial();
+    const App::Material mat = bodyMaterialAppearance(index);
+    // Körper mit einem der Standard-Looks (auch früheren Vorgaben) umfärben, eigene Farben und Texturen bleiben.
+    // ponytail: erkennt "Standard" an Grundfarbe bzw. Textur; was zufällig gleich aussieht, wird mit umgefärbt
     std::set<uint32_t> presets = {0xCDD1D8, 0xA4A9B2, 0xD5D9DF, 0xAEB3BC, 0xC8CCD4, 0x9EA3AD, 0xCCCCCC};
     for (const auto& b : bodyMaterials) {
-        presets.insert(b.diffuse >> 8);
+        if (!b.texture) {
+            presets.insert(b.diffuse >> 8);
+        }
     }
     const Base::Type body = Base::Type::fromName("Design::Body");
     for (auto doc : App::GetApplication().getDocuments()) {
         for (auto obj : doc->getObjects()) {
             auto vp = dynamic_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(obj));
-            if (!vp || !obj->isDerivedFrom(body) || !presets.contains(vp->ShapeAppearance.getDiffuseColor().getPackedValue() >> 8)) {
+            if (!vp || !obj->isDerivedFrom(body)) {
+                continue;
+            }
+            const std::string& texture = vp->ShapeAppearance[0].imagePath;
+            if (texture.empty() ? !presets.contains(vp->ShapeAppearance.getDiffuseColor().getPackedValue() >> 8)
+                                : !previous.texture || texture != previous.texture) {
                 continue;
             }
             vp->ShapeAppearance.setValue(mat);

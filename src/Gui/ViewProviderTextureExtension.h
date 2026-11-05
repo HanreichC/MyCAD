@@ -51,6 +51,8 @@ public:
     ViewProviderTextureExtension();
     ~ViewProviderTextureExtension() override;
     void setup(SoMaterial*);
+    /// Farben aus source; eine mitgelieferte Textur steht in source.imagePath (":/mycad/textures/…"), ein eigenes Bild
+    /// als PNG in source.image
     void setCoinAppearance(SoMaterial* pcShapeMaterial, const App::Material& source);
     SoSwitch* getAppearance() const;
     SoGroup* getTextureGroup3D() const;
@@ -72,6 +74,8 @@ private:
     SoSwitch* pcSwitchAppearance {nullptr};
     SoSwitch* pcSwitchTexture {nullptr};
     SoTexture2* pcShapeTexture2D {nullptr};
+    SoMaterial* pcTextureMaterial {nullptr};
+    SoGroup* pcTexture2D {nullptr};
     SoGroup* pcTextureGroup3D {nullptr};
 };
 
