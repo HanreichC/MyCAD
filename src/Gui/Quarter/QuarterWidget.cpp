@@ -43,6 +43,7 @@
 #pragma warning(disable : 4267)
 #endif
 
+#include <algorithm>
 #include <cassert>
 
 #if HAVE_CONFIG_H
@@ -57,6 +58,7 @@
 #include <QDebug>
 #include <QEvent>
 #include <QFile>
+#include <QGraphicsItem>
 #include <QGuiApplication>
 #include <QMetaObject>
 #include <QOpenGLDebugLogger>
@@ -950,6 +952,17 @@ bool QuarterWidget::viewportEvent(QEvent* event)
         QGraphicsScene* glScene = this->scene();
         if (!(glScene && glScene->mouseGrabberItem())) {
             QGraphicsView::viewportEvent(event);
+            // Verlässt die Maus ein Panel, schreibt QGraphicsView den vorherigen Cursor als feste Kopie auf den
+            // Viewport. Die verdeckt jeden Cursor, den Werkzeuge und Navigation danach auf der View setzen: Das
+            // Werkzeug-Symbol bliebe nach Esc stehen. Ohne Panel unter der Maus erbt der Viewport von der View.
+            if (event->type() == QEvent::MouseMove && viewport()->testAttribute(Qt::WA_SetCursor)) {
+                const auto under = items(static_cast<QMouseEvent*>(event)->pos());
+                if (std::none_of(under.begin(), under.end(), [](QGraphicsItem* item) {
+                        return item->isEnabled() && item->hasCursor();
+                    })) {
+                    viewport()->unsetCursor();
+                }
+            }
             return false;
         }
     }
