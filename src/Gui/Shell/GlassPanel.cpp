@@ -30,7 +30,7 @@ namespace
 constexpr float LensZone = 30, LensStrength = 32, EdgeBlur = 8, Chroma = 0.08F, Saturation = 1.5F;
 constexpr qreal ShadowBlur = 28, ShadowY = 6;
 constexpr qreal ShadowMargin = ShadowBlur + ShadowY;  // logische Pixel um das Panel herum für den Schatten
-// Eigene Glasfarbe (Post-its) im Dunkelmodus dichter: über dunklem Grund würde die helle Farbe sonst trüb
+// glass.noteCoverDark: eigene Glasfarbe (Post-its) im Dunkelmodus dichter, über dunklem Grund würde sie sonst trüb
 constexpr double SurfaceCoverDark = 0.92;
 
 const char* QuadVs = R"(

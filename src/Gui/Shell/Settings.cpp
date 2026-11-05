@@ -18,6 +18,8 @@
 #include <QWheelEvent>
 #include <QToolButton>
 #include <QDir>
+#include <QTimer>
+#include <QMessageBox>
 #include <QFileDialog>
 #include <QCursor>
 #include <QDialog>
@@ -942,6 +944,21 @@ void Gui::Shell::showSettings()
                      }));
     restartRow = addRow(generalCard, QString(), restartHint, true);
     restartRow->hide();
+    // Nur mit zwei GPUs etwas zu wählen. Beim Start gesetzt (main), daher erst nach einem Neustart wirksam; zurück auf
+    // den Wert, mit dem MyCAD gerade läuft, braucht keinen
+    if (QDir(QStringLiteral("/sys/class/drm")).entryList({QStringLiteral("card?"), QStringLiteral("card??")}, QDir::AllEntries).size() > 1) {
+        static const int runningGpu = int(myParams()->GetInt("Gpu", 0));
+        addRow(generalCard, T("Graphics card"),
+               segmented({T("Dedicated"), T("Processor")}, int(myParams()->GetInt("Gpu", 0)), [&dlg](int i) {
+                   myParams()->SetInt("Gpu", i);
+                   if (i != runningGpu) {
+                       QTimer::singleShot(0, &dlg, [&dlg] {
+                           QMessageBox::information(&dlg, T("Restart MyCAD"),
+                                                    T("The selected graphics card is used after you restart MyCAD."));
+                       });
+                   }
+               }));
+    }
     auto folder = new QPushButton;
     auto showFolder = [folder] {
         QString path = Gui::Shell::projectsFolder();

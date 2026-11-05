@@ -151,10 +151,21 @@ static void displayCritical(const QString& msg, bool preformatted = true)
 }
 
 #if defined(FC_OS_LINUX)
-/// Rechner mit zwei GPUs: die 3D-Ansicht auf der dedizierten rechnen, sonst läuft sie auf der im Prozessor.
-/// Muss vor dem ersten OpenGL-Aufruf gesetzt sein; schon gesetzte Variablen bleiben, so lässt es sich auch abschalten.
-static void preferDedicatedGpu()
+/// Rechner mit zwei GPUs: die 3D-Ansicht auf der dedizierten rechnen, außer die Einstellung "Graphics card" sagt
+/// Prozessor (MyCAD/Gpu = 1). Muss vor dem ersten OpenGL-Aufruf gesetzt sein; schon gesetzte Variablen bleiben.
+static void chooseGpu()
 {
+    if (App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetInt("Gpu", 0) == 1) {
+        setenv("__NV_PRIME_RENDER_OFFLOAD", "0", 0);
+        setenv("__GLX_VENDOR_LIBRARY_NAME", "mesa", 0);
+        setenv("DRI_PRIME", "0", 0);
+        // sonst nimmt die OpenGL-Weiche zuerst einen vorhandenen Nvidia-Treiber
+        const char* mesa = "/usr/share/glvnd/egl_vendor.d/50_mesa.json";
+        if (access(mesa, R_OK) == 0) {
+            setenv("__EGL_VENDOR_LIBRARY_FILENAMES", mesa, 0);
+        }
+        return;
+    }
     // Nvidia: nur wenn der Treiber wirklich da ist (im Container reicht ihn der Starter von install.sh hinein)
     if (access("/dev/nvidiactl", R_OK | W_OK) == 0) {
         if (void* driver = dlopen("libEGL_nvidia.so.0", RTLD_LAZY)) {
@@ -188,9 +199,6 @@ static void preferDedicatedGpu()
 
 int main(int argc, char** argv)
 {
-#if defined(FC_OS_LINUX)
-    preferDedicatedGpu();
-#endif
 #if defined(FC_OS_LINUX) || defined(FC_OS_BSD)
     setlocale(LC_ALL, "");       // use native environment settings
     setlocale(LC_NUMERIC, "C");  // except for numbers to not break XML import
@@ -283,6 +291,9 @@ int main(int argc, char** argv)
 # endif
 #else
         App::Application::init(argc, argv);
+#endif
+#if defined(FC_OS_LINUX)
+        chooseGpu();  // braucht die Einstellungen, also nach init; OpenGL lädt erst die QApplication
 #endif
         // To set the window icon on Wayland, the desktop file has to be available to the
         // compositor. Qt also uses the desktop file name to register with the portal registry.
