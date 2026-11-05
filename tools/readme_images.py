@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""README-Bilder neu erzeugen: docs/images/workspace.png und start.png. Läuft in MyCAD, mit eigenem Home:
+"""README-Bilder neu erzeugen: docs/images/workspace.png, notes.png und start.png. Läuft in MyCAD, mit eigenem Home:
     MYCAD_HOME=/tmp/readme tests/gui/run.sh tools/readme_images.py /tmp/readme/log"""
 import os
 import sys
@@ -55,6 +55,36 @@ def only_bracket():
         recent.SetString("MRU%d" % i, os.path.join(PROJECTS, name, name + ".mycad"))
 
 
+def add_note():
+    activate()
+    click(button("Design_Note"))
+
+
+def type_note():
+    """Echt getippt: die Ergebnisse rechnet MyCAD selbst aus"""
+    note = [o for o in doc().Objects if o.TypeId == "Design::Note"][0]
+    note.Label = "Bracket math"
+    note.OffsetX = 56; note.OffsetY = 96
+    for c in "Hole spacing: 80 - 2 * 22 =\rEdge to hole: (50 - 18) / 2 =\r12 mm + 0.25 in =\rM8 or M10? Check the washer.":
+        QtTest.QTest.keyClick(mw.windowHandle(), c)
+    QtTest.QTest.keyClick(mw.windowHandle(), QtCore.Qt.Key_Escape)
+    L("note text: %r" % note.Text)
+
+
+def show_note_in_browser():
+    doc().recompute()  # Umbenennen gilt als Änderung: sonst trägt die Notiz im Browser das Abzeichen "veraltet"
+    [o for o in doc().Objects if o.TypeId == "Design::Note"][0].purgeTouched()
+    tree = visible(QtWidgets.QTreeWidget)[0]
+    for label in ("Design", "Notes"):
+        tree.findItems(label, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive)[0].setExpanded(True)
+
+
+def clear_focus():
+    widget = QtWidgets.QApplication.focusWidget()
+    if widget:
+        widget.clearFocus()
+
+
 def picture(name):
     mw.grab().save(IMAGES + name + ".png")
 
@@ -71,6 +101,11 @@ in_order([
     ("bracket", lambda: plate("Bracket", 80, 50, 12, [(22, 25, 9), (58, 25, 9)])), wait, wait, wait,
     ("only bracket", only_bracket), wait, wait,
     ("workspace", lambda: picture("workspace")),
+    ("note", add_note), wait,
+    ("type", type_note), wait,
+    ("browser", show_note_in_browser), wait,
+    ("notes", lambda: picture("notes")),
     ("home", home), wait, wait,
+    ("focus", clear_focus), wait,
     ("start", lambda: picture("start")),
 ], delay=1500)

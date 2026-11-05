@@ -59,6 +59,22 @@ Create **components** and connect them with **joints**. Each component has its o
 
 <br>
 
+## Notes that stay put.
+
+<div align="center">
+
+![A note with calculations next to a model in MyCAD](docs/images/notes.png)
+
+</div>
+
+Click **Note** in the toolbar and a yellow note lands on top of your model. Drag it wherever you want it. It sticks to that corner of the window and stays open while you go in and out of sketches.
+
+It can do the math too. End a line with `=` and the answer appears right after it: type `120 / 4 =` and you get `30`. Units work (`10 mm + 1 in =` gives `35.40 mm`), and so do the names from **Change Parameters**.
+
+Closed a note? It's still under **Notes** in the browser, double-click to open it again. Notes are saved in the design file, so they're still there next time you open it.
+
+<br>
+
 ## Everything at a glance.
 
 <div align="center">
@@ -67,7 +83,7 @@ Create **components** and connect them with **joints**. Each component has its o
 
 </div>
 
-The start page lists your recent designs and everything in your project folder, each with a large preview. Type a few letters into the search box to find a part, then click it to pick up where you left off. The Home button brings you back here at any time.
+The start page lists your recent designs and everything in your project folder, each with a large preview. Type a few letters into the search box to find a part, then click it to pick up where you left off. **Home** in the sidebar brings you back here at any time.
 
 <br>
 
@@ -106,6 +122,7 @@ New bodies come in **Space Gray** with a satin finish. You can pick **Clay**, **
 | **Model** | Parametric, with a global timeline, components and joints |
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
 | **Solids** | 16 create, 12 modify and 6 construction tools |
+| **Notes** | Saved in the design, lines ending in `=` are calculated |
 | **Export** | STL · 3MF · STEP · DXF (sketches) |
 | **Import** | STEP · DXF · SVG |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
