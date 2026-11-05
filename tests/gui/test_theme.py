@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Hell/Dunkel und Liquid Glass über die Einstellungen umschalten (ohne Neustart), Screenshots aller Bereiche."""
 from harness import *
+from harness import _keep
 
 grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
 
@@ -44,6 +45,18 @@ def home():
     click([b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Home"][0])
 
 
+def note_stays_beige():
+    """Post-it im Dunkelmodus: heller Zettel mit dunkler Schrift, wie im hellen Modus"""
+    e = [e for e in visible(QtWidgets.QPlainTextEdit) if e.objectName() == "NoteText"][0]
+    e.setPlainText("Text")
+    top = e.window(); proxy = top.graphicsProxyWidget(); _keep.extend([e, top, proxy])
+    p = view().mapFromScene(proxy.mapToScene(QtCore.QPointF(e.mapTo(top, QtCore.QPoint(e.width() - 40, e.height() - 20)))))
+    paper = mw.grab().toImage().pixelColor(view().mapTo(mw, p))
+    text = e.palette().text().color()
+    good = paper.lightnessF() > 0.7 and paper.red() > paper.blue() and text.lightnessF() < 0.3
+    L("%s note in dark mode: paper %s, text %s" % ("ok  " if good else "FAIL", paper.name(), text.name()))
+
+
 def leave_start():
     [b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Back to Design"][0].click()
 
@@ -62,6 +75,10 @@ run([
     ("close", lambda: settings().accept()),
     ("state dark", lambda: state("dark")),
     ("shot model dark", lambda: shot("model-dark")),
+    ("note", lambda: click(button("Design_Note"))),
+    ("note beige", note_stays_beige),
+    ("shot note dark", lambda: shot("note-dark")),
+    ("close note", lambda: click([b for b in visible(QtWidgets.QToolButton) if b.objectName() == "NoteClose"][0])),
     ("sketch", lambda: click(button("Design_CreateSketch"))),
     ("pick top", lambda: Gui.Selection.addSelection(body("Box"), top_face(body("Box")))),
     ("draw", lambda: Gui.ActiveDocument.getInEdit().Object.addGeometry(Part.Circle(App.Vector(30, 20, 15), App.Vector(0, 0, 1), 8))),

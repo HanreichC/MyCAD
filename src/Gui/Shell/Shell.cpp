@@ -158,8 +158,10 @@ QToolButton#GlassButton[error="true"] { background: @errorFill; }
 QToolButton#WindowClose:hover { background: @red; }
 QToolButton#WindowClose:pressed { background: @redPressed; }
 /* Schließen-Knopf der Post-its wie beim Hinweis-Popup (MyStyle § 9.4): 28 rund, fill.tertiary */
-QToolButton#NoteClose { border: 2px solid transparent; border-radius: 14px; background: @fillTertiary; }
-QToolButton#NoteClose:hover { background: @fillSecondary; }
+QToolButton#NoteClose { border: 2px solid transparent; border-radius: 14px; background: @noteFillTertiary; }
+QToolButton#NoteClose:hover { background: @noteFillSecondary; }
+QLabel#NoteTitle { color: @noteLabel; }
+QPlainTextEdit#NoteText QScrollBar::handle { background: @noteScrollbar; }
 QToolButton#NoteClose:focus { border-color: @focusRing; }
 
 /* Prominent-Button (Akzentfläche): Kapsel 30 hoch, 16 seitlich, Callout SemiBold, Hover 1 px Weiß 35 %, gedrückt 15 % dunkler */
@@ -188,7 +190,7 @@ QLabel#Section, QLabel#Secondary, QLabel#StartDate, QLabel#StartCaption, QLabel#
 #GlassContent QComboBox:hover { background: @fillSecondary; }
 #GlassContent QLineEdit:focus, #GlassContent QAbstractSpinBox:focus, #GlassContent QComboBox:focus { border-color: @focusRing; }
 /* Post-it: ohne Rahmen, auch mit Fokus (ausdrücklicher Wunsch; den Fokus zeigt die Einfügemarke) */
-#GlassContent QPlainTextEdit#NoteText { background: transparent; border: none;
+#GlassContent QPlainTextEdit#NoteText { background: transparent; border: none; color: @noteLabel; placeholder-text-color: @noteLabelTertiary;
     selection-background-color: @accent; selection-color: @labelOnAccent; }
 #GlassContent QAbstractSpinBox::up-button, #GlassContent QAbstractSpinBox::down-button { width: 0; border: none; }
 QComboBox::drop-down { border: none; width: 20px; }
@@ -206,10 +208,15 @@ QLineEdit { selection-background-color: @accent; selection-color: @labelOnAccent
 #GlassContent QPushButton:default:pressed, QDialog QPushButton:default:pressed, QMessageBox QPushButton:default:pressed { background: @accentPressed; }
 #GlassContent QPushButton:disabled, QDialog QPushButton:disabled { color: @labelTertiary; }
 
+/* Auswahl nur auf der Zeile selbst, nicht auch auf der Einrückung links davon */
+#GlassContent QTreeView { show-decoration-selected: 0; }
 #GlassContent QTreeView::item { min-height: 28px; border-radius: 8px; }
 #GlassContent QTreeView::item:hover { background: @fillTertiary; }
 #GlassContent QTreeView::item:selected { background: @accent; color: @labelOnAccent; }
 #GlassContent QTreeView::branch:selected, #GlassContent QTreeView::branch:hover { background: transparent; }
+/* Seit Qt 6.5 färbt ::item auch die Einrückung links der Zeile. Die Zeile selbst zeichnet der Browser über ein
+   unsichtbares zweites QTreeView (siehe TreeWidgetItemDelegate), der Browser selbst bleibt deshalb ohne Hintergrund. */
+#GlassContent Gui--TreeWidget::item:selected, #GlassContent Gui--TreeWidget::item:hover { background: transparent; }
 #GlassContent QHeaderView::section { background: transparent; border: none; color: @labelSecondary; font-weight: 600; padding: 4px 8px; }
 #GlassContent QTabWidget::pane { border: none; }
 #GlassContent QTabBar::tab { background: transparent; border: none; border-radius: 8px; padding: 4px 12px; margin: 2px; color: @labelSecondary; }
@@ -2953,13 +2960,14 @@ NotePanel makeNotePanel(App::DocumentObject* obj)
     auto headLay = new QHBoxLayout(head);
     headLay->setContentsMargins(0, 0, 0, 0);
     note.title = new QLabel;
+    note.title->setObjectName(QStringLiteral("NoteTitle"));
     setTextStyle(note.title, Text::Headline);
     note.title->setContentsMargins(10, 0, 0, 0);
     note.title->setAttribute(Qt::WA_TransparentForMouseEvents);
     headLay->addWidget(note.title, 1);
     auto close = new QToolButton;
     close->setObjectName(QStringLiteral("NoteClose"));
-    close->setIcon(designIcon(QStringLiteral("Window_Close")));
+    close->setIcon(designIcon(QStringLiteral("Window_Close"), &Theme::noteLabel));
     close->setIconSize(QSize(Token::IconM, Token::IconM));
     close->setFixedSize(28, 28);
     close->setToolTip(T("Close Note"));
@@ -2986,7 +2994,7 @@ NotePanel makeNotePanel(App::DocumentObject* obj)
     box->setFixedSize(NoteWidth, NoteHeight);
 
     note.panel = new GlassPanel(box, Token::RadiusPanel, true);  // mehrzeiliger Text steht auf Text-Glas (GV-2)
-    note.panel->setTint(&Theme::yellow);
+    note.panel->setSurface(&Theme::noteSurface);
     note.panel->setZValue(20);  // über den anderen Panels
     head->installEventFilter(new NoteGrip(note.panel, find, head));
 

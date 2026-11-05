@@ -175,6 +175,18 @@ void Gui::Shell::reloadTheme()
         return QColor::fromString(QLatin1String(t.dark ? (t.increaseContrast ? darkIC : dark) : (t.increaseContrast ? lightIC : light)));
     };
     const auto ic = [&t](const char* lightIC, const char* darkIC) { return QColor::fromString(QLatin1String(t.dark ? darkIC : lightIC)); };
+    const auto note = [&t](const char* light, const char* lightIC) {
+        return QColor::fromString(QLatin1String(t.increaseContrast ? lightIC : light));
+    };
+    constexpr double noteTint = 0.30;  // glass.noteTint: Anteil system.yellow in der weißen Glas-Tönung
+    const QColor noteYellow = note("#FFCC00", "#A16A00");
+    t.noteSurface = QColor::fromRgbF(float(1 + (noteYellow.redF() - 1) * noteTint), float(1 + (noteYellow.greenF() - 1) * noteTint),
+                                     float(1 + (noteYellow.blueF() - 1) * noteTint));
+    t.noteLabel = note("#1D1D1F", "#000000");
+    t.noteLabelTertiary = note("#A1A1A6", "#6E6E73");
+    t.noteFillSecondary = note("#29787880", "#3D787880");
+    t.noteFillTertiary = note("#1F767680", "#33767680");
+    t.noteScrollbar = QColor(0, 0, 0, 71);
     t.backgroundTop = pick("#F4F5F7", "#2A2A2E", "#F4F5F7", "#2A2A2E");
     t.backgroundBottom = pick("#D5D9E0", "#1C1C1F", "#D5D9E0", "#1C1C1F");
     t.labelPrimary = pick("#1D1D1F", "#F5F5F7", "#000000", "#FFFFFF");
@@ -260,6 +272,11 @@ QString Gui::Shell::themed(QString s)
     QColor errorFill = t.red;
     errorFill.setAlphaF(0.24);  // MyStyle: kein Token für eine Fehlerfläche (system.red gedämpft, dazu Fehler-Symbol)
     const std::pair<const char*, QColor> colors[] = {
+        {"noteLabelTertiary", t.noteLabelTertiary},
+        {"noteLabel", t.noteLabel},
+        {"noteFillSecondary", t.noteFillSecondary},
+        {"noteFillTertiary", t.noteFillTertiary},
+        {"noteScrollbar", t.noteScrollbar},
         {"labelPrimary", t.labelPrimary},
         {"labelSecondary", t.labelSecondary},
         {"labelTertiary", t.labelTertiary},

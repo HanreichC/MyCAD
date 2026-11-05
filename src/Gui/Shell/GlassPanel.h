@@ -26,7 +26,7 @@ public:
 
     void setGeometry(const QRectF& rect);  ///< in Szenen-/View-Koordinaten
     void setRadius(qreal radius);          ///< Token::RadiusCapsule = Höhe / 2
-    void setTint(QColor Theme::*color);    ///< Glas leicht in dieser Theme-Farbe tönen (Post-its)
+    void setSurface(QColor Theme::*color);  ///< Glas in dieser Theme-Farbe statt in der normalen Tönung (Post-its)
     QWidget* content() const;
 
     QRectF boundingRect() const override;
@@ -39,7 +39,7 @@ private:
     QSizeF size;
     qreal radius;
     bool textSurface;
-    QColor Theme::*tint = nullptr;
+    QColor Theme::*surface = nullptr;
     QGraphicsProxyWidget* proxy;
 };
 

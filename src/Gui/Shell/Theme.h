@@ -36,6 +36,8 @@ struct Theme
     QColor materialFill, materialBorder, materialThumb;
     QColor glassTint, glassBorder, glassEdge, glassOpaqueTop, glassOpaqueBottom, glassPopupBorder;
     QColor shadow, scrim;
+    /// Post-its sehen in Hell und Dunkel gleich aus (beiger Zettel, dunkle Schrift): feste Werte des hellen Modus
+    QColor noteSurface, noteLabel, noteLabelTertiary, noteFillSecondary, noteFillTertiary, noteScrollbar;
 
     /// Anteil, mit dem glassTint den weichgezeichneten Hintergrund deckt (textSurface = Text-Glas für Browser,
     /// Inspector, Menüs); stückweise linear durch die Stützpunkte bei Stufe 0 / 0.5 / 1

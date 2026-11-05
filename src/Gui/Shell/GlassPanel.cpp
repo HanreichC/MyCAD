@@ -30,8 +30,8 @@ namespace
 constexpr float LensZone = 30, LensStrength = 32, EdgeBlur = 8, Chroma = 0.08F, Saturation = 1.5F;
 constexpr qreal ShadowBlur = 28, ShadowY = 6;
 constexpr qreal ShadowMargin = ShadowBlur + ShadowY;  // logische Pixel um das Panel herum für den Schatten
-// glass.noteTint: Anteil Gelb in der Glas-Tönung der Post-its, die Ausnahme in MyStyle C-8
-constexpr double TintLight = 0.30, TintDark = 0.15;
+// Eigene Glasfarbe (Post-its) im Dunkelmodus dichter: über dunklem Grund würde die helle Farbe sonst trüb
+constexpr double SurfaceCoverDark = 0.92;
 
 const char* QuadVs = R"(
 #version 120
@@ -162,7 +162,7 @@ public:
     }
 
     /// panel/fb in Gerätepixeln, Ursprung oben links. Gibt false zurück, wenn GL den Blur nicht kann.
-    bool draw(const QRect& panel, const QSize& fb, float radius, float dpr, bool textSurface, const QColor& tint)
+    bool draw(const QRect& panel, const QSize& fb, float radius, float dpr, bool textSurface, const QColor& tint, double cover)
     {
         const Theme& th = theme();
         const bool inactive = qApp->applicationState() != Qt::ApplicationActive;  // GM-4: Glas tritt zurück
@@ -262,7 +262,7 @@ public:
                 glass.setUniformValue("uShadowY", float(ShadowY * dpr));
                 glass.setUniformValue("uShadowAlpha", float(th.shadow.alphaF()));
                 glass.setUniformValue("uDpr", dpr);
-                glass.setUniformValue("uTint", float(std::min(1.0, th.glassTintAmount(textSurface) + (inactive ? 0.1 : 0.0))));
+                glass.setUniformValue("uTint", float(std::min(1.0, std::max(cover, th.glassTintAmount(textSurface)) + (inactive ? 0.1 : 0.0))));
                 glass.setUniformValue("uTintColor", QVector3D(tint.redF(), tint.greenF(), tint.blueF()));
                 glass.setUniformValue("uRim", float(th.glassRim() * (inactive ? 0.5 : 1.0)));
                 glass.setUniformValue("uEdge", float(th.glassEdge.alphaF()));
@@ -368,9 +368,9 @@ void GlassPanel::setGeometry(const QRectF& rect)
     proxy->sceneTransform();  // Lage gleich aktualisieren: die Szene nimmt sonst für die nächste Mausbewegung die alte (Ziehen)
 }
 
-void GlassPanel::setTint(QColor Theme::*color)
+void GlassPanel::setSurface(QColor Theme::*color)
 {
-    tint = color;
+    surface = color;
     update();
 }
 
@@ -395,8 +395,6 @@ void GlassPanel::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidg
     auto view = gl ? qobject_cast<QGraphicsView*>(gl->parentWidget()) : nullptr;
     auto ctx = QOpenGLContext::currentContext();
 
-    const double share = !tint ? 0 : theme().dark ? TintDark : TintLight;
-    const QColor color = tint ? theme().*tint : QColor();
     bool drawn = false;
     if (view && ctx && !theme().reduceTransparency) {
         const qreal dpr = gl->devicePixelRatioF();
@@ -404,23 +402,18 @@ void GlassPanel::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidg
         const QRect px(QPoint(qRound(viewRect.x() * dpr), qRound(viewRect.y() * dpr)),
                        QSize(qRound(size.width() * dpr), qRound(size.height() * dpr)));
         painter->beginNativePainting();
-        const QColor base = theme().glassTint;
-        const QColor mixed = !tint ? base
-                                   : QColor::fromRgbF(float(base.redF() + (color.redF() - base.redF()) * share),
-                                                      float(base.greenF() + (color.greenF() - base.greenF()) * share),
-                                                      float(base.blueF() + (color.blueF() - base.blueF()) * share));
-        drawn = GlassRenderer::forContext(ctx)->draw(px, gl->size() * dpr, float(r * dpr), float(dpr), textSurface, mixed);
+        drawn = GlassRenderer::forContext(ctx)->draw(px, gl->size() * dpr, float(r * dpr), float(dpr), textSurface,
+                                                     surface ? theme().*surface : theme().glassTint,
+                                                     surface && theme().dark ? SurfaceCoverDark : 0);
         painter->endNativePainting();
     }
 
     painter->setRenderHint(QPainter::Antialiasing);
     if (!drawn) {  // ohne Blur-fähiges GL oder mit "Transparenz reduzieren"
         paintGlass(*painter, local, r, textSurface);
-        if (tint) {
-            QColor overlay = color;
-            overlay.setAlphaF(float(share));
+        if (surface) {
             painter->setPen(Qt::NoPen);
-            painter->setBrush(overlay);
+            painter->setBrush(theme().*surface);
             painter->drawRoundedRect(local, r, r);
         }
     }
