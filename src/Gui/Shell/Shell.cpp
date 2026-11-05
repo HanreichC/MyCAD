@@ -76,6 +76,7 @@
 #include <QSizePolicy>
 #include <QLabel>
 #include <QWindow>
+#include <QPixmapCache>
 #include <QSurfaceFormat>
 #include <QMenuBar>
 #include <QDir>
@@ -3469,6 +3470,14 @@ bool frameless()
 
 void Gui::Shell::prepareWindow()
 {
+    // Nicht bei jedem Anzeigen auf den Bildschirmtakt warten: Zeigt Qt in einem Bild zweimal an (das Maßfeld neben dem
+    // Cursor ist ein eigenes Widget), läuft die Ansicht sonst nur mit der halben Bildrate. Reißen kann unter Wayland
+    // nichts, das Bild setzt der Compositor zusammen; die 3D-Ansicht begrenzt sich selbst auf die Bildschirmrate.
+    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    format.setSwapInterval(0);
+    QSurfaceFormat::setDefaultFormat(format);
+    // Platz für den gemerkten Inhalt der Glas-Panels, auch auf großen und hochauflösenden Bildschirmen
+    QPixmapCache::setCacheLimit(64 * 1024);
     if (frameless()) {
         // Der Alphakanal lässt sich nur setzen, bevor Qt das native Fenster anlegt
         getMainWindow()->setAttribute(Qt::WA_TranslucentBackground);

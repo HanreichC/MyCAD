@@ -18,7 +18,7 @@
 #include <QVector3D>
 
 #include <algorithm>
-
+#include <map>
 #include <memory>
 
 using namespace Gui::Shell;
@@ -197,29 +197,34 @@ public:
             const QSize small = down == 1 ? cap.size()
                 : down == 2               ? half
                                           : QSize(std::max(1, half.width() / 2), std::max(1, half.height() / 2));
-            ensure(resolve, cap.size());
-            ensure(pingA, small);
-            ensure(pingB, small);
+            // Je Panel-Größe eigene Puffer: neu anlegen ist teuer, und alle Panels teilen sich diesen Renderer
+            if (buffers.size() > 16) {
+                buffers.clear();  // Fenstergröße wird gerade geändert, die alten Größen kommen nicht wieder
+            }
+            Buffers& b = buffers[{cap.width(), cap.height()}];
+            ensure(b.resolve, cap.size());
+            ensure(b.pingA, small);
+            ensure(b.pingB, small);
 
             // 1:1 auflösen (Quelle kann multisampled sein), dann in Halbierungen verkleinern: jede mittelt genau
             // 2 x 2 Pixel (ein Sprung auf 1/4 läse nur 4 von 16 Pixeln, dünne Linien wie das Raster fielen heraus)
             const int gy0 = fb.height() - (cap.y() + cap.height());
             glBindFramebuffer(GL_READ_FRAMEBUFFER, prevFbo);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolve->handle());
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, b.resolve->handle());
             glBlitFramebuffer(cap.x(), gy0, cap.x() + cap.width(), gy0 + cap.height(),
                               0, 0, cap.width(), cap.height(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            GLuint from = resolve->handle();
+            GLuint from = b.resolve->handle();
             if (down == 4) {
-                ensure(halved, half);
+                ensure(b.halved, half);
                 glBindFramebuffer(GL_READ_FRAMEBUFFER, from);
-                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, halved->handle());
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, b.halved->handle());
                 glBlitFramebuffer(0, 0, half.width() * 2, half.height() * 2,
                                   0, 0, half.width(), half.height(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
-                from = halved->handle();
+                from = b.halved->handle();
             }
             const int step = down == 1 ? 1 : 2;
             glBindFramebuffer(GL_READ_FRAMEBUFFER, from);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, pingA->handle());
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, b.pingA->handle());
             glBlitFramebuffer(0, 0, small.width() * step, small.height() * step,
                               0, 0, small.width(), small.height(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
@@ -231,8 +236,8 @@ public:
                 setupQuad(blur, -1, -1, 1, 1);
                 blur.setUniformValue("uTex", 0);
                 for (int i = 0; i < 2; ++i) {
-                    pass(pingB.get(), pingA->texture(), QVector2D(spread / small.width(), 0));
-                    pass(pingA.get(), pingB->texture(), QVector2D(0, spread / small.height()));
+                    pass(b.pingB.get(), b.pingA->texture(), QVector2D(spread / small.width(), 0));
+                    pass(b.pingA.get(), b.pingB->texture(), QVector2D(0, spread / small.height()));
                 }
 
                 glBindFramebuffer(GL_FRAMEBUFFER, prevFbo);
@@ -245,7 +250,7 @@ public:
                 setupQuad(glass,
                           float(2 * q.left() / fb.width() - 1), float(1 - 2 * q.bottom() / fb.height()),
                           float(2 * q.right() / fb.width() - 1), float(1 - 2 * q.top() / fb.height()));
-                glBindTexture(GL_TEXTURE_2D, pingA->texture());
+                glBindTexture(GL_TEXTURE_2D, b.pingA->texture());
                 glass.setUniformValue("uTex", 0);
                 glass.setUniformValue("uFbH", float(fb.height()));
                 glass.setUniformValue("uCenter", QVector2D(QRectF(panel).center()));
@@ -325,7 +330,11 @@ private:
     bool ok = false;
     QOpenGLShaderProgram blur, glass;
     QOpenGLBuffer vbo;
-    std::unique_ptr<QOpenGLFramebufferObject> resolve, halved, pingA, pingB;
+    struct Buffers
+    {
+        std::unique_ptr<QOpenGLFramebufferObject> resolve, halved, pingA, pingB;
+    };
+    std::map<std::pair<int, int>, Buffers> buffers;
 };
 
 }  // namespace
@@ -338,6 +347,9 @@ GlassPanel::GlassPanel(QWidget* content, qreal radius, bool textSurface)
     content->setAttribute(Qt::WA_TranslucentBackground);
     content->setAutoFillBackground(false);
     proxy->setWidget(content);
+    // Inhalt nur neu zeichnen, wenn er sich ändert: die Bedienelemente kosteten sonst bei jedem Bild der 3D-Ansicht
+    // die meiste Zeit, auch wenn sie gleich blieben
+    proxy->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
     setZValue(10);
 }
 
