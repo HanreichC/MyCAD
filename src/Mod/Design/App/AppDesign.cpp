@@ -61,6 +61,7 @@ PyMOD_INIT_FUNC(Design)
     Design::Emboss::init();
     Design::Joint::init();
     Design::Note::init();
+    Design::Scribble::init();
 
     PyMOD_Return(mod);
 }

@@ -6,6 +6,8 @@
 #include <Mod/Part/Gui/ViewProviderExt.h>
 #include <Gui/ViewProviderDocumentObject.h>
 
+#include <memory>
+
 namespace Design
 {
 class Body;
@@ -86,6 +88,52 @@ public:
     {
         return Visibility.getValue();
     }
+};
+
+/// Scribble im Browser (Ordner "Scribbles"): Striche im Modell; Doppelklick öffnet das Zeichenblatt (Scribble.cpp)
+class DesignGuiExport ViewProviderScribble: public Gui::ViewProviderDocumentObject
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(DesignGui::ViewProviderScribble);
+
+public:
+    enum class Tool
+    {
+        Pencil,
+        Pen,
+        Marker,
+        Eraser,
+        Sheet  ///< Blatt umstellen: Tippen auf Fläche, geraden Strich oder ins Leere
+    };
+
+    ViewProviderScribble();
+    ~ViewProviderScribble() override;
+    void attach(App::DocumentObject* obj) override;
+    void updateData(const App::Property* prop) override;
+    std::vector<std::string> getDisplayModes() const override;
+    const char* getDefaultDisplayMode() const override;
+    void setDisplayMode(const char* mode) override;
+    QIcon getIcon() const override;
+    bool doubleClicked() override;
+    bool setEdit(int ModNum) override;
+    void unsetEdit(int ModNum) override;
+    void setEditViewer(Gui::View3DInventorViewer* viewer, int ModNum) override;
+    void unsetEditViewer(Gui::View3DInventorViewer* viewer) override;
+    bool keyPressed(bool pressed, int key) override;
+
+    /// Scribble, auf dem gerade gezeichnet wird, sonst nullptr
+    static ViewProviderScribble* editing();
+    static Tool tool();
+    static void setTool(Tool tool);
+    static void setColor(const Base::Color& color);
+    /// Tinte "Schwarz" (im Dunkelmodus ohne Blatt hell dargestellt)
+    static const Base::Color& ink();
+    /// Kamera gerade aufs Blatt (nur im Zeichenmodus)
+    void lookAtSheet();
+
+    struct Private;
+
+private:
+    std::unique_ptr<Private> d;
 };
 
 }  // namespace DesignGui

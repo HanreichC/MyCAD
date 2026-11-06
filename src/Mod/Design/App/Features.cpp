@@ -2477,3 +2477,74 @@ void Note::onBeforeChange(const App::Property* prop)
         App::DocumentObject::onBeforeChange(prop);
     }
 }
+
+PROPERTY_SOURCE(Design::Scribble, App::GeoFeature)
+
+Scribble::Scribble()
+{
+    // nichts davon braucht ein Neuberechnen: Striche ändern kein Modell, also auch kein "veraltet"-Abzeichen
+    constexpr auto hidden = App::PropertyType(App::Prop_NoRecompute | App::Prop_Hidden);
+    ADD_PROPERTY_TYPE(Points, (), "Scribble", hidden, "Points of all strokes, one after another");
+    ADD_PROPERTY_TYPE(Widths, (), "Scribble", hidden, "Stroke width at each point (mm)");
+    ADD_PROPERTY_TYPE(Counts, (), "Scribble", hidden, "Number of points of each stroke");
+    ADD_PROPERTY_TYPE(Tools, (), "Scribble", hidden, "Tool of each stroke: 0 pencil, 1 pen, 2 marker");
+    ADD_PROPERTY_TYPE(Kinds, (), "Scribble", hidden, "Shape of each stroke: 0 free, 1 line, 2 circle, 3 rectangle");
+    ADD_PROPERTY_TYPE(Colors, (), "Scribble", hidden, "Color of each stroke");
+    ADD_PROPERTY_TYPE(Normals, (), "Scribble", hidden, "Normal of the sheet each stroke lies on");
+    ADD_PROPERTY_TYPE(Sheet, (Base::Placement()), "Scribble", App::Prop_NoRecompute, "Current drawing sheet (its XY plane)");
+    ADD_PROPERTY_TYPE(Tracing, (false), "Scribble", App::Prop_NoRecompute, "Tracing paper: the model shows through the sheet");
+    Placement.setStatus(App::Property::Hidden, true);
+}
+
+std::vector<Scribble::Stroke> Scribble::strokes() const
+{
+    const auto& counts = Counts.getValues();
+    const size_t n = counts.size();
+    size_t total = 0;
+    for (long c : counts) {
+        total += size_t(std::max(0L, c));
+    }
+    if (Tools.getSize() != int(n) || Kinds.getSize() != int(n) || Colors.getSize() != int(n) || Normals.getSize() != int(n)
+        || Points.getSize() != int(total) || Widths.getSize() != int(total)) {
+        return {};
+    }
+    std::vector<Stroke> result(n);
+    size_t at = 0;
+    for (size_t i = 0; i < n; ++i) {
+        Stroke& s = result[i];
+        const auto count = size_t(std::max(0L, counts[i]));
+        s.points.assign(Points.getValues().begin() + long(at), Points.getValues().begin() + long(at + count));
+        s.widths.assign(Widths.getValues().begin() + long(at), Widths.getValues().begin() + long(at + count));
+        s.tool = Tools[int(i)];
+        s.kind = Kinds[int(i)];
+        s.color = Colors[int(i)];
+        s.normal = Normals[int(i)];
+        at += count;
+    }
+    return result;
+}
+
+void Scribble::setStrokes(const std::vector<Stroke>& strokes)
+{
+    std::vector<Base::Vector3d> points, normals;
+    std::vector<double> widths;
+    std::vector<long> counts, tools, kinds;
+    std::vector<Base::Color> colors;
+    for (const Stroke& s : strokes) {
+        points.insert(points.end(), s.points.begin(), s.points.end());
+        widths.insert(widths.end(), s.widths.begin(), s.widths.end());
+        counts.push_back(long(s.points.size()));
+        tools.push_back(s.tool);
+        kinds.push_back(s.kind);
+        colors.push_back(s.color);
+        normals.push_back(s.normal);
+    }
+    // Counts zuletzt: erst dann passen die Listen wieder zusammen (die Ansicht zeichnet nur zusammenpassende)
+    Points.setValues(points);
+    Widths.setValues(widths);
+    Tools.setValues(tools);
+    Kinds.setValues(kinds);
+    Colors.setValues(colors);
+    Normals.setValues(normals);
+    Counts.setValues(counts);
+}

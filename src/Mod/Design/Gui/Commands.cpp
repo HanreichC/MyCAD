@@ -19,7 +19,10 @@
 #include <Gui/ViewProviderCoordinateSystem.h>
 #include <Gui/ViewProviderGeometryObject.h>
 #include <Mod/Design/App/Features.h>
+#include <Mod/Sketcher/App/Constraint.h>
 #include <Mod/Sketcher/App/SketchObject.h>
+#include <Base/BoundBox.h>
+#include <Standard_Failure.hxx>
 #include <Mod/Part/App/Geometry.h>
 #include <Mod/Part/App/AttachExtension.h>
 #include <Mod/Part/App/Attacher.h>
@@ -62,6 +65,7 @@
 #include <QSvgRenderer>
 #include <QXmlStreamReader>
 
+#include "ScribbleShapes.h"
 #include "ViewProviders.h"
 
 #include <BRepAdaptor_Surface.hxx>
@@ -176,19 +180,25 @@ bool isPlanarFace(App::DocumentObject* obj, const std::string& element)
     return !face.isNull() && BRepAdaptor_Surface(TopoDS::Face(face.getShape())).GetType() == GeomAbs_Plane;
 }
 
-/// Neue Skizze mit Profiles-Begleiter in der Komponente der Ebene bzw. des Körpers (ohne Transaktion)
-Sketcher::SketchObject* addSketch(App::DocumentObject* support, const std::string& element)
+/// Neue, nicht angehängte Skizze mit Profiles-Begleiter in der Komponente root (ohne Transaktion)
+Sketcher::SketchObject* newSketch(App::Part* root)
 {
-    App::Document* doc = support->getDocument();
-    App::Part* root = Design::componentOf(support);
+    App::Document* doc = root->getDocument();
     auto sketch = static_cast<Sketcher::SketchObject*>(doc->addObject("Sketcher::SketchObject", "Sketch"));
     Design::folder(root, "Sketches")->addObject(sketch);
     Design::addToTimeline(sketch);
-    sketch->AttachmentSupport.setValue(support, std::vector<std::string> {element});
-    sketch->MapMode.setValue("FlatFace");
     auto profiles = static_cast<Design::Profiles*>(doc->addObject("Design::Profiles", "Profiles"));
     root->addObject(profiles);
     profiles->Sketch.setValue(sketch);
+    return sketch;
+}
+
+/// Neue Skizze mit Profiles-Begleiter in der Komponente der Ebene bzw. des Körpers (ohne Transaktion)
+Sketcher::SketchObject* addSketch(App::DocumentObject* support, const std::string& element)
+{
+    Sketcher::SketchObject* sketch = newSketch(Design::componentOf(support));
+    sketch->AttachmentSupport.setValue(support, std::vector<std::string> {element});
+    sketch->MapMode.setValue("FlatFace");
     return sketch;
 }
 
@@ -349,6 +359,223 @@ private:
         }
     }
 };
+
+/// Neues Scribble in der aktiven Komponente; das Zeichenblatt öffnet sich gleich (XY-Ebene, Kamera gerade darauf)
+class ScribbleCommand: public DesignCommand
+{
+public:
+    ScribbleCommand()
+        : DesignCommand("Design_Scribble", "Scribble",
+                        "Scribble: draw freely with a pen tablet or the mouse. Hold still at the end of a stroke to "
+                        "straighten it",
+                        nullptr, "", run)
+    {}
+
+protected:
+    bool isActive() override
+    {
+        return hasActiveDocument() && !Gui::Control().activeDialog() && !getActiveGuiDocument()->getInEdit();
+    }
+
+private:
+    static void run(App::Document* doc)
+    {
+        doc->openTransaction("New Scribble");
+        App::Part* root = activeContainer(doc);
+        auto scribble = doc->addObject("Design::Scribble", "Scribble");
+        App::DocumentObjectGroup* folder = Design::folder(root, "Scribbles");
+        folder->addObject(scribble);
+        // im Browser zwischen Skizzen und Notizen: ein neuer Ordner käme sonst hinter einen schon vorhandenen "Notes"
+        auto items = root->Group.getValues();
+        const auto notes = std::find_if(items.begin(), items.end(), [](App::DocumentObject* obj) {
+            std::string name = obj->getNameInDocument();
+            name.erase(name.find_last_not_of("0123456789") + 1);
+            return obj->isDerivedFrom<App::DocumentObjectGroup>() && name == "Notes";
+        });
+        const auto mine = std::find(items.begin(), items.end(), folder);
+        if (notes < mine && mine != items.end()) {
+            items.erase(mine);
+            items.insert(notes, folder);
+            root->Group.setValues(items);
+        }
+        doc->recompute();
+        doc->commitTransaction();
+        Gui::Document* gdoc = Gui::Application::Instance->getDocument(doc);
+        if (gdoc->setEdit(gdoc->getViewProvider(scribble))) {
+            if (auto vp = DesignGui::ViewProviderScribble::editing()) {
+                vp->lookAtSheet();
+            }
+        }
+    }
+};
+
+/// Befehl im offenen Scribble (Toolbar und Palette des Zeichenmodus)
+class ScribbleTool: public DesignCommand
+{
+public:
+    ScribbleTool(const char* name, const char* text, const char* tip, std::function<void(DesignGui::ViewProviderScribble*)> act)
+        : DesignCommand(name, text, tip, nullptr, "", [act](App::Document*) {
+            if (auto vp = DesignGui::ViewProviderScribble::editing()) {
+                act(vp);
+            }
+        })
+    {}
+
+protected:
+    bool isActive() override
+    {
+        return DesignGui::ViewProviderScribble::editing() != nullptr;
+    }
+};
+
+/// Striche auf dem aktuellen Blatt werden eine Skizze: Linien und Rechtecke zu Linien, Kreise zu Kreisen, Freihand zu
+/// B-Splines. Enden, die aufeinanderliegen (eingerastet), werden koinzident, achsparallele Linien waagerecht/senkrecht.
+/// Danach ist das Scribble ausgeblendet und die Skizze offen, zum Bemaßen.
+void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
+{
+    auto scribble = static_cast<Design::Scribble*>(vp->getObject());
+    App::Document* doc = scribble->getDocument();
+    const Base::Placement sheet = scribble->Sheet.getValue();
+    const Base::Placement toSheet = sheet.inverse();
+    std::vector<std::unique_ptr<Part::Geometry>> geos;
+    const auto segment = [&geos](const Base::Vector3d& a, const Base::Vector3d& b) {
+        if ((b - a).Length() > 1e-6) {
+            auto line = std::make_unique<Part::GeomLineSegment>();
+            line->setPoints(a, b);
+            geos.push_back(std::move(line));
+        }
+    };
+    for (const auto& s : scribble->strokes()) {
+        std::vector<Base::Vector3d> pts;
+        bool flat = true;
+        for (const auto& p : s.points) {
+            Base::Vector3d q = toSheet.toMatrix() * p;
+            flat = flat && std::abs(q.z) < 1e-3;
+            q.z = 0;
+            pts.push_back(q);
+        }
+        if (!flat || pts.size() < 2) {
+            continue;  // liegt auf einem anderen Blatt (3D) oder ist nur ein Tupfer
+        }
+        if (s.kind == Design::Scribble::Line || s.kind == Design::Scribble::Rectangle || pts.size() == 2) {
+            for (size_t i = 1; i < pts.size(); ++i) {
+                segment(pts[i - 1], pts[i]);
+            }
+        }
+        else if (s.kind == Design::Scribble::Circle) {
+            Base::Vector3d center;
+            for (size_t i = 0; i + 1 < pts.size(); ++i) {  // der letzte Punkt wiederholt den ersten
+                center += pts[i] / double(pts.size() - 1);
+            }
+            auto circle = std::make_unique<Part::GeomCircle>();
+            circle->setCenter(center);
+            circle->setRadius((pts.front() - center).Length());
+            geos.push_back(std::move(circle));
+        }
+        else {
+            // Freihand: vereinfacht und an Knicken geteilt. Gerade Stücke werden Linien, gebogene ein Spline durch ihre
+            // wenigen Punkte; ein Spline über alle Punkte schösse mit seinen Polen weit über jede Ecke hinaus
+            Base::BoundBox3d box;
+            std::vector<ScribbleShapes::P> flat2d;
+            for (const auto& p : pts) {
+                box.Add(p);
+                flat2d.push_back({p.x, p.y});
+            }
+            for (const auto& piece : ScribbleShapes::pieces(flat2d, std::max(1e-3, 0.01 * box.CalcDiagonalLength()))) {
+                if (piece.size() == 2) {
+                    segment(Base::Vector3d(piece[0].x, piece[0].y, 0), Base::Vector3d(piece[1].x, piece[1].y, 0));
+                    continue;
+                }
+                std::vector<gp_Pnt> through;
+                for (const auto& q : piece) {
+                    through.emplace_back(q.x, q.y, 0);
+                }
+                auto spline = std::make_unique<Part::GeomBSplineCurve>();
+                try {
+                    spline->interpolate(through);
+                    geos.push_back(std::move(spline));
+                }
+                catch (const Standard_Failure&) {
+                }
+                catch (const Base::Exception&) {
+                }
+            }
+        }
+    }
+    if (geos.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), T("Convert to Sketch"),
+                                 T("There are no strokes on this sheet. Only strokes on the current sheet become a "
+                                   "sketch."));
+        return;
+    }
+
+    std::vector<std::unique_ptr<Sketcher::Constraint>> constraints;
+    struct End
+    {
+        int geo;
+        Sketcher::PointPos pos;
+        Base::Vector3d p;
+    };
+    std::vector<End> ends;
+    for (int i = 0; i < int(geos.size()); ++i) {
+        if (auto curve = dynamic_cast<Part::GeomBoundedCurve*>(geos[i].get())) {
+            ends.push_back({i, Sketcher::PointPos::start, curve->getStartPoint()});
+            ends.push_back({i, Sketcher::PointPos::end, curve->getEndPoint()});
+        }
+        if (auto line = dynamic_cast<Part::GeomLineSegment*>(geos[i].get())) {
+            const Base::Vector3d d = line->getEndPoint() - line->getStartPoint();
+            if (std::abs(d.y) < 1e-7 || std::abs(d.x) < 1e-7) {
+                auto c = std::make_unique<Sketcher::Constraint>();
+                c->Type = std::abs(d.y) < 1e-7 ? Sketcher::Horizontal : Sketcher::Vertical;
+                c->First = i;
+                constraints.push_back(std::move(c));
+            }
+        }
+    }
+    std::vector<bool> joined(ends.size(), false);  // jeder Punkt nur an den ersten, der auf ihm liegt
+    for (size_t a = 0; a < ends.size(); ++a) {
+        for (size_t b = a + 1; b < ends.size(); ++b) {
+            if (joined[b] || ends[a].geo == ends[b].geo || (ends[a].p - ends[b].p).Length() > 1e-4) {
+                continue;
+            }
+            joined[b] = true;
+            auto c = std::make_unique<Sketcher::Constraint>();
+            c->Type = Sketcher::Coincident;
+            c->First = ends[a].geo;
+            c->FirstPos = ends[a].pos;
+            c->Second = ends[b].geo;
+            c->SecondPos = ends[b].pos;
+            constraints.push_back(std::move(c));
+        }
+    }
+
+    doc->openTransaction("Convert to Sketch");
+    Sketcher::SketchObject* sketch = newSketch(Design::componentOf(scribble));
+    sketch->Placement.setValue(sheet);
+    std::vector<Part::Geometry*> geoList;
+    for (const auto& g : geos) {
+        geoList.push_back(g.get());
+    }
+    sketch->addGeometry(geoList);  // kopiert
+    std::vector<Sketcher::Constraint*> constraintList;
+    for (const auto& c : constraints) {
+        constraintList.push_back(c.get());
+    }
+    sketch->addConstraints(constraintList);  // kopiert
+    scribble->Visibility.setValue(false);
+    doc->recompute();
+    doc->commitTransaction();
+
+    Gui::Document* gdoc = Gui::Application::Instance->getDocument(doc);
+    gdoc->resetEdit();
+    const App::DocumentObjectT target(sketch);
+    QTimer::singleShot(0, [target] {
+        App::DocumentObject* obj = target.getObject();
+        if (Gui::Document* g = obj ? Gui::Application::Instance->getDocument(obj->getDocument()) : nullptr) {
+            g->setEdit(g->getViewProvider(obj));
+        }
+    });
+}
 
 void createSketchCommand(App::Document* doc)
 {
@@ -2628,6 +2855,57 @@ void CreateDesignCommands()
                                      "Parameters: named values to use in any dimension field", "Std_VarSet", "",
                                      showParameters));
     mgr.addCommand(new NoteCommand);
+    mgr.addCommand(new ScribbleCommand);
+    {
+        using DesignGui::ViewProviderScribble;
+        using Tool = ViewProviderScribble::Tool;
+        const auto tool = [&mgr](const char* name, const char* text, const char* tip, Tool t) {
+            mgr.addCommand(new ScribbleTool(name, text, tip, [t](ViewProviderScribble*) { ViewProviderScribble::setTool(t); }));
+        };
+        tool("Design_ScribblePencil", "Pencil", "Pencil: a soft line, thinner the lighter you press", Tool::Pencil);
+        tool("Design_ScribblePen", "Fineliner", "Fineliner: an even, dark line", Tool::Pen);
+        tool("Design_ScribbleMarker", "Marker", "Marker: a broad, see-through stroke for highlighting", Tool::Marker);
+        tool("Design_ScribbleEraser", "Eraser",
+             "Eraser: wipe over strokes to remove them. The back of the pen erases too", Tool::Eraser);
+        tool("Design_ScribbleSheet", "Move Sheet",
+             "Move Sheet: tap a body face to lay the sheet on it, a straight stroke to stand it up along that line, "
+             "or empty space to turn it towards you",
+             Tool::Sheet);
+        // Farben: MyStyle-Systemfarben des hellen Modus, das Blatt ist immer hell
+        const struct
+        {
+            const char* name;
+            const char* text;
+            Base::Color color;
+        } inks[] = {
+            {"Design_ScribbleBlack", "Black", ViewProviderScribble::ink()},
+            {"Design_ScribbleBlue", "Blue", Base::Color(0x0088FFFFu)},
+            {"Design_ScribbleRed", "Red", Base::Color(0xFF383CFFu)},
+            {"Design_ScribbleGreen", "Green", Base::Color(0x34C759FFu)},
+            {"Design_ScribbleYellow", "Yellow", Base::Color(0xFFCC00FFu)},
+        };
+        for (const auto& ink : inks) {
+            const Base::Color color = ink.color;
+            mgr.addCommand(new ScribbleTool(ink.name, ink.text, "Color for the next strokes",
+                                            [color](ViewProviderScribble*) { ViewProviderScribble::setColor(color); }));
+        }
+        mgr.addCommand(new ScribbleTool("Design_ScribbleLookAt", "Look At", "Look At: view the sheet straight on",
+                                        [](ViewProviderScribble* vp) { vp->lookAtSheet(); }));
+        mgr.addCommand(new ScribbleTool("Design_ScribbleTracing", "Tracing Paper",
+                                        "Tracing Paper: the model shows through the sheet, so you can draw over it",
+                                        [](ViewProviderScribble* vp) {
+                                            auto scribble = static_cast<Design::Scribble*>(vp->getObject());
+                                            scribble->Tracing.setValue(!scribble->Tracing.getValue());
+                                        }));
+        mgr.addCommand(new ScribbleTool("Design_ScribbleToSketch", "Convert to Sketch",
+                                        "Convert to Sketch: lines, circles and rectangles on this sheet become sketch "
+                                        "geometry you can dimension and extrude",
+                                        scribbleToSketch));
+        mgr.addCommand(new ScribbleTool("Design_ScribbleFinish", "Finish Scribble", "Finish Scribble (Esc)",
+                                        [](ViewProviderScribble* vp) {
+                                            Gui::Application::Instance->getDocument(vp->getObject()->getDocument())->resetEdit();
+                                        }));
+    }
     mgr.addCommand(new DesignCommand("Design_ReplaceFace", "Replace Face",
                                      "Replace Face: select faces of a body, then the target plane or face",
                                      "Part_Extrude", "", [](App::Document* doc) {

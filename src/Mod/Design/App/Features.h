@@ -542,4 +542,56 @@ protected:
     void onBeforeChange(const App::Property* prop) override;
 };
 
+/// Scribble (Ordner "Scribbles"): Freihand-Striche mit Stift oder Maus. Jeder Strich liegt auf dem Blatt, auf dem er
+/// gezeichnet wurde; das Blatt lässt sich im Raum umstellen, so entstehen 3D-Scribbles. Punkte in Koordinaten der
+/// Komponente (Placement bleibt die Identität), alle Listen parallel: Counts sagt, wie viele Punkte zu jedem Strich gehören.
+class DesignExport Scribble: public App::GeoFeature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Scribble);
+
+public:
+    enum Tool
+    {
+        Pencil,
+        Pen,
+        Marker
+    };
+    enum Kind  ///< Form nach "Halten zum Begradigen"; nur Linien, Kreise und Rechtecke werden in einer Skizze zu Geometrie
+    {
+        Free,
+        Line,
+        Circle,
+        Rectangle
+    };
+    struct Stroke
+    {
+        std::vector<Base::Vector3d> points;
+        std::vector<double> widths;  ///< Strichbreite je Punkt in mm (Druck schon eingerechnet)
+        long tool = Pen;
+        long kind = Free;
+        Base::Color color;
+        Base::Vector3d normal {0, 0, 1};  ///< Blatt-Normale: das Band des Strichs liegt in dieser Ebene
+    };
+
+    Scribble();
+    App::PropertyVectorList Points;
+    App::PropertyFloatList Widths;
+    App::PropertyIntegerList Counts;
+    App::PropertyIntegerList Tools;
+    App::PropertyIntegerList Kinds;
+    App::PropertyColorList Colors;
+    App::PropertyVectorList Normals;
+    App::PropertyPlacement Sheet;  ///< aktuelles Zeichenblatt: die XY-Ebene dieser Lage
+    App::PropertyBool Tracing;     ///< Transparentpapier: das Modell scheint durchs Blatt
+
+    /// leer, solange die Listen nicht zusammenpassen (mitten in einem Undo)
+    std::vector<Stroke> strokes() const;
+    void setStrokes(const std::vector<Stroke>& strokes);
+
+    const char* getViewProviderName() const override
+    {
+        return "DesignGui::ViewProviderScribble";
+    }
+};
+
 }  // namespace Design

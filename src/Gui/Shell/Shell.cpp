@@ -15,6 +15,7 @@
 #include <Gui/Document.h>
 #include <Gui/Selection/Selection.h>
 #include <Gui/ViewProviderDocumentObject.h>
+#include <string_view>
 #include <Gui/ViewProviderGeometryObject.h>
 #include <App/Document.h>
 #include <App/ExpressionParser.h>
@@ -2408,6 +2409,18 @@ protected:
                     if (Control().activeDialog()) {
                         return;
                     }
+                    Gui::Document* gdoc = Application::Instance->activeDocument();
+                    auto edit = gdoc ? dynamic_cast<ViewProviderDocumentObject*>(gdoc->getInEdit()) : nullptr;
+                    if (edit && std::string_view(edit->getObject()->getTypeId().getName()) == "Design::Scribble") {
+                        showCommandMenu({{T("Undo"), "Std_Undo"},
+                                         {T("Redo"), "Std_Redo"},
+                                         {QString(), ""},
+                                         {T("Look At"), "Design_ScribbleLookAt"},
+                                         {T("Tracing Paper"), "Design_ScribbleTracing"},
+                                         {QString(), ""},
+                                         {T("Finish Scribble"), "Design_ScribbleFinish"}});
+                        return;
+                    }
                     showCommandMenu({{T("Undo"), "Std_Undo"},
                                      {T("Redo"), "Std_Redo"},
                                      {QString(), ""},
@@ -2502,34 +2515,37 @@ bool isTimelineItem(const App::DocumentObject* obj)
     return (!sketch.isBad() && t.isDerivedFrom(sketch)) || (!feature.isBad() && t.isDerivedFrom(feature));
 }
 
-/// Sketch Palette wie in Fusion: ersetzt im Skizzenmodus FreeCADs Skizzen-Panel
-QWidget* sketchPalette()
+/// Zeile einer Palette: Text, Befehl, Icon
+struct PaletteRow
+{
+    const char* text;
+    const char* command;
+    const char* icon;
+};
+
+/// Palette rechts unter dem ViewCube wie Fusions Sketch Palette: Zeilen für Befehle (umschaltbare zeigen ihren Zustand),
+/// unten der Fertig-Knopf
+QWidget* toolPalette(const char* heading, std::initializer_list<PaletteRow> rows, const char* finishCommand, const char* finishText)
 {
     auto box = content();
     auto lay = new QVBoxLayout(box);
     lay->setContentsMargins(8, 14, 8, 14);  // wie die Seitenleisten: Zeilen 8 vom Rand (r 20 - 8 = r 12)
     lay->setSpacing(2);
-    auto title = new QLabel(T("Sketch Palette"));
+    auto title = new QLabel(T(heading));
     setTextStyle(title, Text::Headline);
     title->setContentsMargins(10, 0, 0, 0);
     lay->addWidget(title);
     lay->addSpacing(4);
-    const std::pair<const char*, const char*> rows[] = {
-        {"Look At", "Sketcher_ViewSketch"}, {"Slice", "Sketcher_ViewSection"}, {"Grid", "Sketcher_Grid"},
-        {"Snap", "Sketcher_Snap"},          {"Construction", "Sketcher_ToggleConstruction"},
-    };
-    const char* icons[] = {"Palette_LookAt", "Palette_Section", "Palette_Grid", "Palette_Snap",
-                           "Sketcher_ToggleConstruction"};
-    for (size_t i = 0; i < std::size(rows); ++i) {
-        QAction* action = commandAction(rows[i].second);
+    for (const PaletteRow& row : rows) {
+        QAction* action = commandAction(row.command);
         if (!action) {
             continue;
         }
         auto btn = new QToolButton;
         btn->setObjectName(QStringLiteral("PaletteRow"));
         btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        btn->setText(T(rows[i].first));
-        btn->setIcon(designIcon(QString::fromLatin1(icons[i]), &Theme::labelSecondary));
+        btn->setText(T(row.text));
+        btn->setIcon(designIcon(QString::fromLatin1(row.icon), &Theme::labelSecondary));
         btn->setIconSize(QSize(Token::IconM, Token::IconM));
         btn->setCheckable(action->isCheckable());
         btn->setChecked(action->isChecked());
@@ -2545,11 +2561,11 @@ QWidget* sketchPalette()
         lay->addWidget(btn);
     }
     lay->addSpacing(8);
-    if (QAction* finish = commandAction("Sketcher_LeaveSketch")) {
+    if (QAction* finish = commandAction(finishCommand)) {
         auto btn = new QToolButton;
         btn->setObjectName(QStringLiteral("GlassProminent"));
-        btn->setProperty("command", QStringLiteral("Sketcher_LeaveSketch"));
-        btn->setText(T("Finish Sketch"));
+        btn->setProperty("command", QString::fromLatin1(finishCommand));
+        btn->setText(T(finishText));
         btn->setFixedHeight(Token::ControlDesktop);
         btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         QObject::connect(btn, &QToolButton::clicked, finish, [finish] {
@@ -2639,6 +2655,7 @@ struct State
     GlassPanel* header = nullptr;  ///< Kopfleiste über die ganze Fensterbreite: Seitenleisten-Knopf, Toolbar, Fensterknöpfe
     QWidget* modelBar = nullptr;
     QWidget* sketchBar = nullptr;
+    QWidget* scribbleBar = nullptr;
     GlassPanel* collapsedBar = nullptr;  ///< Name und Seitenleisten-Knopf, solange die Seitenleiste eingeklappt ist (W-1)
     WindowControls* windowControls = nullptr;
     GlassPanel* windowPanel = nullptr;  ///< Kapsel der Fensterknöpfe
@@ -2647,9 +2664,11 @@ struct State
     GlassPanel* inspector = nullptr;
     GlassPanel* timeline = nullptr;
     GlassPanel* palette = nullptr;
+    GlassPanel* scribblePalette = nullptr;
     ViewCube* viewCube = nullptr;
     WindowCorners* corners = nullptr;  ///< nur rahmenlos
     bool sketchMode = false;
+    bool scribbleMode = false;  ///< Zeichenblatt eines Scribbles offen
     QGraphicsScene* scene = nullptr;
     std::vector<NotePanel> notes;  ///< offene Post-its des aktiven Designs
     std::string notesDocument;
@@ -2658,7 +2677,8 @@ struct State
 std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
-    for (auto p : {state.header, state.browser, state.inspector, state.timeline, state.palette, state.collapsedBar, state.windowPanel}) {
+    for (auto p : {state.header, state.browser, state.inspector, state.timeline, state.palette, state.scribblePalette,
+                   state.collapsedBar, state.windowPanel}) {
         if (p) {
             all.push_back(p);
         }
@@ -2710,9 +2730,10 @@ void layout()
     if (state.corners) {
         state.corners->setRect(r);
     }
-    QWidget* bar = state.sketchMode ? state.sketchBar : state.modelBar;
-    state.modelBar->setVisible(!state.sketchMode);
-    state.sketchBar->setVisible(state.sketchMode);
+    QWidget* bar = state.sketchMode ? state.sketchBar : state.scribbleMode ? state.scribbleBar : state.modelBar;
+    for (QWidget* b : {state.modelBar, state.sketchBar, state.scribbleBar}) {
+        b->setVisible(b == bar);
+    }
     const QSizeF bs = bar->sizeHint();  // eine Reihe
     const QSizeF cs = state.windowControls ? QSizeF(state.windowControls->sizeHint()) : QSizeF();
     if (state.windowPanel) {
@@ -2783,11 +2804,13 @@ void layout()
         state.viewCube->setPos(r.width() - state.viewCube->boundingRect().width() - m, top);
         belowCube = top + state.viewCube->boundingRect().height() + m;
     }
-    if (state.palette) {
-        QSizeF ps = state.palette->content()->sizeHint();
-        ps.setWidth(std::max<qreal>(ps.width(), state.palette->content()->minimumWidth()));
-        state.palette->setVisible(state.sketchMode);
-        state.palette->setGeometry(QRectF(r.width() - ps.width() - m, belowCube, ps.width(), ps.height()));
+    for (auto [panel, show] : {std::pair {state.palette, state.sketchMode}, std::pair {state.scribblePalette, state.scribbleMode}}) {
+        if (panel) {
+            QSizeF ps = panel->content()->sizeHint();
+            ps.setWidth(std::max<qreal>(ps.width(), panel->content()->minimumWidth()));
+            panel->setVisible(show);
+            panel->setGeometry(QRectF(r.width() - ps.width() - m, belowCube, ps.width(), ps.height()));
+        }
     }
     if (state.inspector) {
         const qreal itop = belowCube;  // unter dem ViewCube
@@ -3478,13 +3501,14 @@ GroundGrid& groundGrid()
     return g;
 }
 
-/// Raster an Einstellung (MyCAD/GroundGrid), Skizzenmodus (dort zeigt die Skizze ihr eigenes) und Theme anpassen
+/// Raster an Einstellung (MyCAD/GroundGrid), Skizzen- und Scribble-Modus (dort zeigen Skizze bzw. Blatt ihr eigenes)
+/// und Theme anpassen
 void updateGroundGrid()
 {
     const bool on = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("GroundGrid", true);
     const QColor c = theme().separator;  // MyStyle-Diagrammraster: separator, Hauptlinien voll, sonst 50 %
     groundGrid().color->value.setValue(c.redF(), c.greenF(), c.blueF(), c.alphaF());
-    groundGrid().node->whichChild = on && !state.sketchMode ? 0 : SO_SWITCH_NONE;
+    groundGrid().node->whichChild = on && !state.sketchMode && !state.scribbleMode ? 0 : SO_SWITCH_NONE;
 }
 
 void attach(View3DInventor* view)
@@ -3647,7 +3671,7 @@ void Gui::Shell::install()
                  "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",
                  "#INSPECT", "Design_Measure", "Design_Section", "Std_ViewFitAll",
-                 "#UTILITIES", "Design_Parameters", "Design_Appearance", "Design_Note"});
+                 "#UTILITIES", "Design_Parameters", "Design_Appearance", "Design_Scribble", "Design_Note"});
     state.sketchBar =
         toolbar({"#CREATE", "Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
                  "Sketcher_CompCreateConic", "Sketcher_CompCreateArc", "Sketcher_CompSlot",
@@ -3661,12 +3685,33 @@ void Gui::Shell::install()
                  "Sketcher_ConstrainParallel|Sketcher_ConstrainPerpendicular", "Sketcher_ConstrainTangent",
                  "Sketcher_ConstrainEqual", "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock",
                  "#UTILITIES", "Design_Note"});
+    state.scribbleBar =
+        toolbar({"#FILE", "Std_Save", "Std_Undo", "Std_Redo",
+                 "#DRAW", "Design_ScribblePencil", "Design_ScribblePen", "Design_ScribbleMarker", "Design_ScribbleEraser",
+                 "Design_ScribbleBlack|Design_ScribbleBlue|Design_ScribbleRed|Design_ScribbleGreen|Design_ScribbleYellow",
+                 "#SHEET", "Design_ScribbleSheet",
+                 "#UTILITIES", "Design_Note"});
     QWidget* header = content();
     state.modelBar->setParent(header);
     state.sketchBar->setParent(header);
+    state.scribbleBar->setParent(header);
     state.header = new GlassPanel(header, Token::RadiusCapsule);
     state.viewCube = new ViewCube;
-    state.palette = new GlassPanel(sketchPalette(), Token::RadiusPanel, true);
+    state.palette = new GlassPanel(toolPalette("Sketch Palette",
+                                               {{"Look At", "Sketcher_ViewSketch", "Palette_LookAt"},
+                                                {"Slice", "Sketcher_ViewSection", "Palette_Section"},
+                                                {"Grid", "Sketcher_Grid", "Palette_Grid"},
+                                                {"Snap", "Sketcher_Snap", "Palette_Snap"},
+                                                {"Construction", "Sketcher_ToggleConstruction", "Sketcher_ToggleConstruction"}},
+                                               "Sketcher_LeaveSketch", "Finish Sketch"),
+                                   Token::RadiusPanel, true);
+    // Scribble: Zeichenwerkzeuge oben, Blatt-Optionen hier
+    state.scribblePalette = new GlassPanel(toolPalette("Scribble",
+                                                       {{"Look At", "Design_ScribbleLookAt", "Palette_LookAt"},
+                                                        {"Tracing Paper", "Design_ScribbleTracing", "Palette_Tracing"},
+                                                        {"Convert to Sketch", "Design_ScribbleToSketch", "Tree_Sketch"}},
+                                                       "Design_ScribbleFinish", "Finish Scribble"),
+                                           Token::RadiusPanel, true);
     qApp->installEventFilter(new MenuPolisher);
     qApp->installEventFilter(new HelpKey);
     qApp->installEventFilter(new SketchTaskFilter);
@@ -3676,7 +3721,7 @@ void Gui::Shell::install()
         state.titleGrip = new TitleGrip;
         state.windowControls = new WindowControls;
         state.windowPanel = new GlassPanel(state.windowControls, Token::RadiusCapsule);
-        for (QWidget* w : {header, state.modelBar, state.sketchBar, static_cast<QWidget*>(state.windowControls)}) {
+        for (QWidget* w : {header, state.modelBar, state.sketchBar, state.scribbleBar, static_cast<QWidget*>(state.windowControls)}) {
             w->installEventFilter(windowGrip());
         }
         qApp->installEventFilter(new EdgeResizer);
@@ -3751,15 +3796,18 @@ void Gui::Shell::install()
     hideChrome();
     Application::Instance->signalActivateWorkbench.connect([](const char*) { hideChromeLater(); });
     Application::Instance->signalInEdit.connect([](const ViewProviderDocumentObject& vp) {
-        // Nur Skizzen schalten auf Sketch-Toolbar und Palette; Feature-Dialoge brauchen den Inspector
+        // Skizzen und Scribbles schalten auf ihre Toolbar und Palette; Feature-Dialoge brauchen den Inspector
         static const Base::Type sketch = Base::Type::fromName("Sketcher::SketchObject");
+        static const Base::Type scribble = Base::Type::fromName("Design::Scribble");
         state.sketchMode = !sketch.isBad() && vp.getObject()->getTypeId().isDerivedFrom(sketch);
+        state.scribbleMode = !scribble.isBad() && vp.getObject()->getTypeId().isDerivedFrom(scribble);
         updateGroundGrid();
         hideChromeLater();
         QTimer::singleShot(0, layout);
     });
     Application::Instance->signalResetEdit.connect([](const ViewProviderDocumentObject&) {
         state.sketchMode = false;
+        state.scribbleMode = false;
         updateGroundGrid();
         hideChromeLater();
         QTimer::singleShot(0, layout);

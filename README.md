@@ -75,6 +75,18 @@ Closed a note? It's still under **Notes** in the browser, double-click to open i
 
 <br>
 
+## Ideas first. Scribble.
+
+Click **Scribble** in the toolbar and a sheet of paper fills the view. Grab your pen tablet and draw: **Pencil**, **Fineliner** and **Marker**, in five colors. Press harder and the line gets thicker. Flip the pen to erase.
+
+Hold the pen still at the end of a stroke and it straightens out into a clean line, circle or rectangle. Lines lock to horizontal, vertical and to the ends of your other strokes.
+
+Then go 3D. **Move Sheet** lays the paper onto any face of your model, or stands it up along a line you drew, so you can sketch a frame in space. Orbit, and the paper fades so you can see your strokes and your model together. **Tracing Paper** lets you draw right over a body.
+
+Happy with an idea? **Convert to Sketch** turns your lines, circles and rectangles into a real sketch, joined and ready to dimension and extrude. Your scribbles stay in the design under **Scribbles** in the browser.
+
+<br>
+
 ## Everything at a glance.
 
 <div align="center">
