@@ -116,6 +116,7 @@ constexpr std::pair<const char*, Tool> ToolCommands[] = {
     {"Design_ScribbleRectangle", Tool::Rectangle}, {"Design_ScribbleCircle", Tool::Circle},
     {"Design_ScribbleArrow", Tool::Arrow}, {"Design_ScribbleTriangle", Tool::Triangle},
     {"Design_ScribbleHexagon", Tool::Hexagon}, {"Design_ScribbleEllipse", Tool::Ellipse}, {"Design_ScribbleFill", Tool::Fill},
+    {"Design_ScribbleSelect", Tool::Select},
 };
 
 QAction* commandAction(const char* name)
@@ -440,7 +441,7 @@ struct ViewProviderScribble::Private
         return static_cast<Design::Scribble*>(vp->getObject());
     }
 
-    void rebuild();
+    void rebuild(bool editOnly = false);
     void updatePaper();
     void updateSheet();
 
@@ -463,6 +464,15 @@ struct ViewProviderScribble::Private
     QPolygonF screenPolygon(const Stroke& s) const;
     void fillAt(const QPointF& pos);
     void erase(const QPointF& pos);
+    bool hits(const Stroke& s, const QPointF& pos) const;
+    int hitStroke(const QPointF& pos) const;  ///< oberster Strich unter dem Stift, sonst -1
+    bool selected(int i) const;
+    QRectF selectionBox() const;               ///< Bildschirm, mit Rand; leer ohne Auswahl
+    double pixelSize() const;                  ///< mm je Pixel in der Bildmitte, auf dem Blatt
+    void grab(const QPointF& pos);
+    void showSelection();
+    void showLasso();
+    void deleteSelection();
     void pickSheet(const QPointF& pos);
     void showLive();
     void showSnap(const std::optional<Base::Vector3d>& p);
@@ -473,6 +483,7 @@ struct ViewProviderScribble::Private
     SoSeparator* displayInk;   ///< Striche mit Tiefe, Haarlinien
     SoSeparator* editRoot;     ///< Zeichenmodus: Blatt, Striche, laufender Strich, Fangpunkt, über allem anderen
     SoSeparator* editInk;
+    SoSeparator* selectionInk;  ///< Schein unter den ausgewählten Strichen und gestrichelter Rahmen
     SoSeparator* live;
     SoSwitch* snapSwitch;
     SoCoordinate3* snapCoords;
@@ -502,6 +513,15 @@ struct ViewProviderScribble::Private
     QPointF anchor;
     QTimer hold;
     bool erased = false;
+
+    // Auswählen und Verschieben
+    std::vector<int> selection;      ///< Nummern in strokes()
+    bool moving = false;
+    Base::Vector3d grabFrom;         ///< wo das Ziehen begann (auf dem Blatt)
+    Base::Vector3d moveOffset;       ///< bisher gezogen
+    int grabCandidate = -1;          ///< Stift auf einem Strich: Halten greift ihn
+    std::vector<QPointF> lasso;      ///< Bildschirm
+    bool overSelection = false;      ///< Mauszeiger zeigt "verschieben"
 };
 
 namespace
@@ -517,8 +537,31 @@ public:
     {}
 
 protected:
-    bool eventFilter(QObject*, QEvent* event) override
+    bool eventFilter(QObject* obj, QEvent* event) override
     {
+        // Tasten kommen je nach Fokus beim Viewport oder bei der Ansicht an. Entf ist auch ein Befehlskürzel
+        // (Std_Delete): solange etwas ausgewählt ist, gehört die Taste der Auswahl
+        if (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress) {
+            const int key = static_cast<QKeyEvent*>(event)->key();
+            const bool mine = !d->selection.empty()
+                && (key == Qt::Key_Delete || key == Qt::Key_Backspace || key == Qt::Key_Escape);
+            if (mine && event->type() == QEvent::KeyPress) {
+                if (key == Qt::Key_Escape) {
+                    d->selection.clear();
+                    d->showSelection();
+                }
+                else {
+                    d->deleteSelection();
+                }
+            }
+            if (mine) {
+                event->accept();
+            }
+            return mine;
+        }
+        if (obj != d->viewport) {
+            return false;
+        }
         switch (event->type()) {
             case QEvent::TabletPress: {
                 auto te = static_cast<QTabletEvent*>(event);
@@ -632,7 +675,9 @@ ViewProviderScribble::Private::Private(ViewProviderScribble* vp)
     annotation->addChild(paperNode(sheetTransform, paperColor, dotColor));
     auto ink = inkGroup();
     editInk = new SoSeparator;
+    selectionInk = new SoSeparator;
     live = new SoSeparator;
+    ink->addChild(selectionInk);
     ink->addChild(editInk);
     ink->addChild(live);
     annotation->addChild(ink);
@@ -660,22 +705,36 @@ ViewProviderScribble::Private::Private(ViewProviderScribble* vp)
     QObject::connect(&hold, &QTimer::timeout, [this] { shapeUp(); });
 }
 
-void ViewProviderScribble::Private::rebuild()
+void ViewProviderScribble::Private::rebuild(bool editOnly)
 {
-    displayInk->removeAllChildren();
+    if (!editOnly) {
+        displayInk->removeAllChildren();
+    }
     editInk->removeAllChildren();
     endpoints.clear();
     const auto strokes = object()->strokes();
+    std::erase_if(selection, [&strokes](int i) { return i >= int(strokes.size()); });  // nach Rückgängig
     for (const bool fills : {true, false}) {  // Flächen zuerst: die Linien liegen darüber
-        for (const Stroke& s : strokes) {
+        for (int i = 0; i < int(strokes.size()); ++i) {
+            const Stroke& s = strokes[size_t(i)];
             if ((s.kind == Design::Scribble::Fill) != fills) {
                 continue;
             }
-            displayInk->addChild(strokeNode(s));
-            editInk->addChild(strokeNode(s));
+            Stroke shifted = s;  // beim Verschieben zeigt das Blatt die Auswahl schon am neuen Ort
+            if (moving && selected(i)) {
+                for (auto& q : shifted.points) {
+                    q += moveOffset;
+                }
+            }
+            if (!editOnly) {
+                displayInk->addChild(strokeNode(s));
+            }
+            editInk->addChild(strokeNode(shifted));
             if (s.tool != Design::Scribble::Marker) {
-                displayInk->addChild(hairlineNode(s));
-                editInk->addChild(hairlineNode(s));
+                if (!editOnly) {
+                    displayInk->addChild(hairlineNode(s));
+                }
+                editInk->addChild(hairlineNode(shifted));
             }
             // offene Striche rasten an ihren Enden ein (Freihand, Linie, Pfeil)
             if (!s.points.empty()
@@ -688,6 +747,7 @@ void ViewProviderScribble::Private::rebuild()
     if (!down) {
         live->removeAllChildren();  // der fertige Strich steht jetzt in editInk
     }
+    showSelection();
 }
 
 void ViewProviderScribble::Private::updatePaper()
@@ -794,6 +854,24 @@ void ViewProviderScribble::Private::press(const QPointF& pos, double pressure, b
     if (gesture == Tool::Sheet) {
         return;  // Tippen wertet release() aus
     }
+    if (gesture == Tool::Select) {
+        // auf der Auswahl oder einem Strich: ziehen (ein anderer Strich wird dabei die Auswahl); sonst umranden
+        const int hit = hitStroke(pos);
+        if ((hit >= 0 && selected(hit)) || selectionBox().contains(pos)) {
+            grab(pos);
+        }
+        else if (hit >= 0) {
+            selection = {hit};
+            grab(pos);
+        }
+        else {
+            selection.clear();
+            lasso = {pos};
+            showSelection();
+        }
+        return;
+    }
+    grabCandidate = isPen(gesture) ? hitStroke(pos) : -1;
     const auto p = onSheet(pos);
     const auto right = onSheet(pos + QPointF(1, 0));
     if (!p || !right) {
@@ -856,6 +934,19 @@ void ViewProviderScribble::Private::move(const QPointF& pos, double pressure)
     if (gesture == Tool::Sheet) {
         return;
     }
+    if (gesture == Tool::Select) {
+        if (moving) {
+            if (const auto p = onSheet(pos)) {
+                moveOffset = *p - grabFrom;
+                rebuild(true);
+            }
+        }
+        else {
+            lasso.push_back(pos);
+            showLasso();
+        }
+        return;
+    }
     if (!isPen(gesture) && gesture != Tool::Fill) {
         updateShape(pos);
         return;
@@ -883,6 +974,15 @@ void ViewProviderScribble::Private::move(const QPointF& pos, double pressure)
 
 void ViewProviderScribble::Private::shapeUp()
 {
+    // Halten zum Greifen: der Stift steht seit dem Aufsetzen still auf einem Strich, dann hängt der Strich am Stift
+    if (down && isPen(gesture) && grabCandidate >= 0 && screenLength < 4) {
+        current = Stroke();
+        live->removeAllChildren();
+        selection = {grabCandidate};
+        gesture = Tool::Select;
+        grab(pressPos);
+        return;
+    }
     if (!down || shaped || gesture == Tool::Eraser || gesture == Tool::Sheet || current.points.size() < 3) {
         return;
     }
@@ -996,6 +1096,45 @@ void ViewProviderScribble::Private::release(const QPointF& pos)
         }
         return;
     }
+    if (gesture == Tool::Select) {
+        if (moving) {
+            moving = false;
+            const Base::Vector3d offset = moveOffset;
+            moveOffset = Base::Vector3d();
+            if (offset.Length() > 1e-9) {
+                auto all = object()->strokes();
+                for (int i : selection) {
+                    for (auto& q : all[size_t(i)].points) {
+                        q += offset;
+                    }
+                }
+                doc->openTransaction("Move Strokes");
+                object()->setStrokes(all);
+                doc->commitTransaction();
+            }
+            if (currentTool != Tool::Select) {
+                selection.clear();  // mit dem Stift gegriffen: danach geht es mit dem Stift weiter
+            }
+            rebuild(true);
+            return;
+        }
+        // umrandet: ausgewählt ist, was überwiegend im Umriss liegt
+        const QPolygonF loop(QList<QPointF>(lasso.begin(), lasso.end()));
+        const auto all = object()->strokes();
+        for (int i = 0; lasso.size() > 2 && i < int(all.size()); ++i) {
+            const QPolygonF poly = screenPolygon(all[size_t(i)]);
+            const auto inside = std::count_if(poly.begin(), poly.end(), [&loop](const QPointF& q) {
+                return loop.containsPoint(q, Qt::OddEvenFill);
+            });
+            if (!poly.isEmpty() && inside * 10 >= poly.size() * 6) {
+                selection.push_back(i);
+            }
+        }
+        lasso.clear();
+        live->removeAllChildren();
+        showSelection();
+        return;
+    }
     if (current.points.empty()) {
         return;
     }
@@ -1041,8 +1180,178 @@ void ViewProviderScribble::Private::release(const QPointF& pos)
 
 void ViewProviderScribble::Private::hover(const QPointF& pos)
 {
-    const bool snaps = currentTool != Tool::Eraser && currentTool != Tool::Sheet && currentTool != Tool::Fill;
+    const bool snaps = currentTool != Tool::Eraser && currentTool != Tool::Sheet && currentTool != Tool::Fill
+        && currentTool != Tool::Select;
     showSnap(snaps ? snapEndpoint(pos, false) : std::nullopt);
+    const bool over = currentTool == Tool::Select && (selectionBox().contains(pos) || hitStroke(pos) >= 0);
+    if (over != overSelection && viewer) {
+        overSelection = over;
+        viewer->setEditingCursor(QCursor(over ? Qt::SizeAllCursor : Qt::ArrowCursor));
+    }
+}
+
+bool ViewProviderScribble::Private::hits(const Stroke& s, const QPointF& pos) const
+{
+    QPointF prev = s.points.empty() ? QPointF() : toScreen(s.points.front());
+    for (const auto& p : s.points) {
+        const QPointF here = toScreen(p);
+        if (distanceToSegment(pos, prev, here) < EraseRadius) {
+            return true;
+        }
+        prev = here;
+    }
+    return s.kind == Design::Scribble::Fill && screenPolygon(s).containsPoint(pos, Qt::OddEvenFill);
+}
+
+int ViewProviderScribble::Private::hitStroke(const QPointF& pos) const
+{
+    const auto all = object()->strokes();
+    for (int i = int(all.size()) - 1; i >= 0; --i) {  // oben liegt, was zuletzt gezeichnet wurde; Linien vor Flächen
+        if (all[size_t(i)].kind != Design::Scribble::Fill && hits(all[size_t(i)], pos)) {
+            return i;
+        }
+    }
+    for (int i = int(all.size()) - 1; i >= 0; --i) {
+        if (hits(all[size_t(i)], pos)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool ViewProviderScribble::Private::selected(int i) const
+{
+    return std::ranges::find(selection, i) != selection.end();
+}
+
+QRectF ViewProviderScribble::Private::selectionBox() const
+{
+    QRectF box;
+    const auto all = object()->strokes();
+    for (int i : selection) {
+        box = box.united(screenPolygon(all[size_t(i)]).boundingRect());
+    }
+    return box.isNull() ? box : box.adjusted(-8, -8, 8, 8);
+}
+
+double ViewProviderScribble::Private::pixelSize() const
+{
+    const QPointF c(viewport->width() / 2.0, viewport->height() / 2.0);
+    const auto a = onSheet(c), b = onSheet(c + QPointF(1, 0));
+    return a && b ? std::max(1e-6, (*b - *a).Length()) : mmPerPx;
+}
+
+void ViewProviderScribble::Private::grab(const QPointF& pos)
+{
+    const auto p = onSheet(pos);
+    if (!p) {
+        down = false;
+        return;
+    }
+    moving = true;
+    grabFrom = *p;
+    moveOffset = Base::Vector3d();
+    showSelection();
+}
+
+/// Auswahl: ein Schein in Akzentfarbe unter jedem Strich und ein gestrichelter Rahmen um alle, im Blatt gezeichnet
+void ViewProviderScribble::Private::showSelection()
+{
+    selectionInk->removeAllChildren();
+    const auto all = object()->strokes();
+    if (selection.empty() || !viewport) {
+        return;
+    }
+    const Gui::Shell::Theme& t = Gui::Shell::theme();
+    const double px = pixelSize();
+    const Base::Vector3d offset = moving ? moveOffset : Base::Vector3d();
+    for (int i : selection) {
+        Stroke glow = all[size_t(i)];
+        glow.kind = Design::Scribble::Polygon;  // eine Fläche leuchtet an ihrem Umriss
+        glow.tool = Design::Scribble::Pen;
+        glow.color = Base::Color(float(t.accent.redF()), float(t.accent.greenF()), float(t.accent.blueF()), 0.35F);
+        for (size_t k = 0; k < glow.points.size(); ++k) {
+            glow.points[k] += offset;
+            glow.widths[k] += 8 * px;
+        }
+        selectionInk->addChild(strokeNode(glow));
+    }
+    // Rahmen in Blatt-Koordinaten um alle Punkte
+    const Base::Placement sheet = object()->Sheet.getValue();
+    const Base::Matrix4D toSheet = sheet.inverse().toMatrix(), fromSheet = sheet.toMatrix();
+    double x0 = 1e300, y0 = 1e300, x1 = -1e300, y1 = -1e300;
+    for (int i : selection) {
+        for (const auto& q : all[size_t(i)].points) {
+            const Base::Vector3d r = toSheet * (q + offset);
+            x0 = std::min(x0, r.x); y0 = std::min(y0, r.y); x1 = std::max(x1, r.x); y1 = std::max(y1, r.y);
+        }
+    }
+    const double m = 8 * px;
+    std::vector<SbVec3f> box;
+    for (const auto& [x, y] : {std::pair {x0 - m, y0 - m}, {x1 + m, y0 - m}, {x1 + m, y1 + m}, {x0 - m, y1 + m}, {x0 - m, y0 - m}}) {
+        box.push_back(sb(fromSheet * Base::Vector3d(x, y, 0)));
+    }
+    auto sep = new SoSeparator;
+    auto material = new SoMaterial;
+    material->diffuseColor.setValue(float(t.accentText.redF()), float(t.accentText.greenF()), float(t.accentText.blueF()));
+    auto style = new SoDrawStyle;
+    style->linePattern = 0xF0F0;  // gestrichelt
+    style->lineWidth = 1.5F;
+    auto coords = new SoCoordinate3;
+    coords->point.setValues(0, int(box.size()), box.data());
+    auto lines = new SoLineSet;
+    lines->numVertices.setValue(int(box.size()));
+    sep->addChild(material);
+    sep->addChild(style);
+    sep->addChild(coords);
+    sep->addChild(lines);
+    selectionInk->addChild(sep);
+}
+
+/// Umriss beim Umranden: gestrichelt in Akzentfarbe
+void ViewProviderScribble::Private::showLasso()
+{
+    live->removeAllChildren();
+    std::vector<SbVec3f> pts;
+    for (const QPointF& q : lasso) {
+        if (const auto p = onSheet(q)) {
+            pts.push_back(sb(*p));
+        }
+    }
+    if (pts.size() < 2) {
+        return;
+    }
+    const QColor accent = Gui::Shell::theme().accentText;
+    auto material = new SoMaterial;
+    material->diffuseColor.setValue(float(accent.redF()), float(accent.greenF()), float(accent.blueF()));
+    auto style = new SoDrawStyle;
+    style->linePattern = 0xF0F0;
+    style->lineWidth = 1.5F;
+    auto coords = new SoCoordinate3;
+    coords->point.setValues(0, int(pts.size()), pts.data());
+    auto lines = new SoLineSet;
+    lines->numVertices.setValue(int(pts.size()));
+    live->addChild(material);
+    live->addChild(style);
+    live->addChild(coords);
+    live->addChild(lines);
+}
+
+void ViewProviderScribble::Private::deleteSelection()
+{
+    auto all = object()->strokes();
+    std::vector<Stroke> keep;
+    for (int i = 0; i < int(all.size()); ++i) {
+        if (!selected(i)) {
+            keep.push_back(all[size_t(i)]);
+        }
+    }
+    selection.clear();
+    App::Document* doc = vp->getObject()->getDocument();
+    doc->openTransaction("Delete Strokes");
+    object()->setStrokes(keep);
+    doc->commitTransaction();
+    showSelection();
 }
 
 QPolygonF ViewProviderScribble::Private::screenPolygon(const Stroke& s) const
@@ -1115,15 +1424,7 @@ void ViewProviderScribble::Private::erase(const QPointF& pos)
     const auto all = object()->strokes();
     std::vector<Stroke> keep;
     for (const Stroke& s : all) {
-        bool hit = false;
-        QPointF prev = s.points.empty() ? QPointF() : toScreen(s.points.front());
-        for (size_t i = 0; i < s.points.size() && !hit; ++i) {
-            const QPointF here = toScreen(s.points[i]);
-            hit = distanceToSegment(pos, prev, here) < EraseRadius;
-            prev = here;
-        }
-        hit = hit || (s.kind == Design::Scribble::Fill && screenPolygon(s).containsPoint(pos, Qt::OddEvenFill));
-        if (!hit) {
+        if (!hits(s, pos)) {
             keep.push_back(s);
         }
     }
@@ -1209,6 +1510,9 @@ void ViewProviderScribble::Private::cancel()
     down = false;
     hold.stop();
     current = Stroke();
+    moving = false;
+    moveOffset = Base::Vector3d();
+    lasso.clear();
     live->removeAllChildren();
     showSnap(std::nullopt);
 }
@@ -1312,6 +1616,9 @@ void ViewProviderScribble::setEditViewer(Gui::View3DInventorViewer* viewer, int 
     d->viewport = viewer->viewport();
     d->input = std::make_unique<ScribbleInput>(d.get());
     d->viewport->installEventFilter(d->input.get());
+    if (d->viewport->parentWidget()) {
+        d->viewport->parentWidget()->installEventFilter(d->input.get());  // Tasten, wenn die Ansicht den Fokus hat
+    }
     d->viewport->setAttribute(Qt::WA_TabletTracking);  // Stift in der Luft: Fangpunkt schon vor dem Aufsetzen zeigen
     if (!isPen(currentTool)) {
         currentTool = lastDrawTool;  // jedes Öffnen beginnt mit einem Stift
@@ -1326,6 +1633,9 @@ void ViewProviderScribble::unsetEditViewer(Gui::View3DInventorViewer* viewer)
     d->cancel();
     if (d->viewport) {
         d->viewport->removeEventFilter(d->input.get());
+        if (d->viewport->parentWidget()) {
+            d->viewport->parentWidget()->removeEventFilter(d->input.get());
+        }
         d->viewport->setAttribute(Qt::WA_TabletTracking, false);
     }
     d->input.reset();
@@ -1365,9 +1675,16 @@ void ViewProviderScribble::setTool(Tool tool)
         lastDrawTool = tool;
     }
     if (active && active->d->viewer) {
-        active->d->viewer->setEditingCursor(QCursor(tool == Tool::Sheet ? Qt::PointingHandCursor : Qt::CrossCursor));
+        active->d->viewer->setEditingCursor(QCursor(tool == Tool::Sheet ? Qt::PointingHandCursor
+                                                        : tool == Tool::Select ? Qt::ArrowCursor
+                                                                               : Qt::CrossCursor));
+        active->d->overSelection = false;
         active->d->updatePaper();
         active->d->showSnap(std::nullopt);
+        if (tool != Tool::Select) {
+            active->d->selection.clear();
+            active->d->showSelection();
+        }
     }
     syncActions();
 }
@@ -1375,6 +1692,19 @@ void ViewProviderScribble::setTool(Tool tool)
 void ViewProviderScribble::setColor(const Base::Color& color)
 {
     currentColor = color;
+    if (active && !active->d->selection.empty()) {  // Auswahl umfärben, jede Strich-Art behält ihre Deckkraft
+        auto all = active->d->object()->strokes();
+        for (int i : active->d->selection) {
+            const float alpha = all[size_t(i)].color.a;
+            all[size_t(i)].color = color;
+            all[size_t(i)].color.a = alpha;
+        }
+        App::Document* doc = active->getObject()->getDocument();
+        doc->openTransaction("Color Strokes");
+        active->d->object()->setStrokes(all);
+        doc->commitTransaction();
+        return;
+    }
     if (currentTool == Tool::Eraser || currentTool == Tool::Sheet) {
         setTool(lastDrawTool);  // Farbe wählen heißt weiterzeichnen
     }

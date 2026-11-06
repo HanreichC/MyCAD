@@ -110,7 +110,8 @@ public:
         Triangle,
         Hexagon,
         Ellipse,
-        Fill  ///< in eine geschlossene Form tippen oder eine Fläche umranden: färbt sie ein
+        Fill,   ///< in eine geschlossene Form tippen oder eine Fläche umranden: färbt sie ein
+        Select  ///< auf Striche tippen oder sie umranden, dann ziehen; Entf löscht, eine Farbe färbt um
     };
 
     ViewProviderScribble();

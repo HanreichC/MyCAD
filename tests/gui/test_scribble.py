@@ -104,6 +104,16 @@ def dump(tag):
     L("  %s counts=%s kinds=%s ends=%s" % (tag, list(s().Counts), kinds(), [tuple(round(c, 2) for c in (e.x, e.y, e.z)) for i in range(len(s().Counts)) for e in ends(i)]))
 
 
+def last():
+    """das zuletzt angelegte Scribble"""
+    return scribbles()[-1]
+
+
+def stroke_points(i):
+    start = sum(last().Counts[:i])
+    return last().Points[start:start + last().Counts[i]]
+
+
 def round_last():
     """letzter Strich ein Kreis: alle Punkte gleich weit von der Mitte"""
     pts = s().Points[sum(s().Counts[:-1]):]
@@ -285,6 +295,32 @@ in_order([
     ("solved 2", lambda: check("that sketch solves", Gui.ActiveDocument.getInEdit().Object.solve() == 0)),
     ("leave 2", lambda: Gui.ActiveDocument.resetEdit()), wait,
     ("reopen 2", lambda: (setattr(s(), "Visibility", True), Gui.ActiveDocument.setEdit(s().Name))), wait, wait,
+
+    # Auswählen und Verschieben, auf einem frischen Blatt
+    ("leave 3", lambda: Gui.ActiveDocument.resetEdit()), wait,
+    ("fresh", lambda: Gui.runCommand("Design_Scribble")), wait, wait,
+    ("two lines", lambda: (Gui.runCommand("Design_ScribbleBlack"), Gui.runCommand("Design_ScribbleLine"), stroke(line((0.40, 0.30), (0.50, 0.30), 10)), stroke(line((0.40, 0.40), (0.50, 0.40), 10)))), wait,
+    ("a circle", lambda: (Gui.runCommand("Design_ScribbleCircle"), stroke(line((0.70, 0.60), (0.73, 0.60), 10)))), wait,
+    ("three", lambda: check("fresh scribble with two lines and a circle", list(last().Kinds) == [1, 1, 2], str(list(last().Kinds)))),
+    ("select tool", lambda: (saved.update(a=stroke_points(0)[0], b=stroke_points(1)[0], c=stroke_points(2)[0]), Gui.runCommand("Design_ScribbleSelect"))), wait,
+    ("drag one", lambda: stroke(line((0.45, 0.30), (0.45, 0.50), 10))), wait,
+    ("moved one", lambda: check("Select: dragging a stroke moves just that stroke", stroke_points(0)[0].y < saved["a"].y - 1
+                                and stroke_points(1)[0] == saved["b"], str((stroke_points(0)[0], saved["a"])))),
+    ("lasso two", lambda: stroke([(0.36, 0.34), (0.54, 0.34), (0.54, 0.56), (0.36, 0.56), (0.36, 0.345)])), wait,
+    ("drag two", lambda: (saved.update(a=stroke_points(0)[0], b=stroke_points(1)[0]), stroke(line((0.45, 0.45), (0.55, 0.45), 10)))), wait,
+    ("moved two", lambda: check("Select: drawing around strokes selects them, dragging inside the box moves them together",
+                                stroke_points(0)[0].x > saved["a"].x + 1 and abs((stroke_points(0)[0] - saved["a"]).x - (stroke_points(1)[0] - saved["b"]).x) < 1e-6
+                                and stroke_points(2)[0] == saved["c"], str([stroke_points(i)[0] for i in range(3)]))),
+    ("recolor", lambda: Gui.runCommand("Design_ScribbleRed")), wait,
+    ("red", lambda: check("a colour recolours the selection only", last().Colors[0][0] > 0.99 and last().Colors[1][0] > 0.99 and last().Colors[2][0] < 0.2,
+                          str(list(last().Colors)))),
+    ("delete", lambda: (activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Delete))), wait,
+    ("deleted", lambda: check("Delete removes the selected strokes", list(last().Kinds) == [2], str(list(last().Kinds)))),
+    ("pen grab", lambda: (Gui.runCommand("Design_ScribblePen"), saved.update(c=stroke_points(0)[1]), press(0.73, 0.60))), hold,
+    ("pen drag", lambda: (path(line((0.73, 0.60), (0.73, 0.45), 10)[1:]), release(0.73, 0.45))), wait,
+    ("grabbed", lambda: check("hold the pen still on a stroke: it sticks to the pen and moves, no new stroke",
+                              list(last().Kinds) == [2] and stroke_points(0)[1].y > saved["c"].y + 1 and button("Design_ScribblePen").isChecked(),
+                              str((list(last().Kinds), stroke_points(0)[1], saved["c"])))),
     ("esc", lambda: (activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Escape))), wait,
     ("closed", lambda: check("Esc finishes the scribble", not editing())),
     ("shot end", lambda: shot("end")),

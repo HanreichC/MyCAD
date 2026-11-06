@@ -56,6 +56,8 @@ ICONS = {
     "Design_ScribbleLine": '<path d="M5 19L19 5"/>',
     "Design_ScribbleRectangle": '<rect x="4" y="6" width="16" height="12" rx="1"/>',
     "Design_ScribbleCircle": '<circle cx="12" cy="12" r="8"/>' + DOT.format(12, 12),
+    "Design_ScribbleSelect": '<path d="M12 4.5c-4.7 0-8.5 2.4-8.5 5.4 0 2 1.7 3.7 4.3 4.6" stroke-dasharray="2.4 2.2"/>'
+                             '<path d="M20.4 9.6c-.4-2.9-4-5.1-8.4-5.1" stroke-dasharray="2.4 2.2"/><path d="M11 11l9 3.6-3.9 1.4-1.5 3.9z"/>',
     "Design_ScribbleArrow": '<path d="M5 19L19 5"/><path d="M11 5h8v8"/>',
     "Design_ScribbleTriangle": '<path d="M12 4l9 16H3z"/>',
     "Design_ScribbleHexagon": '<path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/>',

@@ -3661,6 +3661,7 @@
    "group": "utilities",
    "icon": "Design_Scribble",
    "commands": [
+    "Design_ScribbleSelect",
     "Design_ScribblePencil",
     "Design_ScribblePen",
     "Design_ScribbleMarker",
@@ -3709,7 +3710,10 @@
      "ellipse",
      "fill",
      "colour",
-     "color"
+     "color",
+     "select",
+     "move",
+     "lasso"
     ],
     "de": [
      "Scribble",
@@ -3734,7 +3738,10 @@
      "Sechseck",
      "Ellipse",
      "Füllen",
-     "einfärben"
+     "einfärben",
+     "Auswählen",
+     "verschieben",
+     "Lasso"
     ]
    },
    "summary": {
@@ -3748,6 +3755,7 @@
      "Hold the pen still for a moment at the end of a stroke: it turns into a line, circle or rectangle. A line keeps following the pen and locks to horizontal, vertical and to the ends of other strokes (a blue ring shows where).",
      "Or pick a shape under Shapes and drag it out: Line or Arrow from start to end, Rectangle, Triangle or Ellipse from corner to corner, Circle or Hexagon from the center. The small arrow next to each button shows the other shapes. Shapes draw with the last pen and colour; Esc takes you back to the pen.",
      "To colour an area, pick Fill and tap inside a closed shape, or draw around any area. Tap a filled area again to give it the current colour; the eraser removes a fill when you tap inside it.",
+     "To move strokes, pick Select and tap a stroke or draw around several, then drag them. Delete removes the selection, a colour recolours it. With any pen you can also hold the pen still on a stroke for a moment: it sticks to the pen and moves with it.",
      "Erase with Eraser or with the back of the pen: wipe over a stroke and it is gone. Ctrl+Z brings it back.",
      "To draw in 3D, click Move Sheet and tap a body face (the sheet lies on it), a straight stroke (the sheet stands up along it) or empty space (the sheet turns towards you). Turn the view with the pen's side button.",
      "Click Finish Scribble or press Esc. The strokes stay in the model; double-click the scribble under Scribbles in the browser to go on drawing."
@@ -3758,6 +3766,7 @@
      "Halte den Stift am Ende eines Strichs kurz still: Er wird zur Linie, zum Kreis oder Rechteck. Eine Linie folgt dem Stift weiter und rastet waagerecht, senkrecht und an den Enden anderer Striche ein (ein blauer Ring zeigt, wo).",
      "Oder wähle unter Formen eine Form und zieh sie auf: Linie oder Pfeil von Anfang bis Ende, Rechteck, Dreieck oder Ellipse von Ecke zu Ecke, Kreis oder Sechseck von der Mitte aus. Der kleine Pfeil neben jedem Knopf zeigt die anderen Formen. Formen zeichnen mit dem zuletzt gewählten Stift und der Farbe; Esc führt zurück zum Stift.",
      "Um eine Fläche einzufärben, wähle Füllen und tippe in eine geschlossene Form, oder zeichne um eine beliebige Fläche herum. Tippst du erneut in eine gefüllte Fläche, bekommt sie die aktuelle Farbe; der Radierer entfernt eine Füllung, wenn du in sie hineintippst.",
+     "Um Striche zu verschieben, wähle Auswählen und tippe auf einen Strich oder umrande mehrere, dann zieh sie. Entf löscht die Auswahl, eine Farbe färbt sie um. Mit jedem Stift geht es auch so: Halte den Stift kurz still auf einem Strich, dann hängt er am Stift und wandert mit.",
      "Radiere mit dem Radierer oder dem hinteren Ende des Stifts: Wisch über einen Strich, und er ist weg. Strg+Z holt ihn zurück.",
      "Um in 3D zu zeichnen, klicke auf Blatt umstellen und tippe auf eine Körperfläche (das Blatt legt sich darauf), auf einen geraden Strich (das Blatt stellt sich entlang auf) oder ins Leere (das Blatt dreht sich zu dir). Die Ansicht drehst du mit der Seitentaste des Stifts.",
      "Klicke auf Scribble fertig stellen oder drücke Esc. Die Striche bleiben im Modell; ein Doppelklick auf das Scribble unter Scribbles im Browser zeichnet weiter."
