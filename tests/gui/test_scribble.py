@@ -112,11 +112,15 @@ def round_last():
     return len(pts) == 97 and r > 0 and all(abs((p - center).Length - r) < 1e-6 for p in pts)
 
 
-def darkest(fx, fy):
-    """dunkelster Grauwert in einer waagerechten Reihe ±5 px um diesen Punkt der 3D-Ansicht (Bildschirmfoto)"""
+def row(fx, fy, half=5):
+    """Grauwerte einer waagerechten Reihe ±half px um diesen Punkt der 3D-Ansicht (Bildschirmfoto)"""
     img = mw.grab().toImage(); dpr = img.devicePixelRatio()
     p = view().mapTo(mw, at(fx, fy))
-    return min(QtGui.QColor(img.pixel(int((p.x() + dx) * dpr), int(p.y() * dpr))).lightness() for dx in range(-5, 6))
+    return [QtGui.QColor(img.pixel(int((p.x() + dx) * dpr), int(p.y() * dpr))).lightness() for dx in range(-half, half + 1)]
+
+
+def darkest(fx, fy):
+    return min(row(fx, fy))
 
 
 def normal():
@@ -142,6 +146,8 @@ in_order([
     ("folder order", lambda: check("browser: Scribbles before Notes", [o.Name.rstrip("0123456789") for o in doc().getObject("Root").Group if o.TypeId == "App::DocumentObjectGroup"][-2:] == ["Scribbles", "Notes"],
                                    str([o.Name for o in doc().getObject("Root").Group]))),
     ("shot empty", lambda: shot("empty")),
+    ("paper", lambda: (lambda r: check("the sheet is light paper with grain (paper shader runs)", sum(r) / len(r) > 225 and max(r) - min(r) >= 4, str(r)))
+                      (row(0.62, 0.62, 30))),
 
     ("free", lambda: stroke([(0.40 + 0.01 * k, 0.62 + 0.03 * ((-1) ** k)) for k in range(16)])), wait,
     ("free kept", lambda: check("zigzag stays a free stroke", kinds() == [0], str(kinds()))),

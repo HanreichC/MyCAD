@@ -79,7 +79,7 @@ Closed a note? It's still under **Notes** in the browser, double-click to open i
 
 <div align="center">
 
-![Ideas drawn on tracing paper over a bracket in MyCAD](docs/images/scribble.png)
+![A slot idea scribbled on paper in MyCAD](docs/images/scribble.png)
 
 </div>
 

@@ -123,11 +123,14 @@ def editing_scribble():
 
 
 def slot_idea():
-    """Transparentpapier über dem Bracket, von oben: Ideen direkt auf das Teil gezeichnet"""
+    """Das Bracket von oben auf Papier skizziert (Bleistift), darüber die Ideen: Langloch, Rundungen, Kante"""
     [o for o in doc().Objects if o.TypeId == "Design::Note"][0].Visibility = False
-    s = editing_scribble(); s.Label = "Slot idea"; s.Tracing = True
+    s = editing_scribble(); s.Label = "Slot idea"
     slot = [(30, 19), (50, 19), (50, 31), (30, 31), (30, 19)]
     draw(s, App.Placement(), [
+        (wobble([(0, 0), (80, 0), (80, 50), (0, 50), (0, 0)], 0.05), 0.22, PENCIL, RECT, INK),
+        (wobble(circle(22, 25, 9), 0.04), 0.22, PENCIL, FREE, INK),
+        (wobble(circle(58, 25, 9), 0.04), 0.22, PENCIL, FREE, INK),
         (slot, 0, MARKER, FILL, BLUE),
         (slot, 0.3, PEN, RECT, INK),
         (circle(22, 25, 13), 0.3, PEN, CIRCLE, RED),

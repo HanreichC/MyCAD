@@ -348,6 +348,7 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderPa
         varying vec2 world;   // Punkt auf dem Blatt (mm)
         varying vec2 local;   // 1 = Bildrand, für das Auslaufen
         varying float facing; // 1 = gerade drauf, 0 = Blatt von der Kante gesehen
+        varying vec2 origin;  // Blattpunkt in der Bildmitte
         void main()
         {
             vec3 n = gl_NormalMatrix * vec3(0.0, 0.0, 1.0);
@@ -358,6 +359,7 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderPa
             vec2 center = (gl_ModelViewMatrixInverse * vec4(0.0, 0.0, z, 1.0)).xy;
             local = gl_Vertex.xy;
             world = center + local * r;
+            origin = center;
             facing = abs(normalize(n).z);
             gl_Position = gl_ModelViewProjectionMatrix * vec4(world, 0.0, 1.0);
         }
@@ -371,11 +373,35 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderPa
         varying vec2 world;
         varying vec2 local;
         varying float facing;
+        varying vec2 origin;
         // Rasterpunkte mit Abstand s, rund 1 px Radius
         float dots(float s, vec2 px)
         {
             vec2 d = abs(fract(world / s + 0.5) - 0.5) * s / px;
             return 1.0 - smoothstep(0.7, 1.5, length(d));
+        }
+        float hash(vec2 c)  // c: ganzzahlige Zelle
+        {
+            vec3 p = fract(vec3(c.xyx) * 0.1031);
+            p += dot(p, p.yzx + 33.33);
+            return fract((p.x + p.y) * p.z);
+        }
+        // Rauschen in Zellen der Größe cell (mm), fest auf dem Blatt; es wiederholt sich alle 1024 Zellen. Gerechnet
+        // wird ab einer Kachelecke nahe der Bildmitte, damit die Zahlen auch weit weg vom Ursprung klein bleiben.
+        float noise(float cell)
+        {
+            float tile = cell * 1024.0;
+            vec2 p = (world - floor(origin / tile) * tile) / cell;
+            vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
+            return mix(mix(hash(mod(i, 1024.0)), hash(mod(i + vec2(1.0, 0.0), 1024.0)), u.x),
+                       mix(hash(mod(i + vec2(0.0, 1.0), 1024.0)), hash(mod(i + vec2(1.0, 1.0), 1024.0)), u.x), u.y);
+        }
+        // Papierstruktur, auf dem Bildschirm immer etwa size px groß: zwei Zweierstufen, beim Zoomen weich überblendet
+        float structure(float mmPerPx, float size)
+        {
+            float l = log2(mmPerPx * size);
+            float cell = exp2(floor(l));
+            return mix(noise(cell), noise(cell * 2.0), fract(l)) - 0.5;
         }
         void main()
         {
@@ -391,7 +417,12 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderPa
             if (a < 0.004) {
                 discard;
             }
-            gl_FragColor = vec4(mix(paperColor.rgb, dotColor, clamp(ink / max(fill, ink), 0.0, 1.0)), a);
+            // Papier statt Fläche: feine Körnung (Zahn) und leichte Wolken (Fasern). Weiß etwas zurückgenommen,
+            // sonst schnitte 1,0 die helle Hälfte der Körnung ab
+            // ponytail: Stärken ohne MyStyle-Token (wie glass.noteTint wäre das ein eigener Wert für Scribbles)
+            float m = max(px.x, px.y);
+            vec3 sheet = min(paperColor.rgb, vec3(0.975)) + 0.045 * structure(m, 2.5) + 0.03 * structure(m, 110.0);
+            gl_FragColor = vec4(mix(sheet, dotColor, clamp(ink / max(fill, ink), 0.0, 1.0)), a);
         }
     )";
     fragment->parameter.set1Value(0, color);
