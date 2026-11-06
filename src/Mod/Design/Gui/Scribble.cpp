@@ -1075,6 +1075,7 @@ void ViewProviderScribble::setEditViewer(Gui::View3DInventorViewer* viewer, int 
         currentTool = lastDrawTool;  // jedes Öffnen beginnt mit einem Stift
     }
     setTool(currentTool);
+    lookAtSheet();  // jedes Öffnen (Toolbar, Doppelklick, Bearbeiten im Browser) schaut gerade aufs Blatt
 }
 
 void ViewProviderScribble::unsetEditViewer(Gui::View3DInventorViewer* viewer)

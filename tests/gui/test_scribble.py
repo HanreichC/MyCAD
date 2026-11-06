@@ -193,8 +193,12 @@ in_order([
 
     ("save", reopen_file), wait, wait,
     ("loaded", lambda: check("after reload: strokes, kinds and sheet", kinds() == [0, 1, 1, 3, 0] and len(s().Points) == sum(s().Counts))),
-    ("reopen", lambda: (setattr(s(), "Visibility", True), Gui.ActiveDocument.setEdit(s().Name))), wait,
+    ("iso again", lambda: Gui.ActiveDocument.ActiveView.viewIsometric()), wait,
+    ("reopen", lambda: (setattr(s(), "Visibility", True), Gui.ActiveDocument.setEdit(s().Name))), wait, wait,
     ("reopened", lambda: check("double-click/setEdit reopens the sheet", editing())),
+    ("top", lambda: check("reopening looks straight at the sheet (top view)",
+                          (Gui.ActiveDocument.ActiveView.getViewDirection() - App.Vector(0, 0, -1)).Length < 1e-3,
+                          str(Gui.ActiveDocument.ActiveView.getViewDirection()))),
     ("esc", lambda: (activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Escape))), wait,
     ("closed", lambda: check("Esc finishes the scribble", not editing())),
     ("shot end", lambda: shot("end")),

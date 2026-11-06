@@ -401,11 +401,7 @@ private:
         doc->recompute();
         doc->commitTransaction();
         Gui::Document* gdoc = Gui::Application::Instance->getDocument(doc);
-        if (gdoc->setEdit(gdoc->getViewProvider(scribble))) {
-            if (auto vp = DesignGui::ViewProviderScribble::editing()) {
-                vp->lookAtSheet();
-            }
-        }
+        gdoc->setEdit(gdoc->getViewProvider(scribble));
     }
 };
 
