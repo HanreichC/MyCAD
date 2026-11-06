@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""README-Bilder neu erzeugen: docs/images/workspace.png, notes.png und start.png. Läuft in MyCAD, mit eigenem Home:
+"""README-Bilder neu erzeugen: docs/images/workspace.png, notes.png, scribble.png, scribble-3d.png und start.png. Läuft in MyCAD, mit eigenem Home:
     MYCAD_HOME=/tmp/readme tests/gui/run.sh tools/readme_images.py /tmp/readme/log"""
+import math
 import os
 import sys
 
@@ -79,6 +80,90 @@ def show_note_in_browser():
         tree.findItems(label, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive)[0].setExpanded(True)
 
 
+# Scribbles: Striche direkt in die Eigenschaften (wie sie die Werkzeuge speichern), damit das Bild genau so wird
+INK, BLUE, RED, GREEN, YELLOW = (0x1D / 255, 0x1D / 255, 0x1F / 255), (0, 0x88 / 255, 1), (1, 0x38 / 255, 0x3C / 255), \
+    (0x34 / 255, 0xC7 / 255, 0x59 / 255), (1, 0xCC / 255, 0)
+PENCIL, PEN, MARKER = 0, 1, 2
+FREE, LINE, CIRCLE, RECT, POLYGON, ELLIPSE, FILL = range(7)
+
+
+def circle(cx, cy, r, n=96):
+    return [(cx + r * math.cos(2 * math.pi * i / n), cy + r * math.sin(2 * math.pi * i / n)) for i in range(n + 1)]
+
+
+def arrow(a, b, head=3.0):
+    """wie das Pfeil-Werkzeug: Ende, Spitze, Flügel, Flügel, Spitze"""
+    length = math.dist(a, b); ux, uy = (b[0] - a[0]) / length, (b[1] - a[1]) / length
+    bx, by, w = b[0] - ux * head, b[1] - uy * head, head * 0.55
+    return [a, b, (bx - uy * w, by + ux * w), (bx + uy * w, by - ux * w), b]
+
+
+def wobble(points, amount=0.25):
+    """Hand-Strich: leicht zittrig, aber gleichmäßig"""
+    return [(x + amount * math.sin(i * 1.7), y + amount * math.cos(i * 1.3)) for i, (x, y) in enumerate(points)]
+
+
+def draw(scribble, sheet, strokes):
+    """strokes: (Punkte auf dem Blatt, Breite mm, Werkzeug, Form, Farbe)"""
+    normal = sheet.Rotation.multVec(App.Vector(0, 0, 1))
+    pts, widths, counts, tools, kinds, colors = [], [], [], [], [], []
+    for points, width, tool, kind, color in strokes:
+        pts += [sheet.multVec(App.Vector(x, y, 0)) for x, y in points]
+        widths += [width] * len(points)
+        counts.append(len(points)); tools.append(tool); kinds.append(kind)
+        colors.append(tuple(float(c) for c in color) + ({PENCIL: 0.8, PEN: 1.0, MARKER: 0.35}[tool],))
+    scribble.Sheet = sheet
+    scribble.Points = pts; scribble.Widths = widths; scribble.Tools = tools; scribble.Kinds = kinds
+    scribble.Colors = colors; scribble.Normals = [normal] * len(counts)
+    scribble.Counts = counts  # zuletzt: erst dann passen alle Listen zusammen
+
+
+def editing_scribble():
+    return Gui.ActiveDocument.getInEdit().Object
+
+
+def slot_idea():
+    """Transparentpapier über dem Bracket, von oben: Ideen direkt auf das Teil gezeichnet"""
+    [o for o in doc().Objects if o.TypeId == "Design::Note"][0].Visibility = False
+    s = editing_scribble(); s.Label = "Slot idea"; s.Tracing = True
+    slot = [(30, 19), (50, 19), (50, 31), (30, 31), (30, 19)]
+    draw(s, App.Placement(), [
+        (slot, 0, MARKER, FILL, BLUE),
+        (slot, 0.3, PEN, RECT, INK),
+        (circle(22, 25, 13), 0.3, PEN, CIRCLE, RED),
+        (arrow((3, 46), (12.5, 34.5)), 0.3, PEN, POLYGON, INK),  # Pfeil auf das Loch
+        (wobble([(80 - 10 + 10 * math.cos(t / 20 * math.pi / 2), 50 - 10 + 10 * math.sin(t / 20 * math.pi / 2)) for t in range(21)], 0.15), 0.35, PEN, FREE, GREEN),
+        (wobble([(80 - 10 + 10 * math.cos(t / 20 * math.pi / 2), 10 - 10 * math.sin(t / 20 * math.pi / 2)) for t in range(21)], 0.15), 0.35, PEN, FREE, GREEN),
+        (wobble([(x, 50) for x in range(4, 70, 3)], 0.1), 1.6, MARKER, FREE, YELLOW),
+        ([(30, 36), (50, 36)], 0.25, PENCIL, LINE, INK),  # Maß über dem Langloch
+        ([(30, 34.5), (30, 37.5)], 0.25, PENCIL, LINE, INK),
+        ([(50, 34.5), (50, 37.5)], 0.25, PENCIL, LINE, INK),
+    ])
+    v = Gui.ActiveDocument.ActiveView
+    v.viewTop(); Gui.SendMsgToActiveView("ViewFit"); Gui.runCommand("Std_ViewZoomOut")
+
+
+def wall_idea():
+    """Zweites Blatt steht auf der Platte (Blatt umstellen): eine Wand mit Loch, im Raum gesehen"""
+    [o for o in doc().Objects if o.Label == "Slot idea"][0].Visibility = False  # liegt unter der Platte
+    s = editing_scribble(); s.Label = "Wall idea"
+    wall = [(0, 0), (80, 0), (80, 28), (0, 28), (0, 0)]
+    draw(s, App.Placement(App.Vector(0, 25, 12), App.Rotation(App.Vector(1, 0, 0), 90)), [
+        (wall, 0, MARKER, FILL, GREEN),
+        (wall, 0.35, PEN, RECT, INK),
+        (circle(40, 15, 7), 0, MARKER, FILL, BLUE),
+        (circle(40, 15, 7), 0.35, PEN, CIRCLE, INK),
+    ])
+    v = Gui.ActiveDocument.ActiveView
+    v.viewIsometric(); Gui.SendMsgToActiveView("ViewFit"); Gui.runCommand("Std_ViewZoomOut")
+
+
+def show_scribbles_in_browser():
+    tree = visible(QtWidgets.QTreeWidget)[0]
+    for label in ("Design", "Scribbles"):
+        tree.findItems(label, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive)[0].setExpanded(True)
+
+
 def clear_focus():
     widget = QtWidgets.QApplication.focusWidget()
     if widget:
@@ -105,6 +190,15 @@ in_order([
     ("type", type_note), wait,
     ("browser", show_note_in_browser), wait,
     ("notes", lambda: picture("notes")),
+    ("scribble", lambda: Gui.runCommand("Design_Scribble")), wait,
+    ("slot idea", slot_idea), wait,
+    ("scribble browser", show_scribbles_in_browser), wait,
+    ("scribble picture", lambda: picture("scribble")),
+    ("finish slot", lambda: Gui.runCommand("Design_ScribbleFinish")), wait,
+    ("scribble 2", lambda: Gui.runCommand("Design_Scribble")), wait,
+    ("wall idea", wall_idea), wait, wait,
+    ("scribble 3d", lambda: picture("scribble-3d")),
+    ("finish wall", lambda: Gui.runCommand("Design_ScribbleFinish")), wait,
     ("home", home), wait, wait,
     ("focus", clear_focus), wait,
     ("start", lambda: picture("start")),

@@ -77,13 +77,29 @@ Closed a note? It's still under **Notes** in the browser, double-click to open i
 
 ## Ideas first. Scribble.
 
-Click **Scribble** in the toolbar and a sheet of paper fills the view. Grab your pen tablet and draw: **Pencil**, **Fineliner** and **Marker**, in five colors. Press harder and the line gets thicker. Flip the pen to erase.
+<div align="center">
 
-Hold the pen still at the end of a stroke and it straightens out into a clean line, circle or rectangle. Or pick a shape under Shapes (line, arrow, rectangle, triangle, hexagon, circle, ellipse) and just drag it out. **Fill** colours an area: tap inside a shape, or draw around any area. Lines lock to horizontal, vertical and to the ends of your other strokes.
+![Ideas drawn on tracing paper over a bracket in MyCAD](docs/images/scribble.png)
 
-Then go 3D. **Move Sheet** lays the paper onto any face of your model, or stands it up along a line you drew, so you can sketch a frame in space. Orbit, and the paper fades so you can see your strokes and your model together. **Tracing Paper** lets you draw right over a body.
+</div>
 
-Happy with an idea? **Convert to Sketch** turns your lines, circles and rectangles into a real sketch, joined and ready to dimension and extrude. Your scribbles stay in the design under **Scribbles** in the browser.
+Click **Scribble** in the toolbar and a sheet of paper fills the view. Grab your pen tablet and draw with **Pencil**, **Fineliner** or **Marker** in five colors. Press harder and the line gets thicker. Flip the pen over to erase.
+
+Hold the pen still at the end of a stroke and it straightens into a clean line, circle or rectangle. Lines snap to horizontal, vertical and to the ends of your other strokes.
+
+Under **Shapes** you drag out a line, arrow, rectangle, triangle, hexagon, circle or ellipse. **Fill** colors an area: tap inside a shape, or draw around the part you want filled.
+
+**Tracing Paper** lets the model show through, so you can draw right on top of a part.
+
+<div align="center">
+
+![A scribbled wall standing upright on a bracket in MyCAD](docs/images/scribble-3d.png)
+
+</div>
+
+Then go 3D. **Move Sheet** lays the paper onto any face of your model, or stands it up along a line you drew, so you can sketch a wall or a rib right where it goes. Orbit around it and the paper fades, so you see your strokes and the model together.
+
+Happy with an idea? **Convert to Sketch** turns your lines, circles, ellipses and other shapes into a real sketch, joined up and ready to dimension and extrude. Your scribbles stay in the design under **Scribbles** in the browser.
 
 <br>
 
@@ -137,6 +153,7 @@ Bodies can also have real textures: six woods (**Oak**, **Walnut**, **Maple**, *
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
 | **Solids** | 16 create, 12 modify and 6 construction tools |
 | **Notes** | Saved in the design, lines ending in `=` are calculated |
+| **Scribbles** | Pen tablet with pressure, 7 shapes, fill, sheets in 3D, convert to sketch |
 | **Export** | STL · 3MF · STEP · DXF (sketches) |
 | **Import** | STEP · DXF · SVG |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
