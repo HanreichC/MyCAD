@@ -86,8 +86,18 @@ Nib nib(long tool)
     }
 }
 
-/// Tinte: feste Werte des hellen Modus (MyStyle labelPrimary), das Blatt ist in Hell und Dunkel hell wie Post-its
+/// Tinte: gespeichert als labelPrimary des hellen Modus, damit die Datei nicht vom Modus abhängt
 constexpr Base::Color Ink(0x1D / 255.0F, 0x1D / 255.0F, 0x1F / 255.0F);
+
+/// Farbe auf dem Bildschirm: schwarze Tinte ist im Dunkelmodus labelPrimary (hell), auf dem dunklen Blatt und im Modell
+Base::Color shown(const Base::Color& c)
+{
+    if (!Gui::Shell::theme().dark || std::abs(c.r - Ink.r) + std::abs(c.g - Ink.g) + std::abs(c.b - Ink.b) >= 0.01F) {
+        return c;
+    }
+    const QColor light = Gui::Shell::theme().labelPrimary;
+    return Base::Color(float(light.redF()), float(light.greenF()), float(light.blueF()), c.a);
+}
 
 Tool currentTool = Tool::Pen;
 Tool lastDrawTool = Tool::Pen;  ///< nach "Blatt umstellen" geht es mit diesem Werkzeug weiter
@@ -150,8 +160,12 @@ Base::Placement sheetAt(const Base::Vector3d& origin, Base::Vector3d xHint, Base
 }
 
 /// Band eines Strichs in seiner Blatt-Ebene, mit runden Enden. Breite je Punkt, also dünner bei wenig Druck.
-SoSeparator* strokeNode(const Stroke& s, const Base::Color& color)
+SoSeparator* strokeNode(const Stroke& s)
 {
+    Base::Color color = shown(s.color);
+    if (s.tool == Design::Scribble::Marker && Gui::Shell::theme().dark) {
+        color.a = 0.6F;  // ponytail: kein MyStyle-Token; mit 0,35 wird Leuchtfarbe auf dunklem Grund olivbraun
+    }
     auto sep = new SoSeparator;
     auto material = new SoMaterial;
     material->diffuseColor.setValue(color.r, color.g, color.b);
@@ -224,8 +238,9 @@ SoSeparator* strokeNode(const Stroke& s, const Base::Color& color)
 }
 
 /// 1 px breite Mittellinie: so bleibt ein Strich sichtbar, auch wenn man sein Blatt von der Kante sieht
-SoSeparator* hairlineNode(const Stroke& s, const Base::Color& color)
+SoSeparator* hairlineNode(const Stroke& s)
 {
+    const Base::Color color = shown(s.color);
     auto sep = new SoSeparator;
     auto material = new SoMaterial;
     material->diffuseColor.setValue(color.r, color.g, color.b);
@@ -273,10 +288,11 @@ SoCallback* depthClamp(bool on)
     return cb;
 }
 
-/// Zeichenblatt: helles Papier mit Punktraster, das beim Zoomen in Zehnerschritten dichter oder gröber wird.
+/// Zeichenblatt: Papier (hell Weiß, dunkel system.gray5) mit Punktraster in labelTertiary, das beim Zoomen in
+/// Zehnerschritten dichter oder gröber wird.
 /// Wie das Bodenraster der Shell legt der Shader ein Quadrat um den Punkt des Blatts in der Bildmitte. Sieht man schräg
 /// aufs Blatt (3D), wird es fast durchsichtig, damit man die Striche und das Modell im Raum sieht.
-SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color)
+SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderParameter3f* dotColor)
 {
     auto vertex = new SoVertexShader;
     vertex->sourceType = SoShaderObject::GLSL_PROGRAM;
@@ -304,6 +320,7 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color)
     fragment->sourceProgram = R"(
         #version 120
         uniform vec4 paperColor;  // a = Deckkraft des Blatts
+        uniform vec3 dotColor;
         varying vec2 world;
         varying vec2 local;
         varying float facing;
@@ -327,11 +344,11 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color)
             if (a < 0.004) {
                 discard;
             }
-            vec3 grey = vec3(0.63, 0.63, 0.65);  // labelTertiary (hell)
-            gl_FragColor = vec4(mix(paperColor.rgb, grey, clamp(ink / max(fill, ink), 0.0, 1.0)), a);
+            gl_FragColor = vec4(mix(paperColor.rgb, dotColor, clamp(ink / max(fill, ink), 0.0, 1.0)), a);
         }
     )";
     fragment->parameter.set1Value(0, color);
+    fragment->parameter.set1Value(1, dotColor);
     auto program = new SoShaderProgram;
     program->shaderObject.set1Value(0, vertex);
     program->shaderObject.set1Value(1, fragment);
@@ -403,7 +420,7 @@ struct ViewProviderScribble::Private
 
     ViewProviderScribble* vp;
     SoSwitch* displaySwitch;   ///< Anzeige im Modell; im Zeichenmodus aus, dann zeigt das Blatt die Striche
-    SoSeparator* displayInk;   ///< Striche mit Tiefe, Haarlinien, Tinte im Dunkelmodus hell
+    SoSeparator* displayInk;   ///< Striche mit Tiefe, Haarlinien
     SoSeparator* editRoot;     ///< Zeichenmodus: Blatt, Striche, laufender Strich, Fangpunkt, über allem anderen
     SoSeparator* editInk;
     SoSeparator* live;
@@ -411,6 +428,7 @@ struct ViewProviderScribble::Private
     SoCoordinate3* snapCoords;
     SoTransform* sheetTransform;
     SoShaderParameter4f* paperColor;
+    SoShaderParameter3f* dotColor;
     SoOneShotSensor rebuildSensor;
 
     Gui::View3DInventorViewer* viewer = nullptr;
@@ -558,7 +576,9 @@ ViewProviderScribble::Private::Private(ViewProviderScribble* vp)
     sheetTransform = new SoTransform;
     paperColor = new SoShaderParameter4f;
     paperColor->name = "paperColor";
-    annotation->addChild(paperNode(sheetTransform, paperColor));
+    dotColor = new SoShaderParameter3f;
+    dotColor->name = "dotColor";
+    annotation->addChild(paperNode(sheetTransform, paperColor, dotColor));
     auto ink = inkGroup();
     editInk = new SoSeparator;
     live = new SoSeparator;
@@ -594,19 +614,12 @@ void ViewProviderScribble::Private::rebuild()
     displayInk->removeAllChildren();
     editInk->removeAllChildren();
     endpoints.clear();
-    const bool dark = Gui::Shell::theme().dark;
-    const QColor light = Gui::Shell::theme().labelPrimary;
     for (const Stroke& s : object()->strokes()) {
-        // ohne Blatt im Dunkelmodus: schwarze Tinte wird hell, sonst verschwände sie im Hintergrund
-        Base::Color shown = s.color;
-        if (dark && std::abs(s.color.r - Ink.r) + std::abs(s.color.g - Ink.g) + std::abs(s.color.b - Ink.b) < 0.01F) {
-            shown = Base::Color(float(light.redF()), float(light.greenF()), float(light.blueF()), s.color.a);
-        }
-        displayInk->addChild(strokeNode(s, shown));
-        editInk->addChild(strokeNode(s, s.color));
+        displayInk->addChild(strokeNode(s));
+        editInk->addChild(strokeNode(s));
         if (s.tool != Design::Scribble::Marker) {
-            displayInk->addChild(hairlineNode(s, shown));
-            editInk->addChild(hairlineNode(s, s.color));
+            displayInk->addChild(hairlineNode(s));
+            editInk->addChild(hairlineNode(s));
         }
         if (!s.points.empty() && s.kind != Design::Scribble::Circle && s.kind != Design::Scribble::Rectangle) {
             endpoints.push_back(s.points.front());
@@ -622,7 +635,10 @@ void ViewProviderScribble::Private::updatePaper()
 {
     // Beim Umstellen fast durchsichtig: man muss die Körperfläche sehen, auf die man tippt
     const float opacity = active == vp && currentTool == Tool::Sheet ? 0.15F : object()->Tracing.getValue() ? 0.3F : 1.0F;
-    paperColor->value.setValue(1, 1, 1, opacity);
+    const Gui::Shell::Theme& t = Gui::Shell::theme();
+    const QColor paper = t.dark ? t.gray5 : QColor(Qt::white);
+    paperColor->value.setValue(float(paper.redF()), float(paper.greenF()), float(paper.blueF()), opacity);
+    dotColor->value.setValue(float(t.labelTertiary.redF()), float(t.labelTertiary.greenF()), float(t.labelTertiary.blueF()));
 }
 
 void ViewProviderScribble::Private::updateSheet()
@@ -946,7 +962,7 @@ void ViewProviderScribble::Private::showLive()
 {
     live->removeAllChildren();
     if (!current.points.empty()) {
-        live->addChild(strokeNode(current, current.color));
+        live->addChild(strokeNode(current));
     }
 }
 
@@ -1074,6 +1090,7 @@ void ViewProviderScribble::setEditViewer(Gui::View3DInventorViewer* viewer, int 
     if (currentTool == Tool::Eraser || currentTool == Tool::Sheet) {
         currentTool = lastDrawTool;  // jedes Öffnen beginnt mit einem Stift
     }
+    d->rebuild();  // Hell/Dunkel kann seit dem letzten Aufbau gewechselt haben: Tinte passend zum Blatt
     setTool(currentTool);
     lookAtSheet();  // jedes Öffnen (Toolbar, Doppelklick, Bearbeiten im Browser) schaut gerade aufs Blatt
 }
