@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""MyCAD-Icons im SF-Symbols-Stil: 24er-Raster, Strich 1.7, runde Enden, Farbe = currentColor.
+"""MyCAD-Icons im SF-Symbols-Stil: 24er-Raster, Strich 1.8 (MyStyle I-1), runde Enden, Farbe = currentColor.
 Die Shell färbt currentColor beim Laden in die Textfarbe des Themes.
 Erzeugt src/Gui/Shell/icons/<Befehl>.svg und icons.qrc.   python3 tools/make_icons.py"""
 import math
@@ -45,17 +45,19 @@ ICONS = {
     "Design_Appearance": '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-2 0-1.4-1.3-1.8-1.3-3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/>' + DOT.format(7.5, 11) + DOT.format(10, 7) + DOT.format(15, 7.5),
     "Design_Rib": '<path d="M4 4v16h16"/><path d="M4 9l11 11M4 13l7 7" stroke-width="2.6"/>',
     "Design_Parameters": '<path d="M14.5 4c-2 0-2.7 1.4-3 3.4L10 17c-.3 2-1 3-3 3"/><path d="M8 10h7"/><path d="M15.5 13l4.5 5M20 13l-4.5 5"/>',
+    "Design_Note": '<path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/>',
     "Design_AnglePlane": '<path d="M3 19h18"/><path d="M6 19l9-13h5l-9 13"/><path d="M14 19a5 5 0 0 0-1.6-3.6"/>',
     "Design_Web": '<path d="M3 20h18M3 20V8M21 20V8"/><path d="M8 20v-8M16 20v-8M3 12h18" stroke-width="2.4"/>',
     "Design_ReplaceFace": '<path d="M4 14l4-4h12l-4 4z"/><path d="M4 20l4-4h12l-4 4z"' + DASH + '/><path d="M12 6v6M9.5 8.5L12 6l2.5 2.5"/>',
     "Design_SplitFace": '<path d="M3 17l5-10h13l-5 10z"/><path d="M12 7l-3 10"/>',
     "Design_Emboss": '<rect x="3" y="13" width="18" height="7" rx="1"/><path d="M8 13V7h8v6M8 7l4 3 4-3"/>',
-    "Design_Note": '<path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/>',
     "Design_Joint": '<circle cx="8" cy="16" r="4.5"/><circle cx="16" cy="8" r="4.5"/><path d="M11.2 12.8l1.6-1.6"/>' + DOT.format(8, 16) + DOT.format(16, 8),
-    "Window_Minimize": '<path d="M4 12h16"/>',
-    "Window_Maximize": '<rect x="4.5" y="4.5" width="15" height="15" rx="2"/>',
-    "Window_Restore": '<rect x="5" y="9" width="10" height="10" rx="1.5"/><path d="M9 9V6.5A1.5 1.5 0 0 1 10.5 5H17.5A1.5 1.5 0 0 1 19 6.5V13.5A1.5 1.5 0 0 1 17.5 15H15"/>',
-    "Window_Close": '<path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/>',
+    "Window_Sidebar": '<rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M9.5 5v14"/>',
+    # Fensterknöpfe: MyStyle platforms/icons/window-*.svg (Kreuz wie überall, Rest im 12er-Feld)
+    "Window_Minimize": '<path d="M6 12h12"/>',
+    "Window_Maximize": '<rect x="6" y="6" width="12" height="12" rx="2.5"/>',
+    "Window_Restore": '<rect x="6" y="9" width="9" height="9" rx="2"/><path d="M9 6h6.5A2.5 2.5 0 0 1 18 8.5V15"/>',
+    "Window_Close": '<path d="M7 7l10 10M17 7 7 17"/>',
     "Window_Home": '<path d="M4 11.5L12 5l8 6.5"/><path d="M6.5 9.5V19h11V9.5"/><path d="M10 19v-5h4v5"/>',
     "Window_Back": '<path d="M14.5 6l-6 6 6 6"/>',
     "Window_Help": '<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.6a2.4 2.4 0 1 1 3.3 2.2c-.6.3-1 .8-1 1.5v.6"/>' + DOT.format(12, 16.6).replace('r="1.7"', 'r="1.1"'),
@@ -186,13 +188,13 @@ ICONS = {
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     for name, body in ICONS.items():
-        (OUT / f"{name}.svg").write_text(
+        (OUT / f"{name}.svg").write_text(newline="\n", data=
             '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" '
-            'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'
+            'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
             + body + "</svg>\n"
         )
     files = "\n".join(f"        <file>{n}.svg</file>" for n in ICONS)
-    (OUT / "icons.qrc").write_text(f'<RCC>\n    <qresource prefix="/mycad/icons">\n{files}\n    </qresource>\n</RCC>\n')
+    (OUT / "icons.qrc").write_text(newline="\n", data=f'<RCC>\n    <qresource prefix="/mycad/icons">\n{files}\n    </qresource>\n</RCC>\n')
     print(f"{len(ICONS)} icons -> {OUT}")
 
 

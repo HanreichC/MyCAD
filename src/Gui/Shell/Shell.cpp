@@ -1064,7 +1064,7 @@ public:
             auto btn = new QToolButton;
             btn->setObjectName(QString::fromLatin1(name));
             btn->setIcon(designIcon(QString::fromLatin1(icon)));
-            btn->setIconSize(QSize(Token::IconL, Token::IconL));  // so groß wie die Toolbar-Knöpfe daneben
+            btn->setIconSize(QSize(Token::IconWindow, Token::IconWindow));
             btn->setFixedSize(Token::WindowButton, Token::WindowButton);
             btn->setToolTip(tip);
             btn->setAccessibleName(tip);
@@ -3697,7 +3697,7 @@ void Gui::Shell::install()
             auto btn = new QToolButton;
             btn->setObjectName(QStringLiteral("GlassButton"));
             btn->setIcon(designIcon(QStringLiteral("Window_Sidebar")));
-            btn->setIconSize(QSize(Token::IconL, Token::IconL));
+            btn->setIconSize(QSize(Token::IconWindow, Token::IconWindow));
             btn->setFixedSize(Token::WindowButton, Token::WindowButton);
             btn->setCursor(Qt::ArrowCursor);
             btn->setToolTip(tip);
