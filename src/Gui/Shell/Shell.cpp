@@ -3689,6 +3689,7 @@ void Gui::Shell::install()
         toolbar({"#FILE", "Std_Save", "Std_Undo", "Std_Redo",
                  "#DRAW", "Design_ScribblePencil", "Design_ScribblePen", "Design_ScribbleMarker", "Design_ScribbleEraser",
                  "Design_ScribbleBlack|Design_ScribbleBlue|Design_ScribbleRed|Design_ScribbleGreen|Design_ScribbleYellow",
+                 "#SHAPES", "Design_ScribbleLine", "Design_ScribbleRectangle", "Design_ScribbleCircle",
                  "#SHEET", "Design_ScribbleSheet",
                  "#UTILITIES", "Design_Note"});
     QWidget* header = content();

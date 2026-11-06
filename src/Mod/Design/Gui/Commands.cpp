@@ -2867,6 +2867,9 @@ void CreateDesignCommands()
              "Move Sheet: tap a body face to lay the sheet on it, a straight stroke to stand it up along that line, "
              "or empty space to turn it towards you",
              Tool::Sheet);
+        tool("Design_ScribbleLine", "Line", "Line: drag from start to end. It snaps level, plumb and to stroke ends", Tool::Line);
+        tool("Design_ScribbleRectangle", "Rectangle", "Rectangle: drag from one corner to the opposite one", Tool::Rectangle);
+        tool("Design_ScribbleCircle", "Circle", "Circle: drag from the center outwards", Tool::Circle);
         // Farben: MyStyle-Systemfarben des hellen Modus, das Blatt ist immer hell
         const struct
         {

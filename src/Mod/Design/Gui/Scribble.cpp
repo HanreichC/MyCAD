@@ -100,13 +100,19 @@ Base::Color shown(const Base::Color& c)
 }
 
 Tool currentTool = Tool::Pen;
-Tool lastDrawTool = Tool::Pen;  ///< nach "Blatt umstellen" geht es mit diesem Werkzeug weiter
+Tool lastDrawTool = Tool::Pen;  ///< nach "Blatt umstellen" geht es mit diesem Werkzeug weiter; Formen zeichnen mit ihm
 Base::Color currentColor = Ink;
 ViewProviderScribble* active = nullptr;
 
+bool isPen(Tool t)
+{
+    return t == Tool::Pencil || t == Tool::Pen || t == Tool::Marker;
+}
+
 constexpr std::pair<const char*, Tool> ToolCommands[] = {
     {"Design_ScribblePencil", Tool::Pencil}, {"Design_ScribblePen", Tool::Pen}, {"Design_ScribbleMarker", Tool::Marker},
-    {"Design_ScribbleEraser", Tool::Eraser}, {"Design_ScribbleSheet", Tool::Sheet},
+    {"Design_ScribbleEraser", Tool::Eraser}, {"Design_ScribbleSheet", Tool::Sheet}, {"Design_ScribbleLine", Tool::Line},
+    {"Design_ScribbleRectangle", Tool::Rectangle}, {"Design_ScribbleCircle", Tool::Circle},
 };
 
 QAction* commandAction(const char* name)
@@ -199,10 +205,12 @@ SoSeparator* strokeNode(const Stroke& s)
         cap(s.points[0], side, normal % side, halfWidth(0), 8);
         cap(s.points[0], side * -1, (normal % side) * -1, halfWidth(0), 8);
     }
-    else {
+    std::vector<int> stripSizes;
+    // ein Stück a..b ohne Knick: Band entlang der Punkte, runde Enden an beiden Seiten
+    const auto run = [&](size_t a, size_t b) {
         Base::Vector3d side, firstSide, firstDir, dir;
-        for (size_t i = 0; i < n; ++i) {
-            dir = s.points[std::min(i + 1, n - 1)] - s.points[i > 0 ? i - 1 : 0];
+        for (size_t i = a; i <= b; ++i) {
+            dir = s.points[std::min(i + 1, b)] - s.points[i > a ? i - 1 : a];
             if (dir.Length() > 1e-12) {
                 dir.Normalize();
                 Base::Vector3d next = normal % dir;
@@ -210,21 +218,37 @@ SoSeparator* strokeNode(const Stroke& s)
                     side = next.Normalize();
                 }
             }
-            if (i == 0) {
+            if (i == a) {
                 firstSide = side;
                 firstDir = dir;
             }
             band.push_back(sb(s.points[i] + side * halfWidth(i)));
             band.push_back(sb(s.points[i] - side * halfWidth(i)));
         }
-        cap(s.points.front(), firstSide, firstDir * -1, halfWidth(0), 6);
-        cap(s.points.back(), side * -1, dir, halfWidth(n - 1), 6);
+        stripSizes.push_back(int(2 * (b - a + 1)));
+        cap(s.points[a], firstSide, firstDir * -1, halfWidth(a), 6);
+        cap(s.points[b], side * -1, dir, halfWidth(b), 6);
+    };
+    if (n > 1) {
+        // an Knicken über 30° (Rechteckecken, Zickzack) teilen: ein durchgehendes Band verdrehte sich dort und würde
+        // bis zur nächsten Ecke fast unsichtbar dünn; die runden Enden der Stücke ergeben eine runde Ecke. Nur wenn
+        // beide Abschnitte länger als die Strichbreite sind, sonst hätte der Marker an jedem Pixel-Knick dunkle Tupfer
+        size_t from = 0;
+        for (size_t i = 1; i + 1 < n; ++i) {
+            Base::Vector3d in = s.points[i] - s.points[i - 1], out = s.points[i + 1] - s.points[i];
+            const double minLength = 2 * halfWidth(i);
+            if (in.Length() > minLength && out.Length() > minLength && in.Normalize() * out.Normalize() < 0.87) {
+                run(from, i);
+                from = i;
+            }
+        }
+        run(from, n - 1);
     }
     if (!band.empty()) {
         auto coords = new SoCoordinate3;
         coords->point.setValues(0, int(band.size()), band.data());
         auto strip = new SoTriangleStripSet;
-        strip->numVertices.setValue(int(band.size()));
+        strip->numVertices.setValues(0, int(stripSizes.size()), stripSizes.data());
         sep->addChild(coords);
         sep->addChild(strip);
     }
@@ -412,6 +436,7 @@ struct ViewProviderScribble::Private
     void addPoint(const Base::Vector3d& p, const QPointF& pos, double pressure);
     void shapeUp();
     void updateLineEnd(const QPointF& pos);
+    void updateShape(const QPointF& pos);
     void erase(const QPointF& pos);
     void pickSheet(const QPointF& pos);
     void showLive();
@@ -447,6 +472,7 @@ struct ViewProviderScribble::Private
     double screenLength = 0;
     double mmPerPx = 0.1;
     std::optional<Base::Vector3d> snappedStart;
+    Base::Vector3d start;  ///< Form-Werkzeug: wo das Ziehen begann (Linienanfang, Ecke, Kreismitte)
     bool shaped = false;
     QPointF anchor;
     QTimer hold;
@@ -739,9 +765,10 @@ void ViewProviderScribble::Private::press(const QPointF& pos, double pressure, b
     screen.clear();
     screenLength = 0;
     shaped = false;
-    current.tool = gesture == Tool::Pencil ? Design::Scribble::Pencil
-        : gesture == Tool::Marker          ? Design::Scribble::Marker
-                                           : Design::Scribble::Pen;
+    const Tool pen = isPen(gesture) ? gesture : lastDrawTool;
+    current.tool = pen == Tool::Pencil ? Design::Scribble::Pencil
+        : pen == Tool::Marker          ? Design::Scribble::Marker
+                                       : Design::Scribble::Pen;
     current.color = currentColor;
     current.color.a = nib(current.tool).alpha;
     current.normal = sheetNormal(object()->Sheet.getValue());
@@ -749,8 +776,16 @@ void ViewProviderScribble::Private::press(const QPointF& pos, double pressure, b
     snappedStart = snapEndpoint(pos, false);
     addPoint(snappedStart.value_or(*p), pos, pressure);
     anchor = pos;
-    hold.start();
     showSnap(std::nullopt);
+    if (!isPen(gesture)) {
+        shaped = true;  // die Form steht von Anfang an fest, Halten braucht es nicht
+        current.kind = gesture == Tool::Line ? Design::Scribble::Line
+            : gesture == Tool::Rectangle     ? Design::Scribble::Rectangle
+                                             : Design::Scribble::Circle;
+        start = current.points.front();
+        return;
+    }
+    hold.start();
     showLive();
 }
 
@@ -772,6 +807,10 @@ void ViewProviderScribble::Private::move(const QPointF& pos, double pressure)
         return;
     }
     if (gesture == Tool::Sheet) {
+        return;
+    }
+    if (!isPen(gesture)) {
+        updateShape(pos);
         return;
     }
     if (shaped) {
@@ -850,6 +889,46 @@ void ViewProviderScribble::Private::updateLineEnd(const QPointF& pos)
     showLive();
 }
 
+/// Form-Werkzeug beim Ziehen: Linie bis zum Stift, Rechteck mit dem Stift als Gegenecke, Kreis mit dem Stift auf dem
+/// Rand. Der Stift rastet an Strich-Enden ein, das Rechteck liegt achsparallel zum Blatt.
+void ViewProviderScribble::Private::updateShape(const QPointF& pos)
+{
+    const double width = current.widths.front();
+    if (current.kind == Design::Scribble::Line) {
+        current.points = {start, start};
+        current.widths = {width, width};
+        updateLineEnd(pos);
+        return;
+    }
+    std::optional<Base::Vector3d> end = snapEndpoint(pos, false);
+    showSnap(end);
+    if (!end) {
+        end = onSheet(pos);
+    }
+    if (!end) {
+        return;
+    }
+    const Base::Placement sheet = object()->Sheet.getValue();
+    const Base::Matrix4D toSheet = sheet.inverse().toMatrix(), fromSheet = sheet.toMatrix();
+    const Base::Vector3d a = toSheet * start, b = toSheet * *end;
+    current.points.clear();
+    if (current.kind == Design::Scribble::Rectangle) {
+        for (const auto& [x, y] : {std::pair {a.x, a.y}, {b.x, a.y}, {b.x, b.y}, {a.x, b.y}, {a.x, a.y}}) {
+            current.points.push_back(fromSheet * Base::Vector3d(x, y, 0));
+        }
+    }
+    else {
+        const double r = std::hypot(b.x - a.x, b.y - a.y);
+        constexpr int n = 96;  // wie die Kreise aus "Halten zum Begradigen"
+        for (int i = 0; i <= n; ++i) {
+            const double t = 2 * M_PI * i / n;
+            current.points.push_back(fromSheet * Base::Vector3d(a.x + r * std::cos(t), a.y + r * std::sin(t), 0));
+        }
+    }
+    current.widths.assign(current.points.size(), width);
+    showLive();
+}
+
 void ViewProviderScribble::Private::release(const QPointF& pos)
 {
     down = false;
@@ -867,6 +946,11 @@ void ViewProviderScribble::Private::release(const QPointF& pos)
         return;
     }
     if (current.points.empty()) {
+        return;
+    }
+    if (!isPen(gesture) && std::hypot(pos.x() - pressPos.x(), pos.y() - pressPos.y()) < 3) {
+        current = Stroke();  // nur getippt: keine Form ohne Größe
+        live->removeAllChildren();
         return;
     }
     if (!shaped && current.points.size() > 1) {
@@ -1087,7 +1171,7 @@ void ViewProviderScribble::setEditViewer(Gui::View3DInventorViewer* viewer, int 
     d->input = std::make_unique<ScribbleInput>(d.get());
     d->viewport->installEventFilter(d->input.get());
     d->viewport->setAttribute(Qt::WA_TabletTracking);  // Stift in der Luft: Fangpunkt schon vor dem Aufsetzen zeigen
-    if (currentTool == Tool::Eraser || currentTool == Tool::Sheet) {
+    if (!isPen(currentTool)) {
         currentTool = lastDrawTool;  // jedes Öffnen beginnt mit einem Stift
     }
     d->rebuild();  // Hell/Dunkel kann seit dem letzten Aufbau gewechselt haben: Tinte passend zum Blatt
@@ -1112,8 +1196,8 @@ void ViewProviderScribble::unsetEditViewer(Gui::View3DInventorViewer* viewer)
 
 bool ViewProviderScribble::keyPressed(bool pressed, int key)
 {
-    // Esc legt "Blatt umstellen" weg; ohne dieses Werkzeug schließt Esc das Scribble (FreeCADs Vorgabe)
-    if (key == SoKeyboardEvent::ESCAPE && currentTool == Tool::Sheet) {
+    // Esc legt Blatt umstellen und die Formen weg (zurück zum Stift); beim Stift oder Radierer schließt Esc das Scribble
+    if (key == SoKeyboardEvent::ESCAPE && currentTool != Tool::Eraser && !isPen(currentTool)) {
         if (!pressed) {
             setTool(lastDrawTool);
         }
@@ -1135,7 +1219,7 @@ ViewProviderScribble::Tool ViewProviderScribble::tool()
 void ViewProviderScribble::setTool(Tool tool)
 {
     currentTool = tool;
-    if (tool != Tool::Eraser && tool != Tool::Sheet) {
+    if (isPen(tool)) {
         lastDrawTool = tool;
     }
     if (active && active->d->viewer) {

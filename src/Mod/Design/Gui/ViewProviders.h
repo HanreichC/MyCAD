@@ -102,7 +102,10 @@ public:
         Pen,
         Marker,
         Eraser,
-        Sheet  ///< Blatt umstellen: Tippen auf Fläche, geraden Strich oder ins Leere
+        Sheet,  ///< Blatt umstellen: Tippen auf Fläche, geraden Strich oder ins Leere
+        Line,   ///< Formen: ziehen von Punkt zu Punkt, von Ecke zu Ecke, von der Mitte aus
+        Rectangle,
+        Circle
     };
 
     ViewProviderScribble();

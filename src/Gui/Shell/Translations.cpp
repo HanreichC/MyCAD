@@ -313,6 +313,10 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
          "space to turn it towards you",
          "Blatt umstellen: auf eine Körperfläche tippen legt das Blatt darauf, auf einen geraden Strich stellt es entlang "
          "dieser Linie auf, ins Leere dreht es zu dir"},
+        {"Line: drag from start to end. It snaps level, plumb and to stroke ends",
+         "Linie: vom Anfang zum Ende ziehen. Sie rastet waagerecht, senkrecht und an Strich-Enden ein"},
+        {"Rectangle: drag from one corner to the opposite one", "Rechteck: von einer Ecke zur gegenüberliegenden ziehen"},
+        {"Circle: drag from the center outwards", "Kreis: von der Mitte nach außen ziehen"},
         {"Black", "Schwarz"},
         {"Blue", "Blau"},
         {"Red", "Rot"},
@@ -471,6 +475,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"CONSTRAINTS", "ABHÄNGIGKEITEN"},
         {"DRAW", "ZEICHNEN"},
         {"SHEET", "BLATT"},
+        {"SHAPES", "FORMEN"},
         {"Space Gray", "Space Grau"},
         {"Clay", "Ton"},
         {"Sierra Blue", "Sierrablau"},

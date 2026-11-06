@@ -103,6 +103,21 @@ def dump(tag):
     L("  %s counts=%s kinds=%s ends=%s" % (tag, list(s().Counts), kinds(), [tuple(round(c, 2) for c in (e.x, e.y, e.z)) for i in range(len(s().Counts)) for e in ends(i)]))
 
 
+def round_last():
+    """letzter Strich ein Kreis: alle Punkte gleich weit von der Mitte"""
+    pts = s().Points[sum(s().Counts[:-1]):]
+    center = sum(pts[:-1], App.Vector()) / (len(pts) - 1)
+    r = (pts[0] - center).Length
+    return len(pts) == 97 and r > 0 and all(abs((p - center).Length - r) < 1e-6 for p in pts)
+
+
+def darkest(fx, fy):
+    """dunkelster Grauwert in einer waagerechten Reihe ±5 px um diesen Punkt der 3D-Ansicht (Bildschirmfoto)"""
+    img = mw.grab().toImage(); dpr = img.devicePixelRatio()
+    p = view().mapTo(mw, at(fx, fy))
+    return min(QtGui.QColor(img.pixel(int((p.x() + dx) * dpr), int(p.y() * dpr))).lightness() for dx in range(-5, 6))
+
+
 def normal():
     return s().Sheet.Rotation.multVec(App.Vector(0, 0, 1))
 
@@ -199,6 +214,24 @@ in_order([
     ("top", lambda: check("reopening looks straight at the sheet (top view)",
                           (Gui.ActiveDocument.ActiveView.getViewDirection() - App.Vector(0, 0, -1)).Length < 1e-3,
                           str(Gui.ActiveDocument.ActiveView.getViewDirection()))),
+
+    # Formen: aufziehen statt halten
+    ("rect tool", lambda: (saved.update(n=len(kinds())), click(button("Design_ScribbleRectangle")))), wait,
+    ("drag rect", lambda: stroke(line((0.30, 0.30), (0.40, 0.45), 10))), wait,
+    ("rect", lambda: check("Rectangle tool: dragged corner to corner, level", kinds()[-1] == 3 and s().Counts[-1] == 5
+                           and abs(ends(len(kinds()) - 1)[0].y - s().Points[sum(s().Counts[:-1]) + 1].y) < 1e-9, str(kinds()))),
+    ("pen nib", lambda: check("shapes draw with the last pen", s().Tools[-1] == 1, str(list(s().Tools)))),
+    ("full edge", lambda: (lambda v: check("rectangle edge far from the start corner is drawn full width (band split at corners)", v < 60, str(v)))(darkest(0.40, 0.375))),
+    ("circle tool", lambda: click(button("Design_ScribbleCircle"))), wait,
+    ("drag circle", lambda: stroke(line((0.60, 0.40), (0.66, 0.44), 10))), wait,
+    ("circle", lambda: check("Circle tool: dragged from the center, round", kinds()[-1] == 2 and round_last(), str(kinds()))),
+    ("line tool", lambda: click(button("Design_ScribbleLine"))), wait,
+    ("drag line", lambda: stroke(line((0.30, 0.65), (0.45, 0.655), 10))), wait,
+    ("line", lambda: check("Line tool: dragged, snapped level", kinds()[-1] == 1 and abs(ends(len(kinds()) - 1)[0].y - ends(len(kinds()) - 1)[1].y) < 1e-9)),
+    ("tap", lambda: stroke([(0.5, 0.8), (0.5, 0.8)])), wait,
+    ("no tap shape", lambda: check("a tap with a shape tool draws nothing", len(kinds()) == saved["n"] + 3, str(kinds()))),
+    ("esc shape", lambda: (activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Escape))), wait,
+    ("pen back", lambda: check("Esc puts the shape tool away, back to the pen", editing() and button("Design_ScribblePen").isChecked())),
     ("esc", lambda: (activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Escape))), wait,
     ("closed", lambda: check("Esc finishes the scribble", not editing())),
     ("shot end", lambda: shot("end")),
