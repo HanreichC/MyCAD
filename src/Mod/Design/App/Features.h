@@ -556,12 +556,15 @@ public:
         Pen,
         Marker
     };
-    enum Kind  ///< Form nach "Halten zum Begradigen"; nur Linien, Kreise und Rechtecke werden in einer Skizze zu Geometrie
+    enum Kind  ///< Form des Strichs; in einer Skizze wird Freihand zu Splines, Formen zu Linien, Kreisen und Ellipsen
     {
         Free,
         Line,
         Circle,
-        Rectangle
+        Rectangle,
+        Polygon,  ///< gerade Stücke von Punkt zu Punkt: Pfeil, Dreieck, Sechseck
+        Ellipse,  ///< achsparallel zum Blatt, Punkt 0 auf der x-Halbachse, Punkt 24 auf der y-Halbachse (96 + 1 Punkte)
+        Fill      ///< gefüllte Fläche innerhalb der Punkte (Umriss), ohne Linie
     };
     struct Stroke
     {

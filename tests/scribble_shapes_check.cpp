@@ -113,6 +113,37 @@ int main()
     assert(parts.size() == 1 && parts[0].size() > 3 && parts[0].size() < 30);
     assert(simplify(line({0, 0}, {100, 0}, 0.1), 1).size() == 2);
 
+    // aufgezogene Formen: geschlossen, an der richtigen Stelle, Ellipse mit Halbachsen an Punkt 0 und 24
+    const auto closed = [](const std::vector<P>& p) { return p.size() > 3 && dist(p.front(), p.back()) < 1e-9; };
+    std::vector<P> f = dragged(Drag::Rectangle, {10, 10}, {0, 4});
+    assert(f.size() == 5 && closed(f) && f[2].x == 0 && f[2].y == 4);
+    f = dragged(Drag::Ellipse, {0, 0}, {20, -10});
+    assert(f.size() == 97 && closed(f) && std::abs(f[0].x - 20) < 1e-9 && std::abs(f[0].y + 5) < 1e-9);
+    assert(std::abs(f[24].x - 10) < 1e-9 && std::abs(f[24].y) < 1e-9);
+    f = dragged(Drag::Triangle, {0, 10}, {8, 0});
+    assert(f.size() == 4 && closed(f) && f[2].x == 4 && f[2].y == 10 && f[0].y == 0 && f[1].y == 0);  // Spitze oben
+    f = dragged(Drag::Circle, {5, 5}, {8, 9});
+    assert(f.size() == 97 && closed(f) && std::abs(dist(f[37], {5, 5}) - 5) < 1e-9);
+    f = dragged(Drag::Hexagon, {0, 0}, {0, 10});
+    assert(f.size() == 7 && closed(f) && dist(f[0], {0, 10}) < 1e-9 && std::abs(dist(f[3], {0, -10})) < 1e-9);
+    for (size_t i = 1; i < f.size(); ++i) {
+        assert(std::abs(dist(f[i - 1], f[i]) - 10) < 1e-9);  // regelmäßig: Kante = Radius
+    }
+    f = dragged(Drag::Arrow, {0, 0}, {100, 0}, 12);
+    assert(f.size() == 5 && f[1].x == 100 && f[4].x == 100 && std::abs(f[2].x - 88) < 1e-9 && f[2].y > 0 && f[3].y < 0);
+    assert(std::abs(dragged(Drag::Arrow, {0, 0}, {10, 0}, 12)[2].x - 6) < 1e-9);  // kurzer Pfeil: Spitze 40 %
+
+    // Umrandung zum Füllen: über den Anfang hinaus gezeichnet, der Überhang fällt weg; Zittern wird weniger Punkte
+    std::vector<P> loop = ellipse({0, 0}, 30, 30, 0.3, 2.3 * M_PI);
+    f = lasso(loop, 0.5);
+    assert(closed(f) && f.size() < loop.size());
+    double swept = 0;  // ohne Überlappung läuft der Umriss nur einmal um die Mitte (mit Überhang: 2,6 π)
+    for (size_t i = 1; i < f.size(); ++i) {
+        swept += std::abs(std::remainder(std::atan2(f[i].y, f[i].x) - std::atan2(f[i - 1].y, f[i - 1].x), 2 * M_PI));
+    }
+    assert(swept < 2 * M_PI + 0.5);
+    assert(lasso({{0, 0}, {1, 1}}, 0.5).size() == 2);
+
     std::puts("scribble shapes: ok");
     return 0;
 }

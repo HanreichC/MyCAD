@@ -2488,7 +2488,7 @@ Scribble::Scribble()
     ADD_PROPERTY_TYPE(Widths, (), "Scribble", hidden, "Stroke width at each point (mm)");
     ADD_PROPERTY_TYPE(Counts, (), "Scribble", hidden, "Number of points of each stroke");
     ADD_PROPERTY_TYPE(Tools, (), "Scribble", hidden, "Tool of each stroke: 0 pencil, 1 pen, 2 marker");
-    ADD_PROPERTY_TYPE(Kinds, (), "Scribble", hidden, "Shape of each stroke: 0 free, 1 line, 2 circle, 3 rectangle");
+    ADD_PROPERTY_TYPE(Kinds, (), "Scribble", hidden, "Shape of each stroke: 0 free, 1 line, 2 circle, 3 rectangle, 4 polygon, 5 ellipse, 6 fill");
     ADD_PROPERTY_TYPE(Colors, (), "Scribble", hidden, "Color of each stroke");
     ADD_PROPERTY_TYPE(Normals, (), "Scribble", hidden, "Normal of the sheet each stroke lies on");
     ADD_PROPERTY_TYPE(Sheet, (Base::Placement()), "Scribble", App::Prop_NoRecompute, "Current drawing sheet (its XY plane)");

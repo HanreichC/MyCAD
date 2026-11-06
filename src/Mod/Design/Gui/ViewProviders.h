@@ -103,9 +103,14 @@ public:
         Marker,
         Eraser,
         Sheet,  ///< Blatt umstellen: Tippen auf Fläche, geraden Strich oder ins Leere
-        Line,   ///< Formen: ziehen von Punkt zu Punkt, von Ecke zu Ecke, von der Mitte aus
-        Rectangle,
-        Circle
+        Line,   ///< Formen: ziehen von Punkt zu Punkt (Linie, Pfeil), über die Diagonale (Rechteck, Dreieck, Ellipse)
+        Rectangle,  ///< oder von der Mitte aus (Kreis, Sechseck)
+        Circle,
+        Arrow,
+        Triangle,
+        Hexagon,
+        Ellipse,
+        Fill  ///< in eine geschlossene Form tippen oder eine Fläche umranden: färbt sie ein
     };
 
     ViewProviderScribble();

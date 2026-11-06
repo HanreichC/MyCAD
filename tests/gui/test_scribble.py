@@ -2,6 +2,7 @@
 """Scribbles mit echten Mausgesten: Blatt öffnet sich, Freihand-Strich, Halten macht Linie und Rechteck, Linie rastet am
 Ende einer anderen ein, Rückgängig, Radierer, Transparentpapier, Blatt an einer Linie aufstellen und darauf zeichnen,
 in eine Skizze umwandeln, Speichern und Laden. Fehler stehen als FAIL im Protokoll."""
+import math
 import os
 from harness import *
 from PySide6 import QtGui
@@ -232,6 +233,45 @@ in_order([
     ("no tap shape", lambda: check("a tap with a shape tool draws nothing", len(kinds()) == saved["n"] + 3, str(kinds()))),
     ("esc shape", lambda: (activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Escape))), wait,
     ("pen back", lambda: check("Esc puts the shape tool away, back to the pen", editing() and button("Design_ScribblePen").isChecked())),
+
+    # weitere Formen aus den Varianten-Knöpfen, Füllen
+    ("arrow tool", lambda: Gui.runCommand("Design_ScribbleArrow")), wait,
+    ("arrow shown", lambda: check("variant button shows the active arrow and is checked",
+                                  button("Design_ScribbleLine").isChecked() and button("Design_ScribbleLine").property("help") == "Design_ScribbleArrow")),
+    ("drag arrow", lambda: stroke(line((0.30, 0.75), (0.45, 0.752), 10))), wait,
+    ("arrow", lambda: check("Arrow tool: shaft and closed tip, level", kinds()[-1] == 4 and s().Counts[-1] == 5
+                            and abs(ends(len(kinds()) - 1)[0].y - ends(len(kinds()) - 1)[1].y) < 1e-9, str(kinds()))),
+    ("triangle tool", lambda: Gui.runCommand("Design_ScribbleTriangle")), wait,
+    ("drag triangle", lambda: stroke(line((0.55, 0.60), (0.65, 0.70), 10))), wait,
+    ("triangle", lambda: check("Triangle tool: closed, three corners", kinds()[-1] == 4 and s().Counts[-1] == 4, str(kinds()))),
+    ("ellipse tool", lambda: Gui.runCommand("Design_ScribbleEllipse")), wait,
+    ("drag ellipse", lambda: stroke(line((0.70, 0.30), (0.85, 0.40), 10))), wait,
+    ("ellipse", lambda: check("Ellipse tool: dragged corner to corner", kinds()[-1] == 5 and s().Counts[-1] == 97, str(kinds()))),
+
+    ("fill tool", lambda: (saved.update(n=len(kinds())), Gui.runCommand("Design_ScribbleFill"), Gui.runCommand("Design_ScribbleBlue"))), wait,
+    ("still fill", lambda: check("picking a colour keeps the fill tool, the shape button is no longer active",
+                                 button("Design_ScribbleFill").isChecked() and not button("Design_ScribbleLine").isChecked())),
+    ("tap triangle", lambda: stroke([(0.60, 0.67), (0.60, 0.67)])), wait,
+    ("filled", lambda: check("tapping inside the triangle fills it in blue", kinds()[-1] == 6 and s().Counts[-1] == 4
+                             and s().Colors[-1][0] < 0.01 and s().Colors[-1][2] > 0.99, str(kinds()))),
+    ("red", lambda: Gui.runCommand("Design_ScribbleRed")),
+    ("tap again", lambda: stroke([(0.60, 0.67), (0.60, 0.67)])), wait,
+    ("recolored", lambda: check("tapping a filled area again recolours it", len(kinds()) == saved["n"] + 1 and s().Colors[-1][0] > 0.99, str(kinds()))),
+    ("tap outside", lambda: stroke([(0.75, 0.88), (0.75, 0.88)])), wait,
+    ("nothing", lambda: check("tapping outside every closed shape fills nothing", len(kinds()) == saved["n"] + 1)),
+    ("lasso", lambda: stroke([(0.50 + 0.04 * math.cos(k / 6), 0.85 + 0.04 * math.sin(k / 6)) for k in range(38)])), wait,
+    ("lasso filled", lambda: check("drawing around an area fills it, closed", kinds()[-1] == 6 and ends(len(kinds()) - 1)[0] == ends(len(kinds()) - 1)[1], str(kinds()))),
+    ("eraser in fill", lambda: (Gui.runCommand("Design_ScribbleEraser"), stroke([(0.60, 0.67), (0.60, 0.67)]))), wait,
+    ("fill erased", lambda: check("the eraser inside a filled area removes the fill, the outline stays",
+                                  len(kinds()) == saved["n"] + 1 and kinds().count(6) == 1 and s().Counts[saved["n"] - 2] == 4, str(kinds()))),
+
+    ("convert shapes", lambda: Gui.runCommand("Design_ScribbleToSketch")), wait, wait,
+    ("ellipse in sketch", lambda: check("an ellipse becomes a sketch ellipse, fills stay out",
+                                        any(g.TypeId == "Part::GeomEllipse" for g in Gui.ActiveDocument.getInEdit().Object.Geometry),
+                                        str([g.TypeId for g in Gui.ActiveDocument.getInEdit().Object.Geometry]))),
+    ("solved 2", lambda: check("that sketch solves", Gui.ActiveDocument.getInEdit().Object.solve() == 0)),
+    ("leave 2", lambda: Gui.ActiveDocument.resetEdit()), wait,
+    ("reopen 2", lambda: (setattr(s(), "Visibility", True), Gui.ActiveDocument.setEdit(s().Name))), wait, wait,
     ("esc", lambda: (activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Escape))), wait,
     ("closed", lambda: check("Esc finishes the scribble", not editing())),
     ("shot end", lambda: shot("end")),

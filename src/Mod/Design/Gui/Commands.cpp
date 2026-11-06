@@ -55,6 +55,8 @@
 #include <BRep_Tool.hxx>
 #include <GeomConvert.hxx>
 #include <Geom_BezierCurve.hxx>
+#include <Geom_Ellipse.hxx>
+#include <gp_Ax2.hxx>
 #include <Geom_TrimmedCurve.hxx>
 #include <TColgp_Array1OfPnt.hxx>
 #include <QPaintDevice>
@@ -424,8 +426,8 @@ protected:
     }
 };
 
-/// Striche auf dem aktuellen Blatt werden eine Skizze: Linien und Rechtecke zu Linien, Kreise zu Kreisen, Freihand zu
-/// B-Splines. Enden, die aufeinanderliegen (eingerastet), werden koinzident, achsparallele Linien waagerecht/senkrecht.
+/// Striche auf dem aktuellen Blatt werden eine Skizze: Linien, Rechtecke und Vielecke zu Linien, Kreise zu Kreisen,
+/// Ellipsen zu Ellipsen, Freihand zu B-Splines; Füllflächen bleiben im Scribble. Enden, die aufeinanderliegen (eingerastet), werden koinzident, achsparallele Linien waagerecht/senkrecht.
 /// Danach ist das Scribble ausgeblendet und die Skizze offen, zum Bemaßen.
 void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
 {
@@ -442,6 +444,9 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
         }
     };
     for (const auto& s : scribble->strokes()) {
+        if (s.kind == Design::Scribble::Fill) {
+            continue;
+        }
         std::vector<Base::Vector3d> pts;
         bool flat = true;
         for (const auto& p : s.points) {
@@ -453,7 +458,8 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
         if (!flat || pts.size() < 2) {
             continue;  // liegt auf einem anderen Blatt (3D) oder ist nur ein Tupfer
         }
-        if (s.kind == Design::Scribble::Line || s.kind == Design::Scribble::Rectangle || pts.size() == 2) {
+        if (s.kind == Design::Scribble::Line || s.kind == Design::Scribble::Rectangle || s.kind == Design::Scribble::Polygon
+            || pts.size() == 2) {
             for (size_t i = 1; i < pts.size(); ++i) {
                 segment(pts[i - 1], pts[i]);
             }
@@ -467,6 +473,22 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
             circle->setCenter(center);
             circle->setRadius((pts.front() - center).Length());
             geos.push_back(std::move(circle));
+        }
+        else if (s.kind == Design::Scribble::Ellipse && pts.size() == 97) {
+            Base::Vector3d center;
+            for (size_t i = 0; i + 1 < pts.size(); ++i) {
+                center += pts[i] / double(pts.size() - 1);
+            }
+            Base::Vector3d major = pts[0] - center, minor = pts[24] - center;  // Halbachsen (Features.h, Kind::Ellipse)
+            if (major.Length() < minor.Length()) {
+                std::swap(major, minor);
+            }
+            if (minor.Length() > 1e-6) {
+                Handle(Geom_Ellipse) e = new Geom_Ellipse(
+                    gp_Ax2(gp_Pnt(center.x, center.y, 0), gp_Dir(0, 0, 1), gp_Dir(major.x, major.y, 0)), major.Length(),
+                    minor.Length());
+                geos.push_back(std::make_unique<Part::GeomEllipse>(e));
+            }
         }
         else {
             // Freihand: vereinfacht und an Knicken geteilt. Gerade Stücke werden Linien, gebogene ein Spline durch ihre
@@ -2870,6 +2892,12 @@ void CreateDesignCommands()
         tool("Design_ScribbleLine", "Line", "Line: drag from start to end. It snaps level, plumb and to stroke ends", Tool::Line);
         tool("Design_ScribbleRectangle", "Rectangle", "Rectangle: drag from one corner to the opposite one", Tool::Rectangle);
         tool("Design_ScribbleCircle", "Circle", "Circle: drag from the center outwards", Tool::Circle);
+        tool("Design_ScribbleArrow", "Arrow", "Arrow: drag from the tail to the tip", Tool::Arrow);
+        tool("Design_ScribbleTriangle", "Triangle", "Triangle: drag across it, the tip points up", Tool::Triangle);
+        tool("Design_ScribbleHexagon", "Hexagon", "Hexagon: drag from the center to a corner", Tool::Hexagon);
+        tool("Design_ScribbleEllipse", "Ellipse", "Ellipse: drag across it from corner to corner", Tool::Ellipse);
+        tool("Design_ScribbleFill", "Fill",
+             "Fill: tap inside a closed shape to colour it, or draw around an area to fill it", Tool::Fill);
         // Farben: MyStyle-Systemfarben des hellen Modus, das Blatt ist immer hell
         const struct
         {

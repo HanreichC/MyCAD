@@ -214,6 +214,62 @@ inline Shape recognize(const std::vector<P>& raw)
     return {};
 }
 
+enum class Drag  ///< Form-Werkzeuge, die man aufzieht
+{
+    Rectangle,  ///< a, b: gegenüberliegende Ecken
+    Ellipse,    ///< a, b: Ecken des umschließenden Rechtecks
+    Triangle,   ///< a, b: Ecken des umschließenden Rechtecks, Spitze oben in der Mitte
+    Circle,     ///< a: Mitte, b: auf dem Rand
+    Hexagon,    ///< a: Mitte, b: eine Ecke
+    Arrow       ///< a: Ende, b: Spitze; head: Länge der Spitze
+};
+
+/// Punkte einer aufgezogenen Form. Geschlossene Formen enden auf ihrem ersten Punkt; Kreis und Ellipse haben 96 + 1
+/// Punkte, Punkt 0 liegt auf der x-Halbachse, Punkt 24 auf der y-Halbachse. Der Pfeil läuft Ende → Spitze → Flügel →
+/// Flügel → Spitze: ein Strich ohne doppelte Stücke, die Spitze ist ein geschlossenes Dreieck.
+inline std::vector<P> dragged(Drag d, P a, P b, double head = 0)
+{
+    constexpr int n = 96;
+    const auto round = [](P c, double rx, double ry) {
+        std::vector<P> p;
+        for (int i = 0; i <= n; ++i) {
+            const double t = 2 * M_PI * i / n;
+            p.push_back({c.x + rx * std::cos(t), c.y + ry * std::sin(t)});
+        }
+        return p;
+    };
+    const P lo {std::min(a.x, b.x), std::min(a.y, b.y)}, hi {std::max(a.x, b.x), std::max(a.y, b.y)};
+    switch (d) {
+        case Drag::Rectangle:
+            return {a, {b.x, a.y}, b, {a.x, b.y}, a};
+        case Drag::Ellipse:
+            return round({(lo.x + hi.x) / 2, (lo.y + hi.y) / 2}, (hi.x - lo.x) / 2, (hi.y - lo.y) / 2);
+        case Drag::Triangle:
+            return {{lo.x, lo.y}, {hi.x, lo.y}, {(lo.x + hi.x) / 2, hi.y}, {lo.x, lo.y}};
+        case Drag::Circle:
+            return round(a, dist(a, b), dist(a, b));
+        case Drag::Hexagon: {
+            std::vector<P> p;
+            for (int i = 0; i <= 6; ++i) {
+                p.push_back(detail::rotate({b.x - a.x, b.y - a.y}, M_PI / 3 * (i % 6)));
+                p.back() = {a.x + p.back().x, a.y + p.back().y};
+            }
+            return p;
+        }
+        case Drag::Arrow: {
+            const double len = dist(a, b);
+            if (len <= 0) {
+                return {a, b};
+            }
+            const double h = std::min(head, 0.4 * len), ux = (b.x - a.x) / len, uy = (b.y - a.y) / len;
+            const P base {b.x - ux * h, b.y - uy * h};
+            const double w = h * 0.55;  // Flügel je ~29° zur Achse
+            return {a, b, {base.x - uy * w, base.y + ux * w}, {base.x + uy * w, base.y - ux * w}, b};
+        }
+    }
+    return {a, b};
+}
+
 /// Douglas-Peucker: nur die Punkte, die mehr als tol von der Verbindung ihrer Nachbarn abweichen
 inline std::vector<P> simplify(const std::vector<P>& p, double tol)
 {
@@ -251,6 +307,27 @@ inline std::vector<P> simplify(const std::vector<P>& p, double tol)
         }
     }
     return out;
+}
+
+/// Umrandete Fläche zum Füllen: ohne Zittern (simplify mit tol) und geschlossen. Wer über den Anfang hinaus
+/// weiterzeichnet, dessen Überhang fällt weg (Schnitt am Punkt im letzten Drittel, der dem Anfang am nächsten ist):
+/// sonst kreuzte sich der Umriss und die Überlappung bliebe leer.
+/// ponytail: Umrisse, die sich mittendrin kreuzen (Acht), füllen nur die ungeraden Bereiche
+inline std::vector<P> lasso(const std::vector<P>& raw, double tol)
+{
+    std::vector<P> p = simplify(raw, tol);
+    if (p.size() < 3) {
+        return p;
+    }
+    size_t cut = p.size() - 1;
+    for (size_t i = p.size() * 2 / 3; i < p.size(); ++i) {
+        if (i > 1 && dist(p[i], p.front()) < dist(p[cut], p.front())) {
+            cut = i;
+        }
+    }
+    p.resize(cut + 1);
+    p.push_back(p.front());
+    return p;
 }
 
 /// Freihand-Strich für eine Skizze: vereinfacht (tol) und an Knicken über 45° geteilt. Ein Stück aus zwei Punkten wird

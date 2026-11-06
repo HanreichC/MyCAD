@@ -49,6 +49,7 @@
 #include <QGraphicsView>
 #include <QMouseEvent>
 #include <QPointer>
+#include <QPolygonF>
 #include <QTabletEvent>
 #include <QTimer>
 
@@ -113,6 +114,8 @@ constexpr std::pair<const char*, Tool> ToolCommands[] = {
     {"Design_ScribblePencil", Tool::Pencil}, {"Design_ScribblePen", Tool::Pen}, {"Design_ScribbleMarker", Tool::Marker},
     {"Design_ScribbleEraser", Tool::Eraser}, {"Design_ScribbleSheet", Tool::Sheet}, {"Design_ScribbleLine", Tool::Line},
     {"Design_ScribbleRectangle", Tool::Rectangle}, {"Design_ScribbleCircle", Tool::Circle},
+    {"Design_ScribbleArrow", Tool::Arrow}, {"Design_ScribbleTriangle", Tool::Triangle},
+    {"Design_ScribbleHexagon", Tool::Hexagon}, {"Design_ScribbleEllipse", Tool::Ellipse}, {"Design_ScribbleFill", Tool::Fill},
 };
 
 QAction* commandAction(const char* name)
@@ -179,6 +182,26 @@ SoSeparator* strokeNode(const Stroke& s)
     sep->addChild(material);
     const size_t n = s.points.size();
     if (n == 0) {
+        return sep;
+    }
+    if (s.kind == Design::Scribble::Fill) {  // Fläche im Umriss, auch nach innen gewölbt (Coin zerlegt sie)
+        auto hints = new SoShapeHints;
+        hints->faceType = SoShapeHints::UNKNOWN_FACE_TYPE;
+        hints->vertexOrdering = SoShapeHints::UNKNOWN_ORDERING;
+        std::vector<SbVec3f> pts;
+        for (const auto& p : s.points) {
+            pts.push_back(sb(p));
+        }
+        if (pts.size() > 1 && pts.front() == pts.back()) {
+            pts.pop_back();
+        }
+        auto coords = new SoCoordinate3;
+        coords->point.setValues(0, int(pts.size()), pts.data());
+        auto face = new SoFaceSet;
+        face->numVertices.setValue(int(pts.size()));
+        sep->addChild(hints);
+        sep->addChild(coords);
+        sep->addChild(face);
         return sep;
     }
     Base::Vector3d normal = s.normal;
@@ -437,6 +460,8 @@ struct ViewProviderScribble::Private
     void shapeUp();
     void updateLineEnd(const QPointF& pos);
     void updateShape(const QPointF& pos);
+    QPolygonF screenPolygon(const Stroke& s) const;
+    void fillAt(const QPointF& pos);
     void erase(const QPointF& pos);
     void pickSheet(const QPointF& pos);
     void showLive();
@@ -640,16 +665,24 @@ void ViewProviderScribble::Private::rebuild()
     displayInk->removeAllChildren();
     editInk->removeAllChildren();
     endpoints.clear();
-    for (const Stroke& s : object()->strokes()) {
-        displayInk->addChild(strokeNode(s));
-        editInk->addChild(strokeNode(s));
-        if (s.tool != Design::Scribble::Marker) {
-            displayInk->addChild(hairlineNode(s));
-            editInk->addChild(hairlineNode(s));
-        }
-        if (!s.points.empty() && s.kind != Design::Scribble::Circle && s.kind != Design::Scribble::Rectangle) {
-            endpoints.push_back(s.points.front());
-            endpoints.push_back(s.points.back());
+    const auto strokes = object()->strokes();
+    for (const bool fills : {true, false}) {  // Flächen zuerst: die Linien liegen darüber
+        for (const Stroke& s : strokes) {
+            if ((s.kind == Design::Scribble::Fill) != fills) {
+                continue;
+            }
+            displayInk->addChild(strokeNode(s));
+            editInk->addChild(strokeNode(s));
+            if (s.tool != Design::Scribble::Marker) {
+                displayInk->addChild(hairlineNode(s));
+                editInk->addChild(hairlineNode(s));
+            }
+            // offene Striche rasten an ihren Enden ein (Freihand, Linie, Pfeil)
+            if (!s.points.empty()
+                && (s.kind == Design::Scribble::Free || s.kind == Design::Scribble::Line || s.kind == Design::Scribble::Polygon)) {
+                endpoints.push_back(s.points.front());
+                endpoints.push_back(s.points.back());
+            }
         }
     }
     if (!down) {
@@ -777,11 +810,19 @@ void ViewProviderScribble::Private::press(const QPointF& pos, double pressure, b
     addPoint(snappedStart.value_or(*p), pos, pressure);
     anchor = pos;
     showSnap(std::nullopt);
+    if (gesture == Tool::Fill) {  // Umranden wie mit dem Stift, Farbe wie ein Marker
+        current.tool = Design::Scribble::Marker;
+        current.color.a = nib(current.tool).alpha;
+        current.kind = Design::Scribble::Fill;
+        return;
+    }
     if (!isPen(gesture)) {
         shaped = true;  // die Form steht von Anfang an fest, Halten braucht es nicht
         current.kind = gesture == Tool::Line ? Design::Scribble::Line
             : gesture == Tool::Rectangle     ? Design::Scribble::Rectangle
-                                             : Design::Scribble::Circle;
+            : gesture == Tool::Circle        ? Design::Scribble::Circle
+            : gesture == Tool::Ellipse       ? Design::Scribble::Ellipse
+                                             : Design::Scribble::Polygon;
         start = current.points.front();
         return;
     }
@@ -809,7 +850,7 @@ void ViewProviderScribble::Private::move(const QPointF& pos, double pressure)
     if (gesture == Tool::Sheet) {
         return;
     }
-    if (!isPen(gesture)) {
+    if (!isPen(gesture) && gesture != Tool::Fill) {
         updateShape(pos);
         return;
     }
@@ -827,7 +868,7 @@ void ViewProviderScribble::Private::move(const QPointF& pos, double pressure)
         return;
     }
     addPoint(*p, pos, pressure);
-    if (std::hypot(pos.x() - anchor.x(), pos.y() - anchor.y()) > 4) {
+    if (isPen(gesture) && std::hypot(pos.x() - anchor.x(), pos.y() - anchor.y()) > 4) {
         anchor = pos;
         hold.start();  // bewegt: Halten beginnt von vorn
     }
@@ -889,41 +930,45 @@ void ViewProviderScribble::Private::updateLineEnd(const QPointF& pos)
     showLive();
 }
 
-/// Form-Werkzeug beim Ziehen: Linie bis zum Stift, Rechteck mit dem Stift als Gegenecke, Kreis mit dem Stift auf dem
-/// Rand. Der Stift rastet an Strich-Enden ein, das Rechteck liegt achsparallel zum Blatt.
+/// Form-Werkzeug beim Ziehen (Formen in ScribbleShapes::dragged). Linie und Pfeil rasten wie eine Linie an Achsen
+/// und Strich-Enden ein, die anderen Formen mit dem Stift an Strich-Enden; alle liegen achsparallel zum Blatt.
 void ViewProviderScribble::Private::updateShape(const QPointF& pos)
 {
     const double width = current.widths.front();
-    if (current.kind == Design::Scribble::Line) {
+    std::optional<Base::Vector3d> end;
+    if (gesture == Tool::Line || gesture == Tool::Arrow) {
         current.points = {start, start};
         current.widths = {width, width};
         updateLineEnd(pos);
+        if (gesture == Tool::Line) {
+            return;
+        }
+        end = current.points.back();
+    }
+    else {
+        end = snapEndpoint(pos, false);
+        showSnap(end);
+        if (!end) {
+            end = onSheet(pos);
+        }
+    }
+    if (!end) {
         return;
     }
-    std::optional<Base::Vector3d> end = snapEndpoint(pos, false);
-    showSnap(end);
-    if (!end) {
-        end = onSheet(pos);
-    }
-    if (!end) {
-        return;
-    }
+    using ScribbleShapes::Drag;
+    const Drag drag = gesture == Tool::Rectangle ? Drag::Rectangle
+        : gesture == Tool::Ellipse              ? Drag::Ellipse
+        : gesture == Tool::Triangle             ? Drag::Triangle
+        : gesture == Tool::Circle               ? Drag::Circle
+        : gesture == Tool::Hexagon              ? Drag::Hexagon
+                                                : Drag::Arrow;
     const Base::Placement sheet = object()->Sheet.getValue();
     const Base::Matrix4D toSheet = sheet.inverse().toMatrix(), fromSheet = sheet.toMatrix();
     const Base::Vector3d a = toSheet * start, b = toSheet * *end;
+    const double head = std::max(18 * mmPerPx, 4 * width);  // Pfeilspitze: gut sichtbar, auch beim Marker
     current.points.clear();
-    if (current.kind == Design::Scribble::Rectangle) {
-        for (const auto& [x, y] : {std::pair {a.x, a.y}, {b.x, a.y}, {b.x, b.y}, {a.x, b.y}, {a.x, a.y}}) {
-            current.points.push_back(fromSheet * Base::Vector3d(x, y, 0));
-        }
-    }
-    else {
-        const double r = std::hypot(b.x - a.x, b.y - a.y);
-        constexpr int n = 96;  // wie die Kreise aus "Halten zum Begradigen"
-        for (int i = 0; i <= n; ++i) {
-            const double t = 2 * M_PI * i / n;
-            current.points.push_back(fromSheet * Base::Vector3d(a.x + r * std::cos(t), a.y + r * std::sin(t), 0));
-        }
+    for (const ScribbleShapes::P& q : ScribbleShapes::dragged(drag, {a.x, a.y}, {b.x, b.y}, head)) {
+        current.points.push_back(fromSheet * Base::Vector3d(q.x, q.y, 0));
     }
     current.widths.assign(current.points.size(), width);
     showLive();
@@ -948,12 +993,35 @@ void ViewProviderScribble::Private::release(const QPointF& pos)
     if (current.points.empty()) {
         return;
     }
-    if (!isPen(gesture) && std::hypot(pos.x() - pressPos.x(), pos.y() - pressPos.y()) < 3) {
+    const bool tapped = std::hypot(pos.x() - pressPos.x(), pos.y() - pressPos.y()) < 3 && screenLength < 6;
+    if (gesture == Tool::Fill && (tapped || current.points.size() < 3)) {
+        live->removeAllChildren();
+        if (tapped) {
+            fillAt(pos);
+        }
+        current = Stroke();
+        return;
+    }
+    if (gesture == Tool::Fill) {  // umrandete Fläche: Zittern und Überhang weg, geschlossen
+        const Base::Placement sheet = object()->Sheet.getValue();
+        const Base::Matrix4D toSheet = sheet.inverse().toMatrix(), fromSheet = sheet.toMatrix();
+        std::vector<ScribbleShapes::P> flat;
+        for (const auto& p : current.points) {
+            const Base::Vector3d q = toSheet * p;
+            flat.push_back({q.x, q.y});
+        }
+        current.points.clear();
+        for (const auto& q : ScribbleShapes::lasso(flat, mmPerPx)) {
+            current.points.push_back(fromSheet * Base::Vector3d(q.x, q.y, 0));
+        }
+        current.widths.assign(current.points.size(), 0);
+    }
+    else if (!isPen(gesture) && tapped) {
         current = Stroke();  // nur getippt: keine Form ohne Größe
         live->removeAllChildren();
         return;
     }
-    if (!shaped && current.points.size() > 1) {
+    if (!shaped && gesture != Tool::Fill && current.points.size() > 1) {
         if (auto end = snapEndpoint(pos, true)) {
             current.points.back() = *end;
         }
@@ -967,7 +1035,73 @@ void ViewProviderScribble::Private::release(const QPointF& pos)
 
 void ViewProviderScribble::Private::hover(const QPointF& pos)
 {
-    showSnap(currentTool == Tool::Eraser || currentTool == Tool::Sheet ? std::nullopt : snapEndpoint(pos, false));
+    const bool snaps = currentTool != Tool::Eraser && currentTool != Tool::Sheet && currentTool != Tool::Fill;
+    showSnap(snaps ? snapEndpoint(pos, false) : std::nullopt);
+}
+
+QPolygonF ViewProviderScribble::Private::screenPolygon(const Stroke& s) const
+{
+    QPolygonF poly;
+    for (const auto& p : s.points) {
+        poly << toScreen(p);
+    }
+    return poly;
+}
+
+/// Tippen mit Füllen: die kleinste geschlossene Form unter dem Stift wird in der aktuellen Farbe gefüllt, eine schon
+/// gefüllte Fläche umgefärbt.
+/// ponytail: nur einzelne geschlossene Striche (Formen, Umrisse mit eingerastetem Ende, Füllflächen); Flächen, die erst
+/// mehrere Striche zusammen umschließen, bräuchten eine Schnittpunkt-Zerlegung aller Striche
+void ViewProviderScribble::Private::fillAt(const QPointF& pos)
+{
+    auto all = object()->strokes();
+    int best = -1;
+    double bestArea = 0;
+    for (int i = 0; i < int(all.size()); ++i) {
+        const Stroke& s = all[size_t(i)];
+        if (s.points.size() < 4) {
+            continue;
+        }
+        const QPolygonF poly = screenPolygon(s);
+        const QPointF gap = poly.front() - poly.back();
+        if (std::hypot(gap.x(), gap.y()) > 1.5 || !poly.containsPoint(pos, Qt::OddEvenFill)) {
+            continue;  // offen, oder der Stift ist nicht darin
+        }
+        double area = 0;
+        for (int k = 1; k < poly.size(); ++k) {
+            area += poly[k - 1].x() * poly[k].y() - poly[k].x() * poly[k - 1].y();
+        }
+        area = std::abs(area) / 2;
+        // gleich groß: die Füllfläche gewinnt gegen ihren Umriss, damit Tippen umfärbt statt eine zweite Lage zu legen
+        if (best < 0 || area < bestArea - 1e-9
+            || (std::abs(area - bestArea) <= 1e-9 && s.kind == Design::Scribble::Fill)) {
+            best = i;
+            bestArea = area;
+        }
+    }
+    if (best < 0) {
+        return;
+    }
+    Base::Color color = currentColor;
+    color.a = nib(Design::Scribble::Marker).alpha;
+    App::Document* doc = vp->getObject()->getDocument();
+    doc->openTransaction("Fill");
+    Stroke& target = all[size_t(best)];
+    if (target.kind == Design::Scribble::Fill) {
+        target.color = color;
+    }
+    else {
+        Stroke fill;
+        fill.points = target.points;
+        fill.widths.assign(fill.points.size(), 0);
+        fill.tool = Design::Scribble::Marker;
+        fill.kind = Design::Scribble::Fill;
+        fill.color = color;
+        fill.normal = target.normal;
+        all.push_back(fill);
+    }
+    object()->setStrokes(all);
+    doc->commitTransaction();
 }
 
 void ViewProviderScribble::Private::erase(const QPointF& pos)
@@ -982,6 +1116,7 @@ void ViewProviderScribble::Private::erase(const QPointF& pos)
             hit = distanceToSegment(pos, prev, here) < EraseRadius;
             prev = here;
         }
+        hit = hit || (s.kind == Design::Scribble::Fill && screenPolygon(s).containsPoint(pos, Qt::OddEvenFill));
         if (!hit) {
             keep.push_back(s);
         }
@@ -1001,7 +1136,8 @@ void ViewProviderScribble::Private::pickSheet(const QPointF& pos)
 
     // gerader Strich (Linie, Rechteckkante): Blatt stellt sich entlang dieser Linie auf, senkrecht zum bisherigen Blatt
     for (const Stroke& s : object()->strokes()) {
-        if ((s.kind != Design::Scribble::Line && s.kind != Design::Scribble::Rectangle) || next) {
+        if ((s.kind != Design::Scribble::Line && s.kind != Design::Scribble::Rectangle && s.kind != Design::Scribble::Polygon)
+            || next) {
             continue;
         }
         for (size_t i = 1; i < s.points.size() && !next; ++i) {
