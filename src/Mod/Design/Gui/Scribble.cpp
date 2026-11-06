@@ -335,7 +335,7 @@ SoCallback* depthClamp(bool on)
     return cb;
 }
 
-/// Zeichenblatt: Papier (hell Weiß, dunkel system.gray5) mit Punktraster in labelTertiary, das beim Zoomen in
+/// Zeichenblatt: Papier (warmes Weiß, dunkel warmes system.gray5, siehe updatePaper) mit Punktraster in labelTertiary, das beim Zoomen in
 /// Zehnerschritten dichter oder gröber wird.
 /// Wie das Bodenraster der Shell legt der Shader ein Quadrat um den Punkt des Blatts in der Bildmitte. Sieht man schräg
 /// aufs Blatt (3D), wird es fast durchsichtig, damit man die Striche und das Modell im Raum sieht.
@@ -348,7 +348,6 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderPa
         varying vec2 world;   // Punkt auf dem Blatt (mm)
         varying vec2 local;   // 1 = Bildrand, für das Auslaufen
         varying float facing; // 1 = gerade drauf, 0 = Blatt von der Kante gesehen
-        varying vec2 origin;  // Blattpunkt in der Bildmitte
         void main()
         {
             vec3 n = gl_NormalMatrix * vec3(0.0, 0.0, 1.0);
@@ -359,7 +358,6 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderPa
             vec2 center = (gl_ModelViewMatrixInverse * vec4(0.0, 0.0, z, 1.0)).xy;
             local = gl_Vertex.xy;
             world = center + local * r;
-            origin = center;
             facing = abs(normalize(n).z);
             gl_Position = gl_ModelViewProjectionMatrix * vec4(world, 0.0, 1.0);
         }
@@ -373,35 +371,11 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderPa
         varying vec2 world;
         varying vec2 local;
         varying float facing;
-        varying vec2 origin;
         // Rasterpunkte mit Abstand s, rund 1 px Radius
         float dots(float s, vec2 px)
         {
             vec2 d = abs(fract(world / s + 0.5) - 0.5) * s / px;
             return 1.0 - smoothstep(0.7, 1.5, length(d));
-        }
-        float hash(vec2 c)  // c: ganzzahlige Zelle
-        {
-            vec3 p = fract(vec3(c.xyx) * 0.1031);
-            p += dot(p, p.yzx + 33.33);
-            return fract((p.x + p.y) * p.z);
-        }
-        // Rauschen in Zellen der Größe cell (mm), fest auf dem Blatt; es wiederholt sich alle 1024 Zellen. Gerechnet
-        // wird ab einer Kachelecke nahe der Bildmitte, damit die Zahlen auch weit weg vom Ursprung klein bleiben.
-        float noise(float cell)
-        {
-            float tile = cell * 1024.0;
-            vec2 p = (world - floor(origin / tile) * tile) / cell;
-            vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
-            return mix(mix(hash(mod(i, 1024.0)), hash(mod(i + vec2(1.0, 0.0), 1024.0)), u.x),
-                       mix(hash(mod(i + vec2(0.0, 1.0), 1024.0)), hash(mod(i + vec2(1.0, 1.0), 1024.0)), u.x), u.y);
-        }
-        // Papierstruktur, auf dem Bildschirm immer etwa size px groß: zwei Zweierstufen, beim Zoomen weich überblendet
-        float structure(float mmPerPx, float size)
-        {
-            float l = log2(mmPerPx * size);
-            float cell = exp2(floor(l));
-            return mix(noise(cell), noise(cell * 2.0), fract(l)) - 0.5;
         }
         void main()
         {
@@ -417,12 +391,7 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderPa
             if (a < 0.004) {
                 discard;
             }
-            // Papier statt Fläche: feine Körnung (Zahn) und leichte Wolken (Fasern). Weiß etwas zurückgenommen,
-            // sonst schnitte 1,0 die helle Hälfte der Körnung ab
-            // ponytail: Stärken ohne MyStyle-Token (wie glass.noteTint wäre das ein eigener Wert für Scribbles)
-            float m = max(px.x, px.y);
-            vec3 sheet = min(paperColor.rgb, vec3(0.975)) + 0.045 * structure(m, 2.5) + 0.03 * structure(m, 110.0);
-            gl_FragColor = vec4(mix(sheet, dotColor, clamp(ink / max(fill, ink), 0.0, 1.0)), a);
+            gl_FragColor = vec4(mix(paperColor.rgb, dotColor, clamp(ink / max(fill, ink), 0.0, 1.0)), a);
         }
     )";
     fragment->parameter.set1Value(0, color);
@@ -726,8 +695,14 @@ void ViewProviderScribble::Private::updatePaper()
     // Beim Umstellen fast durchsichtig: man muss die Körperfläche sehen, auf die man tippt
     const float opacity = active == vp && currentTool == Tool::Sheet ? 0.15F : object()->Tracing.getValue() ? 0.3F : 1.0F;
     const Gui::Shell::Theme& t = Gui::Shell::theme();
-    const QColor paper = t.dark ? t.gray5 : QColor(Qt::white);
-    paperColor->value.setValue(float(paper.redF()), float(paper.greenF()), float(paper.blueF()), opacity);
+    // warmer Papierton wie bei den Notizen (C-8, glass.noteTint), nur ein Hauch: hell Weiß mit system.yellow (Creme),
+    // dunkel system.gray5 mit system.orange (warmes Anthrazit)
+    // ponytail: die Anteile 0,07 und 0,04 sind kein MyStyle-Token; ein "glass.paperTint" gehörte dorthin
+    const QColor base = t.dark ? t.gray5 : QColor(Qt::white), warm = t.dark ? t.orange : t.yellow;
+    const double f = t.dark ? 0.04 : 0.07;
+    const auto channel = [f](double a, double b) { return float(a + (b - a) * f); };
+    paperColor->value.setValue(channel(base.redF(), warm.redF()), channel(base.greenF(), warm.greenF()),
+                               channel(base.blueF(), warm.blueF()), opacity);
     dotColor->value.setValue(float(t.labelTertiary.redF()), float(t.labelTertiary.greenF()), float(t.labelTertiary.blueF()));
 }
 
