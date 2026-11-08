@@ -63,7 +63,7 @@ chmod +x "$WORK/AppRun"
 echo "==> Abhängigkeiten bündeln (linuxdeploy)"
 for tool in linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage; do
     [ -x "$WORK/tools/$tool" ] || {
-        curl -fsSL -o "$WORK/tools/$tool" \
+        curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 -o "$WORK/tools/$tool" \
             "https://github.com/linuxdeploy/${tool%-x86_64.AppImage}/releases/download/continuous/$tool"
         chmod +x "$WORK/tools/$tool"
     }
@@ -92,6 +92,17 @@ LD_LIBRARY_PATH="$APPDIR/usr/lib" linuxdeploy-x86_64.AppImage --appdir "$APPDIR"
 linuxdeploy-x86_64.AppImage --appdir "$APPDIR" --plugin qt --custom-apprun AppRun
 # MyCAD ist immer hell: kein Desktop-Portal-Theme (das meldet ein dunkles KDE an FreeCADs Ersteinrichtung)
 rm -rf "$APPDIR/usr/plugins/platformthemes"
-# 3. AppImage packen
+# 3. AppImage packen. Die Runtime selbst laden: appimagetool versucht es nur einmal, GitHub antwortet manchmal mit 504
+[ -s "$WORK/tools/runtime-x86_64" ] || curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 -o "$WORK/tools/runtime-x86_64" \
+    https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64
+export LDAI_RUNTIME_FILE="$WORK/tools/runtime-x86_64"
+# .DirIcon muss ein PNG sein (Icon=mycad): appimagetool baut es aus mycad.png im AppDir
+QT_QPA_PLATFORM=offscreen python3 -c '
+import sys
+from PySide6.QtGui import QGuiApplication, QImage, QPainter, Qt
+from PySide6.QtSvg import QSvgRenderer
+app = QGuiApplication([]); img = QImage(256, 256, QImage.Format_ARGB32); img.fill(Qt.transparent)
+p = QPainter(img); QSvgRenderer(sys.argv[1]).render(p); p.end(); sys.exit(not img.save(sys.argv[2]))
+' mycad.svg "$APPDIR/mycad.png"
 linuxdeploy-x86_64.AppImage --appdir "$APPDIR" --custom-apprun AppRun --output appimage
 echo "==> Fertig: $LDAI_OUTPUT"
