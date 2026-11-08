@@ -2899,6 +2899,7 @@ void CreateDesignCommands()
         tool("Design_ScribbleSelect", "Select",
              "Select: tap a stroke or draw around strokes, then drag them. Delete removes them, a colour recolours them",
              Tool::Select);
+        tool("Design_ScribbleText", "Text", "Text: click on the sheet and type. Enter or Esc puts it down, Shift+Enter starts a new line", Tool::Text);
         tool("Design_ScribbleFill", "Fill",
              "Fill: tap inside a closed shape to colour it, or draw around an area to fill it", Tool::Fill);
         // Farben: MyStyle-Systemfarben des hellen Modus, das Blatt ist immer hell

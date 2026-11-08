@@ -62,6 +62,7 @@ ICONS = {
     "Design_ScribbleTriangle": '<path d="M12 4l9 16H3z"/>',
     "Design_ScribbleHexagon": '<path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/>',
     "Design_ScribbleEllipse": '<ellipse cx="12" cy="12" rx="9" ry="6"/>',
+    "Design_ScribbleText": '<path d="M5 7V5h14v2M12 5v14M9 19h6"/>',
     "Design_ScribbleFill": '<path d="M4 11l7-7 8 8-7 7a2 2 0 0 1-2.8 0L4 13.8a2 2 0 0 1 0-2.8z"/><path d="M4 12h15"/>'
                            '<path d="M21 18a2 2 0 0 1-4 0c0-1.4 2-3.5 2-3.5s2 2.1 2 3.5z"/>',
     "Design_ScribbleBlack": '<circle cx="12" cy="12" r="7" fill="currentColor" stroke="none"/>',

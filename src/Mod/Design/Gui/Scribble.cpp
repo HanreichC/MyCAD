@@ -28,6 +28,7 @@
 #include <Inventor/nodes/SoDrawStyle.h>
 #include <Inventor/nodes/SoFaceSet.h>
 #include <Inventor/nodes/SoFragmentShader.h>
+#include <Inventor/nodes/SoIndexedFaceSet.h>
 #include <Inventor/nodes/SoLightModel.h>
 #include <Inventor/nodes/SoLineSet.h>
 #include <Inventor/nodes/SoMarkerSet.h>
@@ -46,14 +47,20 @@
 #include <Inventor/sensors/SoOneShotSensor.h>
 #include <Inventor/system/gl.h>
 
+#include <QFont>
+#include <QFontMetricsF>
 #include <QGraphicsView>
+#include <QKeyEvent>
+#include <QPainterPath>
 #include <QMouseEvent>
 #include <QPointer>
 #include <QPolygonF>
 #include <QTabletEvent>
 #include <QTimer>
+#include <QtGui/private/qtriangulator_p.h>
 
 #include <optional>
+#include <set>
 
 #include <Gui/Shell/Theme.h>
 
@@ -116,7 +123,7 @@ constexpr std::pair<const char*, Tool> ToolCommands[] = {
     {"Design_ScribbleRectangle", Tool::Rectangle}, {"Design_ScribbleCircle", Tool::Circle},
     {"Design_ScribbleArrow", Tool::Arrow}, {"Design_ScribbleTriangle", Tool::Triangle},
     {"Design_ScribbleHexagon", Tool::Hexagon}, {"Design_ScribbleEllipse", Tool::Ellipse}, {"Design_ScribbleFill", Tool::Fill},
-    {"Design_ScribbleSelect", Tool::Select},
+    {"Design_ScribbleSelect", Tool::Select}, {"Design_ScribbleText", Tool::Text},
 };
 
 QAction* commandAction(const char* name)
@@ -185,24 +192,47 @@ SoSeparator* strokeNode(const Stroke& s)
     if (n == 0) {
         return sep;
     }
-    if (s.kind == Design::Scribble::Fill) {  // Fläche im Umriss, auch nach innen gewölbt (Coin zerlegt sie)
-        auto hints = new SoShapeHints;
-        hints->faceType = SoShapeHints::UNKNOWN_FACE_TYPE;
-        hints->vertexOrdering = SoShapeHints::UNKNOWN_ORDERING;
-        std::vector<SbVec3f> pts;
-        for (const auto& p : s.points) {
-            pts.push_back(sb(p));
+    if (s.kind == Design::Scribble::Fill) {
+        // Fläche im Umriss, gerade/ungerade gefüllt: Löcher (Text), nach innen gewölbt, auch sich kreuzend. Qt zerlegt sie
+        // in Dreiecke; Coins Zerleger scheitert an Löchern. Gerechnet in der Blatt-Ebene, so groß, dass Qts Rundung auf
+        // 1/32 nichts verschiebt
+        Base::Vector3d n = s.normal, u = s.normal % Base::Vector3d(1, 0, 0);
+        if (u.Length() < 1e-9) {
+            u = n % Base::Vector3d(0, 1, 0);
         }
-        if (pts.size() > 1 && pts.front() == pts.back()) {
-            pts.pop_back();
+        n.Normalize();
+        u.Normalize();
+        const Base::Vector3d v = n % u, o = s.points.front();
+        std::vector<qreal> flat;
+        double extent = 1e-9;
+        for (const auto& p : s.points) {
+            flat.push_back((p - o) * u);
+            flat.push_back((p - o) * v);
+            extent = std::max({extent, std::abs(flat.rbegin()[0]), std::abs(flat.rbegin()[1])});
+        }
+        const double scale = 1e4 / extent;
+        const QTriangleSet set = qTriangulate(flat.data(), int(flat.size() / 2),
+                                              uint(QVectorPath::PolygonHint | QVectorPath::OddEvenFill),
+                                              QTransform::fromScale(scale, scale));
+        std::vector<SbVec3f> pts;
+        for (qsizetype i = 0; i + 1 < set.vertices.size(); i += 2) {
+            pts.push_back(sb(o + u * (set.vertices[i] / scale) + v * (set.vertices[i + 1] / scale)));
+        }
+        std::vector<int32_t> index;
+        for (int i = 0; i < set.indices.size(); ++i) {
+            index.push_back(set.indices.type() == QVertexIndexVector::UnsignedInt
+                                ? int32_t(static_cast<const quint32*>(set.indices.data())[i])
+                                : int32_t(static_cast<const quint16*>(set.indices.data())[i]));
+            if (i % 3 == 2) {
+                index.push_back(SO_END_FACE_INDEX);
+            }
         }
         auto coords = new SoCoordinate3;
         coords->point.setValues(0, int(pts.size()), pts.data());
-        auto face = new SoFaceSet;
-        face->numVertices.setValue(int(pts.size()));
-        sep->addChild(hints);
+        auto faces = new SoIndexedFaceSet;
+        faces->coordIndex.setValues(0, int(index.size()), index.data());
         sep->addChild(coords);
-        sep->addChild(face);
+        sep->addChild(faces);
         return sep;
     }
     Base::Vector3d normal = s.normal;
@@ -429,6 +459,41 @@ double distanceToSegment(const QPointF& p, const QPointF& a, const QPointF& b)
 constexpr double SnapRadius = 10;   ///< px: so nah muss der Stift an ein Strich-Ende, damit er einrastet
 constexpr double EraseRadius = 10;  ///< px
 constexpr int HoldMs = 450;         ///< so lange still halten, damit ein Strich zur Form wird
+constexpr double TextPx = 20;       ///< Schriftgröße beim Tippen, px (MyStyle typography.desktop.title2)
+
+/// Getippter Text als Umrisse in Pixeln der Schrift (y nach unten, Ursprung = Klickpunkt auf halber Versalhöhe der ersten
+/// Zeile), je Zeile einer: gerade/ungerade gefüllt ergibt er die Buchstaben (strokeNode). Alle Umrisse einer Zeile (auch
+/// Löcher wie im o) hängen über Stege am ersten Punkt, die hin und zurück laufen und so nichts füllen: jede Zeile ist ein
+/// Strich zum Auswählen, Verschieben und Radieren. caret: Ende der letzten Zeile auf der Grundlinie.
+std::vector<QPolygonF> textOutlines(const QString& text, QPointF& caret, double& ascent, double& descent)
+{
+    QFont font(QStringLiteral("Inter"));
+    font.setPixelSize(int(TextPx * 5));  // groß aufbauen: Rundungen werden fein genug unterteilt, auch nah herangezoomt
+    font.setWeight(QFont::Medium);
+    const QFontMetricsF fm(font);
+    const double scale = 1.0 / 5;
+    ascent = fm.ascent() * scale;
+    descent = fm.descent() * scale;
+    std::vector<QPolygonF> rings;
+    const QStringList lines = text.split(QLatin1Char('\n'));
+    for (int i = 0; i < lines.size(); ++i) {
+        const double baseline = fm.capHeight() / 2 + i * fm.lineSpacing();
+        caret = QPointF(fm.horizontalAdvance(lines[i]), baseline) * scale;
+        QPainterPath path;
+        path.addText(0, baseline, font, lines[i]);
+        QPolygonF ring;
+        for (const QPolygonF& c : path.simplified().toSubpathPolygons(QTransform::fromScale(scale, scale))) {
+            if (c.size() > 2) {
+                const QPointF anchor = ring.isEmpty() ? c.first() : ring.first();
+                ring << c << c.first() << anchor;
+            }
+        }
+        if (!ring.isEmpty()) {
+            rings.push_back(ring);
+        }
+    }
+    return rings;
+}
 
 }  // namespace
 
@@ -474,6 +539,10 @@ struct ViewProviderScribble::Private
     void showLasso();
     void deleteSelection();
     void pickSheet(const QPointF& pos);
+    bool typeKey(const QKeyEvent* key, bool apply);  ///< Taste gehört zum Text, der gerade getippt wird
+    std::vector<Stroke> typedStrokes(Stroke* caret = nullptr) const;  ///< caret: Schreibmarke am Ende
+    void showTyped();
+    void commitText();
     void showLive();
     void showSnap(const std::optional<Base::Vector3d>& p);
     void cancel();
@@ -522,6 +591,12 @@ struct ViewProviderScribble::Private
     int grabCandidate = -1;          ///< Stift auf einem Strich: Halten greift ihn
     std::vector<QPointF> lasso;      ///< Bildschirm
     bool overSelection = false;      ///< Mauszeiger zeigt "verschieben"
+
+    // Text: getippt wird direkt aufs Blatt; Enter, Esc, ein Klick daneben oder ein anderes Werkzeug legt ihn ab
+    bool typing = false;
+    QString typed;
+    Base::Vector3d typedAt;  ///< Klickpunkt (lokal)
+    double typedMm = 0.1;    ///< mm je Schrift-Pixel
 };
 
 namespace
@@ -542,6 +617,10 @@ protected:
         // Tasten kommen je nach Fokus beim Viewport oder bei der Ansicht an. Entf ist auch ein Befehlskürzel
         // (Std_Delete): solange etwas ausgewählt ist, gehört die Taste der Auswahl
         if (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress) {
+            if (d->typing && d->typeKey(static_cast<QKeyEvent*>(event), event->type() == QEvent::KeyPress)) {
+                event->accept();  // Buchstaben sind beim Tippen keine Befehlskürzel
+                return true;
+            }
             const int key = static_cast<QKeyEvent*>(event)->key();
             const bool mine = !d->selection.empty()
                 && (key == Qt::Key_Delete || key == Qt::Key_Backspace || key == Qt::Key_Escape);
@@ -730,7 +809,7 @@ void ViewProviderScribble::Private::rebuild(bool editOnly)
                 displayInk->addChild(strokeNode(s));
             }
             editInk->addChild(strokeNode(shifted));
-            if (s.tool != Design::Scribble::Marker) {
+            if (s.tool != Design::Scribble::Marker && s.kind != Design::Scribble::Fill) {
                 if (!editOnly) {
                     displayInk->addChild(hairlineNode(s));
                 }
@@ -845,6 +924,19 @@ void ViewProviderScribble::Private::press(const QPointF& pos, double pressure, b
     pressPos = pos;
     gesture = eraser ? Tool::Eraser : currentTool;
     hold.stop();
+    commitText();  // ein Klick daneben legt den getippten Text ab
+    if (gesture == Tool::Text) {
+        const auto p = onSheet(pos), right = onSheet(pos + QPointF(1, 0));
+        if (p && right) {
+            typing = true;
+            typed.clear();
+            typedAt = *p;
+            typedMm = std::max(1e-6, (*right - *p).Length());
+            viewport->setFocus();  // ein Stift-Tippen gibt den Fokus nicht von selbst
+            showTyped();
+        }
+        return;  // move() und release() tun nichts
+    }
     if (gesture == Tool::Eraser) {
         erased = false;
         doc->openTransaction("Erase");
@@ -931,7 +1023,7 @@ void ViewProviderScribble::Private::move(const QPointF& pos, double pressure)
         erase(pos);
         return;
     }
-    if (gesture == Tool::Sheet) {
+    if (gesture == Tool::Sheet || gesture == Tool::Text) {
         return;
     }
     if (gesture == Tool::Select) {
@@ -1096,6 +1188,9 @@ void ViewProviderScribble::Private::release(const QPointF& pos)
         }
         return;
     }
+    if (gesture == Tool::Text) {
+        return;
+    }
     if (gesture == Tool::Select) {
         if (moving) {
             moving = false;
@@ -1181,7 +1276,7 @@ void ViewProviderScribble::Private::release(const QPointF& pos)
 void ViewProviderScribble::Private::hover(const QPointF& pos)
 {
     const bool snaps = currentTool != Tool::Eraser && currentTool != Tool::Sheet && currentTool != Tool::Fill
-        && currentTool != Tool::Select;
+        && currentTool != Tool::Select && currentTool != Tool::Text;
     showSnap(snaps ? snapEndpoint(pos, false) : std::nullopt);
     const bool over = currentTool == Tool::Select && (selectionBox().contains(pos) || hitStroke(pos) >= 0);
     if (over != overSelection && viewer) {
@@ -1266,15 +1361,37 @@ void ViewProviderScribble::Private::showSelection()
     const double px = pixelSize();
     const Base::Vector3d offset = moving ? moveOffset : Base::Vector3d();
     for (int i : selection) {
-        Stroke glow = all[size_t(i)];
+        const Stroke& s = all[size_t(i)];
+        Stroke glow;
         glow.kind = Design::Scribble::Polygon;  // eine Fläche leuchtet an ihrem Umriss
         glow.tool = Design::Scribble::Pen;
         glow.color = Base::Color(float(t.accent.redF()), float(t.accent.greenF()), float(t.accent.blueF()), 0.35F);
-        for (size_t k = 0; k < glow.points.size(); ++k) {
-            glow.points[k] += offset;
-            glow.widths[k] += 8 * px;
+        glow.normal = s.normal;
+        const auto flush = [&] {
+            if (!glow.points.empty()) {
+                selectionInk->addChild(strokeNode(glow));
+            }
+            glow.points.clear();
+            glow.widths.clear();
+        };
+        // Stege im Text-Umriss (hin und zurück gelaufen) leuchten nicht: dort beginnt ein neues Stück
+        using Segment = std::array<double, 6>;
+        const auto segment = [&s](size_t a, size_t b) {
+            const Base::Vector3d &p = s.points[a], &q = s.points[b];
+            return Segment {p.x, p.y, p.z, q.x, q.y, q.z};
+        };
+        std::set<Segment> segments;
+        for (size_t k = 1; s.kind == Design::Scribble::Fill && k < s.points.size(); ++k) {
+            segments.insert(segment(k - 1, k));
         }
-        selectionInk->addChild(strokeNode(glow));
+        for (size_t k = 0; k < s.points.size(); ++k) {
+            if (k > 0 && segments.contains(segment(k, k - 1))) {
+                flush();
+            }
+            glow.points.push_back(s.points[k] + offset);
+            glow.widths.push_back(s.widths[k] + 8 * px);
+        }
+        flush();
     }
     // Rahmen in Blatt-Koordinaten um alle Punkte
     const Base::Placement sheet = object()->Sheet.getValue();
@@ -1485,6 +1602,97 @@ void ViewProviderScribble::Private::pickSheet(const QPointF& pos)
     setTool(lastDrawTool);
 }
 
+bool ViewProviderScribble::Private::typeKey(const QKeyEvent* key, bool apply)
+{
+    const int k = key->key();
+    const bool enter = k == Qt::Key_Return || k == Qt::Key_Enter;
+    const bool printable = !key->text().isEmpty() && key->text().at(0).isPrint();  // Strg+Z usw. bleiben Befehle
+    if (!enter && !printable && k != Qt::Key_Backspace && k != Qt::Key_Escape) {
+        return false;
+    }
+    if (apply) {
+        if ((enter && !(key->modifiers() & Qt::ShiftModifier)) || k == Qt::Key_Escape) {
+            commitText();
+            return true;
+        }
+        if (enter) {
+            typed += QLatin1Char('\n');
+        }
+        else if (k == Qt::Key_Backspace) {
+            typed.chop(1);
+        }
+        else {
+            typed += key->text();
+        }
+        showTyped();
+    }
+    return true;
+}
+
+std::vector<Stroke> ViewProviderScribble::Private::typedStrokes(Stroke* caret) const
+{
+    QPointF end;
+    double ascent = 0, descent = 0;
+    const Base::Placement sheet = object()->Sheet.getValue();
+    const Base::Matrix4D fromSheet = sheet.toMatrix();
+    const Base::Vector3d o = sheet.inverse().toMatrix() * typedAt;
+    const auto at = [&](const QPointF& q) { return fromSheet * Base::Vector3d(o.x + q.x() * typedMm, o.y - q.y() * typedMm, 0); };
+    std::vector<Stroke> out;
+    for (const QPolygonF& ring : textOutlines(typed, end, ascent, descent)) {
+        Stroke s;
+        s.kind = Design::Scribble::Fill;
+        s.tool = Design::Scribble::Pen;  // deckend, auch im Dunkelmodus
+        s.color = currentColor;
+        s.color.a = 1;
+        s.normal = sheetNormal(sheet);
+        for (const QPointF& q : ring) {
+            s.points.push_back(at(q));
+        }
+        s.widths.assign(s.points.size(), 0);
+        out.push_back(s);
+    }
+    if (caret) {
+        const QColor accent = Gui::Shell::theme().accentText;  // Schreibmarke ist eine Glyphe (MyStyle C-2)
+        caret->kind = Design::Scribble::Line;
+        caret->tool = Design::Scribble::Pen;
+        caret->color = Base::Color(float(accent.redF()), float(accent.greenF()), float(accent.blueF()));
+        caret->normal = sheetNormal(sheet);
+        caret->points = {at(end + QPointF(1.5, descent)), at(end + QPointF(1.5, -ascent))};
+        caret->widths.assign(2, 1.5 * typedMm);
+    }
+    return out;
+}
+
+/// Getippter Text im Blatt, mit Schreibmarke
+void ViewProviderScribble::Private::showTyped()
+{
+    live->removeAllChildren();
+    Stroke caret;
+    for (const Stroke& s : typedStrokes(&caret)) {
+        live->addChild(strokeNode(s));
+    }
+    live->addChild(strokeNode(caret));
+}
+
+void ViewProviderScribble::Private::commitText()
+{
+    if (!typing) {
+        return;
+    }
+    typing = false;
+    live->removeAllChildren();
+    const auto strokes = typedStrokes();
+    if (strokes.empty()) {
+        return;
+    }
+    auto all = object()->strokes();
+    all.insert(all.end(), strokes.begin(), strokes.end());
+    App::Document* doc = vp->getObject()->getDocument();
+    doc->openTransaction("Text");
+    object()->setStrokes(all);
+    doc->commitTransaction();
+}
+
 void ViewProviderScribble::Private::showLive()
 {
     live->removeAllChildren();
@@ -1630,6 +1838,7 @@ void ViewProviderScribble::setEditViewer(Gui::View3DInventorViewer* viewer, int 
 
 void ViewProviderScribble::unsetEditViewer(Gui::View3DInventorViewer* viewer)
 {
+    d->commitText();  // Fertig stellen mitten im Tippen: der Text bleibt
     d->cancel();
     if (d->viewport) {
         d->viewport->removeEventFilter(d->input.get());
@@ -1675,8 +1884,10 @@ void ViewProviderScribble::setTool(Tool tool)
         lastDrawTool = tool;
     }
     if (active && active->d->viewer) {
+        active->d->commitText();
         active->d->viewer->setEditingCursor(QCursor(tool == Tool::Sheet ? Qt::PointingHandCursor
                                                         : tool == Tool::Select ? Qt::ArrowCursor
+                                                        : tool == Tool::Text   ? Qt::IBeamCursor
                                                                                : Qt::CrossCursor));
         active->d->overSelection = false;
         active->d->updatePaper();
@@ -1692,6 +1903,10 @@ void ViewProviderScribble::setTool(Tool tool)
 void ViewProviderScribble::setColor(const Base::Color& color)
 {
     currentColor = color;
+    if (active && active->d->typing) {
+        active->d->showTyped();  // der Text wird beim Ablegen in dieser Farbe gespeichert
+        return;
+    }
     if (active && !active->d->selection.empty()) {  // Auswahl umfärben, jede Strich-Art behält ihre Deckkraft
         auto all = active->d->object()->strokes();
         for (int i : active->d->selection) {

@@ -325,6 +325,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Hexagon: drag from the center to a corner", "Sechseck: von der Mitte zu einer Ecke ziehen"},
         {"Ellipse: drag across it from corner to corner", "Ellipse: von Ecke zu Ecke über sie ziehen"},
         {"Fill", "Füllen"},
+        {"Text: click on the sheet and type. Enter or Esc puts it down, Shift+Enter starts a new line",
+         "Text: aufs Blatt klicken und tippen. Enter oder Esc legt ihn ab, Umschalt+Enter beginnt eine neue Zeile"},
         {"Select: tap a stroke or draw around strokes, then drag them. Delete removes them, a colour recolours them",
          "Auswählen: auf einen Strich tippen oder Striche umranden, dann ziehen. Entf löscht sie, eine Farbe färbt sie um"},
         {"Fill: tap inside a closed shape to colour it, or draw around an area to fill it",

@@ -111,7 +111,8 @@ public:
         Hexagon,
         Ellipse,
         Fill,   ///< in eine geschlossene Form tippen oder eine Fläche umranden: färbt sie ein
-        Select  ///< auf Striche tippen oder sie umranden, dann ziehen; Entf löscht, eine Farbe färbt um
+        Select,  ///< auf Striche tippen oder sie umranden, dann ziehen; Entf löscht, eine Farbe färbt um
+        Text     ///< aufs Blatt klicken und tippen; der Text wird zu gefüllten Buchstaben (je Zeile ein Strich)
     };
 
     ViewProviderScribble();

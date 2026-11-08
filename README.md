@@ -89,7 +89,9 @@ Hold the pen still at the end of a stroke and it straightens into a clean line, 
 
 Under **Shapes** you drag out a line, arrow, rectangle, triangle, hexagon, circle or ellipse. **Fill** colors an area: tap inside a shape, or draw around the part you want filled.
 
-To move things around, hold the pen still on a stroke for a moment and it sticks to the pen. **Select** picks up more at once: tap a stroke or draw around a few, then drag. Tap a color to recolor them, or press Delete.
+To move things around, hold the pen still on a stroke for a moment and it sticks to the pen. **Select** picks up more at once (with the mouse too): tap a stroke or draw around a few, then drag. Tap a color to recolor them, or press Delete.
+
+No pen tablet at hand? **Text** writes with the keyboard: click on the sheet and type, Enter puts it down. Each line becomes a stroke you can select, move and recolor.
 
 **Tracing Paper** lets the model show through, so you can draw right on top of a part.
 
@@ -155,7 +157,7 @@ Bodies can also have real textures: six woods (**Oak**, **Walnut**, **Maple**, *
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
 | **Solids** | 16 create, 12 modify and 6 construction tools |
 | **Notes** | Saved in the design, lines ending in `=` are calculated |
-| **Scribbles** | Pen tablet with pressure, 7 shapes, fill, select and move, sheets in 3D, convert to sketch |
+| **Scribbles** | Pen tablet with pressure, 7 shapes, fill, text, select and move, sheets in 3D, convert to sketch |
 | **Export** | STL · 3MF · STEP · DXF (sketches) |
 | **Import** | STEP · DXF · SVG |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |

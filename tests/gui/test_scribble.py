@@ -321,7 +321,23 @@ in_order([
     ("grabbed", lambda: check("hold the pen still on a stroke: it sticks to the pen and moves, no new stroke",
                               list(last().Kinds) == [2] and stroke_points(0)[1].y > saved["c"].y + 1 and button("Design_ScribblePen").isChecked(),
                               str((list(last().Kinds), stroke_points(0)[1], saved["c"])))),
-    ("esc", lambda: (activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Escape))), wait,
+    # Text: klicken und tippen; F wäre sonst das Kürzel für Abrunden
+    ("text tool", lambda: (saved.update(n=len(last().Kinds)), Gui.runCommand("Design_ScribbleText"))), wait,
+    ("click text", lambda: stroke([(0.35, 0.75), (0.35, 0.75)])), wait,
+    ("type", lambda: (QtTest.QTest.keyClicks(view().viewport(), "Fab"),
+                      QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Return, QtCore.Qt.ShiftModifier),
+                      QtTest.QTest.keyClicks(view().viewport(), "go"))), wait,
+    ("shot typing", lambda: shot("typing")),
+    ("enter", lambda: QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Return)), wait,
+    ("typed", lambda: check("Text: typed letters are no shortcuts, Enter puts two lines down as two opaque filled strokes",
+                            editing() and button("Design_ScribbleText").isChecked() and list(last().Kinds)[saved["n"]:] == [6, 6]
+                            and list(last().Tools)[-2:] == [1, 1] and last().Colors[-1][3] == 1, str((list(last().Kinds), list(last().Tools))))),
+    ("shot text", lambda: shot("text")),
+    ("move text", lambda: (saved.update(t=stroke_points(saved["n"])[0], u=stroke_points(saved["n"] + 1)[0]), Gui.runCommand("Design_ScribbleSelect"),
+                           stroke(line((0.352, 0.75), (0.352, 0.65), 10)))), wait,
+    ("text moved", lambda: check("Select: dragging a text line moves that whole line", stroke_points(saved["n"])[0].y > saved["t"].y + 1
+                                 and stroke_points(saved["n"] + 1)[0] == saved["u"], str((stroke_points(saved["n"])[0], saved["t"])))),
+    ("esc", lambda: (Gui.runCommand("Design_ScribblePen"), activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Escape))), wait,
     ("closed", lambda: check("Esc finishes the scribble", not editing())),
     ("shot end", lambda: shot("end")),
 ])

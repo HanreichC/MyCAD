@@ -3706,7 +3706,7 @@ void Gui::Shell::install()
                  "#UTILITIES", "Design_Note"});
     state.scribbleBar =
         toolbar({"#FILE", "Std_Save", "Std_Undo", "Std_Redo",
-                 "#DRAW", "Design_ScribbleSelect", "Design_ScribblePencil", "Design_ScribblePen", "Design_ScribbleMarker", "Design_ScribbleFill",
+                 "#DRAW", "Design_ScribbleSelect", "Design_ScribblePencil", "Design_ScribblePen", "Design_ScribbleMarker", "Design_ScribbleText", "Design_ScribbleFill",
                  "Design_ScribbleEraser",
                  "Design_ScribbleBlack|Design_ScribbleBlue|Design_ScribbleRed|Design_ScribbleGreen|Design_ScribbleYellow",
                  "#SHAPES", "Design_ScribbleLine|Design_ScribbleArrow",
