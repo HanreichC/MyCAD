@@ -8,6 +8,8 @@
 #include <Gui/Application.h>
 #include <Gui/Command.h>
 #include <Gui/MainWindow.h>
+#include <Gui/Navigation/NavigationStyle.h>
+#include <Gui/View3DInventorViewer.h>
 
 #include <QAbstractSpinBox>
 #include <QApplication>
@@ -58,6 +60,14 @@
 #include <QAbstractButton>
 
 #include <cstring>
+#include <cerrno>
+#include <fcntl.h>
+#include <libinput.h>
+#include <libudev.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <QPointer>
+#include <QSocketNotifier>
 
 using namespace Gui::Shell;
 
@@ -210,9 +220,10 @@ bool isViewport(QObject* obj)
     return view && view->viewport() == w && view->inherits("Gui::View3DInventorViewer");
 }
 
-/// Zoomrichtung getrennt für Maus und Trackpad (Einstellungen). FreeCAD kennt nur eine Richtung ("InvertZoom",
-/// gilt fürs Mausrad); beim Trackpad wird die Richtung im Ereignis selbst umgedreht, bevor das 3D-Fenster es sieht.
-/// (Ein neu zugestelltes Ersatz-Ereignis kam bei echten Trackpads nicht an: Qt bindet Scrollphasen an das Original.)
+/// Trackpad im 3D-Fenster: Zoomrichtung getrennt für Maus und Trackpad (Einstellungen) und 3 Finger = drehen.
+/// FreeCAD kennt nur eine Zoomrichtung ("InvertZoom", gilt fürs Mausrad); beim Trackpad wird die Richtung im Ereignis
+/// selbst umgedreht, bevor das 3D-Fenster es sieht. (Ein neu zugestelltes Ersatz-Ereignis kam bei echten Trackpads
+/// nicht an: Qt bindet Scrollphasen an das Original.) 2 Finger schieben und Spreizen erledigt NavigationStyle selbst.
 struct FlipWheel: QWheelEvent
 {
     static void flip(QWheelEvent* e)
@@ -231,12 +242,12 @@ struct FlipGesture: QNativeGestureEvent
     }
 };
 
-class ZoomDirection: public QObject
+class Trackpad: public QObject
 {
 public:
     static void install()
     {
-        static ZoomDirection filter;
+        static Trackpad filter;
         qApp->installEventFilter(&filter);
     }
 
@@ -253,7 +264,11 @@ protected:
             // Wayland meldet Maus und Trackpad oft als ein Gerät; Trackpad-Scrollen hat aber Phasen bzw. Pixel-Schritte
             const bool trackpad = (we->pointingDevice() && we->pointingDevice()->type() == QInputDevice::DeviceType::TouchPad)
                 || we->phase() != Qt::NoScrollPhase || !we->pixelDelta().isNull();
-            if (trackpad && padInvert != mouseInvert) {
+            const bool zooms = Gui::NavigationStyle::wheelAction(true, Gui::NavigationStyle::touchpadScrollPans(),
+                                                                 we->modifiers() & Qt::ShiftModifier,
+                                                                 we->modifiers() & Qt::ControlModifier)
+                == Gui::NavigationStyle::WheelAction::Zoom;  // beim Schieben nichts umdrehen
+            if (trackpad && zooms && padInvert != mouseInvert) {
                 FlipWheel::flip(we);
             }
             return false;
@@ -262,8 +277,120 @@ protected:
         if (ge->gestureType() == Qt::ZoomNativeGesture && padInvert) {
             FlipGesture::flip(ge);  // Spreizen: ohne Umkehr wie gewohnt (auseinander = näher)
         }
+        // 3 Finger wischen = drehen wie Ziehen mit der Maus (2 Finger sind Scrollen; 4 belegen KDE/GNOME selbst).
+        // Qt meldet Beginn/Ende für Wischen und Spreizen gleich, darum erst bei der ersten Wischbewegung anfangen.
+        auto nav = static_cast<Gui::View3DInventorViewer*>(obj->parent())->navigationStyle();
+        if (ge->gestureType() == Qt::PanNativeGesture && ge->fingerCount() >= 3 && nav) {
+            if (!orbiting) {
+                nav->beginOrbitDrag({});
+                orbiting = true;
+            }
+            auto vp = static_cast<QWidget*>(obj);
+            const SbVec2f mid(0.5F, 0.5F);  // Qt: y nach unten, Coin: y nach oben
+            const auto k = float(viewParams()->GetFloat("TrackpadRotateSpeed", 1.0));
+            nav->updateOrbitDrag(mid + k * SbVec2f(float(ge->delta().x() / vp->width()), float(-ge->delta().y() / vp->height())), mid);
+            return true;
+        }
+        if (ge->gestureType() == Qt::EndNativeGesture && orbiting && nav) {
+            nav->endOrbitDrag();
+            orbiting = false;
+        }
         return false;
     }
+
+private:
+    bool orbiting = false;
+};
+
+/// KWin behält jedes Wischen mit 3+ Fingern für sich (auch ohne Kürzel), Programme bekommen es nie. Darum liest
+/// MyCAD lesbare Touchpads selbst mit, neben KWin (wie libinput-gestures), und reicht 3-Finger-Wischen als Qt-Geste
+/// an die 3D-Ansicht unter dem Zeiger; dort dreht Trackpad oben. Lesbar macht Touchpads eine udev-Regel (uaccess,
+/// siehe jomaa.kb96trackpad.config); ohne Zugriff passiert einfach nichts.
+/// ponytail: leitet ein Compositor 3-Finger-Wischen doch weiter (z. B. Sway), dreht es doppelt; dann Qt-Gesten
+/// mit 3 Fingern im Trackpad-Filter ignorieren, sobald hier ein Touchpad offen ist.
+class TouchpadReader: public QObject
+{
+public:
+    static void install()
+    {
+        static TouchpadReader reader;
+    }
+
+private:
+    TouchpadReader()
+    {
+        static const libinput_interface io {
+            [](const char* path, int flags, void* udev) -> int {
+                // nur Touchpads öffnen, nie Tastaturen (falls der Benutzer z. B. in der Gruppe input ist)
+                struct stat st {};
+                if (stat(path, &st) != 0) {
+                    return -errno;
+                }
+                auto dev = udev_device_new_from_devnum(static_cast<struct udev*>(udev), 'c', st.st_rdev);
+                const char* tp = dev ? udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD") : nullptr;
+                const bool touchpad = tp && std::strcmp(tp, "1") == 0;
+                udev_device_unref(dev);
+                if (!touchpad) {
+                    return -EPERM;
+                }
+                const int fd = ::open(path, flags | O_CLOEXEC);
+                return fd < 0 ? -errno : fd;
+            },
+            [](int fd, void*) { ::close(fd); }};
+        struct udev* udev = udev_new();
+        li = udev ? libinput_udev_create_context(&io, udev, udev) : nullptr;
+        if (!li) {
+            return;
+        }
+        // nicht lesbare Geräte (der Normalfall ohne udev-Regel) nicht bei jedem Start ins Terminal melden
+        libinput_log_set_handler(li, [](libinput*, libinput_log_priority, const char*, va_list) {});
+        if (libinput_udev_assign_seat(li, "seat0") != 0) {
+            return;
+        }
+        auto notifier = new QSocketNotifier(libinput_get_fd(li), QSocketNotifier::Read, this);
+        connect(notifier, &QSocketNotifier::activated, this, &TouchpadReader::read);
+        read();
+    }
+
+    void read()
+    {
+        libinput_dispatch(li);
+        while (libinput_event* e = libinput_get_event(li)) {
+            const auto type = libinput_event_get_type(e);
+            if (type == LIBINPUT_EVENT_GESTURE_SWIPE_BEGIN || type == LIBINPUT_EVENT_GESTURE_SWIPE_UPDATE
+                || type == LIBINPUT_EVENT_GESTURE_SWIPE_END) {
+                auto g = libinput_event_get_gesture_event(e);
+                if (libinput_event_gesture_get_finger_count(g) == 3) {  // 4 Finger gehören KDE
+                    swipe(type, QPointF(libinput_event_gesture_get_dx(g), libinput_event_gesture_get_dy(g)));
+                }
+            }
+            libinput_event_destroy(e);
+        }
+    }
+
+    void swipe(libinput_event_type type, QPointF delta)
+    {
+        if (type == LIBINPUT_EVENT_GESTURE_SWIPE_BEGIN) {
+            viewport = nullptr;
+            for (QWidget* w : QApplication::allWidgets()) {
+                if (isViewport(w) && w->isVisible() && w->underMouse()) {
+                    viewport = w;
+                }
+            }
+            return;
+        }
+        if (!viewport) {
+            return;
+        }
+        const QPointF global = QCursor::pos();
+        const QPointF local = viewport->mapFromGlobal(global);
+        QNativeGestureEvent ev(type == LIBINPUT_EVENT_GESTURE_SWIPE_END ? Qt::EndNativeGesture : Qt::PanNativeGesture,
+                               QPointingDevice::primaryPointingDevice(), 3, local, local, global, 0, delta);
+        QApplication::sendEvent(viewport, &ev);
+    }
+
+    libinput* li = nullptr;
+    QPointer<QWidget> viewport;
 };
 
 /// Tippt der Benutzer gerade Text? Dann bleiben Tasten Tasten.
@@ -476,7 +603,8 @@ void Gui::Shell::registerSettings()
         .GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher")
         ->SetBool("MakeInternals", false);
     MouseKeyMapper::instance();
-    ZoomDirection::install();
+    Trackpad::install();
+    TouchpadReader::install();
 }
 
 namespace
@@ -1073,7 +1201,7 @@ void Gui::Shell::showSettings()
         showHelp(i);
     });
     new EventHook(style->view(), QEvent::Hide, [style, showHelp] { showHelp(style->currentIndex()); });
-    nav->addWidget(hint(T("On a trackpad, two-finger scrolling acts as the scroll wheel. "
+    nav->addWidget(hint(T("On a trackpad: two fingers pan, three fingers rotate, pinch zooms. "
                           "Keys that act as mouse buttons are set up under Keys.")));
 
     auto viewCard = addCard(nav, T("View"));
@@ -1114,8 +1242,19 @@ void Gui::Shell::showSettings()
     addRow(speedCard, T("Zoom & scroll speed"), zoomStep);
     viewToggle(speedCard, T("Zoom towards the cursor"), "ZoomAtCursor", true);
     viewToggle(speedCard, T("Invert zoom (mouse wheel)"), "InvertZoom", true);
-    toggle(speedCard, T("Invert zoom (trackpad)"), myParams()->GetBool("InvertTrackpadZoom", view->GetBool("InvertZoom", true)),
+
+    auto padCard = addCard(nav, T("Trackpad"));
+    viewToggle(padCard, T("Two fingers pan"), "TouchpadScrollPans", Gui::NavigationStyle::touchpadScrollPansByDefault());
+    // Spreizen, und 2-Finger-Scrollen, falls es zoomt
+    toggle(padCard, T("Invert zoom"), myParams()->GetBool("InvertTrackpadZoom", view->GetBool("InvertZoom", true)),
            [](bool on) { myParams()->SetBool("InvertTrackpadZoom", on); });
+    for (auto [label, param] : {std::pair {"Rotate (3 fingers)", "TrackpadRotateSpeed"},
+                                std::pair {"Pan (2 fingers)", "TrackpadPanSpeed"},
+                                std::pair {"Zoom (pinch)", "TrackpadZoomSpeed"}}) {
+        auto s = slider(25, 400, int(view->GetFloat(param, 1.0) * 100));  // 25 % … 400 %
+        QObject::connect(s, &QSlider::valueChanged, [view, param](int v) { view->SetFloat(param, v / 100.0); });
+        addRow(padCard, T(label), s);
+    }
     nav->addStretch();
 
     // --- Seite Tasten als Maustasten (cad.helper) ---

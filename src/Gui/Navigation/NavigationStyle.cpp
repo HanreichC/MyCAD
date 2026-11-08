@@ -2593,11 +2593,7 @@ void NavigationStyle::replayDeferredMouseDownEvent()
 
 bool NavigationStyle::touchpadScrollPansByDefault()
 {
-#ifdef Q_OS_MACOS
-    return true;
-#else
-    return false;
-#endif
+    return true;  // MyCAD: 2 Finger schieben, Spreizen zoomt, 3 Finger drehen (überall, nicht nur macOS)
 }
 
 bool NavigationStyle::touchpadScrollPans()
@@ -2605,6 +2601,14 @@ bool NavigationStyle::touchpadScrollPans()
     return App::GetApplication()
         .GetParameterGroupByPath("User parameter:BaseApp/Preferences/View")
         ->GetBool("TouchpadScrollPans", touchpadScrollPansByDefault());
+}
+
+/// MyCAD: Trackpad-Tempo aus den Einstellungen (1 = wie FreeCAD), getrennt für Drehen, Schieben, Zoomen
+static float trackpadSpeed(const char* param)
+{
+    return static_cast<float>(App::GetApplication()
+                                  .GetParameterGroupByPath("User parameter:BaseApp/Preferences/View")
+                                  ->GetFloat(param, 1.0));
 }
 
 NavigationStyle::WheelAction NavigationStyle::wheelAction(
@@ -2642,7 +2646,7 @@ SbBool NavigationStyle::processWheelEvent(const SoMouseWheelEvent* const event)
     switch (action) {
         case WheelAction::Orbit: {
             const SbVec2f center(0.5F, 0.5F);
-            spin_simplified(center + normalizePixelPos(event->getPixelDelta()), center);
+            spin_simplified(center + normalizePixelPos(event->getPixelDelta()) * trackpadSpeed("TrackpadRotateSpeed"), center);
             break;
         }
         case WheelAction::Pan: {
@@ -2653,7 +2657,7 @@ SbBool NavigationStyle::processWheelEvent(const SoMouseWheelEvent* const event)
                 camera,
                 ratio,
                 this->panningplane,
-                normalizePixelPos(event->getPixelDelta()),
+                normalizePixelPos(event->getPixelDelta()) * trackpadSpeed("TrackpadPanSpeed"),
                 SbVec2f(0, 0)
             );
             break;
@@ -2696,7 +2700,7 @@ SbBool NavigationStyle::processPinchEvent(const SoGesturePinchEvent* const event
     }
 
     if (action.zoom) {
-        doZoom(camera, action.zoomLogFactor, posn);
+        doZoom(camera, action.zoomLogFactor * trackpadSpeed("TrackpadZoomSpeed"), posn);
     }
 
     if (action.rotate) {
@@ -2722,9 +2726,8 @@ NavigationStyle::PinchAction NavigationStyle::pinchAction(
         action.zoomLogFactor = -logf(static_cast<float>(event->deltaZoom));
     }
 
-    const bool tiltBlocked = touchTiltDisabled && !event->fromNativeGesture;
-
-    if (event->deltaAngle != 0.0 && !tiltBlocked) {
+    // MyCAD: auch beim Trackpad aus, sonst kippt die Ansicht bei jedem Spreizen mit
+    if (event->deltaAngle != 0.0 && !touchTiltDisabled) {
         action.rotate = true;
         action.rotateAngle = static_cast<float>(event->deltaAngle);
     }

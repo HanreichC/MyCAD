@@ -167,6 +167,8 @@ list(APPEND FreeCADGui_LIBS
     ${QtSvgWidgets_LIBRARIES}
     ${QtNetwork_LIBRARIES}
     ${QtUiTools_LIBRARIES}
+    input  # Shell/Settings.cpp: 3-Finger-Wischen selbst lesen (KWin gibt es nicht weiter)
+    udev
 )
 
 link_directories(${YAML_CPP_LIBRARY_DIR})

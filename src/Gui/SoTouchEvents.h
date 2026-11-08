@@ -101,7 +101,6 @@ public:
     double totalZoom;  // zoom factor accumulated since start of gesture.
     double deltaAngle;
     double totalAngle;
-    bool fromNativeGesture {false};
 
     static double unbranchAngle(double ang);
 };

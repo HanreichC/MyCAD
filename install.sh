@@ -43,10 +43,12 @@ if [ -e /dev/nvidiactl ]; then
         NVIDIA+=(-v "\$file:\$file:ro")
     done
 fi
+# /dev/input + /run/udev: Touchpad selbst lesen (3 Finger drehen), braucht die udev-Regel aus jomaa.kb96trackpad.config
 exec podman run --rm --userns=keep-id --group-add keep-groups \\
     --device /dev/dri "\${NVIDIA[@]}" \\
     -v "$ROOT:/workspace" -v "\$HOME:\$HOME" -w "\$PWD" \\
     -v "\$XDG_RUNTIME_DIR/\$WAYLAND_DISPLAY:/tmp/runtime/\$WAYLAND_DISPLAY" \\
+    -v /dev/input:/dev/input:ro -v /run/udev:/run/udev:ro \\
     -e HOME="\$HOME" -e XDG_RUNTIME_DIR=/tmp/runtime -e WAYLAND_DISPLAY="\$WAYLAND_DISPLAY" \\
     -e QT_QPA_PLATFORM=wayland \\
     $IMAGE /workspace/build/bin/FreeCAD "\$@"

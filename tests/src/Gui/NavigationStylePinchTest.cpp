@@ -12,13 +12,12 @@ namespace
 constexpr bool TouchTiltDisabled = true;
 constexpr bool TouchTiltAllowed = false;
 
-SoGesturePinchEvent updateEvent(double deltaZoom, double deltaAngle, bool native = false)
+SoGesturePinchEvent updateEvent(double deltaZoom, double deltaAngle)
 {
     SoGesturePinchEvent event;
     event.state = SoGestureEvent::SbGSUpdate;
     event.deltaZoom = deltaZoom;
     event.deltaAngle = deltaAngle;
-    event.fromNativeGesture = native;
     return event;
 }
 }  // namespace
@@ -89,7 +88,7 @@ TEST(NavigationStylePinchAction, pinchingInZoomsOutBySymmetricAmount)
     EXPECT_FLOAT_EQ(zoomOut.zoomLogFactor, -zoomIn.zoomLogFactor);
 }
 
-TEST(NavigationStylePinchAction, aTouchscreenPinchObeysTheTiltPreference)
+TEST(NavigationStylePinchAction, aPinchObeysTheTiltPreference)  // MyCAD: Trackpad wie Touchscreen
 {
     const auto event = updateEvent(2.0, 0.5);
 
@@ -97,15 +96,4 @@ TEST(NavigationStylePinchAction, aTouchscreenPinchObeysTheTiltPreference)
 
     EXPECT_TRUE(action.zoom);
     EXPECT_FALSE(action.rotate);
-}
-
-TEST(NavigationStylePinchAction, aTrackpadRotateIsNotBlockedByTheTouchscreenTiltPreference)
-{
-    const auto event = updateEvent(2.0, 0.5, true);
-
-    const auto action = Gui::NavigationStyle::pinchAction(&event, TouchTiltDisabled);
-
-    EXPECT_TRUE(action.zoom);
-    ASSERT_TRUE(action.rotate);
-    EXPECT_FLOAT_EQ(action.rotateAngle, 0.5F);
 }

@@ -209,7 +209,8 @@
     "en": [
      "Rotate (Fusion 360 style): hold Shift and drag with the middle mouse button (the pressed scroll wheel).",
      "Pan: drag with the middle mouse button.",
-     "Zoom: turn the scroll wheel; it zooms towards the cursor. On a trackpad, scroll with two fingers.",
+     "Zoom: turn the scroll wheel; it zooms towards the cursor.",
+     "Trackpad, no keys needed: move two fingers to pan, three fingers to rotate, pinch to zoom.",
      "View cube (top right, below the window buttons): click a face such as TOP or FRONT to look from that side, or a corner for an angled view. The small house below it shows the whole model.",
      "Lost the model? INSPECT → Fit All (keys V, F) zooms so everything fits.",
      "To see the exact buttons of your style: open Settings (bottom of the sidebar) → Navigation; the box below Style lists Rotate, Pan, Zoom and Select."
@@ -217,7 +218,8 @@
     "de": [
      "Drehen (Stil Fusion 360): Umschalt gedrückt halten und mit der mittleren Maustaste (dem gedrückten Mausrad) ziehen.",
      "Verschieben: mit der mittleren Maustaste ziehen.",
-     "Zoomen: Mausrad drehen; es zoomt zum Cursor hin. Auf dem Trackpad mit zwei Fingern scrollen.",
+     "Zoomen: Mausrad drehen; es zoomt zum Cursor hin.",
+     "Trackpad, ganz ohne Tasten: zwei Finger bewegen zum Verschieben, drei Finger zum Drehen, Spreizen zum Zoomen.",
      "ViewCube (oben rechts, unter den Fensterknöpfen): Klicke eine Seite wie OBEN oder VORNE an, um von dort zu schauen, oder eine Ecke für eine Schrägansicht. Das kleine Haus darunter zeigt das ganze Modell.",
      "Modell verloren? PRÜFEN → Alles zeigen (Tasten V, F) zoomt so, dass alles hineinpasst.",
      "Die genauen Tasten deines Stils: Einstellungen öffnen (unten in der Seitenleiste) → Navigation; der Kasten unter Stil zeigt Drehen, Verschieben, Zoomen und Auswählen."
@@ -231,12 +233,12 @@
     "en": [
      "On a laptop, Settings → Keys can turn a key such as Space into the middle mouse button.",
      "The view turns around the body under the cursor (Settings → Rotate around), so the detail you look at stays in place.",
-     "Zoom in the wrong direction? Settings → Speed & Zoom → Invert zoom (mouse wheel) or Invert zoom (trackpad)."
+     "Zoom in the wrong direction? Settings → Speed & Zoom → Invert zoom (mouse wheel), or for pinching Settings → Trackpad → Invert zoom."
     ],
     "de": [
      "Am Laptop machst du unter Einstellungen → Tasten eine Taste wie die Leertaste zur mittleren Maustaste.",
      "Die Ansicht dreht um den Körper unter dem Cursor (Einstellungen → Drehen um), so bleibt das betrachtete Detail an seinem Platz.",
-     "Zoom in die falsche Richtung? Einstellungen → Tempo & Zoom → Zoom umkehren (Mausrad) oder Zoom umkehren (Trackpad)."
+     "Zoom in die falsche Richtung? Einstellungen → Tempo & Zoom → Zoom umkehren (Mausrad), beim Spreizen Einstellungen → Trackpad → Zoom umkehren."
     ]
    }
   },
@@ -3914,7 +3916,7 @@
      "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart) and Projects folder.",
      "Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
      "View: Camera, Rotate, Rotate around and Animate view changes.",
-     "Speed & Zoom: Rotation speed, Zoom & scroll speed, Zoom towards the cursor, Invert zoom (mouse wheel) and Invert zoom (trackpad).",
+     "Speed & Zoom: Rotation speed, Zoom & scroll speed, Zoom towards the cursor, Invert zoom (mouse wheel). Trackpad: Two fingers pan (off: two-finger scrolling zooms like the scroll wheel), Invert zoom (pinch direction) and how strongly 3 fingers rotate, 2 fingers pan and pinching zooms.",
      "Keys tab: Add Key… turns a key into a mouse button, e.g. Shift as the middle button; choose the button and whether to Hold, Click, Double-click or Toggle."
     ],
     "de": [
@@ -3922,7 +3924,7 @@
      "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart) und Projektordner.",
      "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen.",
      "Ansicht: Kamera, Drehen, Drehen um und Ansichtswechsel animieren.",
-     "Tempo & Zoom: Drehgeschwindigkeit, Zoom- & Scrollgeschwindigkeit, Zum Cursor hin zoomen, Zoom umkehren (Mausrad) und Zoom umkehren (Trackpad).",
+     "Tempo & Zoom: Drehgeschwindigkeit, Zoom- & Scrollgeschwindigkeit, Zum Cursor hin zoomen, Zoom umkehren (Mausrad). Trackpad: Zwei Finger schieben (aus: Scrollen mit zwei Fingern zoomt wie das Mausrad), Zoom umkehren (Richtung beim Spreizen) und wie stark 3 Finger drehen, 2 Finger schieben und Spreizen zoomt.",
      "Reiter Tasten: Taste hinzufügen… macht eine Taste zur Maustaste, z. B. Umschalt als mittlere Taste; wähle die Maustaste und ob Halten, Klicken, Doppelklick oder Umschalten."
     ]
    },

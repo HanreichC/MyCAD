@@ -43,7 +43,6 @@ bool NativeGesturePinch::update(Qt::NativeGestureType type, double value, const 
     pinch.deltaZoom = 0.0;
     pinch.deltaAngle = 0.0;
     pinch.deltaCenter = SbVec2f(0.0F, 0.0F);
-    pinch.fromNativeGesture = true;
     const SbVec2f center(static_cast<float>(glPos[0]), static_cast<float>(glPos[1]));
     pinch.curCenter = center;
     pinch.setPosition(glPos);
@@ -229,7 +228,7 @@ GesturesDevice::GesturesDevice(QWidget* widget)
 
 const SoEvent* GesturesDevice::translateEvent(QEvent* event)
 {
-#ifdef Q_OS_MACOS
+    // Trackpad-Spreizen/-Drehen (macOS, Wayland, X11)
     if (event->type() == QEvent::NativeGesture) {
         auto native = static_cast<QNativeGestureEvent*>(event);
         const SbVec2s pos = InputDevice::toDevicePixelPosition(
@@ -245,7 +244,6 @@ const SoEvent* GesturesDevice::translateEvent(QEvent* event)
         }
         return &this->nativePinch.event();
     }
-#endif
 
     if (event->type() == QEvent::Gesture || event->type() == QEvent::GestureOverride) {
         auto gevent = static_cast<QGestureEvent*>(event);
