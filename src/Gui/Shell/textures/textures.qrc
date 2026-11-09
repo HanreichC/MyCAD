@@ -1,18 +1,42 @@
 <RCC>
     <qresource prefix="/mycad/textures">
-        <file>oak.jpg</file>
-        <file>walnut.jpg</file>
-        <file>maple.jpg</file>
-        <file>cherry.jpg</file>
-        <file>pine.jpg</file>
+        <file>ash.jpg</file>
+        <file>ash_s.jpg</file>
         <file>bamboo.jpg</file>
+        <file>bamboo_s.jpg</file>
         <file>brushed_aluminum.jpg</file>
+        <file>brushed_aluminum_s.jpg</file>
         <file>brushed_steel.jpg</file>
+        <file>brushed_steel_s.jpg</file>
         <file>carbon.jpg</file>
+        <file>carbon_s.jpg</file>
+        <file>cherry.jpg</file>
+        <file>cherry_s.jpg</file>
         <file>concrete.jpg</file>
-        <file>marble.jpg</file>
-        <file>granite.jpg</file>
-        <file>leather.jpg</file>
+        <file>concrete_s.jpg</file>
         <file>cork.jpg</file>
+        <file>cork_s.jpg</file>
+        <file>fabric.jpg</file>
+        <file>fabric_s.jpg</file>
+        <file>granite.jpg</file>
+        <file>granite_s.jpg</file>
+        <file>leather.jpg</file>
+        <file>leather_s.jpg</file>
+        <file>maple.jpg</file>
+        <file>maple_s.jpg</file>
+        <file>marble.jpg</file>
+        <file>marble_black.jpg</file>
+        <file>marble_black_s.jpg</file>
+        <file>marble_s.jpg</file>
+        <file>oak.jpg</file>
+        <file>oak_s.jpg</file>
+        <file>pine.jpg</file>
+        <file>pine_s.jpg</file>
+        <file>plywood.jpg</file>
+        <file>plywood_s.jpg</file>
+        <file>teak.jpg</file>
+        <file>teak_s.jpg</file>
+        <file>walnut.jpg</file>
+        <file>walnut_s.jpg</file>
     </qresource>
 </RCC>

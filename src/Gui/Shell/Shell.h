@@ -42,8 +42,10 @@ void applyAppearance();
 struct BodyMaterialEntry
 {
     const char* name;     ///< englisch, über T() anzeigen
-    const char* texture;  ///< Ressource der Textur oder nullptr
+    const char* texture;   ///< Ressource der Textur oder nullptr
     bool wood;
+    const char* category;  ///< englisch: Colors, Metal, Anodized, Coatings, Plastic, 3D Print, Rubber, Glass, Wood …
+    const char* family;    ///< Varianten (Farben, Finish) teilen sich eine Familie
 };
 std::vector<BodyMaterialEntry> bodyMaterialList();
 App::Material bodyMaterialAppearance(int index);

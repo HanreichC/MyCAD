@@ -1068,7 +1068,7 @@ void ViewProviderPartExt::unsetEdit(int ModNum)
 
 namespace
 {
-constexpr double TextureTileMM = 200.0;  // eine Kachel auf dem Körper, siehe tools/make_textures.py
+constexpr double TextureTileMM = 200.0;  // Koordinaten in 200-mm-Kacheln; den Maßstab je Bild setzt Gui::Shell::bodyTexture
 
 /// Texturkoordinaten einer Fläche. Ebenen werden auf die Achsebene projiziert, zu der sie am besten passt: Die Maserung
 /// läuft so auf allen Seiten eines Körpers gleich. Gekrümmte Flächen nutzen ihre UV-Parameter, umgerechnet in mm.

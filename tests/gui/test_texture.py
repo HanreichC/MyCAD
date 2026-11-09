@@ -135,11 +135,12 @@ in_order([
     ("after", after_reopen),
     ("reopen check", lambda: (report("nach Öffnen", state["box"]), check("Textur übersteht Speichern und Öffnen", textured(state["box"])), shot("reopened"))),
 
-    # Vorgabe in den Einstellungen: bestehender Körper mit eigener Textur bleibt, neuer Körper bekommt Ahorn
-    ("default", lambda: pick_default("Maple")), ("wait", lambda: None), ("wait", lambda: None),
+    # Vorgabe in den Einstellungen: bestehender Körper mit eigener Textur bleibt, neuer Körper bekommt Eiche (deutliche
+    # Maserung; der Ahorn-Scan ist fast gleichmäßig hell wie echter Ahorn)
+    ("default", lambda: pick_default("Oak")), ("wait", lambda: None), ("wait", lambda: None),
     ("new", lambda: state.update(new=make_body(rect(0, 100, 90, 160), 0, 30, "New"))),
     ("fit", fit),
-    ("default check", lambda: (report("neu mit Vorgabe Ahorn", state["new"]), report("eigene Textur", state["box"]),
+    ("default check", lambda: (report("neu mit Vorgabe Eiche", state["new"]), report("eigene Textur", state["box"]),
                                check("neuer Körper bekommt die Vorgabe-Textur", textured(state["new"]) and sum(patch(state["new"])[0]) > 400),
                                check("eigene Textur bleibt beim Wechsel", textured(state["box"]) and sum(patch(state["box"])[0]) < 360),
                                shot("default"))),

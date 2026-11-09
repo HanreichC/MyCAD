@@ -300,47 +300,196 @@ QColor mix(const QColor& a, const QColor& b, double f)
                             a.blueF() + (b.blueF() - a.blueF()) * f);
 }
 
-/// Aussehen der Körper (Einstellung "Body material"), Farben als 0xRRGGBBAA
+/// Aussehen der Körper (Einstellung "Body material", Panel "Aussehen"), Farben als 0xRRGGBBAA
 struct BodyMaterial
 {
     const char* name;
+    const char* category;  ///< Gruppe im Panel, englisch wie name
     uint32_t diffuse, specular, emissive, line;
     int shininess;
     const char* texture = nullptr;  ///< diffuse ist dann die mittlere Bildfarbe, für Exporte und als Rückfall
-    bool wood = false;
+    int transparency = 0;           ///< Prozent
+    const char* family = nullptr;   ///< Varianten einer Oberfläche (Farben, Finish) stehen als Chips unter einer Kugel
 };
-/// Leuchtfarbe = Markierung für das PBR-Material (BodyShading.cpp): Blau 1/255 kein Metall, 2/255 Metall. Unsichtbar,
-/// steht in jeder Datei und bleibt FreeCAD-kompatibel. Rauheit = 1 - Glanz.
+
+/// Leuchtfarbe = Markierung für das PBR-Material (BodyShading.h): Grün die Bits unten, Blau 1/255 kein Metall,
+/// 2/255 Metall. Unsichtbar, steht in jeder Datei und bleibt FreeCAD-kompatibel. Rauheit = 1 - Glanz.
+enum Finish : uint32_t
+{
+    Plain = 0,
+    Coat = 1,     ///< Klarlack über dem Material
+    Brushed = 2,  ///< Schliff entlang x
+    Grain = 4,    ///< Holz: Hirnholz an den x-Seiten
+    Layers = 8,   ///< 3D-Druck: Schichten entlang z
+};
+
+constexpr uint32_t scaled(uint32_t rgba, int percent)
+{
+    uint32_t out = 0xFF;
+    for (int shift : {8, 16, 24}) {
+        out |= std::min(0xFFU, ((rgba >> shift) & 0xFF) * percent / 100) << shift;
+    }
+    return out;
+}
+
+constexpr uint32_t gray(int v)
+{
+    return uint32_t(v) * 0x01010100U | 0xFF;
+}
+
+/// Metall: Glanzlicht in der eigenen Farbe (Phong bei Qualität "Sparsam"), Kanten dunkler
+constexpr BodyMaterial metal(const char* name, const char* category, uint32_t diffuse, int shininess, uint32_t finish = Plain,
+                             const char* family = nullptr, const char* texture = nullptr)
+{
+    return {name, category, diffuse, scaled(diffuse, 70), finish << 16 | 0x2FF, scaled(diffuse, 45), shininess, texture, 0, family};
+}
+
+/// Nichtmetall: Glanzlicht grau, heller je glatter
+constexpr BodyMaterial dielectric(const char* name, const char* category, uint32_t diffuse, int shininess,
+                                  uint32_t finish = Plain, const char* family = nullptr, const char* texture = nullptr,
+                                  int transparency = 0)
+{
+    return {name, category, diffuse, gray(20 + shininess), finish << 16 | 0x1FF, scaled(diffuse, 45), shininess, texture,
+            transparency, family};
+}
+
 constexpr BodyMaterial bodyMaterials[] = {
-    {"Space Gray", 0x5C6169FF, 0x737373FF, 0x000002FF, 0x1F1F24FF, 55},
-    {"Clay", 0xE8DED1FF, 0x1A1A1AFF, 0x000001FF, 0x73665CFF, 10},
-    {"Sierra Blue", 0x9EBDDBFF, 0x59595FFF, 0x000002FF, 0x384D66FF, 45},
-    {"Ceramic", 0xF2F2F5FF, 0x999999FF, 0x000001FF, 0x8C8F99FF, 75},
+    // Die ersten zwölf: Apple-Farben (Metall, Ton, Keramik)
+    {"Space Gray", "Colors", 0x5C6169FF, 0x737373FF, 0x000002FF, 0x1F1F24FF, 55},
+    {"Clay", "Colors", 0xE8DED1FF, 0x1A1A1AFF, 0x000001FF, 0x73665CFF, 10},
+    {"Sierra Blue", "Colors", 0x9EBDDBFF, 0x59595FFF, 0x000002FF, 0x384D66FF, 45},
+    {"Ceramic", "Colors", 0xF2F2F5FF, 0x999999FF, 0x000001FF, 0x8C8F99FF, 75},
     // weitere Apple-Oberflächen, je etwas heller als das Original, damit die Schattierung lesbar bleibt
-    {"Midnight", 0x3A4250FF, 0x5E6066FF, 0x000002FF, 0x15181FFF, 50},
-    {"Alpine Green", 0x5F705DFF, 0x5E625EFF, 0x000002FF, 0x2A3329FF, 50},
-    {"Deep Purple", 0x6A5E78FF, 0x66626BFF, 0x000002FF, 0x2E2735FF, 50},
-    {"Natural Titanium", 0xB8B2A7FF, 0x8C8A86FF, 0x000002FF, 0x5C5850FF, 70},
+    {"Midnight", "Colors", 0x3A4250FF, 0x5E6066FF, 0x000002FF, 0x15181FFF, 50},
+    {"Alpine Green", "Colors", 0x5F705DFF, 0x5E625EFF, 0x000002FF, 0x2A3329FF, 50},
+    {"Deep Purple", "Colors", 0x6A5E78FF, 0x66626BFF, 0x000002FF, 0x2E2735FF, 50},
+    {"Natural Titanium", "Colors", 0xB8B2A7FF, 0x8C8A86FF, 0x000002FF, 0x5C5850FF, 70},
     // Neue Materialien nur anhängen: Der Index steht in den Einstellungen des Benutzers
-    {"Silver", 0xD5D6D8FF, 0x8C8C8CFF, 0x000002FF, 0x6B6D72FF, 70},
-    {"Graphite", 0x47484DFF, 0x66666BFF, 0x000002FF, 0x1A1A1DFF, 55},
-    {"Rose Gold", 0xD8B0A2FF, 0x8C7D78FF, 0x000002FF, 0x7A5C52FF, 70},
-    {"Matte Black", 0x2C2D30FF, 0x2B2B2BFF, 0x000001FF, 0x0D0D0EFF, 15},
-    // Texturen aus tools/make_textures.py
-    {"Oak", 0xB48E5EFF, 0x262626FF, 0x000001FF, 0x5C4325FF, 20, ":/mycad/textures/oak.jpg", true},
-    {"Walnut", 0x5E402AFF, 0x262626FF, 0x000001FF, 0x241710FF, 25, ":/mycad/textures/walnut.jpg", true},
-    {"Maple", 0xDFC69DFF, 0x262626FF, 0x000001FF, 0x8A7350FF, 20, ":/mycad/textures/maple.jpg", true},
-    {"Cherry", 0xA56744FF, 0x262626FF, 0x000001FF, 0x552D18FF, 25, ":/mycad/textures/cherry.jpg", true},
-    {"Pine", 0xD0AD77FF, 0x1A1A1AFF, 0x000001FF, 0x7D5D2EFF, 15, ":/mycad/textures/pine.jpg", true},
-    {"Bamboo", 0xD2B77FFF, 0x262626FF, 0x000001FF, 0x7F6A3FFF, 25, ":/mycad/textures/bamboo.jpg", true},
-    {"Brushed Aluminum", 0xC6C9CCFF, 0x8C8C8CFF, 0x000002FF, 0x62656AFF, 60, ":/mycad/textures/brushed_aluminum.jpg"},
-    {"Brushed Steel", 0x8D9094FF, 0x8C8C8CFF, 0x000002FF, 0x3A3C40FF, 60, ":/mycad/textures/brushed_steel.jpg"},
-    {"Carbon Fiber", 0x252525FF, 0x737373FF, 0x000001FF, 0x0D0D0DFF, 70, ":/mycad/textures/carbon.jpg"},
-    {"Concrete", 0x93928DFF, 0x141414FF, 0x000001FF, 0x4D4C49FF, 5, ":/mycad/textures/concrete.jpg"},
-    {"Marble", 0xE2E0DDFF, 0x808080FF, 0x000001FF, 0x7D7B78FF, 70, ":/mycad/textures/marble.jpg"},
-    {"Granite", 0x8E8582FF, 0x4D4D4DFF, 0x000001FF, 0x3D3937FF, 50, ":/mycad/textures/granite.jpg"},
-    {"Leather", 0x643C24FF, 0x262626FF, 0x000001FF, 0x2A180EFF, 20, ":/mycad/textures/leather.jpg"},
-    {"Cork", 0xA77E54FF, 0x141414FF, 0x000001FF, 0x523D28FF, 5, ":/mycad/textures/cork.jpg"},
+    {"Silver", "Colors", 0xD5D6D8FF, 0x8C8C8CFF, 0x000002FF, 0x6B6D72FF, 70},
+    {"Graphite", "Colors", 0x47484DFF, 0x66666BFF, 0x000002FF, 0x1A1A1DFF, 55},
+    {"Rose Gold", "Colors", 0xD8B0A2FF, 0x8C7D78FF, 0x000002FF, 0x7A5C52FF, 70},
+    {"Matte Black", "Colors", 0x2C2D30FF, 0x2B2B2BFF, 0x000001FF, 0x0D0D0EFF, 15},
+    // Fotoscans aus tools/fetch_textures.py (CC0), diffuse = mittlere Bildfarbe
+    {"Oak", "Wood", 0xA17E57FF, 0x262626FF, 0x000401FF, 0x5C4325FF, 20, ":/mycad/textures/oak.jpg", 0, "Oak"},
+    {"Walnut", "Wood", 0x5E412BFF, 0x262626FF, 0x000401FF, 0x241710FF, 25, ":/mycad/textures/walnut.jpg", 0, "Walnut"},
+    {"Maple", "Wood", 0xE3D4B9FF, 0x262626FF, 0x000401FF, 0x8A7350FF, 20, ":/mycad/textures/maple.jpg", 0, "Maple"},
+    {"Cherry", "Wood", 0xAE6745FF, 0x262626FF, 0x000401FF, 0x552D18FF, 25, ":/mycad/textures/cherry.jpg"},
+    {"Pine", "Wood", 0xD2AE78FF, 0x1A1A1AFF, 0x000401FF, 0x7D5D2EFF, 15, ":/mycad/textures/pine.jpg"},
+    {"Bamboo", "Wood", 0xD2AD80FF, 0x262626FF, 0x000401FF, 0x7F6A3FFF, 25, ":/mycad/textures/bamboo.jpg"},
+    {"Brushed Aluminum", "Metal", 0xDBDFE2FF, 0x8C8C8CFF, 0x000202FF, 0x62656AFF, 60, ":/mycad/textures/brushed_aluminum.jpg"},
+    {"Brushed Steel", "Metal", 0xA8ABB0FF, 0x8C8C8CFF, 0x000202FF, 0x3A3C40FF, 60, ":/mycad/textures/brushed_steel.jpg"},
+    {"Carbon Fiber", "Composites", 0x2F2E31FF, 0x737373FF, 0x000101FF, 0x0D0D0DFF, 70, ":/mycad/textures/carbon.jpg", 0, "Carbon Fiber"},
+    {"Concrete", "Stone", 0x9E9C91FF, 0x141414FF, 0x000001FF, 0x4D4C49FF, 10, ":/mycad/textures/concrete.jpg"},
+    {"Marble", "Stone", 0xACADB6FF, 0x808080FF, 0x000101FF, 0x7D7B78FF, 80, ":/mycad/textures/marble.jpg"},
+    {"Granite", "Stone", 0xB5B1ADFF, 0x4D4D4DFF, 0x000001FF, 0x3D3937FF, 60, ":/mycad/textures/granite.jpg"},
+    {"Leather", "Fabric & Leather", 0x512D10FF, 0x262626FF, 0x000001FF, 0x2A180EFF, 35, ":/mycad/textures/leather.jpg"},
+    {"Cork", "Fabric & Leather", 0xAF8265FF, 0x141414FF, 0x000001FF, 0x523D28FF, 5, ":/mycad/textures/cork.jpg"},
+
+    // Metalle roh und veredelt: Farbe = Spiegelung (gemessene Werte, leicht abgedunkelt)
+    metal("Aluminum", "Metal", 0xD2D4D6FF, 55),
+    metal("Polished Aluminum", "Metal", 0xE8EAECFF, 95),
+    metal("Stainless Steel", "Metal", 0xC4C6C8FF, 92),
+    metal("Steel", "Metal", 0x8F9296FF, 60),
+    metal("Blackened Steel", "Metal", 0x3A3B3EFF, 55),
+    metal("Cast Iron", "Metal", 0x5A5B5DFF, 30),
+    metal("Galvanized Steel", "Metal", 0xB8BCC0FF, 50),
+    metal("Chrome", "Metal", 0xDCDEE0FF, 98),
+    metal("Titanium", "Metal", 0xC1BAB1FF, 70),
+    metal("Brass", "Metal", 0xE6CB8AFF, 85, Plain, "Brass"),
+    metal("Brushed Brass", "Metal", 0xE6CB8AFF, 70, Brushed, "Brass"),
+    metal("Copper", "Metal", 0xE8A888FF, 85, Plain, "Copper"),
+    metal("Brushed Copper", "Metal", 0xE8A888FF, 70, Brushed, "Copper"),
+    metal("Bronze", "Metal", 0xC09464FF, 70),
+    metal("Gold", "Metal", 0xF2CC7AFF, 92),
+    metal("Sterling Silver", "Metal", 0xEDEBE6FF, 92),
+    // Eloxiertes Aluminium: gefärbte Oxidschicht, darunter glänzt das Metall
+    metal("Anodized Silver", "Anodized", 0xC9CCD0FF, 62, Plain, "Anodized"),
+    metal("Anodized Black", "Anodized", 0x2E2F33FF, 62, Plain, "Anodized"),
+    metal("Anodized Titanium", "Anodized", 0x7D8188FF, 62, Plain, "Anodized"),
+    metal("Anodized Blue", "Anodized", 0x3F6FB0FF, 62, Plain, "Anodized"),
+    metal("Anodized Red", "Anodized", 0xB03A3AFF, 62, Plain, "Anodized"),
+    metal("Anodized Gold", "Anodized", 0xC9A24FFF, 62, Plain, "Anodized"),
+    metal("Anodized Green", "Anodized", 0x4E8A5AFF, 62, Plain, "Anodized"),
+    metal("Anodized Purple", "Anodized", 0x6E4F9AFF, 62, Plain, "Anodized"),
+    metal("Anodized Orange", "Anodized", 0xD07A35FF, 62, Plain, "Anodized"),
+    // Pulverbeschichtet: matt-satiniert, deckend (RAL-Töne)
+    dielectric("Powder Coat Black", "Coatings", 0x232427FF, 45, Plain, "Powder Coat"),
+    dielectric("Powder Coat Anthracite", "Coatings", 0x383E42FF, 45, Plain, "Powder Coat"),
+    dielectric("Powder Coat White", "Coatings", 0xEDEDEAFF, 45, Plain, "Powder Coat"),
+    dielectric("Powder Coat Red", "Coatings", 0xC1121CFF, 45, Plain, "Powder Coat"),
+    dielectric("Powder Coat Yellow", "Coatings", 0xF0CA00FF, 45, Plain, "Powder Coat"),
+    dielectric("Powder Coat Blue", "Coatings", 0x2271B3FF, 45, Plain, "Powder Coat"),
+    dielectric("Powder Coat Green", "Coatings", 0x57A639FF, 45, Plain, "Powder Coat"),
+    // Lacke: Farbe unter Klarlack; Metallic mit Metallflocken
+    dielectric("Piano Black", "Coatings", 0x0E0F11FF, 70, Coat, "Lacquer"),
+    dielectric("Lacquer White", "Coatings", 0xF2F2F0FF, 70, Coat, "Lacquer"),
+    dielectric("Lacquer Red", "Coatings", 0xB0161EFF, 70, Coat, "Lacquer"),
+    dielectric("Lacquer Blue", "Coatings", 0x1F4E9AFF, 70, Coat, "Lacquer"),
+    metal("Metallic Silver", "Coatings", 0xB8BCC2FF, 50, Coat, "Metallic Paint"),
+    metal("Metallic Graphite", "Coatings", 0x4A4D52FF, 50, Coat, "Metallic Paint"),
+    metal("Metallic Blue", "Coatings", 0x2A4F8FFF, 50, Coat, "Metallic Paint"),
+    metal("Metallic Red", "Coatings", 0x8E1B1BFF, 50, Coat, "Metallic Paint"),
+    // Kunststoffe: matt, satiniert, glänzend
+    dielectric("Plastic Matte White", "Plastic", 0xEFEFECFF, 25, Plain, "Plastic Matte"),
+    dielectric("Plastic Matte Gray", "Plastic", 0x8E9095FF, 25, Plain, "Plastic Matte"),
+    dielectric("Plastic Matte Black", "Plastic", 0x26272AFF, 25, Plain, "Plastic Matte"),
+    dielectric("Plastic Satin White", "Plastic", 0xEFEFECFF, 55, Plain, "Plastic Satin"),
+    dielectric("Plastic Satin Gray", "Plastic", 0x8E9095FF, 55, Plain, "Plastic Satin"),
+    dielectric("Plastic Satin Black", "Plastic", 0x26272AFF, 55, Plain, "Plastic Satin"),
+    dielectric("Plastic Glossy White", "Plastic", 0xF2F2EFFF, 88, Plain, "Plastic Glossy"),
+    dielectric("Plastic Glossy Black", "Plastic", 0x1C1D20FF, 88, Plain, "Plastic Glossy"),
+    dielectric("Plastic Glossy Red", "Plastic", 0xC8302CFF, 88, Plain, "Plastic Glossy"),
+    dielectric("Plastic Glossy Blue", "Plastic", 0x2F6DC8FF, 88, Plain, "Plastic Glossy"),
+    dielectric("Plastic Glossy Yellow", "Plastic", 0xF2C230FF, 88, Plain, "Plastic Glossy"),
+    // 3D-Druck: FDM mit Schichtlinien, SLA glatt, SLS körnig matt
+    dielectric("PLA White", "3D Print", 0xF0EFEAFF, 35, Layers, "PLA"),
+    dielectric("PLA Gray", "3D Print", 0x9A9C9FFF, 35, Layers, "PLA"),
+    dielectric("PLA Black", "3D Print", 0x2A2B2EFF, 35, Layers, "PLA"),
+    dielectric("PLA Orange", "3D Print", 0xF07A1EFF, 35, Layers, "PLA"),
+    dielectric("PLA Blue", "3D Print", 0x2C6FD1FF, 35, Layers, "PLA"),
+    dielectric("PETG Clear", "3D Print", 0xE8F0F0FF, 80, Layers, nullptr, nullptr, 60),
+    dielectric("Resin Gray", "3D Print", 0x8C8E91FF, 60),
+    dielectric("Nylon SLS", "3D Print", 0xE6E3DAFF, 8),
+    // Gummi und Silikon
+    dielectric("Rubber Black", "Rubber", 0x1F2022FF, 15, Plain, "Rubber"),
+    dielectric("Rubber Gray", "Rubber", 0x5A5C60FF, 15, Plain, "Rubber"),
+    dielectric("Silicone White", "Rubber", 0xE8E6E1FF, 35, Plain, "Silicone"),
+    dielectric("Silicone Red", "Rubber", 0xD9473FFF, 35, Plain, "Silicone"),
+    dielectric("Silicone Blue", "Rubber", 0x4F86C6FF, 35, Plain, "Silicone"),
+    // Glas und Acryl: durchsichtig, die Spiegelung bleibt voll
+    dielectric("Clear Glass", "Glass", 0xF4F8F8FF, 98, Plain, "Glass", nullptr, 75),
+    dielectric("Frosted Glass", "Glass", 0xF0F3F3FF, 45, Plain, "Glass", nullptr, 50),
+    dielectric("Tinted Glass", "Glass", 0x60666CFF, 98, Plain, "Glass", nullptr, 60),
+    dielectric("Clear Acrylic", "Glass", 0xF8F8F8FF, 95, Plain, "Acrylic", nullptr, 70),
+    dielectric("Opal Acrylic", "Glass", 0xF6F6F4FF, 90, Plain, "Acrylic", nullptr, 25),
+    dielectric("Red Acrylic", "Glass", 0xD8312AFF, 95, Plain, "Acrylic", nullptr, 45),
+    dielectric("Blue Acrylic", "Glass", 0x2F7FD8FF, 95, Plain, "Acrylic", nullptr, 45),
+    // Holz mit Oberfläche: roh (oben), geölt, lackiert
+    dielectric("Ash", "Wood", 0xAC947DFF, 20, Grain, "Ash", ":/mycad/textures/ash.jpg"),
+    dielectric("Teak", "Wood", 0xAF8257FF, 30, Grain, "Teak", ":/mycad/textures/teak.jpg"),
+    dielectric("Plywood", "Wood", 0x7E6140FF, 20, Grain, nullptr, ":/mycad/textures/plywood.jpg"),
+    dielectric("Oak, Oiled", "Wood", 0xA17E57FF, 50, Grain, "Oak", ":/mycad/textures/oak.jpg"),
+    dielectric("Oak, Lacquered", "Wood", 0xA17E57FF, 45, Grain | Coat, "Oak", ":/mycad/textures/oak.jpg"),
+    dielectric("Walnut, Oiled", "Wood", 0x5E412BFF, 50, Grain, "Walnut", ":/mycad/textures/walnut.jpg"),
+    dielectric("Walnut, Lacquered", "Wood", 0x5E412BFF, 45, Grain | Coat, "Walnut", ":/mycad/textures/walnut.jpg"),
+    dielectric("Maple, Oiled", "Wood", 0xE3D4B9FF, 50, Grain, "Maple", ":/mycad/textures/maple.jpg"),
+    dielectric("Maple, Lacquered", "Wood", 0xE3D4B9FF, 45, Grain | Coat, "Maple", ":/mycad/textures/maple.jpg"),
+    dielectric("Ash, Oiled", "Wood", 0xAC947DFF, 50, Grain, "Ash", ":/mycad/textures/ash.jpg"),
+    dielectric("Teak, Oiled", "Wood", 0xAF8257FF, 55, Grain, "Teak", ":/mycad/textures/teak.jpg"),
+    // Stein, Beton, Keramik
+    dielectric("Black Marble", "Stone", 0x3D3F3EFF, 80, Coat, nullptr, ":/mycad/textures/marble_black.jpg"),
+    dielectric("Glazed Ceramic", "Stone", 0xF4F3EFFF, 60, Coat, "Ceramic"),
+    dielectric("Porcelain", "Stone", 0xF7F6F2FF, 85, Plain, "Ceramic"),
+    dielectric("Stoneware", "Stone", 0xD8D2C8FF, 25, Plain, "Ceramic"),
+    dielectric("Terracotta", "Stone", 0xB8653EFF, 12, Plain, "Ceramic"),
+    // Leder und Stoff
+    dielectric("Fabric", "Fabric & Leather", 0x5B5B5BFF, 5, Plain, nullptr, ":/mycad/textures/fabric.jpg"),
+    dielectric("Felt Gray", "Fabric & Leather", 0x7A7B7EFF, 0, Plain, "Felt"),
+    dielectric("Felt Anthracite", "Fabric & Leather", 0x3A3B3EFF, 0, Plain, "Felt"),
+    // Carbon und Verbund
+    dielectric("Carbon Fiber, Matte", "Composites", 0x2F2E31FF, 40, Plain, "Carbon Fiber", ":/mycad/textures/carbon.jpg"),
+    dielectric("Fiberglass", "Composites", 0xD9D7C9FF, 50),
+    dielectric("Circuit Board", "Composites", 0x2F6B3AFF, 60, Coat),
 };
 
 const BodyMaterial& bodyMaterial()
@@ -362,6 +511,7 @@ void setDefaultMaterial()
     view->SetUnsigned("DefaultAmbientColor", 0x333333FF);
     view->SetInt("DefaultShapeShininess", m.shininess);
     view->SetUnsigned("DefaultShapeLineColor", m.line);
+    view->SetInt("DefaultShapeTransparency", m.transparency);
 }
 
 /// Farben und Schrift aus dem Theme auf App, Palette, 3D-Ansicht und Skizzen übertragen (FreeCAD beobachtet die
@@ -4003,7 +4153,7 @@ std::vector<Gui::Shell::BodyMaterialEntry> Gui::Shell::bodyMaterialList()
 {
     std::vector<BodyMaterialEntry> list;
     for (const auto& m : bodyMaterials) {
-        list.push_back({m.name, m.texture, m.wood});
+        list.push_back({m.name, m.texture, std::strcmp(m.category, "Wood") == 0, m.category, m.family ? m.family : m.name});
     }
     return list;
 }
@@ -4017,7 +4167,7 @@ App::Material Gui::Shell::bodyMaterialAppearance(int index)
     mat.emissiveColor.setPackedValue(m.emissive);
     mat.ambientColor.setPackedValue(0x333333FF);
     mat.shininess = float(m.shininess) / 100.0F;
-    mat.transparency = 0.0F;
+    mat.transparency = float(m.transparency) / 100.0F;
     mat.imagePath = m.texture ? m.texture : "";
     return mat;
 }
@@ -4053,13 +4203,11 @@ void Gui::Shell::setBodyMaterial(int index)
     setDefaultMaterial();
     const BodyMaterial& m = bodyMaterial();
     const App::Material mat = bodyMaterialAppearance(index);
-    // Körper mit einem der Standard-Looks (auch früheren Vorgaben) umfärben, eigene Farben und Texturen bleiben.
+    // Körper mit der bisherigen Vorgabe (oder einem früheren Grau) umfärben, eigene Farben und Texturen bleiben.
     // ponytail: erkennt "Standard" an Grundfarbe bzw. Textur; was zufällig gleich aussieht, wird mit umgefärbt
     std::set<uint32_t> presets = {0xCDD1D8, 0xA4A9B2, 0xD5D9DF, 0xAEB3BC, 0xC8CCD4, 0x9EA3AD, 0xCCCCCC};
-    for (const auto& b : bodyMaterials) {
-        if (!b.texture) {
-            presets.insert(b.diffuse >> 8);
-        }
+    if (!previous.texture) {
+        presets.insert(previous.diffuse >> 8);
     }
     const Base::Type body = Base::Type::fromName("Design::Body");
     for (auto doc : App::GetApplication().getDocuments()) {

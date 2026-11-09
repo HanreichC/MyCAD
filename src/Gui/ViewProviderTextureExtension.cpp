@@ -35,39 +35,11 @@
 
 #include "ViewProviderTextureExtension.h"
 #include <Gui/BitmapFactory.h>
+#include <Gui/Shell/BodyShading.h>
 #include <App/Material.h>
 
 
 using namespace Gui;
-
-namespace
-{
-/// Mitgelieferte Textur. Alle Körper teilen sich einen Knoten, sonst läge das Bild je Körper im Speicher und auf der GPU.
-SoTexture2* bundledTexture(const std::string& path)
-{
-    // Der Pfad kommt aus der geöffneten Datei: nur eigene Ressourcen laden, keine beliebigen Dateien
-    if (!path.starts_with(":/mycad/textures/")) {
-        return nullptr;
-    }
-    static std::map<std::string, SoTexture2*> textures;  // lebt bis zum Programmende
-    auto known = textures.find(path);
-    if (known != textures.end()) {
-        return known->second;
-    }
-    SoTexture2* texture = nullptr;
-    const QImage image(QString::fromStdString(path));
-    if (!image.isNull()) {
-        SoSFImage pixels;
-        Gui::BitmapFactory().convert(image, pixels);
-        texture = new SoTexture2;
-        texture->ref();
-        texture->image = pixels;
-    }
-    textures[path] = texture;  // auch den Fehlschlag merken: Der Körper bleibt dann einfach einfarbig
-    return texture;
-}
-}  // namespace
-
 
 EXTENSION_PROPERTY_SOURCE(Gui::ViewProviderTextureExtension, Gui::ViewProviderExtension)
 
@@ -136,7 +108,8 @@ void ViewProviderTextureExtension::setCoinAppearance(
     const App::Material& source
 )
 {
-    if (SoTexture2* bundled = bundledTexture(source.imagePath)) {
+    SoNode* bundled = Gui::Shell::bodyTexture(source.imagePath);
+    if (bundled) {
         pcTexture2D->replaceChild(1, bundled);
         activateTexture2D();
     }
@@ -159,8 +132,8 @@ void ViewProviderTextureExtension::setCoinAppearance(
     pcTextureMaterial->diffuseColor.setValue(1.0F, 1.0F, 1.0F);
     pcTextureMaterial->ambientColor.setValue(source.ambientColor.r, source.ambientColor.g, source.ambientColor.b);
     pcTextureMaterial->specularColor.setValue(source.specularColor.r, source.specularColor.g, source.specularColor.b);
-    // Rot 1/255 sagt dem Körper-Shader: Textur auf Stufe 0 (Gui/Shell/BodyShading.h)
-    pcTextureMaterial->emissiveColor.setValue(1 / 255.0F, source.emissiveColor.g, source.emissiveColor.b);
+    // Rot sagt dem Körper-Shader, was auf Stufe 0 liegt: 1/255 eigenes Bild, 2/255 Fotoscan (Gui/Shell/BodyShading.h)
+    pcTextureMaterial->emissiveColor.setValue((bundled ? 2 : 1) / 255.0F, source.emissiveColor.g, source.emissiveColor.b);
     pcTextureMaterial->shininess.setValue(source.shininess);
     pcTextureMaterial->transparency.setValue(source.transparency);
 
