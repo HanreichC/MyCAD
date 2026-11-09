@@ -3781,7 +3781,7 @@
      "Write with the pen as usual. A second after you lift it, what you just wrote lines up: straight lines, the same size, slant and spacing for every word, in your own handwriting. Ctrl+Z brings back the raw version; Settings > Mouse & Trackpad > Pen & Handwriting switches it off or makes it gentler.",
      "To move strokes, pick Select and tap a stroke or draw around several, then drag them. Delete removes the selection, a colour recolours it. With any pen you can also hold the pen still on a stroke for a moment: it sticks to the pen and moves with it.",
      "To write without a pen tablet, pick Text, click on the sheet and type. Enter or Esc puts the text down, Shift+Enter starts a new line. Each line becomes one stroke: select it to move or recolour it.",
-     "Erase with Eraser or with the back of the pen: wipe over a stroke and it is gone. Ctrl+Z brings it back.",
+     "Erase with Eraser (E) or with the back of the pen: wipe over a stroke and it is gone. Ctrl+Z brings it back. Pens without an eraser end (such as the Huion H640P) switch with E: once to erase, once more back to the pen.",
      "To draw in 3D, click Move Sheet and tap a body face (the sheet lies on it), a straight stroke (the sheet stands up along it) or empty space (the sheet turns towards you). Turn the view with the pen's side button.",
      "Click Finish Scribble or press Esc. The strokes stay in the model; double-click the scribble under Scribbles in the browser to go on drawing."
     ],
@@ -3794,7 +3794,7 @@
      "Schreib mit dem Stift wie gewohnt. Eine Sekunde nachdem du ihn absetzt, wird das eben Geschriebene ordentlich: gerade Zeilen, jedes Wort gleich groß, gleich schräg und mit gleichem Abstand, in deiner eigenen Schrift. Strg+Z holt die rohe Fassung zurück; Einstellungen > Maus & Trackpad > Stift & Handschrift schaltet es aus oder macht es sanfter.",
      "Um Striche zu verschieben, wähle Auswählen und tippe auf einen Strich oder umrande mehrere, dann zieh sie. Entf löscht die Auswahl, eine Farbe färbt sie um. Mit jedem Stift geht es auch so: Halte den Stift kurz still auf einem Strich, dann hängt er am Stift und wandert mit.",
      "Um ohne Grafiktablett zu schreiben, wähle Text, klicke aufs Blatt und tippe. Enter oder Esc legt den Text ab, Umschalt+Enter beginnt eine neue Zeile. Jede Zeile wird ein Strich: Auswählen verschiebt oder färbt sie um.",
-     "Radiere mit dem Radierer oder dem hinteren Ende des Stifts: Wisch über einen Strich, und er ist weg. Strg+Z holt ihn zurück.",
+     "Radiere mit dem Radierer (E) oder dem hinteren Ende des Stifts: Wisch über einen Strich, und er ist weg. Strg+Z holt ihn zurück. Stifte ohne Radierer-Ende (wie beim Huion H640P) wechseln mit E: einmal zum Radieren, noch einmal zurück zum Stift.",
      "Um in 3D zu zeichnen, klicke auf Blatt umstellen und tippe auf eine Körperfläche (das Blatt legt sich darauf), auf einen geraden Strich (das Blatt stellt sich entlang auf) oder ins Leere (das Blatt dreht sich zu dir). Die Ansicht drehst du mit der Seitentaste des Stifts.",
      "Klicke auf Scribble fertig stellen oder drücke Esc. Die Striche bleiben im Modell; ein Doppelklick auf das Scribble unter Scribbles im Browser zeichnet weiter."
     ]
@@ -3806,6 +3806,7 @@
    "tips": {
     "en": [
      "Tracing Paper in the palette lets the model show through, so you can draw over a body.",
+     "Tablet keys: in System Settings > Drawing Tablet, give them keyboard keys. Useful in a scribble: E eraser, V select, L look at the sheet, Ctrl+Z undo, Ctrl+Shift+Z redo, Esc finish. The pen's side buttons stay for turning and moving the view.",
      "Convert to Sketch turns the strokes on the current sheet into a sketch: lines, circles and rectangles become geometry you can dimension and extrude, touching ends stay joined.",
      "Sizes are written the CAD way, right in your ink: o12 becomes Ø12, 2x45 gets its degree sign, 25mm becomes 25 mm.",
      "Find handwriting at the top of the palette searches what you wrote on this sheet. Type Ø12 or a word; Enter selects the next match and moves the view to it.",
@@ -3813,6 +3814,7 @@
     ],
     "de": [
      "Transparentpapier in der Palette lässt das Modell durchscheinen, so kannst du über einen Körper zeichnen.",
+     "Tablet-Tasten: Gib ihnen in den Systemeinstellungen > Grafiktablett Tastaturtasten. Nützlich im Scribble: E Radierer, V Auswählen, L gerade aufs Blatt, Strg+Z rückgängig, Strg+Umschalt+Z wiederholen, Esc fertig. Die Seitentasten des Stifts bleiben fürs Drehen und Schieben der Ansicht.",
      "In Skizze umwandeln macht aus den Strichen auf dem aktuellen Blatt eine Skizze: Linien, Kreise und Rechtecke werden zu Geometrie, die du bemaßen und extrudieren kannst, aneinanderliegende Enden bleiben verbunden.",
      "Maße werden in CAD-Schreibweise gebracht, direkt in deiner Tinte: aus o12 wird Ø12, 2x45 bekommt sein Gradzeichen, aus 25mm wird 25 mm.",
      "Handschrift suchen oben in der Palette durchsucht, was du auf diesem Blatt geschrieben hast. Tippe Ø12 oder ein Wort; Enter wählt den nächsten Treffer aus und schiebt die Ansicht dorthin.",

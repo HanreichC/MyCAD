@@ -56,6 +56,7 @@
 #include <QFont>
 #include <QFontMetricsF>
 #include <QGraphicsProxyWidget>
+#include <QGuiApplication>
 #include <QGraphicsView>
 #include <QKeyEvent>
 #include <QLineEdit>
@@ -659,7 +660,25 @@ protected:
                 event->accept();  // Buchstaben sind beim Tippen keine Befehlskürzel
                 return true;
             }
-            const int key = static_cast<QKeyEvent*>(event)->key();
+            const auto ke = static_cast<QKeyEvent*>(event);
+            const int key = ke->key();
+            // Werkzeug-Tasten im Scribble, für Tablet-Tasten (KDE legt sie auf Tastenkürzel): E Radierer, V Auswählen,
+            // jeweils noch einmal zurück zum Stift; L gerade aufs Blatt. Stifte ohne Radierer-Ende (Huion H640P) radieren
+            // so mit einem Tastendruck. Im Scribble schlagen sie die Befehlskürzel (E wäre sonst Extrudieren).
+            const bool plain = !(ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier | Qt::ShiftModifier));
+            if (plain && (key == Qt::Key_E || key == Qt::Key_V || key == Qt::Key_L)) {
+                if (event->type() == QEvent::KeyPress && !ke->isAutoRepeat() && !d->down) {
+                    if (key == Qt::Key_L) {
+                        d->vp->lookAtSheet();
+                    }
+                    else {
+                        const Tool tool = key == Qt::Key_E ? Tool::Eraser : Tool::Select;
+                        ViewProviderScribble::setTool(currentTool == tool ? lastDrawTool : tool);
+                    }
+                }
+                event->accept();
+                return true;
+            }
             const bool mine = !d->selection.empty()
                 && (key == Qt::Key_Delete || key == Qt::Key_Backspace || key == Qt::Key_Escape);
             if (mine && event->type() == QEvent::KeyPress) {
@@ -682,8 +701,10 @@ protected:
         switch (event->type()) {
             case QEvent::TabletPress: {
                 auto te = static_cast<QTabletEvent*>(event);
-                if (te->button() != Qt::LeftButton || d->overPanel(te->position())) {
-                    te->ignore();  // Qt macht daraus Mausereignisse: Navigation, Glas-Panels
+                // Seitentaste allein, oder gehalten, während die Spitze aufsetzt (Wayland: button Links, buttons
+                // Links|Mitte): das ist Navigation, kein Strich. Qt macht daraus Mausereignisse, auch für die Glas-Panels.
+                if (te->button() != Qt::LeftButton || te->buttons() != Qt::LeftButton || d->overPanel(te->position())) {
+                    te->ignore();
                     return false;
                 }
                 d->fromTablet = true;
@@ -696,7 +717,10 @@ protected:
                 if (d->down && d->fromTablet) {
                     d->move(te->position(), te->pressure());
                 }
-                else if (te->buttons() != Qt::NoButton || d->overPanel(te->position())) {
+                // Seitentaste gedrückt; oder in KDE auf eine Maustaste gelegt: dann kommt der Klick als echte Maus, die
+                // Bewegung aber weiter als schwebender Stift und muss als Maus weiter, sonst hängt das Drehen
+                else if (te->buttons() != Qt::NoButton || QGuiApplication::mouseButtons() != Qt::NoButton
+                         || d->overPanel(te->position())) {
                     te->ignore();
                     return false;
                 }

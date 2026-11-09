@@ -2946,7 +2946,7 @@ void CreateDesignCommands()
         tool("Design_ScribblePen", "Fineliner", "Fineliner: an even, dark line", Tool::Pen);
         tool("Design_ScribbleMarker", "Marker", "Marker: a broad, see-through stroke for highlighting", Tool::Marker);
         tool("Design_ScribbleEraser", "Eraser",
-             "Eraser: wipe over strokes to remove them. The back of the pen erases too", Tool::Eraser);
+             "Eraser (E): wipe over strokes to remove them. E again goes back to the pen. On pens with an eraser end, the back of the pen erases too", Tool::Eraser);
         tool("Design_ScribbleSheet", "Move Sheet",
              "Move Sheet: tap a body face to lay the sheet on it, a straight stroke to stand it up along that line, "
              "or empty space to turn it towards you",
@@ -2959,7 +2959,7 @@ void CreateDesignCommands()
         tool("Design_ScribbleHexagon", "Hexagon", "Hexagon: drag from the center to a corner", Tool::Hexagon);
         tool("Design_ScribbleEllipse", "Ellipse", "Ellipse: drag across it from corner to corner", Tool::Ellipse);
         tool("Design_ScribbleSelect", "Select",
-             "Select: tap a stroke or draw around strokes, then drag them. Delete removes them, a colour recolours them",
+             "Select (V): tap a stroke or draw around strokes, then drag them. Delete removes them, a colour recolours them",
              Tool::Select);
         tool("Design_ScribbleText", "Text", "Text: click on the sheet and type. Enter or Esc puts it down, Shift+Enter starts a new line", Tool::Text);
         tool("Design_ScribbleFill", "Fill",
@@ -2982,7 +2982,7 @@ void CreateDesignCommands()
             mgr.addCommand(new ScribbleTool(ink.name, ink.text, "Color for the next strokes",
                                             [color](ViewProviderScribble*) { ViewProviderScribble::setColor(color); }));
         }
-        mgr.addCommand(new ScribbleTool("Design_ScribbleLookAt", "Look At", "Look At: view the sheet straight on",
+        mgr.addCommand(new ScribbleTool("Design_ScribbleLookAt", "Look At", "Look At (L): view the sheet straight on",
                                         [](ViewProviderScribble* vp) { vp->lookAtSheet(); }));
         mgr.addCommand(new ScribbleTool("Design_ScribbleTracing", "Tracing Paper",
                                         "Tracing Paper: the model shows through the sheet, so you can draw over it",

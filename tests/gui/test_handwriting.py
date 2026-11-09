@@ -103,6 +103,43 @@ def spread_of_bottoms(ss, words):
     return max(bottoms) - min(bottoms)
 
 
+_pen = []
+
+
+def tablet(kind, x, y, pressure, button, buttons):
+    """Grafiktablett wie über Wayland (Huion H640P: Stift ohne Radierer-Ende); True, wenn das Blatt es angenommen hat"""
+    if not _pen:
+        _pen.append(QtGui.QPointingDevice("pen", 17, QtGui.QInputDevice.DeviceType.Stylus, QtGui.QPointingDevice.PointerType.Pen,
+                                          QtGui.QInputDevice.Capability.Position | QtGui.QInputDevice.Capability.Pressure, 1, 3))
+    vp = view().viewport(); p = QtCore.QPointF(x, y)
+    e = QtGui.QTabletEvent(kind, _pen[0], p, vp.mapToGlobal(p), pressure, 0, 0, 0, 0, 0, QtCore.Qt.NoModifier, button, buttons)
+    QtWidgets.QApplication.sendEvent(vp, e)
+    return e.isAccepted()
+
+
+def side_button_and_tip():
+    """Seitentaste (BTN_STYLUS = Mitte) gehalten, dann setzt die Spitze auf: Wayland meldet button Links, buttons Links|Mitte"""
+    v = view(); x, y = v.width() * .3, v.height() * .85
+    L, M, N = QtCore.Qt.LeftButton, QtCore.Qt.MiddleButton, QtCore.Qt.NoButton
+    saved["n"] = len(s().Counts)
+    saved["side"] = tablet(QtCore.QEvent.TabletPress, x, y, 0, M, M)
+    saved["tip"] = tablet(QtCore.QEvent.TabletPress, x, y, .5, L, L | M)
+    for k in range(1, 20):
+        tablet(QtCore.QEvent.TabletMove, x + 4 * k, y, .5, N, L | M)
+    tablet(QtCore.QEvent.TabletRelease, x + 80, y, 0, L, M)
+    tablet(QtCore.QEvent.TabletRelease, x + 80, y, 0, M, N)
+
+
+def hover_with_mouse_button():
+    """KDE hat die Seitentaste auf eine Maustaste gelegt: der Klick kommt als echte Maus, der Stift schwebt weiter"""
+    vp = view().viewport(); p = QtCore.QPoint(int(vp.width() * .5), int(vp.height() * .85))
+    QtTest.QTest.mousePress(vp, QtCore.Qt.MiddleButton, QtCore.Qt.NoModifier, p)
+    saved["held"] = QtWidgets.QApplication.mouseButtons() == QtCore.Qt.MiddleButton
+    saved["hover"] = tablet(QtCore.QEvent.TabletMove, p.x() + 10, p.y(), 0, QtCore.Qt.NoButton, QtCore.Qt.NoButton)
+    QtTest.QTest.mouseRelease(vp, QtCore.Qt.MiddleButton, QtCore.Qt.NoModifier, p)
+    saved["free"] = tablet(QtCore.QEvent.TabletMove, p.x() + 20, p.y(), 0, QtCore.Qt.NoButton, QtCore.Qt.NoButton)
+
+
 def find_field():
     return [w for w in visible(QtWidgets.QLineEdit) if w.placeholderText() in ("Find handwriting", "Handschrift suchen")]
 
@@ -127,6 +164,28 @@ in_order([
                                 all((a - b).Length < 1e-9 for x, y in zip(strokes(), saved["raw"]) for a, b in zip(x, y)))),
     ("redo", lambda: Gui.runCommand("Std_Redo")),
     ("tidy again", lambda: check("redo tidies again", spread_of_bottoms(strokes(), WORDS) < 0.4 * spread_of_bottoms(saved["raw"], WORDS))),
+
+    # Grafiktablett: Seitentaste ist Navigation, auch wenn dabei die Spitze aufsetzt
+    ("side button", side_button_and_tip),
+    ("no stroke", lambda: check("side button held + tip down: no stroke, left to navigation",
+                                len(s().Counts) == saved["n"] and not saved["side"] and not saved["tip"],
+                                "strokes +%d, accepted side=%s tip=%s" % (len(s().Counts) - saved["n"], saved["side"], saved["tip"]))),
+    ("hover mouse", hover_with_mouse_button),
+    ("hover passes", lambda: check("pen hovering while a (remapped) mouse button is held goes on as mouse",
+                                   saved["held"] and not saved["hover"] and saved["free"],
+                                   "held=%s hover accepted=%s, afterwards=%s" % (saved["held"], saved["hover"], saved["free"]))),
+
+    # Tablet-Tasten (in KDE auf Tasten gelegt): E Radierer an/aus, V Auswählen an/aus, L gerade aufs Blatt
+    ("key E", lambda: (activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_E))),
+    ("eraser", lambda: check("E switches to the eraser, no Extrude dialog",
+                             button("Design_ScribbleEraser").isChecked() and not Gui.Control.activeDialog())),
+    ("key E again", lambda: QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_E)),
+    ("pen back", lambda: check("E again goes back to the pen", button("Design_ScribblePen").isChecked())),
+    ("key V", lambda: QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_V)),
+    ("select", lambda: check("V switches to Select", button("Design_ScribbleSelect").isChecked())),
+    ("key V again", lambda: QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_V)),
+    ("pen again", lambda: check("V again goes back to the pen", button("Design_ScribblePen").isChecked())),
+    ("key L", lambda: QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_L)),
 
     # M: o12 ohne Schrägstrich geschrieben
     ("write o12", lambda: (saved.update(n=len(s().Counts)), write("Bohrung o12", .25, .50, messy=.4))),
