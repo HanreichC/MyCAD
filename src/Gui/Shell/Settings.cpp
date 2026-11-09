@@ -1255,6 +1255,16 @@ void Gui::Shell::showSettings()
         QObject::connect(s, &QSlider::valueChanged, [view, param](int v) { view->SetFloat(param, v / 100.0); });
         addRow(padCard, T(label), s);
     }
+
+    // Schönschrift in Scribbles (ScribbleTidy): Schalter und Stärke, gelesen beim Aufräumen
+    auto penCard = addCard(nav, T("Pen & Handwriting"));
+    toggle(penCard, T("Tidy handwriting after a pause"), myParams()->GetBool("ScribbleTidy", true),
+           [](bool on) { myParams()->SetBool("ScribbleTidy", on); });
+    auto strength = slider(0, 100, int(myParams()->GetInt("ScribbleTidyStrength", 100)));
+    QObject::connect(strength, &QSlider::valueChanged, [](int v) { myParams()->SetInt("ScribbleTidyStrength", v); });
+    addRow(penCard, T("Tidying strength"), strength);
+    nav->addWidget(hint(T("A second after you lift the pen, what you just wrote in a Scribble lines up: straight lines, "
+                          "even size, slant and spacing. Undo brings back the raw handwriting.")));
     nav->addStretch();
 
     // --- Seite Tasten als Maustasten (cad.helper) ---

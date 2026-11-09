@@ -2,10 +2,13 @@
 // Scribbles: freihand zeichnen mit Grafiktablett (Druck, Radierer-Ende) oder Maus. Gezeichnet wird auf einem Blatt, das
 // sich im Raum umstellen lässt: auf eine Körperfläche, aufrecht entlang eines Strichs oder zur Ansicht hin. So entstehen
 // aus 2D-Ideen 3D-Drahtmodelle. Hält der Stift am Ende eines Strichs kurz still, wird er zur Linie, zum Kreis oder Rechteck.
+// Nach einer Schreibpause räumt die Schönschrift das eben Geschriebene auf (ScribbleTidy), die Striche gleiten an ihren Platz.
 
 #include "ScribbleShapes.h"
+#include "ScribbleTidy.h"
 #include "ViewProviders.h"
 
+#include <App/Application.h>
 #include <App/Document.h>
 #include <Base/Placement.h>
 #include <Gui/Action.h>
@@ -47,6 +50,7 @@
 #include <Inventor/sensors/SoOneShotSensor.h>
 #include <Inventor/system/gl.h>
 
+#include <QElapsedTimer>
 #include <QFont>
 #include <QFontMetricsF>
 #include <QGraphicsView>
@@ -61,6 +65,7 @@
 
 #include <optional>
 #include <set>
+#include <utility>
 
 #include <Gui/Shell/Theme.h>
 
@@ -460,6 +465,14 @@ constexpr double SnapRadius = 10;   ///< px: so nah muss der Stift an ein Strich
 constexpr double EraseRadius = 10;  ///< px
 constexpr int HoldMs = 450;         ///< so lange still halten, damit ein Strich zur Form wird
 constexpr double TextPx = 20;       ///< Schriftgröße beim Tippen, px (MyStyle typography.desktop.title2)
+constexpr int TidyPauseMs = 1000;   ///< so lange ohne Stift auf dem Blatt, dann wird das Geschriebene aufgeräumt
+constexpr int GlideMs = 250;        ///< so lange gleiten die Striche an ihren aufgeräumten Platz
+
+/// Einstellungen der Schönschrift (Einstellungen > Maus & Trackpad > Stift & Handschrift)
+ParameterGrp::handle tidyParams()
+{
+    return App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+}
 
 /// Getippter Text als Umrisse in Pixeln der Schrift (y nach unten, Ursprung = Klickpunkt auf halber Versalhöhe der ersten
 /// Zeile), je Zeile einer: gerade/ungerade gefüllt ergibt er die Buchstaben (strokeNode). Alle Umrisse einer Zeile (auch
@@ -546,6 +559,8 @@ struct ViewProviderScribble::Private
     void showLive();
     void showSnap(const std::optional<Base::Vector3d>& p);
     void cancel();
+    void tidyWriting();
+    void endGlide();
 
     ViewProviderScribble* vp;
     SoSwitch* displaySwitch;   ///< Anzeige im Modell; im Zeichenmodus aus, dann zeigt das Blatt die Striche
@@ -597,6 +612,18 @@ struct ViewProviderScribble::Private
     QString typed;
     Base::Vector3d typedAt;  ///< Klickpunkt (lokal)
     double typedMm = 0.1;    ///< mm je Schrift-Pixel
+
+    // Schönschrift: freie Striche, die ohne lange Pause aufeinander folgen, sind eine Schreibrunde
+    int writingFrom = -1;   ///< erster Strich der Runde in strokes(), sonst -1
+    size_t writingTo = 0;   ///< so viele Striche gab es nach ihrem letzten; sonst kam Rückgängig o. ä. dazwischen
+    QTimer pause;
+    struct
+    {
+        size_t from = 0;
+        std::vector<Stroke> before;  ///< die Runde vor dem Aufräumen; gespeichert ist schon das Ergebnis
+        QElapsedTimer clock;
+    } glide;
+    QTimer glideTick;
 };
 
 namespace
@@ -782,6 +809,13 @@ ViewProviderScribble::Private::Private(ViewProviderScribble* vp)
     hold.setSingleShot(true);
     hold.setInterval(HoldMs);
     QObject::connect(&hold, &QTimer::timeout, [this] { shapeUp(); });
+    pause.setSingleShot(true);
+    pause.setInterval(TidyPauseMs);
+    QObject::connect(&pause, &QTimer::timeout, [this] { tidyWriting(); });
+    glideTick.setInterval(16);
+    QObject::connect(&glideTick, &QTimer::timeout, [this] {
+        glide.clock.elapsed() >= GlideMs ? endGlide() : rebuild(true);
+    });
 }
 
 void ViewProviderScribble::Private::rebuild(bool editOnly)
@@ -793,6 +827,10 @@ void ViewProviderScribble::Private::rebuild(bool editOnly)
     endpoints.clear();
     const auto strokes = object()->strokes();
     std::erase_if(selection, [&strokes](int i) { return i >= int(strokes.size()); });  // nach Rückgängig
+    // Schönschrift: das Blatt zeigt die Runde auf dem Weg von vorher zum gespeicherten Ergebnis
+    const bool gliding = glideTick.isActive() && glide.from + glide.before.size() <= strokes.size();
+    const double t = gliding ? std::min(1.0, double(glide.clock.elapsed()) / GlideMs) : 1.0;
+    const double k = t * t * (3 - 2 * t);  // sanft an- und auslaufen
     for (const bool fills : {true, false}) {  // Flächen zuerst: die Linien liegen darüber
         for (int i = 0; i < int(strokes.size()); ++i) {
             const Stroke& s = strokes[size_t(i)];
@@ -803,6 +841,13 @@ void ViewProviderScribble::Private::rebuild(bool editOnly)
             if (moving && selected(i)) {
                 for (auto& q : shifted.points) {
                     q += moveOffset;
+                }
+            }
+            if (gliding && size_t(i) >= glide.from && size_t(i) < glide.from + glide.before.size()) {
+                const Stroke& b = glide.before[size_t(i) - glide.from];
+                for (size_t j = 0; j < shifted.points.size() && j < b.points.size(); ++j) {
+                    shifted.points[j] = b.points[j] + (s.points[j] - b.points[j]) * k;
+                    shifted.widths[j] = b.widths[j] + (s.widths[j] - b.widths[j]) * k;
                 }
             }
             if (!editOnly) {
@@ -920,6 +965,13 @@ bool ViewProviderScribble::Private::overPanel(const QPointF& pos) const
 void ViewProviderScribble::Private::press(const QPointF& pos, double pressure, bool eraser)
 {
     App::Document* doc = vp->getObject()->getDocument();
+    if (pause.isActive()) {
+        pause.stop();  // weiterschreiben: die Pause beginnt beim Absetzen von vorn
+        if (!isPen(eraser ? Tool::Eraser : currentTool)) {
+            tidyWriting();  // jetzt kommt etwas anderes: das Geschriebene vorher aufräumen
+        }
+    }
+    endGlide();  // wer weiterarbeitet, sieht gleich das Ergebnis; Radieren o. ä. darf nicht in ein Gleiten fallen
     down = true;
     pressPos = pos;
     gesture = eraser ? Tool::Eraser : currentTool;
@@ -1070,6 +1122,7 @@ void ViewProviderScribble::Private::shapeUp()
     if (down && isPen(gesture) && grabCandidate >= 0 && screenLength < 4) {
         current = Stroke();
         live->removeAllChildren();
+        writingFrom = -1;  // gegriffen statt geschrieben: die Schreibrunde ist vorbei, ohne Aufräumen
         selection = {grabCandidate};
         gesture = Tool::Select;
         grab(pressPos);
@@ -1266,11 +1319,79 @@ void ViewProviderScribble::Private::release(const QPointF& pos)
             current.points.back() = *end;
         }
     }
+    // Schönschrift: freie Striche mit Fineliner oder Bleistift sammeln, eine Pause räumt sie auf; eine Form beendet die Runde
+    const bool writing = current.kind == Design::Scribble::Free && current.tool != Design::Scribble::Marker;
+    if (!writing && writingFrom >= 0) {
+        tidyWriting();
+    }
     doc->openTransaction("Scribble");
     auto all = object()->strokes();
     all.push_back(current);
     object()->setStrokes(all);
     doc->commitTransaction();
+    if (writing) {
+        if (writingFrom < 0 || writingTo != all.size() - 1) {
+            writingFrom = int(all.size()) - 1;
+        }
+        writingTo = all.size();
+        pause.start();
+    }
+}
+
+void ViewProviderScribble::Private::tidyWriting()
+{
+    pause.stop();
+    const int from = std::exchange(writingFrom, -1);
+    auto all = object()->strokes();
+    if (from < 0 || all.size() != writingTo || down || !tidyParams()->GetBool("ScribbleTidy", true)) {
+        return;
+    }
+    const Base::Placement sheet = object()->Sheet.getValue();
+    const Base::Matrix4D toSheet = sheet.inverse().toMatrix(), fromSheet = sheet.toMatrix();
+    std::vector<ScribbleTidy::Stroke> flat;
+    for (size_t i = size_t(from); i < all.size(); ++i) {
+        ScribbleTidy::Stroke f;
+        for (size_t j = 0; j < all[i].points.size(); ++j) {
+            const Base::Vector3d q = toSheet * all[i].points[j];
+            if (std::abs(q.z) > 1e-6) {
+                return;  // liegt nicht auf dem aktuellen Blatt (an einem Strich anderswo eingerastet)
+            }
+            f.push_back({q.x, q.y, all[i].widths[j]});
+        }
+        flat.push_back(f);
+    }
+    const double strength = double(std::clamp(tidyParams()->GetInt("ScribbleTidyStrength", 100), 0L, 100L)) / 100;
+    if (strength <= 0 || !ScribbleTidy::looksLikeWriting(flat, pixelSize())) {
+        return;
+    }
+    const auto neat = ScribbleTidy::tidy(flat);
+    glide.from = size_t(from);
+    glide.before.assign(all.begin() + from, all.end());
+    for (size_t i = 0; i < neat.size(); ++i) {
+        Stroke& s = all[size_t(from) + i];
+        const ScribbleTidy::Stroke done = ScribbleTidy::blend(flat[i], neat[i], strength);
+        for (size_t j = 0; j < done.size(); ++j) {
+            s.points[j] = fromSheet * Base::Vector3d(done[j].x, done[j].y, 0);
+            s.widths[j] = done[j].w;
+        }
+    }
+    App::Document* doc = vp->getObject()->getDocument();
+    doc->openTransaction("Tidy Handwriting");  // Rückgängig holt die rohe Schrift zurück
+    object()->setStrokes(all);
+    doc->commitTransaction();
+    if (!Gui::Shell::theme().reduceMotion) {
+        glide.clock.start();
+        glideTick.start();
+    }
+}
+
+void ViewProviderScribble::Private::endGlide()
+{
+    if (glideTick.isActive()) {
+        glideTick.stop();
+        glide.before.clear();
+        rebuild(true);
+    }
 }
 
 void ViewProviderScribble::Private::hover(const QPointF& pos)
@@ -1717,6 +1838,9 @@ void ViewProviderScribble::Private::cancel()
     }
     down = false;
     hold.stop();
+    pause.stop();
+    writingFrom = -1;
+    endGlide();
     current = Stroke();
     moving = false;
     moveOffset = Base::Vector3d();
@@ -1839,6 +1963,9 @@ void ViewProviderScribble::setEditViewer(Gui::View3DInventorViewer* viewer, int 
 void ViewProviderScribble::unsetEditViewer(Gui::View3DInventorViewer* viewer)
 {
     d->commitText();  // Fertig stellen mitten im Tippen: der Text bleibt
+    if (d->pause.isActive()) {
+        d->tidyWriting();  // Fertig stellen gleich nach dem Schreiben: trotzdem aufräumen
+    }
     d->cancel();
     if (d->viewport) {
         d->viewport->removeEventFilter(d->input.get());
