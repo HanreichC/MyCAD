@@ -2995,6 +2995,12 @@ void CreateDesignCommands()
                                         "geometry you can dimension and extrude. Written sizes like Ø12, R5 or 40 next "
                                         "to a circle or line become its dimension",
                                         scribbleToSketch));
+        mgr.addCommand(new ScribbleTool("Design_ScribbleFocus", "Only the Sheet",
+                                        "Only the Sheet (Tab): toolbar, browser and palette fold into a small pill at the top. "
+                                        "Tab again brings them back",
+                                        [](ViewProviderScribble*) { Gui::Shell::setScribbleFocus(!Gui::Shell::scribbleFocus()); }));
+        mgr.addCommand(new ScribbleTool("Design_ScribbleDeleteSelection", "Delete", "Delete the selected strokes (Del)",
+                                        [](ViewProviderScribble* vp) { vp->deleteSelection(); }));
         mgr.addCommand(new ScribbleTool("Design_ScribbleFinish", "Finish Scribble", "Finish Scribble (Esc)",
                                         [](ViewProviderScribble* vp) {
                                             Gui::Application::Instance->getDocument(vp->getObject()->getDocument())->resetEdit();

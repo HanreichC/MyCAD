@@ -146,6 +146,8 @@ public:
     static const Base::Color& ink();
     /// Kamera gerade aufs Blatt (nur im Zeichenmodus)
     void lookAtSheet();
+    /// ausgewählte Striche löschen (Leiste an der Auswahl, Entf)
+    void deleteSelection();
     /// Handschrift-Suche (Feld in der Scribble-Palette): wählt die nächste Zeile auf dem Blatt, die den Text enthält,
     /// und zeigt sie in der Mitte; false, wenn nichts passt
     static bool find(const QString& text);

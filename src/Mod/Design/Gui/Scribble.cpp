@@ -49,6 +49,7 @@
 #include <Inventor/nodes/SoTransparencyType.h>
 #include <Inventor/nodes/SoTriangleStripSet.h>
 #include <Inventor/nodes/SoVertexShader.h>
+#include <Inventor/sensors/SoNodeSensor.h>
 #include <Inventor/sensors/SoOneShotSensor.h>
 #include <Inventor/system/gl.h>
 
@@ -72,6 +73,7 @@
 #include <set>
 #include <utility>
 
+#include <Gui/Shell/Shell.h>
 #include <Gui/Shell/Theme.h>
 
 #ifndef GL_DEPTH_CLAMP
@@ -107,14 +109,23 @@ Nib nib(long tool)
 /// Tinte: gespeichert als labelPrimary des hellen Modus, damit die Datei nicht vom Modus abhängt
 constexpr Base::Color Ink(0x1D / 255.0F, 0x1D / 255.0F, 0x1F / 255.0F);
 
-/// Farbe auf dem Bildschirm: schwarze Tinte ist im Dunkelmodus labelPrimary (hell), auf dem dunklen Blatt und im Modell
+/// Farbe auf dem Bildschirm. Gespeichert ist immer die Farbe des hellen Modus; im Dunkelmodus wird sie nur umgefärbt
+/// (wie Apples PencilKit oder tldraw, nie die Farbe selbst umdrehen): schwarze Tinte wird labelPrimary (hell), jede
+/// andere Farbe behält ihren Ton und wird heller und etwas weniger satt, sonst ist sie auf dem dunklen Blatt zu grell
+/// oder versinkt (Blau, Gelb). Gilt auf dem Blatt und im Modell.
 Base::Color shown(const Base::Color& c)
 {
-    if (!Gui::Shell::theme().dark || std::abs(c.r - Ink.r) + std::abs(c.g - Ink.g) + std::abs(c.b - Ink.b) >= 0.01F) {
+    if (!Gui::Shell::theme().dark) {
         return c;
     }
-    const QColor light = Gui::Shell::theme().labelPrimary;
-    return Base::Color(float(light.redF()), float(light.greenF()), float(light.blueF()), c.a);
+    if (std::abs(c.r - Ink.r) + std::abs(c.g - Ink.g) + std::abs(c.b - Ink.b) < 0.01F) {
+        const QColor light = Gui::Shell::theme().labelPrimary;
+        return Base::Color(float(light.redF()), float(light.greenF()), float(light.blueF()), c.a);
+    }
+    float h = 0, s = 0, l = 0;
+    QColor::fromRgbF(c.r, c.g, c.b).getHslF(&h, &s, &l);
+    const QColor lifted = QColor::fromHslF(std::max(h, 0.0F), s * 0.9F, std::max(l, 0.7F));
+    return Base::Color(float(lifted.redF()), float(lifted.greenF()), float(lifted.blueF()), c.a);
 }
 
 Tool currentTool = Tool::Pen;
@@ -191,7 +202,9 @@ SoSeparator* strokeNode(const Stroke& s)
 {
     Base::Color color = shown(s.color);
     if (s.tool == Design::Scribble::Marker && Gui::Shell::theme().dark) {
-        color.a = 0.6F;  // ponytail: kein MyStyle-Token; mit 0,35 wird Leuchtfarbe auf dunklem Grund olivbraun
+        // Marker im Dunkeln: aufgehellte Farbe (shown) und weniger deckend, ein leiser Schimmer statt Senfbalken
+        // ponytail: 0,25 ist kein MyStyle-Token; gehörte als "scribble.markerDark" in die Tokens
+        color.a = 0.25F;
     }
     auto sep = new SoSeparator;
     auto material = new SoMaterial;
@@ -376,8 +389,8 @@ SoCallback* depthClamp(bool on)
     return cb;
 }
 
-/// Zeichenblatt: Papier (warmes Weiß, dunkel warmes system.gray5, siehe updatePaper) mit Punktraster in labelTertiary, das beim Zoomen in
-/// Zehnerschritten dichter oder gröber wird.
+/// Zeichenblatt: Papier im Hintergrund der App (background, siehe updatePaper) mit engem Punktraster in labelTertiary,
+/// das beim Zoomen in 1-2-5-Schritten (mm) dichter oder gröber wird, auf dem Bildschirm etwa alle 24 bis 60 px.
 /// Wie das Bodenraster der Shell legt der Shader ein Quadrat um den Punkt des Blatts in der Bildmitte. Sieht man schräg
 /// aufs Blatt (3D), wird es fast durchsichtig, damit man die Striche und das Modell im Raum sieht.
 SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderParameter3f* dotColor)
@@ -421,13 +434,17 @@ SoNode* paperNode(SoTransform* placement, SoShaderParameter4f* color, SoShaderPa
         void main()
         {
             vec2 px = max(fwidth(world), vec2(1e-6));
-            float lod = log(max(px.x, px.y) * 18.0) / log(10.0);  // Punktabstand mindestens 18 px
-            float k = ceil(lod);
-            float fine = clamp((k - lod) * 3.0, 0.0, 1.0);         // feine Stufe blendet weich ein
-            float dot = max(fine * dots(pow(10.0, k), px), dots(pow(10.0, k + 1.0), px));
+            float p = max(px.x, px.y);                    // mm je Pixel
+            float target = p * 24.0;                      // Punktabstand mindestens 24 px
+            float b = pow(10.0, floor(log(target) / log(10.0)));
+            float m = target / b;
+            float s = b * (m <= 2.0 ? 2.0 : (m <= 5.0 ? 5.0 : 10.0));      // nächster 1-2-5-Schritt
+            float sf = b * (m <= 2.0 ? 1.0 : (m <= 5.0 ? 2.0 : 5.0));      // der feinere davor
+            float fine = clamp((sf / p - 12.0) / 12.0, 0.0, 1.0);          // er läuft zwischen 12 und 24 px weich aus
+            float dot = max(fine * dots(sf, px), dots(s, px));
             // schräg wird das Papier fast durchsichtig, das Punktraster bleibt: es zeigt, wo das Blatt im Raum steht
             float fill = paperColor.a * mix(0.06, 1.0, smoothstep(0.8, 0.97, facing));
-            float ink = 0.55 * dot * min(1.0, paperColor.a * 2.0);
+            float ink = 0.45 * dot * min(1.0, paperColor.a * 2.0);  // enges Raster: leiser als früher das weite
             float a = max(fill, ink) * (1.0 - smoothstep(1.2, 1.9, length(local)));
             if (a < 0.004) {
                 discard;
@@ -580,6 +597,7 @@ struct ViewProviderScribble::Private
     SoShaderParameter4f* paperColor;
     SoShaderParameter3f* dotColor;
     SoOneShotSensor rebuildSensor;
+    SoNodeSensor cameraSensor;  ///< Ansicht gedreht oder gezoomt: die Leiste an der Auswahl wandert mit
 
     Gui::View3DInventorViewer* viewer = nullptr;
     QPointer<QWidget> viewport;
@@ -666,9 +684,12 @@ protected:
             // jeweils noch einmal zurück zum Stift; L gerade aufs Blatt. Stifte ohne Radierer-Ende (Huion H640P) radieren
             // so mit einem Tastendruck. Im Scribble schlagen sie die Befehlskürzel (E wäre sonst Extrudieren).
             const bool plain = !(ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier | Qt::ShiftModifier));
-            if (plain && (key == Qt::Key_E || key == Qt::Key_V || key == Qt::Key_L)) {
+            if (plain && (key == Qt::Key_E || key == Qt::Key_V || key == Qt::Key_L || key == Qt::Key_Tab)) {
                 if (event->type() == QEvent::KeyPress && !ke->isAutoRepeat() && !d->down) {
-                    if (key == Qt::Key_L) {
+                    if (key == Qt::Key_Tab) {
+                        Gui::Shell::setScribbleFocus(!Gui::Shell::scribbleFocus());  // Nur das Blatt (wie Krita)
+                    }
+                    else if (key == Qt::Key_L) {
                         d->vp->lookAtSheet();
                     }
                     else {
@@ -840,6 +861,13 @@ ViewProviderScribble::Private::Private(ViewProviderScribble* vp)
 
     rebuildSensor.setFunction([](void* data, SoSensor*) { static_cast<Private*>(data)->rebuild(); });
     rebuildSensor.setData(this);
+    cameraSensor.setFunction([](void* data, SoSensor*) {
+        auto d = static_cast<Private*>(data);
+        if (!d->selection.empty() && !d->moving && d->viewport) {
+            Gui::Shell::showScribbleActions(d->selectionBox());
+        }
+    });
+    cameraSensor.setData(this);
 
     hold.setSingleShot(true);
     hold.setInterval(HoldMs);
@@ -914,14 +942,10 @@ void ViewProviderScribble::Private::updatePaper()
     // Beim Umstellen fast durchsichtig: man muss die Körperfläche sehen, auf die man tippt
     const float opacity = active == vp && currentTool == Tool::Sheet ? 0.15F : object()->Tracing.getValue() ? 0.3F : 1.0F;
     const Gui::Shell::Theme& t = Gui::Shell::theme();
-    // warmer Papierton wie bei den Notizen (C-8, glass.noteTint), nur ein Hauch: hell Weiß mit system.yellow (Creme),
-    // dunkel system.gray5 mit system.orange (warmes Anthrazit)
-    // ponytail: die Anteile 0,07 und 0,04 sind kein MyStyle-Token; ein "glass.paperTint" gehörte dorthin
-    const QColor base = t.dark ? t.gray5 : QColor(Qt::white), warm = t.dark ? t.orange : t.yellow;
-    const double f = t.dark ? 0.04 : 0.07;
-    const auto channel = [f](double a, double b) { return float(a + (b - a) * f); };
-    paperColor->value.setValue(channel(base.redF(), warm.redF()), channel(base.greenF(), warm.greenF()),
-                               channel(base.blueF(), warm.blueF()), opacity);
+    // Papier ist der Hintergrund der App (L0): hell das kühle Fast-Weiß von oben, dunkel das neutrale Dunkel von unten.
+    // Die weißen Glas-Leisten heben sich so ab, und die Tinte liegt wie bei tldraw/Apple auf neutralem Grund.
+    const QColor paper = t.dark ? t.backgroundBottom : t.backgroundTop;
+    paperColor->value.setValue(float(paper.redF()), float(paper.greenF()), float(paper.blueF()), opacity);
     dotColor->value.setValue(float(t.labelTertiary.redF()), float(t.labelTertiary.greenF()), float(t.labelTertiary.blueF()));
 }
 
@@ -1534,6 +1558,8 @@ void ViewProviderScribble::Private::showSelection()
 {
     selectionInk->removeAllChildren();
     const auto all = object()->strokes();
+    // Leiste mit Farben und Löschen unter der Auswahl; beim Ziehen weg, danach am neuen Ort
+    Gui::Shell::showScribbleActions(selection.empty() || moving || !viewport ? QRectF() : selectionBox());
     if (selection.empty() || !viewport) {
         return;
     }
@@ -2011,6 +2037,9 @@ void ViewProviderScribble::setEditViewer(Gui::View3DInventorViewer* viewer, int 
         d->viewport->parentWidget()->installEventFilter(d->input.get());  // Tasten, wenn die Ansicht den Fokus hat
     }
     d->viewport->setAttribute(Qt::WA_TabletTracking);  // Stift in der Luft: Fangpunkt schon vor dem Aufsetzen zeigen
+    if (SoCamera* camera = viewer->getSoRenderManager()->getCamera()) {
+        d->cameraSensor.attach(camera);
+    }
     if (!isPen(currentTool)) {
         currentTool = lastDrawTool;  // jedes Öffnen beginnt mit einem Stift
     }
@@ -2032,6 +2061,8 @@ void ViewProviderScribble::unsetEditViewer(Gui::View3DInventorViewer* viewer)
             d->viewport->parentWidget()->removeEventFilter(d->input.get());
         }
         d->viewport->setAttribute(Qt::WA_TabletTracking, false);
+        d->cameraSensor.detach();
+        Gui::Shell::showScribbleActions(QRectF());
     }
     d->input.reset();
     d->viewport = nullptr;
@@ -2114,6 +2145,11 @@ void ViewProviderScribble::setColor(const Base::Color& color)
 const Base::Color& ViewProviderScribble::ink()
 {
     return Ink;
+}
+
+void ViewProviderScribble::deleteSelection()
+{
+    d->deleteSelection();
 }
 
 void ViewProviderScribble::lookAtSheet()

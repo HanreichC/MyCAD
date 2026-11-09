@@ -2687,6 +2687,9 @@ struct State
     GlassPanel* timeline = nullptr;
     GlassPanel* palette = nullptr;
     GlassPanel* scribblePalette = nullptr;
+    GlassPanel* scribblePill = nullptr;     ///< "Nur das Blatt": statt Toolbar, Seitenleiste und Palette
+    GlassPanel* scribbleActions = nullptr;  ///< Farben und Löschen unter der Auswahl
+    bool scribbleFocus = false;
     ViewCube* viewCube = nullptr;
     WindowCorners* corners = nullptr;  ///< nur rahmenlos
     bool sketchMode = false;
@@ -2700,7 +2703,7 @@ std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
     for (auto p : {state.header, state.browser, state.inspector, state.timeline, state.palette, state.scribblePalette,
-                   state.collapsedBar, state.windowPanel}) {
+                   state.scribblePill, state.scribbleActions, state.collapsedBar, state.windowPanel}) {
         if (p) {
             all.push_back(p);
         }
@@ -2860,6 +2863,31 @@ void layout()
                 state.inspector->setGeometry(QRectF(r.width() - 340 - m, top, 340, h));
             }
         }
+    }
+
+    // Scribble "Nur das Blatt": nur die Pille oben in der Mitte (und die Fensterknöpfe) bleiben
+    const bool focus = state.scribbleMode && state.scribbleFocus;
+    if (state.scribblePill) {
+        state.scribblePill->setVisible(focus);
+        const QSizeF ps = state.scribblePill->content()->sizeHint();
+        state.scribblePill->setGeometry(QRectF((r.width() - ps.width()) / 2, m, ps.width(), std::max<qreal>(ps.height(), Token::BarHeight)));
+    }
+    if (focus) {
+        for (QGraphicsItem* item : std::initializer_list<QGraphicsItem*> {state.header, state.browser, state.collapsedBar,
+                                                                          state.scribblePalette, state.timeline, state.viewCube}) {
+            if (item) {
+                item->setVisible(false);
+            }
+        }
+    }
+    else {
+        state.header->setVisible(true);
+        if (state.viewCube) {
+            state.viewCube->setVisible(true);
+        }
+    }
+    if (state.scribbleActions && !state.scribbleMode) {
+        state.scribbleActions->setVisible(false);
     }
 }
 
@@ -3735,6 +3763,7 @@ void Gui::Shell::install()
     QWidget* scribbleBox = toolPalette("Scribble",
                                        {{"Look At", "Design_ScribbleLookAt", "Palette_LookAt"},
                                         {"Tracing Paper", "Design_ScribbleTracing", "Palette_Tracing"},
+                                        {"Only the Sheet", "Design_ScribbleFocus", "Design_ScribbleFocus"},
                                         {"Convert to Sketch", "Design_ScribbleToSketch", "Tree_Sketch"}},
                                        "Design_ScribbleFinish", "Finish Scribble");
     scribbleFindField = new QLineEdit;
@@ -3752,6 +3781,15 @@ void Gui::Shell::install()
     });
     static_cast<QVBoxLayout*>(scribbleBox->layout())->insertWidget(2, scribbleFindField);  // unter der Überschrift
     state.scribblePalette = new GlassPanel(scribbleBox, Token::RadiusPanel, true);
+    // "Nur das Blatt" (Tab): was man beim Schreiben braucht, der Rest klappt ein (wie reMarkable und Supernote)
+    state.scribblePill = new GlassPanel(toolbar({"Std_Undo", "Design_ScribblePen", "Design_ScribbleEraser", "Design_ScribbleFocus"}),
+                                        Token::RadiusCapsule);
+    state.scribblePill->setVisible(false);
+    // an der Auswahl: umfärben und löschen, ohne den Weg zur Toolbar (wie Boox und reMarkable)
+    state.scribbleActions = new GlassPanel(toolbar({"Design_ScribbleBlack", "Design_ScribbleBlue", "Design_ScribbleRed",
+                                                    "Design_ScribbleGreen", "Design_ScribbleYellow", "Design_ScribbleDeleteSelection"}),
+                                           Token::RadiusCapsule);
+    state.scribbleActions->setVisible(false);
     qApp->installEventFilter(new MenuPolisher);
     qApp->installEventFilter(new HelpKey);
     qApp->installEventFilter(new SketchTaskFilter);
@@ -3848,6 +3886,10 @@ void Gui::Shell::install()
     Application::Instance->signalResetEdit.connect([](const ViewProviderDocumentObject&) {
         state.sketchMode = false;
         state.scribbleMode = false;
+        state.scribbleFocus = false;  // "Nur das Blatt" endet mit dem Scribble
+        if (QAction* a = commandAction("Design_ScribbleFocus")) {
+            a->setChecked(false);
+        }
         updateGroundGrid();
         hideChromeLater();
         QTimer::singleShot(0, layout);
@@ -4072,6 +4114,44 @@ void Gui::Shell::setScribbleFind(std::function<bool(const QString&)> find)
     if (scribbleFindField) {
         scribbleFindField->setVisible(bool(scribbleFind));  // die Palette nimmt beim nächsten Layout ihre neue Höhe
     }
+}
+
+void Gui::Shell::setScribbleFocus(bool on)
+{
+    state.scribbleFocus = on && state.scribbleMode;
+    if (QAction* a = commandAction("Design_ScribbleFocus")) {
+        a->setCheckable(true);
+        a->setChecked(state.scribbleFocus);
+    }
+    layout();
+}
+
+bool Gui::Shell::scribbleFocus()
+{
+    return state.scribbleFocus;
+}
+
+void Gui::Shell::showScribbleActions(const QRectF& selection)
+{
+    if (!state.scribbleActions || !state.scene) {
+        return;
+    }
+    if (selection.isEmpty() || !state.scribbleMode) {
+        state.scribbleActions->setVisible(false);
+        return;
+    }
+    // unter der Auswahl, mittig; passt es unten nicht mehr hin, darüber. Immer ganz im Fenster.
+    const QRectF r = state.scene->sceneRect();
+    const qreal m = Token::WindowInset, gap = 12;
+    const QSizeF s = state.scribbleActions->content()->sizeHint();
+    const qreal h = std::max<qreal>(s.height(), Token::BarHeight);
+    qreal y = selection.bottom() + gap;
+    if (y + h > r.height() - m) {
+        y = selection.top() - gap - h;
+    }
+    const qreal x = std::clamp(selection.center().x() - s.width() / 2, m, std::max(m, r.width() - s.width() - m));
+    state.scribbleActions->setGeometry(QRectF(x, std::clamp(y, m, std::max(m, r.height() - h - m)), s.width(), h));
+    state.scribbleActions->setVisible(true);
 }
 
 void Gui::Shell::setToolNames(bool on)

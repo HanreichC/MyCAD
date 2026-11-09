@@ -4,6 +4,7 @@
 
 #include <QCoreApplication>
 #include <QPixmap>
+#include <QRectF>
 #include <QSize>
 #include <QString>
 #include <functional>
@@ -27,6 +28,13 @@ void setToolNames(bool on);
 /// Handschrift suchen in Scribbles: das Design-Modul meldet hier die Suche an (nur mit Handschrift-Modell), dann zeigt
 /// die Scribble-Palette ein Suchfeld. Die Suche bekommt den Text und sagt, ob sie ihn gefunden hat.
 void setScribbleFind(std::function<bool(const QString&)> find);
+/// Scribble "Nur das Blatt": Toolbar, Seitenleiste, Palette und ViewCube klappen zu einer kleinen Pille oben ein
+/// (Rückgängig, Stift, Radierer, Ausklappen). Endet mit dem Scribble.
+void setScribbleFocus(bool on);
+bool scribbleFocus();
+/// Glasleiste mit den Farben und Löschen unter der Auswahl eines Scribbles (Rechteck in Ansichts-Koordinaten,
+/// ohne Auswahl leer: dann verschwindet sie)
+void showScribbleActions(const QRectF& selection);
 /// Erscheinungsbild neu anwenden, nachdem die Einstellungen (MyCAD/Appearance, GlassLevel, IncreaseContrast,
 /// ReduceTransparency, ReduceMotion) geändert wurden; wirkt sofort auf alle Fenster
 void applyAppearance();

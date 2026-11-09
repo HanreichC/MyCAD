@@ -140,6 +140,11 @@ def hover_with_mouse_button():
     saved["free"] = tablet(QtCore.QEvent.TabletMove, p.x() + 20, p.y(), 0, QtCore.Qt.NoButton, QtCore.Qt.NoButton)
 
 
+def shown(cmd):
+    """liegt ein Glas-Knopf dieses Befehls sichtbar auf dem Bildschirm (Toolbar, Pille, Leiste an der Auswahl)?"""
+    return any(b.objectName() == "GlassButton" and b.property("command") == cmd for b in visible(QtWidgets.QToolButton))
+
+
 def find_field():
     return [w for w in visible(QtWidgets.QLineEdit) if w.placeholderText() in ("Find handwriting", "Handschrift suchen")]
 
@@ -187,6 +192,14 @@ in_order([
     ("pen again", lambda: check("V again goes back to the pen", button("Design_ScribblePen").isChecked())),
     ("key L", lambda: QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_L)),
 
+    # Nur das Blatt (Tab): Toolbar und Palette klappen zur Pille ein, Tab holt sie zurück
+    ("tab", lambda: (activate(), QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Tab))),
+    ("pill", lambda: check("Tab folds the tools into the pill (undo, pen, eraser, unfold)",
+                           shown("Design_ScribbleFocus") and shown("Std_Undo") and not shown("Design_ScribbleText") and not find_field(),
+                           "pill=%s toolbar=%s" % (shown("Design_ScribbleFocus"), shown("Design_ScribbleText")))),
+    ("tab again", lambda: QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Tab)),
+    ("unfolded", lambda: check("Tab again brings toolbar and palette back", shown("Design_ScribbleText") and not shown("Design_ScribbleFocus") and len(find_field()) == 1)),
+
     # M: o12 ohne Schrägstrich geschrieben
     ("write o12", lambda: (saved.update(n=len(s().Counts)), write("Bohrung o12", .25, .50, messy=.4))),
     ("slashed", lambda: check("o12 gets a slash in the ink (Ø12)", len(s().Counts) == saved["n"] + count("Bohrung o12") + 1,
@@ -203,6 +216,14 @@ in_order([
                            QtTest.QTest.keyClick(view(), QtCore.Qt.Key_Backspace))),
     ("kept", lambda: check("backspace in the find field deletes text, not strokes", len(s().Counts) == saved["n"] and find_field()[0].text() == "25m",
                            "%d strokes, field %r" % (len(s().Counts), find_field()[0].text()))),
+
+    # Leiste an der Auswahl: Farben und Löschen schweben unter der gefundenen Zeile
+    ("actions", lambda: check("a selection shows colours and delete next to it", shown("Design_ScribbleDeleteSelection") and shown("Design_ScribbleBlue"))),
+    ("delete", lambda: (saved.update(n=len(s().Counts)), click([b for b in visible(QtWidgets.QToolButton) if b.property("command") == "Design_ScribbleDeleteSelection"][0]))),
+    ("deleted", lambda: check("delete in that bar removes the selected line, the bar goes away",
+                              len(s().Counts) < saved["n"] and not shown("Design_ScribbleDeleteSelection"), "%d -> %d" % (saved["n"], len(s().Counts)))),
+    ("undo delete", lambda: Gui.runCommand("Std_Undo")),
+    ("back", lambda: check("undo brings the line back", len(s().Counts) == saved["n"])),
 
     # T: Ø12 neben einem Kreis wird beim Umwandeln dessen Durchmesser. Die Suche hat die Ansicht verschoben: erst wieder
     # gerade aufs Blatt, sonst landen Kreis und Maß in der Zeile von "Bohrung Ø12"

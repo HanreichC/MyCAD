@@ -163,7 +163,7 @@ in_order([
     ("folder order", lambda: check("browser: Scribbles before Notes", [o.Name.rstrip("0123456789") for o in doc().getObject("Root").Group if o.TypeId == "App::DocumentObjectGroup"][-2:] == ["Scribbles", "Notes"],
                                    str([o.Name for o in doc().getObject("Root").Group]))),
     ("shot empty", lambda: shot("empty")),
-    ("paper", lambda: (lambda c: check("the sheet is warm light paper (paper shader runs)", c.lightness() > 225 and c.red() - c.blue() >= 8,
+    ("paper", lambda: (lambda c: check("the sheet is cool near-white paper, the app background (paper shader runs)", c.lightness() > 225 and 0 <= c.blue() - c.red() <= 8,
                                        str(c.getRgb())))(pixel(0.62, 0.62))),
 
     ("free", lambda: stroke([(0.40 + 0.01 * k, 0.62 + 0.03 * ((-1) ** k)) for k in range(16)])), wait,

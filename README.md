@@ -93,11 +93,11 @@ MyCAD also reads what you write, offline, with a small model for German handwrit
 
 Under **Shapes** you drag out a line, arrow, rectangle, triangle, hexagon, circle or ellipse. **Fill** colors an area: tap inside a shape, or draw around the part you want filled.
 
-To move things around, hold the pen still on a stroke for a moment and it sticks to the pen. **Select** picks up more at once (with the mouse too): tap a stroke or draw around a few, then drag. Tap a color to recolor them, or press Delete.
+To move things around, hold the pen still on a stroke for a moment and it sticks to the pen. **Select** picks up more at once (with the mouse too): tap a stroke or draw around a few, then drag. A small bar under the selection recolors them or deletes them.
 
 No pen tablet at hand? **Text** writes with the keyboard: click on the sheet and type, Enter puts it down. Each line becomes a stroke you can select, move and recolor.
 
-**Tracing Paper** lets the model show through, so you can draw right on top of a part.
+**Tracing Paper** lets the model show through, so you can draw right on top of a part. **Only the Sheet** (Tab) folds the toolbar, browser and palette into a small pill at the top, so it's just you and the paper.
 
 <div align="center">
 
