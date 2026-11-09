@@ -406,6 +406,7 @@ set(Gui_RES_SRCS
     Shell/icons/icons.qrc
     Shell/help/help.qrc
     Shell/textures/textures.qrc
+    Shell/environment/environment.qrc
     Language/translation.qrc
     ${FreeCAD_TR_QRC}
 )
@@ -691,6 +692,7 @@ SOURCE_GROUP("Dialog\\Settings" FILES ${Dialog_Settings_SRCS})
 
 # The dock windows sources
 SET(Dock_Windows_CPP_SRCS
+    Shell/BodyShading.cpp
     Shell/GlassPanel.cpp
     Shell/Shell.cpp
     Shell/ViewCube.cpp
@@ -711,6 +713,7 @@ SET(Dock_Windows_CPP_SRCS
     DAGView/DAGModelGraph.cpp
 )
 SET(Dock_Windows_HPP_SRCS
+    Shell/BodyShading.h
     Shell/GlassPanel.h
     Shell/Shell.h
     Shell/ViewCube.h

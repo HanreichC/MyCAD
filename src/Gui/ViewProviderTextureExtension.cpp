@@ -159,7 +159,8 @@ void ViewProviderTextureExtension::setCoinAppearance(
     pcTextureMaterial->diffuseColor.setValue(1.0F, 1.0F, 1.0F);
     pcTextureMaterial->ambientColor.setValue(source.ambientColor.r, source.ambientColor.g, source.ambientColor.b);
     pcTextureMaterial->specularColor.setValue(source.specularColor.r, source.specularColor.g, source.specularColor.b);
-    pcTextureMaterial->emissiveColor.setValue(source.emissiveColor.r, source.emissiveColor.g, source.emissiveColor.b);
+    // Rot 1/255 sagt dem Körper-Shader: Textur auf Stufe 0 (Gui/Shell/BodyShading.h)
+    pcTextureMaterial->emissiveColor.setValue(1 / 255.0F, source.emissiveColor.g, source.emissiveColor.b);
     pcTextureMaterial->shininess.setValue(source.shininess);
     pcTextureMaterial->transparency.setValue(source.transparency);
 

@@ -84,12 +84,14 @@
 #include <Base/Tools.h>
 
 #include <Gui/BitmapFactory.h>
+#include <Gui/Shell/BodyShading.h>
 #include <Gui/Control.h>
 #include <Gui/Selection/SoFCSelectionAction.h>
 #include <Gui/Selection/SoFCUnifiedSelection.h>
 #include <Gui/ViewParams.h>
 #include <Gui/Utilities.h>
 
+#include <Mod/Part/App/Part2DObject.h>
 #include <Mod/Part/App/ShapeMapHasher.h>
 #include <Mod/Part/App/Tools.h>
 
@@ -518,6 +520,11 @@ void ViewProviderPartExt::attach(App::DocumentObject* pcFeat)
     pcFlatRoot->addChild(pcFaceBind);
     pcFlatRoot->addChild(texture.getAppearance());
     texture.setup(pcShapeMaterial);
+    // Körper physikalisch schattieren (Spiegelung der Umgebung, Fresnel); Skizzen und die halbdurchsichtigen Profilflächen
+    // bleiben flach
+    if (!pcFeat->isDerivedFrom<Part::Part2DObject>() && std::string_view(pcFeat->getTypeId().getName()) != "Design::Profiles") {
+        pcFlatRoot->addChild(Gui::Shell::bodyShading());
+    }
     SoDrawStyle* pcFaceStyle = new SoDrawStyle();
     pcFaceStyle->setName("FaceStyle");
     pcFaceStyle->style = SoDrawStyle::FILLED;

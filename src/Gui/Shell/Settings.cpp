@@ -1005,6 +1005,12 @@ void Gui::Shell::showSettings()
                updateStyle();
            }));
 
+    // Materialien der Körper: Hoch und Ausgewogen mit Spiegelung der Umgebung (BodyShading.h), Sparsam wie früher (Phong)
+    addRow(lookCard, T("Materials"),
+           segmented({T("High"), T("Balanced"), T("Low")}, int(myParams()->GetInt("RenderQuality", 0)), [](int i) {
+               myParams()->SetInt("RenderQuality", i);  // BodyShading beobachtet den Parameter
+           }));
+
     // Liquid Glass (MyStyle GQ-2): stufenlos von Ultra Clear über Default bis Tinted, wirkt sofort
     auto glass = new QWidget;
     auto glassLay = new QGridLayout(glass);

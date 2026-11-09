@@ -2375,6 +2375,7 @@ public:
             QObject::connect(swatch, &QToolButton::clicked, swatch, [this, c] {
                 App::Material material(App::Material::PLASTIC);
                 material.diffuseColor = Base::Color(float(c.redF()), float(c.greenF()), float(c.blueF()));
+                material.emissiveColor = Base::Color(0, 0, 1 / 255.0F);  // Markierung: kein Metall (BodyShading.h)
                 apply(material);
             });
             swatches->addWidget(swatch, i / 7, i % 7);
