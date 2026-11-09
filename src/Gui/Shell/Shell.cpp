@@ -135,6 +135,9 @@ namespace
 constexpr qreal BrowserWidth = 290;
 constexpr qreal SearchWidth = 420;  ///< Suchfeld-Kapsel in der Titelzeile von Startseite und Hilfe
 
+std::function<bool(const QString&)> scribbleFind;  ///< Gui::Shell::setScribbleFind
+QLineEdit* scribbleFindField = nullptr;            ///< Suchfeld in der Scribble-Palette
+
 void overrideFreeCadIcons();
 
 /// Das Stylesheet der ganzen App; "@token" steht für die Farbe aus dem aktuellen Theme (MyStyle § 9).
@@ -3728,13 +3731,27 @@ void Gui::Shell::install()
                                                 {"Construction", "Sketcher_ToggleConstruction", "Sketcher_ToggleConstruction"}},
                                                "Sketcher_LeaveSketch", "Finish Sketch"),
                                    Token::RadiusPanel, true);
-    // Scribble: Zeichenwerkzeuge oben, Blatt-Optionen hier
-    state.scribblePalette = new GlassPanel(toolPalette("Scribble",
-                                                       {{"Look At", "Design_ScribbleLookAt", "Palette_LookAt"},
-                                                        {"Tracing Paper", "Design_ScribbleTracing", "Palette_Tracing"},
-                                                        {"Convert to Sketch", "Design_ScribbleToSketch", "Tree_Sketch"}},
-                                                       "Design_ScribbleFinish", "Finish Scribble"),
-                                           Token::RadiusPanel, true);
+    // Scribble: Zeichenwerkzeuge oben, Blatt-Optionen hier, darüber die Suche in der Handschrift (setScribbleFind)
+    QWidget* scribbleBox = toolPalette("Scribble",
+                                       {{"Look At", "Design_ScribbleLookAt", "Palette_LookAt"},
+                                        {"Tracing Paper", "Design_ScribbleTracing", "Palette_Tracing"},
+                                        {"Convert to Sketch", "Design_ScribbleToSketch", "Tree_Sketch"}},
+                                       "Design_ScribbleFinish", "Finish Scribble");
+    scribbleFindField = new QLineEdit;
+    scribbleFindField->setPlaceholderText(T("Find handwriting"));
+    scribbleFindField->setAccessibleName(T("Find handwriting"));
+    scribbleFindField->setToolTip(T("Find handwriting: type what you wrote, Enter jumps to the next match on this sheet"));
+    scribbleFindField->setClearButtonEnabled(true);
+    scribbleFindField->setVisible(bool(scribbleFind));
+    QObject::connect(scribbleFindField, &QLineEdit::returnPressed, scribbleFindField, [] {
+        const QString text = scribbleFindField->text().trimmed();
+        if (scribbleFind && !text.isEmpty() && !scribbleFind(text)) {
+            QToolTip::showText(scribbleFindField->mapToGlobal(QPoint(0, scribbleFindField->height())),
+                               T("Not found on this sheet"), scribbleFindField);
+        }
+    });
+    static_cast<QVBoxLayout*>(scribbleBox->layout())->insertWidget(2, scribbleFindField);  // unter der Überschrift
+    state.scribblePalette = new GlassPanel(scribbleBox, Token::RadiusPanel, true);
     qApp->installEventFilter(new MenuPolisher);
     qApp->installEventFilter(new HelpKey);
     qApp->installEventFilter(new SketchTaskFilter);
@@ -4046,6 +4063,14 @@ void Gui::Shell::applyAppearance()
     }
     for (QWidget* w : QApplication::allWidgets()) {  // Icons und selbst gezeichnete Flächen lesen die Farben beim Zeichnen
         w->update();
+    }
+}
+
+void Gui::Shell::setScribbleFind(std::function<bool(const QString&)> find)
+{
+    scribbleFind = std::move(find);
+    if (scribbleFindField) {
+        scribbleFindField->setVisible(bool(scribbleFind));  // die Palette nimmt beim nächsten Layout ihre neue Höhe
     }
 }
 

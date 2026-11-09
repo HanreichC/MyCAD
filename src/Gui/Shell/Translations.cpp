@@ -343,9 +343,9 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
          "Transparentpapier: das Modell scheint durch das Blatt, so kannst du darüber zeichnen"},
         {"Convert to Sketch", "In Skizze umwandeln"},
         {"Convert to Sketch: lines, circles and rectangles on this sheet become sketch geometry you can dimension and "
-         "extrude",
+         "extrude. Written sizes like Ø12, R5 or 40 next to a circle or line become its dimension",
          "In Skizze umwandeln: Linien, Kreise und Rechtecke auf diesem Blatt werden zu Skizzengeometrie, die du bemaßen "
-         "und extrudieren kannst"},
+         "und extrudieren kannst. Geschriebene Maße wie Ø12, R5 oder 40 an einem Kreis oder einer Linie werden zu deren Bemaßung"},
         {"There are no strokes on this sheet. Only strokes on the current sheet become a sketch.",
          "Auf diesem Blatt sind keine Striche. Nur Striche auf dem aktuellen Blatt werden zur Skizze."},
         {"Finish Scribble", "Scribble fertig stellen"},
@@ -625,6 +625,10 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Pan (2 fingers)", "Schieben (2 Finger)"},
         {"Zoom (pinch)", "Zoomen (Spreizen)"},
         {"Pen & Handwriting", "Stift & Handschrift"},
+        {"Find handwriting", "Handschrift suchen"},
+        {"Find handwriting: type what you wrote, Enter jumps to the next match on this sheet",
+         "Handschrift suchen: tippe, was du geschrieben hast, Enter springt zum nächsten Treffer auf diesem Blatt"},
+        {"Not found on this sheet", "Auf diesem Blatt nicht gefunden"},
         {"Tidy handwriting after a pause", "Handschrift nach einer Pause aufräumen"},
         {"Tidying strength", "Stärke des Aufräumens"},
         {"A second after you lift the pen, what you just wrote in a Scribble lines up: straight lines, even size, slant and spacing. Undo brings back the raw handwriting.",

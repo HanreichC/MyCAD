@@ -4,12 +4,14 @@
 // aus 2D-Ideen 3D-Drahtmodelle. Hält der Stift am Ende eines Strichs kurz still, wird er zur Linie, zum Kreis oder Rechteck.
 // Nach einer Schreibpause räumt die Schönschrift das eben Geschriebene auf (ScribbleTidy), die Striche gleiten an ihren Platz.
 
+#include "ScribbleRead.h"
 #include "ScribbleShapes.h"
 #include "ScribbleTidy.h"
 #include "ViewProviders.h"
 
 #include <App/Application.h>
 #include <App/Document.h>
+#include <Base/BoundBox.h>
 #include <Base/Placement.h>
 #include <Gui/Action.h>
 #include <Gui/Application.h>
@@ -53,8 +55,10 @@
 #include <QElapsedTimer>
 #include <QFont>
 #include <QFontMetricsF>
+#include <QGraphicsProxyWidget>
 #include <QGraphicsView>
 #include <QKeyEvent>
+#include <QLineEdit>
 #include <QPainterPath>
 #include <QMouseEvent>
 #include <QPointer>
@@ -644,6 +648,13 @@ protected:
         // Tasten kommen je nach Fokus beim Viewport oder bei der Ansicht an. Entf ist auch ein Befehlskürzel
         // (Std_Delete): solange etwas ausgewählt ist, gehört die Taste der Auswahl
         if (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress) {
+            // getippt wird in ein Textfeld der Panels (Handschrift suchen): Entf löscht dort Text, keine Striche
+            if (auto view = qobject_cast<QGraphicsView*>(obj); view && view->scene()) {
+                auto proxy = dynamic_cast<QGraphicsProxyWidget*>(view->scene()->focusItem());
+                if (proxy && proxy->widget() && qobject_cast<QLineEdit*>(proxy->widget()->focusWidget())) {
+                    return false;
+                }
+            }
             if (d->typing && d->typeKey(static_cast<QKeyEvent*>(event), event->type() == QEvent::KeyPress)) {
                 event->accept();  // Buchstaben sind beim Tippen keine Befehlskürzel
                 return true;
@@ -972,6 +983,9 @@ void ViewProviderScribble::Private::press(const QPointF& pos, double pressure, b
         }
     }
     endGlide();  // wer weiterarbeitet, sieht gleich das Ergebnis; Radieren o. ä. darf nicht in ein Gleiten fallen
+    if (viewport) {
+        viewport->setFocus();  // Tasten gehören wieder dem Blatt, nicht dem Suchfeld in der Palette
+    }
     down = true;
     pressPos = pos;
     gesture = eraser ? Tool::Eraser : currentTool;
@@ -1365,14 +1379,35 @@ void ViewProviderScribble::Private::tidyWriting()
         return;
     }
     const auto neat = ScribbleTidy::tidy(flat);
+    std::vector<ScribbleTidy::Stroke> done;
+    for (size_t i = 0; i < neat.size(); ++i) {
+        done.push_back(ScribbleTidy::blend(flat[i], neat[i], strength));
+    }
+    // CAD-Schreibweise, wenn das Modell da ist: was der Tinte für Ø12, 2×45° oder 25 mm fehlt, kommt in der eigenen
+    // Strichstärke dazu; extra: je neuem Strich der, von dem er Stift und Farbe erbt
+    std::vector<size_t> extra;
+    for (ScribbleRead::Line& line : ScribbleRead::read(done)) {
+        const auto edits = ScribbleRead::correct(line);
+        for (size_t origin : ScribbleRead::applyInk(done, line, edits)) {
+            extra.push_back(origin);
+        }
+    }
     glide.from = size_t(from);
     glide.before.assign(all.begin() + from, all.end());
-    for (size_t i = 0; i < neat.size(); ++i) {
-        Stroke& s = all[size_t(from) + i];
-        const ScribbleTidy::Stroke done = ScribbleTidy::blend(flat[i], neat[i], strength);
-        for (size_t j = 0; j < done.size(); ++j) {
-            s.points[j] = fromSheet * Base::Vector3d(done[j].x, done[j].y, 0);
-            s.widths[j] = done[j].w;
+    for (size_t i = 0; i < done.size(); ++i) {
+        const bool added = i >= flat.size();
+        Stroke s = all[size_t(from) + (added ? extra[i - flat.size()] : i)];
+        s.points.resize(done[i].size());
+        s.widths.resize(done[i].size());
+        for (size_t j = 0; j < done[i].size(); ++j) {
+            s.points[j] = fromSheet * Base::Vector3d(done[i][j].x, done[i][j].y, 0);
+            s.widths[j] = done[i][j].w;
+        }
+        if (added) {
+            all.push_back(s);
+        }
+        else {
+            all[size_t(from) + i] = s;
         }
     }
     App::Document* doc = vp->getObject()->getDocument();
@@ -2071,4 +2106,91 @@ void ViewProviderScribble::lookAtSheet()
     camera->orientation.getValue().multVec(SbVec3f(0, 0, -1), dir);
     camera->position.setValue(sb(world.getPosition()) - camera->focalDistance.getValue() * dir);
     viewer->setCameraOrientation(SbRotation(float(r[0]), float(r[1]), float(r[2]), float(r[3])));
+}
+
+std::vector<ScribbleRead::Line> DesignGui::readScribble(const Design::Scribble* scribble)
+{
+    if (!ScribbleRead::available()) {
+        return {};
+    }
+    const auto all = scribble->strokes();
+    const Base::Matrix4D toSheet = scribble->Sheet.getValue().inverse().toMatrix();
+    std::vector<ScribbleTidy::Stroke> flat;
+    std::vector<size_t> index;  // Nummer in flat → Nummer in all
+    for (size_t i = 0; i < all.size(); ++i) {
+        const Stroke& s = all[i];
+        if (s.kind != Design::Scribble::Free || s.tool == Design::Scribble::Marker) {
+            continue;
+        }
+        ScribbleTidy::Stroke f;
+        for (size_t j = 0; j < s.points.size(); ++j) {
+            const Base::Vector3d q = toSheet * s.points[j];
+            if (std::abs(q.z) > 1e-3) {
+                f.clear();
+                break;  // auf einem anderen Blatt
+            }
+            f.push_back({q.x, q.y, s.widths[j]});
+        }
+        if (!f.empty()) {
+            flat.push_back(f);
+            index.push_back(i);
+        }
+    }
+    // ponytail: gruppiert alle freien Striche des Blatts zu Zeilen, auch Zeichnungen; die liest das Modell als Unsinn,
+    // der niemandem schadet. Besser wäre, nur Gruppen zu lesen, die looksLikeWriting bestehen
+    auto lines = ScribbleRead::read(flat);
+    for (ScribbleRead::Line& line : lines) {
+        ScribbleRead::correct(line);
+        for (size_t& i : line.strokes) {
+            i = index[i];
+        }
+    }
+    return lines;
+}
+
+bool ViewProviderScribble::find(const QString& text)
+{
+    if (!active || !active->d->viewer) {
+        return false;
+    }
+    Private* d = active->d.get();
+    // ohne Leerzeichen und Groß/klein; ø und o, × und x gelten gleich (getippt wird meist ohne Sonderzeichen)
+    const auto plain = [](QString s) {
+        s = s.toCaseFolded().remove(QLatin1Char(' '));
+        return s.replace(QChar(0x00F8), QLatin1Char('o')).replace(QChar(0x00D7), QLatin1Char('x'));
+    };
+    const QString wanted = plain(text);
+    std::vector<ScribbleRead::Line> hits;
+    for (ScribbleRead::Line& line : readScribble(d->object())) {
+        if (plain(line.text).contains(wanted)) {
+            hits.push_back(std::move(line));
+        }
+    }
+    if (hits.empty()) {
+        return false;
+    }
+    // Enter noch einmal: der nächste Treffer nach dem, der gerade ausgewählt ist
+    size_t next = 0;
+    for (size_t i = 0; i < hits.size(); ++i) {
+        const auto& s = hits[i].strokes;
+        if (!d->selection.empty() && std::find(s.begin(), s.end(), size_t(d->selection.front())) != s.end()) {
+            next = (i + 1) % hits.size();
+        }
+    }
+    setTool(Tool::Select);  // der Treffer ist ausgewählt: gleich verschieben, umfärben oder löschen
+    d->selection.assign(hits[next].strokes.begin(), hits[next].strokes.end());
+    d->showSelection();
+    // Kamera schiebt sich auf die Mitte der Zeile, Richtung und Zoom bleiben
+    const auto all = d->object()->strokes();
+    Base::BoundBox3d box;
+    for (int i : d->selection) {
+        for (const auto& p : all[size_t(i)].points) {
+            box.Add(p);
+        }
+    }
+    SoCamera* camera = d->viewer->getSoRenderManager()->getCamera();
+    SbVec3f dir;
+    camera->orientation.getValue().multVec(SbVec3f(0, 0, -1), dir);
+    camera->position.setValue(sb(d->toWorld * box.GetCenter()) - camera->focalDistance.getValue() * dir);
+    return true;
 }

@@ -6,6 +6,7 @@
 #include <QPixmap>
 #include <QSize>
 #include <QString>
+#include <functional>
 #include <vector>
 
 namespace App
@@ -23,6 +24,9 @@ void install();
 void prepareWindow();
 /// Namen unter den Symbolen der Toolbar ein-/ausblenden (Einstellung "Show tool names")
 void setToolNames(bool on);
+/// Handschrift suchen in Scribbles: das Design-Modul meldet hier die Suche an (nur mit Handschrift-Modell), dann zeigt
+/// die Scribble-Palette ein Suchfeld. Die Suche bekommt den Text und sagt, ob sie ihn gefunden hat.
+void setScribbleFind(std::function<bool(const QString&)> find);
 /// Erscheinungsbild neu anwenden, nachdem die Einstellungen (MyCAD/Appearance, GlassLevel, IncreaseContrast,
 /// ReduceTransparency, ReduceMotion) geändert wurden; wirkt sofort auf alle Fenster
 void applyAppearance();

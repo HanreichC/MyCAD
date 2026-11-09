@@ -6,16 +6,23 @@
 #include <Mod/Part/Gui/ViewProviderExt.h>
 #include <Gui/ViewProviderDocumentObject.h>
 
+#include "ScribbleRead.h"
+
 #include <memory>
 
 namespace Design
 {
 class Body;
 class Joint;
+class Scribble;
 }
 
 namespace DesignGui
 {
+
+/// Handschrift auf dem aktuellen Blatt eines Scribbles lesen (freie Fineliner- und Bleistift-Striche), mit
+/// CAD-Schreibweise; die Strich-Nummern der Zeilen zählen in scribble->strokes(). Leer ohne Handschrift-Modell.
+std::vector<ScribbleRead::Line> readScribble(const Design::Scribble* scribble);
 
 /// Parameter-Tabelle des Designs (App::VarSet "Parameters" in der Root-Komponente), wie Fusions "Change Parameters"
 DesignGuiExport App::DocumentObject* parameters(App::Document* doc, bool create);
@@ -139,6 +146,9 @@ public:
     static const Base::Color& ink();
     /// Kamera gerade aufs Blatt (nur im Zeichenmodus)
     void lookAtSheet();
+    /// Handschrift-Suche (Feld in der Scribble-Palette): wählt die nächste Zeile auf dem Blatt, die den Text enthält,
+    /// und zeigt sie in der Mitte; false, wenn nichts passt
+    static bool find(const QString& text);
 
     struct Private;
 

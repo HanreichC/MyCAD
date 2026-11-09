@@ -3722,7 +3722,11 @@
      "lasso",
      "text",
      "type",
-     "label"
+     "label",
+     "find",
+     "search",
+     "dimension",
+     "diameter"
     ],
     "de": [
      "Scribble",
@@ -3756,7 +3760,11 @@
      "Lasso",
      "Text",
      "tippen",
-     "Beschriftung"
+     "Beschriftung",
+     "suchen",
+     "Maß",
+     "Durchmesser",
+     "Bemaßung"
     ]
    },
    "summary": {
@@ -3798,11 +3806,17 @@
    "tips": {
     "en": [
      "Tracing Paper in the palette lets the model show through, so you can draw over a body.",
-     "Convert to Sketch turns the strokes on the current sheet into a sketch: lines, circles and rectangles become geometry you can dimension and extrude, touching ends stay joined."
+     "Convert to Sketch turns the strokes on the current sheet into a sketch: lines, circles and rectangles become geometry you can dimension and extrude, touching ends stay joined.",
+     "Sizes are written the CAD way, right in your ink: o12 becomes Ø12, 2x45 gets its degree sign, 25mm becomes 25 mm.",
+     "Find handwriting at the top of the palette searches what you wrote on this sheet. Type Ø12 or a word; Enter selects the next match and moves the view to it.",
+     "Write sizes like Ø12, R5 or 40 next to a circle or line: Convert to Sketch turns them into dimensions of that circle or line."
     ],
     "de": [
      "Transparentpapier in der Palette lässt das Modell durchscheinen, so kannst du über einen Körper zeichnen.",
-     "In Skizze umwandeln macht aus den Strichen auf dem aktuellen Blatt eine Skizze: Linien, Kreise und Rechtecke werden zu Geometrie, die du bemaßen und extrudieren kannst, aneinanderliegende Enden bleiben verbunden."
+     "In Skizze umwandeln macht aus den Strichen auf dem aktuellen Blatt eine Skizze: Linien, Kreise und Rechtecke werden zu Geometrie, die du bemaßen und extrudieren kannst, aneinanderliegende Enden bleiben verbunden.",
+     "Maße werden in CAD-Schreibweise gebracht, direkt in deiner Tinte: aus o12 wird Ø12, 2x45 bekommt sein Gradzeichen, aus 25mm wird 25 mm.",
+     "Handschrift suchen oben in der Palette durchsucht, was du auf diesem Blatt geschrieben hast. Tippe Ø12 oder ein Wort; Enter wählt den nächsten Treffer aus und schiebt die Ansicht dorthin.",
+     "Schreib Maße wie Ø12, R5 oder 40 neben einen Kreis oder eine Linie: In Skizze umwandeln macht daraus die Bemaßung dieses Kreises oder dieser Linie."
     ]
    }
   },

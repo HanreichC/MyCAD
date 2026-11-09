@@ -97,7 +97,63 @@ inline void smooth(Stroke& s, double sigma)
     s = out;
 }
 
+/// typische Strichhöhe (ohne Punkte), 0 wenn es nur Punkte gibt
+inline double typicalHeight(const std::vector<Stroke>& S)
+{
+    std::vector<double> hs;
+    for (const Stroke& s : S) {
+        if (const double h = box(s).h(); h > 0) {
+            hs.push_back(h);
+        }
+    }
+    return quant(hs, 0.6);
+}
+
+/// Zeilen in Schreibreihenfolge: neue Zeile, wenn der Stift weit nach links und nach unten springt oder weit weg ist.
+/// y nach unten; Ergebnis von oben nach unten sortiert.
+inline std::vector<std::vector<size_t>> groupLines(const std::vector<Stroke>& S, double h)
+{
+    struct Line
+    {
+        std::vector<size_t> idx;
+        std::vector<double> centers;
+        double cy = 0, maxX = -INFINITY;
+    };
+    std::vector<Line> lines;
+    for (size_t i = 0; i < S.size(); ++i) {
+        const Box b = box(S[i]);
+        const double cy = (b.minY + b.maxY) / 2;
+        if (lines.empty() || std::abs(cy - lines.back().cy) > 1.6 * h
+            || (b.minX < lines.back().maxX - 3 * h && cy > lines.back().cy + 0.7 * h)) {
+            lines.emplace_back();
+        }
+        Line& L = lines.back();
+        L.idx.push_back(i);
+        L.centers.push_back(cy);
+        L.cy = median(L.centers);
+        L.maxX = std::max(L.maxX, b.maxX);
+    }
+    std::sort(lines.begin(), lines.end(), [](const Line& a, const Line& b) { return a.cy < b.cy; });
+    std::vector<std::vector<size_t>> out;
+    for (const Line& L : lines) {
+        out.push_back(L.idx);
+    }
+    return out;
+}
+
 }  // namespace detail
+
+/// Zeilen der Striche (Blatt-Koordinaten, y nach oben), von oben nach unten, je Zeile die Nummern ihrer Striche
+inline std::vector<std::vector<size_t>> lines(std::vector<Stroke> S)
+{
+    for (Stroke& s : S) {
+        for (Pt& p : s) {
+            p.y = -p.y;
+        }
+    }
+    const double h = detail::typicalHeight(S);
+    return h > 0 ? detail::groupLines(S, h) : std::vector<std::vector<size_t>> {};
+}
 
 /// Sieht die Gruppe nach Schrift aus? Mindestens zwei Striche, auf dem Bildschirm schriftgroß, zusammen nicht schmaler
 /// als hoch. unitsPerPx: Blatt-Einheiten je Bildschirm-Pixel.
@@ -143,13 +199,7 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
     };
     flip();
     [&] {
-        std::vector<double> hs;
-        for (const Stroke& s : S) {
-            if (const double h = box(s).h(); h > 0) {
-                hs.push_back(h);
-            }
-        }
-        const double h = quant(hs, 0.6);  // typische Strichhöhe
+        const double h = typicalHeight(S);
         if (h <= 0) {
             return;  // nur Punkte
         }
@@ -222,27 +272,13 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
         struct Line
         {
             std::vector<size_t> idx;
-            std::vector<double> centers;
-            double cy = 0, maxX = -INFINITY, base = 0, xh = 0;
+            double base = 0, xh = 0;
             std::vector<Word> words;
         };
-
-        // Zeilen: neue Zeile, wenn der Stift weit nach links und nach unten springt oder weit weg ist
         std::vector<Line> lines;
-        for (size_t i = 0; i < S.size(); ++i) {
-            const Box& b = B[i];
-            const double cy = (b.minY + b.maxY) / 2;
-            if (lines.empty() || std::abs(cy - lines.back().cy) > 1.6 * h
-                || (b.minX < lines.back().maxX - 3 * h && cy > lines.back().cy + 0.7 * h)) {
-                lines.emplace_back();
-            }
-            Line& L = lines.back();
-            L.idx.push_back(i);
-            L.centers.push_back(cy);
-            L.cy = median(L.centers);
-            L.maxX = std::max(L.maxX, b.maxX);
+        for (auto& idx : groupLines(S, h)) {
+            lines.emplace_back().idx = std::move(idx);
         }
-        std::sort(lines.begin(), lines.end(), [](const Line& a, const Line& b) { return a.cy < b.cy; });
 
         for (Line& L : lines) {
             // Neigung der Zeile: Ausgleichsgerade durch die Strich-Unterkanten, Unterlängen fallen als Ausreißer raus

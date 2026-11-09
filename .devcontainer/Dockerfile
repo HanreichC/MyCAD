@@ -6,7 +6,7 @@ FROM docker.io/library/archlinux:base-devel
 RUN pacman -Syu --noconfirm --needed \
         cmake ninja ccache git pkgconf python gtest \
         boost eigen nlohmann-json microsoft-gsl pybind11 swig \
-        qt6-base qt6-declarative qt6-shadertools qt6-svg qt6-tools qt6-wayland \
+        qt6-base qt6-declarative qt6-shadertools qt6-svg qt6-tools qt6-wayland onnxruntime-cpu \
         pyside6 shiboken6 python-pivy coin opencascade xerces-c yaml-cpp fmt icu freetype2 zlib \
         python-yaml python-packaging python-matplotlib \
         mesa glu libglvnd ttf-dejavu inter-font \

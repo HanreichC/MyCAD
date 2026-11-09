@@ -63,6 +63,10 @@ PyMOD_INIT_FUNC(DesignGui)
     DesignGui::ViewProviderJoint::init();
     DesignGui::ViewProviderNote::init();
     DesignGui::ViewProviderScribble::init();
+#ifdef MYCAD_HTR
+    // Handschrift suchen: Feld in der Scribble-Palette (das Modell lädt erst bei der ersten Suche)
+    Gui::Shell::setScribbleFind([](const QString& text) { return DesignGui::ViewProviderScribble::find(text); });
+#endif
 
     // Jedes neue Design bekommt sofort seine Root-Komponente (Origin, Bodies, Sketches)
     App::GetApplication().signalNewDocument.connect([](const App::Document& doc, bool) {

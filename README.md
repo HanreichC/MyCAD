@@ -89,6 +89,8 @@ Hold the pen still at the end of a stroke and it straightens into a clean line, 
 
 Messy handwriting? Just write. A second after you lift the pen, your words glide into place: straight lines, the same size, slant and spacing, still in your own hand. Ctrl+Z brings back the raw version.
 
+MyCAD also reads what you write, offline, with a small model for German handwriting. Sizes come out the CAD way right in your ink: o12 gets its slash and becomes Ø12, 2x45 gets its degree sign. **Find handwriting** in the palette jumps to any note on the sheet, and **Convert to Sketch** turns an Ø12 written next to a circle into that circle's dimension.
+
 Under **Shapes** you drag out a line, arrow, rectangle, triangle, hexagon, circle or ellipse. **Fill** colors an area: tap inside a shape, or draw around the part you want filled.
 
 To move things around, hold the pen still on a stroke for a moment and it sticks to the pen. **Select** picks up more at once (with the mouse too): tap a stroke or draw around a few, then drag. Tap a color to recolor them, or press Delete.
@@ -159,7 +161,7 @@ Bodies can also have real textures: six woods (**Oak**, **Walnut**, **Maple**, *
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
 | **Solids** | 16 create, 12 modify and 6 construction tools |
 | **Notes** | Saved in the design, lines ending in `=` are calculated |
-| **Scribbles** | Pen tablet with pressure, 7 shapes, fill, text, select and move, sheets in 3D, convert to sketch |
+| **Scribbles** | Pen tablet with pressure, 7 shapes, fill, text, select and move, sheets in 3D, convert to sketch, handwriting tidy-up, offline handwriting recognition (find, CAD notation, written dimensions) |
 | **Export** | STL · 3MF · STEP · DXF (sketches) |
 | **Import** | STEP · DXF · SVG |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
@@ -215,5 +217,7 @@ The roadmap is in [`docs/PLAN.md`](docs/PLAN.md).
 MyCAD is built on [FreeCAD](https://www.freecad.org), the free parametric CAD program. Thanks to everyone who works on it. [`docs/UPSTREAM.md`](docs/UPSTREAM.md) has the details.
 
 Like FreeCAD, MyCAD is licensed under the [LGPL-2.1-or-later](LICENSE).
+
+Handwriting recognition uses [DE·HTR v2](https://huggingface.co/naeyn/de-htr-web-v2) (Apache-2.0), trained on the ScaDS.AI German handwriting dataset (CC BY 4.0, Universität Leipzig) and fhswf/german_handwriting (AFL-3.0). Details in [`src/Mod/Design/Gui/htr/`](src/Mod/Design/Gui/htr/README.md).
 
 <sub>MyCAD is an independent project and is not affiliated with Apple Inc. or Autodesk, Inc. Liquid Glass is a design language by Apple, and Fusion 360 is a trademark of Autodesk. Both names are used here only to describe the style and workflow.</sub>

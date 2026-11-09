@@ -1,0 +1,24 @@
+{
+  "format_version": 2,
+  "model": "model.onnx",
+  "input_name": "image",
+  "output_name": "logits",
+  "input_channels": 1,
+  "image_height": 64,
+  "max_width": 1024,
+  "output_stride": 4,
+  "blank_index": 0,
+  "alphabet": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZäöüÄÖÜß0123456789 .,;:!?\"'()[]{}<>-–—_/\\@#%&*+=|€§°²³→←↑↓×÷",
+  "preprocessing": {
+    "note": "Grayscale single-channel input. Convert to grayscale, resize to height 64 preserving aspect ratio, right-pad to a multiple of 4 with white, scale pixels to [0,1] (white padding = 1.0). ImageNet RGB normalization happens INSIDE the model (grayscale is replicated to 3 channels internally) - do NOT apply the v1 mean/std in the app.",
+    "scale": 0.00392156862745098,
+    "pad_value": 1.0
+  },
+  "output_note": "Raw CTC logits (not log-softmax). Greedy argmax decoding is unchanged vs v1; apply softmax first if the app displays per-character confidences.",
+  "breaking_changes_vs_v1": [
+    "input tensor is 1-channel grayscale (v1: 3-channel RGB with external ImageNet normalization)",
+    "alphabet reduced 195 -> 112 symbols (measured OOV floor on the benchmark: <0.01% of characters)",
+    "input_name 'image' (v1: 'images'); output_name 'logits' (v1: 'log_probs')",
+    "max_width 1024 (v1: 2048); split longer lines or scale down before inference"
+  ]
+}

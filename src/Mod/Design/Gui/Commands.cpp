@@ -64,6 +64,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QRegularExpression>
+#include <set>
 #include <QSvgRenderer>
 #include <QXmlStreamReader>
 
@@ -443,8 +444,39 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
             geos.push_back(std::move(line));
         }
     };
-    for (const auto& s : scribble->strokes()) {
-        if (s.kind == Design::Scribble::Fill) {
+    const auto strokes = scribble->strokes();
+
+    // Maße aus der Handschrift: "Ø12" oder "R5" an einem Kreis, "40" an einer Linie werden Bemaßungen statt Geometrie
+    struct Dimension
+    {
+        QChar kind;  ///< Ø, R oder 0 (nur eine Zahl)
+        double value;
+        Base::Vector3d center;
+        double height;  ///< Schrifthöhe, so weit darf das Maß von seiner Geometrie weg sein (mal 4)
+    };
+    std::vector<Dimension> dimensions;
+    std::set<size_t> written;  // Striche der Maße
+    static const QRegularExpression number(QString::fromUtf8("^([ØR]?)\\s*(\\d+(?:[.,]\\d+)?)\\s*(?:mm)?$"));
+    for (const ScribbleRead::Line& line : DesignGui::readScribble(scribble)) {
+        const QRegularExpressionMatch m = number.match(line.text);
+        if (!m.hasMatch()) {
+            continue;
+        }
+        Base::BoundBox3d box;
+        for (size_t i : line.strokes) {
+            for (const auto& p : strokes[i].points) {
+                box.Add(toSheet.toMatrix() * p);
+            }
+        }
+        const QString kind = m.captured(1);
+        dimensions.push_back({kind.isEmpty() ? QChar() : kind.front(), m.captured(2).replace(QLatin1Char(','), QLatin1Char('.')).toDouble(),
+                              box.GetCenter(), box.LengthY()});
+        written.insert(line.strokes.begin(), line.strokes.end());
+    }
+
+    for (size_t si = 0; si < strokes.size(); ++si) {
+        const auto& s = strokes[si];
+        if (s.kind == Design::Scribble::Fill || written.count(si)) {
             continue;
         }
         std::vector<Base::Vector3d> pts;
@@ -549,6 +581,36 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
                 constraints.push_back(std::move(c));
             }
         }
+    }
+    // jedes Maß an die nächste passende Geometrie, jede Geometrie höchstens ein Maß: Ø und R nur an Kreise, eine Zahl
+    // allein an einen Kreis (Durchmesser) oder eine Linie (Länge). Text im Kreis zählt als am Kreis.
+    std::set<int> dimensioned;
+    for (const Dimension& dim : dimensions) {
+        int best = -1;
+        double bestDist = 4 * dim.height;
+        for (int i = 0; i < int(geos.size()); ++i) {
+            double dist = INFINITY;
+            if (auto circle = dynamic_cast<Part::GeomCircle*>(geos[i].get())) {
+                dist = std::max(0.0, (dim.center - circle->getCenter()).Length() - circle->getRadius());
+            }
+            else if (auto line = dynamic_cast<Part::GeomLineSegment*>(geos[i].get()); line && dim.kind.isNull()) {
+                dist = dim.center.DistanceToLineSegment(line->getStartPoint(), line->getEndPoint()).Length();
+            }
+            if (dist < bestDist && !dimensioned.count(i) && dim.value > 0) {
+                bestDist = dist;
+                best = i;
+            }
+        }
+        if (best < 0) {
+            continue;
+        }
+        dimensioned.insert(best);
+        const bool circle = dynamic_cast<Part::GeomCircle*>(geos[best].get());
+        auto c = std::make_unique<Sketcher::Constraint>();
+        c->Type = dim.kind == QLatin1Char('R') ? Sketcher::Radius : circle ? Sketcher::Diameter : Sketcher::Distance;
+        c->First = best;
+        c->setValue(dim.value);
+        constraints.push_back(std::move(c));
     }
     std::vector<bool> joined(ends.size(), false);  // jeder Punkt nur an den ersten, der auf ihm liegt
     for (size_t a = 0; a < ends.size(); ++a) {
@@ -2930,7 +2992,8 @@ void CreateDesignCommands()
                                         }));
         mgr.addCommand(new ScribbleTool("Design_ScribbleToSketch", "Convert to Sketch",
                                         "Convert to Sketch: lines, circles and rectangles on this sheet become sketch "
-                                        "geometry you can dimension and extrude",
+                                        "geometry you can dimension and extrude. Written sizes like Ø12, R5 or 40 next "
+                                        "to a circle or line become its dimension",
                                         scribbleToSketch));
         mgr.addCommand(new ScribbleTool("Design_ScribbleFinish", "Finish Scribble", "Finish Scribble (Esc)",
                                         [](ViewProviderScribble* vp) {
