@@ -83,13 +83,13 @@ Closed a note? It's still under **Notes** in the browser, double-click to open i
 
 </div>
 
-Click **Scribble** in the toolbar and a sheet of paper fills the view. Grab your pen tablet and draw with **Pencil**, **Fineliner** or **Marker** in five colors. Press harder and the line gets thicker. Flip the pen over to erase.
+Click **Scribble** in the toolbar and a sheet of paper fills the view. Grab your pen tablet and draw with **Pencil**, **Fineliner** or **Marker** in five colors. Press harder and the line gets thicker. Flip the pen over to erase. No eraser on your pen? Press **E**, and **E** again takes you back to the pen.
 
 Hold the pen still at the end of a stroke and it straightens into a clean line, circle or rectangle. Lines snap to horizontal, vertical and to the ends of your other strokes.
 
-Messy handwriting? Just write. A second after you lift the pen, your words glide into place: straight lines, the same size, slant and spacing, still in your own hand. Ctrl+Z brings back the raw version.
+Messy handwriting? Just write. A second after you lift the pen, your words glide into place: straight lines, the same size, slant and spacing, still in your own hand. Ctrl+Z brings back the raw version, and **Pen & Handwriting** in Settings makes the tidy-up gentler or turns it off.
 
-MyCAD also reads what you write, offline, with a small model for German handwriting. Sizes come out the CAD way right in your ink: o12 gets its slash and becomes Ø12, 2x45 gets its degree sign. **Find handwriting** in the palette jumps to any note on the sheet, and **Convert to Sketch** turns an Ø12 written next to a circle into that circle's dimension.
+MyCAD also reads what you write, offline, with a small model for German handwriting. Sizes come out the CAD way right in your ink: o12 gets its slash and becomes Ø12, 2x45 gets its degree sign, 25mm becomes 25 mm. **Find handwriting** in the palette jumps to any note on the sheet, and **Convert to Sketch** turns an Ø12 written next to a circle into that circle's dimension.
 
 Under **Shapes** you drag out a line, arrow, rectangle, triangle, hexagon, circle or ellipse. **Fill** colors an area: tap inside a shape, or draw around the part you want filled.
 
@@ -129,6 +129,8 @@ Choose from twelve navigation styles, including **Fusion 360**, **SolidWorks**, 
 
 You can map a key to a mouse button, for example **Shift** as the middle button, and then navigate with your touchpad. Shift still works as Shift when you type. MyCAD orbits around the body under your cursor. If you'd rather see names than icons, turn on **Show tool names**.
 
+Pen tablets work on Wayland with pressure and hover. The side buttons orbit and pan, even while the tip is on the paper. In KDE's **Drawing Tablet** settings you can give the buttons on your tablet keys: **E** for the eraser, **V** to select, **L** to look straight at the sheet, Ctrl+Z to undo. With **E** on a button, you can erase in one press even with a pen that has no eraser end, like the Huion Inspiroy H640P's.
+
 <br>
 
 ## Speaks your language.
@@ -166,6 +168,7 @@ Bodies can also have real textures: six woods (**Oak**, **Walnut**, **Maple**, *
 | **Import** | STEP · DXF · SVG |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
+| **Pen tablet** | Pressure and hover on Wayland, side buttons navigate, keys for tablet buttons (E eraser, V select, L look at) |
 | **Materials** | 12 surfaces (Space Gray, Clay, Natural Titanium, …), 6 woods and 8 textures (Marble, Carbon Fiber, Leather, …) |
 | **Core** | FreeCAD with OpenCascade |
 | **License** | LGPL-2.1-or-later |
@@ -207,6 +210,8 @@ The GUI tests click through the app like a person would, with real mouse and key
 ```sh
 tests/gui/run.sh tests/gui/test_ring.py /tmp/ring   # log in /tmp/ring.txt, screenshot in /tmp/ring.png
 ```
+
+The scribble math runs without FreeCAD. [`tests/scribble_tidy_check.cpp`](tests/scribble_tidy_check.cpp) checks the handwriting tidy-up, [`tests/scribble_read_check.cpp`](tests/scribble_read_check.cpp) reads synthetic handwriting with the real model, and [`tests/gui/test_handwriting.py`](tests/gui/test_handwriting.py) writes with the mouse and a simulated pen tablet in the running app.
 
 The roadmap is in [`docs/PLAN.md`](docs/PLAN.md).
 
