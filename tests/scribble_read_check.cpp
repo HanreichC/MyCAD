@@ -195,6 +195,7 @@ void checkNotation()
     assert(has(expect("Bohrung b12", "Bohrung Ø12"), K::Slash));
     assert(has(expect("012", "Ø12"), K::Slash));
     assert(has(expect("Bohrung ol2", "Bohrung Ø12"), K::Slash));
+    assert(has(expect("D12", "Ø12"), K::Slash));  // durchgestrichener Kreis, als D gelesen (applyInk sieht den Strich)
     assert(expect("Bohrung Ø12", "Bohrung Ø12").empty());
     assert(has(expect("Fase 2xA5", "Fase 2×45°"), K::Degree));
     assert(expect("Fase 2x45o", "Fase 2×45°").empty());  // ° war schon da, als o gelesen

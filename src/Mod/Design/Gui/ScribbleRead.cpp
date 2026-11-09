@@ -214,12 +214,13 @@ std::vector<InkEdit> correct(Line& line)
     const auto insert = [&c](qsizetype i, QChar ch, double x) { c.insert(c.begin() + i, {ch, x, 1.0F}); };
     const QChar Dia(0x00D8), Times(0x00D7), Deg(0x00B0), PlusMinus(0x00B1);
 
-    // Kreis am Wortanfang vor einer Ziffer ist ein Durchmesser (das Modell kennt Ø nicht): o12, O12, 012, b12, ø12;
+    // Kreis am Wortanfang vor einer Ziffer ist ein Durchmesser (das Modell kennt Ø nicht): o12, O12, 012, b12, ø12, und
+    // ein durchgestrichener Kreis kommt oft als D12 an (D steht in Notizen ohnehin oft für Durchmesser);
     // die 1 dahinter liest es oft als l: ol2
     for (qsizetype i = 0; i < qsizetype(c.size()); ++i) {
         const QChar ch = at(i);
         const bool one = (at(i + 1) == QLatin1Char('l') || at(i + 1) == QLatin1Char('I')) && digit(i + 2);
-        if (at(i - 1) == QLatin1Char(' ') && QStringLiteral("oO0bdøØ").contains(ch) && (digit(i + 1) || one)) {
+        if (at(i - 1) == QLatin1Char(' ') && QStringLiteral("oO0bdDøØ").contains(ch) && (digit(i + 1) || one)) {
             if (one) {
                 c[size_t(i + 1)].c = QLatin1Char('1');
             }
@@ -377,13 +378,22 @@ std::vector<size_t> applyInk(std::vector<ScribbleTidy::Stroke>& strokes, const L
             if (slashed) {
                 continue;
             }
-            // ein kleines o wird so hoch wie die Ziffer dahinter, sonst sähe es aus wie ø
+            // ein kleines o wird so hoch wie die Ziffer dahinter, sonst sähe es aus wie ø. Es wächst nach rechts (die
+            // Wortlücke links bleibt), die Ziffern rücken um das Mehr an Breite und den Überstand des Strichs weiter.
             const Box digit = box(nearest(e.next));
             const double f = std::clamp((digit.maxY - digit.minY) / std::max(b.maxY - b.minY, 1e-9), 1.0, 2.0);
-            const double cx = b.cx(), bottom = b.minY, fx = 1 + (f - 1) * 0.4;  // schmaler wachsen: Ø ist oval, Platz daneben knapp
+            const double left = b.minX, bottom = b.minY, fx = 1 + (f - 1) * 0.4;  // schmaler wachsen: Ø ist oval
             for (Pt& p : strokes[ref]) {
-                p.x = cx + (p.x - cx) * fx;
+                p.x = left + (p.x - left) * fx;
                 p.y = bottom + (p.y - bottom) * f;
+            }
+            const double extra = (b.maxX - b.minX) * (fx - 1) + 0.05 * (b.maxX - b.minX) * fx;
+            for (size_t i : mine) {
+                if (i != ref && box(i).cx() > b.cx()) {
+                    for (Pt& p : strokes[i]) {
+                        p.x += extra;
+                    }
+                }
             }
             b = box(ref);
         }
@@ -391,7 +401,7 @@ std::vector<size_t> applyInk(std::vector<ScribbleTidy::Stroke>& strokes, const L
         if (e.kind == InkEdit::Slash) {
             for (int k = 0; k <= 12; ++k) {
                 const double t = k / 12.0;
-                s.push_back({b.minX - 0.15 * w + t * 1.3 * w, b.minY - 0.1 * h + t * 1.2 * h, width(ref)});
+                s.push_back({b.minX - 0.05 * w + t * 1.1 * w, b.minY - 0.1 * h + t * 1.2 * h, width(ref)});
             }
         }
         else {  // Gradzeichen: kleiner Kreis oben rechts neben der Ziffer
