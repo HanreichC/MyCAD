@@ -5,6 +5,10 @@
 #include <App/Application.h>
 
 #include <QApplication>
+#include <QButtonGroup>
+#include <QHBoxLayout>
+#include <QKeyEvent>
+#include <QPushButton>
 #include <QFile>
 #include <QIconEngine>
 #include <QLabel>
@@ -27,6 +31,39 @@ using namespace Gui::Shell;
 
 namespace
 {
+
+/// Segmented Control mit Pfeiltasten (MyStyle A-2)
+class SegmentKeys: public QObject
+{
+public:
+    explicit SegmentKeys(QButtonGroup* group)
+        : QObject(group)
+        , group(group)
+    {}
+
+protected:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        if (event->type() != QEvent::KeyPress) {
+            return false;
+        }
+        const int key = static_cast<QKeyEvent*>(event)->key();
+        if (key != Qt::Key_Left && key != Qt::Key_Right) {
+            return false;
+        }
+        const int n = int(group->buttons().size());
+        const int next = std::clamp(group->checkedId() + (key == Qt::Key_Right ? 1 : -1), 0, n - 1);
+        if (QAbstractButton* b = group->button(next); b && next != group->checkedId()) {
+            b->setFocus(Qt::TabFocusReason);
+            b->click();
+        }
+        return true;
+    }
+
+private:
+    QButtonGroup* group;
+};
+
 
 Theme current;
 bool loaded = false;
@@ -395,4 +432,46 @@ void Gui::Shell::paintGlass(QPainter& p, const QRectF& r, qreal radius, bool tex
         p.setPen(QPen(t.glassBorder, 1));
         p.drawRoundedRect(r.adjusted(0.5, 0.5, -0.5, -0.5), radius, radius);
     }
+}
+
+QWidget* Gui::Shell::segmented(const QStringList& items, int current, std::function<void(int)> changed)
+{
+    auto box = new QWidget;
+    box->setObjectName(QStringLiteral("Segmented"));
+    box->setAttribute(Qt::WA_StyledBackground);
+    box->setFixedHeight(Token::Segmented);
+    auto row = new QHBoxLayout(box);
+    row->setContentsMargins(4, 4, 4, 4);
+    row->setSpacing(2);
+    auto group = new QButtonGroup(box);
+    auto keys = new SegmentKeys(group);
+    for (int i = 0; i < items.size(); ++i) {
+        auto b = new QPushButton(items[i]);
+        b->setObjectName(QStringLiteral("Segment"));
+        b->setCheckable(true);
+        b->setChecked(i == current);
+        b->setAutoDefault(false);
+        b->setFocusPolicy(Qt::TabFocus);
+        b->installEventFilter(keys);
+        group->addButton(b, i);
+        row->addWidget(b, 1);  // gleich breite Segmente
+    }
+    // so breit wie der längste (fette) Text, sonst schneidet Qt ihn ab; als Stylesheet, weil min-width aus dem
+    // Stylesheet eine gesetzte Mindestbreite überschreibt
+    const QFontMetrics fm(textFont(Text::Callout, 600));
+    int widest = 0;
+    for (const QString& item : items) {
+        widest = std::max(widest, fm.horizontalAdvance(item) + 2);
+    }
+    box->setStyleSheet(themed(QStringLiteral(R"(
+QWidget#Segmented { background: @fillTertiary; border-radius: 22px; }
+QWidget#Segmented[backdrop="true"] { background: @materialFill; border: 1px solid @materialBorder; }
+QPushButton#Segment { background: transparent; border: 2px solid transparent; border-radius: 18px; padding: 0 14px;
+    min-height: 32px; min-width: %1px; font-weight: 400; color: @labelPrimary; }
+QPushButton#Segment:hover { background: @fillTertiary; }
+QPushButton#Segment:checked { background: @materialThumb; font-weight: 600; }
+QPushButton#Segment:focus { border-color: @focusRing; }
+)")).arg(widest));
+    QObject::connect(group, &QButtonGroup::idClicked, box, [changed](int id) { changed(id); });
+    return box;
 }

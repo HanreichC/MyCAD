@@ -28,7 +28,16 @@
 #include <Gui/View3DInventorViewer.h>
 #include <Gui/Inventor/SoFCBoundingBox.h>
 #include <Inventor/actions/SoGLRenderAction.h>
+#include <Inventor/actions/SoSearchAction.h>
 #include <Inventor/nodes/SoCallback.h>
+#include <Inventor/nodes/SoComplexity.h>
+#include <Inventor/nodes/SoDirectionalLight.h>
+#include <Inventor/nodes/SoOrthographicCamera.h>
+#include <Inventor/nodes/SoSeparator.h>
+#include <Inventor/nodes/SoSphere.h>
+#include <Inventor/nodes/SoTranslation.h>
+#include <Gui/SoFCOffscreenRenderer.h>
+#include "BodyShading.h"
 #include <Inventor/nodes/SoCoordinate3.h>
 #include <Inventor/nodes/SoDepthBuffer.h>
 #include <Inventor/nodes/SoFaceSet.h>
@@ -3721,6 +3730,12 @@ void attach(View3DInventor* view)
     }
     auto root = static_cast<SoSeparator*>(view->getViewer()->getSceneGraph());
     if (root->findChild(groundGrid().node) < 0) {
+        SoSearchAction search;  // Körper der Ansicht für den Kontaktschatten (View3DInventorViewer::objectGroup)
+        search.setName(SbName("ObjectGroup"));
+        search.apply(root);
+        if (SoPath* path = search.getPath()) {
+            root->addChild(Gui::Shell::contactShadow(path->getTail()));  // vor dem Raster: die Linien liegen über dem Schatten
+        }
         root->addChild(groundGrid().node);
     }
     updateGroundGrid();
@@ -4177,23 +4192,102 @@ const char* Gui::Shell::defaultBodyTexture()
     return bodyMaterial().texture;
 }
 
-QPixmap Gui::Shell::materialThumbnail(const char* texture, QSize size, qreal ratio)
+int Gui::Shell::bodyMaterialIndex(const App::Material& mat)
 {
-    // Nur einen Ausschnitt in passender Größe dekodieren: Die Vorschauen entstehen beim Öffnen von Panel und Einstellungen
-    QImageReader reader{QString::fromLatin1(texture)};
-    const int full = reader.size().width();
-    reader.setClipRect(QRect(0, 0, full, full * size.height() / size.width()));
-    reader.setScaledSize(size * ratio);
-    QPixmap rounded(size * ratio);
-    rounded.setDevicePixelRatio(ratio);
-    rounded.fill(Qt::transparent);
-    QPainter p(&rounded);
+    for (int i = 0; i < int(std::size(bodyMaterials)); ++i) {
+        const App::Material m = bodyMaterialAppearance(i);
+        if (m.imagePath == mat.imagePath && m.diffuseColor.getPackedValue() == mat.diffuseColor.getPackedValue()
+            && m.emissiveColor.getPackedValue() == mat.emissiveColor.getPackedValue()
+            && std::abs(m.shininess - mat.shininess) < 0.005F && std::abs(m.transparency - mat.transparency) < 0.005F) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+QPixmap Gui::Shell::materialPreview(int index, int size, qreal ratio)
+{
+    // Alle Kugeln in einem Bild, einmal je Sitzung: mit dem Körper-Shader (BodyShading), also genau wie im Modell.
+    // Die Kugeln stehen in einer Ebene quer zum Blick, leicht von oben gesehen: Boden und Decke spiegeln sich.
+    constexpr int Cell = 128, Columns = 12;
+    static QImage sheet;
+    const int count = int(std::size(bodyMaterials));
+    const int rows = (count + Columns - 1) / Columns;
+    if (sheet.isNull()) {
+        constexpr float Radius = 20.0F, Pitch = 2 * Radius;  // 40-mm-Kugel: Texturen in echter Größe
+        const SbVec3f dir = SbVec3f(0, 1, -0.4F) / SbVec3f(0, 1, -0.4F).length();
+        const SbVec3f right(1, 0, 0), up = right.cross(dir);
+        auto root = new SoSeparator;
+        root->ref();
+        auto camera = new SoOrthographicCamera;
+        const SbVec3f center = right * (Pitch * (Columns - 1) / 2) - up * (Pitch * float(rows - 1) / 2);
+        camera->position = center - dir * 1000;
+        camera->pointAt(center, SbVec3f(0, 0, 1));
+        camera->height = Pitch * float(rows);
+        camera->aspectRatio = float(Columns) / float(rows);
+        camera->nearDistance = 900;
+        camera->farDistance = 1100;
+        root->addChild(camera);
+        auto light = new SoDirectionalLight;  // Kopflicht wie in der Ansicht
+        light->direction = dir;
+        root->addChild(light);
+        auto complexity = new SoComplexity;
+        complexity->value = 1;
+        root->addChild(complexity);
+        root->addChild(Gui::Shell::bodyShading());
+        for (int i = 0; i < count; ++i) {
+            const App::Material m = bodyMaterialAppearance(i);
+            auto cell = new SoSeparator;
+            auto move = new SoTranslation;
+            move->translation = right * (Pitch * float(i % Columns)) - up * (Pitch * float(i / Columns));
+            cell->addChild(move);
+            auto material = new SoMaterial;
+            SoNode* texture = Gui::Shell::bodyTexture(m.imagePath);
+            const Base::Color d = texture ? Base::Color(1, 1, 1) : m.diffuseColor;  // wie ViewProviderTextureExtension
+            material->diffuseColor.setValue(d.r, d.g, d.b);
+            material->specularColor.setValue(m.specularColor.r, m.specularColor.g, m.specularColor.b);
+            material->emissiveColor.setValue(texture ? 2 / 255.0F : m.emissiveColor.r, m.emissiveColor.g, m.emissiveColor.b);
+            material->ambientColor.setValue(0.2F, 0.2F, 0.2F);
+            material->shininess = m.shininess;
+            material->transparency = m.transparency;
+            cell->addChild(material);
+            if (texture) {
+                cell->addChild(texture);
+            }
+            auto sphere = new SoSphere;
+            sphere->radius = Radius;
+            cell->addChild(sphere);
+            root->addChild(cell);
+        }
+        SoQtOffscreenRenderer renderer(SbViewportRegion(short(Cell * Columns), short(Cell * rows)));
+        renderer.setNumPasses(4);
+        renderer.setBackgroundColor(SbColor4f(0.5F, 0.5F, 0.5F, 1));  // wird weggeschnitten; Glas zeigt dieses Grau
+        renderer.getGLRenderAction()->setTransparencyType(SoGLRenderAction::SORTED_OBJECT_BLEND);
+        if (renderer.render(root)) {
+            renderer.writeToImage(sheet);
+        }
+        root->unref();
+        if (sheet.isNull()) {
+            sheet = QImage(Cell * Columns, Cell * rows, QImage::Format_ARGB32);
+            sheet.fill(Qt::gray);
+        }
+    }
+    QPixmap out(QSize(size, size) * ratio);
+    out.setDevicePixelRatio(ratio);
+    out.fill(Qt::transparent);
+    if (index < 0 || index >= count) {
+        return out;
+    }
+    const QImage cell = sheet.copy((index % Columns) * Cell, (index / Columns) * Cell, Cell, Cell)
+                            .scaled(QSize(size, size) * ratio, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    QPainter p(&out);
     p.setRenderHint(QPainter::Antialiasing);
-    QPainterPath path;
-    path.addRoundedRect(QRectF(QPointF(0, 0), QSizeF(size)), Token::RadiusControl, Token::RadiusControl);
-    p.setClipPath(path);
-    p.drawImage(QRectF(QPointF(0, 0), QSizeF(size)), reader.read());
-    return rounded;
+    p.setPen(Qt::NoPen);
+    QBrush brush(cell);
+    brush.setTransform(QTransform::fromScale(1 / ratio, 1 / ratio));
+    p.setBrush(brush);
+    p.drawEllipse(QRectF(0.5, 0.5, size - 1.0, size - 1.0));  // Kante weich statt treppig
+    return out;
 }
 
 void Gui::Shell::setBodyMaterial(int index)

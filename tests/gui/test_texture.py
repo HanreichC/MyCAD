@@ -45,10 +45,6 @@ def tile(name):
     [b for b in visible(QtWidgets.QToolButton) if b.accessibleName() == name][0].click()
 
 
-def press(text):
-    [b for b in visible(QtWidgets.QPushButton) if b.text() == text][0].click()
-
-
 def setup():
     state["box"] = make_body(rect(0, 0, 90, 60), 0, 30, "Box")
     state["cyl"] = cylinder(150, 30, 30, 50, "Cylinder")
@@ -111,7 +107,7 @@ in_order([
     ("oak check", lambda: (report("Eiche", state["box"]), check("Eiche zeigt Maserung", textured(state["box"])), check("Eiche ist holzfarben", woody(state["box"])), shot("oak"))),
 
     ("select", lambda: select("Box", "Cylinder")),
-    ("steel", lambda: press("Steel")),
+    ("steel", lambda: tile("Steel")),
     ("deselect", Gui.Selection.clearSelection),
     ("steel check", lambda: (report("Stahl", state["box"]), check("Stahl nimmt die Textur weg", not textured(state["box"])))),
 

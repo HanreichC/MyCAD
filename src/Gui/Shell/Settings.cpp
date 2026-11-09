@@ -673,38 +673,6 @@ private:
     QVariantAnimation anim;
 };
 
-/// Segmented Control mit Pfeiltasten (MyStyle A-2)
-class SegmentKeys: public QObject
-{
-public:
-    explicit SegmentKeys(QButtonGroup* group)
-        : QObject(group)
-        , group(group)
-    {}
-
-protected:
-    bool eventFilter(QObject*, QEvent* event) override
-    {
-        if (event->type() != QEvent::KeyPress) {
-            return false;
-        }
-        const int key = static_cast<QKeyEvent*>(event)->key();
-        if (key != Qt::Key_Left && key != Qt::Key_Right) {
-            return false;
-        }
-        const int n = int(group->buttons().size());
-        const int next = std::clamp(group->checkedId() + (key == Qt::Key_Right ? 1 : -1), 0, n - 1);
-        if (QAbstractButton* b = group->button(next); b && next != group->checkedId()) {
-            b->setFocus(Qt::TabFocusReason);
-            b->click();
-        }
-        return true;
-    }
-
-private:
-    QButtonGroup* group;
-};
-
 /// Ereignis eines anderen Objekts beobachten (z. B. Aufklapp-Liste wird geschlossen)
 class EventHook: public QObject
 {
@@ -789,12 +757,6 @@ QFrame#Card { background: @materialFill; border: 1px solid @materialBorder; bord
 QFrame#Separator { background: @separator; border: none; min-height: 1px; max-height: 1px; }
 QLabel#Section, QLabel#Secondary, QLabel#Hint { color: @labelSecondary; }
 QLabel#Chip { background: @fillTertiary; border-radius: 12px; padding: 0 10px; }
-QWidget#Segmented { background: @fillTertiary; border-radius: 22px; }
-QWidget#Segmented[backdrop="true"] { background: @materialFill; border: 1px solid @materialBorder; }
-QPushButton#Segment { background: transparent; border: 2px solid transparent; border-radius: 18px; padding: 0 14px; min-height: 32px; font-weight: 400; }
-QPushButton#Segment:hover { background: @fillTertiary; }
-QPushButton#Segment:checked { background: @materialThumb; font-weight: 600; }
-QPushButton#Segment:focus { border-color: @focusRing; }
 QComboBox { background: transparent; border: 2px solid transparent; border-radius: 8px; padding: 2px 8px; min-height: 22px; color: @labelSecondary; }
 QComboBox:hover { background: @fillTertiary; }
 QComboBox:focus { border-color: @focusRing; }
@@ -839,39 +801,6 @@ void Gui::Shell::showSettings()
     auto lay = new QVBoxLayout(window);
     lay->setContentsMargins(Token::WindowInset, Token::WindowInset, Token::WindowInset, Token::WindowInset);
     lay->setSpacing(8);
-
-    auto segmented = [](const QStringList& items, int current, std::function<void(int)> changed) {
-        auto box = new QWidget;
-        box->setObjectName(QStringLiteral("Segmented"));
-        box->setAttribute(Qt::WA_StyledBackground);
-        box->setFixedHeight(Token::Segmented);
-        auto row = new QHBoxLayout(box);
-        row->setContentsMargins(4, 4, 4, 4);
-        row->setSpacing(2);
-        auto group = new QButtonGroup(box);
-        auto keys = new SegmentKeys(group);
-        for (int i = 0; i < items.size(); ++i) {
-            auto b = new QPushButton(items[i]);
-            b->setObjectName(QStringLiteral("Segment"));
-            b->setCheckable(true);
-            b->setChecked(i == current);
-            b->setAutoDefault(false);
-            b->setFocusPolicy(Qt::TabFocus);
-            b->installEventFilter(keys);
-            group->addButton(b, i);
-            row->addWidget(b, 1);  // gleich breite Segmente
-        }
-        // so breit wie der längste (fette) Text, sonst schneidet Qt ihn ab; als Stylesheet, weil min-width aus dem
-        // Stylesheet eine gesetzte Mindestbreite überschreibt
-        const QFontMetrics fm(textFont(Text::Callout, 600));
-        int widest = 0;
-        for (const QString& item : items) {
-            widest = std::max(widest, fm.horizontalAdvance(item) + 2);
-        }
-        box->setStyleSheet(QStringLiteral("QPushButton#Segment { min-width: %1px; }").arg(widest));
-        QObject::connect(group, &QButtonGroup::idClicked, box, [changed](int id) { changed(id); });
-        return box;
-    };
 
     // Kopf: Titel (zum Verschieben), Bereiche, Schließen
     auto head = new DragArea;
@@ -1047,15 +976,33 @@ void Gui::Shell::showSettings()
     });
     addRow(lookCard, T("Liquid Glass"), glass);
     auto material = new QComboBox;  // Pop-up-Button: mehr Materialien, als ein Segmented Control fasst (≤ 7)
-    for (const auto& entry : Gui::Shell::bodyMaterialList()) {
-        material->addItem(T(entry.name));
-        if (entry.texture) {
-            const QSize thumb(Token::IconL, Token::IconL);
-            material->setItemIcon(material->count() - 1, Gui::Shell::materialThumbnail(entry.texture, thumb, material->devicePixelRatioF()));
+    {
+        // nach Gruppen, mit Trennlinie dazwischen; die Nummer des Materials steht in den Daten des Eintrags
+        const QSize thumb(Token::IconL, Token::IconL);
+        const auto list = Gui::Shell::bodyMaterialList();
+        QStringList categories;
+        for (const auto& entry : list) {
+            if (!categories.contains(QLatin1String(entry.category))) {
+                categories << QLatin1String(entry.category);
+            }
         }
+        for (const QString& category : categories) {
+            if (material->count() > 0) {
+                material->insertSeparator(material->count());
+            }
+            for (int i = 0; i < int(list.size()); ++i) {
+                if (category == QLatin1String(list[i].category)) {
+                    material->addItem(Gui::Shell::materialPreview(i, thumb.width(), material->devicePixelRatioF()), T(list[i].name), i);
+                }
+            }
+        }
+        material->setIconSize(thumb);
+        material->setMaxVisibleItems(16);
     }
-    material->setCurrentIndex(int(myParams()->GetInt("BodyMaterial", 0)));
-    QObject::connect(material, &QComboBox::currentIndexChanged, [](int i) { Gui::Shell::setBodyMaterial(i); });
+    material->setCurrentIndex(material->findData(int(myParams()->GetInt("BodyMaterial", 0))));
+    QObject::connect(material, &QComboBox::currentIndexChanged, [material](int i) {
+        Gui::Shell::setBodyMaterial(material->itemData(i).toInt());
+    });
     addRow(lookCard, T("Body material"), material);
     auto names = new Switch(myParams()->GetBool("ToolNames", false));
     QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });

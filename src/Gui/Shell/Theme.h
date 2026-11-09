@@ -2,10 +2,13 @@
 
 #pragma once
 
+#include <functional>
+
 #include <QColor>
 #include <QFont>
 #include <QIcon>
 #include <QString>
+#include <QStringList>
 
 class QLabel;
 class QPainter;
@@ -79,6 +82,10 @@ QFont textFont(Text style, int weight = 0);  ///< weight: anderes Gewicht (400/5
 void setTextStyle(QWidget* w, Text style, int weight = 0);
 /// Abschnittskopf (Section-Stil, labelSecondary)
 QLabel* sectionLabel(const QString& text);
+
+/// Segmented Control (MyStyle § 9.3) mit Pfeiltasten; changed(Index) bei Klick. Property backdrop=true: auf dem Hintergrund
+/// statt in einer Karte
+QWidget* segmented(const QStringList& items, int current, std::function<void(int)> changed);
 
 /// Farbe als Stylesheet-Wert
 QString css(const QColor& c);

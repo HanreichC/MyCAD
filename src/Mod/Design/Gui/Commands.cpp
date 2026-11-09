@@ -49,6 +49,19 @@
 #include <QTableWidget>
 #include <App/Material.h>
 #include <QToolButton>
+#include <QAbstractButton>
+#include <QApplication>
+#include <QDrag>
+#include <QDropEvent>
+#include <QMenu>
+#include <QMimeData>
+#include <QMouseEvent>
+#include <QPointer>
+#include <Inventor/SoPickedPoint.h>
+#include <App/Application.h>
+#include <App/GeoFeature.h>
+#include <Mod/Part/App/PartFeature.h>
+#include <map>
 #include <QPushButton>
 #include <QGridLayout>
 #include <QVBoxLayout>
@@ -2266,102 +2279,358 @@ private:
     QLabel* result;
 };
 
-/// Aussehen wie in Fusion: Material-Vorlagen und Farben für die gewählten Bodies, sofort sichtbar
+/// Material per Ziehen: Kugel oder Chip ziehen, auf einem Körper in der Ansicht loslassen
+constexpr const char* MaterialMime = "application/x-mycad-material";
+
+class MaterialDrag: public QObject
+{
+public:
+    MaterialDrag(QAbstractButton* button, std::function<int()> index)
+        : QObject(button)
+        , index(std::move(index))
+    {
+        button->installEventFilter(this);
+    }
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        auto button = static_cast<QAbstractButton*>(obj);
+        if (event->type() == QEvent::MouseButtonPress) {
+            start = static_cast<QMouseEvent*>(event)->position().toPoint();
+        }
+        else if (event->type() == QEvent::MouseMove && (static_cast<QMouseEvent*>(event)->buttons() & Qt::LeftButton)
+                 && (static_cast<QMouseEvent*>(event)->position().toPoint() - start).manhattanLength()
+                     >= QApplication::startDragDistance()) {
+            auto mime = new QMimeData;
+            mime->setData(QLatin1String(MaterialMime), QByteArray::number(index()));
+            auto drag = new QDrag(button);
+            drag->setMimeData(mime);
+            drag->setPixmap(Gui::Shell::materialPreview(index(), 40, button->devicePixelRatioF()));
+            drag->setHotSpot(QPoint(20, 20));
+            button->setDown(false);
+            drag->exec(Qt::CopyAction);
+            return true;
+        }
+        return false;
+    }
+
+private:
+    std::function<int()> index;
+    QPoint start;
+};
+
+/// Material auf einen Körper oder einzelne Flächen (Indizes ab 0). Flächen tragen keine Textur (FreeCAD färbt Flächen nur
+/// einfarbig), sie bekommen die mittlere Farbe des Fotos.
+// ponytail: Je Fläche wechselt in Coin nur die Farbe (Bindung PER_PART), Glanz, Metall und Lack kommen von der ersten
+// Fläche. Echte Materialien je Fläche bräuchten eigene Flächen-Gruppen im SoBrepFaceSet.
+void applyMaterial(App::DocumentObject* obj, const std::vector<int>& faces, App::Material material)
+{
+    auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(obj));
+    auto part = freecad_cast<Part::Feature*>(obj);
+    if (!vp) {
+        return;
+    }
+    if (faces.empty() || !part) {
+        vp->ShapeAppearance.setValue(material);
+        return;
+    }
+    material.imagePath.clear();
+    const auto count = part->Shape.getShape().countSubShapes(TopAbs_FACE);
+    std::vector<App::Material> list = vp->ShapeAppearance.getValues();
+    if (list.size() != count) {
+        list.assign(count, list.empty() ? App::Material() : list.front());
+    }
+    for (int f : faces) {
+        if (f >= 0 && std::size_t(f) < count) {
+            list[f] = material;
+        }
+    }
+    vp->ShapeAppearance.setValues(list);
+}
+
+/// Aussehen: die Materialbibliothek als Kugeln, gerendert wie im Modell; Varianten einer Oberfläche (Farben, Finish)
+/// als Chips darunter. Suche, "In diesem Design", Favoriten (Kontextmenü). Klick wendet auf die Auswahl an, Ziehen auf
+/// einen Körper in der Ansicht auch ohne Auswahl. Mit gewählten Flächen: nur diese Flächen oder der ganze Körper.
 class TaskAppearance: public Gui::TaskView::TaskDialog
 {
 public:
-    TaskAppearance(App::Document* doc, std::vector<App::DocumentObject*> bodies)
+    TaskAppearance(App::Document* doc, std::vector<App::DocumentObject*> bodies, std::map<App::DocumentObject*, std::vector<int>> faces)
         : doc(doc)
         , bodies(std::move(bodies))
+        , faces(std::move(faces))
+        , list(Gui::Shell::bodyMaterialList())
     {
         doc->openTransaction("Appearance");
         auto w = new QWidget;
         w->setWindowTitle(T("Appearance"));
         auto lay = new QVBoxLayout(w);
-        lay->addWidget(new QLabel(T("%1 selected").arg(this->bodies.size() == 1
-                                                                        ? QString::fromUtf8(this->bodies.front()->Label.getValue())
-                                                                        : T("%1 bodies").arg(this->bodies.size()))));
-        auto heading = [lay](const QString& text) {
-            auto label = Gui::Shell::sectionLabel(text);
-            label->setContentsMargins(0, 8, 0, 4);
-            lay->addWidget(label);
-        };
-        // Texturen als Kacheln mit Vorschau: der Name steht darunter und bricht um, statt abgeschnitten zu werden
-        auto tiles = [&](const QString& title, bool wood) {
-            heading(title);
-            auto tileGrid = new QGridLayout;
-            tileGrid->setSpacing(8);
-            for (int column = 0; column < 3; ++column) {
-                tileGrid->setColumnStretch(column, 1);  // gleich breite Spalten: Holz und Texturen stehen untereinander
+        auto summary = new QLabel(this->bodies.empty() ? T("Drag a material onto a body, or select bodies first.")
+                                  : this->bodies.size() == 1 ? T("%1 selected").arg(QString::fromUtf8(this->bodies.front()->Label.getValue()))
+                                                             : T("%1 selected").arg(T("%1 bodies").arg(this->bodies.size())));
+        summary->setWordWrap(true);
+        lay->addWidget(summary);
+        if (!this->faces.empty()) {
+            onFaces = true;
+            lay->addWidget(Gui::Shell::segmented({T("Faces"), T("Body")}, 0, [this](int i) { onFaces = i == 0; }));
+        }
+        search = new QLineEdit;
+        search->setPlaceholderText(T("Search materials"));
+        search->setClearButtonEnabled(true);
+        search->setAccessibleName(T("Search materials"));
+        lay->addWidget(search);
+        content = new QWidget;
+        lay->addWidget(content);
+        QObject::connect(search, &QLineEdit::textChanged, w, [this] { rebuild(); });
+        rebuild();
+        addTaskBox(w, false);
+        watchDrops();
+    }
+    ~TaskAppearance() override
+    {
+        if (viewport) {
+            viewport->removeEventFilter(dropFilter);
+        }
+        delete dropFilter;
+    }
+    QDialogButtonBox::StandardButtons getStandardButtons() const override
+    {
+        return QDialogButtonBox::Ok | QDialogButtonBox::Cancel;
+    }
+    bool accept() override
+    {
+        doc->commitTransaction();
+        return true;
+    }
+    bool reject() override
+    {
+        doc->abortTransaction();
+        return true;
+    }
+
+private:
+    static ParameterGrp::handle params()
+    {
+        return App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+    }
+    static std::set<int> favorites()
+    {
+        std::set<int> out;
+        for (const QString& n : QString::fromStdString(params()->GetASCII("MaterialFavorites", "")).split(QLatin1Char(','), Qt::SkipEmptyParts)) {
+            out.insert(n.toInt());
+        }
+        return out;
+    }
+    static void toggleFavorite(int index)
+    {
+        std::set<int> favs = favorites();
+        if (!favs.erase(index)) {
+            favs.insert(index);
+        }
+        QStringList out;
+        for (int i : favs) {
+            out << QString::number(i);
+        }
+        params()->SetASCII("MaterialFavorites", out.join(QLatin1Char(',')).toStdString());
+    }
+
+    void apply(const App::Material& material)
+    {
+        for (auto body : bodies) {
+            auto f = faces.find(body);
+            applyMaterial(body, onFaces && f != faces.end() ? f->second : std::vector<int>(), material);
+        }
+    }
+
+    /// Materialien, die in diesem Design schon vorkommen (ganze Körper und einzelne Flächen)
+    std::vector<int> usedInDesign() const
+    {
+        std::vector<int> used;
+        for (auto obj : doc->getObjectsOfType(Part::Feature::getClassTypeId())) {
+            auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(obj));
+            if (!vp || !obj->isDerivedFrom<Design::Body>()) {
+                continue;
             }
-            int index = -1, cell = 0;
-            for (const auto& entry : Gui::Shell::bodyMaterialList()) {
-                ++index;
-                if (!entry.texture || entry.wood != wood) {
-                    continue;
+            for (const auto& m : vp->ShapeAppearance.getValues()) {
+                const int i = Gui::Shell::bodyMaterialIndex(m);
+                if (i >= 0 && std::ranges::find(used, i) == used.end()) {
+                    used.push_back(i);
                 }
-                auto tile = new QToolButton;
-                const QSize size(76, 44);
-                tile->setIcon(Gui::Shell::materialThumbnail(entry.texture, size, w->devicePixelRatioF()));
-                tile->setIconSize(size);
-                tile->setToolTip(T(entry.name));
-                tile->setAccessibleName(T(entry.name));
-                // Rand und Hover-Ring aus dem Theme, wie bei den Farbfeldern
-                tile->setStyleSheet(Gui::Shell::themed(QStringLiteral("QToolButton { padding: 0; background: transparent; border-radius: %1px; "
-                                                                      "border: 1px solid @separator; }"
-                                                                      "QToolButton:hover, QToolButton:focus { border: 2px solid @focusRing; }"))
-                                        .arg(Gui::Shell::Token::RadiusControl));
-                const App::Material material = Gui::Shell::bodyMaterialAppearance(index);
-                QObject::connect(tile, &QToolButton::clicked, tile, [this, material] { apply(material); });
-                auto caption = new QLabel(T(entry.name));
-                caption->setWordWrap(true);
-                caption->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-                caption->setFont(Gui::Shell::textFont(Gui::Shell::Text::Caption));
-                auto column = new QVBoxLayout;
-                column->setSpacing(4);
-                column->addWidget(tile, 0, Qt::AlignHCenter);
-                column->addWidget(caption);
-                column->addStretch();
-                tileGrid->addLayout(column, cell / 3, cell % 3);
-                ++cell;
             }
-            lay->addLayout(tileGrid);
+        }
+        return used;
+    }
+
+    bool matches(int i, const QString& text) const
+    {
+        const auto& e = list[i];
+        for (const char* s : {e.name, e.family, e.category}) {
+            if (QString::fromLatin1(s).contains(text, Qt::CaseInsensitive) || T(s).contains(text, Qt::CaseInsensitive)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Kugel mit Namen, darunter die Varianten als Chips; Klick auf einen Chip zeigt ihn auch in der Kugel
+    QWidget* tile(const std::vector<int>& variants, bool familyName)
+    {
+        const qreal ratio = content->devicePixelRatioF();
+        auto box = new QWidget;
+        auto column = new QVBoxLayout(box);
+        column->setContentsMargins(0, 0, 0, 0);
+        column->setSpacing(4);
+        auto sphere = new QToolButton;
+        const QSize size(56, 56);
+        sphere->setIconSize(size);
+        sphere->setStyleSheet(Gui::Shell::themed(QStringLiteral("QToolButton { padding: 0; background: transparent; border-radius: 30px; "
+                                                                "border: 2px solid transparent; }"
+                                                                "QToolButton:hover, QToolButton:focus { border: 2px solid @focusRing; }")));
+        auto caption = new QLabel;
+        caption->setWordWrap(true);
+        caption->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
+        caption->setFont(Gui::Shell::textFont(Gui::Shell::Text::Caption));
+        auto shown = std::make_shared<int>(variants.front());
+        auto show = [=, this](int i) {
+            *shown = i;
+            sphere->setIcon(Gui::Shell::materialPreview(i, size.width(), ratio));
+            sphere->setToolTip(T(list[i].name));
+            sphere->setAccessibleName(T(list[i].name));
+            caption->setText(T(familyName ? list[i].family : list[i].name));
         };
-        tiles(T("Wood"), true);
-        tiles(T("Textures"), false);
-        heading(T("Material"));
-        struct Preset
-        {
-            const char* name;
-            App::Material::MaterialType type;
-        };
-        const Preset presets[] = {{"Steel", App::Material::STEEL},       {"Aluminum", App::Material::ALUMINIUM},
-                                  {"Chrome", App::Material::CHROME},     {"Brass", App::Material::BRASS},
-                                  {"Copper", App::Material::COPPER},     {"Gold", App::Material::GOLD},
-                                  {"Plastic", App::Material::PLASTIC},   {"Glossy", App::Material::SHINY_PLASTIC},
-                                  {"Satin", App::Material::SATIN},       {"Stone", App::Material::STONE},
-                                  {"Plaster", App::Material::PLASTER},   {"Bronze", App::Material::BRONZE},
-                                  {"Silver", App::Material::SILVER},     {"Obsidian", App::Material::OBSIDIAN},
-                                  {"Jade", App::Material::JADE},         {"Ruby", App::Material::RUBY},
-                                  {"Emerald", App::Material::EMERALD},   {"Default", App::Material::DEFAULT}};
+        show(variants.front());
+        new MaterialDrag(sphere, [shown] { return *shown; });
+        QObject::connect(sphere, &QToolButton::clicked, box, [this, shown] { apply(Gui::Shell::bodyMaterialAppearance(*shown)); });
+        sphere->setContextMenuPolicy(Qt::CustomContextMenu);
+        QObject::connect(sphere, &QWidget::customContextMenuRequested, box, [this, shown, sphere](const QPoint& at) {
+            QMenu menu;
+            const bool fav = favorites().contains(*shown);
+            menu.addAction(fav ? T("Remove from Favorites") : T("Add to Favorites"), [this, shown] {
+                toggleFavorite(*shown);
+                QTimer::singleShot(0, content, [this] { rebuild(); });
+            });
+            menu.exec(sphere->mapToGlobal(at));
+        });
+        column->addWidget(sphere, 0, Qt::AlignHCenter);
+        column->addWidget(caption);
+        if (variants.size() > 1) {
+            auto chips = new QGridLayout;
+            chips->setSpacing(4);
+            int n = 0;
+            for (int i : variants) {
+                auto chip = new QToolButton;
+                chip->setFixedSize(Gui::Shell::Token::IconL, Gui::Shell::Token::IconL);
+                chip->setIconSize(QSize(Gui::Shell::Token::IconM, Gui::Shell::Token::IconM));
+                chip->setIcon(Gui::Shell::materialPreview(i, Gui::Shell::Token::IconM, ratio));
+                chip->setToolTip(T(list[i].name));
+                chip->setAccessibleName(T(list[i].name));
+                chip->setStyleSheet(Gui::Shell::themed(QStringLiteral("QToolButton { padding: 0; background: transparent; border-radius: 10px; "
+                                                                      "border: 1px solid @separator; }"
+                                                                      "QToolButton:hover, QToolButton:focus { border: 2px solid @focusRing; }")));
+                new MaterialDrag(chip, [i] { return i; });
+                QObject::connect(chip, &QToolButton::clicked, box, [this, show, i] {
+                    show(i);
+                    apply(Gui::Shell::bodyMaterialAppearance(i));
+                });
+                chips->addWidget(chip, n / 4, n % 4);
+                ++n;
+            }
+            column->addLayout(chips);
+            column->setAlignment(chips, Qt::AlignHCenter);
+        }
+        column->addStretch();
+        return box;
+    }
+
+    void section(QVBoxLayout* lay, const QString& title, const std::vector<std::vector<int>>& tiles, bool familyNames)
+    {
+        if (tiles.empty()) {
+            return;
+        }
+        auto label = Gui::Shell::sectionLabel(title);
+        label->setContentsMargins(0, 8, 0, 4);
+        lay->addWidget(label);
         auto grid = new QGridLayout;
-        int i = 0;
-        for (const auto& preset : presets) {
-            auto button = new QPushButton(T(preset.name));
-            button->setAutoDefault(false);
-            const App::Material material(preset.type);
-            QObject::connect(button, &QPushButton::clicked, button, [this, material] { apply(material); });
-            grid->addWidget(button, i / 3, i % 3);
-            ++i;
+        grid->setSpacing(8);
+        for (int column = 0; column < 3; ++column) {
+            grid->setColumnStretch(column, 1);  // gleich breite Spalten
+        }
+        for (int i = 0; i < int(tiles.size()); ++i) {
+            grid->addWidget(tile(tiles[i], familyNames), i / 3, i % 3);
         }
         lay->addLayout(grid);
-        heading(T("Color"));
+    }
+
+    void rebuild()
+    {
+        auto fresh = new QWidget;
+        auto lay = new QVBoxLayout(fresh);
+        lay->setContentsMargins(0, 0, 0, 0);
+        content->parentWidget()->layout()->replaceWidget(content, fresh);
+        content->hide();  // sofort weg, gelöscht wird später
+        content->deleteLater();
+        content = fresh;
+        fresh->show();
+        const QString text = search->text().trimmed();
+        auto single = [&](const auto& indices) {
+            std::vector<std::vector<int>> out;
+            for (int i : indices) {
+                if (text.isEmpty() || matches(i, text)) {
+                    out.push_back({i});
+                }
+            }
+            return out;
+        };
+        section(lay, T("In this design"), single(usedInDesign()), false);
+        section(lay, T("Favorites"), single(favorites()), false);
+        // je Gruppe der Bibliothek die Oberflächen (Familien) in der Reihenfolge der Tabelle
+        std::vector<QString> categories;
+        for (const auto& e : list) {
+            if (std::ranges::find(categories, QLatin1String(e.category)) == categories.end()) {
+                categories.emplace_back(QLatin1String(e.category));
+            }
+        }
+        for (const QString& category : categories) {
+            std::vector<std::vector<int>> families;
+            std::vector<QString> names;
+            for (int i = 0; i < int(list.size()); ++i) {
+                if (category != QLatin1String(list[i].category) || (!text.isEmpty() && !matches(i, text))) {
+                    continue;
+                }
+                const QString family = QLatin1String(list[i].family);
+                auto known = std::ranges::find(names, family);
+                if (known == names.end()) {
+                    names.push_back(family);
+                    families.push_back({i});
+                }
+                else {
+                    families[known - names.begin()].push_back(i);
+                }
+            }
+            section(lay, T(category.toLatin1().constData()), families, true);
+        }
+        if (text.isEmpty()) {
+            colors(lay);
+        }
+        else if (lay->count() == 0) {
+            auto none = new QLabel(T("No material matches “%1”.").arg(text));
+            none->setWordWrap(true);
+            lay->addWidget(none);
+        }
+    }
+
+    /// Eigene Farbe: die Systemfarben als Kunststoff
+    void colors(QVBoxLayout* lay)
+    {
+        auto label = Gui::Shell::sectionLabel(T("Color"));
+        label->setContentsMargins(0, 8, 0, 4);
+        lay->addWidget(label);
         auto swatches = new QGridLayout;
         swatches->setSpacing(8);
-        const char* colors[] = {"#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#00C7BE", "#30B0C7", "#007AFF",
-                                "#5856D6", "#AF52DE", "#FF2D55", "#A2845E", "#8E8E93", "#F2F2F7", "#1C1C1E"};
-        i = 0;
-        for (const char* hex : colors) {
+        const char* hexes[] = {"#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#00C7BE", "#30B0C7", "#007AFF",
+                               "#5856D6", "#AF52DE", "#FF2D55", "#A2845E", "#8E8E93", "#F2F2F7", "#1C1C1E"};
+        int i = 0;
+        for (const char* hex : hexes) {
             auto swatch = new QToolButton;
             swatch->setFixedSize(30, 30);
             swatch->setToolTip(QString::fromLatin1(hex));
@@ -2382,49 +2651,103 @@ public:
             ++i;
         }
         lay->addLayout(swatches);
-        addTaskBox(w, false);
-    }
-    QDialogButtonBox::StandardButtons getStandardButtons() const override
-    {
-        return QDialogButtonBox::Ok | QDialogButtonBox::Cancel;
-    }
-    bool accept() override
-    {
-        doc->commitTransaction();
-        return true;
-    }
-    bool reject() override
-    {
-        doc->abortTransaction();
-        return true;
     }
 
-private:
-    void apply(const App::Material& material)
+    /// Ablegen auf der 3D-Ansicht: Körper (oder mit "Flächen" die Fläche) unter dem Mauszeiger bekommt das Material
+    void watchDrops()
     {
-        for (auto body : bodies) {
-            if (auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(body))) {
-                vp->ShapeAppearance.setValue(material);
-            }
+        auto gdoc = Gui::Application::Instance->getDocument(doc);
+        auto view = gdoc ? dynamic_cast<Gui::View3DInventor*>(gdoc->getActiveView()) : nullptr;
+        if (!view) {
+            return;
         }
+        Gui::View3DInventorViewer* viewer = view->getViewer();
+        viewport = viewer->viewport();
+        dropFilter = new DropFilter([this, viewer](QDropEvent* e) {
+            bool number = false;  // die Daten können auch aus einem anderen Programm kommen
+            const int index = e->mimeData()->data(QLatin1String(MaterialMime)).toInt(&number);
+            if (!number || index < 0 || index >= int(list.size())) {
+                return false;
+            }
+            const QPoint at = e->position().toPoint();
+            std::unique_ptr<SoPickedPoint> pp(viewer->pickPoint(viewer->fromQPoint(at)));
+            // wie die Auswahl: Treffer in der Komponente ("Body001.Face6") zum Körper und seiner Fläche auflösen
+            auto vp = dynamic_cast<Gui::ViewProviderDocumentObject*>(pp ? viewer->getViewProviderByPath(pp->getPath()) : nullptr);
+            std::string sub;
+            if (!vp || !vp->getElementPicked(pp.get(), sub)) {
+                return false;
+            }
+            App::ElementNamePair element;
+            App::DocumentObject* obj = App::GeoFeature::resolveElement(vp->getObject(), sub.c_str(), element);
+            if (!obj || !obj->isDerivedFrom<Part::Feature>()) {
+                return false;
+            }
+            std::vector<int> face;
+            if (onFaces && element.oldName.starts_with("Face")) {
+                face.push_back(std::atoi(element.oldName.c_str() + 4) - 1);
+            }
+            applyMaterial(obj, face, Gui::Shell::bodyMaterialAppearance(index));
+            return true;
+        });
+        viewport->setAcceptDrops(true);
+        viewport->installEventFilter(dropFilter);
     }
+
+    class DropFilter: public QObject
+    {
+    public:
+        explicit DropFilter(std::function<bool(QDropEvent*)> drop)
+            : drop(std::move(drop))
+        {}
+
+    protected:
+        bool eventFilter(QObject*, QEvent* event) override
+        {
+            const auto type = event->type();
+            if (type != QEvent::DragEnter && type != QEvent::DragMove && type != QEvent::Drop) {
+                return false;
+            }
+            auto e = static_cast<QDropEvent*>(event);
+            if (!e->mimeData()->hasFormat(QLatin1String(MaterialMime))) {
+                return false;  // Dateien usw. wie bisher
+            }
+            if (type != QEvent::Drop || drop(e)) {
+                e->acceptProposedAction();
+            }
+            return true;
+        }
+
+    private:
+        std::function<bool(QDropEvent*)> drop;
+    };
+
     App::Document* doc;
     std::vector<App::DocumentObject*> bodies;
+    std::map<App::DocumentObject*, std::vector<int>> faces;  ///< gewählte Flächen je Körper
+    std::vector<Gui::Shell::BodyMaterialEntry> list;
+    bool onFaces = false;
+    QLineEdit* search;
+    QWidget* content;
+    QPointer<QWidget> viewport;
+    DropFilter* dropFilter = nullptr;
 };
 
 void startAppearance(App::Document* doc)
 {
     std::vector<App::DocumentObject*> bodies;
+    std::map<App::DocumentObject*, std::vector<int>> faces;
     for (auto b : selectedBodies()) {
         bodies.push_back(b);
     }
-    if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Appearance"),
-                                 T("Select one or more bodies first."));
-        return;
+    for (auto& sel : Gui::Selection().getSelectionEx(doc->getName())) {
+        for (const std::string& sub : sel.getSubNames()) {
+            if (sub.starts_with("Face") && std::ranges::find(bodies, sel.getObject()) != bodies.end()) {
+                faces[sel.getObject()].push_back(std::atoi(sub.c_str() + 4) - 1);
+            }
+        }
     }
     Gui::Selection().clearSelection();
-    Gui::Control().showDialog(new TaskAppearance(doc, bodies));
+    Gui::Control().showDialog(new TaskAppearance(doc, bodies, faces));
 }
 
 /// Parameter wie in Fusion ("Change Parameters"): Name und Ausdruck ("40 mm", "Width / 10"); Maßfelder der

@@ -3842,7 +3842,12 @@
      "paint",
      "look",
      "wood",
-     "texture"
+     "texture",
+     "finish",
+     "metal",
+     "glass",
+     "favorites",
+     "drag"
     ],
     "de": [
      "Darstellung",
@@ -3851,24 +3856,31 @@
      "einfärben",
      "Aussehen",
      "Holz",
-     "Textur"
+     "Textur",
+     "Oberfläche",
+     "Metall",
+     "Glas",
+     "Favoriten",
+     "ziehen"
     ]
    },
    "summary": {
-    "en": "Gives bodies a textured surface such as Oak, Marble or Carbon Fiber, a material look such as Steel or Brass, or a colour.",
-    "de": "Gibt Körpern eine Oberfläche mit Textur wie Eiche, Marmor oder Carbon, ein Material-Aussehen wie Stahl oder Messing oder eine Farbe."
+    "en": "Gives bodies a material from the library: metals, anodized and powder-coated finishes, plastics, 3D print, rubber, glass, woods, stone, leather and more, or a plain colour.",
+    "de": "Gibt Körpern ein Material aus der Bibliothek: Metalle, eloxiert oder pulverbeschichtet, Kunststoffe, 3D-Druck, Gummi, Glas, Hölzer, Stein, Leder und mehr, oder eine Farbe."
    },
    "steps": {
     "en": [
-     "Select one or more bodies (Ctrl+click for several).",
+     "Select one or more bodies (Ctrl+click for several), or single faces.",
      "In the toolbar at the top, in the UTILITIES section, click Appearance (key A). The panel opens on the right.",
-     "Click a tile under Wood or Textures, a button under Material (e.g. Steel, Aluminum, Brass, Plastic) or a colour dot under Color – the bodies change right away.",
+     "Click a sphere to apply its material. The small dots under a sphere are its variants, such as colours or an oiled or lacquered finish. Search materials finds one by name.",
+     "With faces selected, choose Faces or Body at the top: Faces changes only the selected faces.",
      "Click OK at the top of the panel. Cancel (next to it) or Esc discards the tool without changing anything."
     ],
     "de": [
-     "Wähle einen oder mehrere Körper (Strg+Klick für mehrere).",
+     "Wähle einen oder mehrere Körper (Strg+Klick für mehrere) oder einzelne Flächen.",
      "Klicke in der Werkzeugleiste oben im Bereich WERKZEUGE auf Darstellung (Taste A). Rechts öffnet sich das Panel.",
-     "Klicke eine Kachel unter Holz oder Texturen, unter Material einen Knopf (z. B. Stahl, Aluminium, Messing, Kunststoff) oder unter Farbe einen Farbpunkt – die Körper ändern sich sofort.",
+     "Klicke eine Kugel, um ihr Material anzuwenden. Die kleinen Punkte darunter sind ihre Varianten, etwa Farben oder geölt und lackiert. Unter Materialien suchen findest du eines nach Namen.",
+     "Mit gewählten Flächen wählst du oben Flächen oder Körper: Flächen ändert nur die gewählten Flächen.",
      "Klicke oben im Panel auf OK. Abbrechen (daneben) oder Esc verwirft das Werkzeug, ohne etwas zu ändern."
     ]
    },
@@ -3877,9 +3889,17 @@
    ],
    "tips": {
     "en": [
+     "You can also drag a sphere straight onto a body in the view, without selecting it first.",
+     "Right-click a sphere to add it to Favorites. In this design shows the materials you already use.",
+     "Single faces only take the colour of a material. Textures, gloss and lacquer apply to whole bodies.",
+     "Settings → General → Materials: High shows relief, end grain and a soft shadow under the bodies, Balanced leaves them out, Low draws bodies as before, without reflections.",
      "The default look of new bodies is set in Settings → General → Body material."
     ],
     "de": [
+     "Du kannst eine Kugel auch direkt auf einen Körper in der Ansicht ziehen, ohne ihn vorher zu wählen.",
+     "Ein Rechtsklick auf eine Kugel legt sie unter Favoriten ab. In diesem Design zeigt die Materialien, die du schon verwendest.",
+     "Einzelne Flächen übernehmen nur die Farbe eines Materials. Texturen, Glanz und Lack gibt es für ganze Körper.",
+     "Einstellungen → Allgemein → Materialien: Hoch zeigt Relief, Hirnholz und einen weichen Schatten unter den Körpern, Ausgewogen lässt sie weg, Sparsam zeichnet Körper wie früher, ohne Spiegelungen.",
      "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Allgemein → Körpermaterial ein."
     ]
    },
@@ -3947,7 +3967,7 @@
    },
    "steps": {
     "en": [
-     "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Body material, Show tool names and Show grid (the grid on the ground plane under the bodies).",
+     "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Body material, Materials (High, Balanced or Low), Show tool names and Show grid (the grid on the ground plane under the bodies).",
      "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart) and Projects folder.",
      "Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
      "View: Camera, Rotate, Rotate around and Animate view changes.",
@@ -3955,7 +3975,7 @@
      "Keys tab: Add Key… turns a key into a mouse button, e.g. Shift as the middle button; choose the button and whether to Hold, Click, Double-click or Toggle."
     ],
     "de": [
-     "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Körpermaterial, Werkzeugnamen anzeigen und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
+     "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Körpermaterial, Materialien (Hoch, Ausgewogen oder Sparsam), Werkzeugnamen anzeigen und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
      "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart) und Projektordner.",
      "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen.",
      "Ansicht: Kamera, Drehen, Drehen um und Ansichtswechsel animieren.",

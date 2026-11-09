@@ -25,7 +25,11 @@ GuiExport SoNode* bodyShading();
 /// Rauheit aus <name>_s.jpg auf Stufe 1. Geteilt von allen Körpern; nullptr für fremde Pfade oder fehlende Bilder.
 GuiExport SoNode* bodyTexture(const std::string& path);
 
-/// Qualität neu lesen (MyCAD/RenderQuality: 0 Hoch, 1 Ausgewogen ohne Relief und Hirnholz, 2 Sparsam) und anwenden
+/// Kontaktschatten unter den Körpern einer Ansicht (nur Qualität "Hoch"): Was knapp über dem Boden liegt, von unten
+/// gesehen als Maske, weich und halbdurchsichtig auf dem Boden. objects = die Körper der Ansicht (ObjectGroup des Viewers).
+GuiExport SoNode* contactShadow(SoNode* objects);
+
+/// Qualität neu lesen (MyCAD/RenderQuality: 0 Hoch, 1 Ausgewogen ohne Relief, Hirnholz und Kontaktschatten, 2 Sparsam) und anwenden
 GuiExport void applyRenderQuality();
 
 }  // namespace Gui::Shell

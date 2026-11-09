@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Körper-Materialien (Gui/Shell/BodyShading.cpp): eine spiegelnde Chromkugel zeigt den Raum, darin eine scharfe Linie, wo
 Wand und Boden aufeinandertreffen. Mit Materialien "Sparsam" (Phong, wie früher) gibt es nur weiche Verläufe.
-Fotoscans: Maßstab aus dem Bild, Hirnholz an der Stirnseite (nur bei "Hoch"). Zum Schluss ein Bild aller Effekte.
+Fotoscans: Maßstab aus dem Bild, Hirnholz an der Stirnseite, Kontaktschatten (beides nur bei "Hoch"). Zum Schluss ein
+Bild aller Effekte.
 Fehler stehen als FAIL im Protokoll."""
 from harness import *
 import Part
@@ -70,6 +71,24 @@ def scale():
     check("Photo scan: tile size from the image (oak 600 mm)", any(abs(f - 200 / 600) < 1e-3 for f in factors), str(factors))
 
 
+def ground(key):
+    """Boden direkt vor dem Holzklotz (2 mm) und weiter weg (25 mm), von oben: Verhältnis der Helligkeit"""
+    v = Gui.ActiveDocument.ActiveView
+    img = view().viewport().grab().toImage()
+    def at(y):
+        px, py = v.getPointOnViewport(App.Vector(30, y, 0))
+        x, y = int(px), int(img.height() - py)
+        values = [lum(img, x + dx, y + dy) for dx in range(-6, 7, 2) for dy in range(-1, 2)]  # Rasterlinien mitteln
+        return sum(values) / len(values)
+    saved[key] = at(-2) / max(at(-25), 1e-3)
+
+
+def top():
+    fit("viewTop")
+    cam = Gui.ActiveDocument.ActiveView.getCameraNode()
+    cam.height.setValue(cam.height.getValue() * 2)  # Boden rund um den Klotz sichtbar
+
+
 def showcase():
     """Holz lackiert, gebürstetes Aluminium, Carbon, Glas, PLA mit Schichten nebeneinander"""
     for i, (name, mat) in enumerate([
@@ -108,5 +127,11 @@ in_order([
                                 saved["x high"] / saved["y high"] < 0.95 * saved["x bal"] / saved["y bal"],
                                 "x/y high %.3f, balanced %.3f" % (saved["x high"] / saved["y high"], saved["x bal"] / saved["y bal"]))),
     ("back 2", lambda: P.SetInt("RenderQuality", 0)),
+    ("top", top), ("wait", lambda: None), ("shadow high", lambda: ground("shadow high")), ("shot shadow", lambda: shot("shadow")),
+    ("balanced 2", lambda: P.SetInt("RenderQuality", 1)), ("wait", lambda: None), ("shadow bal", lambda: ground("shadow bal")),
+    ("shadow", lambda: check("High: contact shadow darkens the ground next to the body, Balanced has none",
+                             saved["shadow high"] < 0.93 and saved["shadow bal"] > 0.97,
+                             "near/far high %.3f, balanced %.3f" % (saved["shadow high"], saved["shadow bal"]))),
+    ("back 3", lambda: P.SetInt("RenderQuality", 0)),
     ("showcase", showcase), ("wait", lambda: None), ("shot showcase", lambda: shot("showcase")),
 ])

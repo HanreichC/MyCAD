@@ -4,8 +4,20 @@
 
 #include <App/Application.h>
 
+#include <Inventor/actions/SoGetBoundingBoxAction.h>
 #include <Inventor/actions/SoGLRenderAction.h>
 #include <Inventor/nodes/SoCallback.h>
+#include <Inventor/nodes/SoCoordinate3.h>
+#include <Inventor/nodes/SoDepthBuffer.h>
+#include <Inventor/nodes/SoFaceSet.h>
+#include <Inventor/nodes/SoMaterial.h>
+#include <Inventor/nodes/SoOrthographicCamera.h>
+#include <Inventor/nodes/SoPickStyle.h>
+#include <Inventor/nodes/SoPolygonOffset.h>
+#include <Inventor/nodes/SoLightModel.h>
+#include <Inventor/sensors/SoNodeSensor.h>
+#include <Inventor/nodes/SoSeparator.h>
+#include <Inventor/nodes/SoTransparencyType.h>
 #include <Inventor/nodes/SoFragmentShader.h>
 #include <Inventor/nodes/SoGroup.h>
 #include <Inventor/nodes/SoShaderParameter.h>
@@ -16,6 +28,8 @@
 #include <Inventor/nodes/SoVertexShader.h>
 
 #include <Gui/BitmapFactory.h>
+#include <Gui/Inventor/SoFCBoundingBox.h>
+#include <Gui/SoFCOffscreenRenderer.h>
 
 #include <QFile>
 #include <QImage>
@@ -23,9 +37,16 @@
 #include <QObject>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QTimer>
 
+#include <GL/gl.h>
+#include <GL/glext.h>
+
+#include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <map>
+#include <vector>
 
 namespace
 {
@@ -339,6 +360,11 @@ SoSwitch* root()
     return node;
 }
 
+struct ContactShadow;
+std::vector<ContactShadow*>& shadows();
+void renderMask(ContactShadow* s);
+void setShadow(ContactShadow* s, bool on);
+
 /// Einstellung "Materialien" (MyCAD/RenderQuality) wirkt sofort, auch wenn ein Skript sie setzt
 class QualityObserver: public ParameterGrp::ObserverType
 {
@@ -370,7 +396,10 @@ void Gui::Shell::applyRenderQuality()
 {
     const long quality = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetInt("RenderQuality", 0);
     root()->whichChild = quality >= 2 ? SO_SWITCH_NONE : 0;  // Sparsam: Phong wie früher
-    detail()->value = quality == 0 ? 1 : 0;                  // Ausgewogen: ohne Relief und Hirnholz
+    detail()->value = quality == 0 ? 1 : 0;                  // Ausgewogen: ohne Relief, Hirnholz und Kontaktschatten
+    for (ContactShadow* shadow : shadows()) {
+        setShadow(shadow, quality == 0);
+    }
 }
 
 SoNode* Gui::Shell::bodyTexture(const std::string& path)
@@ -409,4 +438,217 @@ SoNode* Gui::Shell::bodyTexture(const std::string& path)
     }
     nodes[path] = group;  // auch den Fehlschlag merken: Der Körper bleibt dann einfach einfarbig
     return group;
+}
+
+namespace
+{
+
+/// Kontaktschatten einer Ansicht: Eine Kamera unter dem Boden schaut nach oben und sieht nur, was bis `reach` über dem
+/// Boden liegt. Das wird schwarz auf weiß in eine kleine Maske gerendert (eigener Kontext wie bei den Material-Kugeln),
+/// der Boden zeichnet sie weich und halbdurchsichtig. Neu gerendert wird nur, wenn sich die Szene ändert.
+struct ContactShadow
+{
+    SoSwitch* sw;
+    SoGroup* objects;
+    SoSeparator* under;  ///< Kamera, Grundfarbe schwarz erzwingen, Körper
+    SoOrthographicCamera* camera;
+    SoTexture2* mask;
+    SoShaderParameter4f* area;  ///< Mitte x, y; halbe Breite; Stärke
+    SoCoordinate3* quad;
+    SoNodeSensor* sensor;
+    QTimer* timer;
+};
+
+constexpr short MaskSize = 256;
+
+std::vector<ContactShadow*>& shadows()
+{
+    static std::vector<ContactShadow*> list;  // ponytail: je Ansicht ein Eintrag, der bis zum Programmende bleibt
+    return list;
+}
+
+void renderMask(ContactShadow* s)
+{
+    if (s->sw->whichChild.getValue() == SO_SWITCH_NONE) {
+        return;
+    }
+    SoGetBoundingBoxAction bbox(SbViewportRegion(MaskSize, MaskSize));
+    bbox.apply(s->objects);
+    const SbBox3f box = bbox.getBoundingBox();
+    if (box.isEmpty()) {
+        s->quad->point.setNum(0);
+        return;
+    }
+    float x0, y0, z0, x1, y1, z1;
+    box.getBounds(x0, y0, z0, x1, y1, z1);
+    const float size = std::max(x1 - x0, y1 - y0);
+    const float half = size * 0.75F + 5.0F;                     // Rand für die weiche Kante
+    const float ground = std::min(z0, 0.0F);                    // auf dem Raster, oder darunter, wenn der Körper tiefer reicht
+    const float reach = std::clamp(size * 0.2F, 2.0F, 200.0F);  // was so nah am Boden liegt, wirft Schatten
+    const float cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    s->camera->position.setValue(cx, cy, ground - 1);
+    s->camera->height = 2 * half;
+    s->camera->nearDistance = 0.5F;
+    s->camera->farDistance = 1 + reach;
+
+    s->sensor->detach();  // das eigene Rendern soll nicht gleich das nächste auslösen
+    Gui::SoQtOffscreenRenderer renderer(SbViewportRegion(MaskSize, MaskSize));
+    renderer.setBackgroundColor(SbColor4f(1, 1, 1, 1));
+    QImage image;
+    if (renderer.render(s->under)) {
+        renderer.writeToImage(image);
+    }
+    s->sensor->attach(s->objects);
+    if (image.isNull()) {
+        return;
+    }
+    image = image.convertToFormat(QImage::Format_Grayscale8);
+    image.invertPixels();  // Deckung: 255 unter einem Körper
+    SoSFImage pixels;
+    Gui::BitmapFactory().convert(image, pixels);
+    s->mask->image = pixels;
+    s->area->value.setValue(cx, cy, half, 0.6F);
+    const SbVec3f corners[] = {{cx - half, cy - half, ground}, {cx + half, cy - half, ground},
+                               {cx + half, cy + half, ground}, {cx - half, cy + half, ground}};
+    s->quad->point.setValues(0, 4, corners);
+}
+
+void setShadow(ContactShadow* s, bool on)
+{
+    s->sw->whichChild = on ? 0 : SO_SWITCH_NONE;
+    if (on) {
+        s->timer->start();
+    }
+}
+
+const char* const ShadowVertex = R"(
+#version 120
+varying vec2 world;
+varying float up;  // > 0: Blick von oben auf den Boden
+void main()
+{
+    world = gl_Vertex.xy;
+    up = -(gl_ModelViewMatrixInverse * vec4(0.0, 0.0, -1.0, 0.0)).z;
+    gl_Position = ftransform();
+}
+)";
+
+const char* const ShadowFragment = R"(
+#version 120
+uniform sampler2D mask;  // Deckung: Körper nah am Boden, von unten gesehen (x gespiegelt)
+uniform vec4 area;       // Mitte x, y; halbe Breite; Stärke
+varying vec2 world;
+varying float up;
+void main()
+{
+    vec2 uv = vec2(0.5 - (world.x - area.x) / (2.0 * area.z), 0.5 + (world.y - area.y) / (2.0 * area.z));
+    // weichzeichnen: Mitte und drei Ringe zu je 12 Proben (gegeneinander verdreht), außen schwächer
+    float sum = texture2D(mask, uv).r * 1.5;
+    float weight = 1.5;
+    for (int i = 0; i < 12; ++i) {
+        float a = float(i) * 0.5236;
+        vec2 d = vec2(cos(a), sin(a)), e = vec2(cos(a + 0.26), sin(a + 0.26));
+        sum += texture2D(mask, uv + d * 0.015).r * 1.2 + texture2D(mask, uv + e * 0.035).r * 0.8
+             + texture2D(mask, uv + d * 0.06).r * 0.5;
+        weight += 2.5;
+    }
+    float shadow = sum / weight * area.w * smoothstep(0.05, 0.3, up);
+    if (shadow < 0.004) {
+        discard;
+    }
+    gl_FragColor = vec4(0.0, 0.0, 0.0, shadow);
+}
+)";
+
+void depthClamp(void* on, SoAction* action)
+{
+    if (action->isOfType(SoGLRenderAction::getClassTypeId())) {
+        on ? glEnable(GL_DEPTH_CLAMP) : glDisable(GL_DEPTH_CLAMP);
+    }
+}
+
+}  // namespace
+
+SoNode* Gui::Shell::contactShadow(SoNode* objects)
+{
+    auto s = new ContactShadow {};
+    s->objects = new SoGroup;
+    s->objects->ref();
+    s->objects->addChild(objects);
+    s->camera = new SoOrthographicCamera;
+    s->camera->orientation = SbRotation(SbVec3f(0, 1, 0), float(M_PI));  // nach oben schauen, y bleibt oben
+    // alles in Grundfarbe schwarz (der Körper-Shader gibt dann die Grundfarbe aus), auch Texturen und Linien
+    auto flat = new SoLightModel;
+    flat->model = SoLightModel::BASE_COLOR;
+    flat->setOverride(TRUE);
+    auto black = new SoMaterial;
+    black->diffuseColor.setValue(0, 0, 0);
+    black->transparency = 0;
+    black->setOverride(TRUE);
+    s->under = new SoSeparator;
+    s->under->ref();
+    for (SoNode* n : std::initializer_list<SoNode*> {s->camera, flat, black, s->objects}) {
+        s->under->addChild(n);
+    }
+    s->mask = new SoTexture2;
+    s->mask->wrapS = SoTexture2::CLAMP;
+    s->mask->wrapT = SoTexture2::CLAMP;
+    s->area = new SoShaderParameter4f;
+    s->area->name = "area";
+    s->quad = new SoCoordinate3;
+    s->quad->point.setNum(0);
+
+    auto vertex = new SoVertexShader;
+    vertex->sourceType = SoShaderObject::GLSL_PROGRAM;
+    vertex->sourceProgram = ShadowVertex;
+    auto fragment = new SoFragmentShader;
+    fragment->sourceType = SoShaderObject::GLSL_PROGRAM;
+    fragment->sourceProgram = ShadowFragment;
+    auto maskUnit = new SoShaderParameter1i;
+    maskUnit->name = "mask";
+    maskUnit->value = 0;
+    fragment->parameter.set1Value(0, maskUnit);
+    fragment->parameter.set1Value(1, s->area);
+    auto program = new SoShaderProgram;
+    program->shaderObject.set1Value(0, vertex);
+    program->shaderObject.set1Value(1, fragment);
+
+    auto pick = new SoPickStyle;
+    pick->style = SoPickStyle::UNPICKABLE;
+    auto blend = new SoTransparencyType;  // in Reihenfolge nach den Körpern zeichnen, wie das Raster
+    blend->value = SoTransparencyType::BLEND;
+    auto material = new SoMaterial;
+    material->transparency = 0.5F;  // schaltet Blending ein; die Deckkraft kommt aus dem Shader
+    auto depth = new SoDepthBuffer;
+    depth->write = FALSE;
+    depth->function = SoDepthBuffer::LEQUAL;
+    auto clampOn = new SoCallback;
+    clampOn->setCallback(depthClamp, clampOn);
+    auto clampOff = new SoCallback;
+    clampOff->setCallback(depthClamp, nullptr);
+    auto sep = new SoSeparator;
+    sep->renderCulling = SoSeparator::OFF;
+    for (SoNode* n : std::initializer_list<SoNode*> {pick, blend, material, depth, new SoPolygonOffset, s->mask, program,
+                                                     s->quad, clampOn, new SoFaceSet, clampOff}) {
+        sep->addChild(n);
+    }
+    auto skip = new SoSkipBoundingGroup;  // Einpassen und Clipping richten sich nur nach den Körpern
+    skip->mode = SoSkipBoundingGroup::EXCLUDE_BBOX;
+    skip->addChild(sep);
+    s->sw = new SoSwitch;
+    s->sw->ref();
+    s->sw->addChild(skip);
+    s->sw->whichChild = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetInt("RenderQuality", 0) == 0
+        ? 0 : SO_SWITCH_NONE;
+
+    // Szene geändert (Körper bearbeitet, ein- oder ausgeblendet): Maske kurz danach neu, beim Tippen nicht bei jeder Taste
+    s->timer = new QTimer;
+    s->timer->setSingleShot(true);
+    s->timer->setInterval(400);
+    QObject::connect(s->timer, &QTimer::timeout, [s] { renderMask(s); });
+    s->sensor = new SoNodeSensor([](void* data, SoSensor*) { static_cast<ContactShadow*>(data)->timer->start(); }, s);
+    s->sensor->attach(s->objects);
+    s->timer->start();
+    shadows().push_back(s);
+    return s->sw;
 }

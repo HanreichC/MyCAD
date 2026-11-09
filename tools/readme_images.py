@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""README-Bilder neu erzeugen: docs/images/workspace.png, notes.png, scribble.png, scribble-3d.png und start.png. Läuft in MyCAD, mit eigenem Home:
+"""README-Bilder neu erzeugen: docs/images/workspace.png, notes.png, scribble.png, scribble-3d.png, materials.png und start.png. Läuft in MyCAD, mit eigenem Home:
     MYCAD_HOME=/tmp/readme tests/gui/run.sh tools/readme_images.py /tmp/readme/log"""
 import math
 import os
@@ -173,6 +173,47 @@ def clear_focus():
         widget.clearFocus()
 
 
+wait = ("wait", lambda: None)
+
+
+def disc(x, y, r):
+    return [Part.Circle(App.Vector(x, y, 0), App.Vector(0, 0, 1), r)]
+
+
+# Körper und ihr Material (Name einer Kugel oder eines Chips im Panel "Darstellung")
+MATERIALS = [("Tray", rect(0, 0, 70, 45), 18, "Walnut, Oiled"), ("Knob", disc(100, 22, 16), 30, "Anodized Blue"),
+             ("Cap", disc(140, 22, 14), 22, "Lacquer Red"), ("Plate", rect(165, 0, 215, 45), 6, "Carbon Fiber"),
+             ("Lens", disc(100, 72, 18), 12, "Clear Glass"), ("Block", rect(125, 55, 165, 85), 25, "Brushed Aluminum"),
+             ("Print", disc(30, 78, 15), 35, "PLA Orange")]
+
+
+def materials_design():
+    Gui.runCommand("Std_New")
+    QtCore.QTimer.singleShot(1500, lambda: [make_body(geo, 0, h, name) for name, geo, h, _ in MATERIALS])
+
+
+def accept():
+    """OK im Panel (direkt statt per Mausklick: der trifft bei dieser Fenstergröße nicht zuverlässig)"""
+    [b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "OK"][0].click()
+
+
+def paint(name, material):
+    """wie von Hand: Körper wählen, Darstellung öffnen, Material anklicken, OK (je ein Schritt)"""
+    def open_panel():
+        Gui.Selection.clearSelection(); Gui.Selection.addSelection(body(name))
+        Gui.runCommand("Design_Appearance")
+    return [(name, open_panel), wait,
+            (material, lambda: [b for b in visible(QtWidgets.QToolButton) if b.accessibleName() == material][0].click()),
+            ("ok", accept), wait]
+
+
+def materials_view():
+    v = Gui.ActiveDocument.ActiveView
+    v.viewIsometric(); Gui.SendMsgToActiveView("ViewFit")
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(body("Tray"))
+    Gui.runCommand("Design_Appearance")
+
+
 def picture(name):
     mw.grab().save(IMAGES + name + ".png")
 
@@ -181,7 +222,6 @@ def home():
     [b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Home"][0].click()
 
 
-wait = ("wait", lambda: None)
 in_order([
     ("size", lambda: (mw.showNormal(), mw.resize(1800, 1080))), wait,
     ("flange", lambda: plate("Flange", 60, 60, 8, [(30, 30, 14), (10, 10, 3), (50, 10, 3), (10, 50, 3), (50, 50, 3)])), wait, wait, wait,
@@ -202,6 +242,11 @@ in_order([
     ("wall idea", wall_idea), wait, wait,
     ("scribble 3d", lambda: picture("scribble-3d")),
     ("finish wall", lambda: Gui.runCommand("Design_ScribbleFinish")), wait,
+    ("materials design", materials_design), wait, wait,
+    *[s for name, _, _, material in MATERIALS for s in paint(name, material)],
+    ("materials view", materials_view), wait, wait,
+    ("materials", lambda: picture("materials")),
+    ("close panel", accept), wait,
     ("home", home), wait, wait,
     ("focus", clear_focus), wait,
     ("start", lambda: picture("start")),

@@ -141,9 +141,17 @@ Switch to **Deutsch** in the settings and MyCAD is in German, from the toolbar d
 
 ## Materials with character.
 
-New bodies come in **Space Gray** with a satin finish. You can pick **Clay**, **Sierra Blue**, **Ceramic**, **Midnight**, **Alpine Green**, **Deep Purple**, **Natural Titanium** and more in the settings instead, and existing bodies switch right away.
+<div align="center">
 
-Bodies can also have real textures: six woods (**Oak**, **Walnut**, **Maple**, **Cherry**, **Pine**, **Bamboo**) plus **Brushed Aluminum**, **Brushed Steel**, **Carbon Fiber**, **Concrete**, **Marble**, **Granite**, **Leather** and **Cork**. Pick one as the default in the settings, or give a single body its own material or color with **Appearance**.
+![Bodies in oiled walnut, anodized aluminum, red lacquer, carbon, glass, brushed aluminum and PLA, with the Appearance panel](docs/images/materials.png)
+
+</div>
+
+Bodies sit in a bright room and catch its light. Metal mirrors the windows, red lacquer shines under its clear coat, and glass stays see-through but still reflects. New bodies come in **Space Gray**. Pick another default in the settings and your existing bodies switch right away.
+
+**Appearance** has 119 materials: raw and polished metals, anodized aluminum in nine colors, powder coat, lacquer and metallic paint, matte, satin and glossy plastics, PLA that shows its print layers up close, rubber and silicone, glass and acrylic, woods raw, oiled or lacquered, stone and ceramics, leather, felt and carbon. Each one is a small sphere drawn the same way as your model, with its colors and finishes as dots underneath. Search by name, right-click to keep a favorite, and see at the top what this design already uses. Click a sphere to apply it to the selected bodies, or drag it straight onto a body. With single faces selected, only those faces change color.
+
+The woods, stone, leather, cork, fabric, carbon and brushed metals are real photo scans with their relief, and a wooden part shows end grain where it's cut. A soft shadow grounds every body on the grid. On a slow graphics card, set **Materials** in the settings to **Balanced** or **Low**.
 
 <br>
 
@@ -169,7 +177,7 @@ Bodies can also have real textures: six woods (**Oak**, **Walnut**, **Maple**, *
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
 | **Pen tablet** | Pressure and hover on Wayland, side buttons navigate, keys for tablet buttons (E eraser, V select, L look at) |
-| **Materials** | 12 surfaces (Space Gray, Clay, Natural Titanium, …), 6 woods and 8 textures (Marble, Carbon Fiber, Leather, …) |
+| **Materials** | 119 in 12 groups (metal, anodized, coatings, plastic, 3D print, rubber, glass, wood, stone, fabric and leather, composites, Apple colors), 19 CC0 photo scans with relief, reflections of a room, clear coat, end grain, contact shadow |
 | **Core** | FreeCAD with OpenCascade |
 | **License** | LGPL-2.1-or-later |
 
@@ -203,7 +211,7 @@ The build runs inside a Podman container (`.devcontainer/`), so the compiler and
 
 ## For developers.
 
-The core of the interface lives in [`src/Gui/Shell/`](src/Gui/Shell) and the Fusion-style tools in [`src/Mod/Design/`](src/Mod/Design). [`tools/make_icons.py`](tools/make_icons.py) generates the icons.
+The core of the interface lives in [`src/Gui/Shell/`](src/Gui/Shell) and the Fusion-style tools in [`src/Mod/Design/`](src/Mod/Design). [`tools/make_icons.py`](tools/make_icons.py) generates the icons. [`tools/fetch_textures.py`](tools/fetch_textures.py) downloads the photo scans for the materials, and [`tools/make_environment.py`](tools/make_environment.py) renders the room that metal and lacquer reflect. [`tests/gui/test_materials.py`](tests/gui/test_materials.py) checks reflections, end grain and the contact shadow.
 
 The GUI tests click through the app like a person would, with real mouse and keyboard events:
 
@@ -222,6 +230,8 @@ The roadmap is in [`docs/PLAN.md`](docs/PLAN.md).
 MyCAD is built on [FreeCAD](https://www.freecad.org), the free parametric CAD program. Thanks to everyone who works on it. [`docs/UPSTREAM.md`](docs/UPSTREAM.md) has the details.
 
 Like FreeCAD, MyCAD is licensed under the [LGPL-2.1-or-later](LICENSE).
+
+The material scans come from [Poly Haven](https://polyhaven.com) and [ambientCG](https://ambientcg.com), both CC0. [`src/Gui/Shell/textures/SOURCES.md`](src/Gui/Shell/textures/SOURCES.md) lists each one.
 
 Handwriting recognition uses [DE·HTR v2](https://huggingface.co/naeyn/de-htr-web-v2) (Apache-2.0), trained on the ScaDS.AI German handwriting dataset (CC BY 4.0, Universität Leipzig) and fhswf/german_handwriting (AFL-3.0). Details in [`src/Mod/Design/Gui/htr/`](src/Mod/Design/Gui/htr/README.md).
 

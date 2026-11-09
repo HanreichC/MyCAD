@@ -50,7 +50,10 @@ struct BodyMaterialEntry
 std::vector<BodyMaterialEntry> bodyMaterialList();
 App::Material bodyMaterialAppearance(int index);
 const char* defaultBodyTexture();  ///< Textur neuer Körper oder nullptr
-QPixmap materialThumbnail(const char* texture, QSize size, qreal ratio);
+/// Kugel mit dem Material, gerendert wie im Modell (alle auf einmal beim ersten Aufruf), rund ausgeschnitten
+QPixmap materialPreview(int index, int size, qreal ratio);
+/// Eintrag der Bibliothek, der genau so aussieht, oder -1
+int bodyMaterialIndex(const App::Material& mat);
 void setBodyMaterial(int index);
 /// Ordner mit den Designs des Benutzers (Startseite "Projects", Einstellung "Projects folder")
 QString projectsFolder();
