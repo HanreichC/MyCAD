@@ -1,39 +1,40 @@
 # MyCAD Wiki
 
-MyCAD ist ein parametrisches CAD für Linux: der Arbeitsablauf von Fusion 360, die Optik von Liquid Glass, und viele
-Ideen, die es so in keinem anderen CAD gibt. Es läuft als AppImage, ohne Installation.
+MyCAD is parametric CAD for Linux: the workflow of Fusion 360, the look of Liquid Glass, and a handful of ideas you
+won't find in any other CAD program. It runs as an AppImage, nothing to install.
 
-## Wo anfangen?
+Inside the app, the built-in help (**?** at the bottom left) explains every tool step by step, in English or German,
+depending on the language you picked. This wiki is the overview for everyone else.
 
-| Du willst … | Lies |
+## Where to start
+
+| You want to … | Read |
 |---|---|
-| wissen, was MyCAD alles kann | **[Funktionsübersicht](Funktionsuebersicht)** – alles auf einer Seite |
-| gleich loslegen | **[Tutorial: Ein Halter für den 3D-Druck](Tutorial-Erstes-Teil)** (ca. 20 Minuten) |
-| Teile beweglich verbinden | **[Tutorial: Baugruppe mit Gelenken](Tutorial-Baugruppe)** |
-| Einzelheiten nachschlagen | die Themenseiten unten |
+| see everything MyCAD can do | **[Features](Features)**, all on one page |
+| get going right away | **[Tutorial: a bracket for 3D printing](Tutorial-3D-Printed-Bracket)** (about 20 minutes) |
+| connect parts that move | **[Tutorial: an assembly with joints](Tutorial-Assembly)** |
+| look something up | the topic pages below |
 
-## Themen
+## Topics
 
-- [Modellieren](Modellieren) – Skizzen, alle Werkzeuge, Zeitleiste, Maße am Modell, Fehler, die sich erklären
-- [Notizen und Parameter](Notizen-und-Parameter) – rechnen, Parameter direkt in der Notiz festlegen
-- [Rotstift und Scribble](Rotstift-und-Scribble) – Ideen skizzieren, Handschrift, Korrekturen aufs Modell schreiben
-- [3D-Druck](3D-Druck) – Druckansicht, Drucken im Slicer, Passungen, Schraube hier, Druckgewinde
-- [Versionen und Varianten](Versionen-und-Varianten) – immer gespeichert, nichts geht verloren
-- [Baugruppen](Baugruppen) – Komponenten, Gelenke, geschlossene Ketten
-- [Bedienung und Einstellungen](Bedienung-und-Einstellungen) – Navigation, Tastenkürzel, Stift, Sprache, Materialien
-- [Für Entwickler](Fuer-Entwickler) – bauen, testen, Aufbau des Codes
+- [Modeling](Modeling): sketches, every tool, the timeline, sizes on the model, errors that explain themselves
+- [Notes and Parameters](Notes-and-Parameters): calculate in a note and define parameters right there
+- [Red Pen and Scribble](Red-Pen-and-Scribble): sketch ideas, handwriting, write corrections on the model
+- [3D Printing](3D-Printing): Print View, printing to your slicer, fits, Screw Here, print threads
+- [Versions and Variants](Versions-and-Variants): always saved, nothing gets lost
+- [Assemblies](Assemblies): components, joints, closed loops
+- [Controls and Settings](Controls-and-Settings): navigation, shortcuts, pen tablets, language, materials
+- [For Developers](For-Developers): build, test, how the code is organized
 
-## Das Besondere in einer Minute
+## What makes MyCAD different, in one minute
 
-- **Immer gespeichert.** Kein Speichern-Knopf, keine Rückfrage beim Schließen. Jeder Stand wird eine Version, die du
-  vergleichen und zurückholen kannst.
-- **Fläche antippen, Zahl ändern.** Klick auf eine Fläche zeigt die Maße, die sie erzeugen, direkt am Modell.
-- **Die Notiz ist die Parameterliste.** `Wand = 2 mm` in einer Notiz ist ein Parameter, den jedes Maß benutzen kann.
-- **Rotstift.** `R2` neben eine Kante schreiben, `M5` auf eine Fläche – MyCAD macht daraus Rundung und Gewindebohrung.
-- **Fehler erklären sich.** Ist eine Rundung zu groß, sagt MyCAD, welcher Radius geht, und setzt ihn auf Klick.
-- **Werkzeuge für den Zweck.** „Schraube hier“ verschraubt zwei Teile in einem Schritt, „Passung“ macht Bohrung und
-  Welle passend – nach ISO oder für den 3D-Drucker.
-- **Druck im Viewport.** Überhänge, Bettflächen und zu dünne Wände direkt am Modell; „Drucken“ öffnet den Slicer.
-- **Strg+K** findet jeden Befehl, Körper und jede Skizze, auch mit Tippfehlern und deutschen Begriffen.
-
-Die eingebaute Hilfe (**?** unten links in MyCAD) erklärt jedes Werkzeug Schritt für Schritt, auf Deutsch und Englisch.
+- **Always saved.** No save button, no question when you close. Every state becomes a version you can compare and
+  bring back.
+- **Tap a face, change a number.** Click a face and the sizes that make it appear right on the model.
+- **Your note is your parameter list.** `Wall = 2 mm` in a note is a parameter any size field can use.
+- **Red Pen.** Write `R2` next to an edge, `M5` on a face, and MyCAD turns them into a fillet and a tapped hole.
+- **Errors explain themselves.** A fillet too big? MyCAD tells you which radius fits and sets it in one click.
+- **Tools for a purpose.** Screw Here joins two parts in one step; Fit makes a hole and its pin fit, to ISO or for
+  your printer.
+- **Printing in the viewport.** Overhangs, bed faces and thin walls on the model; Print opens your slicer.
+- **Ctrl+K** finds every command, body and sketch, typos included.

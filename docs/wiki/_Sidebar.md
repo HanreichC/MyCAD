@@ -1,17 +1,19 @@
 **[MyCAD Wiki](Home)**
 
-- [Funktionsübersicht](Funktionsuebersicht)
+- [Features](Features)
 
 **Tutorials**
-- [Ein Halter für den 3D-Druck](Tutorial-Erstes-Teil)
-- [Baugruppe mit Gelenken](Tutorial-Baugruppe)
+- [A bracket for 3D printing](Tutorial-3D-Printed-Bracket)
+- [An assembly with joints](Tutorial-Assembly)
 
-**Themen**
-- [Modellieren](Modellieren)
-- [Notizen und Parameter](Notizen-und-Parameter)
-- [Rotstift und Scribble](Rotstift-und-Scribble)
-- [3D-Druck](3D-Druck)
-- [Versionen und Varianten](Versionen-und-Varianten)
-- [Baugruppen](Baugruppen)
-- [Bedienung und Einstellungen](Bedienung-und-Einstellungen)
-- [Für Entwickler](Fuer-Entwickler)
+**Topics**
+- [Modeling](Modeling)
+- [Notes and Parameters](Notes-and-Parameters)
+- [Red Pen and Scribble](Red-Pen-and-Scribble)
+- [3D Printing](3D-Printing)
+- [Versions and Variants](Versions-and-Variants)
+- [Assemblies](Assemblies)
+- [Controls and Settings](Controls-and-Settings)
+- [For Developers](For-Developers)
+
+[Download](https://github.com/HanreichC/MyCAD/releases/latest)

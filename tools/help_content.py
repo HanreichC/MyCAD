@@ -25,8 +25,9 @@ def pairs(items):
     return [e for e, _ in items], [d for _, d in items]
 
 
-def A(id, group, icon, title, keywords, summary, steps, options=(), tips=(), see=(), commands=(), caption=None):
-    """steps/tips: Liste von (Englisch, Deutsch); options: Liste von (Name en, Text en, Name de, Text de)."""
+def A(id, group, icon, title, keywords, summary, steps, options=(), tips=(), see=(), commands=(), caption=None, sections=()):
+    """steps/tips: Liste von (Englisch, Deutsch); options: Liste von (Name en, Text en, Name de, Text de);
+    sections: Abschnitte mit eigener Überschrift ((en, de), [(en, de) …], nummeriert) für Überblicke und Anleitungen"""
     st, tp = pairs(steps), pairs(tips)
     a = {"id": id, "group": group, "icon": icon, "commands": list(commands),
          "title": {"en": title[0], "de": title[1]}, "keywords": {"en": keywords[0], "de": keywords[1]},
@@ -35,6 +36,9 @@ def A(id, group, icon, title, keywords, summary, steps, options=(), tips=(), see
         a["options"] = {"en": [[o[0], o[1]] for o in options], "de": [[o[2], o[3]] for o in options]}
     if tips:
         a["tips"] = {"en": tp[0], "de": tp[1]}
+    if sections:
+        a["sections"] = {lang: [[title[i], [item[i] for item in items], numbered] for title, items, numbered in sections]
+                         for i, lang in enumerate(("en", "de"))}
     if caption:
         a["caption"] = {"en": caption[0], "de": caption[1]}
     ARTICLES.append(a)
@@ -85,6 +89,189 @@ PROFILE = ("Outside a sketch, its closed areas (profiles) are shown light orange
            "Außerhalb einer Skizze sind ihre geschlossenen Flächen (Profile) hellorange. Ein Klick wählt eine aus – sie wird blau.")
 
 # --- Erste Schritte ------------------------------------------------------------------------------------------------
+# Überblick: alles, was MyCAD kann (zuerst in der Gruppe, damit man es findet)
+A("start_overview", "start", "MyCAD_Search", ("What MyCAD can do", "Was MyCAD alles kann"),
+  (["overview", "features", "what can", "everything", "capabilities", "new", "tour"],
+   ["Überblick", "Funktionen", "was kann", "alles", "Möglichkeiten", "neu", "Rundgang"]),
+  ("Everything MyCAD can do on one page. Each part has its own article: search for its name above or click it under See also.",
+   "Alles, was MyCAD kann, auf einer Seite. Zu jedem Teil gibt es einen eigenen Artikel: such oben nach dem Namen oder klick ihn unter Siehe auch an."),
+  [],
+  sections=[
+    (("Sketch and model", "Skizzieren und modellieren"), [
+      ("Sketch on a plane or face; every closed area is a profile you can extrude, revolve, sweep or loft.",
+       "Skizziere auf einer Ebene oder Fläche; jede geschlossene Fläche ist ein Profil zum Extrudieren, Drehen, Sweepen oder für eine Erhebung."),
+      ("Create: Extrude, Revolve, Sweep, Loft, Rib, Web, Emboss, Box, Cylinder, Sphere, Torus, Coil, Hole, Screw Here, Thread, Pattern, Mirror.",
+       "Erstellen: Extrudieren, Drehen, Sweep, Erhebung, Rippe, Steg, Prägen, Quader, Zylinder, Kugel, Torus, Spirale, Bohrung, Schraube hier, Gewinde, Muster, Spiegeln."),
+      ("Modify: Press Pull, Fit, Remove Face, Replace Face, Split Face, Fillet, Chamfer, Shell, Draft, Combine, Split Body, Move, Align, Scale.",
+       "Ändern: Drücken/Ziehen, Passung, Fläche entfernen, Fläche ersetzen, Fläche teilen, Abrunden, Fase, Wandstärke, Formschräge, Kombinieren, Körper teilen, Verschieben, Ausrichten, Skalieren."),
+      ("Holes by standard (ISO metric, fine, UNC, UNF) with the right counterbore or countersink; real, printable threads.",
+       "Bohrungen nach Norm (ISO metrisch, fein, UNC, UNF) mit passender Senkung; echte, druckbare Gewinde."),
+      ("Every step lands in the timeline: go back, change it, reorder by dragging, group steps.",
+       "Jeder Schritt landet in der Zeitleiste: zurückgehen, ändern, per Ziehen umsortieren, Schritte gruppieren."),
+    ], False),
+    (("Change sizes the easy way", "Maße einfach ändern"), [
+      ("Tap a face with no tool active: the sizes that make it appear next to it. Type a number, press Enter.",
+       "Tipp ohne Werkzeug auf eine Fläche: die Maße, die sie erzeugen, erscheinen daneben. Zahl tippen, Enter."),
+      ("Notes calculate (120 / 4 =) and are your parameter list: a line like Wall = 2 mm is a parameter for every size field, both ways.",
+       "Notizen rechnen (120 / 4 =) und sind deine Parameterliste: eine Zeile wie Wand = 2 mm ist ein Parameter für jedes Maßfeld, in beide Richtungen."),
+      ("Errors explain themselves and offer a value that works, e.g. the largest fillet radius that fits.",
+       "Fehler erklären sich und schlagen einen Wert vor, der geht, z. B. den größten Radius, der passt."),
+      ("Ctrl+K finds every command, body and sketch, also with typos and German words.",
+       "Strg+K findet jeden Befehl, Körper und jede Skizze, auch mit Tippfehlern und englischen Begriffen."),
+    ], False),
+    (("Draw and write", "Zeichnen und schreiben"), [
+      ("Scribble: a drawing sheet with pen pressure, shapes, fill and text; tidy handwriting; sheets on faces in 3D; convert to a sketch.",
+       "Scribble: ein Zeichenblatt mit Stiftdruck, Formen, Füllen und Text; ordentliche Handschrift; Blätter auf Flächen in 3D; in eine Skizze umwandeln."),
+      ("Red Pen: write corrections on the model – R2, C2, +5, M5, Ø8, H7, 3×, a size, or a line through a face – and apply them as normal steps.",
+       "Rotstift: Korrekturen aufs Modell schreiben – R2, C2, +5, M5, Ø8, H7, 3×, ein Maß oder ein Strich durch eine Fläche – und als normale Schritte ausführen."),
+    ], False),
+    (("3D printing", "3D-Druck"), [
+      ("Print View marks overhangs, faces on the bed and thin walls; choose which face lies on the bed.",
+       "Die Druckansicht markiert Überhänge, Flächen auf dem Bett und dünne Wände; du wählst, welche Fläche auf dem Bett liegt."),
+      ("Print opens the design in OrcaSlicer, Bambu Studio, PrusaSlicer or Cura – also as Flatpak or AppImage.",
+       "Drucken öffnet das Design in OrcaSlicer, Bambu Studio, PrusaSlicer oder Cura – auch als Flatpak oder AppImage."),
+      ("Fit makes a hole and its pin fit, for printing or to ISO 286; Screw Here joins two parts with screw, heat-set insert or nut trap.",
+       "Passung macht Bohrung und Welle passend, für den Druck oder nach ISO 286; Schraube hier verschraubt zwei Teile mit Gewinde, Einschmelzmutter oder Mutterfalle."),
+    ], False),
+    (("Never lose anything", "Nichts geht verloren"), [
+      ("Always saved after every step; closing never asks. New designs get their own folder in the projects folder.",
+       "Nach jedem Schritt gespeichert; Schließen fragt nie. Neue Designs bekommen einen eigenen Ordner im Projektordner."),
+      ("Versions of every state: compare them as a ghost over the model, restore without deleting. Ctrl+S gives a state a name.",
+       "Versionen jedes Stands: als Geisterbild über dem Modell vergleichen, zurückholen, ohne etwas zu löschen. Strg+S gibt einem Stand einen Namen."),
+      ("Variants for “what if”: switch in the browser, compare, make one the main design.",
+       "Varianten für „was wäre wenn“: im Browser umschalten, vergleichen, eine zum Hauptdesign machen."),
+    ], False),
+    (("Assemblies", "Baugruppen"), [
+      ("Components with joints: rigid, revolute, slider, cylindrical, pin-slot, planar, ball; limits, animation and collisions.",
+       "Komponenten mit Gelenken: starr, Drehung, Schieberegler, zylindrisch, Stift-Schlitz, planar, Kugel; Grenzen, Animation und Kollisionen."),
+      ("Chains move along; closed loops such as a four-bar linkage are solved together.",
+       "Ketten fahren mit; geschlossene Ketten wie ein Viergelenk werden zusammen gelöst."),
+      ("Measure shows mass, material and centre of mass.", "Messen zeigt Masse, Werkstoff und Schwerpunkt."),
+    ], False),
+    (("Look and feel", "Aussehen und Bedienung"), [
+      ("Liquid Glass interface, light and dark, English or German; 119 materials with photo scans, reflections and contact shadow.",
+       "Liquid-Glass-Oberfläche, hell und dunkel, Deutsch oder Englisch; 119 Materialien mit Fotoscans, Spiegelungen und Kontaktschatten."),
+      ("12 navigation styles, keys as mouse buttons, pen tablets with pressure; export STL, 3MF, STEP and DXF, import STEP, DXF and SVG.",
+       "12 Navigationsstile, Tasten als Maustasten, Grafiktabletts mit Druck; Export als STL, 3MF, STEP und DXF, Import von STEP, DXF und SVG."),
+    ], False),
+  ],
+  see=["start_tutorial_print", "start_tutorial_assembly", "start_shortcuts", "start_first", "start_dimensions", "Design_Note",
+       "Design_RedPen", "Design_PrintView", "Design_Versions", "Design_Joint"])
+
+A("start_tutorial_print", "start", "Design_Print", ("Tutorial: a bracket for 3D printing", "Anleitung: ein Halter für den 3D-Druck"),
+  (["tutorial", "walkthrough", "example", "bracket", "3d print", "learn", "step by step"],
+   ["Anleitung", "Tutorial", "Beispiel", "Halter", "3D-Druck", "lernen", "Schritt für Schritt"]),
+  ("In about 20 minutes you build a mounting plate with rounded corners and two screw holes, drive it from a note, correct it with the Red Pen, check it for printing and send it to your slicer.",
+   "In etwa 20 Minuten baust du eine Montageplatte mit gerundeten Ecken und zwei Schraubenlöchern, steuerst sie über eine Notiz, korrigierst sie mit dem Rotstift, prüfst sie für den Druck und schickst sie an deinen Slicer."),
+  [],
+  sections=[
+    (("1. Sizes in a note", "1. Maße in eine Notiz"), [
+      ("On the start page click New Design. From now on MyCAD saves by itself.",
+       "Klicke auf der Startseite auf Neues Design. Ab jetzt speichert MyCAD von selbst."),
+      ("In the toolbar, UTILITIES section, click Note and type, pressing Enter after each line: Width = 60 mm, Depth = 30 mm, Thickness = 4 mm.",
+       "Klicke in der Werkzeugleiste im Bereich WERKZEUGE auf Notiz und tippe, mit Enter nach jeder Zeile: Breite = 60 mm, Tiefe = 30 mm, Dicke = 4 mm."),
+      ("Each line is now a parameter you can type into any size field.",
+       "Jede Zeile ist jetzt ein Parameter, den du in jedes Maßfeld tippen kannst."),
+    ], True),
+    (("2. Sketch and body", "2. Skizze und Körper"), [
+      ("Create Sketch (S) and click the XY plane. Draw a rectangle.",
+       "Skizze erstellen (S) und die XY-Ebene anklicken. Ein Rechteck zeichnen."),
+      ("With Dimension click one side and type Width, the other side Depth. Finish the sketch.",
+       "Mit Bemaßung eine Seite anklicken und Breite tippen, die andere Seite Tiefe. Skizze fertig stellen."),
+      ("Extrude (E), click the rectangle, type Thickness as distance, click OK.",
+       "Extrudieren (E), das Rechteck anklicken, als Abstand Dicke tippen, OK."),
+    ], True),
+    (("3. Tap a face, change a number", "3. Fläche antippen, Zahl ändern"), [
+      ("With no tool active, click the top face. A card shows the distance; type 6 and press Enter.",
+       "Ohne Werkzeug die Oberseite anklicken. Eine Karte zeigt den Abstand; 6 tippen und Enter."),
+      ("The plate gets thicker and the note now says Thickness = 6 mm. It works the other way round too: change Width in the note, click into the view.",
+       "Die Platte wird dicker, und in der Notiz steht jetzt Dicke = 6 mm. Andersherum geht es auch: Breite in der Notiz ändern, in die Ansicht klicken."),
+    ], True),
+    (("4. Round the corners", "4. Ecken runden"), [
+      ("Ctrl+click the four vertical edges, Fillet (F), radius 3, OK.",
+       "Die vier senkrechten Kanten mit Strg+Klick wählen, Abrunden (F), Radius 3, OK."),
+      ("Try a radius that is too big: the step turns red and the panel offers one that fits.",
+       "Probier einen zu großen Radius: der Schritt wird rot, und das Panel bietet einen an, der passt."),
+    ], True),
+    (("5. Correct with the Red Pen", "5. Mit dem Rotstift korrigieren"), [
+      ("UTILITIES, the small arrow next to Scribble, Red Pen.", "WERKZEUGE, der kleine Pfeil neben Scribble, Rotstift."),
+      ("Write Ø4.5 twice on the top face where the holes go, and C1 next to a long top edge.",
+       "Schreib zweimal Ø4,5 auf die Oberseite, wo die Löcher hin sollen, und C1 neben eine obere Längskante."),
+      ("Click Apply Corrections. Point at a card to see its target, Show to try it, Apply or Apply All to keep it.",
+       "Klicke auf Korrekturen ausführen. Zeig auf eine Karte, um ihr Ziel zu sehen, Zeigen probiert es aus, Ausführen oder Alle ausführen behält es."),
+    ], True),
+    (("6. Check, keep, print", "6. Prüfen, festhalten, drucken"), [
+      ("INSPECT → Print View: red stripes are overhangs, green dots lie on the bed, yellow cross-hatching is a wall that is too thin.",
+       "PRÜFEN → Druckansicht: rote Streifen sind Überhänge, grüne Punkte liegen auf dem Bett, gelbe Kreuzschraffur ist eine zu dünne Wand."),
+      ("Ctrl+S (Save Version) and name the state, e.g. First print.", "Strg+S (Version sichern) und dem Stand einen Namen geben, z. B. Erster Druck."),
+      ("Print in the legend opens the plate in your slicer, right side down.", "Drucken in der Legende öffnet die Platte in deinem Slicer, richtig herum."),
+      ("Later: FILE → Versions → First print → Compare shows what changed since then.",
+       "Später: DATEI → Versionen → Erster Druck → Vergleichen zeigt, was sich seitdem geändert hat."),
+    ], True),
+  ],
+  see=["start_overview", "Design_Note", "start_dimensions", "Design_RedPen", "Design_PrintView", "Design_Print", "Design_Versions"])
+
+A("start_tutorial_assembly", "start", "Design_Joint", ("Tutorial: an assembly with joints", "Anleitung: eine Baugruppe mit Gelenken"),
+  (["tutorial", "assembly", "joint", "lever", "four-bar", "linkage", "screw", "example"],
+   ["Anleitung", "Baugruppe", "Gelenk", "Hebel", "Viergelenk", "Mechanismus", "Schraube", "Beispiel"]),
+  ("A lever that turns on a base plate, two parts screwed together in one click, and a closed four-bar linkage.",
+   "Ein Hebel, der sich auf einer Grundplatte dreht, zwei Teile mit einem Klick verschraubt, und ein geschlossenes Viergelenk."),
+  [],
+  sections=[
+    (("1. Base and lever", "1. Grundplatte und Hebel"), [
+      ("Build a base plate in the design itself; it never moves.", "Bau eine Grundplatte im Design selbst; sie bewegt sich nie."),
+      ("ASSEMBLE → New Component, then build a lever with a hole in it. It belongs to the new component.",
+       "ZUSAMMENFÜGEN → Neue Komponente, dann einen Hebel mit Loch bauen. Er gehört zur neuen Komponente."),
+    ], True),
+    (("2. Joint", "2. Gelenk"), [
+      ("Joint (J): first click the hole of the lever, then the place on the base it should sit.",
+       "Gelenk (J): zuerst die Bohrung des Hebels anklicken, dann die Stelle auf der Grundplatte, an die er soll."),
+      ("Type Revolute; turn it with Angle. Tick Keep angle and distance within limits for a range, then Animate; Show collisions reports parts that touch.",
+       "Typ Drehung; mit Winkel drehen. Für einen Bereich Winkel und Weg in Grenzen halten anhaken, dann Animieren; Kollisionen zeigen meldet Teile, die sich berühren."),
+    ], True),
+    (("3. Screw two parts together", "3. Zwei Teile verschrauben"), [
+      ("Lay a second plate on the first and click its top face where the screw goes.",
+       "Leg eine zweite Platte auf die erste und klicke ihre Oberseite an, wo die Schraube hin soll."),
+      ("CREATE → arrow next to Hole → Screw Here. Choose screw, size and what holds it at the bottom: tapped hole, heat-set insert or nut trap.",
+       "ERSTELLEN → Pfeil neben Bohrung → Schraube hier. Schraube, Größe und was sie unten hält wählen: Gewindebohrung, Einschmelzmutter oder Mutterfalle."),
+    ], True),
+    (("4. A closed loop", "4. Eine geschlossene Kette"), [
+      ("Join crank, coupler and rocker one after another with Revolute joints, the crank to the base.",
+       "Kurbel, Koppel und Schwinge nacheinander mit Drehgelenken verbinden, die Kurbel an die Grundplatte."),
+      ("Turn the parts roughly the way the linkage should sit, then give the rocker a second joint back to the base.",
+       "Dreh die Teile grob so, wie das Viergelenk sitzen soll, und gib der Schwinge dann ein zweites Gelenk zurück zur Grundplatte."),
+      ("Now the first joint drives the whole chain with its angle; the others follow.",
+       "Jetzt treibt das erste Gelenk die ganze Kette mit seinem Winkel; die anderen folgen."),
+    ], True),
+    (("5. Fit and weight", "5. Passung und Gewicht"), [
+      ("Select a hole and its pin, MODIFY → arrow next to Press Pull → Fit: 3D print normal, or H7/g6 for the workshop.",
+       "Bohrung und Bolzen wählen, ÄNDERN → Pfeil neben Drücken/Ziehen → Passung: 3D-Druck normal, oder H7/g6 für die Werkstatt."),
+      ("Select a body, Measure: volume, mass, material and centre of mass.", "Körper wählen, Messen: Volumen, Masse, Werkstoff und Schwerpunkt."),
+    ], True),
+  ],
+  see=["start_overview", "Design_NewComponent", "Design_Joint", "Design_Fastener", "Design_Fit", "Design_Measure"])
+
+A("start_shortcuts", "start", "Std_ViewFitAll", ("Keyboard shortcuts", "Tastenkürzel"),
+  (["shortcut", "keyboard", "keys", "hotkey", "accelerator"], ["Tastenkürzel", "Tastatur", "Tasten", "Kurzbefehl"]),
+  ("The keys that save the most time.", "Die Tasten, die am meisten Zeit sparen."),
+  [],
+  options=[("Ctrl+K", "Search commands, bodies and sketches", "Strg+K", "Befehle, Körper und Skizzen suchen"),
+           ("Ctrl+S", "Save Version (with a name)", "Strg+S", "Version sichern (mit Namen)"),
+           ("Ctrl+Z / Ctrl+Shift+Z", "Undo / Redo", "Strg+Z / Strg+Umschalt+Z", "Rückgängig / Wiederherstellen"),
+           ("Ctrl+N / Ctrl+O", "New design / Open", "Strg+N / Strg+O", "Neues Design / Öffnen"),
+           ("S", "Create Sketch", "S", "Skizze erstellen"),
+           ("E", "Extrude (in a scribble: eraser)", "E", "Extrudieren (im Scribble: Radierer)"),
+           ("F", "Fillet", "F", "Abrunden"),
+           ("H", "Hole", "H", "Bohrung"),
+           ("Q", "Press Pull", "Q", "Drücken/Ziehen"),
+           ("M", "Move", "M", "Verschieben"),
+           ("J", "Joint", "J", "Gelenk"),
+           ("V / L / Tab", "In a scribble: Select / look straight at the sheet / Only the Sheet",
+            "V / L / Tab", "Im Scribble: Auswählen / gerade aufs Blatt sehen / Nur das Blatt"),
+           ("Esc", "Put the tool away, leave a note or scribble", "Esc", "Werkzeug weglegen, Notiz oder Scribble verlassen"),
+           ("Ctrl+,", "Settings", "Strg+,", "Einstellungen")],
+  see=["start_overview", "start_navigation", "settings"])
+
 A("start_first", "start", "Std_New", ("Your first design", "Dein erstes Design"),
   (["start", "beginner", "tutorial", "first steps", "how to", "overview"], ["Start", "Anfänger", "Anleitung", "erste Schritte", "wie", "Überblick"]),
   ("In MyCAD you draw a flat sketch, then turn its closed areas into solid bodies – just like in Fusion 360. This walkthrough builds a simple block.",
@@ -106,8 +293,8 @@ A("start_first", "start", "Std_New", ("Your first design", "Dein erstes Design")
    ("Drag the blue arrow upwards, or type a value into Distance in the panel on the right, e.g. 20 mm.",
     "Ziehe den blauen Pfeil nach oben oder tippe im Panel rechts bei Abstand einen Wert ein, z. B. 20 mm."),
    OK,
-   ("Save with Ctrl+S (or FILE → Save). The first time you choose a name; designs in your projects folder appear on the start page.",
-    "Speichere mit Strg+S (oder DATEI → Speichern). Beim ersten Mal wählst du einen Namen; Designs im Projektordner erscheinen auf der Startseite.")],
+   ("You don't need to save: MyCAD saves after every step, and the new design gets its own folder in your projects folder, so it shows up on the start page. Ctrl+S gives the current state a name as a version.",
+    "Speichern musst du nicht: MyCAD speichert nach jedem Schritt, und das neue Design bekommt einen eigenen Ordner im Projektordner, so erscheint es auf der Startseite. Strg+S gibt dem jetzigen Stand als Version einen Namen.")],
   tips=[EDIT_LATER,
         ("Hold the mouse over any tool for its name, and press F1 to open its help page.",
          "Halte die Maus über ein Werkzeug, um seinen Namen zu sehen, und drücke F1 für seine Hilfeseite."),
@@ -224,8 +411,8 @@ A("file_basics", "file", "Std_Save", ("Designs and files", "Designs und Dateien"
     "Start unten in der Seitenleiste öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Zurück zum Design an derselben Stelle bringt dich zurück."),
    ("The sidebar button next to the name MyCAD hides the browser for more room; it then moves to the top left corner and shows it again.",
     "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus; er rückt dann in die Ecke oben links und blendet ihn dort wieder ein."),
-   ("Right-click the design name at the top of the browser (left) for Save, Save As…, Export…, Rename, Close and Delete….",
-    "Rechtsklick auf den Designnamen ganz oben im Browser (links) bietet Speichern, Speichern unter…, Exportieren…, Umbenennen, Schließen und Löschen…."),
+   ("Right-click the design name at the top of the browser (left) for Save Version, Save As…, Export…, Variants, Rename, Close and Delete….",
+    "Rechtsklick auf den Designnamen ganz oben im Browser (links) bietet Version sichern, Speichern unter…, Exportieren…, Varianten, Umbenennen, Schließen und Löschen…."),
    ("Delete… asks first. A saved file goes to the trash, so you can still get it back there.",
     "Löschen… fragt vorher nach. Eine gespeicherte Datei kommt in den Papierkorb, du holst sie dort also noch zurück.")],
   tips=[("Choose the projects folder in Settings → General → Projects folder; new designs get their own folder there.",
@@ -1055,6 +1242,8 @@ A("settings", "utilities", "MyCAD_Settings", ("Settings", "Einstellungen"),
     "Materialien und Licht: Körpermaterial für neue Körper und Schalter für Realistische Materialien, Spiegelungen, Relief und Hirnholz und Kontaktschatten."),
    ("Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart) and Projects folder.",
     "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart) und Projektordner."),
+   ("3D printing: Export resolution (how fine curves become in STL and 3MF), 3D print clearance for the Fit tool (tight, normal, loose), and Overhang angle and Minimum wall for the Print View.",
+    "3D-Druck: Export-Auflösung (wie fein Rundungen in STL und 3MF werden), Spiel beim 3D-Druck für die Passung (eng, normal, locker) sowie Überhang-Winkel und kleinste Wand für die Druckansicht."),
    ("Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
     "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen."),
    ("View: Camera, Rotate, Rotate around and Animate view changes.",

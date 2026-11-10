@@ -11,7 +11,7 @@ The workflow of Fusion 360 with the look of Liquid Glass. Built for Linux.
 
 ![MyCAD workspace](docs/images/workspace.png)
 
-**[Wiki](https://github.com/HanreichC/MyCAD/wiki)** · [Everything MyCAD can do](https://github.com/HanreichC/MyCAD/wiki/Funktionsuebersicht) · [Tutorial](https://github.com/HanreichC/MyCAD/wiki/Tutorial-Erstes-Teil) · [Download](https://github.com/HanreichC/MyCAD/releases/latest)
+**[Wiki](https://github.com/HanreichC/MyCAD/wiki)** · [Everything MyCAD can do](https://github.com/HanreichC/MyCAD/wiki/Features) · [Tutorial](https://github.com/HanreichC/MyCAD/wiki/Tutorial-3D-Printed-Bracket) · [Download](https://github.com/HanreichC/MyCAD/releases/latest)
 
 </div>
 
@@ -283,7 +283,7 @@ The scribble math runs without FreeCAD. [`tests/scribble_tidy_check.cpp`](tests/
 
 All tests at once, inside the container: `GUI=ci tests/run_all.sh` (logic checks without FreeCAD, headless model tests, GUI tests).
 
-The roadmap is in [`docs/PLAN.md`](docs/PLAN.md). The [wiki](https://github.com/HanreichC/MyCAD/wiki) explains every feature and has tutorials; its pages also live in [`docs/wiki/`](docs/wiki).
+The roadmap is in [`docs/PLAN.md`](docs/PLAN.md). The [wiki](https://github.com/HanreichC/MyCAD/wiki) explains every feature and has tutorials; its pages also live in [`docs/wiki/`](docs/wiki). Inside the app, the built-in help (**?** at the bottom left, source in [`tools/help_content.py`](tools/help_content.py)) covers every tool in English and German, with an overview and two tutorials under Getting Started.
 
 <br>
 

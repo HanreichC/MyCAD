@@ -48,20 +48,32 @@ def content():
     data = json.load(open("/workspace/src/Gui/Shell/help/help.json"))
     problems = []
     for a in data["articles"]:
-        for field in ("title", "summary", "steps"):
+        for field in ("title", "summary"):
             for lang in ("en", "de"):
                 if not a.get(field, {}).get(lang):
                     problems.append("%s: %s/%s fehlt" % (a["id"], field, lang))
+        for lang in ("en", "de"):  # Inhalt: Schritte, Abschnitte (Überblick, Anleitungen) oder eine Tabelle (Tastenkürzel)
+            if not any(a.get(f, {}).get(lang) for f in ("steps", "sections", "options")):
+                problems.append("%s: kein Inhalt auf %s" % (a["id"], lang))
         for img in a.get("images", []):
             if not os.path.exists("/workspace/src/Gui/Shell/help/images/" + img["file"]):
                 problems.append("%s: Bild %s fehlt" % (a["id"], img["file"]))
     L("Artikel=%d Probleme=%s" % (len(data["articles"]), problems[:20]))
+    check("every article has title, summary and content in both languages", not problems, str(problems[:5]))
+
+
+def article_text():
+    return page().findChild(QtWidgets.QTextBrowser, "HelpArticle").document().toPlainText()
 
 
 run([
     ("content", content),
     ("help button", lambda: click([b for b in visible(QtWidgets.QToolButton) if b.toolTip().startswith("Help")][0])),
     ("wait", lambda: None), ("opened", lambda: (report("?-Knopf"), shot("help"))),
+    ("overview", lambda: search("what MyCAD can do")), ("wait", lambda: None),
+    ("sections", lambda: check("the overview shows its sections", article_title() == "What MyCAD can do"
+                               and "Sketch and model" in article_text() and "3D printing" in article_text(), article_title())),
+    ("shot overview", lambda: shot("overview")),
     ("search", lambda: search("donut")), ("searched", lambda: (report("nach Suche + Enter"), shot("revolve"))),
     ("hover", f1_over_extrude), ("wait", lambda: None), ("f1", press_f1), ("wait", lambda: None),
     ("after f1", lambda: report("F1 über Extrude")),

@@ -2233,6 +2233,16 @@ a { color: %3; text-decoration: none; }
             }
             html += numbered ? QStringLiteral("</ol>") : QStringLiteral("</ul>");
         };
+        // Abschnitte mit eigener Überschrift (Überblick, Anleitungen in Kapiteln)
+        for (const QJsonValue s : localized(a, "sections").toArray()) {
+            const QJsonArray section = s.toArray();
+            const bool numbered = section.at(2).toBool();
+            html += QStringLiteral("<h3>%1</h3>").arg(esc(section.at(0).toString())) + (numbered ? QStringLiteral("<ol>") : QStringLiteral("<ul>"));
+            for (const QJsonValue item : section.at(1).toArray()) {
+                html += QStringLiteral("<li>%1</li>").arg(esc(item.toString()));
+            }
+            html += numbered ? QStringLiteral("</ol>") : QStringLiteral("</ul>");
+        }
         list("steps", T("How to use it"), true);
         const QJsonArray options = localized(a, "options").toArray();
         if (!options.isEmpty()) {
@@ -2277,6 +2287,12 @@ a { color: %3; text-decoration: none; }
             QString haystack = localized(a, "title").toString() + QLatin1Char(' ') + localized(a, "summary").toString();
             for (const char* field : {"keywords", "steps", "tips"}) {
                 for (const QJsonValue v : localized(a, field).toArray()) {
+                    haystack += QLatin1Char(' ') + v.toString();
+                }
+            }
+            for (const QJsonValue s : localized(a, "sections").toArray()) {
+                haystack += QLatin1Char(' ') + s.toArray().at(0).toString();
+                for (const QJsonValue v : s.toArray().at(1).toArray()) {
                     haystack += QLatin1Char(' ') + v.toString();
                 }
             }
