@@ -4,6 +4,8 @@ import os
 import FreeCAD as App, FreeCADGui as Gui, Part
 from PySide6 import QtCore, QtWidgets, QtTest
 
+# Immer gespeichert (Idee 7) stört den festen Takt der Tests: aus, test_versions_ui schaltet es gezielt ein
+App.ParamGet("User parameter:BaseApp/Preferences/MyCAD").SetBool("AlwaysSave", False)
 mw = Gui.getMainWindow()
 mw.resize(1500, 950)
 _log = open(os.environ["OUT"] + ".txt", "w")
@@ -197,7 +199,8 @@ def activate():
 
 def in_order(steps, delay=1200):
     """Schritte nacheinander statt im festen Takt von run(): nötig, wenn ein Schritt länger dauert (Tippen)"""
-    steps = [("design", lambda: App.ActiveDocument or Gui.runCommand("Std_New"))] + list(steps)
+    start = [] if START_PAGE else [("design", lambda: App.ActiveDocument or Gui.runCommand("Std_New"))]
+    steps = start + list(steps) + [("shot", lambda: mw.grab().save(os.environ["OUT"] + ".png"))]
 
     def next_step():
         if not steps:

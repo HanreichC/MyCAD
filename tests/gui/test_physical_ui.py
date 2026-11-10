@@ -31,7 +31,8 @@ def select_box():
     Gui.Selection.addSelection(body("Box"))
 
 
-run([
+# in_order: jeder Schritt wartet, bis der vorige fertig ist (Kamera-Animation, Dateidialog, Materialvorschauen)
+in_order([
     ("setup", lambda: make_body(rect(0, 0, 100, 100), 0, 100, "Box")),
     ("select", select_box),
     ("appearance", lambda: click(button("Design_Appearance"))),

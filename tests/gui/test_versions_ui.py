@@ -11,6 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(harness.__file__), "..", "design"))
 import design  # noqa: E402
 import DesignVersions  # noqa: E402
 
+App.ParamGet("User parameter:BaseApp/Preferences/MyCAD").SetBool("AlwaysSave", True)  # harness schaltet es aus
 state = {}
 wait = ("wait", lambda: None)
 

@@ -67,7 +67,8 @@ def store():
     shutil.copy(FILE, os.path.join(FOLDER, "Legacy.FCStd"))  # Design aus der Zeit vor .mycad
 
 
-run([
+# in_order: jeder Schritt wartet, bis der vorige fertig ist (Kamera-Animation, Dateidialog, Materialvorschauen)
+in_order([
     ("start", lambda: report("beim Start")),
     ("version", lambda: L("version shown=%s" % bool([l for l in page().findChildren(QtWidgets.QLabel, "Hint")
                                                     if re.search(r"MyCAD \d{4}\.\d\d\.\d\d · [0-9a-f]{7}", l.text())]))),

@@ -110,6 +110,7 @@
 #include <QScreen>
 #include <QStyleHints>
 #include <QTimer>
+#include <QThread>
 #include <QToolBar>
 #include <QToolButton>
 #include <algorithm>
@@ -4025,8 +4026,10 @@ void startAlwaysSave()
     auto timer = new QTimer(getMainWindow());
     timer->setInterval(1000);
     QObject::connect(timer, &QTimer::timeout, timer, [] {
+        // nur in der Hauptschleife: in einer verschachtelten (Kamera-Animation, Dialog) würde das Speichern samt
+        // Vorschaubild mitten in die laufende Darstellung greifen
         if (!alwaysSave() || Control().activeDialog() || QApplication::mouseButtons() != Qt::NoButton
-            || QApplication::activeModalWidget()) {
+            || QApplication::activeModalWidget() || QThread::currentThread()->loopLevel() > 1) {
             return;
         }
         const qint64 now = QDateTime::currentMSecsSinceEpoch();
