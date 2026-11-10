@@ -9,7 +9,9 @@
 #include <Gui/BitmapFactory.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
+#include <Gui/MainWindow.h>
 #include <Gui/QuantitySpinBox.h>
+#include <Gui/Selection/Selection.h>
 #include <Gui/ViewProviderDocumentObject.h>
 #include <Mod/Sketcher/App/SketchObject.h>
 #include <Gui/TaskView/TaskDialog.h>
@@ -20,7 +22,9 @@
 #include <QFormLayout>
 #include <QLabel>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QSpinBox>
+#include <QTimer>
 #include <cstring>
 #include <regex>
 #include <QLineEdit>
@@ -341,6 +345,72 @@ protected:
     }
 };
 
+/// Wartet im Feature-Dialog auf einen Klick auf eine Fläche, Kante oder Ebene und setzt damit einen Bezug.
+/// Körperflächen werden auf den Timeline-Zustand vor diesem Feature umgehängt (sonst hinge das Feature an sich selbst).
+class ReferencePicker: public Gui::SelectionObserver
+{
+public:
+    /// context: läuft der verzögerte Abschluss erst, nachdem der Dialog zu ist, fällt er mit context weg
+    ReferencePicker(Design::Feature* feature, App::PropertyLinkSub* link, QObject* context, std::function<void()> done)
+        : feature(feature)
+        , link(link)
+        , context(context)
+        , done(std::move(done))
+    {
+        Gui::getMainWindow()->showMessage(T("Click a face or plane…"));
+    }
+
+private:
+    void onSelectionChanged(const Gui::SelectionChanges& msg) override
+    {
+        if (msg.Type != Gui::SelectionChanges::AddSelection) {
+            return;
+        }
+        App::DocumentObject* obj = msg.Object.getSubObject();
+        std::string element = msg.Object.getOldElementName();
+        if (!obj) {
+            return;
+        }
+        // Ein Body, den dieses Feature selbst verändert: Fläche im Zustand davor suchen
+        const auto& bodies = feature->Bodies.getValues();
+        const auto& bases = feature->BaseFeatures.getValues();
+        const auto idx = std::ranges::find(bodies, obj) - bodies.begin();
+        if (idx < static_cast<long>(bases.size()) && !element.empty()) {
+            auto base = freecad_cast<Design::Feature*>(bases[idx]);
+            const TopoDS_Shape sub = static_cast<Design::Body*>(obj)->Shape.getShape().getSubShape(element.c_str(), true);
+            const std::string name = base ? Design::elementName(base->shapeFor(obj).getShape(), sub) : std::string();
+            if (name.empty()) {
+                Gui::getMainWindow()->showMessage(T("Pick a face that exists before this feature"));
+                return;
+            }
+            obj = base;
+            element = name;
+        }
+        else {
+            Design::stableRef(obj, element);
+        }
+        if (obj == feature) {
+            return;
+        }
+        const App::DocumentObjectT target(obj);
+        auto finish = done;
+        auto property = link;
+        // Nicht im Selektions-Callback rechnen; done() löscht diesen Picker
+        QTimer::singleShot(0, context, [target, element, finish, property] {
+            Gui::Selection().clearSelection();
+            if (auto o = target.getObject()) {
+                property->setValue(o, std::vector<std::string> {element});
+                finish();
+            }
+        });
+    }
+
+    Design::Feature* feature;
+    App::PropertyLinkSub* link;
+    QObject* context;
+    std::function<void()> done;
+};
+
 /// Dialog für alle Features im Inspector. Läuft in einer eigenen Transaktion: Abbrechen macht alles rückgängig.
 /// Extrude/Revolve haben zusätzlich Operation (New Body/Join/Cut/Intersect) und Ziel-Body.
 class TaskFeature: public Gui::TaskView::TaskDialog
@@ -367,7 +437,7 @@ public:
 
         if (extrude) {
             extent = new QComboBox;
-            extent->addItems({T("One Side"), T("Symmetric"), T("Two Sides")});
+            extent->addItems({T("One Side"), T("Symmetric"), T("Two Sides"), T("To Object"), T("All")});
             extent->setCurrentIndex(extrude->Extent.getValue());
             distance = quantityBox(Base::Unit::Length, extrude->Distance.getValue());
             bindExpression(distance, &extrude->Distance);
@@ -449,6 +519,9 @@ public:
             form->addRow(T("Mirror plane"), axis);
             QObject::connect(axis, &QComboBox::currentIndexChanged, [this] { apply(); });
         }
+        if (hole && generic) {
+            addParameterRows();  // Norm, Größe, Art zuerst: sie bestimmen die Maße darunter
+        }
         if (hole) {
             holeType = new QComboBox;
             holeType->addItems({T("Simple"), T("Counterbore"), T("Countersink")});
@@ -529,7 +602,7 @@ public:
             }
             QObject::connect(sinkAngle, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
         }
-        if (generic) {
+        if (generic && !hole) {
             addParameterRows();
         }
         if (check) {
@@ -691,6 +764,7 @@ private:
                 distance->setValue(Base::Quantity(extrude && flip->isChecked() ? -d : d, Base::Unit::Length));
             }
         );
+        arrow->setVisible(distance->isVisibleTo(distance->parentWidget()));
     }
 
     void setupOperation(Design::Body* target)
@@ -784,14 +858,13 @@ private:
                 newComponent = Design::newComponent(Design::componentOf(feature));
             }
             if (!newBody) {
-                const auto count = doc->getObjectsOfType(Design::Body::getClassTypeId()).size();
-                newBody = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
-                newBody->Label.setValue("Body" + std::to_string(count + 1));
-                Design::folder(newComponent ? newComponent : Design::componentOf(feature), "Bodies")->addObject(newBody);
+                newBody = Design::newBody(feature, newComponent);
             }
-            feature->Bodies.setValues({newBody});
-            feature->BaseFeatures.setValues({});
-            newBody->Tip.setValue(feature);
+            else {
+                feature->Bodies.setValues({newBody});
+                feature->BaseFeatures.setValues({});
+                newBody->Tip.setValue(feature);
+            }
         }
         else {
             if (newBody) {
@@ -954,11 +1027,52 @@ private:
                 });
                 field = box;
             }
+            else if (auto link = freecad_cast<App::PropertyLinkSub*>(prop)) {
+                field = referenceButton(link);
+            }
             if (field) {
                 form->addRow(label, field);
                 paramRows.emplace_back(prop, field);
             }
         }
+    }
+
+    /// Bezugszeile: der Knopf zeigt den Bezug; gedrückt wartet er auf einen Klick auf Fläche, Kante oder Ebene.
+    /// Wird die Zeile sichtbar und ist noch leer, wartet sie gleich (wie Fusion bei "To Object").
+    QPushButton* referenceButton(App::PropertyLinkSub* link)
+    {
+        auto button = new QPushButton;
+        button->setCheckable(true);
+        button->setAutoDefault(false);
+        const auto text = [link, button] {
+            App::DocumentObject* obj = link->getValue();
+            const auto& subs = link->getSubValues();
+            button->setText(button->isChecked() ? T("Click a face or plane…")
+                            : !obj             ? T("Select")
+                                               : QString::fromUtf8(obj->Label.getValue())
+                                                     + (subs.empty() || subs.front().empty()
+                                                            ? QString()
+                                                            : QStringLiteral(" · ") + QString::fromStdString(subs.front())));
+        };
+        text();
+        QObject::connect(button, &QPushButton::toggled, button, [this, link, button, text](bool on) {
+            picker.reset();
+            if (on) {
+                for (auto& [other, b] : referenceButtons) {
+                    if (b != button && b->isChecked()) {
+                        b->setChecked(false);
+                    }
+                }
+                Gui::Selection().clearSelection();
+                picker = std::make_unique<ReferencePicker>(feature, link, button, [this, button] {
+                    button->setChecked(false);
+                    apply();
+                });
+            }
+            text();
+        });
+        referenceButtons.emplace_back(link, button);
+        return button;
     }
 
     void showRow(QWidget* field, bool show)
@@ -978,9 +1092,13 @@ private:
             extrude->Distance.setValue(std::abs(d));
             extrude->Distance2.setValue(std::abs(distance2->value().getValue()));
             extrude->Reversed.setValue(flip->isChecked() != (d < 0));
-            const bool twoSides = extent->currentIndex() == 2;
-            distance2->setVisible(twoSides);
-            form->labelForField(distance2)->setVisible(twoSides);
+            const int ext = extent->currentIndex();
+            const bool byDistance = ext != Design::Extrude::ExtentToObject && ext != Design::Extrude::ExtentAll;
+            showRow(distance, byDistance);
+            showRow(distance2, ext == Design::Extrude::ExtentTwoSides);
+            if (arrow) {
+                arrow->setVisible(byDistance);  // ohne Abstand gibt es nichts zu ziehen
+            }
         }
         if (revolve) {
             revolve->Axis.setValue(axis->currentIndex());
@@ -1012,14 +1130,26 @@ private:
         if (hole) {
             const int type = holeType->currentIndex();
             hole->HoleType.setValue(type);
-            hole->Diameter.setValue(std::abs(distance->value().getValue()));
             hole->Depth.setValue(std::abs(distance2->value().getValue()));
             hole->ThroughAll.setValue(check->isChecked());
-            hole->HeadDiameter.setValue(std::abs(headDiameter->value().getValue()));
-            hole->HeadDepth.setValue(std::abs(headDepth->value().getValue()));
-            hole->CountersinkAngle.setValue(std::abs(sinkAngle->value().getValue()));
             hole->Reversed.setValue(flip->isChecked());
             distance2->setEnabled(!check->isChecked());
+            // Maße aus der Norm (ReadOnly) zeigen, eigene Maße übernehmen
+            const std::pair<App::PropertyQuantity*, Gui::QuantitySpinBox*> sized[] = {
+                {&hole->Diameter, distance}, {&hole->HeadDiameter, headDiameter},
+                {&hole->HeadDepth, headDepth}, {&hole->CountersinkAngle, sinkAngle}};
+            for (const auto& [prop, box] : sized) {
+                const bool fromStandard = prop->testStatus(App::Property::ReadOnly);
+                if (fromStandard) {
+                    box->blockSignals(true);
+                    box->setValue(prop->getQuantityValue());
+                    box->blockSignals(false);
+                }
+                else {
+                    prop->setValue(std::abs(box->value().getValue()));
+                }
+                box->setEnabled(!fromStandard);
+            }
             showRow(headDiameter, type != 0);
             showRow(headDepth, type == 1);
             showRow(sinkAngle, type == 2);
@@ -1045,6 +1175,34 @@ private:
         }
         for (const auto& [prop, field] : paramRows) {
             showRow(field, !prop->testStatus(App::Property::Hidden));
+            field->setEnabled(!prop->testStatus(App::Property::ReadOnly));
+            // Auswahllisten, die vom Rest abhängen (Größen einer Norm), nachladen
+            auto e = freecad_cast<App::PropertyEnumeration*>(prop);
+            auto box = qobject_cast<QComboBox*>(field);
+            if (e && box) {
+                QStringList items;
+                for (const auto& item : e->getEnumVector()) {
+                    items << T(item.c_str());
+                }
+                QStringList shown;
+                for (int i = 0; i < box->count(); ++i) {
+                    shown << box->itemText(i);
+                }
+                box->blockSignals(true);
+                if (items != shown) {
+                    box->clear();
+                    box->addItems(items);
+                }
+                box->setCurrentIndex(e->getValue());
+                box->blockSignals(false);
+            }
+        }
+        for (auto& [link, button] : referenceButtons) {
+            if (!link->testStatus(App::Property::Hidden) && !link->getValue() && !picker
+                && !button->property("autoStarted").toBool()) {
+                button->setProperty("autoStarted", true);  // nur einmal von selbst, nicht nach jedem Abbrechen
+                QTimer::singleShot(0, button, [button] { button->setChecked(true); });
+            }
         }
         if (generic) {  // Titel folgt z. B. dem Grundkörper-Typ
             if (auto box = form->parentWidget()) {
@@ -1064,6 +1222,8 @@ private:
     Design::Feature* feature;
     bool generic;
     std::vector<std::pair<App::Property*, QWidget*>> paramRows;
+    std::vector<std::pair<App::PropertyLinkSub*, QPushButton*>> referenceButtons;
+    std::unique_ptr<ReferencePicker> picker;
     Design::Extrude* extrude;
     Design::Revolve* revolve;
     Design::DressUp* dressUp;

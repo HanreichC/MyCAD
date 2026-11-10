@@ -6,6 +6,7 @@
 # einem Abzug der laufenden App in beiden Sprachen. Neue Texte bitte genauso gegen die Oberfläche prüfen.
 import json
 import pathlib
+import sys
 
 HELP = pathlib.Path(__file__).resolve().parent.parent / "src/Gui/Shell/help"
 
@@ -198,12 +199,14 @@ A("file_basics", "file", "Std_Save", ("Designs and files", "Designs und Dateien"
     "Rückgängig (Strg+Z) und Wiederherstellen (Strg+Umschalt+Z) gehen in deinen Änderungen zurück und vor."),
    ("Home at the bottom of the sidebar opens the start page: recent designs and your projects folder, with search. Back to Design in the same place brings you back.",
     "Start unten in der Seitenleiste öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Zurück zum Design an derselben Stelle bringt dich zurück."),
+   ("The sidebar button next to the name MyCAD hides the browser for more room; it then moves to the top left corner and shows it again.",
+    "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus; er rückt dann in die Ecke oben links und blendet ihn dort wieder ein."),
    ("Right-click the design name at the top of the browser (left) for Save, Save As…, Export…, Rename, Close and Delete….",
     "Rechtsklick auf den Designnamen ganz oben im Browser (links) bietet Speichern, Speichern unter…, Exportieren…, Umbenennen, Schließen und Löschen…."),
    ("Delete… asks first. A saved file goes to the trash, so you can still get it back there.",
     "Löschen… fragt vorher nach. Eine gespeicherte Datei kommt in den Papierkorb, du holst sie dort also noch zurück.")],
-  tips=[("Choose the projects folder in Settings → View → Projects folder; Save starts there.",
-         "Den Projektordner wählst du in Einstellungen → Ansicht → Projektordner; Speichern beginnt dort.")],
+  tips=[("Choose the projects folder in Settings → General → Projects folder; Save starts there and gives each design its own folder.",
+         "Den Projektordner wählst du in Einstellungen → Allgemein → Projektordner; Speichern beginnt dort und legt für jedes Design einen eigenen Ordner an.")],
   commands=["Std_New", "Std_Open", "Std_Save", "Std_SaveAs", "Std_Undo", "Std_Redo"], see=["Design_Export", "Design_Import"])
 
 A("Design_Import", "file", "Design_Import", ("Insert", "Einfügen"),
@@ -269,9 +272,15 @@ A("Design_Extrude", "create", "Design_Extrude", ("Extrude", "Extrudieren"),
    PANEL,
    ("Drag the blue arrow in the view, or type the length into Distance.", "Ziehe den blauen Pfeil in der Ansicht oder tippe die Länge bei Abstand ein."),
    ("Choose Direction and Operation if needed (see Options).", "Wähle bei Bedarf Richtung und Vorgang (siehe Optionen)."), OK],
-  options=[("Direction", "One Side, Symmetric (half to each side) or Two Sides (Distance and Distance 2).",
-            "Richtung", "Eine Seite, Symmetrisch (je zur Hälfte nach beiden Seiten) oder Zwei Seiten (Abstand und Abstand 2)."),
+  options=[("Direction", "One Side, Symmetric (half to each side), Two Sides (Distance and Distance 2), To Object (up to a face or plane you click) or All (through every body of the design).",
+            "Richtung", "Eine Seite, Symmetrisch (je zur Hälfte nach beiden Seiten), Zwei Seiten (Abstand und Abstand 2), Bis Objekt (bis zu einer Fläche oder Ebene, die du anklickst) oder Alle (durch jeden Körper des Designs)."),
            ("Distance", "How far the profile is pulled; a negative value goes the other way.", "Abstand", "Wie weit das Profil gezogen wird; ein negativer Wert geht in die andere Richtung."),
+           ("To Object", "With To Object the button waits for your click on a face or plane; the body ends exactly there, also on slanted faces.",
+            "Bis Objekt", "Bei Bis Objekt wartet der Knopf auf deinen Klick auf eine Fläche oder Ebene; der Körper endet genau dort, auch an schrägen Flächen."),
+           ("Taper Angle", "Positive values make the body narrower towards the end (draft for casting or printing), negative values wider. Holes in the profile open up accordingly.",
+            "Verjüngungswinkel", "Positive Werte machen den Körper zum Ende hin schmaler (Entformungsschräge zum Gießen oder Drucken), negative breiter. Löcher im Profil öffnen sich entsprechend."),
+           ("Thin wall", "Extrudes only a wall along the edge of the profile: Thickness and Thin Side (Inside, Outside or Center). A circle becomes a tube, a rectangle a frame.",
+            "Dünne Wand", "Extrudiert nur eine Wand entlang des Profilrands: Dicke und Wandseite (Innen, Außen oder Mitte). Aus einem Kreis wird ein Rohr, aus einem Rechteck ein Rahmen."),
            FLIP, OPERATION],
   tips=[("Click a flat face of a body and then Extrude to pull that face out directly, without a sketch.", "Klicke eine ebene Fläche eines Körpers an und dann Extrudieren, um sie direkt ohne Skizze herauszuziehen."),
         ("Two circles inside each other: click only the ring to get a tube instead of a solid cylinder.",
@@ -404,11 +413,20 @@ A("Design_Hole", "create", "Design_Hole", ("Hole", "Bohrung"),
     "Klicke in der Skizzen-Werkzeugleiste im Bereich ERSTELLEN auf Punkt und klicke einmal pro Bohrungsmitte. Lege bei Bedarf Maße fest. Klicke Skizze fertig stellen."),
    ("Select that sketch (click it in the timeline or in the Sketches folder of the browser).", "Wähle diese Skizze aus (in der Zeitleiste oder im Ordner Skizzen im Browser anklicken)."),
    tool("CREATE", ("Hole", "Bohrung"), ("Hole", "Bohrung")), PANEL,
-   ("Choose the Type and type Diameter and Depth (or tick Through all).", "Wähle den Typ und tippe Durchmesser und Tiefe ein (oder hake Durchgehend an)."), OK],
-  options=[("Type", "Simple, Counterbore (cylindrical recess for a screw head) or Countersink (cone for a countersunk screw).",
+   ("Pick a Standard and Size (e.g. ISO metric, M5x0.8) and whether it is a Clearance hole or a Tapped hole – MyCAD fills in the diameters. Without a standard (Custom) you type Diameter yourself.",
+    "Wähle Norm und Größe (z. B. ISO metrisch, M5x0.8) und ob es eine Durchgangsbohrung oder eine Gewindebohrung ist – MyCAD trägt die Durchmesser ein. Ohne Norm (Eigene Maße) tippst du den Durchmesser selbst ein."),
+   ("Choose the Type and the Depth (or tick Through all).", "Wähle den Typ und die Tiefe (oder hake Durchgehend an)."), OK],
+  options=[("Standard, Size", "ISO metric, ISO metric fine, UNC or UNF and the screw size. Custom keeps your own dimensions.",
+            "Norm, Größe", "ISO metrisch, ISO metrisch fein, UNC oder UNF und die Schraubengröße. Eigene Maße lässt deine Maße stehen."),
+           ("Kind", "Clearance hole: the screw slides through (ISO 273). Tapped hole: core hole for the thread, optionally with Modeled thread.",
+            "Art", "Durchgangsbohrung: die Schraube geht hindurch (ISO 273). Gewindebohrung: Kernloch für das Gewinde, auf Wunsch mit Gewinde modellieren."),
+           ("Fit", "For clearance holes: Fine, Medium or Coarse – how much room the screw gets.", "Passung", "Bei Durchgangsbohrungen: Fein, Mittel oder Grob – wie viel Luft die Schraube hat."),
+           ("Screw", "For counterbores and countersinks: the screw standard (e.g. ISO 4762 socket head, ISO 10642 countersunk) sets the head dimensions.",
+            "Schraube", "Bei Senkungen: die Schraubennorm (z. B. ISO 4762 Zylinderkopf, ISO 10642 Senkkopf) gibt die Kopfmaße vor."),
+           ("Type", "Simple, Counterbore (cylindrical recess for a screw head) or Countersink (cone for a countersunk screw).",
             "Typ", "Einfach, Senkung zylindrisch (Vertiefung für einen Schraubenkopf) oder Senkung kegelig (Kegel für eine Senkkopfschraube)."),
            ("Diameter, Depth", "Size of the hole.", "Durchmesser, Tiefe", "Maße der Bohrung."),
-           ("Through all", "Drills through the whole body.", "Durchgehend", "Bohrt durch den ganzen Körper."),
+           ("Through all", "Drills through every body of the design, however long.", "Durchgehend", "Bohrt durch jeden Körper des Designs, egal wie lang."),
            ("Head diameter, Head depth", "Size of the counterbore.", "Kopfdurchmesser, Kopftiefe", "Maße der zylindrischen Senkung."),
            ("Countersink angle", "Angle of the countersink cone, e.g. 90°.", "Senkwinkel", "Winkel des Senkkegels, z. B. 90°."),
            FLIP],
@@ -423,10 +441,17 @@ A("Design_Thread", "create", "Design_Thread", ("Thread", "Gewinde"),
    "Schneidet ein echtes, druckbares Gewinde in eine zylindrische Fläche – außen an einem Bolzen oder innen in einer Bohrung."),
   [("Click the round (cylindrical) face of the bolt or of the hole.", "Klicke die runde (zylindrische) Fläche des Bolzens oder der Bohrung an."),
    tool("CREATE", ("Hole", "Bohrung"), ("Thread", "Gewinde")), PANEL,
-   ("Set the Pitch and click OK at the top of the panel.", "Stelle die Steigung ein und klicke oben im Panel auf OK.")],
-  options=[("Pitch", "Distance from one thread to the next, e.g. 1.25 mm for M8.", "Steigung", "Abstand von Gang zu Gang, z. B. 1,25 mm bei M8."),
+   ("MyCAD picks the ISO size that fits the face (Thread Size: Auto). For 3D printing set Clearance, e.g. 0.2 mm, and click OK at the top of the panel.",
+    "MyCAD wählt die ISO-Größe, die zur Fläche passt (Gewindegröße: Automatisch). Für den 3D-Druck stelle Spiel ein, z. B. 0,2 mm, und klicke oben im Panel auf OK.")],
+  options=[("Standard, Thread Size", "ISO metric, ISO metric fine, UNC or UNF. Auto takes the size that matches the diameter; Custom lets you type the Pitch.",
+            "Norm, Gewindegröße", "ISO metrisch, ISO metrisch fein, UNC oder UNF. Automatisch nimmt die Größe, die zum Durchmesser passt; mit Eigene Maße tippst du die Steigung ein."),
+           ("Pitch", "Only with Custom: distance from one thread to the next, e.g. 1.25 mm for M8.", "Steigung", "Nur bei Eigene Maße: Abstand von Gang zu Gang, z. B. 1,25 mm bei M8."),
+           ("Clearance", "Room on each side so printed bolt and nut turn easily (0.1–0.3 mm). A bolt gets thinner, a hole wider; negative values give a press fit.",
+            "Spiel", "Luft je Seite, damit gedruckte Schraube und Mutter leicht laufen (0,1–0,3 mm). Ein Bolzen wird dünner, eine Bohrung weiter; negative Werte ergeben einen Presssitz."),
            ("Left-handed thread", "Turns the other way.", "Linksgewinde", "Dreht andersherum.")],
-  tips=[("The face must be long enough for at least one full turn.", "Die Fläche muss für mindestens einen vollen Gang lang genug sein.")],
+  tips=[("The thread runs over the whole face and ends flush at both ends; a shoulder or the bottom of a hole stays untouched.",
+         "Das Gewinde läuft über die ganze Fläche und endet bündig an beiden Enden; eine Schulter oder der Grund einer Bohrung bleibt unberührt."),
+        ("The face must be at least two turns long.", "Die Fläche muss mindestens zwei Gänge lang sein.")],
   see=["Design_Hole"])
 
 A("Design_Pattern", "create", "Design_Pattern", ("Pattern", "Muster"),
@@ -809,14 +834,22 @@ A("Design_Appearance", "utilities", "Design_Appearance", ("Appearance", "Darstel
   see=["settings"])
 
 A("settings", "utilities", "MyCAD_Settings", ("Settings", "Einstellungen"),
-  (["settings", "preferences", "language", "german", "english", "mouse", "keys", "glass", "material", "projects folder", "zoom direction"],
-   ["Einstellungen", "Optionen", "Sprache", "Deutsch", "Englisch", "Maus", "Tasten", "Glas", "Material", "Projektordner", "Zoomrichtung"]),
-  ("Adjusts navigation, keys, look and language. Open it with Settings at the bottom of the sidebar or Ctrl+,; close it with the ✕ at the top right of the window or Esc.",
-   "Passt Navigation, Tasten, Aussehen und Sprache an. Öffnen mit Einstellungen unten in der Seitenleiste oder Strg+,; schließen mit dem ✕ oben rechts im Fenster oder Esc."),
-  [("Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
+  (["settings", "preferences", "language", "german", "english", "mouse", "keys", "glass", "liquid glass", "dark mode", "light mode",
+    "contrast", "material", "projects folder", "zoom direction"],
+   ["Einstellungen", "Optionen", "Sprache", "Deutsch", "Englisch", "Maus", "Tasten", "Glas", "Liquid Glass", "Dunkelmodus", "dunkel",
+    "hell", "Kontrast", "Material", "Projektordner", "Zoomrichtung"]),
+  ("Adjusts look, navigation, keys and language. Open it with Settings at the bottom of the sidebar or Ctrl+,; close it with the ✕ at the top right of the window or Esc.",
+   "Passt Aussehen, Navigation, Tasten und Sprache an. Öffnen mit Einstellungen unten in der Seitenleiste oder Strg+,; schließen mit dem ✕ oben rechts im Fenster oder Esc."),
+  [("General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Show tool names and Show grid (the grid on the ground plane under the bodies).",
+    "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern)."),
+   ("Materials and Light: Body material for new bodies, and switches for Realistic materials, Reflections, Relief and end grain and Contact shadow.",
+    "Materialien und Licht: Körpermaterial für neue Körper und Schalter für Realistische Materialien, Spiegelungen, Relief und Hirnholz und Kontaktschatten."),
+   ("Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart) and Projects folder.",
+    "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart) und Projektordner."),
+   ("Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
     "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen."),
-   ("View: Camera, Rotate, Rotate around, Animate view changes, Glass, Show tool names, Projects folder and Language. Materials and Light: Body material, Realistic materials, Reflections, Relief and end grain, Contact shadow.",
-    "Ansicht: Kamera, Drehen, Drehen um, Ansichtswechsel animieren, Glas, Werkzeugnamen anzeigen, Projektordner und Sprache. Materialien und Licht: Körpermaterial, Realistische Materialien, Spiegelungen, Relief und Hirnholz, Kontaktschatten."),
+   ("View: Camera, Rotate, Rotate around and Animate view changes.",
+    "Ansicht: Kamera, Drehen, Drehen um und Ansichtswechsel animieren."),
    ("Speed & Zoom: Rotation speed, Zoom & scroll speed, Zoom towards the cursor, Invert zoom (mouse wheel). Trackpad: Two fingers pan (off: two-finger scrolling zooms like the scroll wheel), Invert zoom (pinch direction) and how strongly 3 fingers rotate, 2 fingers pan and pinching zooms.",
     "Tempo & Zoom: Drehgeschwindigkeit, Zoom- & Scrollgeschwindigkeit, Zum Cursor hin zoomen, Zoom umkehren (Mausrad). Trackpad: Zwei Finger schieben (aus: Scrollen mit zwei Fingern zoomt wie das Mausrad), Zoom umkehren (Richtung beim Spreizen) und wie stark 3 Finger drehen, 2 Finger schieben und Spreizen zoomt."),
    ("Keys tab: Add Key… turns a key into a mouse button, e.g. Shift as the middle button; choose the button and whether to Hold, Click, Double-click or Toggle.",
@@ -1060,10 +1093,17 @@ def main():
         if (images / (a["id"] + ".jpg")).exists():  # Bild von tools/help_images.py
             a["images"] = [{"file": a["id"] + ".jpg", "caption": caption or {"en": "", "de": ""}}]
         data["articles"].append(a)
-    (HELP / "help.json").write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n")
+    text = json.dumps(data, ensure_ascii=False, indent=1) + "\n"
+    if "--check" in sys.argv:  # tests/run_all.sh: help.json muss aus dieser Datei erzeugt sein (nie von Hand ändern)
+        same = (HELP / "help.json").read_text(encoding="utf-8") == text
+        print("help.json ist aktuell" if same else "help.json weicht ab: Texte in tools/help_content.py ändern und neu erzeugen")
+        sys.exit(0 if same else 1)
+    # UTF-8 ausdrücklich: unter Windows schriebe Python sonst cp1252 und bräche mitten in der Datei ab
+    (HELP / "help.json").write_text(text, encoding="utf-8")
     files = ["help.json"] + sorted("images/" + p.name for p in images.glob("*.jpg"))
     (HELP / "help.qrc").write_text('<RCC>\n    <qresource prefix="/mycad/help">\n'
-                                   + "".join("        <file>%s</file>\n" % f for f in files) + "    </qresource>\n</RCC>\n")
+                                   + "".join("        <file>%s</file>\n" % f for f in files) + "    </qresource>\n</RCC>\n",
+                                   encoding="utf-8")
     print("%d Artikel, %d Bilder" % (len(ARTICLES), len(files) - 1))
 
 

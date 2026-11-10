@@ -80,6 +80,37 @@ def type_into(n, text, cls=QtWidgets.QAbstractSpinBox):
     box.lineEdit().selectAll(); QtTest.QTest.keyClicks(box.lineEdit(), text)
 
 
+def field(label):
+    """Eingabefeld rechts neben der Beschriftung label (Feature-Dialog). Über die Lage statt über das QFormLayout:
+    PySide verwechselt sonst das Layout eines neuen Dialogs mit dem eines schon gelöschten."""
+    kinds = (QtWidgets.QAbstractSpinBox, QtWidgets.QComboBox, QtWidgets.QPushButton, QtWidgets.QLineEdit)
+    for lab in visible(QtWidgets.QLabel):
+        if lab.text() != label:
+            continue
+        top = lab.mapToGlobal(QtCore.QPoint(0, 0)); mid = top.y() + lab.height() // 2
+        cands = [w for cls in kinds for w in visible(cls) if w.parentWidget() is lab.parentWidget()
+                 and w.mapToGlobal(QtCore.QPoint(0, 0)).x() > top.x()
+                 and abs(w.mapToGlobal(QtCore.QPoint(0, w.height() // 2)).y() - mid) < max(lab.height(), 12)]
+        if cands:
+            w = min(cands, key=lambda w: w.mapToGlobal(QtCore.QPoint(0, 0)).x())
+            _keep.append(w); return w
+    raise RuntimeError("no field " + label)
+
+
+def shown(label):
+    """Ist ein Feld mit dieser Beschriftung sichtbar?"""
+    try:
+        return field(label).isVisible()
+    except RuntimeError:
+        return False
+
+
+def type_field(label, text):
+    box = field(label)
+    edit = box.lineEdit() if hasattr(box, "lineEdit") else box
+    edit.selectAll(); QtTest.QTest.keyClicks(edit, text)  # kein Enter: das bestätigt den ganzen Dialog
+
+
 def choose(item_text, index):
     cb = [c for c in visible(QtWidgets.QComboBox) if c.findText(item_text) >= 0][0]
     cb.setCurrentIndex(index)
@@ -170,7 +201,7 @@ def in_order(steps, delay=1200):
 
     def next_step():
         if not steps:
-            App.saveParameter(); os._exit(0)
+            L("step done"); App.saveParameter(); os._exit(0)  # "step done": run_all.sh erkennt das saubere Ende
         name, fn = steps.pop(0)
         L("step " + name)
         try:

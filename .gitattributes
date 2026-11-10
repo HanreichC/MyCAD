@@ -1,0 +1,2 @@
+# Shell-Skripte laufen im Linux-Container, auch aus einem Windows-Checkout: immer LF
+*.sh text eol=lf

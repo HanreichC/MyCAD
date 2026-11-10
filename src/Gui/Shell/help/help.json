@@ -785,11 +785,23 @@
     "en": [
      [
       "Direction",
-      "One Side, Symmetric (half to each side) or Two Sides (Distance and Distance 2)."
+      "One Side, Symmetric (half to each side), Two Sides (Distance and Distance 2), To Object (up to a face or plane you click) or All (through every body of the design)."
      ],
      [
       "Distance",
       "How far the profile is pulled; a negative value goes the other way."
+     ],
+     [
+      "To Object",
+      "With To Object the button waits for your click on a face or plane; the body ends exactly there, also on slanted faces."
+     ],
+     [
+      "Taper Angle",
+      "Positive values make the body narrower towards the end (draft for casting or printing), negative values wider. Holes in the profile open up accordingly."
+     ],
+     [
+      "Thin wall",
+      "Extrudes only a wall along the edge of the profile: Thickness and Thin Side (Inside, Outside or Center). A circle becomes a tube, a rectangle a frame."
      ],
      [
       "Flip direction",
@@ -803,11 +815,23 @@
     "de": [
      [
       "Richtung",
-      "Eine Seite, Symmetrisch (je zur Hälfte nach beiden Seiten) oder Zwei Seiten (Abstand und Abstand 2)."
+      "Eine Seite, Symmetrisch (je zur Hälfte nach beiden Seiten), Zwei Seiten (Abstand und Abstand 2), Bis Objekt (bis zu einer Fläche oder Ebene, die du anklickst) oder Alle (durch jeden Körper des Designs)."
      ],
      [
       "Abstand",
       "Wie weit das Profil gezogen wird; ein negativer Wert geht in die andere Richtung."
+     ],
+     [
+      "Bis Objekt",
+      "Bei Bis Objekt wartet der Knopf auf deinen Klick auf eine Fläche oder Ebene; der Körper endet genau dort, auch an schrägen Flächen."
+     ],
+     [
+      "Verjüngungswinkel",
+      "Positive Werte machen den Körper zum Ende hin schmaler (Entformungsschräge zum Gießen oder Drucken), negative breiter. Löcher im Profil öffnen sich entsprechend."
+     ],
+     [
+      "Dünne Wand",
+      "Extrudiert nur eine Wand entlang des Profilrands: Dicke und Wandseite (Innen, Außen oder Mitte). Aus einem Kreis wird ein Rohr, aus einem Rechteck ein Rahmen."
      ],
      [
       "Richtung umkehren",
@@ -1587,7 +1611,8 @@
      "Select that sketch (click it in the timeline or in the Sketches folder of the browser).",
      "In the toolbar at the top, in the CREATE section, click Hole. (If the button shows another tool, click the small arrow ▾ next to it and choose Hole.)",
      "A panel opens on the right; the model shows a live preview of the result.",
-     "Choose the Type and type Diameter and Depth (or tick Through all).",
+     "Pick a Standard and Size (e.g. ISO metric, M5x0.8) and whether it is a Clearance hole or a Tapped hole – MyCAD fills in the diameters. Without a standard (Custom) you type Diameter yourself.",
+     "Choose the Type and the Depth (or tick Through all).",
      "Click OK at the top of the panel. Cancel (next to it) or Esc discards the tool without changing anything."
     ],
     "de": [
@@ -1596,7 +1621,8 @@
      "Wähle diese Skizze aus (in der Zeitleiste oder im Ordner Skizzen im Browser anklicken).",
      "Klicke in der Werkzeugleiste oben im Bereich ERSTELLEN auf Bohrung. (Zeigt der Knopf ein anderes Werkzeug, klicke auf den kleinen Pfeil ▾ daneben und wähle Bohrung.)",
      "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
-     "Wähle den Typ und tippe Durchmesser und Tiefe ein (oder hake Durchgehend an).",
+     "Wähle Norm und Größe (z. B. ISO metrisch, M5x0.8) und ob es eine Durchgangsbohrung oder eine Gewindebohrung ist – MyCAD trägt die Durchmesser ein. Ohne Norm (Eigene Maße) tippst du den Durchmesser selbst ein.",
+     "Wähle den Typ und die Tiefe (oder hake Durchgehend an).",
      "Klicke oben im Panel auf OK. Abbrechen (daneben) oder Esc verwirft das Werkzeug, ohne etwas zu ändern."
     ]
    },
@@ -1608,6 +1634,22 @@
    "options": {
     "en": [
      [
+      "Standard, Size",
+      "ISO metric, ISO metric fine, UNC or UNF and the screw size. Custom keeps your own dimensions."
+     ],
+     [
+      "Kind",
+      "Clearance hole: the screw slides through (ISO 273). Tapped hole: core hole for the thread, optionally with Modeled thread."
+     ],
+     [
+      "Fit",
+      "For clearance holes: Fine, Medium or Coarse – how much room the screw gets."
+     ],
+     [
+      "Screw",
+      "For counterbores and countersinks: the screw standard (e.g. ISO 4762 socket head, ISO 10642 countersunk) sets the head dimensions."
+     ],
+     [
       "Type",
       "Simple, Counterbore (cylindrical recess for a screw head) or Countersink (cone for a countersunk screw)."
      ],
@@ -1617,7 +1659,7 @@
      ],
      [
       "Through all",
-      "Drills through the whole body."
+      "Drills through every body of the design, however long."
      ],
      [
       "Head diameter, Head depth",
@@ -1634,6 +1676,22 @@
     ],
     "de": [
      [
+      "Norm, Größe",
+      "ISO metrisch, ISO metrisch fein, UNC oder UNF und die Schraubengröße. Eigene Maße lässt deine Maße stehen."
+     ],
+     [
+      "Art",
+      "Durchgangsbohrung: die Schraube geht hindurch (ISO 273). Gewindebohrung: Kernloch für das Gewinde, auf Wunsch mit Gewinde modellieren."
+     ],
+     [
+      "Passung",
+      "Bei Durchgangsbohrungen: Fein, Mittel oder Grob – wie viel Luft die Schraube hat."
+     ],
+     [
+      "Schraube",
+      "Bei Senkungen: die Schraubennorm (z. B. ISO 4762 Zylinderkopf, ISO 10642 Senkkopf) gibt die Kopfmaße vor."
+     ],
+     [
       "Typ",
       "Einfach, Senkung zylindrisch (Vertiefung für einen Schraubenkopf) oder Senkung kegelig (Kegel für eine Senkkopfschraube)."
      ],
@@ -1643,7 +1701,7 @@
      ],
      [
       "Durchgehend",
-      "Bohrt durch den ganzen Körper."
+      "Bohrt durch jeden Körper des Designs, egal wie lang."
      ],
      [
       "Kopfdurchmesser, Kopftiefe",
@@ -1715,13 +1773,13 @@
      "Click the round (cylindrical) face of the bolt or of the hole.",
      "In the toolbar at the top, in the CREATE section, click the small arrow ▾ next to Hole and choose Thread. The button now shows Thread, so next time one click is enough.",
      "A panel opens on the right; the model shows a live preview of the result.",
-     "Set the Pitch and click OK at the top of the panel."
+     "MyCAD picks the ISO size that fits the face (Thread Size: Auto). For 3D printing set Clearance, e.g. 0.2 mm, and click OK at the top of the panel."
     ],
     "de": [
      "Klicke die runde (zylindrische) Fläche des Bolzens oder der Bohrung an.",
      "Klicke in der Werkzeugleiste oben im Bereich ERSTELLEN auf den kleinen Pfeil ▾ neben Bohrung und wähle Gewinde. Der Knopf zeigt danach Gewinde, beim nächsten Mal reicht also ein Klick.",
      "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
-     "Stelle die Steigung ein und klicke oben im Panel auf OK."
+     "MyCAD wählt die ISO-Größe, die zur Fläche passt (Gewindegröße: Automatisch). Für den 3D-Druck stelle Spiel ein, z. B. 0,2 mm, und klicke oben im Panel auf OK."
     ]
    },
    "see": [
@@ -1730,8 +1788,16 @@
    "options": {
     "en": [
      [
+      "Standard, Thread Size",
+      "ISO metric, ISO metric fine, UNC or UNF. Auto takes the size that matches the diameter; Custom lets you type the Pitch."
+     ],
+     [
       "Pitch",
-      "Distance from one thread to the next, e.g. 1.25 mm for M8."
+      "Only with Custom: distance from one thread to the next, e.g. 1.25 mm for M8."
+     ],
+     [
+      "Clearance",
+      "Room on each side so printed bolt and nut turn easily (0.1–0.3 mm). A bolt gets thinner, a hole wider; negative values give a press fit."
      ],
      [
       "Left-handed thread",
@@ -1740,8 +1806,16 @@
     ],
     "de": [
      [
+      "Norm, Gewindegröße",
+      "ISO metrisch, ISO metrisch fein, UNC oder UNF. Automatisch nimmt die Größe, die zum Durchmesser passt; mit Eigene Maße tippst du die Steigung ein."
+     ],
+     [
       "Steigung",
-      "Abstand von Gang zu Gang, z. B. 1,25 mm bei M8."
+      "Nur bei Eigene Maße: Abstand von Gang zu Gang, z. B. 1,25 mm bei M8."
+     ],
+     [
+      "Spiel",
+      "Luft je Seite, damit gedruckte Schraube und Mutter leicht laufen (0,1–0,3 mm). Ein Bolzen wird dünner, eine Bohrung weiter; negative Werte ergeben einen Presssitz."
      ],
      [
       "Linksgewinde",
@@ -1751,10 +1825,12 @@
    },
    "tips": {
     "en": [
-     "The face must be long enough for at least one full turn."
+     "The thread runs over the whole face and ends flush at both ends; a shoulder or the bottom of a hole stays untouched.",
+     "The face must be at least two turns long."
     ],
     "de": [
-     "Die Fläche muss für mindestens einen vollen Gang lang genug sein."
+     "Das Gewinde läuft über die ganze Fläche und endet bündig an beiden Enden; eine Schulter oder der Grund einer Bohrung bleibt unberührt.",
+     "Die Fläche muss mindestens zwei Gänge lang sein."
     ]
    },
    "images": [

@@ -22,6 +22,14 @@ def later(tag, fn):
     QtCore.QTimer.singleShot(1200, lambda: grab_popups(tag)); fn()
 
 
+def python_error():
+    """absichtlicher Fehler; der Test zeigt, wie MyCAD ihn meldet (Screenshot), er ist kein Fehlschlag"""
+    try:
+        Gui.doCommand("raise RuntimeError('test error')")
+    except RuntimeError:
+        L("  expected error raised")
+
+
 def bad_fillet():
     b = body("Box"); root = [o for o in doc().Objects if o.TypeId == "App::Part"][0]
     f = doc().addObject("Design::Fillet", "Fillet"); f.Bodies = [b]; f.Edges = ["Edge1"]; f.Size = 500; root.addObject(f)
@@ -45,7 +53,7 @@ run([
     ("errors", lambda: L("errors=%s" % errors())),
     ("dclick failed", lambda: later("failed", lambda: Gui.ActiveDocument.setEdit(doc().getObject("Fillet")))),
     ("wait", lambda: None),
-    ("python error", lambda: later("python", lambda: Gui.doCommand("raise RuntimeError('test error')"))),
+    ("python error", lambda: later("python", python_error)),
     ("wait", lambda: None),
     ("conflict", lambda: later("conflict", conflict)),
     ("wait", lambda: None),

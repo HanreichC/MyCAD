@@ -12,6 +12,10 @@
 #include <App/IndexedName.h>
 #include <App/MappedName.h>
 #include <Base/Placement.h>
+#include <App/Application.h>
+#include <Base/Console.h>
+#include <Mod/PartDesign/App/FeatureHole.h>
+#include <Mod/Part/App/ExtrusionHelper.h>
 #include <Mod/Part/App/TopoShapeOpCode.h>
 
 #include <BRepAlgoAPI_Splitter.hxx>
@@ -25,6 +29,7 @@
 #include <BRep_Tool.hxx>
 #include <Bnd_Box.hxx>
 #include <GProp_GProps.hxx>
+#include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
@@ -52,6 +57,7 @@
 #include <BRepOffset_MakeOffset.hxx>
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
+#include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
@@ -69,13 +75,18 @@
 #include <gp_Pln.hxx>
 
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <map>
+#include <nlohmann/json.hpp>
 
 using namespace Design;
 
 namespace
 {
 const char* OpEnums[] = {"New Body", "Join", "Cut", "Intersect", nullptr};
-const char* ExtentEnums[] = {"One Side", "Symmetric", "Two Sides", nullptr};
+const char* ExtentEnums[] = {"One Side", "Symmetric", "Two Sides", "To Object", "All", nullptr};
+const char* ThinEnums[] = {"Inside", "Outside", "Center", nullptr};
 const char* AxisEnums[] = {"Sketch X", "Sketch Y", "X", "Y", "Z", nullptr};
 const char* XYZEnums[] = {"X", "Y", "Z", nullptr};
 const char* PlaneEnums[] = {"XY", "XZ", "YZ", nullptr};
@@ -253,6 +264,177 @@ Part::TopoShape fuseAll(const std::vector<Part::TopoShape>& shapes, App::StringH
     }
     Part::TopoShape tool = Part::TopoShape(0, hasher).makeElementFuse(shapes);
     return tool.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched);
+}
+
+/// "Durch alles": eine Länge, die von around aus hinter jeden Körper des Designs reicht
+double throughAllLength(const App::Document* doc, Base::BoundBox3d around)
+{
+    for (auto obj : doc->getObjectsOfType(Body::getClassTypeId())) {
+        const Part::TopoShape s = static_cast<Body*>(obj)->Shape.getShape();
+        if (!s.isNull()) {
+            around.Add(s.getBoundBox());
+        }
+    }
+    return around.CalcDiagonalLength() * 2 + 10;
+}
+
+// --- Normen: Gewinde und Bohrungen (Tabellen aus PartDesign, Senkungen aus dessen JSON-Dateien) -----------
+
+/// Index in PartDesign::Hole::threadDescription; "Custom" = eigene Maße
+const char* StandardEnums[] = {"Custom", "ISO metric", "ISO metric fine", "UNC", "UNF", nullptr};
+const char* KindEnums[] = {"Clearance hole", "Tapped hole", nullptr};
+const char* FitEnums[] = {"Fine", "Medium", "Coarse", nullptr};
+
+const std::vector<PartDesign::Hole::ThreadDescription>* threadTable(long standard)
+{
+    return standard >= 1 && standard <= 4 ? &PartDesign::Hole::threadDescription[standard] : nullptr;
+}
+
+const PartDesign::Hole::ThreadDescription* threadSize(long standard, const std::string& designation)
+{
+    if (auto table = threadTable(standard)) {
+        for (const auto& t : *table) {
+            if (designation == t.designation) {
+                return &t;
+            }
+        }
+    }
+    return nullptr;
+}
+
+/// Durchgangsbohrung für eine Schraube: ISO 273 (fein/mittel/grob) bzw. ASME B18.2.8 (close/normal/loose)
+double clearanceDiameter(long standard, const PartDesign::Hole::ThreadDescription& t, long fit)
+{
+    if (standard <= 2) {
+        for (const auto& row : PartDesign::Hole::metricHoleDiameters) {
+            if (std::abs(row[0] - t.diameter) < 1e-6) {
+                return row[1 + fit];  // {Schraube, fein, mittel, grob}
+            }
+        }
+    }
+    else {
+        for (const auto& row : PartDesign::Hole::UTSHoleDiameters) {
+            if (row.designation == t.designation) {
+                return fit == 0 ? row.close : fit == 1 ? row.normal : row.loose;
+            }
+        }
+    }
+    return t.diameter * (1.06 + 0.06 * fit);  // ponytail: Näherung für Größen außerhalb der Tabellen
+}
+
+/// Senkung je Schraubennorm (Mod/PartDesign/Resources/Hole/*.json); gleichnamige Dateien (Regel/Fein) zusammen
+struct HeadTable
+{
+    std::string name;
+    bool countersink = false;
+    double angle = 90;
+    std::map<std::string, std::pair<double, double>> sizes;  ///< Gewinde -> (Durchmesser, Tiefe)
+};
+
+const std::vector<HeadTable>& headTables()
+{
+    static const std::vector<HeadTable> tables = [] {
+        std::vector<HeadTable> result;
+        const std::filesystem::path dir = App::Application::getResourceDir() + "Mod/PartDesign/Resources/Hole";
+        std::error_code ec;
+        std::vector<std::filesystem::path> files;
+        for (const auto& entry : std::filesystem::directory_iterator(dir, ec)) {
+            if (entry.path().extension() == ".json") {
+                files.push_back(entry.path());
+            }
+        }
+        std::ranges::sort(files);
+        for (const auto& file : files) {
+            try {
+                std::ifstream in(file);
+                const nlohmann::json j = nlohmann::json::parse(in);
+                const std::string name = j.at("name");
+                auto it = std::ranges::find(result, name, &HeadTable::name);
+                if (it == result.end()) {
+                    result.push_back({name, j.at("cut_type") == "countersink", j.value("angle", 90.0), {}});
+                    it = result.end() - 1;
+                }
+                for (const auto& row : j.at("data")) {
+                    it->sizes[row.at("thread")] = {row.at("diameter").get<double>(), row.value("depth", 0.0)};
+                }
+            }
+            catch (const std::exception&) {
+                Base::Console().warning("Design: could not read %s\n", file.string().c_str());
+            }
+        }
+        return result;
+    }();
+    return tables;
+}
+
+TopoDS_Shape threadGrooves(const gp_Ax1& axis, double start, double length, double r, double pitch, bool external,
+                           bool left, double clearance);
+
+/// Gewinde-Rillen als Werkzeug zum Abziehen, ISO-Profil (60°). external: Welle mit Außenradius r, sonst Bohrung
+/// mit Kernradius r. Die Rillen gehen über die ganze Länge [start, start + length] entlang der Achse und enden dort
+/// glatt abgeschnitten (nichts dahinter wird angeschnitten: Schulter, Bohrungsgrund). clearance > 0 macht die Welle
+/// kleiner bzw. die Bohrung größer (Spiel je Seite, radial), < 0 gibt Übermaß. Die Rillen liegen auf einem festen
+/// Raster entlang der Achse (Innengewinde um eine halbe Steigung versetzt): Welle und Bohrung greifen ineinander.
+TopoDS_Shape threadTool(const gp_Ax1& axis, double start, double length, double r, double pitch, bool external,
+                        bool left, double clearance)
+{
+    // Zwei Steigungen vor der Fläche anfangen (sonst fehlt bei jedem Winkel kurz vor dem ersten Umlauf der Gang davor
+    // und am Rand bleibt Material stehen), eine danach aufhören, dann auf die Länge zuschneiden
+    const TopoDS_Shape raw = threadGrooves(axis, start - 2 * pitch, length + 3 * pitch, r, pitch, external, left, clearance);
+    gp_Ax2 clipAxis(axis.Location().Translated(gp_Vec(axis.Direction()) * start), axis.Direction());
+    const double outer = r + pitch + std::abs(clearance) + 1;
+    const TopoDS_Shape clipped = BRepAlgoAPI_Common(raw, BRepPrimAPI_MakeCylinder(clipAxis, outer, length).Shape()).Shape();
+    // Common liefert einen Compound um den Solid; als Werkzeug zählt nur der Solid selbst (sonst trennt der Schnitt
+    // nur Flächen auf, ohne etwas abzuziehen)
+    TopExp_Explorer solid(clipped, TopAbs_SOLID);
+    if (!solid.More()) {
+        throw Standard_Failure("thread tool is empty");
+    }
+    return solid.Current();
+}
+
+TopoDS_Shape threadGrooves(const gp_Ax1& axis, double start, double length, double r, double pitch, bool external,
+                           bool left, double clearance)
+{
+    const double p = pitch, t30 = std::tan(M_PI / 6);
+    const double depth = external ? 0.6134 * p : 0.5413 * p;  // ISO 68-1/724: d3 bzw. D1
+    const double surfaceHalf = external ? 7 * p / 16 : 3 * p / 8;  // halbe Rillenbreite an der Oberfläche
+    const double margin = 0.05 * p + std::abs(clearance);
+    const double s = external ? -1 : 1;                                     // Richtung in den Werkstoff
+    const double surface = external ? r - clearance : r + clearance;        // Oberfläche nach dem Spiel
+    const double cap = 0.49 * p;
+    const double outerHalf = std::min(cap, surfaceHalf + margin * t30);
+    // Profil in der XZ-Ebene: x = Radius, z = Lage entlang der Achse
+    BRepBuilderAPI_MakePolygon profile(gp_Pnt(surface - s * margin, 0, -outerHalf), gp_Pnt(surface - s * margin, 0, outerHalf),
+                                       gp_Pnt(surface + s * depth, 0, surfaceHalf - depth * t30),
+                                       gp_Pnt(surface + s * depth, 0, -(surfaceHalf - depth * t30)), Standard_True);
+    // makeLongHelix: mit makeHelix (Kurve auf einer Zylinderfläche) legt MakePipeShell das Profil auf den doppelten
+    // Radius und baut einen umgestülpten Körper, der Schnitt entfernt dann nichts (so war es bis 2026-11)
+    const TopoDS_Shape helix = Part::TopoShape().makeLongHelix(p, length, r, 0, left);
+    TopExp_Explorer spine(helix, TopAbs_WIRE);
+    BRepOffsetAPI_MakePipeShell pipe(TopoDS::Wire(spine.Current()));
+    pipe.SetMode(gp::DZ());  // Profil bleibt parallel zur Achse
+    pipe.Add(profile.Wire());
+    pipe.Build();
+    pipe.MakeSolid();
+    TopoDS_Shape tool = pipe.Shape();
+    BRepClass3d_SolidClassifier inside(tool);
+    inside.PerformInfinitePoint(Precision::Confusion());
+    if (inside.State() == TopAbs_IN) {  // innen und außen vertauscht
+        tool.Reverse();
+    }
+    // Spiel: die Oberfläche selbst abdrehen bzw. aufbohren (Ring zwischen r und der neuen Oberfläche)
+    if (std::abs(clearance) > Precision::Confusion() && clearance > 0) {
+        const double inner = external ? surface : r - margin, outer = external ? r + margin : surface;
+        TopoDS_Shape ring = BRepAlgoAPI_Cut(BRepPrimAPI_MakeCylinder(outer, length).Shape(),
+                                            BRepPrimAPI_MakeCylinder(inner, length).Shape()).Shape();
+        tool = BRepAlgoAPI_Fuse(tool, ring).Shape();
+    }
+    gp_Trsf place;
+    const double phase = external ? p / 2 : p;  // Rillen der Welle bei start + p/2 + k·p, der Bohrung dazwischen
+    place.SetDisplacement(gp_Ax3(gp::XOY()),
+                          gp_Ax3(axis.Location().Translated(gp_Vec(axis.Direction()) * (start + phase)), axis.Direction()));
+    return BRepBuilderAPI_Transform(tool, place, Standard_True).Shape();
 }
 }  // namespace
 
@@ -581,6 +763,80 @@ void Design::removeFromTimeline(App::DocumentObject* obj)
     }
 }
 
+/// Name ("FaceN", "EdgeN", "VertexN") des Elements in shape, das geometrisch element entspricht (Schwerpunkt + Größe).
+/// ponytail: geometrischer Abgleich statt topologischer Benennung; kann bei zwei deckungsgleichen Elementen irren
+std::string Design::elementName(const TopoDS_Shape& shape, const TopoDS_Shape& element)
+{
+    if (element.IsNull()) {
+        return {};
+    }
+    const TopAbs_ShapeEnum type = element.ShapeType();
+    auto props = [type](const TopoDS_Shape& s) {
+        GProp_GProps p(type == TopAbs_VERTEX ? BRep_Tool::Pnt(TopoDS::Vertex(s)) : gp::Origin());
+        if (type == TopAbs_FACE) {
+            BRepGProp::SurfaceProperties(s, p);
+        }
+        else if (type == TopAbs_EDGE) {
+            BRepGProp::LinearProperties(s, p);
+        }
+        return p;
+    };
+    const char* prefix = type == TopAbs_FACE ? "Face" : type == TopAbs_EDGE ? "Edge" : "Vertex";
+    const GProp_GProps ref = props(element);
+    TopTools_IndexedMapOfShape all;
+    TopExp::MapShapes(shape, type, all);
+    for (int i = 1; i <= all.Extent(); ++i) {
+        const GProp_GProps p = props(all(i));
+        if (std::abs(p.Mass() - ref.Mass()) < 1e-6 * (1 + ref.Mass())
+            && p.CentreOfMass().Distance(ref.CentreOfMass()) < 1e-6) {
+            return prefix + std::to_string(i);
+        }
+    }
+    return {};
+}
+
+/// Bezug auf einen Body durch seinen Timeline-Zustand ersetzen (das Feature, das ihn gerade erzeugt hat).
+/// Sonst entsteht ein Kreis, sobald ein Feature aus einer Skizze/Ebene darauf denselben Body verändert.
+void Design::stableRef(App::DocumentObject*& obj, std::string& element)
+{
+    auto body = freecad_cast<Body*>(obj);
+    auto tip = body ? freecad_cast<Feature*>(stateAtMarker(body)) : nullptr;
+    if (!tip || element.empty()) {
+        return;
+    }
+    const TopoDS_Shape sub = body->Shape.getShape().getSubShape(element.c_str(), true);
+    const std::string name = elementName(tip->Shape.getShape().getShape(), sub);
+    if (!name.empty()) {
+        obj = tip;
+        element = name;
+    }
+}
+
+Design::Body* Design::newBody(Feature* feature, App::Part* component)
+{
+    App::Document* doc = feature->getDocument();
+    const auto count = doc->getObjectsOfType(Body::getClassTypeId()).size();
+    auto body = static_cast<Body*>(doc->addObject("Design::Body", "Body"));
+    body->Label.setValue("Body" + std::to_string(count + 1));
+    folder(component ? component : componentOf(feature), "Bodies")->addObject(body);
+    feature->Bodies.setValues({body});
+    feature->BaseFeatures.setValues({});
+    body->Tip.setValue(feature);
+    return body;
+}
+
+App::DocumentObject* Design::newSketch(App::Part* component)
+{
+    App::Document* doc = component->getDocument();
+    auto sketch = doc->addObject("Sketcher::SketchObject", "Sketch");
+    folder(component, "Sketches")->addObject(sketch);
+    addToTimeline(sketch);
+    auto profiles = static_cast<Profiles*>(doc->addObject("Design::Profiles", "Profiles"));
+    component->addObject(profiles);
+    profiles->Sketch.setValue(sketch);
+    return sketch;
+}
+
 // ---------------------------------------------------------------------------------------------
 
 PROPERTY_SOURCE(Design::Body, Part::Feature)
@@ -860,48 +1116,211 @@ Extrude::Extrude()
     ADD_PROPERTY_TYPE(Distance, (10.0), "Extrude", App::Prop_None, "Distance");
     ADD_PROPERTY_TYPE(Distance2, (10.0), "Extrude", App::Prop_None, "Distance of the second side");
     ADD_PROPERTY_TYPE(Reversed, (false), "Extrude", App::Prop_None, "Flip direction");
+    // Gruppe "Parameters": der Dialog baut die Felder selbst, Sichtbarkeit über Hidden (updateVisibility)
+    ADD_PROPERTY_TYPE(ToObject, (nullptr), "Parameters", App::Prop_None, "Face or plane to extrude to");
+    ToObject.setScope(App::LinkScope::Global);
+    ADD_PROPERTY_TYPE(TaperAngle, (0.0), "Parameters", App::Prop_None, "Taper angle; positive narrows the extrusion");
+    ADD_PROPERTY_TYPE(Thin, (false), "Parameters", App::Prop_None, "Thin wall");
+    ADD_PROPERTY_TYPE(Thickness, (2.0), "Parameters", App::Prop_None, "Wall thickness");
+    ADD_PROPERTY_TYPE(ThinSide, (0L), "Parameters", App::Prop_None, "Side of the wall");
+    ThinSide.setEnums(ThinEnums);
+    updateVisibility();
+}
+
+void Extrude::updateVisibility()
+{
+    const bool toObject = Extent.getValue() == ExtentToObject;
+    ToObject.setStatus(App::Property::Hidden, !toObject);
+    TaperAngle.setStatus(App::Property::Hidden, toObject);
+    Thickness.setStatus(App::Property::Hidden, !Thin.getValue());
+    ThinSide.setStatus(App::Property::Hidden, !Thin.getValue());
+}
+
+void Extrude::onChanged(const App::Property* prop)
+{
+    if (prop == &Extent || prop == &Thin) {
+        updateVisibility();
+    }
+    Feature::onChanged(prop);
+}
+
+void Extrude::onDocumentRestored()
+{
+    updateVisibility();
+    Feature::onDocumentRestored();
 }
 
 bool Extrude::makeTool(Part::TopoShape& tool, std::string& error) const
 {
     Part::Feature* sketch = nullptr;
     const char* reason = nullptr;
-    const auto faces = profileFaces(Profile, const_cast<App::PropertyStringList&>(ProfileKeys), sketch, reason);
+    auto faces = profileFaces(Profile, const_cast<App::PropertyStringList&>(ProfileKeys), sketch, reason);
     if (faces.empty()) {
         error = reason;
         return false;
+    }
+    const auto hasher = getDocument()->getStringHasher();
+
+    // Dünne Wand: aus jeder Profilfläche ein Band entlang ihres Randes (Löcher bekommen auch eine Wand)
+    if (Thin.getValue()) {
+        const double t = Thickness.getValue();
+        if (t < Precision::Confusion()) {
+            error = "Wall thickness must be greater than zero";
+            return false;
+        }
+        const double outer = ThinSide.getValue() == 0 ? 0 : ThinSide.getValue() == 1 ? t : t / 2;
+        std::vector<Part::TopoShape> bands;
+        try {
+            for (const auto& face : faces) {
+                // Fläche um d vergrößern: Außenrand nach außen, Löcher nach innen (Offset2D allein füllt die Löcher)
+                const auto offset = [&](double d) {
+                    return std::abs(d) < Precision::Confusion() ? face
+                                                                : Part::TopoShape(0, hasher).makeElementOffsetFace(face, d, -d);
+                };
+                const Part::TopoShape big = offset(outer), small = offset(outer - t);
+                bands.push_back(small.isNull() || small.countSubShapes(TopAbs_FACE) == 0
+                                    ? big
+                                    : Part::TopoShape(0, hasher).makeElementCut({big, small}));
+            }
+        }
+        catch (const Standard_Failure&) {
+            error = "The wall is too thick for this profile";
+            return false;
+        }
+        catch (const Base::Exception&) {
+            error = "The wall is too thick for this profile";
+            return false;
+        }
+        faces.clear();
+        for (const auto& band : bands) {
+            for (const auto& f : band.getSubTopoShapes(TopAbs_FACE)) {
+                faces.push_back(f);
+            }
+        }
+        if (faces.empty()) {
+            error = "The wall is too thick for this profile";
+            return false;
+        }
     }
 
     Base::Vector3d n = sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1));
     if (Reversed.getValue()) {
         n = -n;
     }
+    gp_Dir dir(n.x, n.y, n.z);
+
+    if (Extent.getValue() == ExtentToObject) {
+        // Ziel in die Koordinaten der eigenen Komponente holen (Bezüge liefern globale Formen)
+        Base::BoundBox3d around;
+        for (const auto& f : faces) {
+            around.Add(f.getBoundBox());
+        }
+        TopoDS_Shape target = toolShape(ToObject, around);
+        if (target.IsNull()) {
+            error = "Click the face or plane to extrude to";
+            return false;
+        }
+        Part::TopoShape upTo(target);
+        upTo.transformShape(componentOf(this)->globalPlacement().inverse().toMatrix(), false, true);
+        if (upTo.shapeType(true) != TopAbs_FACE) {
+            error = "Extrude to a face or a plane, not a whole body";
+            return false;
+        }
+        // Liegt das Ziel hinter dem Profil, in die andere Richtung ziehen
+        const Base::Vector3d toTarget = upTo.getBoundBox().GetCenter() - around.GetCenter();
+        if (toTarget.Dot(n) < 0) {
+            dir.Reverse();
+        }
+        std::vector<Part::TopoShape> prisms;
+        try {
+            for (const auto& face : faces) {
+                prisms.push_back(Part::TopoShape(0, hasher).makeElementPrismUntil(
+                    Part::TopoShape(), face, Part::TopoShape(), upTo, dir, Part::TopoShape::PrismMode::None, true));
+            }
+        }
+        catch (...) {
+            error = "The profile does not reach this face. Choose a face in front of the profile";
+            return false;
+        }
+        std::erase_if(prisms, [](const Part::TopoShape& p) { return p.isNull() || p.countSubShapes(TopAbs_SOLID) == 0; });
+        if (prisms.size() != faces.size()) {
+            error = "The profile does not reach this face. Choose a face in front of the profile";
+            return false;
+        }
+        tool = fuseAll(prisms, hasher);
+        return true;
+    }
+
     double start = 0, end = Distance.getValue();
-    if (Extent.getValue() == 1) {  // Symmetric
+    if (Extent.getValue() == ExtentSymmetric) {
         start = -end / 2;
         end /= 2;
     }
-    else if (Extent.getValue() == 2) {  // Two Sides
+    else if (Extent.getValue() == ExtentTwoSides) {
         start = -Distance2.getValue();
+    }
+    else if (Extent.getValue() == ExtentAll) {
+        // Durch alles: bis hinter den äußersten Körper des Designs
+        Base::BoundBox3d box;
+        for (const auto& f : faces) {
+            box.Add(f.getBoundBox());
+        }
+        for (auto obj : getDocument()->getObjectsOfType(Body::getClassTypeId())) {
+            const Part::TopoShape s = static_cast<Body*>(obj)->Shape.getShape();
+            if (!s.isNull()) {
+                box.Add(s.getBoundBox());
+            }
+        }
+        end = box.CalcDiagonalLength() * 2 + 10;
     }
     if (end - start < Precision::Confusion()) {
         error = "Distance must be greater than zero";
         return false;
     }
 
+    const double taper = TaperAngle.getValue();
     std::vector<Part::TopoShape> prisms;
-    for (const auto& face : faces) {
-        Part::TopoShape base = face;
-        if (start != 0) {
-            Base::Matrix4D mov;
-            mov.move(n * start);
-            base = Part::TopoShape(0, getDocument()->getStringHasher()).makeElementTransform(face, mov);
+    if (std::abs(taper) > Precision::Angular()) {
+        if (std::abs(taper) >= 89.0) {
+            error = "Taper angle must be between -89° and 89°";
+            return false;
         }
-        const Base::Vector3d v = n * (end - start);
-        prisms.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
-                             .makeElementPrism(base, gp_Vec(v.x, v.y, v.z)));
+        Part::ExtrusionParameters params;
+        params.dir = dir;
+        params.lengthFwd = end;
+        params.lengthRev = -start;
+        params.solid = true;
+        params.taperAngleFwd = params.taperAngleRev = -taper * M_PI / 180.0;  // positiv = schmaler
+        try {
+            for (const auto& face : faces) {
+                std::vector<Part::TopoShape> drafts;
+                Part::ExtrusionHelper::makeElementDraft(params, face, drafts, hasher);
+                prisms.insert(prisms.end(), drafts.begin(), drafts.end());
+            }
+        }
+        catch (...) {
+            error = "Taper angle too large for this distance";
+            return false;
+        }
+        std::erase_if(prisms, [](const Part::TopoShape& p) { return p.isNull() || !p.isValid(); });
+        if (prisms.empty()) {
+            error = "Taper angle too large for this distance";
+            return false;
+        }
     }
-    tool = fuseAll(prisms, getDocument()->getStringHasher());
+    else {
+        for (const auto& face : faces) {
+            Part::TopoShape base = face;
+            if (start != 0) {
+                Base::Matrix4D mov;
+                mov.move(n * start);
+                base = Part::TopoShape(0, hasher).makeElementTransform(face, mov);
+            }
+            const Base::Vector3d v = n * (end - start);
+            prisms.push_back(Part::TopoShape(0, hasher).makeElementPrism(base, gp_Vec(v.x, v.y, v.z)));
+        }
+    }
+    tool = fuseAll(prisms, hasher);
     return true;
 }
 
@@ -1371,7 +1790,121 @@ Hole::Hole()
     ADD_PROPERTY_TYPE(HeadDepth, (3.0), "Hole", App::Prop_None, "Counterbore depth");
     ADD_PROPERTY_TYPE(CountersinkAngle, (90.0), "Hole", App::Prop_None, "Countersink angle");
     ADD_PROPERTY_TYPE(Reversed, (false), "Hole", App::Prop_None, "Flip direction");
+    ADD_PROPERTY_TYPE(Standard, (0L), "Parameters", App::Prop_None, "Thread standard");
+    Standard.setEnums(StandardEnums);
+    ADD_PROPERTY_TYPE(Size, (0L), "Parameters", App::Prop_None, "Screw size");
+    ADD_PROPERTY_TYPE(Kind, (0L), "Parameters", App::Prop_None, "Clearance hole or tapped hole");
+    Kind.setEnums(KindEnums);
+    ADD_PROPERTY_TYPE(Fit, (1L), "Parameters", App::Prop_None, "Fit of the clearance hole");
+    Fit.setEnums(FitEnums);
+    ADD_PROPERTY_TYPE(Screw, (0L), "Parameters", App::Prop_None, "Screw for the counterbore or countersink");
+    ADD_PROPERTY_TYPE(Modeled, (false), "Parameters", App::Prop_None, "Modeled thread");
+    ADD_PROPERTY_TYPE(ThreadDesignation, (""), "Hole", App::PropertyType(App::Prop_Output | App::Prop_ReadOnly),
+                      "Thread of the hole, empty without thread");
     Operation.setValue(2L);  // Cut
+    applyStandard();
+}
+
+void Hole::onChanged(const App::Property* prop)
+{
+    if (!isRestoring()
+        && (prop == &Standard || prop == &Size || prop == &Kind || prop == &Fit || prop == &Screw || prop == &HoleType)) {
+        applyStandard();
+    }
+    Feature::onChanged(prop);
+}
+
+void Hole::onDocumentRestored()
+{
+    applyStandard();
+    Feature::onDocumentRestored();
+}
+
+/// Maße aus der Norm übernehmen und die Felder ein- und ausblenden. Ohne Norm bleiben alle Maße frei.
+void Hole::applyStandard()
+{
+    if (applying) {
+        return;
+    }
+    applying = true;
+    const long standard = Standard.getValue();
+    const PartDesign::Hole::ThreadDescription* t = nullptr;
+    if (auto table = threadTable(standard)) {
+        std::vector<std::string> sizes;
+        for (const auto& d : *table) {
+            sizes.emplace_back(d.designation);
+        }
+        if (Size.getEnumVector() != sizes) {
+            // Neue Norm: die Größe nehmen, die dem bisherigen Durchmesser am nächsten kommt
+            const std::string current = Size.isValid() ? Size.getValueAsString() : std::string();
+            std::string keep = current;
+            if (std::ranges::find(sizes, current) == sizes.end()) {
+                const auto best = std::ranges::min_element(*table, {}, [this](const auto& d) {
+                    return std::abs(d.diameter - Diameter.getValue());
+                });
+                keep = best->designation;
+            }
+            Size.setEnums(sizes);
+            Size.setValue(keep.c_str());
+        }
+        t = threadSize(standard, Size.isValid() ? Size.getValueAsString() : "");
+    }
+    const bool tapped = Kind.getValue() == 1;
+    if (t) {
+        Diameter.setValue(tapped ? t->TapDrill : clearanceDiameter(standard, *t, Fit.getValue()));
+    }
+    ThreadDesignation.setValue(t && tapped ? t->designation : "");
+
+    // Senkung nach Schraubennorm
+    const HeadTable* head = nullptr;
+    std::vector<std::string> screws;
+    if (t && HoleType.getValue() != 0) {
+        for (const auto& h : headTables()) {
+            if (h.countersink == (HoleType.getValue() == 2) && h.sizes.contains(t->designation)) {
+                screws.push_back(h.name);
+            }
+        }
+    }
+    if (screws.empty()) {
+        screws.emplace_back("None");
+    }
+    // die gängigsten Schrauben zuerst (Zylinderkopf ISO 4762, Senkkopf ISO 10642), dann alphabetisch
+    std::ranges::stable_partition(screws, [](const std::string& n) { return n == "ISO 4762" || n == "ISO 10642"; });
+    if (Screw.getEnumVector() != screws) {
+        const std::string current = Screw.isValid() ? Screw.getValueAsString() : std::string();
+        Screw.setEnums(screws);
+        Screw.setValue(std::ranges::find(screws, current) != screws.end() ? current.c_str() : screws.front().c_str());
+    }
+    if (t && HoleType.getValue() != 0) {
+        const std::string name = Screw.getValueAsString();
+        for (const auto& h : headTables()) {
+            if (h.name == name && h.countersink == (HoleType.getValue() == 2) && h.sizes.contains(t->designation)) {
+                head = &h;
+            }
+        }
+    }
+    if (head) {
+        const auto& [diameter, depth] = head->sizes.at(t->designation);
+        HeadDiameter.setValue(diameter);
+        if (head->countersink) {
+            CountersinkAngle.setValue(head->angle);
+        }
+        else {
+            HeadDepth.setValue(depth);
+        }
+    }
+
+    const bool custom = standard == 0;
+    Diameter.setStatus(App::Property::ReadOnly, t != nullptr);
+    for (App::Property* p : std::initializer_list<App::Property*> {&HeadDiameter, &HeadDepth, &CountersinkAngle}) {
+        p->setStatus(App::Property::ReadOnly, head != nullptr);
+    }
+    Size.setStatus(App::Property::Hidden, custom);
+    Kind.setStatus(App::Property::Hidden, custom);
+    Fit.setStatus(App::Property::Hidden, custom || tapped);
+    Modeled.setStatus(App::Property::Hidden, custom || !tapped);
+    Screw.setStatus(App::Property::Hidden, custom || HoleType.getValue() == 0 || !head);
+    applying = false;
 }
 
 bool Hole::makeTool(Part::TopoShape& tool, std::string& error) const
@@ -1403,20 +1936,42 @@ bool Hole::makeTool(Part::TopoShape& tool, std::string& error) const
     }
     const gp_Dir dir(n.x, n.y, n.z);
     constexpr double lead = 0.01;  // knapp über der Fläche beginnen, sonst schneidet die Bohrung koplanar
-    const double depth = (ThroughAll.getValue() ? 10000.0 : Depth.getValue()) + lead;  // ponytail: "durch alles" = 10 m
+    Base::BoundBox3d around;
+    for (const auto& c : centers) {
+        around.Add(Base::Vector3d(c.X(), c.Y(), c.Z()));
+    }
+    const double depth = (ThroughAll.getValue() ? throughAllLength(getDocument(), around) : Depth.getValue()) + lead;
+
+    // Modelliertes Gewinde: Rillen vom Kerndurchmesser D1 bis zum Nenndurchmesser, über die ganze Tiefe
+    const PartDesign::Hole::ThreadDescription* thread = Modeled.getValue() && Kind.getValue() == 1 && Size.isValid()
+        ? threadSize(Standard.getValue(), Size.getValueAsString())
+        : nullptr;
 
     std::vector<Part::TopoShape> holes;
-    for (const auto& c : centers) {
-        const gp_Ax2 ax(c.Translated(gp_Vec(dir) * -lead), dir);
-        std::vector<Part::TopoShape> parts {Part::TopoShape(BRepPrimAPI_MakeCylinder(ax, r, depth).Shape())};
-        if (HoleType.getValue() == 1 && head > r) {
-            parts.emplace_back(BRepPrimAPI_MakeCylinder(ax, head, HeadDepth.getValue() + lead).Shape());
+    try {
+        for (const auto& c : centers) {
+            const gp_Ax2 ax(c.Translated(gp_Vec(dir) * -lead), dir);
+            std::vector<Part::TopoShape> parts {Part::TopoShape(BRepPrimAPI_MakeCylinder(ax, r, depth).Shape())};
+            if (HoleType.getValue() == 1 && head > r) {
+                parts.emplace_back(BRepPrimAPI_MakeCylinder(ax, head, HeadDepth.getValue() + lead).Shape());
+            }
+            else if (HoleType.getValue() == 2 && head > r) {
+                const double h = head / std::tan(CountersinkAngle.getValue() * M_PI / 360.0);
+                parts.emplace_back(BRepPrimAPI_MakeCone(ax, head, 0, h + lead).Shape());
+            }
+            if (thread) {
+                const double minor = (thread->diameter - 1.082532 * thread->pitch) / 2;
+                // ab der Oberfläche bis eine Steigung vor den Grund (wie ein Gewindebohrer im Sackloch); die
+                // Enden liegen so nicht in denselben Ebenen wie die Bohrung
+                parts.emplace_back(threadTool(gp_Ax1(c, dir), lead, depth - lead - thread->pitch - lead, minor,
+                                              thread->pitch, false, false, 0));
+            }
+            holes.push_back(fuseAll(parts, getDocument()->getStringHasher()));
         }
-        else if (HoleType.getValue() == 2 && head > r) {
-            const double h = head / std::tan(CountersinkAngle.getValue() * M_PI / 360.0);
-            parts.emplace_back(BRepPrimAPI_MakeCone(ax, head, 0, h + lead).Shape());
-        }
-        holes.push_back(fuseAll(parts, getDocument()->getStringHasher()));
+    }
+    catch (const Standard_Failure&) {
+        error = "The thread could not be modeled; try a cosmetic thread";
+        return false;
     }
     tool = fuseAll(holes, getDocument()->getStringHasher());
     return true;
@@ -1931,9 +2486,57 @@ PROPERTY_SOURCE(Design::Thread, Design::DressUp)
 
 Thread::Thread()
 {
+    ADD_PROPERTY_TYPE(Standard, (0L), "Parameters", App::Prop_None, "Thread standard");
+    Standard.setEnums(StandardEnums);
+    ADD_PROPERTY_TYPE(ThreadSize, (0L), "Parameters", App::Prop_None, "Thread size; Auto fits the face");
     ADD_PROPERTY_TYPE(Pitch, (1.5), "Parameters", App::Prop_None, "Thread pitch");
+    ADD_PROPERTY_TYPE(Clearance, (0.0), "Parameters", App::Prop_None,
+                      "Clearance per side, e.g. 0.2 mm for 3D printing; negative gives interference");
     ADD_PROPERTY_TYPE(LeftHanded, (false), "Parameters", App::Prop_None, "Left-handed thread");
     Size.setStatus(App::Property::Hidden, true);
+    updateSizes();
+}
+
+void Thread::onChanged(const App::Property* prop)
+{
+    if (!isRestoring() && (prop == &Standard || prop == &ThreadSize)) {
+        updateSizes();
+    }
+    DressUp::onChanged(prop);
+}
+
+void Thread::setupObject()
+{
+    Standard.setValue(1L);
+    DressUp::setupObject();
+}
+
+void Thread::onDocumentRestored()
+{
+    updateSizes();
+    DressUp::onDocumentRestored();
+}
+
+/// Größenliste der Norm; eine feste Größe trägt ihre Steigung ein, "Auto" sucht beim Rechnen die passende
+void Thread::updateSizes()
+{
+    std::vector<std::string> sizes {"Auto"};
+    if (auto table = threadTable(Standard.getValue())) {
+        for (const auto& d : *table) {
+            sizes.emplace_back(d.designation);
+        }
+    }
+    if (ThreadSize.getEnumVector() != sizes) {
+        const std::string current = ThreadSize.isValid() ? ThreadSize.getValueAsString() : std::string();
+        ThreadSize.setEnums(sizes);
+        ThreadSize.setValue(std::ranges::find(sizes, current) != sizes.end() ? current.c_str() : "Auto");
+    }
+    const auto* t = threadSize(Standard.getValue(), ThreadSize.getValueAsString());
+    if (t) {
+        Pitch.setValue(t->pitch);
+    }
+    ThreadSize.setStatus(App::Property::Hidden, Standard.getValue() == 0);
+    Pitch.setStatus(App::Property::Hidden, Standard.getValue() != 0);  // bei Auto stünde sonst eine falsche Steigung da
 }
 
 App::DocumentObjectExecReturn* Thread::compute()
@@ -1952,19 +2555,18 @@ App::DocumentObjectExecReturn* Thread::compute()
         return new App::DocumentObjectExecReturn("The face must be cylindrical");
     }
     const gp_Cylinder cyl = surface.Cylinder();
-    const gp_Ax1 axis = cyl.Axis();
-    const double r = cyl.Radius(), p = Pitch.getValue();
-    // Länge der Fläche entlang der Achse
-    double t0 = 1e100, t1 = -1e100;
-    for (TopExp_Explorer v(face, TopAbs_VERTEX); v.More(); v.Next()) {
-        const double t = gp_Vec(axis.Location(), BRep_Tool::Pnt(TopoDS::Vertex(v.Current()))).Dot(gp_Vec(axis.Direction()));
-        t0 = std::min(t0, t);
-        t1 = std::max(t1, t);
+    // Achse immer gleich ausrichten (größte Komponente positiv): Welle und Bohrung derselben Lage bekommen dieselbe
+    // Gewinde-Phase, egal wie ihre Flächen entstanden sind
+    gp_Ax1 axis = cyl.Axis();
+    const gp_Dir d = axis.Direction();
+    const double big = std::abs(d.X()) >= std::abs(d.Y()) && std::abs(d.X()) >= std::abs(d.Z()) ? d.X()
+                     : std::abs(d.Y()) >= std::abs(d.Z())                                    ? d.Y()
+                                                                                             : d.Z();
+    if (big < 0) {
+        axis.Reverse();
     }
-    const double height = t1 - t0 - p;  // eine halbe Steigung Abstand an beiden Enden
-    if (p < Precision::Confusion() || height < p) {
-        return new App::DocumentObjectExecReturn("The face is too short for this pitch");
-    }
+    const double r = cyl.Radius();
+
     // Welle: Rillen nach innen; Bohrung (Fläche zeigt zur Achse): Rillen nach außen. Beides wird abgezogen.
     // Zeigt die Flächennormale von der Achse weg, ist es eine Welle (die Orientierung allein hängt von der Entstehung ab)
     gp_Pnt mid;
@@ -1979,32 +2581,39 @@ App::DocumentObjectExecReturn* Thread::compute()
                                                      * gp_Vec(axis.Location(), mid).Dot(gp_Vec(axis.Direction()))),
                           mid);
     const bool external = normal.Dot(fromAxis) > 0;
-    const double depth = (external ? 0.6134 : 0.5413) * p;
-    const double out = external ? 0.05 : -0.05, in = external ? -depth : depth;
-    // ponytail: vereinfachtes V-Profil ohne Abflachungen, Gewindeenden enden stumpf
-    TopoDS_Shape tool;
-    try {
-        const TopoDS_Shape helix = Part::TopoShape().makeHelix(p, height, r, 0, LeftHanded.getValue());
-        TopExp_Explorer spine(helix, TopAbs_WIRE);
-        BRepBuilderAPI_MakePolygon profile(gp_Pnt(r + out, 0, -0.45 * p), gp_Pnt(r + out, 0, 0.45 * p),
-                                           gp_Pnt(r + in, 0, 0), Standard_True);
-        BRepOffsetAPI_MakePipeShell pipe(TopoDS::Wire(spine.Current()));
-        pipe.SetMode(gp::DZ());  // Profil bleibt parallel zur Achse
-        pipe.Add(profile.Wire());
-        pipe.Build();
-        pipe.MakeSolid();
-        gp_Trsf place;
-        place.SetDisplacement(gp_Ax3(gp::XOY()),
-                              gp_Ax3(axis.Location().Translated(gp_Vec(axis.Direction()) * (t0 + p / 2)),
-                                     axis.Direction()));
-        tool = BRepBuilderAPI_Transform(pipe.Shape(), place, Standard_True).Shape();
+
+    // Steigung: aus der Norm (Auto: Größe nach dem Durchmesser der Fläche) oder frei
+    double p = Pitch.getValue();
+    if (auto table = threadTable(Standard.getValue())) {
+        const PartDesign::Hole::ThreadDescription* t = threadSize(Standard.getValue(), ThreadSize.getValueAsString());
+        if (!t) {  // Auto: Welle nach Nenndurchmesser, Bohrung nach Kerndurchmesser
+            t = &*std::ranges::min_element(*table, {}, [r, external](const auto& s) {
+                return std::abs((external ? s.diameter : s.diameter - 1.082532 * s.pitch) - 2 * r);
+            });
+        }
+        p = t->pitch;
     }
-    catch (const Standard_Failure&) {
-        return new App::DocumentObjectExecReturn("Thread failed");
+    // Länge der Fläche entlang der Achse
+    double t0 = 1e100, t1 = -1e100;
+    for (TopExp_Explorer v(face, TopAbs_VERTEX); v.More(); v.Next()) {
+        const double t = gp_Vec(axis.Location(), BRep_Tool::Pnt(TopoDS::Vertex(v.Current()))).Dot(gp_Vec(axis.Direction()));
+        t0 = std::min(t0, t);
+        t1 = std::max(t1, t);
     }
+    const double height = t1 - t0;
+    if (p < Precision::Confusion() || height < 2 * p) {
+        return new App::DocumentObjectExecReturn("The face is too short for this pitch");
+    }
+    if (std::abs(Clearance.getValue()) >= 0.3 * p) {
+        return new App::DocumentObjectExecReturn("Clearance must be smaller than a third of the pitch");
+    }
+    // ponytail: Gewinde läuft bis an die Flächenenden und ist dort abgeschnitten (kein Auslauf, keine Fase)
     Part::TopoShape res(0, getDocument()->getStringHasher());
     try {
-        res.makeElementCut({shape, Part::TopoShape(tool)});
+        const TopoDS_Shape tool = threadTool(axis, t0, height, r, p, external, LeftHanded.getValue(),
+                                             Clearance.getValue());
+        // Toleranz: die Enden der Rillen liegen genau in den Stirnflächen, ohne sie trennt OCCT nur Flächen auf
+        res.makeElementCut({shape, Part::TopoShape(tool)}, nullptr, 1e-5);
     }
     catch (const Standard_Failure&) {
         return new App::DocumentObjectExecReturn("Thread failed");

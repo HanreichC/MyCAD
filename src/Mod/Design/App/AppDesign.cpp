@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
+#include <App/Document.h>
+#include <App/DocumentObjectPy.h>
+#include <App/DocumentPy.h>
+#include <App/Part.h>
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
 #include <Base/PyObjectBase.h>
@@ -9,13 +13,117 @@
 
 namespace Design
 {
+/// Die Timeline-Verdrahtung, die sonst nur die Werkzeuge der Oberfläche machen, für Skripte und Headless-Tests
 class Module: public Py::ExtensionModule<Module>
 {
 public:
     Module()
         : Py::ExtensionModule<Module>("Design")
     {
+        add_varargs_method("root", &Module::root, "root(doc): root component, created if missing");
+        add_varargs_method("newComponent", &Module::newComponent, "newComponent(parent): empty component in parent");
+        add_varargs_method("newSketch", &Module::newSketch, "newSketch(component): sketch with profiles, in the timeline");
+        add_varargs_method("newBody", &Module::newBody, "newBody(feature[, component]): body created by feature");
+        add_varargs_method("addToTimeline", &Module::addToTimeline, "addToTimeline(obj): insert at the rollback marker");
+        add_varargs_method("removeFromTimeline", &Module::removeFromTimeline, "removeFromTimeline(obj): delete and rewire");
+        add_varargs_method("timeline", &Module::timeline, "timeline(doc): sketches and features in order");
+        add_varargs_method("attachToBodies", &Module::attachToBodies, "attachToBodies(feature, [bodies]): feature changes bodies");
+        add_varargs_method("rollbackMarker", &Module::rollbackMarker, "rollbackMarker(doc): active entries, -1 = all");
+        add_varargs_method("setRollbackMarker", &Module::setRollbackMarker, "setRollbackMarker(doc, n): roll back");
+        add_varargs_method("componentOf", &Module::componentOf, "componentOf(obj): component containing obj");
+        add_varargs_method("stableRef", &Module::stableRef,
+                           "stableRef(obj, element): (obj, element) with a body replaced by its timeline state");
         initialize("MyCAD Design: components, bodies and timeline features");
+    }
+
+private:
+    static App::Document* doc(const Py::Tuple& args, size_t i = 0)
+    {
+        if (args.size() <= i || !PyObject_TypeCheck(args[i].ptr(), &App::DocumentPy::Type)) {
+            throw Py::TypeError("expected a document");
+        }
+        return static_cast<App::DocumentPy*>(args[i].ptr())->getDocumentPtr();
+    }
+    template<class T = App::DocumentObject>
+    static T* obj(const Py::Object& o)
+    {
+        T* result = nullptr;
+        if (PyObject_TypeCheck(o.ptr(), &App::DocumentObjectPy::Type)) {
+            result = freecad_cast<T*>(static_cast<App::DocumentObjectPy*>(o.ptr())->getDocumentObjectPtr());
+        }
+        if (!result) {
+            throw Py::TypeError("expected a " + std::string(T::getClassTypeId().getName()));
+        }
+        return result;
+    }
+    static Py::Object py(App::DocumentObject* o)
+    {
+        return o ? Py::asObject(o->getPyObject()) : Py::None();
+    }
+
+    Py::Object root(const Py::Tuple& args)
+    {
+        return py(Design::root(doc(args), true));
+    }
+    Py::Object newComponent(const Py::Tuple& args)
+    {
+        return py(Design::newComponent(obj<App::Part>(args[0])));
+    }
+    Py::Object newSketch(const Py::Tuple& args)
+    {
+        return py(Design::newSketch(obj<App::Part>(args[0])));
+    }
+    Py::Object newBody(const Py::Tuple& args)
+    {
+        App::Part* component = args.size() > 1 && !args[1].isNone() ? obj<App::Part>(args[1]) : nullptr;
+        return py(Design::newBody(obj<Feature>(args[0]), component));
+    }
+    Py::Object addToTimeline(const Py::Tuple& args)
+    {
+        Design::addToTimeline(obj(args[0]));
+        return Py::None();
+    }
+    Py::Object removeFromTimeline(const Py::Tuple& args)
+    {
+        Design::removeFromTimeline(obj(args[0]));
+        return Py::None();
+    }
+    Py::Object timeline(const Py::Tuple& args)
+    {
+        Py::List list;
+        for (auto o : Design::timeline(doc(args))) {
+            list.append(py(o));
+        }
+        return list;
+    }
+    Py::Object attachToBodies(const Py::Tuple& args)
+    {
+        std::vector<Body*> bodies;
+        for (const auto& item : Py::Sequence(args[1])) {
+            bodies.push_back(obj<Body>(item));
+        }
+        Design::attachToBodies(obj<Feature>(args[0]), bodies);
+        return Py::None();
+    }
+    Py::Object rollbackMarker(const Py::Tuple& args)
+    {
+        return Py::Long(Design::rollbackMarker(doc(args)));
+    }
+    Py::Object setRollbackMarker(const Py::Tuple& args)
+    {
+        Design::setRollbackMarker(doc(args), static_cast<int>(Py::Long(args[1])));
+        return Py::None();
+    }
+    Py::Object componentOf(const Py::Tuple& args)
+    {
+        return py(Design::componentOf(obj(args[0])));
+    }
+    Py::Object stableRef(const Py::Tuple& args)
+    {
+        App::DocumentObject* o = obj(args[0]);
+        std::string element = Py::String(args[1]).as_std_string();
+        Design::stableRef(o, element);
+        return Py::TupleN(py(o), Py::String(element));
     }
 };
 }  // namespace Design

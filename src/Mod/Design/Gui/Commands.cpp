@@ -130,54 +130,8 @@ Gui::ViewProviderCoordinateSystem* originView(App::Part* root)
     );
 }
 
-/// Name ("FaceN", "EdgeN", "VertexN") des Elements in shape, das geometrisch element entspricht (Schwerpunkt + Größe).
-/// ponytail: geometrischer Abgleich statt topologischer Benennung; kann bei zwei deckungsgleichen Elementen irren
-std::string elementName(const TopoDS_Shape& shape, const TopoDS_Shape& element)
-{
-    if (element.IsNull()) {
-        return {};
-    }
-    const TopAbs_ShapeEnum type = element.ShapeType();
-    auto props = [type](const TopoDS_Shape& s) {
-        GProp_GProps p(type == TopAbs_VERTEX ? BRep_Tool::Pnt(TopoDS::Vertex(s)) : gp::Origin());
-        if (type == TopAbs_FACE) {
-            BRepGProp::SurfaceProperties(s, p);
-        }
-        else if (type == TopAbs_EDGE) {
-            BRepGProp::LinearProperties(s, p);
-        }
-        return p;
-    };
-    const char* prefix = type == TopAbs_FACE ? "Face" : type == TopAbs_EDGE ? "Edge" : "Vertex";
-    const GProp_GProps ref = props(element);
-    TopTools_IndexedMapOfShape all;
-    TopExp::MapShapes(shape, type, all);
-    for (int i = 1; i <= all.Extent(); ++i) {
-        const GProp_GProps p = props(all(i));
-        if (std::abs(p.Mass() - ref.Mass()) < 1e-6 * (1 + ref.Mass())
-            && p.CentreOfMass().Distance(ref.CentreOfMass()) < 1e-6) {
-            return prefix + std::to_string(i);
-        }
-    }
-    return {};
-}
-
-/// Bezug auf einen Body durch seinen Timeline-Zustand ersetzen (das Feature, das ihn gerade erzeugt hat).
-/// Sonst entsteht ein Kreis, sobald ein Feature aus einer Skizze/Ebene darauf denselben Body verändert.
-void stableRef(App::DocumentObject*& obj, std::string& element)
-{
-    auto body = freecad_cast<Design::Body*>(obj);
-    auto tip = body ? freecad_cast<Design::Feature*>(Design::stateAtMarker(body)) : nullptr;
-    if (!tip || element.empty()) {
-        return;
-    }
-    const TopoDS_Shape sub = body->Shape.getShape().getSubShape(element.c_str(), true);
-    const std::string name = elementName(tip->Shape.getShape().getShape(), sub);
-    if (!name.empty()) {
-        obj = tip;
-        element = name;
-    }
-}
+using Design::elementName;
+using Design::stableRef;
 
 /// Ursprungsebene oder Konstruktionsebene (Offset Plane)
 bool isPlane(const App::DocumentObject* obj)
@@ -199,14 +153,7 @@ bool isPlanarFace(App::DocumentObject* obj, const std::string& element)
 /// Neue, nicht angehängte Skizze mit Profiles-Begleiter in der Komponente root (ohne Transaktion)
 Sketcher::SketchObject* newSketch(App::Part* root)
 {
-    App::Document* doc = root->getDocument();
-    auto sketch = static_cast<Sketcher::SketchObject*>(doc->addObject("Sketcher::SketchObject", "Sketch"));
-    Design::folder(root, "Sketches")->addObject(sketch);
-    Design::addToTimeline(sketch);
-    auto profiles = static_cast<Design::Profiles*>(doc->addObject("Design::Profiles", "Profiles"));
-    root->addObject(profiles);
-    profiles->Sketch.setValue(sketch);
-    return sketch;
+    return static_cast<Sketcher::SketchObject*>(Design::newSketch(root));
 }
 
 /// Neue Skizze mit Profiles-Begleiter in der Komponente der Ebene bzw. des Körpers (ohne Transaktion)

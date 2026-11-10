@@ -257,7 +257,7 @@ wenn sichtbar für Nutzer, ein Commit auf `main`.
 
 ---
 
-#### 10.0 Test-Fundament
+#### 10.0 Test-Fundament · 0.1–0.4 erledigt (2026-11-10), 0.5 läuft
 
 | # | Aufgabe | Umsetzung |
 |---|---|---|
@@ -273,22 +273,23 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 
 #### 10.1 Lücken schließen
 
-**L1 Extrude: Ausdehnungen, Verjüngung, dünnwandig**
+**L1 Extrude: Ausdehnungen, Verjüngung, dünnwandig** · erledigt (2026-11-10)
 - `Extent` bekommt „To Object“ (Fläche, Ebene, Body) und „All“ (durch alles, aus der Bounding Box statt 10 m).
 - `TaperAngle` (beide Seiten, über `makeElementDraft` bzw. `makeElementPrismUntil`), `Thin` mit `Thickness` und Seite (innen, außen, Mitte) für offene und geschlossene Profile.
 - Wiederverwendung: `TopoShape::makeElementPrismUntil`, `makeElementDraft`, `makeElementThickSolid`.
 - Tests H: Volumen je Modus gegen Formel (Quader, Zylinder, Kegelstumpf bei Verjüngung); „To Object“ an schräger Fläche; „All“ durch zwei Bodies; dünnwandiges Rohr aus Kreis; Fehler bei Ziel, das nicht getroffen wird; Speichern/Laden; alte Dateien ohne neue Properties laden.
 - Tests G: Extrude-Dialog stellt Modus und Ziel um, Vorschau aktualisiert sich.
 
-**L2 Bohrung nach Norm**
+**L2 Bohrung nach Norm** · erledigt (2026-11-10)
 - Typen: Einfach, Durchgang (ISO 273 fein/mittel/grob), Gewinde (ISO metrisch Regel/Fein, UNC/UNF), dazu Senkung und Flachsenkung aus der Schraubennorm (ISO 4762, ISO 10642).
 - Tabellen aus `PartDesign::Hole::threadDescription` und `metricHoleDiameters` (schon im Repo), nicht kopieren.
 - Gewindebohrung modelliert oder kosmetisch (nur Kernloch plus Kennzeichnung im Browser).
 - „Durch alles“ aus der Bounding Box der Ziel-Bodies.
-- Tests C: Tabellen-Lookup M3, M5, M8, M12, 1/4-20 (Kernloch, Durchgang, Kopfmaße). H: Volumen der Bohrung gegen Formel; Durch alles bei 3 m großem Body; Senkung koaxial; Gewindebohrung gültiges Solid. G: Norm und Größe im Dialog wählen.
+- Tests H (die Tabellen kommen aus PartDesign, also mit FreeCAD): Tabellen-Lookup M5, M6, M8, 1/4 (Kernloch, Durchgang, Kopfmaße). H: Volumen der Bohrung gegen Formel; Durch alles bei 3 m großem Body; Senkung koaxial; Gewindebohrung gültiges Solid. G: Norm und Größe im Dialog wählen.
 
-**L3 Gewinde nach Norm, auch zum Drucken**
-- ISO-Profil mit Abflachungen (H/8, H/4) statt V-Profil, Größen aus derselben Tabelle wie L2, Links/Rechts, Gewindeauslauf.
+**L3 Gewinde nach Norm, auch zum Drucken** · erledigt (2026-11-10)
+- ISO-Profil mit Abflachungen (H/8, H/4) statt V-Profil, Größen aus derselben Tabelle wie L2 (Auto nach Durchmesser), Links/Rechts. Läuft über die ganze Fläche und endet dort bündig (kein Auslauf).
+- Gefunden beim Testen: das alte Gewinde schnitt gar nichts (Wendel mit `makeHelix` legt das Profil auf den doppelten Radius); der alte GUI-Test prüfte nur Logausgaben.
 - `Clearance`: Spiel je Flanke (0 = Norm; Preset „3D-Druck“ 0,2 mm), wird in 10.5 wiederverwendet.
 - Tests H: Außen- und Innengewinde M8 ineinander: mit Spiel keine Überschneidung (Common-Volumen 0), ohne Spiel und mit Übermaß Überschneidung > 0; Profiltiefe 0,6134·P ± 1 %; gültiges Solid für M3 bis M24; zu kurze Fläche gibt Fehler mit Lösung.
 

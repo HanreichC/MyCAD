@@ -49,7 +49,17 @@ DesignExport void attachToBodies(Feature* feature, const std::vector<Body*>& bod
 DesignExport std::vector<std::string> detachFromBodies(Feature* feature);
 /// Skizze oder Feature aus der Timeline löschen und die Kette dahinter neu verbinden
 DesignExport void removeFromTimeline(App::DocumentObject* obj);
+/// New Body: neuer Body im Ordner "Bodies" von component (ohne: Komponente des Features), Ergebnis von feature
+DesignExport Body* newBody(Feature* feature, App::Part* component = nullptr);
+/// Neue, nicht angehängte Skizze mit Profiles-Begleiter in component, am Ende der Timeline (ohne Transaktion)
+DesignExport App::DocumentObject* newSketch(App::Part* component);
 ///@}
+
+/// Name ("FaceN", "EdgeN", "VertexN") des Elements in shape, das geometrisch element entspricht (Schwerpunkt + Größe)
+DesignExport std::string elementName(const TopoDS_Shape& shape, const TopoDS_Shape& element);
+/// Bezug auf einen Body durch seinen Timeline-Zustand ersetzen (das Feature, das ihn gerade erzeugt hat).
+/// Sonst entsteht ein Kreis, sobald ein Feature aus einer Skizze/Ebene darauf denselben Body verändert.
+DesignExport void stableRef(App::DocumentObject*& obj, std::string& element);
 
 class DesignExport Body: public Part::Feature
 {
@@ -154,9 +164,30 @@ public:
     App::PropertyLength Distance;
     App::PropertyLength Distance2;
     App::PropertyBool Reversed;
+    App::PropertyLinkSub ToObject;  ///< Extent "To Object": Fläche oder Ebene
+    App::PropertyAngle TaperAngle;  ///< positiv = schmaler (Entformung), nicht bei "To Object"
+    App::PropertyBool Thin;         ///< dünne Wand entlang des Profilrands
+    App::PropertyLength Thickness;
+    App::PropertyEnumeration ThinSide;  ///< Inside, Outside, Center
+
+    enum ExtentType
+    {
+        ExtentOneSide,
+        ExtentSymmetric,
+        ExtentTwoSides,
+        ExtentToObject,
+        ExtentAll
+    };
 
     bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;
+
+protected:
+    void onChanged(const App::Property* prop) override;
+    void onDocumentRestored() override;
+
+private:
+    void updateVisibility();
 };
 
 class DesignExport Revolve: public Feature
@@ -307,8 +338,25 @@ public:
     App::PropertyLength HeadDepth;
     App::PropertyAngle CountersinkAngle;
     App::PropertyBool Reversed;
+    /// Norm: Größe, Durchgang oder Gewinde, Passung und Schraube füllen Diameter und Senkung aus den Tabellen
+    App::PropertyEnumeration Standard;  ///< Custom, ISO metric, ISO metric fine, UNC, UNF
+    App::PropertyEnumeration Size;      ///< z. B. "M5x0.8" (Liste je Norm)
+    App::PropertyEnumeration Kind;      ///< Clearance hole, Tapped hole
+    App::PropertyEnumeration Fit;       ///< Durchgang: Fine, Medium, Coarse
+    App::PropertyEnumeration Screw;     ///< Senkung nach Schraubennorm (Liste je Bohrungstyp)
+    App::PropertyBool Modeled;          ///< Gewinde modelliert (sonst nur Kernloch, kosmetisch)
+    App::PropertyString ThreadDesignation;  ///< Ausgabe: Gewinde der Bohrung, leer ohne Gewinde
+
     bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;
+
+protected:
+    void onChanged(const App::Property* prop) override;
+    void onDocumentRestored() override;
+
+private:
+    void applyStandard();
+    bool applying = false;
 };
 
 /// Profil entlang eines Pfads ziehen (Skizzenkanten oder Körperkanten). Einstellbare Werte liegen in der
@@ -462,9 +510,21 @@ class DesignExport Thread: public DressUp
 
 public:
     Thread();
+    App::PropertyEnumeration Standard;    ///< Custom (Pitch frei) oder eine Norm wie bei Hole
+    App::PropertyEnumeration ThreadSize;  ///< "Auto" = passend zum Flächendurchmesser, sonst z. B. "M8x1.25"
     App::PropertyLength Pitch;
+    App::PropertyDistance Clearance;  ///< Spiel je Seite (3D-Druck), negativ = Übermaß
     App::PropertyBool LeftHanded;
     App::DocumentObjectExecReturn* compute() override;
+
+protected:
+    void onChanged(const App::Property* prop) override;
+    void onDocumentRestored() override;
+    /// nur für neu angelegte Gewinde: Norm ISO metrisch, Größe automatisch (geladene behalten ihre Werte)
+    void setupObject() override;
+
+private:
+    void updateSizes();
 };
 
 /// Eingefügte Geometrie (STEP): je Solid ein neuer Body, ohne Verlauf (wie Fusions Base Feature)
