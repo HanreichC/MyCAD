@@ -84,6 +84,7 @@
 #include <QTextBlock>
 #include <QTextCursor>
 #include <QTextDocument>
+#include <QTextFrame>
 #include <QTreeWidget>
 #include <QSizePolicy>
 #include <QLabel>
@@ -2077,6 +2078,7 @@ public:
             }
         });
         articleLay->addWidget(view);
+        view->viewport()->installEventFilter(this);  // Textspalte bei jeder Breitenänderung neu mittig setzen
 
         // Titelzeile wie auf der Startseite: Suche als Kapsel über dem Artikel, rechts die Fensterknöpfe
         barCard = new GlassCard(Token::RadiusCapsule, false);
@@ -2149,6 +2151,9 @@ protected:
         if (obj == getMainWindow() && event->type() == QEvent::Resize) {
             setGeometry(getMainWindow()->rect());
         }
+        else if (obj == view->viewport() && event->type() == QEvent::Resize) {
+            centreText();
+        }
         return false;
     }
     void resizeEvent(QResizeEvent*) override
@@ -2162,9 +2167,8 @@ protected:
         barCard->place(QRectF(searchLeft, m, std::min<qreal>(SearchWidth, width() - searchLeft - controlsW - 2 * m), Token::BarHeight));
         const qreal top = m + Token::BarHeight + m;
         side->place(QRectF(m, m, BrowserWidth, height() - 2 * m));
-        // Lesebreite höchstens size.contentMaxWidth (560) plus Innenabstand und Scrollbar (W-4)
-        const qreal articleWidth = std::min<qreal>(width() - searchLeft - m, Token::ContentMaxWidth + 28 + 16 + 24);
-        articleCard->place(QRectF(searchLeft, top, articleWidth, height() - top - m));  // bündig mit der Suche
+        // Karte bis zum Rand; die Textspalte bleibt size.contentMaxWidth breit (W-4), siehe centreText()
+        articleCard->place(QRectF(searchLeft, top, width() - searchLeft - m, height() - top - m));  // bündig mit der Suche
     }
     void keyPressEvent(QKeyEvent* event) override
     {
@@ -2279,6 +2283,20 @@ a { color: %3; text-decoration: none; }
             html += QStringLiteral("<p class=\"keywords\">%1: %2</p>").arg(esc(T("Keywords")), esc(keywords.join(QStringLiteral(", "))));
         }
         view->setHtml(html);
+        centreText();
+    }
+
+    /// Lesetext höchstens size.contentMaxWidth (560) breit, mittig in der Karte (W-4); Ränder des Wurzelrahmens
+    void centreText()
+    {
+        QTextDocument* doc = view->document();
+        QTextFrameFormat f = doc->rootFrame()->frameFormat();
+        const qreal side = std::max(doc->documentMargin(), (view->viewport()->width() - Token::ContentMaxWidth) / 2.0);
+        if (f.leftMargin() != side) {
+            f.setLeftMargin(side);
+            f.setRightMargin(side);
+            doc->rootFrame()->setFrameFormat(f);
+        }
     }
 
     /// Suche in Titel, Schlagwörtern, Kurzbeschreibung und Schritten
