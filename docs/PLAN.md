@@ -1,6 +1,6 @@
 # MyCAD – Masterplan
 
-> Stand: 2026-10-10 · Basis: FreeCAD 27.1-dev, Commit `e9b474306f`
+> Stand: 2026-11-10 (Phase 10 neu) · Basis: FreeCAD 27.1-dev, Commit `e9b474306f`
 > Zielplattform: **ausschließlich Linux / CachyOS** (KDE Plasma, Wayland)
 
 ---
@@ -207,127 +207,195 @@ MyCAD/
 
 ---
 
-## 4. Phasenplan
+## 4. Stand und Plan
 
-Jede Phase endet mit einem **lauffähigen, testbaren Stand** und einem Commit-/Tag-Meilenstein.
+### 4.1 Was steht (Stand 2026-11-10)
 
-### Phase 0: Voraussetzungen
-- [x] Nichts global installieren (CLAUDE.md): Build-Umgebung als Dev Container `.devcontainer/` (Arch base-devel, Podman). Wayland-Socket und `/dev/dri` werden durchgereicht, damit die GUI aus dem Container startet.
-- [x] Image `mycad-dev` bauen. Weitere Pakete (z. B. `kwindowsystem` für KWin-Blur) kommen erst dazu, wenn eine Phase sie braucht.
+Die Phasen 0 bis 8 des ursprünglichen Plans sind zum großen Teil erledigt, nur anders als geplant: Die Oberfläche ist
+kein QML-Neubau, sondern Glass-Panels über dem vorhandenen 3D-Viewer (Entscheidung vom 2026-10-10).
 
-### Phase 1: Fundament: kopieren, entschlacken, bauen
-Ziel: `mycad` startet. Optisch ist es noch die alte FreeCAD-Oberfläche, aber nur mit Part/Sketcher/PartDesign, und alles baut aus dem MyCAD-Repo.
-- [x] Kopieren: `src/{Base,App,Gui,Main,Ext,3rdParty(Teilmenge)}`, `src/Mod/{Part,Sketcher,PartDesign,Material,Import,Measure,Mesh,MeshPart}`, `cMake` → `cmake`, `data` (Teilmenge), `LICENSE`, Top-Level-`CMakeLists.txt`, `tests` (Teilmenge)
-- [x] Herkunft dokumentieren: `docs/UPSTREAM.md` mit FreeCAD-Commit, Liste der übernommenen Pfade
-- [~] CMake entschlacken: Modul-Optionen, LibPack, SMESH/Netgen, Designer-Plugin, Doku sind raus; Coin/Pivy kommen aus dem System. Offen: MSVC/macOS-Zweige in `cMake/FreeCAD_Helpers`.
-- [ ] Nicht benötigte Teile aus `Gui` entfernen (Macro-Recorder-UI, Web, Assistant/Help, 3Dconnexion-Legacy, Designer-Plugin, Splash/Start-Seite, AddonManager-Hooks)
-- [~] Rebranding: Benutzer-Konfiguration unter `~/.config/MyCAD`, `~/.local/share/MyCAD` (erledigt, damit eine installierte FreeCAD-Version nicht gestört wird). Offen: Binärname `mycad` (Starter heißt schon so). Python-Modulnamen bleiben bis Phase 8 `FreeCAD`/`FreeCADGui`.
-- [x] Release-Build (Ninja, ccache, 6 Kerne, `nice`), alle 2119 Unit-Tests grün
-- [x] `.gitignore`, `README.md`, `install.sh` (Build im Container + Starter `mycad` + Menüeintrag)
+| Bereich | Erledigt | Offen (wandert in Phase 10) |
+|---|---|---|
+| Fundament | Build im Container, AppImage per CI, `.mycad`, Einstellungen, Deutsch, Hilfe | Tests laufen nicht in CI; Dev-Container auf ungepinntem Arch |
+| Oberfläche | Liquid Glass, Hell/Dunkel, Toolbar, Browser, Inspector, Timeline, ViewCube, Startseite, Notizen, Scribble, Materialien | Befehlssuche, Timeline umsortieren und gruppieren |
+| Datenmodell | Komponenten, Bodies, globale Timeline, Rollback, Suppress, Parameter, topologische Benennung | stille Rückfalle auf alte Kantennummern (siehe 10.2) |
+| Skizze | 12 Zeichen-, 7 Ändern-Werkzeuge, 9 Constraints, Bemaßung am Cursor, Conic | – |
+| Körper | 16 Create-, 12 Modify-, 6 Construct-Werkzeuge, Measure, Section | Extrude nur „Abstand“; Bohrung ohne Normen; Gewinde vereinfacht; Spiegeln/Muster/Drehen nur an Ursprungs-Achsen und -Ebenen; Fillet nur konstant, Fase nur gleichschenklig, keine Tangentenkette |
+| Baugruppe | Joints Rigid/Revolute/Slider/Cylindrical | kein Solver, keine Bewegung, keine Grenzen |
+| Austausch | STL, 3MF, STEP, DXF raus; STEP, DXF, SVG rein | 3MF ohne Farben und ohne Auflösung; STEP-Farben und Komponenten ungeprüft |
+| Prüfen | Messen mit Volumen | kein physisches Material, kein Gewicht |
 
-### Phase 2: Technik-Prototyp Liquid-Glass-Viewport *(größtes technisches Risiko zuerst)*
+### 4.2 Phase 10: Neu gedacht
 
-> **Entscheidung (2026-10-10):** Statt eines kompletten QML-Neubaus sitzen die Glass-Panels als GPU-Elemente
-> direkt in der Szene des vorhandenen 3D-Viewers (`QuarterWidget` ist ein `QGraphicsView`). Coin rendert zuerst,
-> danach blurrt `Gui/Shell/GlassPanel` die fertigen Pixel unter sich. Vorteil: Sketcher, Task-Dialoge, Auswahl
-> und Undo von FreeCAD funktionieren unverändert weiter. Abschnitt 3.2 (QML) gilt damit nur noch als Option.
+Ziel: MyCAD wird so leicht wie Papier, ohne an Präzision zu verlieren. Die Lücken aus 4.1 werden zuerst geschlossen,
+danach kommen sieben neue Ideen. Notizen und Scribble waren der Anfang.
 
-- [x] `Gui/Shell/GlassPanel`: Blur (Downsample + Gauß), Linse mit Farbaufspaltung, Glanzkante, Tönung, Schatten
-- [x] `Gui/Shell/Shell`: Menüs/Toolbars/Docks/Statusleiste weg, 3D-Ansicht randlos über das ganze Fenster,
-      Glass-Toolbar (wechselt im Sketch-Modus), Browser links, Inspector rechts nur bei aktivem Werkzeug,
-      beim Start automatisch neues Design, Inter-Schrift, Hell/Dunkel nach System
-- [ ] Offen: eigenes Icon-Set, eigener ViewCube, Timeline unten, rahmenloses Fenster, pivy-SWIG-Fehler im Container
-Ziel: Ein QML-Fenster zeigt eine Coin-Szene mit Navigation, darüber ein echtes Liquid-Glass-Panel bei 60+ fps.
-- [ ] `CoinViewportItem` (QQuickFramebufferObject, OpenGL-RHI), Maus/Tastatur/Touchpad → `SoEventManager`
-- [ ] Glass-Shader v1: Blur, Lensing, Specular, adaptive Tönung. Vergleich mit Apple-Referenzscreenshots.
-- [ ] Performance-Messung (4K, Wayland, iGPU/dGPU), Fallback-Strategie
-- [ ] Prüfen, wie viel von `View3DInventorViewer` (Selektion, Highlight, Edit-Mode-Hooks des Sketchers) sich an das neue Item hängen lässt. Ergebnis: Adapter-Schicht oder Refactor.
-- [ ] **Entscheidungspunkt**: Prototyp mit dir abnehmen, bevor die UI in die Breite geht
+**Reihenfolge** (nach Abhängigkeiten, nicht nach Nummer):
 
-### Phase 3: Design-System & UI-Shell
-Ziel: Die leere MyCAD-Oberfläche steht komplett, mit Dokument laden/speichern und 3D-Ansicht.
-- [ ] Design-Tokens (QML-Singleton): Farben Hell/Dunkel, Akzent, Radien (konzentrisch), Abstände (8-pt-Raster), Typografie (Inter), Schatten, Animationskurven (Spring)
-- [ ] Kontrollelemente-Bibliothek: Button (Glass, Prominent, Plain), Icon-Button, Segmented Control, Toggle, Slider, Text-/Zahlenfeld mit Einheiten und Ausdrücken, Stepper, Menu, Popover, Tooltip, Sheet, Alert, Search Field, List/Outline, Disclosure
-- [ ] Icon-Set v1 (Werkzeuge der Phasen 4–6), Pipeline SVG → QML
-- [ ] Fensterrahmen, Titelleiste, KDE-Hell/Dunkel-Erkennung, Reduce Transparency/Motion
-- [ ] Panels: Toolbar, Browser, Inspector, Timeline (vorerst leer), ViewCube, Navigationsleiste, Statusmeldungen (Toasts)
-- [ ] Command Palette (`S`/`Ctrl+K`), Tastenkürzel wie in Fusion (E Extrude, F Fillet, L Line, R Rectangle, C Circle, D Dimension, T Trim, X Construction, Q Press Pull …)
-- [ ] Marking Menu (Rechtsklick-Radialmenü)
-- [ ] Startbildschirm: zuletzt geöffnete Designs mit Vorschaubildern, „New Design“
-- [ ] Viewport-Look v1: Beleuchtung, Hintergrund, Kanten, Auswahl-Glow, Grid
+| Etappe | Inhalt | baut auf |
+|---|---|---|
+| 10.0 | Test-Fundament | – |
+| 10.1 | Lücken schließen | 10.0 |
+| 10.2 | Idee 6: Fehler, die sich erklären und reparieren | 10.1 (alle neuen Features nutzen das Fehlermodell) |
+| 10.3 | Idee 2: Fläche antippen, Zahl ändern | 10.2 |
+| 10.4 | Idee 3: Die Notiz ist die Parameterliste | 10.3 (Maß am Modell ↔ Parameter ↔ Notiz) |
+| 10.5 | Idee 4: Werkzeuge für den Zweck | 10.1 (Normtabellen), 10.2 |
+| 10.6 | Idee 5: Der Druck gehört in den Viewport | 10.1 (3MF mit Farben) |
+| 10.7 | Idee 7: Keine Angst (Speichern, Versionen, Varianten) | 10.0 |
+| 10.8 | Idee 1: Handschrift ist der Befehl | 10.1, 10.3, 10.5 |
 
-### Phase 4: Fusion-Datenmodell (`Mod/Design`)
+**Testarten** (jede Funktion bekommt alle, die passen):
 
-> **Stand 2026-10-10 (vorgezogen vor Phase 3):** `Mod/Design` steht und ist in der Oberfläche verdrahtet.
-> Root-Komponente (App::Part) mit Origin/Bodies/Sketches, Profile (alle geschlossenen Regionen einer Skizze),
-> Body mit Tip, globale Timeline-Leiste (Klick wählt, Doppelklick bearbeitet, Rechtsklick Suppress/Delete).
-> Features: Extrude, Revolve, Fillet, Chamfer, Shell, Combine, Move, Mirror (Bodies). Export 3MF/STL/STEP.
-> Skizzen auf Körperflächen und Werkzeug-Bodies hängen am Timeline-Zustand (Feature), nicht am Body.
-> Seitdem dazu: Pattern, Hole, Press Pull, Offset Plane, Komponenten (New Component, Aktivieren,
-> Verschieben, Extrude -> New Component), Rollback-Marker, Suppress/Delete, topologische Benennung
-> für Kanten/Flächen (Element-Maps) und Profile (Signaturen), Ziehpfeile, Conic Curve.
-> Optik: eigenes Icon-Set, eigener ViewCube, rahmenloses Fenster, Fusion-Skizzenfarben, MSAA 4x.
-> Stand 2026-10-11 dazu: Sweep, Loft, Rib, Box/Cylinder/Sphere/Torus/Coil, Draft, Scale, Align, Split Body,
-> Thread (modelliert), Pattern von Bodies, Press Pull auf gekrümmten Flächen, Appearance, Change Parameters
-> (Ausdrücke in allen Maßfeldern), Insert STEP/DXF/SVG, Plane/Midplane/Axis/Point, Measure, Section Analysis.
-> Skizze: Varianten-Dropdowns, Offset (ganze Kontur), Mirror, Muster, Move/Scale, Text. Einstellungen:
-> Navigation, Kamera, Tasten als Maustasten (cad.helper). Fehlermeldungen im MyCAD-Stil.
-> Plane at Angle, Web, Emboss, Replace/Split Face, Operationen über Komponentengrenzen (Combine, Move,
-> Scale, Mirror, Pattern rechnen in die Koordinaten jeder Komponente um). Joints: Rigid, Revolute, Slider, Cylindrical (ohne Animation).
-Ziel: Mehrere Komponenten und Bodies in einer Datei, globale Timeline, erste Features.
-- [ ] `Component`, `Body`, `Feature`-Basis, `Timeline` inkl. Rollback-Marker, Suppress, Reorder, Gruppen
-- [ ] Algorithmen aus PartDesign in eine Bibliothek auslagern (`Design/Algo`)
-- [ ] Erste Features: **Extrude** (alle Fusion-Optionen: One Side/Two Sides/Symmetric, Distance/To Object/All, Taper, Operation) und **Revolve**
-- [ ] Aktivieren von Komponenten, „New Component“, Bodies ↔ Komponenten umwandeln
-- [ ] Move/Copy (Bodies, Komponenten; frei, Punkt-zu-Punkt, Rotieren) als Timeline-Feature
-- [ ] Browser- und Timeline-Modelle an QML angebunden
-- [ ] Dateiformat `.mycad` (ZIP + Document.xml + BREP + Vorschaubild), Undo/Redo über Transactions
-- [ ] Tests: Recompute-Kette, Rollback, Speichern/Laden, Topo-Naming-Stabilität
+- **C** Logik-Check ohne FreeCAD: `tests/<name>_check.cpp`, header-only Logik, `g++ -std=c++20 -I src …` (wie die Scribble-Checks).
+- **H** Headless-Test: `tests/design/test_<name>.py` mit `FreeCADCmd` und `unittest` aus der Standardbibliothek. Prüft
+  Geometrie über Volumen, Flächen, Maße, Gültigkeit; deckt Speichern/Laden und Undo ab.
+- **G** GUI-Test: `tests/gui/test_<name>.py`, echte Klicks wie bisher, in CI unter Xvfb.
+- Jede neue Oberfläche geht durch MyStyle § 14 (Hell, Dunkel, Kontrast, Transparenz und Bewegung reduziert, Deutsch).
 
-### Phase 5: Sketch, vollständig (Abschnitt 2.2)
-- [ ] Sketch-Edit-Mode im neuen Viewport: Kamera „Look At“, Glass-Sketch-Palette, Freiheitsgrade-Anzeige, Farbcodierung
-- [ ] Heads-Up-Bemaßungseingabe (Tab wechselt Felder), Inferenzlinien, Auto-Constraints, Snap
-- [ ] Alle Create-Werkzeuge inkl. neu: **Conic Curve**, **Circular Pattern**, Text auf Pfad
-- [ ] Alle Modify-Werkzeuge (Fillet, Chamfer-Varianten, Offset, Trim, Extend, Break, Scale, Move/Copy)
-- [ ] Alle Constraints mit neuen Glyphen; Konflikte als verständliche Meldung
-- [ ] Project / Include / Intersect / Project to Surface
-- [ ] Profilerkennung (geschlossene Regionen, verschachtelte Profile) → Auswahl einzelner Profile für Extrude (Fusion-typisch)
-- [ ] 3D-Sketch (Basis)
-- [ ] Neues Rendering der Skizzengeometrie (glatte Linien, MSAA, Punkte als Kreise, Constraint-Badges)
-
-### Phase 6: Solid Create (Abschnitt 2.3)
-- [ ] Sweep (Pfad, Führungsschiene, Twist), Loft (Rails, Centerline, Tangenz)
-- [ ] Hole (alle Typen, Gewindetabellen ISO/UNC), Thread (cosmetic + modeled)
-- [ ] Rib, Web, Emboss (Text/Profil auf Fläche prägen/gravieren)
-- [ ] Primitive: Box, Cylinder, Sphere, Torus, Coil, Pipe
-- [ ] Pattern (Rectangular, Circular, on Path) für Features/Bodies/Faces, Mirror
-- [ ] Direkte Manipulatoren im Viewport (Glass-Pfeile und -Griffe zum Ziehen von Distanzen und Winkeln)
-
-### Phase 7: Modify, Construct, Inspect
-- [ ] Press Pull, Fillet (konstant/variabel/Rule), Chamfer, Shell, Draft, Scale, Combine
-- [ ] Offset Face, Replace Face, Split Face, Split Body, Silhouette Split, Align, Delete
-- [ ] Physical Material & Appearance (Material-Bibliothek, Glass-Picker, Drag & Drop auf Bodies)
-- [ ] Construct: alle Ebenen-, Achsen- und Punkt-Varianten
-- [ ] Inspect: Measure (Glass-HUD), Interference, Section Analysis, Center of Mass, Component Colors
-- [ ] Parameters-Dialog (Benutzerparameter, Ausdrücke, Favoriten)
-
-### Phase 8: Import/Export, Politur, Paket
-- [ ] Export STL/3MF (Auflösungsvorgaben, pro Body/Komponente), STEP (AP214/AP242 mit Farben und Komponentenstruktur)
-- [ ] Import STEP (als Komponenten), DXF/SVG → neue Skizze
-- [ ] Performance: Recompute-Profiling, asynchrones Tessellieren, große Designs
-- [ ] Animationen & Mikrointeraktionen, Feinschliff beider Themes, Barrierefreiheit
-- [ ] Python-Namespace umbenennen (`FreeCAD` → `MyCAD`, Alias für Kompatibilität)
-- [ ] Toten Code entfernen (alte Qt-Widgets-Oberfläche, ungenutzte Gui-Teile, PartDesign-Reste)
-- [ ] `PKGBUILD` für CachyOS, `.desktop`-Datei, MIME-Typ `.mycad`, App-Icon
-- [ ] Autosave & Wiederherstellung, Versionen einer Datei (lokal)
-
-### Phase 9: Später / optional
-- [ ] Joints (Rigid, Revolute, Slider, Cylindrical, Pin-Slot, Planar, Ball) mit OndselSolver, statisch
-- [ ] Data Panel: lokale Projektordner mit Designs, Vorschaubildern und Versionen (wie Fusions Projektbrowser)
-- [ ] Surface-Grundlagen (Thicken, Boundary Fill, Patch), falls doch gebraucht
-- [ ] Ableitung (Derive) von Komponenten aus anderen Designs
+**Fertig heißt** für jedes Paket: alle Tests grün (auch die alten), Hilfe-Artikel EN/DE, Übersetzungen, README-Abschnitt
+wenn sichtbar für Nutzer, ein Commit auf `main`.
 
 ---
+
+#### 10.0 Test-Fundament
+
+| # | Aufgabe | Umsetzung |
+|---|---|---|
+| 0.1 | Headless-Läufer | `tests/design/run.sh`: startet `FreeCADCmd` im Container, führt alle `test_*.py` aus, Exit-Code ≠ 0 bei Fehler |
+| 0.2 | GUI-Tests ohne Desktop | `tests/gui/run.sh` nimmt ohne `WAYLAND_DISPLAY` Xvfb (`QT_QPA_PLATFORM=xcb`); `run_all.sh` sammelt `FAIL`-Zeilen |
+| 0.3 | CI | `release.yml`: Unit-Tests (ctest), C-Checks, H-Tests und eine GUI-Auswahl vor dem AppImage. Rot = kein Release |
+| 0.4 | Gepinnter Container | `Dockerfile` auf festes Datum aus dem Arch Linux Archive; Aktualisieren = Datum ändern, Tests laufen lassen |
+| 0.5 | Grundlinie | alle vorhandenen GUI-Tests laufen lassen, Ergebnis festhalten; rote Tests vor 10.1 reparieren oder begründen |
+
+Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Volumen). Der Läufer selbst ist der Test für 0.1–0.3.
+
+---
+
+#### 10.1 Lücken schließen
+
+**L1 Extrude: Ausdehnungen, Verjüngung, dünnwandig**
+- `Extent` bekommt „To Object“ (Fläche, Ebene, Body) und „All“ (durch alles, aus der Bounding Box statt 10 m).
+- `TaperAngle` (beide Seiten, über `makeElementDraft` bzw. `makeElementPrismUntil`), `Thin` mit `Thickness` und Seite (innen, außen, Mitte) für offene und geschlossene Profile.
+- Wiederverwendung: `TopoShape::makeElementPrismUntil`, `makeElementDraft`, `makeElementThickSolid`.
+- Tests H: Volumen je Modus gegen Formel (Quader, Zylinder, Kegelstumpf bei Verjüngung); „To Object“ an schräger Fläche; „All“ durch zwei Bodies; dünnwandiges Rohr aus Kreis; Fehler bei Ziel, das nicht getroffen wird; Speichern/Laden; alte Dateien ohne neue Properties laden.
+- Tests G: Extrude-Dialog stellt Modus und Ziel um, Vorschau aktualisiert sich.
+
+**L2 Bohrung nach Norm**
+- Typen: Einfach, Durchgang (ISO 273 fein/mittel/grob), Gewinde (ISO metrisch Regel/Fein, UNC/UNF), dazu Senkung und Flachsenkung aus der Schraubennorm (ISO 4762, ISO 10642).
+- Tabellen aus `PartDesign::Hole::threadDescription` und `metricHoleDiameters` (schon im Repo), nicht kopieren.
+- Gewindebohrung modelliert oder kosmetisch (nur Kernloch plus Kennzeichnung im Browser).
+- „Durch alles“ aus der Bounding Box der Ziel-Bodies.
+- Tests C: Tabellen-Lookup M3, M5, M8, M12, 1/4-20 (Kernloch, Durchgang, Kopfmaße). H: Volumen der Bohrung gegen Formel; Durch alles bei 3 m großem Body; Senkung koaxial; Gewindebohrung gültiges Solid. G: Norm und Größe im Dialog wählen.
+
+**L3 Gewinde nach Norm, auch zum Drucken**
+- ISO-Profil mit Abflachungen (H/8, H/4) statt V-Profil, Größen aus derselben Tabelle wie L2, Links/Rechts, Gewindeauslauf.
+- `Clearance`: Spiel je Flanke (0 = Norm; Preset „3D-Druck“ 0,2 mm), wird in 10.5 wiederverwendet.
+- Tests H: Außen- und Innengewinde M8 ineinander: mit Spiel keine Überschneidung (Common-Volumen 0), ohne Spiel und mit Übermaß Überschneidung > 0; Profiltiefe 0,6134·P ± 1 %; gültiges Solid für M3 bis M24; zu kurze Fläche gibt Fehler mit Lösung.
+
+**L4 Freie Bezüge für Spiegeln, Muster, Drehen**
+- Neues `Reference` (LinkSub) bei Mirror, Pattern (Richtung 1/2, Achse), Move (Drehachse): Ursprungsebene/-achse, Konstruktionsebene/-achse, ebene Fläche, gerade Kante, Zylinderfläche (Achse). Ist es leer, gilt das alte Enum (alte Dateien laden unverändert).
+- Muster entlang Pfad (Kante oder Skizze) als dritter Typ.
+- Tests H: Spiegeln an schräger Konstruktionsebene (Schwerpunkt gespiegelt), an Körperfläche; Muster entlang Kante unter 30°; kreisförmig um Zylinderachse; entlang Bogen; alte Datei mit Enum lädt gleich.
+
+**L5 Rundung und Fase**
+- Tangentenkette: eine Kante wählt alle tangential anschließenden (Schalter, Standard an, wie in Fusion).
+- Rundung variabel: Start- und Endradius je Kante.
+- Fase: „Zwei Abstände“ und „Abstand und Winkel“, Seite tauschen.
+- Tests H: Kette an einem abgerundeten Rechteck-Profil (8 Kanten aus 1); variable Rundung gültig und Volumen zwischen den beiden konstanten; Fasen-Varianten gegen Formel am Quader.
+
+**L6 Baugruppe bewegt sich**
+- Joints werden in Abhängigkeitsreihenfolge gelöst; Konflikte (zwei Joints bewegen dieselbe Komponente gegensätzlich) melden statt still überschreiben.
+- Grenzen (min/max) für Winkel und Weg; neue Typen Planar, Ball, Pin-Slot.
+- Bewegen: Joint im Viewport ziehen oder „Animieren“ (Hin und Her zwischen den Grenzen), Kollision optional rot.
+- Geschlossene Ketten (Viergelenk) brauchen einen echten Solver: **Entscheidung** OndselSolver aus FreeCAD übernehmen (LGPL, wie MyCAD). Erst wenn Ketten ohne Schleifen sauber laufen.
+- Tests H: Kette aus drei Komponenten folgt; Grenze klemmt den Wert; Konflikt meldet Fehler; Viergelenk schließt sich (nach Solver). G: Joint ziehen dreht die Komponente, Animation läuft und stoppt mit Esc.
+
+**L7 Timeline**
+- Ziehen zum Umsortieren, nur wenn die Abhängigkeiten es erlauben (sonst springt der Eintrag zurück, Hinweis nennt die Abhängigkeit).
+- Gruppen: Einträge markieren, „Gruppieren“, auf- und zuklappen, umbenennen.
+- Tests H: gültiges Umsortieren gibt dieselben Volumen; ungültiges wird abgelehnt; Gruppe übersteht Speichern/Laden; Undo stellt die Reihenfolge wieder her. G: Ziehen mit der Maus.
+
+**L8 Austausch**
+- 3MF mit Farben je Body (3MF Materials-Erweiterung) und Objektnamen; Auflösung grob/normal/fein (Abweichung 0,1/0,02/0,005 mm, Winkel) im Export-Dialog und in den Einstellungen.
+- STEP über `ImportGui` (Farben, Komponentenstruktur, Namen).
+- Tests H: 3MF entpacken und XML prüfen (Farben, Anzahl Objekte, Dreiecke steigen mit der Auflösung); STEP exportieren und wieder einlesen: gleiche Anzahl Komponenten, Farben, Volumen.
+
+**L9 Physisches Material und Gewicht**
+- Jeder Body hat ein physisches Material (Dichte aus `Mod/Material`); Appearance schlägt das passende vor (Walnuss → Holz, Alu eloxiert → Aluminium, PLA → PLA). Messen zeigt Masse und Schwerpunkt.
+- Tests H: 10-cm-Würfel Aluminium = 2,70 kg ± 1 %; Wechsel der Appearance setzt das Material, eigene Wahl bleibt. G: Messen zeigt Masse.
+
+**L10 Befehlssuche**
+- `S` oder `Strg+K` öffnet eine Suche (Glas-Popover): Befehle EN/DE mit Synonymen („Bohrung“, „Loch“, „hole“), zuletzt benutzte oben, Tastenkürzel daneben; Objekte im Design (Bodies, Skizzen, Parameter) als zweite Gruppe.
+- Tests C: Ranking (Präfix vor Teilwort vor Synonym, Umlaute, Tippfehler um 1 Zeichen). G: Tippen „boh“, Enter startet Bohrung; Esc schließt; Tastatur und Fokusring.
+
+**L11 Plan aktuell halten** – dieses Dokument nach jeder Etappe nachziehen.
+
+---
+
+#### 10.2 Idee 6: Fehler, die sich erklären und reparieren
+
+- **Fehlermodell:** Features melden `Code`, Text und Vorschläge (`Fix`: Beschriftung, Property, Wert). Die Timeline zeigt sie in einem Glas-Popover am Eintrag, der Viewport hebt die betroffenen Kanten/Flächen rot hervor (mit Symbol, nie nur Farbe).
+- **Vorschläge mit Rechnung:** Rundung/Fase zu groß → größter Wert, der noch geht (Bisektion, max. 12 Versuche; `ponytail:` Kosten = 12 Rundungen, reicht für einzelne Features). Shell zu dick, Gewinde zu kurz, Drehachse durch das Profil, Ziel nicht getroffen (Richtung tauschen), leeres Ergebnis bei Cut (Operation prüfen).
+- **Bezüge:** Heute fällt `DressUp::elements` still auf die alte Kantennummer zurück, wenn ein Name verloren geht. Neu: Rückfall wird erkannt, das Feature bekommt eine Warnung „Bezug unsicher“ und Kandidaten (gleicher Typ, nächste Lage, ähnliche Länge). „War es diese Kante?“ zeigt sie zur Wahl.
+- Tests H: je Fehlerart ein Aufbau, der den Fehler auslöst; Code und Vorschlag stimmen; Vorschlag anwenden macht das Feature gültig. Bezug: Fillet auf Kante, davor ein Feature einfügen, das die Topologie ändert → Warnung statt falscher Kante; Kandidat wählen repariert. G: Popover öffnet sich am roten Eintrag, Klick auf den Vorschlag behebt den Fehler, Undo nimmt ihn zurück.
+
+#### 10.3 Idee 2: Fläche antippen, Zahl ändern
+
+- **Treibende Maße finden** (App, ohne GUI): `Design::drivingDimensions(body, "FaceN")` liefert die Werte, die diese Fläche erzeugen: Deckfläche eines Extrudes → `Distance`; Seitenfläche → Bemaßungen der Skizzenkante, aus der sie gezogen wurde; Bohrungswand → Durchmesser; Rundungsfläche → Radius; Press-Pull-Fläche → Abstand; Grundkörper → Länge/Breite/Höhe/Radius. Weg über die Element-Map (Entstehungsgeschichte der Fläche).
+- **Am Modell:** Klick auf eine Fläche ohne aktives Werkzeug zeigt die Maße als kleine Glas-Chips an der Fläche. Klick (oder Tab) öffnet das Feld, Enter rechnet neu (eine Transaktion, Undo), Esc bricht ab. Ausdrücke und Parameter-Namen gehen; ist das Maß an einen Parameter gebunden, ändert sich der Parameter (und in 10.4 die Notiz).
+- Timeline bleibt für Fortgeschrittene, man muss sie nicht mehr kennen.
+- Tests H: Quader aus Extrude: Deckfläche → Distance; Seitenfläche → Skizzenmaß; Bohrung → Durchmesser; Rundung → Radius; Grundkörper; Wert setzen ändert Volumen wie erwartet; nach Einfügen eines Features davor findet es noch dieselben Maße; Maß mit Parameter gibt den Parameter zurück. G: Fläche klicken, Chip erscheint, „30“ tippen, Enter, Körper ändert sich, Strg+Z stellt zurück; Tastatur-Bedienung (Tab, Esc).
+
+#### 10.4 Idee 3: Die Notiz ist die Parameterliste
+
+- Zeilen `Name = Ausdruck` in einer Notiz (ohne `=` am Ende) legen Parameter an oder ändern sie. Rechenzeilen (`… =`) bleiben wie heute.
+- Hinter einer Parameterzeile mit Formel steht der Wert grau („Breite = Wand * 20 → 40 mm“). Doppelte Namen in zwei Notizen: die zweite Zeile bekommt Fehlersymbol und Text.
+- Umlaute erlaubt: „Wandstärke“ wird intern `Wandstaerke`, alle Maßfelder verstehen beide Schreibweisen.
+- Zeile löschen: Parameter verschwindet, außer er wird noch benutzt; dann bleibt er, und die Notiz zeigt, wo er benutzt wird (kein stiller Datenverlust).
+- Zwei Richtungen: Ändert man den Parameter im Dialog oder am Modell (10.3), ändert sich die Zeile in der Notiz. Der Parameter-Dialog zeigt die Quelle („Notiz 2“).
+- Tests C: Zeilen-Parser (Definition, Rechnung, Kommentar, Dezimalkomma, Einheiten, Umlaute, ungültige Namen, Leerzeichen). H: Notiztext → Parameter; Formel zwischen Parametern; Feature folgt; Löschen eines benutzten Parameters bleibt erhalten; Konflikt; Rückweg Parameter → Notiz; Speichern/Laden. G: in Notiz tippen, Körper ändert sich; Wert am Modell ändern, Notiz zeigt den neuen Wert.
+
+#### 10.5 Idee 4: Werkzeuge für den Zweck
+
+- **Passung:** zwei Flächen (Welle/Bohrung oder zwei ebene Flächen) wählen, Passung aussuchen: ISO 286 (H7/g6, H7/h6, H7/k6, H7/p6, H8/f7) oder 3D-Druck (eng/normal/locker, Werte in den Einstellungen, Standard 0,1/0,2/0,3 mm je Seite). Ein Timeline-Feature versetzt die Fläche auf das Mittelmaß und zeigt das Spiel an.
+- **Schraube hier:** Punkt oder Achse durch zwei Komponenten wählen, Schraube aussuchen (ISO 4762, ISO 10642, ISO 7380; M2 bis M12; Länge vorgeschlagen). Ein Feature macht in der oberen Komponente Durchgang plus Senkung, in der unteren Gewinde, Einschmelzmutter-Loch (3D-Druck) oder Mutterfalle.
+- **Druckgewinde:** Gewinde (L3) mit Preset „3D-Druck“ und Hinweis bei zu kleiner Steigung.
+- Tests C: ISO-286-Tabelle (Ø20 H7 = 0/+21 µm, g6 = −7/−20 µm, Bereichsgrenzen 3/6/10/18/30/50/80 mm). H: Passung auf Welle Ø20 → gemessener Durchmesser im Toleranzfeld; 3D-Druck-Passung vergrößert die Bohrung um 2 × Spiel; Schraube M4 ISO 4762: Bohrungen koaxial, Durchmesser laut Tabelle, Einschmelzmutter-Loch; gleiche Funktion über Komponentengrenzen. G: Werkzeug aus der Befehlssuche, zwei Flächen klicken, Passung wählen.
+
+#### 10.6 Idee 5: Der Druck gehört in den Viewport
+
+- **Druckansicht** (Schalter in der Toolbar, wie ein Material): Überhänge über dem Grenzwinkel (Standard 45°) rot schraffiert, Flächen auf dem Bett grün, Wände unter der Mindestdicke (Standard 0,8 mm) gelb; Legende mit Text. Druckrichtung wählbar („Diese Fläche nach unten“).
+- Überhang im Shader (`BodyShading`), Wanddicke auf der CPU per Strahl gegen die Normale je Tessellierungspunkt (`ponytail:` O(Punkte × Flächen); Obergrenze 50 000 Punkte, darüber ausgedünnt).
+- **Drucken:** findet OrcaSlicer, Bambu Studio, PrusaSlicer (Pfad, Flatpak, AppImage in `~/Applications`), schreibt 3MF mit Farben (L8) und öffnet den Slicer damit; merkt sich die Wahl. Ohne Slicer: Export-Dialog.
+- Tests C: Überhang-Klassifikation (Normale gegen Richtung, Grenzfälle 45°, waagerechte Decke). H: Wanddicke an einer 0,5-mm- und einer 2-mm-Platte; Druckrichtung drehen ändert die Überhänge. Slicer-Suche mit einem falschen Slicer im PATH, der seine Argumente protokolliert. G: Druckansicht an/aus, Screenshot hell/dunkel.
+
+#### 10.7 Idee 7: Keine Angst
+
+- **Immer gespeichert:** Neue Designs bekommen gleich einen Ordner im Projektordner. Nach jeder abgeschlossenen Aktion wird gespeichert, sobald MyCAD 2 s ruht. „Speichern“ heißt künftig „Version sichern…“ (mit Name).
+- **Absturz:** Wiederherstellungsdatei bei jeder Aktion; beim Start bietet ein MyCAD-Hinweis die Wiederherstellung an.
+- **Versionen:** Bei Änderungen eine Kopie im Ordner `versions/` (mit Vorschaubild), Aufbewahrung wie Time Machine: alle von heute, stündlich für eine Woche, täglich danach (`ponytail:` reine Dateikopien; bei sehr großen Designs Platz beobachten). Liste mit Vorschaubildern, öffnen nur zum Ansehen, „Wiederherstellen“ legt eine neue Version an, löscht nie.
+- **Vergleich:** Geisterbild einer Version über dem aktuellen Stand, hinzugekommen grün, entfernt rot (mit Schraffur und Legende), dazu die Liste geänderter Features.
+- **Varianten:** „Was wäre wenn“: Kopie als Variante, Umschalten im Browser, vergleichen wie oben, „Übernehmen“ macht die Variante zum Hauptstand (der alte wird Version). Kein Zusammenführen.
+- Tests C: Aufbewahrungsregel (welche Versionen bleiben bei gegebenen Zeitstempeln). H: Version nur bei Änderung; Wiederherstellen ergibt dieselben Volumen; Vergleich findet hinzugefügte, entfernte und geänderte Features; Variante anlegen, ändern, umschalten, übernehmen; Wiederherstellung nach simuliertem Absturz. G: Versionsliste, Vergleich anzeigen, Variante wechseln.
+
+#### 10.8 Idee 1: Handschrift ist der Befehl
+
+- **Rotstift:** Scribble direkt aufs Modell (Striche liegen auf den Flächen). Gelesene Zeilen werden zu Befehlen am nächsten Element:
+  - `M5` an Punkt/Kreuz → Gewindebohrung; an Zylinder → Gewinde
+  - `Ø8` an Kreis/Bohrung → Durchmesser setzen (über 10.3); an Punkt → Bohrung
+  - `R2` an Kante → Rundung; `2×45°`/`C2` → Fase
+  - `3×` an Feature → Muster (Richtung aus der Lage, sonst Rückfrage)
+  - Zahl an einem Maß-Chip → Wert setzen (10.3); `+5`/`−5` auf Fläche → Press Pull
+  - `H7` oder „Druck“ an Bohrung → Passung (10.5); durchgestrichene Fläche → Fläche entfernen
+- Jede erkannte Korrektur erscheint als Karte („R2 → Rundung an 1 Kante“) mit Vorschau, Ausführen und Verwerfen, dazu „Alle ausführen“. Es entstehen normale Timeline-Features; die Tinte bleibt als Ebene „Korrekturen“.
+- Mehrdeutig (zwei Kanten gleich nah): Auswahl mit Vorschau statt Raten.
+- Tests C: Grammatik mit HTR-Verwechslungen (`MS`→`M5`, `R 2`, `2x45`, `o8`, `3x`/`3×`), ungültige Eingaben. C mit echtem Modell: synthetische Handschrift „M5“, „R2“, „Ø8“, „3×“ (wie `scribble_read_check`). H: Ziel-Element aus Tintenlage am Quader (Kante, Fläche, Punkt), Mehrdeutigkeit erkannt; Ausführen erzeugt die richtigen Features. G: mit simuliertem Stift „R2“ an eine Kante schreiben, Karte bestätigen, Rundung da; Undo.
+
+---
+
+### 4.3 Frühere Phasen (Archiv)
+
+Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9) stehen in L6, Versionen und Data Panel in 10.7.
 
 ## 5. Risiken & Gegenmaßnahmen
 
@@ -339,11 +407,14 @@ Ziel: Mehrere Komponenten und Bodies in einer Datei, globale Timeline, erste Fea
 | Topologische Benennung (Referenzen brechen nach Änderungen) | Konsequent `TopoShape`-Element-Maps nutzen, Regressionstests mit typischen Edit-Szenarien |
 | Kein Upstream-Merge mehr möglich (Kopie statt Fork) | Commit in `UPSTREAM.md` festhalten. Wichtige Fixes (OCCT, Solver) gezielt per Diff nachziehen |
 | Lizenzen: SF Pro / SF Symbols | Inter + eigenes Icon-Set (Abschnitt 2.5) |
+| Neue Features brechen alte (Phase 10 ist groß) | Etappe 10.0 zuerst: Tests in CI, rot = kein Release |
+| Ständiges Speichern bremst große Designs | Speichern erst nach 2 s Ruhe; Messung in `test_performance.py`, Grenze 200 ms |
+| Handschrift wird falsch gelesen und tut das Falsche | Rotstift führt nie selbst aus: jede Korrektur ist eine Karte mit Vorschau |
 
 ---
 
 ## 6. Arbeitsweise
 
-- Phasen der Reihe nach, Aufgaben abhaken in dieser Datei
-- Nach jeder Phase: Build, Tests, kurze Demo/Screenshots, Commit + Tag (`m1` … `m8`)
-- Entscheidungspunkte (Ende Phase 2, Design-Review Ende Phase 3) stimmen wir gemeinsam ab
+- Etappen in der Reihenfolge aus 4.2, Pakete abhaken in dieser Datei
+- Je Paket: Tests zuerst schreiben, umsetzen, alle Tests grün, Commit auf `main`
+- Entscheidungen, die Verhalten für Nutzer grundlegend ändern (Speichern in 10.7, Solver in L6), stimmen wir vorher ab
