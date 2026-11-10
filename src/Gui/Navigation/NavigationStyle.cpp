@@ -1380,6 +1380,14 @@ void NavigationStyle::beginOrbitDrag(const OrbitDragOptions& options)
         state.minDistance = std::max(0.0F, options.minDistanceFactor) * sceneSphere.getRadius();
         state.clippingRadius = std::max(0.0F, options.clippingRadiusFactor) * sceneSphere.getRadius();
     }
+    else if (options.centerMode == OrbitDragOptions::CenterMode::Cursor) {
+        SoLocation2Event at;
+        at.setPosition(options.cursor);
+        saveCursorPosition(&at);  // derselbe Drehpunkt wie beim Ziehen mit der Maus
+        if (rotationCenterFound) {
+            state.center = rotationCenter;
+        }
+    }
 
     orbitDrag = state;
     applyOrbitDragCameraConstraints(*orbitDrag);
@@ -2696,7 +2704,8 @@ SbBool NavigationStyle::processPinchEvent(const SoGesturePinchEvent* const event
 
     if (event->deltaCenter != SbVec2f(0.0F, 0.0F)) {
         const float ratio = viewer->getSoRenderManager()->getViewportRegion().getViewportAspectRatio();
-        panCamera(camera, ratio, this->panningplane, normalizePixelPos(event->deltaCenter), SbVec2f(0, 0));
+        panCamera(camera, ratio, this->panningplane,
+                  normalizePixelPos(event->deltaCenter) * trackpadSpeed("TrackpadPanSpeed"), SbVec2f(0, 0));
     }
 
     if (action.zoom) {

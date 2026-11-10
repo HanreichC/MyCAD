@@ -45,11 +45,51 @@ TEST(NativeGesturePinch, nonPositiveZoomValueIsClampedToNeutral)
     NativeGesturePinch tracker;
     tracker.update(Qt::BeginNativeGesture, 0.0, SbVec2s(10, 20));
 
-    EXPECT_TRUE(tracker.update(Qt::ZoomNativeGesture, -1.5, SbVec2s(30, 40)));
-    EXPECT_DOUBLE_EQ(tracker.event().deltaZoom, 1.0);
+    // neutral = kein Spreizen: unter der Schwelle, also kein Ereignis
+    EXPECT_FALSE(tracker.update(Qt::ZoomNativeGesture, -1.5, SbVec2s(30, 40)));
+    EXPECT_FALSE(tracker.update(Qt::ZoomNativeGesture, -1.0, SbVec2s(30, 40)));
+    EXPECT_TRUE(tracker.update(Qt::ZoomNativeGesture, 0.25, SbVec2s(30, 40)));
+    EXPECT_DOUBLE_EQ(tracker.event().deltaZoom, 1.25);
+}
 
-    EXPECT_TRUE(tracker.update(Qt::ZoomNativeGesture, -1.0, SbVec2s(30, 40)));
-    EXPECT_DOUBLE_EQ(tracker.event().deltaZoom, 1.0);
+TEST(NativeGesturePinch, smallSpreadWhileShiftingDoesNotZoom)
+{
+    NativeGesturePinch tracker;
+    tracker.update(Qt::BeginNativeGesture, 0.0, SbVec2s(0, 0));
+
+    EXPECT_FALSE(tracker.update(Qt::ZoomNativeGesture, 0.03, SbVec2s(0, 0)));  // Finger laufen leicht auseinander
+    EXPECT_TRUE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(15.0F, 0.0F)));
+    EXPECT_EQ(tracker.event().deltaCenter, SbVec2f(15.0F, 0.0F));
+    EXPECT_DOUBLE_EQ(tracker.event().deltaZoom, 0.0);
+
+    // eingerastet auf Schieben: auch deutliches Spreizen zoomt in dieser Geste nicht mehr
+    EXPECT_FALSE(tracker.update(Qt::ZoomNativeGesture, 0.5, SbVec2s(0, 0)));
+    EXPECT_TRUE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(1.0F, 2.0F)));
+    EXPECT_EQ(tracker.event().deltaCenter, SbVec2f(1.0F, 2.0F));
+}
+
+TEST(NativeGesturePinch, smallMovesAddUpUntilThePanLocks)
+{
+    NativeGesturePinch tracker;
+    tracker.update(Qt::BeginNativeGesture, 0.0, SbVec2s(0, 0));
+
+    EXPECT_FALSE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(0.0F, 8.0F)));
+    EXPECT_TRUE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(0.0F, 8.0F)));
+    EXPECT_EQ(tracker.event().deltaCenter, SbVec2f(0.0F, 16.0F));  // nichts geht verloren
+}
+
+TEST(NativeGesturePinch, zoomLocksOutShifting)
+{
+    NativeGesturePinch tracker;
+    tracker.update(Qt::BeginNativeGesture, 0.0, SbVec2s(0, 0));
+
+    EXPECT_TRUE(tracker.update(Qt::ZoomNativeGesture, 0.1, SbVec2s(0, 0)));
+    EXPECT_FALSE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(40.0F, 0.0F)));
+
+    // neue Geste: wieder offen
+    tracker.update(Qt::EndNativeGesture, 0.0, SbVec2s(0, 0));
+    tracker.update(Qt::BeginNativeGesture, 0.0, SbVec2s(0, 0));
+    EXPECT_TRUE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(40.0F, 0.0F)));
 }
 
 TEST(NativeGesturePinch, rotateConvertsDegreesToRadiansAndInvertsDirection)

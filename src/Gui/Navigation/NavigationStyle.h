@@ -162,9 +162,12 @@ public:
     {
         enum class CenterMode
         {
-            FocalPoint,         /**< Orbit around the current viewer focal point. */
-            SceneBoundingSphere /**< Orbit around the scene bounding sphere center. */
+            FocalPoint,          /**< Orbit around the current viewer focal point. */
+            SceneBoundingSphere, /**< Orbit around the scene bounding sphere center. */
+            Cursor /**< MyCAD: like a mouse drag starting at `cursor` (body under it, see RotationMode). */
         };
+        /** GL pixel position for CenterMode::Cursor. */
+        SbVec2s cursor {0, 0};
 
         /** Center used for the constrained orbit drag. */
         CenterMode centerMode = CenterMode::FocalPoint;

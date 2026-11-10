@@ -108,7 +108,9 @@ public:
 class GuiExport NativeGesturePinch
 {
 public:
-    bool update(Qt::NativeGestureType type, double value, const SbVec2s& glPos);
+    /// glDelta: Weg der Fingermitte (PanNativeGesture) in GL-Pixeln, schon in Schieberichtung
+    bool update(Qt::NativeGestureType type, double value, const SbVec2s& glPos,
+                const SbVec2f& glDelta = SbVec2f(0.0F, 0.0F));
     const SoGesturePinchEvent& event() const
     {
         return pinch;
@@ -122,6 +124,16 @@ private:
     SoGesturePinchEvent pinch;
     SbVec2f beginCenter {0.0F, 0.0F};
     bool active {false};
+    // MyCAD: zwei Finger schieben ODER spreizen, je Geste das, was zuerst deutlich wird. libinput hält
+    // leicht auseinanderlaufende Finger beim Schieben oft für Spreizen; ohne Sperre zoomt das Schieben dann mit.
+    enum class Lock
+    {
+        None,
+        Pan,
+        Zoom
+    } lock {Lock::None};
+    SbVec2f pendingPan {0.0F, 0.0F};
+    double pendingZoom {1.0};
 };
 
 class SoGestureSwipeEvent: public SoGestureEvent

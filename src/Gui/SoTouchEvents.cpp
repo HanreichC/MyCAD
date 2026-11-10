@@ -21,6 +21,7 @@
  ***************************************************************************/
 
 
+#include <cmath>
 #include <numbers>
 
 #include <QApplication>
@@ -32,9 +33,10 @@
 #include <Base/Tools.h>
 
 #include "SoTouchEvents.h"
+#include "Inventor/SoMouseWheelEvent.h"
 
 
-bool NativeGesturePinch::update(Qt::NativeGestureType type, double value, const SbVec2s& glPos)
+bool NativeGesturePinch::update(Qt::NativeGestureType type, double value, const SbVec2s& glPos, const SbVec2f& glDelta)
 {
     if (type != Qt::BeginNativeGesture && !active) {
         return false;
@@ -53,14 +55,35 @@ bool NativeGesturePinch::update(Qt::NativeGestureType type, double value, const 
             pinch.state = SoGestureEvent::SbGSStart;
             beginCenter = center;
             active = true;
+            lock = Lock::None;
+            pendingPan = SbVec2f(0.0F, 0.0F);
+            pendingZoom = 1.0;
             break;
         case Qt::EndNativeGesture:
             pinch.state = SoGestureEvent::SbGSEnd;
             active = false;
             break;
+        // ponytail: feste Schwellen (8 % Spreizen, 12 px Weg); bei Bedarf in die Trackpad-Einstellungen.
+        // Was bis zur Schwelle aufläuft, kommt beim Einrasten auf einmal: kein Ruck, nichts geht verloren.
         case Qt::ZoomNativeGesture:
             pinch.state = SoGestureEvent::SbGSUpdate;
-            pinch.deltaZoom = (1.0 + value > 0.0) ? 1.0 + value : 1.0;
+            pendingZoom *= (1.0 + value > 0.0) ? 1.0 + value : 1.0;
+            if (lock == Lock::Pan || (lock == Lock::None && std::abs(std::log(pendingZoom)) < 0.08)) {
+                return false;
+            }
+            lock = Lock::Zoom;
+            pinch.deltaZoom = pendingZoom;
+            pendingZoom = 1.0;
+            break;
+        case Qt::PanNativeGesture:
+            pinch.state = SoGestureEvent::SbGSUpdate;
+            pendingPan += glDelta;
+            if (lock == Lock::Zoom || (lock == Lock::None && pendingPan.length() < 12.0F)) {
+                return false;
+            }
+            lock = Lock::Pan;
+            pinch.deltaCenter = pendingPan;
+            pendingPan = SbVec2f(0.0F, 0.0F);
             break;
         case Qt::RotateNativeGesture:
             pinch.state = SoGestureEvent::SbGSUpdate;
@@ -239,7 +262,13 @@ const SoEvent* GesturesDevice::translateEvent(QEvent* event)
             ),
             this->widget->devicePixelRatio()
         );
-        if (!this->nativePinch.update(native->gestureType(), native->value(), pos)) {
+        // Fingerweg roh (unabhängig vom natürlichen Scrollen): in die Richtung drehen, in die 2-Finger-Schieben geht
+        const QPointF way = native->delta() * (SoMouseWheelEvent::naturalScroll ? 1.0 : -1.0);
+        const SbVec2f glDelta = SoMouseWheelEvent::toGlPixelDelta(
+            SbVec2f(static_cast<float>(way.x()), static_cast<float>(way.y())),
+            static_cast<float>(this->widget->devicePixelRatio())
+        );
+        if (!this->nativePinch.update(native->gestureType(), native->value(), pos, glDelta)) {
             return nullptr;
         }
         return &this->nativePinch.event();

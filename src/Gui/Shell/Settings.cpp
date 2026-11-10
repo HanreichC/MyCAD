@@ -9,6 +9,7 @@
 #include <Gui/Command.h>
 #include <Gui/MainWindow.h>
 #include <Gui/Navigation/NavigationStyle.h>
+#include <Quarter/devices/InputDevice.h>
 #include <Gui/View3DInventorViewer.h>
 
 #include <QAbstractSpinBox>
@@ -282,11 +283,15 @@ protected:
         // Qt meldet Beginn/Ende für Wischen und Spreizen gleich, darum erst bei der ersten Wischbewegung anfangen.
         auto nav = static_cast<Gui::View3DInventorViewer*>(obj->parent())->navigationStyle();
         if (ge->gestureType() == Qt::PanNativeGesture && ge->fingerCount() >= 3 && nav) {
+            auto vp = static_cast<QWidget*>(obj);
             if (!orbiting) {
-                nav->beginOrbitDrag({});
+                Gui::NavigationStyle::OrbitDragOptions grab;  // dreht den Körper unter dem Cursor wie die Maus, nicht den Raum
+                grab.centerMode = Gui::NavigationStyle::OrbitDragOptions::CenterMode::Cursor;
+                grab.cursor = SIM::Coin3D::Quarter::InputDevice::toDevicePixelPosition(
+                    ge->position(), SbVec2s(short(vp->width()), short(vp->height())), vp->devicePixelRatio());
+                nav->beginOrbitDrag(grab);
                 orbiting = true;
             }
-            auto vp = static_cast<QWidget*>(obj);
             const SbVec2f mid(0.5F, 0.5F);  // Qt: y nach unten, Coin: y nach oben
             const auto k = float(viewParams()->GetFloat("TrackpadRotateSpeed", 1.0));
             nav->updateOrbitDrag(mid + k * SbVec2f(float(ge->delta().x() / vp->width()), float(-ge->delta().y() / vp->height())), mid);
