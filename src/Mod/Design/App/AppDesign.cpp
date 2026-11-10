@@ -42,6 +42,8 @@ public:
         add_varargs_method("setPhysicalMaterial", &Module::setPhysicalMaterial,
                            "setPhysicalMaterial(body, uuid[, chosen=True]): set ShapeMaterial; False if unknown");
         add_varargs_method("physicalMaterials", &Module::physicalMaterials, "physicalMaterials(): [(name, uuid)]");
+        add_varargs_method("collisions", &Module::collisions,
+                           "collisions(component): [(body inside, body outside)] that overlap");
         add_varargs_method("stableRef", &Module::stableRef,
                            "stableRef(obj, element): (obj, element) with a body replaced by its timeline state");
         initialize("MyCAD Design: components, bodies and timeline features");
@@ -169,6 +171,14 @@ private:
         Py::List list;
         for (const auto& m : Design::physicalMaterials()) {
             list.append(Py::TupleN(Py::String(m.name), Py::String(m.uuid)));
+        }
+        return list;
+    }
+    Py::Object collisions(const Py::Tuple& args)
+    {
+        Py::List list;
+        for (const auto& [a, b] : Design::collisions(obj<App::Part>(args[0]))) {
+            list.append(Py::TupleN(py(a), py(b)));
         }
         return list;
     }

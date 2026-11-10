@@ -78,6 +78,10 @@ DesignExport bool physicalMaterialChosen(const App::DocumentObject* body);
 DesignExport double mass(const Part::Feature* body);
 ///@}
 
+/// Körper der Komponente moving (mit Unterkomponenten), die einen Körper außerhalb durchdringen: Paare (innen, außen).
+/// ponytail: prüft jedes Paar mit einer booleschen Schnittmenge, für Baugruppen mit wenigen Dutzend Körpern gedacht
+DesignExport std::vector<std::pair<App::DocumentObject*, App::DocumentObject*>> collisions(App::Part* moving);
+
 /// Name ("FaceN", "EdgeN", "VertexN") des Elements in shape, das geometrisch element entspricht (Schwerpunkt + Größe)
 DesignExport std::string elementName(const TopoDS_Shape& shape, const TopoDS_Shape& element);
 /// Bezug auf einen Body durch seinen Timeline-Zustand ersetzen (das Feature, das ihn gerade erzeugt hat).
@@ -623,9 +627,38 @@ public:
     App::PropertyDistance Offset;
     App::PropertyBool Flip;
     App::PropertyPlacement Result;  ///< Lage der bewegten Komponente relativ zu ihrer übergeordneten
+    App::PropertyDistance Offset2;  ///< Planar: zweite Richtung in der Ebene
+    App::PropertyAngle Angle2;      ///< Ball: Nicken (um Y)
+    App::PropertyAngle Angle3;      ///< Ball: Rollen (um X)
+    App::PropertyBool Limited;      ///< Winkel und Weg zwischen den Grenzen halten
+    App::PropertyAngle AngleMin;
+    App::PropertyAngle AngleMax;
+    App::PropertyDistance OffsetMin;
+    App::PropertyDistance OffsetMax;
+    /// Komponente der Gegenstelle: echte Abhängigkeit, damit der Joint nachrechnet, wenn sie sich bewegt (Ketten)
+    App::PropertyLink Follows;
+
+    enum JointType
+    {
+        Rigid,
+        Revolute,
+        Slider,
+        Cylindrical,
+        PinSlot,
+        Planar,
+        Ball
+    };
+    /// Welche Werte bewegen dieses Gelenk (für Dialog und Animation)
+    bool turns() const;
+    bool slides() const;
 
     App::DocumentObjectExecReturn* execute() override;
     void unsetupObject() override;
+
+protected:
+    void onChanged(const App::Property* prop) override;
+
+public:
     const char* getViewProviderName() const override
     {
         return "DesignGui::ViewProviderJoint";

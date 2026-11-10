@@ -1444,23 +1444,47 @@ public:
             type->addItem(T(item.c_str()));
         }
         type->setCurrentIndex(joint->Type.getValue());
-        angle = quantityBox(Base::Unit::Angle, joint->Angle.getValue());
-        offset = quantityBox(Base::Unit::Length, joint->Offset.getValue());
+        form->addRow(T("Type"), type);
+        QObject::connect(type, &QComboBox::currentIndexChanged, [this] { apply(); });
+        // Werte des Gelenks: Felder sind sichtbar, wenn der Typ sie braucht (Joint::onChanged setzt Hidden)
+        const std::pair<App::PropertyQuantity*, const char*> fields[] = {
+            {&joint->Angle, "Angle"},        {&joint->Offset, "Offset"},        {&joint->Offset2, "Offset 2"},
+            {&joint->Angle2, "Tilt"},       {&joint->Angle3, "Roll"},          {&joint->AngleMin, "Angle min"},
+            {&joint->AngleMax, "Angle max"}, {&joint->OffsetMin, "Offset min"}, {&joint->OffsetMax, "Offset max"}};
+        for (const auto& [prop, label] : fields) {
+            auto box = quantityBox(prop->getUnit(), prop->getValue());
+            form->addRow(T(label), box);
+            boxes.emplace_back(prop, box);
+            if (prop == &joint->Offset2) {  // Grenzen nach den Werten, mit ihrem Haken davor
+                limited = new QCheckBox(T("Keep angle and distance within limits"));
+                limited->setChecked(joint->Limited.getValue());
+                QObject::connect(limited, &QCheckBox::toggled, [this] { apply(); });
+            }
+            QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
+        }
+        form->insertRow(form->rowCount() - 4, QString(), limited);
         flip = new QCheckBox(T("Flip"));
         flip->setChecked(joint->Flip.getValue());
-        form->addRow(T("Type"), type);
-        form->addRow(T("Angle"), angle);
-        form->addRow(T("Offset"), offset);
         form->addRow(QString(), flip);
+        QObject::connect(flip, &QCheckBox::toggled, [this] { apply(); });
+        // Bewegen: zwischen den Grenzen hin und her (ohne Grenzen eine Umdrehung bzw. 0 bis 20 mm)
+        animate = new QPushButton(T("Animate"));
+        animate->setCheckable(true);
+        animate->setAutoDefault(false);
+        collide = new QCheckBox(T("Show collisions"));
+        form->addRow(QString(), animate);
+        form->addRow(QString(), collide);
+        timer = new QTimer(w);
+        timer->setInterval(40);
+        QObject::connect(timer, &QTimer::timeout, [this] { step(); });
+        QObject::connect(animate, &QPushButton::toggled, [this](bool on) {
+            on ? timer->start() : timer->stop();
+            animate->setText(on ? T("Stop") : T("Animate"));
+        });
         status = new QLabel;
         status->setWordWrap(true);
         status->setStyleSheet(QStringLiteral("color: %1;").arg(Gui::Shell::theme().red.name()));
         form->addRow(status);
-        QObject::connect(type, &QComboBox::currentIndexChanged, [this] { apply(); });
-        QObject::connect(flip, &QCheckBox::toggled, [this] { apply(); });
-        for (auto box : {angle, offset}) {
-            QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
-        }
         addTaskBox(w, false);
         apply();
     }
@@ -1470,6 +1494,7 @@ public:
     }
     bool accept() override
     {
+        timer->stop();
         App::Document* doc = joint->getDocument();
         doc->commitTransaction();
         Gui::Application::Instance->getDocument(doc)->resetEdit();
@@ -1477,6 +1502,7 @@ public:
     }
     bool reject() override
     {
+        timer->stop();
         App::Document* doc = joint->getDocument();
         Gui::Application::Instance->getDocument(doc)->resetEdit();
         doc->abortTransaction();
@@ -1494,25 +1520,82 @@ private:
     }
     void apply()
     {
-        const int t = type->currentIndex();
-        joint->Type.setValue(t);
-        joint->Angle.setValue(angle->value().getValue());
-        joint->Offset.setValue(offset->value().getValue());
+        joint->Type.setValue(type->currentIndex());
+        joint->Limited.setValue(limited->isChecked());
         joint->Flip.setValue(flip->isChecked());
-        // Rigid: beide Werte als feste Lage; Revolute dreht, Slider schiebt, Cylindrical beides
-        showRow(angle, t != 2);
-        showRow(offset, t != 1);
+        for (const auto& [prop, box] : boxes) {
+            prop->setValue(box->value().getValue());
+        }
+        const bool turns = joint->turns(), slides = joint->slides(), rigid = joint->Type.getValue() == Design::Joint::Rigid;
+        for (const auto& [prop, box] : boxes) {
+            bool show = !prop->testStatus(App::Property::Hidden);
+            if (prop == &joint->Angle) {
+                show = turns || rigid;  // Rigid: beide Werte als feste Lage
+            }
+            else if (prop == &joint->Offset) {
+                show = slides || rigid;
+            }
+            showRow(box, show);
+        }
+        limited->setVisible(!rigid);
+        animate->setVisible(!rigid);
+        collide->setVisible(!rigid);
+        recompute();
+    }
+    void recompute()
+    {
         joint->getDocument()->recompute();
-        status->setText(joint->isError() ? T(joint->getStatusString()) : QString());
+        QString text = joint->isError() ? T(joint->getStatusString()) : QString();
+        if (collide->isChecked() && !joint->isError()) {
+            if (auto moving = freecad_cast<App::Part*>(joint->Moving.getValue())) {
+                const auto hits = Design::collisions(moving);
+                if (!hits.empty()) {  // Farbe nie allein (C-5): als Text mit den Namen
+                    text = T("Collision: %1 touches %2")
+                               .arg(QString::fromUtf8(hits.front().first->Label.getValue()),
+                                    QString::fromUtf8(hits.front().second->Label.getValue()));
+                }
+            }
+        }
+        status->setText(text);
+    }
+    /// ein Schritt der Animation: Winkel (bzw. Weg) zwischen Grenzen hin und her
+    void step()
+    {
+        const bool turns = joint->turns();
+        App::PropertyQuantity& value = turns ? static_cast<App::PropertyQuantity&>(joint->Angle) : joint->Offset;
+        double lo = turns ? -180 : 0, hi = turns ? 180 : 20;
+        if (joint->Limited.getValue()) {
+            lo = turns ? joint->AngleMin.getValue() : joint->OffsetMin.getValue();
+            hi = turns ? joint->AngleMax.getValue() : joint->OffsetMax.getValue();
+        }
+        const double stepSize = (turns ? 3.0 : 0.5) * direction;
+        double v = value.getValue() + stepSize;
+        if (v > hi || v < lo) {
+            direction = -direction;
+            v = std::clamp(v, std::min(lo, hi), std::max(lo, hi));
+        }
+        value.setValue(v);
+        for (const auto& [prop, box] : boxes) {
+            if (prop == &value) {
+                box->blockSignals(true);
+                box->setValue(Base::Quantity(v, prop->getUnit()));
+                box->blockSignals(false);
+            }
+        }
+        recompute();
     }
     Design::Joint* joint;
     bool create;
     QFormLayout* form;
     QComboBox* type;
-    Gui::QuantitySpinBox* angle;
-    Gui::QuantitySpinBox* offset;
+    std::vector<std::pair<App::PropertyQuantity*, Gui::QuantitySpinBox*>> boxes;
+    QCheckBox* limited = nullptr;
     QCheckBox* flip;
+    QPushButton* animate;
+    QCheckBox* collide;
+    QTimer* timer;
     QLabel* status;
+    double direction = 1;
 };
 }  // namespace
 

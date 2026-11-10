@@ -304,7 +304,7 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 - Fase: „Zwei Abstände“ und „Abstand und Winkel“, Seite tauschen.
 - Tests H: Kette an einem abgerundeten Rechteck-Profil (8 Kanten aus 1); variable Rundung gültig und Volumen zwischen den beiden konstanten; Fasen-Varianten gegen Formel am Quader.
 
-**L6 Baugruppe bewegt sich**
+**L6 Baugruppe bewegt sich** · erledigt bis auf geschlossene Ketten (2026-11-10): Ketten, Konfliktmeldung, Grenzen, Pin-Slot/Planar/Kugel, Animieren mit Kollisionsanzeige. Offen: Viergelenk (Solver, Entscheidung steht aus)
 - Joints werden in Abhängigkeitsreihenfolge gelöst; Konflikte (zwei Joints bewegen dieselbe Komponente gegensätzlich) melden statt still überschreiben.
 - Grenzen (min/max) für Winkel und Weg; neue Typen Planar, Ball, Pin-Slot.
 - Bewegen: Joint im Viewport ziehen oder „Animieren“ (Hin und Her zwischen den Grenzen), Kollision optional rot.

@@ -3488,11 +3488,19 @@
     "en": [
      [
       "Type",
-      "Rigid (fixed), Revolute (can turn), Slider (can slide) or Cylindrical (turn and slide)."
+      "Rigid (fixed), Revolute (can turn), Slider (can slide), Cylindrical (turn and slide), Pin-Slot (turn and slide sideways in a slot), Planar (slide in the plane and turn) or Ball (turn in every direction)."
      ],
      [
-      "Angle, Offset",
-      "Rotation around and distance along the joint axis."
+      "Angle, Offset, Offset 2, Tilt, Roll",
+      "How far the joint is turned or moved; only the values the type needs are shown."
+     ],
+     [
+      "Keep angle and distance within limits",
+      "With Angle min/max and Offset min/max the joint never goes further – like a hinge that stops."
+     ],
+     [
+      "Animate, Show collisions",
+      "Animate moves the joint back and forth; Show collisions names parts that run into each other."
      ],
      [
       "Flip",
@@ -3502,11 +3510,19 @@
     "de": [
      [
       "Typ",
-      "Starr (fest), Drehung (dreht sich), Schieberegler (schiebt sich) oder Zylindrisch (dreht und schiebt)."
+      "Starr (fest), Drehung (dreht sich), Schieberegler (schiebt sich), Zylindrisch (dreht und schiebt), Stift-Schlitz (dreht und schiebt seitlich im Schlitz), Planar (schiebt in der Ebene und dreht) oder Kugel (dreht in jede Richtung)."
      ],
      [
-      "Winkel, Versatz",
-      "Drehung um und Abstand entlang der Gelenkachse."
+      "Winkel, Versatz, Versatz 2, Neigen, Rollen",
+      "Wie weit das Gelenk gedreht oder verschoben ist; nur die Werte, die der Typ braucht, sind sichtbar."
+     ],
+     [
+      "Winkel und Weg in Grenzen halten",
+      "Mit Winkel min/max und Versatz min/max geht das Gelenk nie weiter – wie ein Scharnier mit Anschlag."
+     ],
+     [
+      "Animieren, Kollisionen zeigen",
+      "Animieren bewegt das Gelenk hin und her; Kollisionen zeigen nennt Teile, die ineinander laufen."
      ],
      [
       "Umkehren",
@@ -3517,11 +3533,13 @@
    "tips": {
     "en": [
      "The first selection must belong to the component that moves; the design itself always stays in place.",
-     "Joints are listed in the Joints folder of the browser; double-click one to change it."
+     "Joints are listed in the Joints folder of the browser; double-click one to change it.",
+     "Joints can build on each other: a part joined to a moving part moves along."
     ],
     "de": [
      "Die erste Auswahl muss zur Komponente gehören, die sich bewegt; das Design selbst bleibt immer an seinem Platz.",
-     "Gelenke stehen im Ordner Gelenke im Browser; Doppelklick ändert eines."
+     "Gelenke stehen im Ordner Gelenke im Browser; Doppelklick ändert eines.",
+     "Gelenke bauen aufeinander auf: ein Teil an einem bewegten Teil bewegt sich mit."
     ]
    }
   },

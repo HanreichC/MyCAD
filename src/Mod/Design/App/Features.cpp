@@ -103,7 +103,7 @@ const char* CenterEnums[] = {"Origin", "Body center", nullptr};
 const char* RibEnums[] = {"Rib", "Web", nullptr};
 const char* ChamferEnums[] = {"Equal distance", "Two distances", "Distance and angle", nullptr};
 const char* EmbossEnums[] = {"Emboss", "Deboss", nullptr};
-const char* JointEnums[] = {"Rigid", "Revolute", "Slider", "Cylindrical", nullptr};
+const char* JointEnums[] = {"Rigid", "Revolute", "Slider", "Cylindrical", "Pin-Slot", "Planar", "Ball", nullptr};
 const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
@@ -1118,6 +1118,55 @@ double Design::mass(const Part::Feature* body)
     GProp_GProps props;
     BRepGProp::VolumeProperties(shape, props);
     return density.getValue() * props.Mass();  // intern kg/mm³ mal mm³
+}
+
+std::vector<std::pair<App::DocumentObject*, App::DocumentObject*>> Design::collisions(App::Part* moving)
+{
+    std::vector<std::pair<App::DocumentObject*, App::DocumentObject*>> hits;
+    const auto inside = [moving](const App::DocumentObject* body) {
+        for (App::Part* c = componentOf(body); c; ) {
+            if (c == moving) {
+                return true;
+            }
+            App::Part* parent = nullptr;
+            for (auto in : c->getInList()) {
+                if (auto part = freecad_cast<App::Part*>(in); part && part->hasObject(c)) {
+                    parent = part;
+                }
+            }
+            c = parent;
+        }
+        return false;
+    };
+    std::vector<App::DocumentObject*> mine, others;
+    for (auto obj : moving->getDocument()->getObjectsOfType(Body::getClassTypeId())) {
+        if (obj->Visibility.getValue() && !static_cast<Body*>(obj)->Shape.getShape().isNull()) {
+            (inside(obj) ? mine : others).push_back(obj);
+        }
+    }
+    const auto global = [](App::DocumentObject* o) {  // mit der Lage aller übergeordneten Komponenten
+        Part::TopoShape s = static_cast<Body*>(o)->Shape.getShape();
+        s.setPlacement(static_cast<Body*>(o)->globalPlacement());
+        return s.getShape();
+    };
+    for (auto a : mine) {
+        const TopoDS_Shape sa = global(a);
+        for (auto b : others) {
+            const TopoDS_Shape sb = global(b);
+            Bnd_Box ba, bb;
+            BRepBndLib::Add(sa, ba);
+            BRepBndLib::Add(sb, bb);
+            if (ba.IsOut(bb)) {
+                continue;
+            }
+            GProp_GProps props;
+            BRepGProp::VolumeProperties(BRepAlgoAPI_Common(sa, sb).Shape(), props);
+            if (props.Mass() > 1e-6) {
+                hits.emplace_back(a, b);
+            }
+        }
+    }
+    return hits;
 }
 
 Design::Body* Design::newBody(Feature* feature, App::Part* component)
@@ -3551,8 +3600,53 @@ Joint::Joint()
     ADD_PROPERTY_TYPE(Flip, (false), "Joint", App::Prop_None, "Flip the moving component");
     ADD_PROPERTY_TYPE(Result, (Base::Placement()), "Joint", App::PropertyType(App::Prop_Output | App::Prop_ReadOnly),
                       "Placement of the moving component");
+    ADD_PROPERTY_TYPE(Offset2, (0.0), "Joint", App::Prop_None, "Second distance in the plane (planar joint)");
+    ADD_PROPERTY_TYPE(Angle2, (0.0), "Joint", App::Prop_None, "Pitch (ball joint)");
+    ADD_PROPERTY_TYPE(Angle3, (0.0), "Joint", App::Prop_None, "Roll (ball joint)");
+    ADD_PROPERTY_TYPE(Limited, (false), "Joint", App::Prop_None, "Keep angle and distance within limits");
+    ADD_PROPERTY_TYPE(AngleMin, (-180.0), "Joint", App::Prop_None, "Smallest angle");
+    ADD_PROPERTY_TYPE(AngleMax, (180.0), "Joint", App::Prop_None, "Largest angle");
+    ADD_PROPERTY_TYPE(OffsetMin, (0.0), "Joint", App::Prop_None, "Smallest distance");
+    ADD_PROPERTY_TYPE(OffsetMax, (50.0), "Joint", App::Prop_None, "Largest distance");
+    ADD_PROPERTY_TYPE(Follows, (nullptr), "Joint", App::PropertyType(App::Prop_Hidden | App::Prop_Output),
+                      "Component of the second snap point");
     Origin1.setScope(App::LinkScope::Global);
     Origin2.setScope(App::LinkScope::Global);
+    Follows.setScope(App::LinkScope::Global);
+    onChanged(&Type);  // Sichtbarkeit der Felder von Anfang an
+}
+
+bool Joint::turns() const
+{
+    const long t = Type.getValue();
+    return t == Revolute || t == Cylindrical || t == PinSlot || t == Planar || t == Ball;
+}
+
+bool Joint::slides() const
+{
+    const long t = Type.getValue();
+    return t == Slider || t == Cylindrical || t == PinSlot || t == Planar;
+}
+
+void Joint::onChanged(const App::Property* prop)
+{
+    if (prop == &Origin2 && !isRestoring()) {  // die Wurzel bewegt sich nie (und enthält den Joint: kein Kreis)
+        App::Part* other = Origin2.getValue() ? componentOf(Origin2.getValue()) : nullptr;
+        Follows.setValue(other && other != root(getDocument(), false) ? other : nullptr);
+    }
+    if (prop == &Type || prop == &Limited) {
+        const long t = Type.getValue();
+        Offset2.setStatus(App::Property::Hidden, t != Planar);
+        Angle2.setStatus(App::Property::Hidden, t != Ball);
+        Angle3.setStatus(App::Property::Hidden, t != Ball);
+        for (App::Property* p : std::initializer_list<App::Property*> {&AngleMin, &AngleMax}) {
+            p->setStatus(App::Property::Hidden, !Limited.getValue() || !turns());
+        }
+        for (App::Property* p : std::initializer_list<App::Property*> {&OffsetMin, &OffsetMax}) {
+            p->setStatus(App::Property::Hidden, !Limited.getValue() || !slides());
+        }
+    }
+    App::DocumentObject::onChanged(prop);
 }
 
 App::DocumentObjectExecReturn* Joint::execute()
@@ -3566,6 +3660,14 @@ App::DocumentObjectExecReturn* Joint::execute()
     if (Design::componentOf(Origin1.getValue()) != moving) {
         return new App::DocumentObjectExecReturn("The first snap point must be on the moving component itself");
     }
+    // Eine Komponente folgt genau einem Joint; der später angelegte meldet den Konflikt, statt still zu überschreiben
+    for (auto other : getDocument()->getObjectsOfType(Joint::getClassTypeId())) {
+        if (other != this && static_cast<Joint*>(other)->Moving.getValue() == moving
+            && std::string(other->getNameInDocument()) < getNameInDocument()) {
+            return new App::DocumentObjectExecReturn(std::string("This component already follows ") + other->Label.getValue()
+                                                     + "; a component follows one joint");
+        }
+    }
     // Gegenstelle global: ihre Komponente kann selbst verschoben sein
     const Base::Placement target = Design::componentOf(Origin2.getValue())->globalPlacement() * f2;
     // zwei ebene Flächen liegen wie in Fusion aufeinander (Normalen gegenläufig); Flip kehrt das um
@@ -3573,8 +3675,36 @@ App::DocumentObjectExecReturn* Joint::execute()
     if ((planar1 && planar2) != Flip.getValue()) {
         flip = Base::Placement(Base::Vector3d(), Base::Rotation(Base::Vector3d(1, 0, 0), M_PI));
     }
-    const Base::Placement motion(Base::Vector3d(0, 0, Offset.getValue()),
-                                 Base::Rotation(Base::Vector3d(0, 0, 1), Angle.getValue() * M_PI / 180.0));
+    // Bewegung im Rahmen der Gegenstelle (Z = Achse bzw. Normale), mit Grenzen
+    const auto clamp = [this](double v, const App::PropertyQuantity& lo, const App::PropertyQuantity& hi) {
+        return Limited.getValue() ? std::clamp(v, std::min(lo.getValue(), hi.getValue()), std::max(lo.getValue(), hi.getValue()))
+                                  : v;
+    };
+    const double angle = clamp(Angle.getValue(), AngleMin, AngleMax) * M_PI / 180.0;
+    const double offset = clamp(Offset.getValue(), OffsetMin, OffsetMax);
+    Base::Vector3d move;
+    Base::Rotation turn(Base::Vector3d(0, 0, 1), angle);
+    switch (Type.getValue()) {
+        case Slider:
+            move.z = offset;
+            turn = Base::Rotation();
+            break;
+        case Revolute:
+            break;
+        case PinSlot:  // drehen um die Achse und im Schlitz (X) schieben
+            move.x = offset;
+            break;
+        case Planar:  // in der Ebene schieben und um die Normale drehen
+            move = Base::Vector3d(offset, Offset2.getValue(), 0);
+            break;
+        case Ball:  // Gieren, Nicken, Rollen um den Punkt
+            turn.setYawPitchRoll(Angle.getValue(), Angle2.getValue(), Angle3.getValue());
+            break;
+        default:  // Rigid: feste Lage aus beiden Werten; Cylindrical: drehen und schieben
+            move.z = offset;
+            break;
+    }
+    const Base::Placement motion(move, turn);
     const Base::Placement global = target * motion * flip * f1.inverse();
     const App::Part* parent = parentPart(moving);
     Result.setValue(parent ? parent->globalPlacement().inverse() * global : global);
