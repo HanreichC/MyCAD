@@ -834,7 +834,9 @@ A("Design_Joint", "assemble", "Design_Joint", ("Joint", "Gelenk"),
   tips=[("The first selection must belong to the component that moves; the design itself always stays in place.",
          "Die erste Auswahl muss zur Komponente gehören, die sich bewegt; das Design selbst bleibt immer an seinem Platz."),
         ("Joints are listed in the Joints folder of the browser; double-click one to change it.", "Gelenke stehen im Ordner Gelenke im Browser; Doppelklick ändert eines."),
-        ("Joints can build on each other: a part joined to a moving part moves along.", "Gelenke bauen aufeinander auf: ein Teil an einem bewegten Teil bewegt sich mit.")],
+        ("Joints can build on each other: a part joined to a moving part moves along.", "Gelenke bauen aufeinander auf: ein Teil an einem bewegten Teil bewegt sich mit."),
+        ("Closed chains work too, e.g. a four-bar linkage: give the last part a second joint back to the frame. The first joint of the chain drives it with its angle or distance, the others follow.",
+         "Geschlossene Ketten gehen auch, z. B. ein Viergelenk: gib dem letzten Teil ein zweites Gelenk zurück zum Gestell. Das erste Gelenk der Kette treibt sie mit seinem Winkel oder Weg, die anderen folgen.")],
   see=["Design_NewComponent", "Design_Align"])
 
 # --- Prüfen ---------------------------------------------------------------------------------------------------------

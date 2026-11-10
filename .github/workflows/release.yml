@@ -21,6 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # ganze Historie, sonst lassen sich die Commits nicht zählen
+          submodules: true  # src/3rdParty/OndselSolver (Gelenk-Solver)
 
       - name: Version
         id: version

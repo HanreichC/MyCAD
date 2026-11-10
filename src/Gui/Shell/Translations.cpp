@@ -159,7 +159,6 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Select a face, edge, hole or point on the component to move, then the place to join it to.", "Wähle eine Fläche, Kante, Bohrung oder einen Punkt an der zu bewegenden Komponente, dann die Stelle, an der sie verbunden wird."},
         {"The first selection must belong to a component (the design itself stays in place).", "Die erste Auswahl muss zu einer Komponente gehören (das Design selbst bleibt an seinem Platz)."},
         {"The second selection must be on another component.", "Die zweite Auswahl muss an einer anderen Komponente liegen."},
-        {"This component is already positioned by a joint.", "Diese Komponente ist bereits durch ein Gelenk positioniert."},
         {"Joint", "Gelenk"},
         {"Scale", "Skalieren"},
         {"Select one or more bodies first.", "Wähle zuerst einen oder mehrere Körper."},

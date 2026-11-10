@@ -754,10 +754,17 @@ public:
     bool slides() const;
 
     App::DocumentObjectExecReturn* execute() override;
+    /// geschlossene Kette: ändert sich ein Joint der Gruppe, rechnen alle nach
+    short mustExecute() const override;
     void unsetupObject() override;
+    /// Bewegung aus Winkel und Weg (mit Grenzen) im Rahmen der Gegenstelle
+    Base::Placement motion() const;
 
 protected:
     void onChanged(const App::Property* prop) override;
+
+private:
+    App::DocumentObjectExecReturn* solveLoop(const std::vector<Joint*>& group);
 
 public:
     const char* getViewProviderName() const override

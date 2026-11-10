@@ -1511,9 +1511,6 @@ void startJoint(App::Document* doc)
     else if (Design::componentOf(refs[1].first) == moving) {
         problem = T("The second selection must be on another component.");
     }
-    else if (moving->getExpression(App::ObjectIdentifier(moving->Placement)).expression) {
-        problem = T("This component is already positioned by a joint.");
-    }
     if (!problem.isEmpty()) {
         QMessageBox::information(Gui::getMainWindow(), T("Joint"), problem);
         return;
@@ -1526,9 +1523,12 @@ void startJoint(App::Document* doc)
     joint->Origin1.setValue(refs[0].first, sub(refs[0].second));
     joint->Origin2.setValue(refs[1].first, sub(refs[1].second));
     doc->recompute();
-    moving->setExpression(App::ObjectIdentifier(moving->Placement),
-                          std::shared_ptr<App::Expression>(
-                              App::Expression::parse(moving, std::string(joint->getNameInDocument()) + ".Result").release()));
+    // die Lage folgt dem ersten Joint der Komponente; ein zweiter schließt eine Kette (der Solver rechnet sie zusammen)
+    if (!moving->getExpression(App::ObjectIdentifier(moving->Placement)).expression) {
+        moving->setExpression(App::ObjectIdentifier(moving->Placement),
+                              std::shared_ptr<App::Expression>(
+                                  App::Expression::parse(moving, std::string(joint->getNameInDocument()) + ".Result").release()));
+    }
     doc->recompute();
     Gui::Selection().clearSelection();
     Gui::Document* gdoc = Gui::Application::Instance->getDocument(doc);

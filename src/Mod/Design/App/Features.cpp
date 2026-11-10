@@ -21,6 +21,7 @@
 #include "NoteParameters.h"
 #include "Fits.h"
 #include "PrintCheck.h"
+#include "AssemblySolver.h"
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <Mod/Part/App/Geometry.h>
 #include <Mod/Sketcher/App/SketchObject.h>
@@ -5313,6 +5314,46 @@ void Joint::onChanged(const App::Property* prop)
     App::DocumentObject::onChanged(prop);
 }
 
+namespace
+{
+/// Joints, die über gemeinsame Komponenten mit joint verbunden sind (die Wurzel trennt: sie bewegt sich nie)
+std::vector<Design::Joint*> jointGroup(Design::Joint* joint)
+{
+    App::Document* doc = joint->getDocument();
+    const App::Part* rootPart = Design::root(doc, false);
+    std::vector<Design::Joint*> all;
+    for (auto obj : doc->getObjectsOfType(Design::Joint::getClassTypeId())) {
+        all.push_back(static_cast<Design::Joint*>(obj));
+    }
+    const auto parts = [](Design::Joint* j) {
+        std::vector<App::DocumentObject*> p {j->Moving.getValue()};
+        if (j->Origin2.getValue()) {
+            p.push_back(Design::componentOf(j->Origin2.getValue()));
+        }
+        return p;
+    };
+    std::vector<Design::Joint*> group {joint};
+    for (size_t i = 0; i < group.size(); ++i) {
+        for (Design::Joint* j : all) {
+            if (std::ranges::find(group, j) != group.end()) {
+                continue;
+            }
+            for (auto a : parts(group[i])) {
+                for (auto b : parts(j)) {
+                    if (a && a == b && a != rootPart) {
+                        group.push_back(j);
+                        goto next;
+                    }
+                }
+            }
+        next:;
+        }
+    }
+    std::ranges::sort(group, {}, [](Design::Joint* j) { return std::string(j->getNameInDocument()); });
+    return group;
+}
+}  // namespace
+
 App::DocumentObjectExecReturn* Joint::execute()
 {
     auto moving = freecad_cast<App::Part*>(Moving.getValue());
@@ -5324,13 +5365,15 @@ App::DocumentObjectExecReturn* Joint::execute()
     if (Design::componentOf(Origin1.getValue()) != moving) {
         return new App::DocumentObjectExecReturn("The first snap point must be on the moving component itself");
     }
-    // Eine Komponente folgt genau einem Joint; der später angelegte meldet den Konflikt, statt still zu überschreiben
-    for (auto other : getDocument()->getObjectsOfType(Joint::getClassTypeId())) {
-        if (other != this && static_cast<Joint*>(other)->Moving.getValue() == moving
-            && std::string(other->getNameInDocument()) < getNameInDocument()) {
-            return new App::DocumentObjectExecReturn(std::string("This component already follows ") + other->Label.getValue()
-                                                     + "; a component follows one joint");
-        }
+    // Hat eine Komponente der Gruppe zwei Joints, ist die Kette geschlossen (Viergelenk): dann löst der Solver alles
+    // zusammen. Sonst wie bisher: jeder Joint setzt seine Komponente direkt.
+    const std::vector<Joint*> group = jointGroup(this);
+    std::map<App::DocumentObject*, int> moves;
+    for (Joint* j : group) {
+        ++moves[j->Moving.getValue()];
+    }
+    if (std::ranges::any_of(moves, [](const auto& m) { return m.second > 1; })) {
+        return solveLoop(group);
     }
     // Gegenstelle global: ihre Komponente kann selbst verschoben sein
     const Base::Placement target = Design::componentOf(Origin2.getValue())->globalPlacement() * f2;
@@ -5372,6 +5415,108 @@ App::DocumentObjectExecReturn* Joint::execute()
     const Base::Placement global = target * motion * flip * f1.inverse();
     const App::Part* parent = parentPart(moving);
     Result.setValue(parent ? parent->globalPlacement().inverse() * global : global);
+    return StdReturn;
+}
+
+short Joint::mustExecute() const
+{
+    if (isTouched()) {
+        return 1;
+    }
+    const auto group = jointGroup(const_cast<Joint*>(this));
+    std::map<App::DocumentObject*, int> moves;
+    for (Joint* j : group) {
+        ++moves[j->Moving.getValue()];
+    }
+    const bool loop = std::ranges::any_of(moves, [](const auto& m) { return m.second > 1; });
+    return loop && std::ranges::any_of(group, [](Joint* j) { return j->isTouched(); }) ? 1 : App::DocumentObject::mustExecute();
+}
+
+Base::Placement Joint::motion() const
+{
+    const auto clamp = [this](double v, const App::PropertyQuantity& lo, const App::PropertyQuantity& hi) {
+        return Limited.getValue() ? std::clamp(v, std::min(lo.getValue(), hi.getValue()), std::max(lo.getValue(), hi.getValue()))
+                                  : v;
+    };
+    const double angle = clamp(Angle.getValue(), AngleMin, AngleMax) * M_PI / 180.0;
+    const double offset = clamp(Offset.getValue(), OffsetMin, OffsetMax);
+    Base::Vector3d move;
+    Base::Rotation turn(Base::Vector3d(0, 0, 1), angle);
+    switch (Type.getValue()) {
+        case Slider: move.z = offset; turn = Base::Rotation(); break;
+        case Revolute: break;
+        case PinSlot: move.x = offset; break;
+        case Planar: move = Base::Vector3d(offset, Offset2.getValue(), 0); break;
+        case Ball: turn.setYawPitchRoll(Angle.getValue(), Angle2.getValue(), Angle3.getValue()); break;
+        default: move.z = offset; break;
+    }
+    return Base::Placement(move, turn);
+}
+
+/// Geschlossene Kette (L6): alle Joints der Gruppe gemeinsam mit dem Solver. Der erste Joint der Gruppe treibt mit
+/// seinem Winkel bzw. Weg (wie Fusions "Drive Joints"), feste Joints ebenso; die übrigen bewegen sich frei. Komponenten,
+/// die keiner der Joints bewegt, bleiben stehen. Jeder Joint setzt danach die Lage seiner Komponente in Result.
+/// ponytail: jeder Joint der Gruppe löst die ganze Gruppe (n-mal dasselbe); bei großen Baugruppen einmal je Neuberechnen
+App::DocumentObjectExecReturn* Joint::solveLoop(const std::vector<Joint*>& group)
+{
+    std::vector<Solver::Part> parts;
+    std::vector<Solver::Link> links;
+    const auto partOf = [&parts](App::Part* comp, bool fixed) {
+        const std::string name = comp->getNameInDocument();
+        auto it = std::ranges::find(parts, name, &Solver::Part::name);
+        if (it == parts.end()) {
+            parts.push_back({name, comp->globalPlacement(), fixed});
+            return;
+        }
+        it->fixed = it->fixed && fixed;
+    };
+    for (Joint* j : group) {
+        partOf(static_cast<App::Part*>(j->Moving.getValue()), false);
+    }
+    for (Joint* j : group) {
+        App::Part* other = componentOf(j->Origin2.getValue());
+        const bool moved = std::ranges::any_of(group, [other](Joint* k) { return k->Moving.getValue() == other; });
+        partOf(other, !moved);
+    }
+    for (Joint* j : group) {
+        Base::Placement f1, f2;
+        bool planar1 = false, planar2 = false;
+        if (!jointFrame(j->Origin1, f1, planar1) || !jointFrame(j->Origin2, f2, planar2)) {
+            return new App::DocumentObjectExecReturn(std::string(j->Label.getValue()) + " has no snap point");
+        }
+        Base::Placement flip;
+        if ((planar1 && planar2) != j->Flip.getValue()) {
+            flip = Base::Placement(Base::Vector3d(), Base::Rotation(Base::Vector3d(1, 0, 0), M_PI));
+        }
+        // Rahmen in den Komponenten (f1, f2 sind schon komponenten-lokal): global gilt Lage(b) * onB = Lage(a) * onA
+        const Base::Placement& placeA = f2;
+        const bool drives = j == group.front() || j->Type.getValue() == Rigid;
+        Solver::Kind kind = Solver::Kind::Fixed;
+        if (!drives) {
+            switch (j->Type.getValue()) {
+                case Revolute: kind = Solver::Kind::Revolute; break;
+                case Slider: kind = Solver::Kind::Slider; break;
+                case Cylindrical: kind = Solver::Kind::Cylindrical; break;
+                case Planar: kind = Solver::Kind::Planar; break;
+                case Ball: kind = Solver::Kind::Ball; break;
+                default:
+                    return new App::DocumentObjectExecReturn(std::string(j->Label.getValue())
+                                                             + ": a pin-slot joint cannot close a loop yet");
+            }
+        }
+        links.push_back({j->getNameInDocument(), kind, componentOf(j->Origin2.getValue())->getNameInDocument(),
+                         j->Moving.getValue()->getNameInDocument(), drives ? placeA * j->motion() : placeA,
+                         f1 * flip.inverse()});
+    }
+    std::string error;
+    if (!Solver::solve(parts, links, error)) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+    // nur der erste Joint einer Komponente setzt ihre Lage (an ihn ist Placement gebunden)
+    auto moving = static_cast<App::Part*>(Moving.getValue());
+    const auto pose = std::ranges::find(parts, std::string(moving->getNameInDocument()), &Solver::Part::name);
+    const App::Part* parent = parentPart(moving);
+    Result.setValue(parent ? parent->globalPlacement().inverse() * pose->pose : pose->pose);
     return StdReturn;
 }
 
