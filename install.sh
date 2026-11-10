@@ -5,7 +5,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-JOBS="${JOBS:-12}"
+JOBS="${JOBS:-8}"
 IMAGE=mycad-dev
 BIN="$HOME/.local/bin/mycad"
 DESKTOP="$HOME/.local/share/applications/mycad.desktop"
