@@ -506,7 +506,7 @@
    "commands": [
     "Std_New",
     "Std_Open",
-    "Std_Save",
+    "MyCAD_SaveVersion",
     "Std_SaveAs",
     "Std_Undo",
     "Std_Redo"
@@ -551,7 +551,8 @@
    },
    "steps": {
     "en": [
-     "New (Ctrl+N) creates an empty design. Open (Ctrl+O) loads a design file. Save (Ctrl+S) stores it; the first time you choose name and folder.",
+     "New (Ctrl+N) creates an empty design. Open (Ctrl+O) loads a design file. You never have to save: MyCAD saves after every step, a new design gets its own folder in your projects folder.",
+     "Save Version (Ctrl+S) gives the current state a name, e.g. “Before the holes”, so you find it again under Versions.",
      "Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z) step backwards and forwards through your changes.",
      "Home at the bottom of the sidebar opens the start page: recent designs and your projects folder, with search. Back to Design in the same place brings you back.",
      "The sidebar button next to the name MyCAD hides the browser for more room; it then moves to the top left corner and shows it again.",
@@ -559,7 +560,8 @@
      "Delete… asks first. A saved file goes to the trash, so you can still get it back there."
     ],
     "de": [
-     "Neu (Strg+N) legt ein leeres Design an. Öffnen (Strg+O) lädt eine Design-Datei. Speichern (Strg+S) sichert es; beim ersten Mal wählst du Name und Ordner.",
+     "Neu (Strg+N) legt ein leeres Design an. Öffnen (Strg+O) lädt eine Design-Datei. Speichern musst du nie: MyCAD speichert nach jedem Schritt, ein neues Design bekommt einen eigenen Ordner in deinem Projektordner.",
+     "Version sichern (Strg+S) gibt dem jetzigen Stand einen Namen, z. B. „Vor den Bohrungen“, damit du ihn unter Versionen wiederfindest.",
      "Rückgängig (Strg+Z) und Wiederherstellen (Strg+Umschalt+Z) gehen in deinen Änderungen zurück und vor.",
      "Start unten in der Seitenleiste öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Zurück zum Design an derselben Stelle bringt dich zurück.",
      "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus; er rückt dann in die Ecke oben links und blendet ihn dort wieder ein.",
@@ -568,15 +570,88 @@
     ]
    },
    "see": [
+    "Design_Versions",
     "Design_Export",
     "Design_Import"
    ],
    "tips": {
     "en": [
-     "Choose the projects folder in Settings → General → Projects folder; Save starts there and gives each design its own folder."
+     "Choose the projects folder in Settings → General → Projects folder; new designs get their own folder there.",
+     "Closing never asks whether to save: everything is saved already."
     ],
     "de": [
-     "Den Projektordner wählst du in Einstellungen → Allgemein → Projektordner; Speichern beginnt dort und legt für jedes Design einen eigenen Ordner an."
+     "Den Projektordner wählst du in Einstellungen → Allgemein → Projektordner; neue Designs bekommen dort einen eigenen Ordner.",
+     "Beim Schließen fragt MyCAD nie nach dem Speichern: alles ist schon gesichert."
+    ]
+   }
+  },
+  {
+   "id": "Design_Versions",
+   "group": "file",
+   "icon": "Design_Versions",
+   "commands": [],
+   "title": {
+    "en": "Versions and variants",
+    "de": "Versionen und Varianten"
+   },
+   "keywords": {
+    "en": [
+     "version",
+     "history",
+     "backup",
+     "restore",
+     "undo yesterday",
+     "compare",
+     "variant",
+     "what if",
+     "time machine",
+     "autosave",
+     "recovery"
+    ],
+    "de": [
+     "Version",
+     "Verlauf",
+     "Sicherung",
+     "wiederherstellen",
+     "gestern rückgängig",
+     "vergleichen",
+     "Variante",
+     "was wäre wenn",
+     "automatisch speichern",
+     "Absturz"
+    ]
+   },
+   "summary": {
+    "en": "Every state of your design is kept. Look at an older one, compare it with today, bring it back – or try an idea as a variant without risk.",
+    "de": "Jeder Stand deines Designs bleibt erhalten. Sieh dir einen älteren an, vergleiche ihn mit heute, hol ihn zurück – oder probier eine Idee ohne Risiko als Variante."
+   },
+   "steps": {
+    "en": [
+     "In the toolbar at the top, in the FILE section, click the small arrow ▾ next to Save Version and choose Versions. The button now shows Versions, so next time one click is enough.",
+     "Pick a version in the list (with picture and time). Open Copy shows it next to your design, Compare lays it over the model: green dots were added since then, red stripes were removed, and the panel lists the changed steps.",
+     "Restore brings a version back. The state before stays as a version too – nothing is ever deleted by restoring.",
+     "Variants: New Variant… makes a copy to try something. Switch To moves between the main design and its variants, Compare shows the difference, Make Main Design takes the variant over (the old main design is kept as a version)."
+    ],
+    "de": [
+     "Klicke in der Werkzeugleiste oben im Bereich DATEI auf den kleinen Pfeil ▾ neben Version sichern und wähle Versionen. Der Knopf zeigt danach Versionen, beim nächsten Mal reicht also ein Klick.",
+     "Wähl eine Version in der Liste (mit Bild und Zeit). Kopie öffnen zeigt sie neben deinem Design, Vergleichen legt sie über das Modell: grüne Punkte kamen seitdem dazu, rote Streifen fielen weg, und das Panel nennt die geänderten Schritte.",
+     "Wiederherstellen holt eine Version zurück. Der Stand davor bleibt ebenfalls als Version – Wiederherstellen löscht nie etwas.",
+     "Varianten: Neue Variante… legt eine Kopie zum Ausprobieren an. Wechseln springt zwischen Hauptdesign und Varianten, Vergleichen zeigt den Unterschied, Zum Hauptdesign machen übernimmt die Variante (das alte Hauptdesign bleibt als Version)."
+    ]
+   },
+   "see": [
+    "file_basics"
+   ],
+   "tips": {
+    "en": [
+     "MyCAD keeps everything from the last day, then one version per hour for a week, then one per day. Named versions always stay.",
+     "If MyCAD or your computer crashes, open the design again: at most the last two seconds are missing.",
+     "Versions and variants lie next to the design file in the folders versions and variants."
+    ],
+    "de": [
+     "MyCAD behält alles vom letzten Tag, danach eine Version je Stunde für eine Woche, danach eine je Tag. Benannte Versionen bleiben immer.",
+     "Stürzt MyCAD oder dein Rechner ab, öffne das Design einfach wieder: höchstens die letzten zwei Sekunden fehlen.",
+     "Versionen und Varianten liegen neben der Design-Datei in den Ordnern versions und variants."
     ]
    }
   },

@@ -2570,7 +2570,7 @@ protected:
                             Application::Instance->commandManager().runCommandByName(command);
                         }
                     };
-                    QObject::connect(menu.addAction(T("Save")), &QAction::triggered, [run] { run("Std_Save"); });
+                    QObject::connect(menu.addAction(T("Save Version")), &QAction::triggered, [run] { run("MyCAD_SaveVersion"); });
                     QObject::connect(menu.addAction(T("Save As…")), &QAction::triggered, [run] { run("Std_SaveAs"); });
                     QObject::connect(menu.addAction(T("Export…")), &QAction::triggered, [run] { run("Design_Export"); });
                     menu.addSeparator();
@@ -3856,6 +3856,131 @@ void showCommandSearch()
     searchField->setFocus();
 }
 
+}  // namespace
+
+bool Gui::Shell::alwaysSave()
+{
+    return App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("AlwaysSave", true);
+}
+
+bool Gui::Shell::saveQuietly(App::Document* doc, const QString& title)
+{
+    bool ok = false;
+    try {
+        if (!*doc->FileName.getValue()) {
+            QString name = QString::fromUtf8(doc->Label.getValue()).trimmed();
+            static const QRegularExpression unsafe(QStringLiteral(R"([/\\:*?"<>|])"));
+            name.remove(unsafe);
+            if (name.isEmpty()) {
+                name = QStringLiteral("Design");
+            }
+            QDir projects(projectsFolder());
+            QString folder = name;
+            for (int n = 2; projects.exists(folder); ++n) {
+                folder = QStringLiteral("%1 %2").arg(name).arg(n);
+            }
+            projects.mkpath(folder);
+            ok = doc->saveAs(projects.filePath(folder + QLatin1Char('/') + folder + QStringLiteral(".mycad")).toUtf8().constData());
+        }
+        else {
+            ok = doc->save();
+        }
+    }
+    catch (const Base::Exception& e) {
+        Base::Console().error("Save: %s\n", e.what());
+        ok = false;
+    }
+    if (!ok) {
+        return false;
+    }
+    if (Gui::Document* gdoc = Application::Instance->getDocument(doc)) {
+        gdoc->setModified(false);
+    }
+    QString t = title;
+    t.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('\''), QStringLiteral("\\'"));
+    try {
+        Base::PyGILStateLocker lock;
+        Base::Interpreter().runString(("import DesignVersions, FreeCAD as App\nDesignVersions.snapshot(App.getDocument('"
+                                       + std::string(doc->getName()) + "'), '" + t.toStdString() + "')")
+                                          .c_str());
+    }
+    catch (const Base::Exception& e) {
+        Base::Console().warning("Version: %s\n", e.what());
+    }
+    return true;
+}
+
+namespace
+{
+/// Idee 7: nach jeder abgeschlossenen Aktion speichern, sobald MyCAD 2 s ruht (nicht mitten in einem Werkzeug-Dialog,
+/// nicht beim Ziehen)
+void startAlwaysSave()
+{
+    static std::map<std::string, qint64> lastChange;
+    App::GetApplication().signalChangedObject.connect([](const App::DocumentObject& obj, const App::Property&) {
+        if (const App::Document* doc = obj.getDocument()) {
+            lastChange[doc->getName()] = QDateTime::currentMSecsSinceEpoch();
+        }
+    });
+    auto timer = new QTimer(getMainWindow());
+    timer->setInterval(1000);
+    QObject::connect(timer, &QTimer::timeout, timer, [] {
+        if (!alwaysSave() || Control().activeDialog() || QApplication::mouseButtons() != Qt::NoButton
+            || QApplication::activeModalWidget()) {
+            return;
+        }
+        const qint64 now = QDateTime::currentMSecsSinceEpoch();
+        for (App::Document* doc : App::GetApplication().getDocuments()) {
+            Gui::Document* gdoc = Application::Instance->getDocument(doc);
+            if (!gdoc || !gdoc->isModified() || doc->testStatus(App::Document::TempDoc)
+                || doc->testStatus(App::Document::PartialDoc) || now - lastChange[doc->getName()] < 2000) {
+                continue;
+            }
+            saveQuietly(doc);
+        }
+    });
+    timer->start();
+}
+
+/// "Version sichern…" (Strg+S): speichern ist ohnehin immer; hier bekommt der Stand einen Namen
+class CmdSaveVersion: public Gui::Command
+{
+public:
+    CmdSaveVersion()
+        : Command("MyCAD_SaveVersion")
+    {
+        sGroup = "File";
+        sMenuText = "Save Version";
+        sToolTipText = "Save Version: your design is always saved; give this state a name to find it again";
+        sStatusTip = sToolTipText;
+        sWhatsThis = "MyCAD_SaveVersion";
+        sPixmap = "Std_Save";
+        sAccel = "Ctrl+S";
+        eType = 0;
+    }
+    const char* className() const override
+    {
+        return "CmdSaveVersion";
+    }
+
+protected:
+    bool isActive() override
+    {
+        return App::GetApplication().getActiveDocument() != nullptr;
+    }
+    void activated(int) override
+    {
+        App::Document* doc = App::GetApplication().getActiveDocument();
+        bool ok = false;
+        const QString title = QInputDialog::getText(getMainWindow(), T("Save Version"),
+                                                    T("Name of this version, e.g. “Before the holes”:"), QLineEdit::Normal,
+                                                    QString(), &ok);
+        if (ok && doc && !saveQuietly(doc, title.trimmed().isEmpty() ? T("Saved") : title.trimmed())) {
+            QMessageBox::warning(getMainWindow(), T("Save Version"), T("The design could not be saved."));
+        }
+    }
+};
+
 class CmdSearch: public Gui::Command
 {
 public:
@@ -4565,9 +4690,15 @@ void Gui::Shell::install()
     Application::Instance->activateWorkbench("DesignWorkbench");
     registerSettings();
     Application::Instance->commandManager().addCommand(new CmdSearch);  // vor der Toolbar, die ihn zeigt
+    // Idee 7: Speichern ist immer; Strg+S sichert eine benannte Version
+    if (Command* save = Application::Instance->commandManager().getCommandByName("Std_Save")) {
+        save->setAccel("");
+    }
+    Application::Instance->commandManager().addCommand(new CmdSaveVersion);
+    startAlwaysSave();
 
     state.modelBar =
-        toolbar({"#FILE", "Std_New", "Std_Open", "Std_Save", "Design_Import", "Design_Export", "Design_Print",
+        toolbar({"#FILE", "Std_New", "Std_Open", "MyCAD_SaveVersion|Design_Versions", "Design_Import", "Design_Export", "Design_Print",
                  "Std_Undo", "Std_Redo",
                  "#CREATE", "Design_CreateSketch", "Design_Extrude", "Design_Revolve",
                  "Design_Sweep|Design_Loft|Design_Rib|Design_Web|Design_Emboss",
@@ -4593,7 +4724,7 @@ void Gui::Shell::install()
                  "Sketcher_ConstrainEqual", "Sketcher_ConstrainSymmetric", "Sketcher_ConstrainBlock",
                  "#UTILITIES", "Design_Note"});
     state.scribbleBar =
-        toolbar({"#FILE", "Std_Save", "Std_Undo", "Std_Redo",
+        toolbar({"#FILE", "MyCAD_SaveVersion", "Std_Undo", "Std_Redo",
                  "#DRAW", "Design_ScribbleSelect", "Design_ScribblePencil", "Design_ScribblePen", "Design_ScribbleMarker", "Design_ScribbleText", "Design_ScribbleFill",
                  "Design_ScribbleEraser",
                  "Design_ScribbleBlack|Design_ScribbleBlue|Design_ScribbleRed|Design_ScribbleGreen|Design_ScribbleYellow",

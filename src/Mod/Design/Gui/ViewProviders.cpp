@@ -510,6 +510,133 @@ private:
 };
 }  // namespace
 
+namespace
+{
+std::vector<Base::Vector3f> triangles(Part::TopoShape shape)
+{
+    std::vector<Base::Vector3f> out;
+    if (shape.isNull()) {
+        return out;
+    }
+    std::vector<Base::Vector3d> points;
+    std::vector<Data::ComplexGeoData::Facet> facets;
+    shape.getFaces(points, facets, 0.05);
+    for (const auto& f : facets) {
+        for (uint32_t i : {f.I1, f.I2, f.I3}) {
+            out.emplace_back(float(points[i].x), float(points[i].y), float(points[i].z));
+        }
+    }
+    return out;
+}
+
+/// Geisterbild des Vergleichs in der Szene der aktiven Ansicht, mit Legende
+class Comparison
+{
+public:
+    void show(const QString& title, const Part::TopoShape& added, const Part::TopoShape& removed, const QStringList& steps)
+    {
+        clear();
+        auto view = qobject_cast<Gui::View3DInventor*>(Gui::getMainWindow()->activeWindow());
+        if (!view || (added.isNull() && removed.isNull())) {
+            return;
+        }
+        viewer = view->getViewer();
+        const auto& theme = Gui::Shell::theme();
+        node = new SoSeparator;
+        node->ref();
+        auto pick = new SoPickStyle;
+        pick->style = SoPickStyle::UNPICKABLE;
+        node->addChild(pick);
+        auto light = new SoLightModel;
+        light->model = SoLightModel::BASE_COLOR;
+        node->addChild(light);
+        auto offset = new SoPolygonOffset;
+        offset->factor = -2;
+        offset->units = -2;
+        node->addChild(offset);
+        node->addChild(printLayer(triangles(added), theme.green, 2));
+        node->addChild(printLayer(triangles(removed), theme.red, 1));
+        if (auto root = dynamic_cast<SoGroup*>(viewer->getSceneGraph())) {
+            root->addChild(node);
+        }
+
+        auto content = new QWidget;
+        content->setObjectName(QStringLiteral("Comparison"));
+        auto lay = new QVBoxLayout(content);
+        lay->setContentsMargins(14, 12, 14, 12);
+        lay->setSpacing(6);
+        auto head = new QLabel(title);
+        Gui::Shell::setTextStyle(head, Gui::Shell::Text::Headline);
+        lay->addWidget(head);
+        const std::tuple<QColor, Qt::BrushStyle, QString> rows[] = {
+            {theme.green, Qt::Dense5Pattern, T("Added since then")}, {theme.red, Qt::BDiagPattern, T("Removed since then")}};
+        for (const auto& [color, style, text] : rows) {
+            auto line = new QHBoxLayout;
+            auto icon = new QLabel;
+            icon->setPixmap(swatch(color, style));
+            line->addWidget(icon);
+            line->addWidget(new QLabel(text), 1);
+            lay->addLayout(line);
+        }
+        for (const QString& step : steps) {
+            auto label = new QLabel(step);
+            label->setWordWrap(true);
+            lay->addWidget(label);
+        }
+        auto close = new QPushButton(T("Close"));
+        close->setAutoDefault(false);
+        QObject::connect(close, &QPushButton::clicked, close, [this] { QTimer::singleShot(0, [this] { clear(); }); });
+        lay->addWidget(close);
+        panel = new Gui::Shell::GlassPanel(content, Gui::Shell::Token::RadiusPanel, true);
+        panel->setZValue(9);
+        viewer->scene()->addItem(panel);
+        const auto place = [this, content] {
+            if (!panel || !viewer) {
+                return;
+            }
+            const QRectF area = viewer->scene()->sceneRect();
+            const QSizeF size = content->sizeHint().expandedTo(QSize(260, 0));
+            panel->setGeometry(QRectF(area.right() - size.width() - 24, area.top() + 300, size.width(), size.height()));
+        };
+        place();
+        panel->show();
+        QTimer::singleShot(0, panel, place);
+    }
+
+    void clear()
+    {
+        if (node) {
+            if (viewer) {
+                if (auto root = dynamic_cast<SoGroup*>(viewer->getSceneGraph())) {
+                    root->removeChild(node);
+                }
+            }
+            node->unref();
+            node = nullptr;
+        }
+        if (panel) {
+            if (panel->scene()) {
+                panel->scene()->removeItem(panel);
+            }
+            panel->deleteLater();
+            panel = nullptr;
+        }
+    }
+
+private:
+    QPointer<Gui::View3DInventorViewer> viewer;
+    SoSeparator* node = nullptr;
+    Gui::Shell::GlassPanel* panel = nullptr;
+};
+}  // namespace
+
+void DesignGui::showComparison(const QString& title, const Part::TopoShape& added, const Part::TopoShape& removed,
+                               const QStringList& steps)
+{
+    static Comparison comparison;
+    comparison.show(title, added, removed, steps);
+}
+
 void DesignGui::showCorrections(App::Document* doc, const std::vector<Design::Correction>& corrections)
 {
     static CorrectionCards cards;

@@ -370,7 +370,7 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 - **Drucken:** findet OrcaSlicer, Bambu Studio, PrusaSlicer (Pfad, Flatpak, AppImage in `~/Applications`), schreibt 3MF mit Farben (L8) und öffnet den Slicer damit; merkt sich die Wahl. Ohne Slicer: Export-Dialog.
 - Tests C: Überhang-Klassifikation (Normale gegen Richtung, Grenzfälle 45°, waagerechte Decke). H: Wanddicke an einer 0,5-mm- und einer 2-mm-Platte; Druckrichtung drehen ändert die Überhänge. Slicer-Suche mit einem falschen Slicer im PATH, der seine Argumente protokolliert. G: Druckansicht an/aus, Screenshot hell/dunkel.
 
-#### 10.7 Idee 7: Keine Angst
+#### 10.7 Idee 7: Keine Angst · erledigt (2026-11-10, „Immer gespeichert“ mit dem Benutzer abgestimmt); Absturzschutz ist das Speichern selbst (höchstens 2 s gehen verloren), keine eigene Wiederherstellungsdatei; Versionen und Varianten im Fenster „Versionen“ (Umschalten dort statt im Browser); Logik in `DesignVersions.py`. ponytail: „Speichern unter“ eines schon still gespeicherten neuen Designs lässt dessen ersten Ordner stehen
 
 - **Immer gespeichert:** Neue Designs bekommen gleich einen Ordner im Projektordner. Nach jeder abgeschlossenen Aktion wird gespeichert, sobald MyCAD 2 s ruht. „Speichern“ heißt künftig „Version sichern…“ (mit Name).
 - **Absturz:** Wiederherstellungsdatei bei jeder Aktion; beim Start bietet ein MyCAD-Hinweis die Wiederherstellung an.

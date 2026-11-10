@@ -17,6 +17,10 @@ class Joint;
 class Scribble;
 struct Correction;
 }
+namespace Part
+{
+class TopoShape;
+}
 
 namespace DesignGui
 {
@@ -41,6 +45,10 @@ DesignGuiExport void refreshPrintView();
 /// Idee 1: Karten der gelesenen Rotstift-Korrekturen in der Ansicht (Ausführen, Verwerfen, Alle ausführen; bei
 /// gleich nahen Zielen eine Auswahl, Zeigen hebt das Ziel hervor). Leere Liste schließt sie.
 DesignGuiExport void showCorrections(App::Document* doc, const std::vector<Design::Correction>& corrections);
+/// Idee 7: Vergleich mit einer Version oder Variante als Geisterbild in der Ansicht: hinzugekommen grün gepunktet,
+/// entfernt rot schraffiert, dazu Legende und die geänderten Schritte. Leere Formen schließen ihn.
+DesignGuiExport void showComparison(const QString& title, const Part::TopoShape& added, const Part::TopoShape& removed,
+                                    const QStringList& steps);
 
 class DesignGuiExport ViewProviderBody: public PartGui::ViewProviderPartExt
 {

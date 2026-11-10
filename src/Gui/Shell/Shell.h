@@ -13,6 +13,7 @@
 namespace App
 {
 class Material;
+class Document;
 }
 
 namespace Gui::Shell
@@ -59,6 +60,11 @@ int bodyMaterialIndex(const App::Material& mat);
 void setBodyMaterial(int index);
 /// Ordner mit den Designs des Benutzers (Startseite "Projects", Einstellung "Projects folder")
 QString projectsFolder();
+/// Idee 7: immer gespeichert (Einstellung MyCAD/AlwaysSave, an als Vorgabe)
+bool alwaysSave();
+/// Design ohne Rückfrage speichern; ein neues bekommt einen eigenen Ordner im Projektordner (<Name>/<Name>.mycad).
+/// Danach eine Version (DesignVersions.snapshot), mit title benannt. false, wenn das Speichern scheiterte.
+bool saveQuietly(App::Document* doc, const QString& title = QString());
 /// Stand dieses Builds aus Commit-Datum und -Hash, z. B. "2026.10.21 · b9d3cde" (Startseite, Einstellungen)
 QString version();
 

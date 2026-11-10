@@ -40,6 +40,11 @@
 #include <gp_Pln.hxx>
 #include <QComboBox>
 #include <QInputDialog>
+#include <QListWidget>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <Mod/Part/App/TopoShapePy.h>
 #include <QStandardPaths>
 #include <QLabel>
 #include <cstring>
@@ -102,6 +107,8 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QDateTime>
+#include <QLocale>
 #include <QFormLayout>
 #include <QMessageBox>
 #include <QTimer>
@@ -1912,6 +1919,207 @@ void importFile(App::Document* doc)
 /// DXF: gewählte Skizzen, ohne Auswahl alle sichtbaren; jede flach in ihrer eigenen Ebene, eine Ebene (Layer) je Skizze.
 void exportBodies(App::Document* doc);
 
+namespace
+{
+/// Python-Zeichenkette (Pfad, Name)
+std::string pyString(QString s)
+{
+    s.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('\''), QStringLiteral("\\'"));
+    return "'" + s.toStdString() + "'";
+}
+
+/// DesignVersions aufrufen; Ergebnis als JSON (leer bei Fehler, der dann als Hinweis erscheint)
+QJsonValue versionsCall(const std::string& expr, const QString& title)
+{
+    try {
+        Base::PyGILStateLocker lock;
+        const std::string r = Base::Interpreter().runStringWithKey(
+            ("import DesignVersions, FreeCAD as App, json, base64\n_r = json.dumps(" + expr + ")").c_str(), "_r");
+        return QJsonDocument::fromJson(QByteArray::fromStdString("[" + r + "]")).array().first();
+    }
+    catch (const Base::Exception& e) {
+        QString text = QString::fromUtf8(e.what()).trimmed();
+        const int at = text.lastIndexOf(QLatin1String("Error: "));
+        QMessageBox::information(Gui::getMainWindow(), title, at >= 0 ? T(text.mid(at + 7).toUtf8().constData()) : text);
+        return {};
+    }
+}
+
+/// Vergleich mit einer anderen Datei des Designs als Geisterbild
+void compareWith(App::Document* doc, const QString& path, const QString& title)
+{
+    try {
+        Base::PyGILStateLocker lock;
+        Py::Module mod(PyImport_ImportModule("DesignVersions"), true);
+        Py::Dict d(mod.callMemberFunction("compare", Py::TupleN(Py::asObject(doc->getPyObject()), Py::String(path.toStdString()))));
+        const auto shape = [&d](const char* key) {
+            Py::Object o = d[key];
+            return PyObject_TypeCheck(o.ptr(), &Part::TopoShapePy::Type)
+                ? *static_cast<Part::TopoShapePy*>(o.ptr())->getTopoShapePtr()
+                : Part::TopoShape();
+        };
+        QStringList steps;
+        Py::Dict features(d["features"]);
+        const std::pair<const char*, QString> kinds[] = {
+            {"added", T("New step: %1")}, {"removed", T("Removed step: %1")}, {"changed", T("Changed step: %1")}};
+        for (const auto& [key, text] : kinds) {
+            for (const auto& label : Py::List(features[key])) {
+                steps << text.arg(QString::fromStdString(Py::String(label).as_std_string()));
+            }
+        }
+        if (steps.isEmpty()) {
+            steps << T("No steps changed");
+        }
+        DesignGui::showComparison(title, shape("added"), shape("removed"), steps);
+    }
+    catch (const Py::Exception&) {
+        Base::PyException e;
+        QMessageBox::information(Gui::getMainWindow(), T("Compare"), QString::fromUtf8(e.what()));
+    }
+}
+}  // namespace
+
+/// Idee 7: Versionen und Varianten des Designs. Versionen entstehen beim immer laufenden Speichern; Öffnen zeigt eine
+/// Kopie, Wiederherstellen legt eine neue Version an und löscht nie. Varianten: "Was wäre wenn", wechseln, übernehmen.
+void showVersions(App::Document* doc)
+{
+    if (!*doc->FileName.getValue() && !Gui::Shell::saveQuietly(doc)) {
+        return;
+    }
+    const QString path = QString::fromUtf8(doc->FileName.getValue());
+    const std::string pdoc = "App.getDocument('" + std::string(doc->getName()) + "')";
+    QDialog dlg(Gui::getMainWindow());
+    dlg.setWindowTitle(T("Versions"));
+    dlg.setMinimumSize(560, 520);
+    auto lay = new QVBoxLayout(&dlg);
+    lay->setContentsMargins(24, 20, 24, 20);
+    lay->addWidget(Gui::Shell::sectionLabel(T("Versions")));
+    auto list = new QListWidget;
+    list->setAccessibleName(T("Versions"));
+    list->setIconSize(QSize(64, 48));
+    lay->addWidget(list, 2);
+    const QJsonArray versions = versionsCall(
+        "[dict(v, thumb=base64.b64encode(DesignVersions.thumbnail(v['path']) or b'').decode()) for v in "
+        "DesignVersions.versions(" + pyString(path) + ")]", T("Versions")).toArray();
+    for (const QJsonValue& v : versions) {
+        const QJsonObject o = v.toObject();
+        const QDateTime when = QDateTime::fromSecsSinceEpoch(qint64(o[QStringLiteral("time")].toDouble()));
+        const QString day = when.date() == QDate::currentDate() ? T("Today") : QLocale().toString(when.date(), QLocale::ShortFormat);
+        QString text = day + QStringLiteral(" ") + QLocale().toString(when.time(), QLocale::ShortFormat);
+        if (!o[QStringLiteral("title")].toString().isEmpty()) {
+            text += QStringLiteral("  ·  ") + o[QStringLiteral("title")].toString();
+        }
+        auto item = new QListWidgetItem(text);
+        QPixmap thumb;
+        if (thumb.loadFromData(QByteArray::fromBase64(o[QStringLiteral("thumb")].toString().toLatin1()))) {
+            item->setIcon(QIcon(thumb));
+        }
+        item->setData(Qt::UserRole, o[QStringLiteral("path")].toString());
+        list->addItem(item);
+    }
+    auto row = new QHBoxLayout;
+    auto open = new QPushButton(T("Open Copy"));
+    auto compare = new QPushButton(T("Compare"));
+    auto restore = new QPushButton(T("Restore"));
+    for (auto b : {open, compare, restore}) {
+        b->setAutoDefault(false);
+        b->setEnabled(false);
+        row->addWidget(b);
+    }
+    lay->addLayout(row);
+    QObject::connect(list, &QListWidget::currentRowChanged, &dlg, [=](int r) {
+        for (auto b : {open, compare, restore}) {
+            b->setEnabled(r >= 0);
+        }
+    });
+    const auto chosen = [list] { return list->currentItem() ? list->currentItem()->data(Qt::UserRole).toString() : QString(); };
+    QObject::connect(open, &QPushButton::clicked, &dlg, [&, chosen] {
+        // Kopie zum Ansehen: die Version selbst bleibt, wie sie ist
+        versionsCall("(lambda p: (lambda c: (__import__('shutil').copy2(p, c), App.openDocument(c).Name)[1])("
+                     "__import__('os').path.join(__import__('tempfile').mkdtemp(), __import__('os').path.basename(p))))("
+                         + pyString(chosen()) + ")",
+                     T("Versions"));
+        dlg.accept();
+    });
+    QObject::connect(compare, &QPushButton::clicked, &dlg, [&, chosen] {
+        const QString title = T("Compared with %1").arg(list->currentItem()->text());
+        dlg.accept();
+        compareWith(doc, chosen(), title);
+    });
+    QObject::connect(restore, &QPushButton::clicked, &dlg, [&, chosen] {
+        versionsCall("DesignVersions.restore(" + pdoc + ", " + pyString(chosen()) + ").Name", T("Restore"));
+        dlg.accept();
+    });
+
+    // Varianten
+    lay->addWidget(Gui::Shell::sectionLabel(T("Variants")));
+    auto variants = new QListWidget;
+    variants->setAccessibleName(T("Variants"));
+    const bool isVariant = versionsCall("DesignVersions.is_variant(" + pyString(path) + ")", T("Variants")).toBool();
+    const QString main = versionsCall("DesignVersions.main_of(" + pyString(path) + ")", T("Variants")).toString();
+    auto mainItem = new QListWidgetItem(T("Main design") + (isVariant ? QString() : QStringLiteral("  ·  ") + T("open")));
+    mainItem->setData(Qt::UserRole, main);
+    variants->addItem(mainItem);
+    for (const QJsonValue& v : versionsCall("DesignVersions.variants(" + pyString(path) + ")", T("Variants")).toArray()) {
+        const QJsonObject o = v.toObject();
+        const bool current = QFileInfo(o[QStringLiteral("path")].toString()) == QFileInfo(path);
+        auto item = new QListWidgetItem(o[QStringLiteral("name")].toString() + (current ? QStringLiteral("  ·  ") + T("open") : QString()));
+        item->setData(Qt::UserRole, o[QStringLiteral("path")].toString());
+        variants->addItem(item);
+    }
+    lay->addWidget(variants, 1);
+    auto vrow = new QHBoxLayout;
+    auto create = new QPushButton(T("New Variant…"));
+    auto switchTo = new QPushButton(T("Switch To"));
+    auto compareVariant = new QPushButton(T("Compare"));
+    auto adopt = new QPushButton(T("Make Main Design"));
+    adopt->setEnabled(isVariant);
+    adopt->setToolTip(T("The open variant becomes the main design; the old main design is kept as a version"));
+    for (auto b : {create, switchTo, compareVariant, adopt}) {
+        b->setAutoDefault(false);
+        vrow->addWidget(b);
+    }
+    lay->addLayout(vrow);
+    const auto variantPath = [variants] {
+        return variants->currentItem() ? variants->currentItem()->data(Qt::UserRole).toString() : QString();
+    };
+    QObject::connect(create, &QPushButton::clicked, &dlg, [&] {
+        bool ok = false;
+        const QString name = QInputDialog::getText(&dlg, T("New Variant"), T("What do you want to try?"), QLineEdit::Normal,
+                                                   QString(), &ok);
+        if (ok && !name.trimmed().isEmpty()) {
+            const QJsonValue made = versionsCall("DesignVersions.make_variant(" + pdoc + ", " + pyString(name.trimmed()) + ")",
+                                                 T("New Variant"));
+            if (made.isString()) {
+                versionsCall("DesignVersions.switch(" + pdoc + ", " + pyString(made.toString()) + ").Name", T("Variants"));
+                dlg.accept();
+            }
+        }
+    });
+    QObject::connect(switchTo, &QPushButton::clicked, &dlg, [&, variantPath] {
+        if (!variantPath().isEmpty() && QFileInfo(variantPath()) != QFileInfo(path)) {
+            versionsCall("DesignVersions.switch(" + pdoc + ", " + pyString(variantPath()) + ").Name", T("Variants"));
+            dlg.accept();
+        }
+    });
+    QObject::connect(compareVariant, &QPushButton::clicked, &dlg, [&, variantPath] {
+        if (!variantPath().isEmpty() && QFileInfo(variantPath()) != QFileInfo(path)) {
+            const QString title = T("Compared with %1").arg(variants->currentItem()->text());
+            dlg.accept();
+            compareWith(doc, variantPath(), title);
+        }
+    });
+    QObject::connect(adopt, &QPushButton::clicked, &dlg, [&] {
+        versionsCall("DesignVersions.adopt(" + pdoc + ").Name", T("Variants"));
+        dlg.accept();
+    });
+
+    auto buttons = new QDialogButtonBox(QDialogButtonBox::Close);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    lay->addWidget(buttons);
+    dlg.exec();
+}
+
 /// Idee 5: die gewählte ebene Fläche liegt beim Drucken auf dem Bett (Druckrichtung = ihre Normale nach innen)
 void choosePrintBottom(App::Document* doc)
 {
@@ -3572,6 +3780,9 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_SplitBody", "Split Body",
                                      "Split Body: select a body and a plane or face to split it with", "Part_Slice", "",
                                      startSplit));
+    mgr.addCommand(new DesignCommand("Design_Versions", "Versions",
+                                     "Versions: every state is kept; open, compare or restore one, or try a variant",
+                                     "Std_Revert", "", showVersions));
     mgr.addCommand(new DesignCommand("Design_RedPen", "Red Pen",
                                      "Red Pen: write corrections straight on the model, e.g. R2 next to an edge or M5 on a face",
                                      nullptr, "", startRedPen));

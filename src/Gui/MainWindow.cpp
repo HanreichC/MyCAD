@@ -85,6 +85,7 @@
 #include <TaskView/TaskView.h>
 
 #include "MainWindow.h"
+#include "Shell/Shell.h"
 #include "Action.h"
 #include "Assistant.h"
 #include "BitmapFactory.h"
@@ -990,6 +991,10 @@ void MainWindow::closeActiveWindow()
 
 int MainWindow::confirmSave(App::Document* doc, QWidget* parent, bool addCheckbox)
 {
+    // MyCAD (Idee 7): ein Design ist immer gespeichert; die letzten Sekunden still nachspeichern statt zu fragen
+    if (Shell::alwaysSave()) {
+        return Shell::saveQuietly(doc) ? ConfirmSaveResult::Discard : ConfirmSaveResult::Cancel;
+    }
     QMessageBox box(parent ? parent : this);
     box.setObjectName(QStringLiteral("confirmSave"));
     box.setIcon(QMessageBox::Question);
