@@ -645,6 +645,7 @@ protected:
         const Theme& t = theme();
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
+        p.setOpacity(isEnabled() ? 1.0 : 0.4);  // deaktiviert (MyStyle § 9)
         const QRectF track = QRectF(rect()).adjusted(2, 2, -2, -2);
         if (hasFocus()) {
             p.setPen(QPen(t.focusRing, 2));
@@ -934,12 +935,6 @@ void Gui::Shell::showSettings()
                updateStyle();
            }));
 
-    // Materialien der Körper: Hoch und Ausgewogen mit Spiegelung der Umgebung (BodyShading.h), Sparsam wie früher (Phong)
-    addRow(lookCard, T("Materials"),
-           segmented({T("High"), T("Balanced"), T("Low")}, int(myParams()->GetInt("RenderQuality", 0)), [](int i) {
-               myParams()->SetInt("RenderQuality", i);  // BodyShading beobachtet den Parameter
-           }));
-
     // Liquid Glass (MyStyle GQ-2): stufenlos von Ultra Clear über Default bis Tinted, wirkt sofort
     auto glass = new QWidget;
     auto glassLay = new QGridLayout(glass);
@@ -1003,7 +998,28 @@ void Gui::Shell::showSettings()
     QObject::connect(material, &QComboBox::currentIndexChanged, [material](int i) {
         Gui::Shell::setBodyMaterial(material->itemData(i).toInt());
     });
-    addRow(lookCard, T("Body material"), material);
+    // Materialien und Licht der Körper (BodyShading.h): jedes einzeln abschaltbar, wenn es beim Arbeiten stört; wirkt sofort
+    auto materialCard = addCard(general, T("Materials and Light"));
+    addRow(materialCard, T("Body material"), material);
+    auto realistic = new Switch(myParams()->GetBool("RealisticMaterials", true));
+    addRow(materialCard, T("Realistic materials"), realistic);
+    std::vector<Switch*> needsRealistic;  // ohne realistische Materialien wirkungslos: abgeblendet (MyStyle: 0,4)
+    for (const auto& [label, param] : {std::pair {"Reflections", "Reflections"}, std::pair {"Relief and end grain", "SurfaceDetail"}}) {
+        auto sw = new Switch(myParams()->GetBool(param, true));
+        sw->setEnabled(realistic->isChecked());
+        QObject::connect(sw, &QAbstractButton::toggled, sw, [param = param](bool on) { myParams()->SetBool(param, on); });
+        addRow(materialCard, T(label), sw);
+        needsRealistic.push_back(sw);
+    }
+    QObject::connect(realistic, &QAbstractButton::toggled, realistic, [needsRealistic](bool on) {
+        myParams()->SetBool("RealisticMaterials", on);  // BodyShading beobachtet die Parameter
+        for (Switch* sw : needsRealistic) {
+            sw->setEnabled(on);
+        }
+    });
+    auto shadow = new Switch(myParams()->GetBool("ContactShadow", true));
+    QObject::connect(shadow, &QAbstractButton::toggled, shadow, [](bool on) { myParams()->SetBool("ContactShadow", on); });
+    addRow(materialCard, T("Contact shadow"), shadow);
     auto names = new Switch(myParams()->GetBool("ToolNames", false));
     QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
     addRow(lookCard, T("Show tool names"), names);

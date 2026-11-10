@@ -40,8 +40,8 @@ SOURCES = [
     ("cork", "ambientcg", "Cork002", 300, False, None),
     ("fabric", "ambientcg", "Fabric030", 150, False, None),
     ("carbon", "ambientcg", "Fabric004", 35, False, None),  # Köper mit rund 3,5 mm breiten Bündeln
-    ("brushed_aluminum", "ambientcg", "Metal009", 500, True, "#DADDE0"),  # Metallfarbe = Spiegelung, physikalisch hell
-    ("brushed_steel", "ambientcg", "Metal010", 500, True, "#A8ABAF"),
+    ("brushed_aluminum", "ambientcg", "Metal009", 500, True, "#C4C8CC"),  # Metallfarbe = Spiegelung
+    ("brushed_steel", "ambientcg", "Metal010", 500, True, "#9DA1A6"),
 ]
 CAP = 600  # mm je Kachel höchstens: rund 3,4 Pixel je mm
 AGENT = {"User-Agent": "MyCAD-texture-fetch"}

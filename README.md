@@ -147,11 +147,11 @@ Switch to **Deutsch** in the settings and MyCAD is in German, from the toolbar d
 
 </div>
 
-Bodies sit in a bright room and catch its light. Metal mirrors the windows, red lacquer shines under its clear coat, and glass stays see-through but still reflects. New bodies come in **Space Gray**. Pick another default in the settings and your existing bodies switch right away.
+Bodies stand in a gray room with bright light panels, much like a photo studio. Metal mirrors the panels, red lacquer shines under its clear coat, and glass stays see-through but still reflects. New bodies come in **Space Gray**. Pick another default in the settings and your existing bodies switch right away.
 
 **Appearance** has 119 materials: raw and polished metals, anodized aluminum in nine colors, powder coat, lacquer and metallic paint, matte, satin and glossy plastics, PLA that shows its print layers up close, rubber and silicone, glass and acrylic, woods raw, oiled or lacquered, stone and ceramics, leather, felt and carbon. Each one is a small sphere drawn the same way as your model, with its colors and finishes as dots underneath. Search by name, right-click to keep a favorite, and see at the top what this design already uses. Click a sphere to apply it to the selected bodies, or drag it straight onto a body. With single faces selected, only those faces change color.
 
-The woods, stone, leather, cork, fabric, carbon and brushed metals are real photo scans with their relief, and a wooden part shows end grain where it's cut. A soft shadow grounds every body on the grid. On a slow graphics card, set **Materials** in the settings to **Balanced** or **Low**.
+The woods, stone, leather, cork, fabric, carbon and brushed metals are real photo scans with their relief, and a wooden part shows end grain where it's cut. A soft shadow grounds every body on the grid. Under **Materials and Light** in the settings you can switch each of these off on its own: realistic materials, reflections, relief and end grain, and the contact shadow. Turn off what gets in your way, or what your graphics card can't keep up with.
 
 <br>
 

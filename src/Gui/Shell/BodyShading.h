@@ -4,9 +4,12 @@
 
 #include <FCGlobal.h>
 
+#include <functional>
 #include <string>
+#include <vector>
 
 class SoNode;
+class SoSwitch;
 
 namespace Gui::Shell
 {
@@ -18,18 +21,20 @@ namespace Gui::Shell
 ///   ohne Markierung (alte Dateien) Metall, wenn das Glanzlicht hell und heller als die Grundfarbe ist.
 ///   Leuchtfarbe Grün, Bits: 1 Klarlack, 2 Schliff entlang x, 4 Holz (Hirnholz an den x-Seiten), 8 Druckschichten entlang z.
 ///   Leuchtfarbe Rot (setzt die TextureExtension): 1/255 eigenes Bild, 2/255 Fotoscan aus bodyTexture.
-/// Qualität "Sparsam" (Einstellungen) schaltet ihn ab: dann wie früher Phong. Prüfung: tests/gui/test_materials.py
+/// Einstellung "Realistische Materialien" aus schaltet ihn ab: dann wie früher Phong. Prüfung: tests/gui/test_materials.py
 GuiExport SoNode* bodyShading();
 
 /// Fotoscan (":/mycad/textures/<name>.jpg") als Knoten für Stufe 0: Farbe im Maßstab aus dem Bild, dazu Normale und
 /// Rauheit aus <name>_s.jpg auf Stufe 1. Geteilt von allen Körpern; nullptr für fremde Pfade oder fehlende Bilder.
 GuiExport SoNode* bodyTexture(const std::string& path);
 
-/// Kontaktschatten unter den Körpern einer Ansicht (nur Qualität "Hoch"): Was knapp über dem Boden liegt, von unten
-/// gesehen als Maske, weich und halbdurchsichtig auf dem Boden. objects = die Körper der Ansicht (ObjectGroup des Viewers).
-GuiExport SoNode* contactShadow(SoNode* objects);
+/// Kontaktschatten unter den Körpern einer Ansicht (Einstellung "Kontaktschatten"): ihr Grundriss nah am Boden, von unten gesehen,
+/// weich und halbdurchsichtig auf dem Boden. objects = alles in der Ansicht (ObjectGroup des Viewers); others liefert die
+/// Anzeige-Schalter von allem, was keinen Schatten werfen soll (Skizzen, Scribbles …): beim Rendern der Maske aus.
+GuiExport SoNode* contactShadow(SoNode* objects, std::function<std::vector<SoSwitch*>()> others);
 
-/// Qualität neu lesen (MyCAD/RenderQuality: 0 Hoch, 1 Ausgewogen ohne Relief, Hirnholz und Kontaktschatten, 2 Sparsam) und anwenden
+/// Einstellungen "Materialien und Licht" neu lesen und anwenden (MyCAD/RealisticMaterials: aus = Phong wie früher,
+/// Reflections: aus = nur weicher Glanz, SurfaceDetail: Relief und Hirnholz, ContactShadow; alle an als Vorgabe)
 GuiExport void applyRenderQuality();
 
 }  // namespace Gui::Shell

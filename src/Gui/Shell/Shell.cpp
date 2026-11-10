@@ -385,8 +385,8 @@ constexpr BodyMaterial bodyMaterials[] = {
     {"Cherry", "Wood", 0xAE6745FF, 0x262626FF, 0x000401FF, 0x552D18FF, 25, ":/mycad/textures/cherry.jpg"},
     {"Pine", "Wood", 0xD2AE78FF, 0x1A1A1AFF, 0x000401FF, 0x7D5D2EFF, 15, ":/mycad/textures/pine.jpg"},
     {"Bamboo", "Wood", 0xD2AD80FF, 0x262626FF, 0x000401FF, 0x7F6A3FFF, 25, ":/mycad/textures/bamboo.jpg"},
-    {"Brushed Aluminum", "Metal", 0xDBDFE2FF, 0x8C8C8CFF, 0x000202FF, 0x62656AFF, 60, ":/mycad/textures/brushed_aluminum.jpg"},
-    {"Brushed Steel", "Metal", 0xA8ABB0FF, 0x8C8C8CFF, 0x000202FF, 0x3A3C40FF, 60, ":/mycad/textures/brushed_steel.jpg"},
+    {"Brushed Aluminum", "Metal", 0xC5C9CEFF, 0x8C8C8CFF, 0x000202FF, 0x62656AFF, 60, ":/mycad/textures/brushed_aluminum.jpg"},
+    {"Brushed Steel", "Metal", 0x9DA1A7FF, 0x8C8C8CFF, 0x000202FF, 0x3A3C40FF, 60, ":/mycad/textures/brushed_steel.jpg"},
     {"Carbon Fiber", "Composites", 0x2F2E31FF, 0x737373FF, 0x000101FF, 0x0D0D0DFF, 70, ":/mycad/textures/carbon.jpg", 0, "Carbon Fiber"},
     {"Concrete", "Stone", 0x9E9C91FF, 0x141414FF, 0x000001FF, 0x4D4C49FF, 10, ":/mycad/textures/concrete.jpg"},
     {"Marble", "Stone", 0xACADB6FF, 0x808080FF, 0x000101FF, 0x7D7B78FF, 80, ":/mycad/textures/marble.jpg"},
@@ -466,10 +466,10 @@ constexpr BodyMaterial bodyMaterials[] = {
     dielectric("Silicone Red", "Rubber", 0xD9473FFF, 35, Plain, "Silicone"),
     dielectric("Silicone Blue", "Rubber", 0x4F86C6FF, 35, Plain, "Silicone"),
     // Glas und Acryl: durchsichtig, die Spiegelung bleibt voll
-    dielectric("Clear Glass", "Glass", 0xF4F8F8FF, 98, Plain, "Glass", nullptr, 75),
+    dielectric("Clear Glass", "Glass", 0xF0F6F6FF, 98, Plain, "Glass", nullptr, 65),
     dielectric("Frosted Glass", "Glass", 0xF0F3F3FF, 45, Plain, "Glass", nullptr, 50),
     dielectric("Tinted Glass", "Glass", 0x60666CFF, 98, Plain, "Glass", nullptr, 60),
-    dielectric("Clear Acrylic", "Glass", 0xF8F8F8FF, 95, Plain, "Acrylic", nullptr, 70),
+    dielectric("Clear Acrylic", "Glass", 0xF8F8F8FF, 95, Plain, "Acrylic", nullptr, 62),
     dielectric("Opal Acrylic", "Glass", 0xF6F6F4FF, 90, Plain, "Acrylic", nullptr, 25),
     dielectric("Red Acrylic", "Glass", 0xD8312AFF, 95, Plain, "Acrylic", nullptr, 45),
     dielectric("Blue Acrylic", "Glass", 0x2F7FD8FF, 95, Plain, "Acrylic", nullptr, 45),
@@ -3734,7 +3734,24 @@ void attach(View3DInventor* view)
         search.setName(SbName("ObjectGroup"));
         search.apply(root);
         if (SoPath* path = search.getPath()) {
-            root->addChild(Gui::Shell::contactShadow(path->getTail()));  // vor dem Raster: die Linien liegen über dem Schatten
+            // Schatten werfen nur Körper (wie beim Material-Shader in ViewProviderExt): Skizzen, Profile, Scribbles,
+            // Ebenen und Achsen nicht
+            QPointer<View3DInventor> owner(view);
+            auto others = [owner] {
+                std::vector<SoSwitch*> list;
+                Gui::Document* doc = owner ? owner->getGuiDocument() : nullptr;
+                for (App::DocumentObject* obj : doc ? doc->getDocument()->getObjects() : std::vector<App::DocumentObject*>()) {
+                    const bool solid = obj->isDerivedFrom(Base::Type::fromName("Part::Feature"))
+                        && !obj->isDerivedFrom(Base::Type::fromName("Part::Part2DObject"))
+                        && std::string_view(obj->getTypeId().getName()) != "Design::Profiles";
+                    Gui::ViewProvider* vp = doc->getViewProvider(obj);
+                    if (!solid && vp && vp->getModeSwitch() && !vp->getChildRoot()) {  // Gruppen (Komponenten) enthalten die Körper
+                        list.push_back(vp->getModeSwitch());
+                    }
+                }
+                return list;
+            };
+            root->addChild(Gui::Shell::contactShadow(path->getTail(), others));  // vor dem Raster: Linien über dem Schatten
         }
         root->addChild(groundGrid().node);
     }

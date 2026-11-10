@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Körper-Materialien (Gui/Shell/BodyShading.cpp): eine spiegelnde Chromkugel zeigt den Raum, darin eine scharfe Linie, wo
-Wand und Boden aufeinandertreffen. Mit Materialien "Sparsam" (Phong, wie früher) gibt es nur weiche Verläufe.
-Fotoscans: Maßstab aus dem Bild, Hirnholz an der Stirnseite, Kontaktschatten (beides nur bei "Hoch"). Zum Schluss ein
-Bild aller Effekte.
+"""Körper-Materialien (Gui/Shell/BodyShading.cpp) und die Schalter unter Einstellungen → Materialien und Licht: eine
+spiegelnde Chromkugel zeigt den Raum, darin eine scharfe Linie, wo Wand und Boden aufeinandertreffen; ohne Spiegelungen
+oder ohne realistische Materialien (Phong, wie früher) nur weiche Verläufe. Fotoscans: Maßstab aus dem Bild, Hirnholz an
+der Stirnseite (Relief und Hirnholz), Kontaktschatten. Zum Schluss ein Bild aller Effekte.
 Fehler stehen als FAIL im Protokoll."""
 from harness import *
 import Part
@@ -83,6 +83,27 @@ def ground(key):
     saved[key] = at(-2) / max(at(-25), 1e-3)
 
 
+def scribble():
+    """dicker Marker-Strich flach auf dem Boden neben dem Holzklotz: ein Scribble wirft keinen Schatten"""
+    s = doc().addObject("Design::Scribble", "Scribble")
+    s.Sheet = App.Placement(App.Vector(0, 0, 0.5), App.Rotation())
+    s.Points = [App.Vector(x, -60, 0.5) for x in (80, 120, 160)]; s.Widths = [15.0] * 3
+    s.Tools = [2]; s.Kinds = [0]; s.Colors = [(0.2, 0.2, 0.2, 0.35)]; s.Normals = [App.Vector(0, 0, 1)]
+    s.Counts = [3]
+    doc().recompute()
+
+
+def beside_scribble():
+    v = Gui.ActiveDocument.ActiveView
+    img = view().viewport().grab().toImage()
+    def at(y):
+        px, py = v.getPointOnViewport(App.Vector(120, y, 0))
+        x, y = int(px), int(img.height() - py)
+        values = [lum(img, x + dx, y + dy) for dx in range(-6, 7, 2) for dy in range(-1, 2)]
+        return sum(values) / len(values)
+    saved["scribble"] = at(-72) / max(at(-95), 1e-3)  # 4,5 mm neben dem Strich gegen weit weg
+
+
 def top():
     fit("viewTop")
     cam = Gui.ActiveDocument.ActiveView.getCameraNode()
@@ -104,34 +125,41 @@ def showcase():
 
 
 in_order([
-    ("high", lambda: P.SetInt("RenderQuality", 0)),
+    ("all on", lambda: [P.SetBool(k, True) for k in ("RealisticMaterials", "Reflections", "SurfaceDetail", "ContactShadow")]),
     ("sphere", sphere), ("wait", lambda: None),
     ("measure pbr", lambda: measure("pbr")),
     ("shot pbr", lambda: shot("pbr")),
     ("pbr", lambda: check("PBR: the mirror sphere reflects the room, a sharp line where wall meets floor",
                           saved["pbr"] > 0.1, "largest jump %.2f" % saved["pbr"])),
-    ("low", lambda: P.SetInt("RenderQuality", 2)), ("wait", lambda: None),
+    ("no reflections", lambda: P.SetBool("Reflections", False)), ("wait", lambda: None),
+    ("measure soft", lambda: measure("soft")),
+    ("soft", lambda: check("Reflections off: only soft sheen, no reflected room", saved["soft"] < 0.05, "largest jump %.2f" % saved["soft"])),
+    ("reflections back", lambda: P.SetBool("Reflections", True)),
+    ("low", lambda: P.SetBool("RealisticMaterials", False)), ("wait", lambda: None),
     ("measure phong", lambda: measure("phong")),
     ("shot phong", lambda: shot("phong")),
-    ("phong", lambda: check("Low (Phong, as before): only soft gradients, no reflected room",
+    ("phong", lambda: check("Realistic materials off (Phong, as before): only soft gradients, no reflected room",
                             saved["phong"] < 0.05, "largest jump %.2f" % saved["phong"])),
-    ("back", lambda: P.SetInt("RenderQuality", 0)),
+    ("back", lambda: P.SetBool("RealisticMaterials", True)),
     ("wood", wood), ("oak", lambda: tile("Oak, Lacquered")), ("ok", ok),
     ("scale", scale),
     ("right", lambda: fit("viewRight")), ("x high", lambda: center("x high")), ("shot end grain", lambda: shot("endgrain")),
     ("front", lambda: fit("viewFront")), ("y high", lambda: center("y high")), ("shot side grain", lambda: shot("sidegrain")),
-    ("balanced", lambda: P.SetInt("RenderQuality", 1)), ("wait", lambda: None),
+    ("balanced", lambda: P.SetBool("SurfaceDetail", False)), ("wait", lambda: None),
     ("y bal", lambda: center("y bal")),
     ("right 2", lambda: fit("viewRight")), ("x bal", lambda: center("x bal")),
-    ("end grain", lambda: check("High: the end face (x) shows darker end grain, Balanced plain texture",
+    ("end grain", lambda: check("Relief and end grain: the end face (x) shows darker end grain, off plain texture",
                                 saved["x high"] / saved["y high"] < 0.95 * saved["x bal"] / saved["y bal"],
                                 "x/y high %.3f, balanced %.3f" % (saved["x high"] / saved["y high"], saved["x bal"] / saved["y bal"]))),
-    ("back 2", lambda: P.SetInt("RenderQuality", 0)),
+    ("back 2", lambda: P.SetBool("SurfaceDetail", True)),
     ("top", top), ("wait", lambda: None), ("shadow high", lambda: ground("shadow high")), ("shot shadow", lambda: shot("shadow")),
-    ("balanced 2", lambda: P.SetInt("RenderQuality", 1)), ("wait", lambda: None), ("shadow bal", lambda: ground("shadow bal")),
-    ("shadow", lambda: check("High: contact shadow darkens the ground next to the body, Balanced has none",
+    ("balanced 2", lambda: P.SetBool("ContactShadow", False)), ("wait", lambda: None), ("shadow bal", lambda: ground("shadow bal")),
+    ("shadow", lambda: check("Contact shadow darkens the ground next to the body, switched off none",
                              saved["shadow high"] < 0.93 and saved["shadow bal"] > 0.97,
                              "near/far high %.3f, balanced %.3f" % (saved["shadow high"], saved["shadow bal"]))),
-    ("back 3", lambda: P.SetInt("RenderQuality", 0)),
+    ("back 3", lambda: P.SetBool("ContactShadow", True)),
+    ("scribble", scribble), ("top 2", top), ("wait", lambda: None), ("wait", lambda: None),
+    ("beside scribble", beside_scribble), ("shot scribble", lambda: shot("scribble")),
+    ("scribble check", lambda: check("A scribble casts no shadow", saved["scribble"] > 0.97, "near/far %.3f" % saved["scribble"])),
     ("showcase", showcase), ("wait", lambda: None), ("shot showcase", lambda: shot("showcase")),
 ])

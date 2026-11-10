@@ -46,6 +46,8 @@
 #include <cmath>
 #include <cstring>
 #include <map>
+#include <set>
+#include <string>
 #include <vector>
 
 namespace
@@ -78,11 +80,15 @@ void bindImage(void* data, SoAction* action)
     f->glActiveTexture(GL_TEXTURE0 + image->unit);
     auto known = image->textures.find(ctx);
     if (known == image->textures.end()) {
-        const QImage img = QImage(image->path).convertToFormat(QImage::Format_RGBA8888);
+        // 16 Bit (Umgebung) bleibt 16 Bit: 8 Bit reichten nicht für Lichtflächen und dunkle Ecken zugleich
+        const QImage source(image->path);
+        const bool deep = source.depth() == 64;
+        const QImage img = source.convertToFormat(deep ? QImage::Format_RGBA64 : QImage::Format_RGBA8888);
         GLuint tex = 0;
         f->glGenTextures(1, &tex);
         f->glBindTexture(GL_TEXTURE_2D, tex);
-        f->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img.constBits());
+        f->glTexImage2D(GL_TEXTURE_2D, 0, deep ? GL_RGBA16 : GL_RGBA, img.width(), img.height(), 0, GL_RGBA,
+                        deep ? GL_UNSIGNED_SHORT : GL_UNSIGNED_BYTE, img.constBits());
         // Kugelkarte ohne Mipmaps: an ihrer Naht (u = 0/1) wählte die GPU sonst eine winzige Stufe, eine Linie wäre zu sehen
         if (image->tiled) {
             f->glGenerateMipmap(GL_TEXTURE_2D);
@@ -109,13 +115,13 @@ const char* const Vertex = R"(
 #version 120
 varying vec3 objNormal;  // Objekt-Koordinaten: darin steht die Umgebung (Z oben)
 varying vec3 objPos;
-varying vec3 eyeNormal;
+varying vec3 eyePos;
 varying vec4 baseColor;
 void main()
 {
     objNormal = gl_Normal;
     objPos = gl_Vertex.xyz;
-    eyeNormal = gl_NormalMatrix * gl_Normal;
+    eyePos = (gl_ModelViewMatrix * gl_Vertex).xyz;
     baseColor = gl_Color;
     gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
     gl_ClipVertex = gl_ModelViewMatrix * gl_Vertex;  // Schnittebenen der Ansicht schneiden weiter
@@ -129,12 +135,13 @@ uniform int coin_light_model;     // von Coin: 0 = Grundfarbe (Auswahl, Vorauswa
 uniform int coin_texunit0_model;  // von Coin: 0 = keine Textur auf Stufe 0
 uniform sampler2D baseMap;        // Stufe 0: Farbe des Fotoscans oder eigenes Bild
 uniform sampler2D surfaceMap;     // Stufe 1: Normale x/y und Rauheit des Fotoscans (tools/fetch_textures.py)
-uniform sampler2D envMap;         // Stufe 2: Umgebung "Raum", 6 Ebenen 512x256 RGBM untereinander
+uniform sampler2D envMap;         // Stufe 2: Umgebung "Raum", 6 Ebenen 512x256 untereinander, 16 Bit, Wert² * 128
 uniform float exposure;
-uniform int detail;               // 1: Oberflächen-Karten, Hirnholz, Druckschichten (Qualität "Hoch")
+uniform int detail;               // 1: Oberflächen-Karten, Hirnholz, Druckschichten (Einstellung "Relief und Hirnholz")
+uniform int reflections;          // 0: keine Spiegelbilder, nur weicher Glanz (Einstellung "Spiegelungen")
 varying vec3 objNormal;
 varying vec3 objPos;
-varying vec3 eyeNormal;
+varying vec3 eyePos;
 varying vec4 baseColor;
 
 const float PI = 3.14159265;
@@ -146,14 +153,15 @@ vec3 envLevel(vec3 d, float level)
 {
     float u = atan(d.y, d.x) / (2.0 * PI) + 0.5;
     float v = clamp(acos(clamp(d.z, -1.0, 1.0)) / PI, 0.5 / 256.0, 1.0 - 0.5 / 256.0);
-    vec4 c = texture2D(envMap, vec2(u, (level + v) / LEVELS));
-    return c.rgb * c.a * 64.0;
+    vec3 c = texture2D(envMap, vec2(u, (level + v) / LEVELS)).rgb;
+    return c * c * 128.0;  // Wurzel-kodiert, tools/make_environment.py
 }
 
-/// Spiegelung aus der Umgebung, Ebene 0 (scharf) bis 4 (rau), dazwischen gemischt
+/// Spiegelung aus der Umgebung, Ebene 0 (scharf) bis 4 (rau), dazwischen gemischt. Ohne Spiegelungen nur die weichen
+/// Ebenen: Glanz und Form bleiben lesbar, Fenster und Lampen tauchen nicht auf.
 vec3 envSpecular(vec3 d, float roughness)
 {
-    float level = clamp(roughness, 0.0, 1.0) * 4.0;
+    float level = clamp(reflections == 1 ? roughness : max(roughness, 0.85), 0.0, 1.0) * 4.0;
     float l0 = floor(level);
     return mix(envLevel(d, l0), envLevel(d, min(l0 + 1.0, 4.0)), level - l0);
 }
@@ -227,10 +235,8 @@ void main()
     bool scan = e.r > 1.5 && e.r < 2.5;
 
     vec3 N = normalize(objNormal);
-    vec3 Ne = normalize(eyeNormal);
     if (!gl_FrontFacing) {
         N = -N;
-        Ne = -Ne;
     }
     vec4 base = baseColor;
     float roughness = clamp(1.0 - gl_FrontMaterial.shininess / 128.0, 0.03, 1.0);
@@ -275,8 +281,17 @@ void main()
         float a = dot(albedo, LUM);
         metal = step(0.12, s) * step(a * 0.9, s);  // Glanzlicht hell und heller als die Grundfarbe: Metall (Chrom, Gold …)
     }
-    vec3 V = gl_ProjectionMatrix[3][3] == 1.0 ? normalize((gl_ModelViewMatrixInverse * vec4(0.0, 0.0, 1.0, 0.0)).xyz)
-                                              : normalize((gl_ModelViewMatrixInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz - objPos);
+    // Blickrichtung. Orthografisch sähe jede ebene Fläche nur eine Richtung der Umgebung und wäre überall gleich hell
+    // (oder ganz weiß, wenn das eine Lampe ist). Darum spiegelt sie wie bei einer Kamera mit rund 30° Bildwinkel, die
+    // Form bleibt orthografisch.
+    vec3 V;
+    if (gl_ProjectionMatrix[3][3] == 1.0) {
+        float height = 2.0 / gl_ProjectionMatrix[1][1];
+        V = normalize((gl_ModelViewMatrixInverse * vec4(-eyePos.xy, 1.8 * height, 0.0)).xyz);
+    }
+    else {
+        V = normalize((gl_ModelViewMatrixInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz - objPos);
+    }
     float NoV = max(dot(N, V), 1e-4);
     vec3 Nr = N;
     if (brushed) {
@@ -289,13 +304,16 @@ void main()
     vec3 R = reflect(-V, Nr);
     // Metall spiegelt in seiner Farbe; altes Phong-Metall hat dunkle Grundfarbe und helles Glanzlicht: das hellere zählt
     vec3 F0 = mix(vec3(0.04), max(albedo, spec * metal), metal);
+    // wie three.js MeshPhysicalMaterial: Einfach- und Mehrfachstreuung (Fdez-Agüera), raues Metall wird nicht zu dunkel;
+    // was der Glanz zurückwirft, fehlt dem Streulicht. Kein Zusatzlicht: die Umgebung allein beleuchtet.
     vec2 ab = envBRDF(NoV, roughness);
-    vec3 specular = envSpecular(R, roughness) * (F0 * ab.x + ab.y);
-    vec3 diffuse = albedo * (1.0 - metal) * envLevel(N, 5.0);
-    // Kopflicht als leichte Aufhellung: auch die von der Umgebung abgewandte Seite bleibt lesbar
-    float head = max(dot(Ne, normalize(gl_LightSource[0].position.xyz)), 0.0);
-    diffuse += albedo * (1.0 - metal) * head * 0.18;
-    specular += F0 * head * 0.08;
+    vec3 FssEss = F0 * ab.x + ab.y;
+    float Ems = 1.0 - (ab.x + ab.y);
+    vec3 Favg = F0 + (1.0 - F0) / 21.0;
+    vec3 Fms = FssEss * Favg / (1.0 - Ems * Favg);
+    vec3 irradiance = envLevel(N, 5.0);
+    vec3 specular = envSpecular(R, roughness) * FssEss + irradiance * Fms * Ems;
+    vec3 diffuse = albedo * (1.0 - metal) * (1.0 - FssEss - Fms * Ems) * irradiance;
     float alpha = base.a;
     diffuse *= alpha;  // Glas: das Dahinter scheint durch, die Spiegelung bleibt voll (siehe alpha unten)
     if (coat) {
@@ -314,6 +332,12 @@ void main()
 )";
 
 SoShaderParameter1i* detail()
+{
+    static auto node = new SoShaderParameter1i;
+    return node;
+}
+
+SoShaderParameter1i* reflections()
 {
     static auto node = new SoShaderParameter1i;
     return node;
@@ -348,6 +372,8 @@ SoSwitch* root()
         fragment->parameter.set1Value(3, surfaceMap);
         detail()->name = "detail";
         fragment->parameter.set1Value(4, detail());
+        reflections()->name = "reflections";
+        fragment->parameter.set1Value(5, reflections());
         auto program = new SoShaderProgram;
         program->shaderObject.set1Value(0, vertex);
         program->shaderObject.set1Value(1, fragment);
@@ -365,13 +391,14 @@ std::vector<ContactShadow*>& shadows();
 void renderMask(ContactShadow* s);
 void setShadow(ContactShadow* s, bool on);
 
-/// Einstellung "Materialien" (MyCAD/RenderQuality) wirkt sofort, auch wenn ein Skript sie setzt
+/// Einstellungen "Materialien und Licht" wirken sofort, auch wenn ein Skript sie setzt
 class QualityObserver: public ParameterGrp::ObserverType
 {
 public:
     void OnChange(ParameterGrp::SubjectType&, ParameterGrp::MessageType reason) override
     {
-        if (reason && std::strcmp(reason, "RenderQuality") == 0) {
+        static const std::set<std::string> names {"RealisticMaterials", "Reflections", "SurfaceDetail", "ContactShadow"};
+        if (reason && names.contains(reason)) {
             Gui::Shell::applyRenderQuality();
         }
     }
@@ -394,11 +421,12 @@ SoNode* Gui::Shell::bodyShading()
 
 void Gui::Shell::applyRenderQuality()
 {
-    const long quality = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetInt("RenderQuality", 0);
-    root()->whichChild = quality >= 2 ? SO_SWITCH_NONE : 0;  // Sparsam: Phong wie früher
-    detail()->value = quality == 0 ? 1 : 0;                  // Ausgewogen: ohne Relief, Hirnholz und Kontaktschatten
+    auto p = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+    root()->whichChild = p->GetBool("RealisticMaterials", true) ? 0 : SO_SWITCH_NONE;  // aus: Phong wie früher
+    detail()->value = p->GetBool("SurfaceDetail", true) ? 1 : 0;
+    reflections()->value = p->GetBool("Reflections", true) ? 1 : 0;
     for (ContactShadow* shadow : shadows()) {
-        setShadow(shadow, quality == 0);
+        setShadow(shadow, p->GetBool("ContactShadow", true));
     }
 }
 
@@ -443,9 +471,11 @@ SoNode* Gui::Shell::bodyTexture(const std::string& path)
 namespace
 {
 
-/// Kontaktschatten einer Ansicht: Eine Kamera unter dem Boden schaut nach oben und sieht nur, was bis `reach` über dem
-/// Boden liegt. Das wird schwarz auf weiß in eine kleine Maske gerendert (eigener Kontext wie bei den Material-Kugeln),
-/// der Boden zeichnet sie weich und halbdurchsichtig. Neu gerendert wird nur, wenn sich die Szene ändert.
+/// Kontaktschatten einer Ansicht, wie in der Browser-Vorschau ein großer weicher Fleck unter dem Teil, aber in dessen
+/// Grundriss: Eine Kamera unter dem Boden schaut nach oben und sieht, was bis zur halben Teilgröße über dem Boden liegt.
+/// Das wird schwarz auf weiß in eine kleine Maske gerendert (eigener Kontext wie bei den Material-Kugeln), auf der CPU
+/// weichgezeichnet und vom Boden halbdurchsichtig gezeichnet. Nur Körper werfen Schatten (Skizzen, Profile, Scribbles,
+/// Hilfsgeometrie sind dabei ausgeblendet). Neu gerendert wird nur, wenn sich die Szene ändert.
 struct ContactShadow
 {
     SoSwitch* sw;
@@ -457,9 +487,10 @@ struct ContactShadow
     SoCoordinate3* quad;
     SoNodeSensor* sensor;
     QTimer* timer;
+    std::function<std::vector<SoSwitch*>()> others;  ///< Anzeige-Schalter von allem, was kein Körper ist
 };
 
-constexpr short MaskSize = 256;
+constexpr int MaskSize = 128;
 
 std::vector<ContactShadow*>& shadows()
 {
@@ -467,47 +498,85 @@ std::vector<ContactShadow*>& shadows()
     return list;
 }
 
+/// dreimal Kastenfilter waagrecht und senkrecht ≈ Gauß mit Sigma ≈ r; außerhalb der Maske ist nichts
+void soften(std::vector<float>& m, int n, int r)
+{
+    std::vector<float> tmp(m.size());
+    for (int pass = 0; pass < 6; ++pass) {
+        const bool rows = pass % 2 == 0;
+        for (int a = 0; a < n; ++a) {
+            for (int b = 0; b < n; ++b) {
+                float sum = 0;
+                for (int k = std::max(0, b - r); k <= std::min(n - 1, b + r); ++k) {
+                    sum += rows ? m[a * n + k] : m[k * n + a];
+                }
+                (rows ? tmp[a * n + b] : tmp[b * n + a]) = sum / float(2 * r + 1);
+            }
+        }
+        m.swap(tmp);
+    }
+}
+
 void renderMask(ContactShadow* s)
 {
     if (s->sw->whichChild.getValue() == SO_SWITCH_NONE) {
         return;
     }
+    s->sensor->detach();  // das eigene Rendern (und Ausblenden) soll nicht gleich das nächste auslösen
+    std::vector<std::pair<SoSwitch*, int>> hidden;
+    for (SoSwitch* other : s->others()) {
+        hidden.emplace_back(other, other->whichChild.getValue());
+        other->whichChild = SO_SWITCH_NONE;
+    }
     SoGetBoundingBoxAction bbox(SbViewportRegion(MaskSize, MaskSize));
     bbox.apply(s->objects);
     const SbBox3f box = bbox.getBoundingBox();
-    if (box.isEmpty()) {
-        s->quad->point.setNum(0);
-        return;
-    }
-    float x0, y0, z0, x1, y1, z1;
-    box.getBounds(x0, y0, z0, x1, y1, z1);
-    const float size = std::max(x1 - x0, y1 - y0);
-    const float half = size * 0.75F + 5.0F;                     // Rand für die weiche Kante
-    const float ground = std::min(z0, 0.0F);                    // auf dem Raster, oder darunter, wenn der Körper tiefer reicht
-    const float reach = std::clamp(size * 0.2F, 2.0F, 200.0F);  // was so nah am Boden liegt, wirft Schatten
-    const float cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-    s->camera->position.setValue(cx, cy, ground - 1);
-    s->camera->height = 2 * half;
-    s->camera->nearDistance = 0.5F;
-    s->camera->farDistance = 1 + reach;
-
-    s->sensor->detach();  // das eigene Rendern soll nicht gleich das nächste auslösen
-    Gui::SoQtOffscreenRenderer renderer(SbViewportRegion(MaskSize, MaskSize));
-    renderer.setBackgroundColor(SbColor4f(1, 1, 1, 1));
     QImage image;
-    if (renderer.render(s->under)) {
-        renderer.writeToImage(image);
+    float cx = 0, cy = 0, half = 0, ground = 0;
+    if (!box.isEmpty()) {
+        float x0, y0, z0, x1, y1, z1;
+        box.getBounds(x0, y0, z0, x1, y1, z1);
+        const float size = std::max(x1 - x0, y1 - y0);
+        half = size * 0.8F + 5.0F;          // Platz für den weichen Rand
+        ground = std::min(z0, 0.0F);        // auf dem Raster, oder darunter, wenn der Körper tiefer reicht
+        cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+        s->camera->position.setValue(cx, cy, ground - 1);
+        s->camera->height = 2 * half;
+        s->camera->nearDistance = 0.5F;
+        s->camera->farDistance = 1 + std::max(size * 0.5F, 2.0F);  // was bis zur halben Größe über dem Boden liegt
+        Gui::SoQtOffscreenRenderer renderer(SbViewportRegion(MaskSize, MaskSize));
+        renderer.setBackgroundColor(SbColor4f(1, 1, 1, 1));
+        if (renderer.render(s->under)) {
+            renderer.writeToImage(image);
+        }
+    }
+    for (const auto& [other, value] : hidden) {
+        other->whichChild = value;
     }
     s->sensor->attach(s->objects);
     if (image.isNull()) {
+        s->quad->point.setNum(0);
         return;
     }
     image = image.convertToFormat(QImage::Format_Grayscale8);
-    image.invertPixels();  // Deckung: 255 unter einem Körper
+    std::vector<float> cover(MaskSize * MaskSize);
+    for (int y = 0; y < MaskSize; ++y) {
+        const uchar* row = image.constScanLine(y);
+        for (int x = 0; x < MaskSize; ++x) {
+            cover[y * MaskSize + x] = 1.0F - row[x] / 255.0F;  // 1 unter einem Körper
+        }
+    }
+    soften(cover, MaskSize, 5);  // Sigma rund 1/10 der Teilgröße
+    for (int y = 0; y < MaskSize; ++y) {
+        uchar* row = image.scanLine(y);
+        for (int x = 0; x < MaskSize; ++x) {
+            row[x] = uchar(std::clamp(cover[y * MaskSize + x], 0.0F, 1.0F) * 255.0F + 0.5F);
+        }
+    }
     SoSFImage pixels;
     Gui::BitmapFactory().convert(image, pixels);
     s->mask->image = pixels;
-    s->area->value.setValue(cx, cy, half, 0.6F);
+    s->area->value.setValue(cx, cy, half, 0.55F);  // wie die Vorschau: mitten unter dem Teil 55 % Schwarz
     const SbVec3f corners[] = {{cx - half, cy - half, ground}, {cx + half, cy - half, ground},
                                {cx + half, cy + half, ground}, {cx - half, cy + half, ground}};
     s->quad->point.setValues(0, 4, corners);
@@ -535,24 +604,14 @@ void main()
 
 const char* const ShadowFragment = R"(
 #version 120
-uniform sampler2D mask;  // Deckung: Körper nah am Boden, von unten gesehen (x gespiegelt)
+uniform sampler2D mask;  // Deckung, weichgezeichnet: Körper nah am Boden, von unten gesehen (x gespiegelt)
 uniform vec4 area;       // Mitte x, y; halbe Breite; Stärke
 varying vec2 world;
 varying float up;
 void main()
 {
     vec2 uv = vec2(0.5 - (world.x - area.x) / (2.0 * area.z), 0.5 + (world.y - area.y) / (2.0 * area.z));
-    // weichzeichnen: Mitte und drei Ringe zu je 12 Proben (gegeneinander verdreht), außen schwächer
-    float sum = texture2D(mask, uv).r * 1.5;
-    float weight = 1.5;
-    for (int i = 0; i < 12; ++i) {
-        float a = float(i) * 0.5236;
-        vec2 d = vec2(cos(a), sin(a)), e = vec2(cos(a + 0.26), sin(a + 0.26));
-        sum += texture2D(mask, uv + d * 0.015).r * 1.2 + texture2D(mask, uv + e * 0.035).r * 0.8
-             + texture2D(mask, uv + d * 0.06).r * 0.5;
-        weight += 2.5;
-    }
-    float shadow = sum / weight * area.w * smoothstep(0.05, 0.3, up);
+    float shadow = texture2D(mask, uv).r * area.w * smoothstep(0.05, 0.3, up);  // schon weich (soften)
     if (shadow < 0.004) {
         discard;
     }
@@ -569,9 +628,10 @@ void depthClamp(void* on, SoAction* action)
 
 }  // namespace
 
-SoNode* Gui::Shell::contactShadow(SoNode* objects)
+SoNode* Gui::Shell::contactShadow(SoNode* objects, std::function<std::vector<SoSwitch*>()> others)
 {
     auto s = new ContactShadow {};
+    s->others = std::move(others);
     s->objects = new SoGroup;
     s->objects->ref();
     s->objects->addChild(objects);
@@ -638,7 +698,7 @@ SoNode* Gui::Shell::contactShadow(SoNode* objects)
     s->sw = new SoSwitch;
     s->sw->ref();
     s->sw->addChild(skip);
-    s->sw->whichChild = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetInt("RenderQuality", 0) == 0
+    s->sw->whichChild = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("ContactShadow", true)
         ? 0 : SO_SWITCH_NONE;
 
     // Szene geändert (Körper bearbeitet, ein- oder ausgeblendet): Maske kurz danach neu, beim Tippen nicht bei jeder Taste

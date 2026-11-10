@@ -3892,14 +3892,14 @@
      "You can also drag a sphere straight onto a body in the view, without selecting it first.",
      "Right-click a sphere to add it to Favorites. In this design shows the materials you already use.",
      "Single faces only take the colour of a material. Textures, gloss and lacquer apply to whole bodies.",
-     "Settings → General → Materials: High shows relief, end grain and a soft shadow under the bodies, Balanced leaves them out, Low draws bodies as before, without reflections.",
+     "Settings → General → Materials and Light switches each effect on or off: Realistic materials, Reflections, Relief and end grain, Contact shadow. Turn off whatever distracts you while you work.",
      "The default look of new bodies is set in Settings → General → Body material."
     ],
     "de": [
      "Du kannst eine Kugel auch direkt auf einen Körper in der Ansicht ziehen, ohne ihn vorher zu wählen.",
      "Ein Rechtsklick auf eine Kugel legt sie unter Favoriten ab. In diesem Design zeigt die Materialien, die du schon verwendest.",
      "Einzelne Flächen übernehmen nur die Farbe eines Materials. Texturen, Glanz und Lack gibt es für ganze Körper.",
-     "Einstellungen → Allgemein → Materialien: Hoch zeigt Relief, Hirnholz und einen weichen Schatten unter den Körpern, Ausgewogen lässt sie weg, Sparsam zeichnet Körper wie früher, ohne Spiegelungen.",
+     "Einstellungen → Allgemein → Materialien und Licht schaltet jeden Effekt einzeln an oder aus: Realistische Materialien, Spiegelungen, Relief und Hirnholz, Kontaktschatten. Schalte ab, was dich beim Arbeiten stört.",
      "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Allgemein → Körpermaterial ein."
     ]
    },
@@ -3967,7 +3967,8 @@
    },
    "steps": {
     "en": [
-     "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Body material, Materials (High, Balanced or Low), Show tool names and Show grid (the grid on the ground plane under the bodies).",
+     "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Show tool names and Show grid (the grid on the ground plane under the bodies).",
+     "Materials and Light: Body material for new bodies, and switches for Realistic materials, Reflections, Relief and end grain and Contact shadow.",
      "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart) and Projects folder.",
      "Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
      "View: Camera, Rotate, Rotate around and Animate view changes.",
@@ -3975,7 +3976,8 @@
      "Keys tab: Add Key… turns a key into a mouse button, e.g. Shift as the middle button; choose the button and whether to Hold, Click, Double-click or Toggle."
     ],
     "de": [
-     "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Körpermaterial, Materialien (Hoch, Ausgewogen oder Sparsam), Werkzeugnamen anzeigen und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
+     "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
+     "Materialien und Licht: Körpermaterial für neue Körper und Schalter für Realistische Materialien, Spiegelungen, Relief und Hirnholz und Kontaktschatten.",
      "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart) und Projektordner.",
      "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen.",
      "Ansicht: Kamera, Drehen, Drehen um und Ansichtswechsel animieren.",
