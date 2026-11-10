@@ -25,6 +25,8 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
+
 #include <FCConfig.h>
 
 #include <Base/Writer.h>
@@ -38,6 +40,21 @@
 #include <App/PropertyLinks.h>
 #include <App/PropertyStandard.h>
 #include <App/VarSet.h>
+
+namespace
+{
+/// Datei im eigenen Ordner dieses Tests: ctest -j lässt die Tests gleichzeitig laufen, und eine gemeinsame test.FCStd
+/// im Arbeitsordner gab ein Rennen beim Umbenennen der Sicherung (test.FCBak). Beide Dokumente eines Tests liegen weiter
+/// nebeneinander, die relativen Pfade zwischen ihnen bleiben also gleich.
+std::string testFile(const char* name)
+{
+    const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
+    const auto dir = std::filesystem::temp_directory_path()
+        / (std::string("freecad-") + info->test_suite_name() + "-" + info->name());
+    std::filesystem::create_directories(dir);
+    return (dir / name).string();
+}
+}  // namespace
 
 #include <src/App/InitApplication.h>
 
@@ -303,8 +320,8 @@ TEST_F(RenameProperty, updateExpressionDifferentDocument)
 
     App::ObjectIdentifier path(*prop2);
     std::shared_ptr<App::Expression> expr(App::Expression::parse(varSet, "test#VarSet.Variable"));
-    doc->saveAs("test.FCStd");
-    doc2->saveAs("test2.FCStd");
+    doc->saveAs(testFile("test.FCStd").c_str());
+    doc2->saveAs(testFile("test2.FCStd").c_str());
     varSet2->setExpression(path, expr);
     varSet2->ExpressionEngine.execute();
 
@@ -551,8 +568,8 @@ void MoveProperty::testMovePropertyExpressionWithAct(
 
     App::ObjectIdentifier path(*prop2);
     std::shared_ptr<App::Expression> expr(App::Expression::parse(varSet1Doc1, "Variable"));
-    doc1->saveAs("test.FCStd");
-    doc2->saveAs("test1.FCStd");
+    doc1->saveAs(testFile("test.FCStd").c_str());
+    doc2->saveAs(testFile("test1.FCStd").c_str());
 
     sourceProp2->setExpression(path, expr);
     sourceProp2->ExpressionEngine.execute();
