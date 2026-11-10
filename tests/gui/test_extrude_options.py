@@ -40,7 +40,8 @@ def check_to_object():
     check("volume up to roof", body and abs(body[0].Shape.Volume - 1000) < 1, str(body and body[0].Shape.Volume))
 
 
-run([
+# in_order: jeder Schritt wartet, bis der vorige fertig ist (auf der langsamen CI öffnet der Dialog sonst zu spät)
+in_order([
     ("setup", setup),
     ("extrude", start_extrude),
     ("to object", lambda: choose("To Object", 3)),
