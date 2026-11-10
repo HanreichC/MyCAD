@@ -342,8 +342,8 @@ void View3DSettings::OnChange(ParameterGrp::SubjectType& rCaller, ParameterGrp::
             }
             else if (mode == 2) {
                 _viewer->navigationStyle()->setRotationCenterMode(
-                    NavigationStyle::RotationCenterMode::ScenePointAtCursor
-                    | NavigationStyle::RotationCenterMode::BoundingBoxCenter
+                    // MyCAD: "Mitte aller Körper" immer, nicht nur neben den Körpern (der Punkt unter dem Cursor gewann sonst)
+                    NavigationStyle::RotationCenterMode::BoundingBoxCenter
                 );
             }
             else if (mode == 3) {  // MyCAD: Mitte des Körpers unter dem Cursor
