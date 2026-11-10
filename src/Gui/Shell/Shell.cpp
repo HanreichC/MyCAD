@@ -164,6 +164,10 @@ QString styleSheet()
     const QString s = QStringLiteral(R"(
 * { color: @labelPrimary; }
 #GlassContent, #GlassContent QWidget { background: transparent; }
+/* Aufgeklappte Auswahlliste ist ein eigenes Fenster: deckend wie im Einstellungsfenster, sonst zeigt sie Schwarz */
+#GlassContent QComboBoxPrivateContainer { background: @glassOpaqueTop; }
+#GlassContent QComboBox QAbstractItemView { background: @glassOpaqueTop; border: 1px solid @glassPopupBorder; padding: 4px; outline: 0;
+    selection-background-color: @accent; selection-color: @labelOnAccent; }
 QToolTip { background: @glassOpaqueTop; color: @labelPrimary; border: 1px solid @glassPopupBorder; border-radius: 8px; padding: 4px 8px; }
 
 /* Icon-Buttons in Glas-Bars: rund, Hover fill.tertiary, gedrückt fill.secondary, Tastaturfokus 2-px-Ring */

@@ -766,6 +766,11 @@ QComboBox::drop-down { border: none; width: 20px; }
 QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
 QComboBox QAbstractItemView { background: @glassOpaqueTop; border: 1px solid @glassPopupBorder; padding: 4px; outline: 0;
     selection-background-color: @accent; selection-color: @labelOnAccent; }
+/* Textfeld (9.3): 30 hoch, r 8, fill.tertiary, Fokus 2-px-Ring; Wert per Tippen, Pfeiltasten oder Mausrad */
+QAbstractSpinBox { background: @fillTertiary; border: 2px solid transparent; border-radius: 8px; padding: 2px 8px; min-height: 22px;
+    selection-background-color: @accent; selection-color: @labelOnAccent; }
+QAbstractSpinBox:focus { border-color: @focusRing; }
+QAbstractSpinBox::up-button, QAbstractSpinBox::down-button { width: 0; border: none; }
 QSlider { min-height: 24px; }
 QSlider::groove:horizontal { height: 4px; background: @fillSecondary; border-radius: 2px; }
 QSlider::sub-page:horizontal { background: @accent; border-radius: 2px; }
