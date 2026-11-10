@@ -52,6 +52,8 @@ cat > "$WORK/AppRun" <<EOF
 #!/bin/sh
 HERE="\$(dirname "\$(readlink -f "\$0")")"
 # wie im Dev-Container: Oberfläche englisch, Farbschema und Sprache nicht vom Desktop übernehmen
+# die Sprache des Desktops merken: Programme, die MyCAD startet (Slicer), bekommen sie zurück (DesignExport)
+export MYCAD_HOST_LANG="\${LANG-}" MYCAD_HOST_LC_ALL="\${LC_ALL-}"
 export LC_ALL=C.UTF-8 LANG=C.UTF-8
 export PYTHONHOME="\$HERE/usr"
 export PYTHONPATH="\$HERE/usr/lib/$PY/site-packages\${PYTHONPATH:+:\$PYTHONPATH}"

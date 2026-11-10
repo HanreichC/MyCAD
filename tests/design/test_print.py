@@ -88,6 +88,29 @@ class Slicer(DesignTest):
             image = fake_slicer(os.path.join(home, "Applications"), "OrcaSlicer_Linux_V2.3.0.AppImage")
             self.assertEqual(DesignExport.find_slicers({"PATH": ""}, home), [("OrcaSlicer", [image])])
 
+    def test_finds_cura_as_flatpak_and_hands_the_file_through_the_portal(self):
+        with tempfile.TemporaryDirectory() as bin_dir, tempfile.TemporaryDirectory() as home:
+            flatpak = fake_slicer(bin_dir, "flatpak")  # protokolliert, womit es gestartet wird
+            os.makedirs(os.path.join(home, ".local/share/flatpak/app/com.ultimaker.cura"))
+            found = DesignExport.find_slicers({"PATH": bin_dir}, home)
+            self.assertEqual(found, [("UltiMaker Cura", [flatpak, "run", "--file-forwarding", "com.ultimaker.cura"])])
+            self.assertEqual(DesignExport.slicer_arguments(found[0][1], "/tmp/a b.3mf"),
+                             [flatpak, "run", "--file-forwarding", "com.ultimaker.cura", "@@", "/tmp/a b.3mf", "@@"])
+
+    def test_finds_cura_appimage(self):
+        with tempfile.TemporaryDirectory() as home:
+            os.makedirs(os.path.join(home, "Applications"))
+            image = fake_slicer(os.path.join(home, "Applications"), "UltiMaker-Cura-5.9.0-linux-X64.AppImage")
+            self.assertEqual(DesignExport.find_slicers({"PATH": ""}, home), [("UltiMaker Cura", [image])])
+
+    def test_slicer_does_not_inherit_mycads_appimage(self):
+        env = DesignExport.slicer_environment({
+            "APPDIR": "/tmp/.mount_MyCAD", "LD_LIBRARY_PATH": "/tmp/.mount_MyCAD/usr/lib:/opt/x/lib",
+            "PYTHONHOME": "/tmp/.mount_MyCAD/usr", "PYTHONPATH": "/tmp/.mount_MyCAD/usr/lib/python3/site-packages",
+            "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "MYCAD_HOST_LANG": "de_DE.UTF-8", "MYCAD_HOST_LC_ALL": "", "HOME": "/home/u"})
+        self.assertEqual(env, {"APPDIR": "/tmp/.mount_MyCAD", "LD_LIBRARY_PATH": "/opt/x/lib", "LANG": "de_DE.UTF-8",
+                               "HOME": "/home/u"})
+
     def test_nothing_installed(self):
         with tempfile.TemporaryDirectory() as home:
             self.assertEqual(DesignExport.find_slicers({"PATH": ""}, home), [])

@@ -2176,7 +2176,7 @@ void printBodies(App::Document* doc)
     }
     if (names.isEmpty()) {
         QMessageBox::information(Gui::getMainWindow(), T("Print"),
-                                 T("No slicer found (OrcaSlicer, Bambu Studio or PrusaSlicer). Save a 3MF file and open it "
+                                 T("No slicer found (OrcaSlicer, Bambu Studio, PrusaSlicer or Cura). Save a 3MF file and open it "
                                    "in your slicer."));
         exportBodies(doc);
         return;
@@ -3795,7 +3795,7 @@ void CreateDesignCommands()
                                      "Choose Bottom Face: click the flat face that lies on the print bed",
                                      "Std_ViewBottom", "", choosePrintBottom));
     mgr.addCommand(new DesignCommand("Design_Print", "Print",
-                                     "Print: opens the design in your slicer (OrcaSlicer, Bambu Studio, PrusaSlicer)",
+                                     "Print: opens the design in your slicer (OrcaSlicer, Bambu Studio, PrusaSlicer, Cura)",
                                      "Std_Print", "", printBodies));
     mgr.addCommand(new DesignCommand("Design_Fit", "Fit",
                                      "Fit: select a hole and its pin (or flat faces) for a 3D print or ISO fit",

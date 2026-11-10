@@ -65,6 +65,9 @@ bool alwaysSave();
 /// Design ohne Rückfrage speichern; ein neues bekommt einen eigenen Ordner im Projektordner (<Name>/<Name>.mycad).
 /// Danach eine Version (DesignVersions.snapshot), mit title benannt. false, wenn das Speichern scheiterte.
 bool saveQuietly(App::Document* doc, const QString& title = QString());
+/// Nach "Speichern unter": war before ein still angelegtes Design (eigener Ordner im Projektordner, in dieser
+/// Sitzung), ziehen seine Versionen zu after um und der alte Ordner kommt in den Papierkorb
+void savedAs(const QString& before, const QString& after);
 /// Stand dieses Builds aus Commit-Datum und -Hash, z. B. "2026.10.21 · b9d3cde" (Startseite, Einstellungen)
 QString version();
 

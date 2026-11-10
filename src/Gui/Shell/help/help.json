@@ -734,6 +734,9 @@
      "orcaslicer",
      "bambu studio",
      "prusaslicer",
+     "cura",
+     "ultimaker",
+     "flatpak",
      "printer",
      "3mf"
     ],
@@ -744,6 +747,9 @@
      "OrcaSlicer",
      "Bambu Studio",
      "PrusaSlicer",
+     "Cura",
+     "UltiMaker",
+     "Flatpak",
      "Drucker",
      "3MF"
     ]
@@ -770,11 +776,11 @@
    ],
    "tips": {
     "en": [
-     "MyCAD finds OrcaSlicer, Bambu Studio and PrusaSlicer as programs, as Flatpak and as AppImage in ~/Applications. Without a slicer, Print saves a 3MF file instead.",
+     "MyCAD finds OrcaSlicer, Bambu Studio, PrusaSlicer and UltiMaker Cura as programs, as Flatpak and as AppImage in ~/Applications. Without a slicer, Print saves a 3MF file instead.",
      "Curves are as fine as the Export resolution in Settings."
     ],
     "de": [
-     "MyCAD findet OrcaSlicer, Bambu Studio und PrusaSlicer als Programm, als Flatpak und als AppImage in ~/Applications. Ohne Slicer speichert Drucken stattdessen eine 3MF-Datei.",
+     "MyCAD findet OrcaSlicer, Bambu Studio, PrusaSlicer und UltiMaker Cura als Programm, als Flatpak und als AppImage in ~/Applications. Ohne Slicer speichert Drucken stattdessen eine 3MF-Datei.",
      "Rundungen sind so fein wie die Export-Auflösung in den Einstellungen."
     ]
    }

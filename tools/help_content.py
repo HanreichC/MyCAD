@@ -267,8 +267,8 @@ A("Design_Import", "file", "Design_Import", ("Insert", "Einfügen"),
   see=["Design_Export", "Design_Extrude"])
 
 A("Design_Print", "file", "Design_Print", ("Print", "Drucken"),
-  (["print", "3d print", "slicer", "orcaslicer", "bambu studio", "prusaslicer", "printer", "3mf"],
-   ["drucken", "3D-Druck", "Slicer", "OrcaSlicer", "Bambu Studio", "PrusaSlicer", "Drucker", "3MF"]),
+  (["print", "3d print", "slicer", "orcaslicer", "bambu studio", "prusaslicer", "cura", "ultimaker", "flatpak", "printer", "3mf"],
+   ["drucken", "3D-Druck", "Slicer", "OrcaSlicer", "Bambu Studio", "PrusaSlicer", "Cura", "UltiMaker", "Flatpak", "Drucker", "3MF"]),
   ("Opens the design in your slicer in one click: as a 3MF file with names and colours, the chosen bottom face on the bed.",
    "Öffnet das Design mit einem Klick in deinem Slicer: als 3MF-Datei mit Namen und Farben, die gewählte Unterseite auf dem Bett."),
   [("Optional: select the bodies to print; otherwise all visible bodies go to the slicer.",
@@ -276,8 +276,8 @@ A("Design_Print", "file", "Design_Print", ("Print", "Drucken"),
    tool("FILE", ("Print", "Drucken")),
    ("The first time, choose your slicer if more than one is installed. MyCAD remembers it.",
     "Beim ersten Mal wähle deinen Slicer, wenn mehrere installiert sind. MyCAD merkt sich die Wahl.")],
-  tips=[("MyCAD finds OrcaSlicer, Bambu Studio and PrusaSlicer as programs, as Flatpak and as AppImage in ~/Applications. Without a slicer, Print saves a 3MF file instead.",
-         "MyCAD findet OrcaSlicer, Bambu Studio und PrusaSlicer als Programm, als Flatpak und als AppImage in ~/Applications. Ohne Slicer speichert Drucken stattdessen eine 3MF-Datei."),
+  tips=[("MyCAD finds OrcaSlicer, Bambu Studio, PrusaSlicer and UltiMaker Cura as programs, as Flatpak and as AppImage in ~/Applications. Without a slicer, Print saves a 3MF file instead.",
+         "MyCAD findet OrcaSlicer, Bambu Studio, PrusaSlicer und UltiMaker Cura als Programm, als Flatpak und als AppImage in ~/Applications. Ohne Slicer speichert Drucken stattdessen eine 3MF-Datei."),
         ("Curves are as fine as the Export resolution in Settings.", "Rundungen sind so fein wie die Export-Auflösung in den Einstellungen.")],
   see=["Design_PrintView", "Design_Export"])
 

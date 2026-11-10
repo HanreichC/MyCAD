@@ -1770,6 +1770,7 @@ bool Document::saveAs()
         }
 
         const char* DocName = App::GetApplication().getDocumentName(getDocument());
+        const QString before = QString::fromUtf8(getDocument()->FileName.getValue());
 
         // save as new file name
         try {
@@ -1786,6 +1787,7 @@ bool Document::saveAs()
             fi.setFile(QString::fromUtf8(d->_pcDocument->FileName.getValue()));
             setModified(false);
             getMainWindow()->appendRecentFile(fi.filePath());
+            Shell::savedAs(before, fi.filePath());  // MyCAD: still angelegten ersten Ordner aufräumen
         }
         catch (const Base::FileException& e) {
             e.reportException();

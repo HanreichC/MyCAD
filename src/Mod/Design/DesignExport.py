@@ -87,15 +87,18 @@ def write_3mf(path, bodies, quality="normal", colors=None, rotation=None):
 
 # --- Drucken: Slicer finden und mit dem 3MF öffnen (Idee 5) -----------------------------------------------------
 
-# (Name, Programmnamen im PATH, Flatpak-ID, Anfang des AppImage-Namens, Windows-Pfad unter Programme)
+# (Name, Programmnamen im PATH, Flatpak-ID, Anfänge des AppImage-Namens, Windows-Pfad unter Programme)
 SLICERS = [
-    ("OrcaSlicer", ["orca-slicer", "OrcaSlicer", "orcaslicer"], "io.github.softfever.OrcaSlicer", "OrcaSlicer",
+    ("OrcaSlicer", ["orca-slicer", "OrcaSlicer", "orcaslicer"], "io.github.softfever.OrcaSlicer", ["OrcaSlicer"],
      "OrcaSlicer/orca-slicer.exe"),
-    ("Bambu Studio", ["bambu-studio", "BambuStudio"], "com.bambulab.BambuStudio", "Bambu_Studio",
+    ("Bambu Studio", ["bambu-studio", "BambuStudio"], "com.bambulab.BambuStudio", ["Bambu_Studio", "BambuStudio"],
      "Bambu Studio/bambu-studio.exe"),
-    ("PrusaSlicer", ["prusa-slicer", "PrusaSlicer", "prusaslicer"], "com.prusa3d.PrusaSlicer", "PrusaSlicer",
+    ("PrusaSlicer", ["prusa-slicer", "PrusaSlicer", "prusaslicer"], "com.prusa3d.PrusaSlicer", ["PrusaSlicer"],
      "Prusa3D/PrusaSlicer/prusa-slicer.exe"),
+    ("UltiMaker Cura", ["cura", "UltiMaker-Cura", "ultimaker-cura", "Ultimaker-Cura"], "com.ultimaker.cura",
+     ["UltiMaker-Cura", "Ultimaker-Cura", "Ultimaker_Cura", "Cura"], "UltiMaker Cura/UltiMaker-Cura.exe"),
 ]
+FILE_FORWARDING = "--file-forwarding"  # Flatpak: die Datei kommt über das Dokumenten-Portal in die Sandbox
 
 
 def find_slicers(environ=None, home=None):
@@ -114,12 +117,13 @@ def find_slicers(environ=None, home=None):
     apps = os.path.join(home, "Applications")
     images = sorted(os.listdir(apps)) if os.path.isdir(apps) else []
     found = []
-    for name, programs, flatpak_id, image, windows in SLICERS:
+    for name, programs, flatpak_id, image_names, windows in SLICERS:
         command = next(([p] for p in (shutil.which(n, path=path) for n in programs) if p), None)
         if not command and flatpak_id in flatpaks:
-            command = [flatpak, "run", flatpak_id]
+            command = [flatpak, "run", FILE_FORWARDING, flatpak_id]
         if not command:
-            hit = next((f for f in images if f.lower().startswith(image.lower()) and f.lower().endswith(".appimage")), None)
+            hit = next((f for f in images if f.lower().endswith(".appimage")
+                        and any(f.lower().startswith(i.lower()) for i in image_names)), None)
             command = [os.path.join(apps, hit)] if hit else None
         if not command:
             for base in (environ.get("ProgramFiles"), environ.get("ProgramW6432")):
@@ -129,6 +133,43 @@ def find_slicers(environ=None, home=None):
         if command:
             found.append((name, command))
     return found
+
+
+# Variablen, die MyCADs AppImage (AppRun) für sich setzt: der Slicer soll sie nicht erben
+_OWN_PATHS = ("LD_LIBRARY_PATH", "PYTHONPATH", "QT_PLUGIN_PATH", "QT_QPA_PLATFORM_PLUGIN_PATH", "QML2_IMPORT_PATH",
+              "GDK_PIXBUF_MODULE_FILE", "GIO_MODULE_DIR", "GSETTINGS_SCHEMA_DIR")
+
+
+def slicer_environment(environ=None):
+    """Umgebung für den Slicer: ohne die Bibliotheks- und Python-Pfade aus MyCADs AppImage, mit der Sprache des
+    Desktops (AppRun hat sie für MyCAD auf C gestellt und in MYCAD_HOST_* gemerkt)"""
+    import os
+    env = dict(os.environ if environ is None else environ)
+    appdir = env.get("APPDIR")
+    if appdir:
+        inside = lambda p: os.path.abspath(p).startswith(os.path.abspath(appdir) + os.sep)  # noqa: E731
+        for key in _OWN_PATHS:
+            if key in env:
+                rest = [p for p in env[key].split(os.pathsep) if p and not inside(p)]
+                if rest:
+                    env[key] = os.pathsep.join(rest)
+                else:
+                    del env[key]
+        if "PYTHONHOME" in env and inside(env["PYTHONHOME"]):
+            del env["PYTHONHOME"]
+    for key in ("LANG", "LC_ALL"):
+        if "MYCAD_HOST_" + key in env:
+            host = env.pop("MYCAD_HOST_" + key)
+            if host:
+                env[key] = host
+            else:
+                env.pop(key, None)
+    return env
+
+
+def slicer_arguments(command, path):
+    """Befehl mit Datei; Flatpak bekommt sie über das Portal (@@ … @@), sonst sähe es die Datei in der Sandbox nicht"""
+    return list(command) + (["@@", path, "@@"] if FILE_FORWARDING in command else [path])
 
 
 def print_rotation(up):
@@ -144,5 +185,5 @@ def open_in_slicer(bodies, folder, command, up=None, quality="normal"):
     name = re.sub(r"[^\w.-]+", "_", bodies[0].Document.Label if bodies else "design") or "design"
     path = os.path.join(folder, name + ".3mf")
     write_3mf(path, bodies, quality, rotation=print_rotation(up) if up is not None else None)
-    subprocess.Popen(list(command) + [path], start_new_session=True)
+    subprocess.Popen(slicer_arguments(command, path), env=slicer_environment(), start_new_session=True)
     return path

@@ -141,6 +141,8 @@
 using namespace Gui;
 using namespace Gui::Shell;
 
+void addVariantMenu(QMenu* menu, App::Document* doc, const std::function<void(const char*)>& run);
+
 namespace
 {
 
@@ -2573,6 +2575,7 @@ protected:
                     QObject::connect(menu.addAction(T("Save Version")), &QAction::triggered, [run] { run("MyCAD_SaveVersion"); });
                     QObject::connect(menu.addAction(T("Save As…")), &QAction::triggered, [run] { run("Std_SaveAs"); });
                     QObject::connect(menu.addAction(T("Export…")), &QAction::triggered, [run] { run("Design_Export"); });
+                    addVariantMenu(menu.addMenu(T("Variants")), guiDoc()->getDocument(), run);
                     menu.addSeparator();
                     QObject::connect(menu.addAction(T("Rename")), &QAction::triggered, [tree, item] { tree->editItem(item); });
                     menu.addSeparator();
@@ -3858,6 +3861,97 @@ void showCommandSearch()
 
 }  // namespace
 
+namespace
+{
+QStringList& quietlyCreated()
+{
+    static QStringList files;  // still angelegte Designs dieser Sitzung
+    return files;
+}
+}  // namespace
+
+void Gui::Shell::savedAs(const QString& before, const QString& after)
+{
+    const QFileInfo old(before), now(after);
+    if (before.isEmpty() || old == now || !quietlyCreated().contains(old.absoluteFilePath())) {
+        return;
+    }
+    quietlyCreated().removeAll(old.absoluteFilePath());
+    // Versionen mitnehmen (DesignVersions: versions/<Name> neben der Datei)
+    const QString from = old.absolutePath() + QStringLiteral("/versions/") + old.completeBaseName();
+    const QString to = now.absolutePath() + QStringLiteral("/versions/") + now.completeBaseName();
+    if (QDir(from).exists() && !QDir(to).exists()) {
+        QDir().mkpath(now.absolutePath() + QStringLiteral("/versions"));
+        QDir().rename(from, to);
+    }
+    // der alte Ordner gehört nur diesem Design (so legt saveQuietly ihn an): in den Papierkorb, nicht löschen
+    const QDir folder = old.absoluteDir();
+    if (folder.dirName() == old.completeBaseName() && QDir(projectsFolder()) == QDir(QFileInfo(folder.absolutePath()).absolutePath())
+        && !now.absoluteFilePath().startsWith(folder.absolutePath() + QLatin1Char('/'))) {
+        QFile::moveToTrash(folder.absolutePath());
+    }
+}
+
+/// Idee 7: Varianten im Browser umschalten (Kontextmenü des Designs): Hauptdesign und Varianten, die offene mit Haken
+namespace
+{
+/// Text als Python-Zeichenkette in einfachen Anführungszeichen
+std::string pyQuoted(QString s)
+{
+    s.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('\''), QStringLiteral("\\'"));
+    return "'" + s.toStdString() + "'";
+}
+}  // namespace
+
+void addVariantMenu(QMenu* menu, App::Document* doc, const std::function<void(const char*)>& run)
+{
+    const std::string name = doc->getName();
+    const QString file = QString::fromUtf8(doc->FileName.getValue());
+    QStringList entries;  // je Zeile "Titel<Tab>Pfad", das Hauptdesign ohne Titel
+    if (!file.isEmpty()) {
+        try {
+            Base::PyGILStateLocker lock;
+            const std::string r = Base::Interpreter().runStringWithKey(
+                ("import DesignVersions\n_p = " + pyQuoted(file)
+                 + "\n_r = '\\n'.join(['\\t' + DesignVersions.main_of(_p)] + [v['name'] + '\\t' + v['path'] for v in "
+                   "DesignVersions.variants(_p)])")
+                    .c_str(),
+                "_r");
+            entries = QString::fromStdString(r).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+        }
+        catch (const Base::Exception& e) {
+            Base::Console().warning("Variants: %s\n", e.what());
+        }
+    }
+    const QFileInfo open(file);
+    for (const QString& entry : entries) {
+        const QString title = entry.section(QLatin1Char('\t'), 0, 0), path = entry.section(QLatin1Char('\t'), 1);
+        QAction* action = menu->addAction(title.isEmpty() ? T("Main design") : title);
+        action->setCheckable(true);
+        action->setChecked(QFileInfo(path) == open);
+        QObject::connect(action, &QAction::triggered, [name, path, open] {
+            if (QFileInfo(path) == open) {
+                return;
+            }
+            QTimer::singleShot(0, [name, path] {
+                try {
+                    Base::PyGILStateLocker lock;
+                    Base::Interpreter().runString(("import DesignVersions, FreeCAD as App\nDesignVersions.switch(App.getDocument('"
+                                                   + name + "'), " + pyQuoted(path) + ")")
+                                                      .c_str());
+                }
+                catch (const Base::Exception& e) {
+                    QMessageBox::information(getMainWindow(), T("Variants"), QString::fromUtf8(e.what()));
+                }
+            });
+        });
+    }
+    if (!entries.isEmpty()) {
+        menu->addSeparator();
+    }
+    QObject::connect(menu->addAction(T("Versions and Variants…")), &QAction::triggered, [run] { run("Design_Versions"); });
+}
+
 bool Gui::Shell::alwaysSave()
 {
     return App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("AlwaysSave", true);
@@ -3880,7 +3974,11 @@ bool Gui::Shell::saveQuietly(App::Document* doc, const QString& title)
                 folder = QStringLiteral("%1 %2").arg(name).arg(n);
             }
             projects.mkpath(folder);
-            ok = doc->saveAs(projects.filePath(folder + QLatin1Char('/') + folder + QStringLiteral(".mycad")).toUtf8().constData());
+            const QString file = projects.filePath(folder + QLatin1Char('/') + folder + QStringLiteral(".mycad"));
+            ok = doc->saveAs(file.toUtf8().constData());
+            if (ok) {
+                quietlyCreated() << QFileInfo(file).absoluteFilePath();
+            }
         }
         else {
             ok = doc->save();

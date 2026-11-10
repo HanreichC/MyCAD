@@ -61,6 +61,40 @@ def taller():
     doc().recompute()
 
 
+def save_as(name):
+    """Speichern unter: Dateidialog wie beim Benutzer, direkt in den Projektordner"""
+    state["before"] = doc().FileName
+    folder = os.path.dirname(os.path.dirname(doc().FileName))
+
+    def pick():
+        dialogs = visible(QtWidgets.QFileDialog)
+        if not dialogs:
+            QtCore.QTimer.singleShot(200, pick)
+            return
+        [e for e in dialogs[0].findChildren(QtWidgets.QLineEdit) if e.isVisible()][0].setText(os.path.join(folder, name))
+        dialogs[0].accept()
+    QtCore.QTimer.singleShot(500, pick)
+    Gui.runCommand("Std_SaveAs")
+
+
+def browser_variant(title):
+    """Rechtsklick auf das Design im Browser, Varianten ▸ title"""
+    tree = [t for t in visible(QtWidgets.QTreeWidget)][0]
+    pos = tree.visualItemRect(tree.topLevelItem(0)).center()
+
+    def pick():
+        menus = [m for m in QtWidgets.QApplication.topLevelWidgets() if isinstance(m, QtWidgets.QMenu) and m.isVisible()]
+        if not menus:
+            QtCore.QTimer.singleShot(200, pick)
+            return
+        variants = [a for a in menus[0].actions() if a.text() == "Variants"][0].menu()
+        state["variant_menu"] = [a.text() for a in variants.actions() if a.text()]
+        [a for a in variants.actions() if a.text() == title][0].trigger()
+        menus[0].close()
+    QtCore.QTimer.singleShot(300, pick)
+    QtTest.QTest.mouseRelease(tree.viewport(), QtCore.Qt.RightButton, QtCore.Qt.NoModifier, pos)
+
+
 def comparison_text():
     return [l.text() for l in visible(QtWidgets.QLabel) if l.parentWidget() and l.parentWidget().objectName() == "Comparison"]
 
@@ -88,6 +122,12 @@ in_order([
     ("name it", lambda: (answer_input("Before holes"), Gui.runCommand("MyCAD_SaveVersion"))), wait,
     ("named", lambda: check("save version stores a named version",
                             any(v["title"] == "Before holes" for v in DesignVersions.versions(doc().FileName)))),
+    ("save as", lambda: save_as("Renamed")), wait, wait,
+    ("renamed", lambda: check("save as moves the design out of its first folder",
+                              os.path.basename(doc().FileName) == "Renamed.mycad" and not os.path.exists(os.path.dirname(state["before"])),
+                              "%s, old folder exists=%s" % (doc().FileName, os.path.exists(os.path.dirname(state["before"]))))),
+    ("history", lambda: check("and takes its versions along",
+                              any(v["title"] == "Before holes" for v in DesignVersions.versions(doc().FileName)))),
     ("compare", lambda: in_versions_dialog(compare_oldest)), wait, wait,
     ("rows", lambda: check("the window lists the versions", state.get("dialog_rows", [0])[0] >= 3, str(state.get("dialog_rows")))),
     ("ghost", lambda: check("compare shows what changed", any("Changed step" in t for t in comparison_text()), str(comparison_text()))),
@@ -95,6 +135,10 @@ in_order([
     ("close compare", lambda: [b for b in visible(QtWidgets.QPushButton) if b.text() == "Close"][0].click()), wait,
     ("variant", lambda: in_versions_dialog(new_variant)), wait, wait,
     ("in variant", lambda: check("a new variant opens", DesignVersions.is_variant(doc().FileName), doc().FileName)),
+    ("browser", lambda: browser_variant("Main design")), wait, wait,
+    ("menu", lambda: check("the browser lists main design and variant", state.get("variant_menu", [])[:2] == ["Main design", "Taller"],
+                           str(state.get("variant_menu")))),
+    ("main again", lambda: check("and switches back to the main design", not DesignVersions.is_variant(doc().FileName), doc().FileName)),
     ("close", close_quickly), wait,
     ("no question", lambda: check("closing does not ask", QtWidgets.QApplication.activeModalWidget() is None)),
     ("reopen", lambda: App.openDocument(state["closed"])), wait,
