@@ -105,6 +105,7 @@ PyMOD_INIT_FUNC(DesignGui)
             }
         });
     });
+    DesignGui::startFaceDimensions();
     // Profilflächen nicht über die Skizze legen, solange sie bearbeitet wird
     Gui::Application::Instance->signalInEdit.connect([](const Gui::ViewProviderDocumentObject& vp) {
         DesignGui::setProfilesVisible(vp, false);

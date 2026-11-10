@@ -58,6 +58,7 @@
 #include <functional>
 
 #include <algorithm>
+#include <Gui/Shell/GlassPanel.h>
 #include <Gui/Shell/Shell.h>
 #include <Gui/Shell/Theme.h>
 
@@ -1695,4 +1696,170 @@ bool ViewProviderJoint::setEdit(int)
 void ViewProviderJoint::unsetEdit(int)
 {
     Gui::Control().closeDialog();
+}
+
+// --- Idee 2: Fläche antippen, Zahl ändern ------------------------------------------------------------------------
+
+namespace
+{
+/// Enter im Feld: übernehmen (Fokus weg übernimmt bewusst nicht)
+class EnterFilter: public QObject
+{
+public:
+    using QObject::QObject;
+    std::function<void()> enter;
+
+protected:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        if (event->type() == QEvent::KeyPress) {
+            const int key = static_cast<QKeyEvent*>(event)->key();
+            if (key == Qt::Key_Return || key == Qt::Key_Enter) {
+                enter();
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+/// Glas-Karte neben der angetippten Fläche: je treibendem Maß ein Feld. Enter rechnet neu (eine Transaktion, Strg+Z
+/// nimmt sie zurück), Esc lässt den Wert stehen. Hängt ein Maß an einem Parameter, ändert sich der Parameter.
+class FaceDimensions: public Gui::SelectionObserver
+{
+public:
+    FaceDimensions()
+    {
+        timer.setInterval(50);  // ponytail: folgt der Kamera im Takt statt über einen Coin-Sensor
+        QObject::connect(&timer, &QTimer::timeout, [this] { place(); });
+    }
+
+private:
+    void onSelectionChanged(const Gui::SelectionChanges& msg) override
+    {
+        if (msg.Type == Gui::SelectionChanges::AddSelection || msg.Type == Gui::SelectionChanges::RmvSelection
+            || msg.Type == Gui::SelectionChanges::ClrSelection || msg.Type == Gui::SelectionChanges::SetSelection) {
+            QTimer::singleShot(0, [this] { refresh(); });
+        }
+    }
+
+    void hide()
+    {
+        timer.stop();
+        if (panel) {
+            panel->hide();
+        }
+    }
+
+    /// genau eine Körperfläche gewählt, kein Werkzeug offen: Maße zeigen
+    void refresh()
+    {
+        hide();
+        const auto sel = Gui::Selection().getSelectionEx();
+        if (sel.size() != 1 || sel.front().getSubNames().size() != 1 || Gui::Control().activeDialog()) {
+            return;
+        }
+        auto body = freecad_cast<Design::Body*>(const_cast<App::DocumentObject*>(sel.front().getObject()));
+        const std::string face = sel.front().getSubNames().front();
+        auto gdoc = body ? Gui::Application::Instance->getDocument(body->getDocument()) : nullptr;
+        if (!body || face.rfind("Face", 0) != 0 || !gdoc || gdoc->getInEdit()) {
+            return;
+        }
+        dims = Design::drivingDimensions(body, face);
+        viewer = activeViewer(body->getDocument());
+        if (dims.empty() || !viewer) {
+            return;
+        }
+        build();
+        place();
+        panel->show();
+        timer.start();
+    }
+
+    void build()
+    {
+        if (!panel) {
+            content = new QWidget;
+            content->setObjectName(QStringLiteral("FaceDimensions"));
+            form = new QFormLayout(content);
+            form->setContentsMargins(12, 10, 12, 10);
+            form->setLabelAlignment(Qt::AlignRight);
+            panel = new Gui::Shell::GlassPanel(content, Gui::Shell::Token::RadiusPanel, true);
+            panel->setZValue(9);
+        }
+        if (panel->scene() != viewer->scene()) {
+            viewer->scene()->addItem(panel);
+        }
+        while (form->rowCount() > 0) {
+            form->removeRow(0);
+        }
+        error = new QLabel;
+        error->setWordWrap(true);
+        error->setStyleSheet(QStringLiteral("color: %1;").arg(Gui::Shell::theme().red.name()));
+        for (size_t i = 0; i < dims.size(); ++i) {
+            const auto& d = dims[i];
+            auto box = quantityBox(d.angle ? Base::Unit::Angle : Base::Unit::Length, d.value);
+            box->setAccessibleName(T(d.label.c_str()));
+            box->setMinimumWidth(110);
+            if (!d.expression.empty()) {  // Formel oder Parameter sichtbar machen
+                box->setToolTip(QStringLiteral("= ") + QString::fromStdString(d.expression));
+            }
+            const App::DocumentObjectT owner(d.owner);
+            const std::string path = d.path;
+            auto commit = [this, box, owner, path] {
+                auto o = owner.getObject();
+                if (!o) {
+                    return;
+                }
+                App::Document* doc = o->getDocument();
+                std::string message;
+                doc->openTransaction("Change Dimension");
+                if (Design::setDrivingDimension(o, path, box->value().getValue(), message)) {
+                    doc->commitTransaction();
+                    QTimer::singleShot(0, [this] { refresh(); });  // neue Werte, Fläche kann neu heißen
+                }
+                else {
+                    doc->abortTransaction();
+                    error->setText(T(message.c_str()));
+                    error->show();
+                }
+            };
+            auto enter = new EnterFilter(box);  // nur Enter übernimmt; Verlassen des Felds ändert nichts
+            enter->enter = commit;
+            box->installEventFilter(enter);
+            form->addRow(T(d.label.c_str()), box);
+        }
+        form->addRow(error);
+        error->hide();
+        content->adjustSize();
+    }
+
+    /// neben der Flächenmitte, im Fenster gehalten
+    void place()
+    {
+        if (!panel || !viewer || dims.empty()) {
+            return;
+        }
+        const Base::Vector3d& a = dims.front().anchor;
+        const QPoint p = viewer->toQPoint(viewer->getPointOnViewport(SbVec3f(float(a.x), float(a.y), float(a.z))));
+        const QSizeF s = content->sizeHint();
+        const QRectF view = viewer->scene()->sceneRect();
+        const qreal x = std::clamp<qreal>(p.x() + 24, view.left() + 12, view.right() - s.width() - 12);
+        const qreal y = std::clamp<qreal>(p.y() - s.height() / 2, view.top() + 80, view.bottom() - s.height() - 80);
+        panel->setGeometry(QRectF(x, y, s.width(), s.height()));
+    }
+
+    std::vector<Design::DrivingDimension> dims;
+    Gui::View3DInventorViewer* viewer = nullptr;
+    Gui::Shell::GlassPanel* panel = nullptr;
+    QWidget* content = nullptr;
+    QFormLayout* form = nullptr;
+    QLabel* error = nullptr;
+    QTimer timer;
+};
+}  // namespace
+
+void DesignGui::startFaceDimensions()
+{
+    static FaceDimensions observer;
 }

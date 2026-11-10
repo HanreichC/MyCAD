@@ -80,6 +80,13 @@
 #include <gp_Pln.hxx>
 
 #include <algorithm>
+#include <iomanip>
+#include <BRepBuilderAPI_MakeVertex.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
+#include <Mod/Sketcher/App/GeometryFacade.h>
+#include <Mod/Sketcher/App/SketchObject.h>
+#include <App/Expression.h>
+#include <App/VarSet.h>
 #include <functional>
 #include <sstream>
 #include <cstring>
@@ -1169,6 +1176,308 @@ std::vector<std::pair<App::DocumentObject*, App::DocumentObject*>> Design::colli
         }
     }
     return hits;
+}
+
+// --- Idee 2: Fläche antippen, Zahl ändern -------------------------------------------------------------------------
+
+namespace
+{
+/// Trägerfläche einer Fläche als Text: gleiche Ebene/gleicher Zylinder … ergibt denselben Schlüssel, auch wenn die
+/// Fläche selbst inzwischen ein Loch hat oder beschnitten ist
+std::string surfaceKey(const TopoDS_Face& face)
+{
+    BRepAdaptor_Surface s(face);
+    const auto unsignedDir = [](gp_Dir d) {  // Richtung ohne Vorzeichen: größte Komponente positiv
+        const double big = std::abs(d.X()) >= std::abs(d.Y()) && std::abs(d.X()) >= std::abs(d.Z()) ? d.X()
+                         : std::abs(d.Y()) >= std::abs(d.Z())                                    ? d.Y()
+                                                                                                 : d.Z();
+        return big < 0 ? d.Reversed() : d;
+    };
+    std::ostringstream key;
+    key << std::fixed << std::setprecision(4);
+    const auto put = [&key](double v) { key << ' ' << (std::abs(v) < 5e-5 ? 0.0 : v); };
+    switch (s.GetType()) {
+        case GeomAbs_Plane: {
+            const gp_Dir n = unsignedDir(s.Plane().Axis().Direction());
+            key << 'P';
+            put(n.X()), put(n.Y()), put(n.Z()), put(gp_Vec(n).Dot(gp_Vec(s.Plane().Location().XYZ())));
+            break;
+        }
+        case GeomAbs_Cylinder: {
+            const gp_Ax1 axis = s.Cylinder().Axis();
+            const gp_Dir d = unsignedDir(axis.Direction());
+            // Punkt der Achse, der dem Ursprung am nächsten liegt
+            const gp_XYZ p = axis.Location().XYZ() - gp_Vec(d).XYZ() * gp_Vec(d).Dot(gp_Vec(axis.Location().XYZ()));
+            key << 'C';
+            put(d.X()), put(d.Y()), put(d.Z()), put(p.X()), put(p.Y()), put(p.Z()), put(s.Cylinder().Radius());
+            break;
+        }
+        default: {  // Kegel, Kugel, Torus, Freiform: Lage und Größe der Fläche selbst
+            GProp_GProps p;
+            BRepGProp::SurfaceProperties(face, p);
+            key << 'S' << int(s.GetType());
+            put(p.CentreOfMass().X()), put(p.CentreOfMass().Y()), put(p.CentreOfMass().Z()), put(p.Mass());
+            break;
+        }
+    }
+    return key.str();
+}
+
+bool hasSurface(const Part::TopoShape& shape, const std::string& key)
+{
+    for (TopExp_Explorer f(shape.getShape(), TopAbs_FACE); f.More(); f.Next()) {
+        if (surfaceKey(TopoDS::Face(f.Current())) == key) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/// Wert hängt an einem Parameter ("Hoehe" oder "Parameters.Hoehe")? Dann dessen Property, sonst nullptr
+App::PropertyQuantity* boundParameter(App::DocumentObject* owner, const App::ObjectIdentifier& path)
+{
+    const auto info = owner->getExpression(path);
+    if (!info.expression) {
+        return nullptr;
+    }
+    std::string text = info.expression->toString();
+    if (text.rfind("Parameters.", 0) == 0) {
+        text.erase(0, std::strlen("Parameters."));
+    }
+    for (auto set : owner->getDocument()->getObjectsOfType(App::VarSet::getClassTypeId())) {
+        if (std::strcmp(set->Label.getValue(), "Parameters") == 0) {
+            if (auto prop = freecad_cast<App::PropertyQuantity*>(set->getPropertyByName(text.c_str()))) {
+                return prop;
+            }
+        }
+    }
+    return nullptr;
+}
+}  // namespace
+
+std::vector<Design::DrivingDimension> Design::drivingDimensions(Body* body, const std::string& faceName)
+{
+    std::vector<DrivingDimension> out;
+    const Part::TopoShape shape = body->Shape.getShape();
+    const TopoDS_Shape sub = shape.getSubShape(faceName.c_str(), true);
+    if (sub.IsNull() || sub.ShapeType() != TopAbs_FACE) {
+        return out;
+    }
+    const TopoDS_Face face = TopoDS::Face(sub);
+    const std::string key = surfaceKey(face);
+    GProp_GProps props;
+    BRepGProp::SurfaceProperties(face, props);
+    const gp_Pnt center = props.CentreOfMass();
+    const Base::Vector3d anchor = componentOf(body)->globalPlacement().getPosition()
+        + componentOf(body)->globalPlacement().getRotation().multVec(Base::Vector3d(center.X(), center.Y(), center.Z()));
+
+    // Erzeuger: das letzte Feature der Kette, in dessen Zustand davor es diese Trägerfläche noch nicht gab
+    auto creator = freecad_cast<Feature*>(body->Tip.getValue());
+    while (creator) {
+        const auto& bodies = creator->Bodies.getValues();
+        const auto idx = std::ranges::find(bodies, body) - bodies.begin();
+        const auto& bases = creator->BaseFeatures.getValues();
+        auto base = idx < static_cast<long>(bases.size()) ? freecad_cast<Feature*>(bases[idx]) : nullptr;
+        if (!base || !hasSurface(base->shapeFor(body), key)) {
+            break;
+        }
+        creator = base;
+    }
+    if (!creator) {
+        return out;
+    }
+
+    const auto add = [&](App::DocumentObject* owner, const char* prop, const char* label) {
+        auto q = freecad_cast<App::PropertyQuantity*>(owner->getPropertyByName(prop));
+        if (!q || q->testStatus(App::Property::Hidden) || q->testStatus(App::Property::ReadOnly)) {
+            return;
+        }
+        DrivingDimension d {owner, prop, label, q->getValue(), q->getUnit() == Base::Unit::Angle, "", anchor};
+        if (const auto info = owner->getExpression(App::ObjectIdentifier(*q)); info.expression) {
+            d.expression = info.expression->toString();
+        }
+        out.push_back(d);
+    };
+    // Bemaßungen der Skizzenkanten, die in dieser Fläche liegen (Seitenflächen von Extrude/Revolve)
+    const auto sketchDims = [&](App::PropertyLinkSub& profile) {
+        auto profiles = freecad_cast<Profiles*>(profile.getValue());
+        auto sketch = profiles ? freecad_cast<Part::Feature*>(profiles->Sketch.getValue()) : nullptr;
+        auto constraints = sketch ? freecad_cast<App::PropertyLists*>(sketch->getPropertyByName("Constraints")) : nullptr;
+        if (!sketch || !constraints) {
+            return;
+        }
+        auto sk = static_cast<Sketcher::SketchObject*>(sketch);
+        const Base::Placement pla = sketch->Placement.getValue();
+        // Geometrien, deren Mitte auf der Fläche liegt: aus ihnen wurde die Fläche gezogen bzw. gedreht
+        std::set<int> geos;
+        for (int g = 0; g <= sk->getHighestCurveIndex(); ++g) {
+            auto curve = dynamic_cast<const Part::GeomCurve*>(sk->getGeometry(g));
+            if (!curve || Sketcher::GeometryFacade::getConstruction(curve)) {
+                continue;
+            }
+            BRepAdaptor_Curve c(TopoDS::Edge(curve->toShape()));
+            const gp_Pnt local = c.Value((c.FirstParameter() + c.LastParameter()) / 2);
+            Base::Vector3d mid;
+            pla.multVec(Base::Vector3d(local.X(), local.Y(), local.Z()), mid);
+            BRepExtrema_DistShapeShape dist(BRepBuilderAPI_MakeVertex(gp_Pnt(mid.x, mid.y, mid.z)).Vertex(), face);
+            if (dist.IsDone() && dist.Value() < 1e-6) {
+                geos.insert(g);
+            }
+        }
+        if (geos.empty()) {
+            return;
+        }
+        const auto& list = sk->Constraints.getValues();
+        for (size_t i = 0; i < list.size(); ++i) {
+            const Sketcher::Constraint* c = list[i];
+            if (!c->isDimensional() || !c->isDriving) {
+                continue;
+            }
+            const bool touches = geos.contains(c->First) || geos.contains(c->Second) || geos.contains(c->Third);
+            if (!touches) {
+                continue;
+            }
+            const char* label = c->Type == Sketcher::Radius ? "Radius"
+                              : c->Type == Sketcher::Diameter ? "Diameter"
+                              : c->Type == Sketcher::Angle ? "Angle"
+                              : c->Type == Sketcher::DistanceX ? "Horizontal distance"
+                              : c->Type == Sketcher::DistanceY ? "Vertical distance"
+                                                               : "Length";
+            const bool angle = c->Type == Sketcher::Angle;
+            DrivingDimension d {sk, "Constraints[" + std::to_string(i) + "]", c->Name.empty() ? label : c->Name,
+                                angle ? c->getValue() * 180 / M_PI : c->getValue(), angle, "", anchor};
+            if (const auto info = sk->getExpression(sk->Constraints.createPath(int(i))); info.expression) {
+                d.expression = info.expression->toString();
+            }
+            out.push_back(d);
+        }
+    };
+
+    if (auto extrude = freecad_cast<Extrude*>(creator)) {
+        // End- oder Seitenfläche? Endflächen stehen senkrecht zur Zugrichtung
+        auto profiles = freecad_cast<Profiles*>(extrude->Profile.getValue());
+        auto sketch = profiles ? freecad_cast<Part::Feature*>(profiles->Sketch.getValue()) : nullptr;
+        BRepAdaptor_Surface s(face);
+        if (sketch && s.GetType() == GeomAbs_Plane) {
+            const Base::Placement pla = sketch->Placement.getValue();
+            Base::Vector3d n = pla.getRotation().multVec(Base::Vector3d(0, 0, 1));
+            const gp_Dir fn = s.Plane().Axis().Direction();
+            if (std::abs(std::abs(fn.Dot(gp_Dir(n.x, n.y, n.z))) - 1) < 1e-6) {
+                if (extrude->Reversed.getValue()) {
+                    n = -n;
+                }
+                const double d = (Base::Vector3d(center.X(), center.Y(), center.Z()) - pla.getPosition()) * n;
+                const long ext = extrude->Extent.getValue();
+                if (ext == Extrude::ExtentTwoSides && d < -1e-6) {
+                    add(extrude, "Distance2", "Distance 2");
+                }
+                else if (std::abs(d) > 1e-6 || ext == Extrude::ExtentSymmetric) {
+                    add(extrude, "Distance", "Distance");
+                }
+                return out;
+            }
+        }
+        sketchDims(extrude->Profile);
+        if (std::abs(extrude->TaperAngle.getValue()) > 1e-9) {
+            add(extrude, "TaperAngle", "Taper Angle");
+        }
+        if (extrude->Thin.getValue()) {
+            add(extrude, "Thickness", "Thickness");
+        }
+    }
+    else if (auto revolve = freecad_cast<Revolve*>(creator)) {
+        sketchDims(revolve->Profile);
+        add(revolve, "Angle", "Angle");
+    }
+    else if (auto hole = freecad_cast<Hole*>(creator)) {
+        add(hole, "Diameter", "Diameter");
+        if (!hole->ThroughAll.getValue()) {
+            add(hole, "Depth", "Depth");
+        }
+        if (hole->HoleType.getValue() != 0) {
+            add(hole, "HeadDiameter", "Head diameter");
+            if (hole->HoleType.getValue() == 1) {
+                add(hole, "HeadDepth", "Head depth");
+            }
+        }
+    }
+    else if (auto pull = freecad_cast<PressPull*>(creator)) {
+        add(pull, "Distance", "Distance");
+    }
+    else if (freecad_cast<Fillet*>(creator)) {
+        add(creator, "Size", "Radius");
+        add(creator, "RadiusEnd", "Radius End");
+    }
+    else if (freecad_cast<Chamfer*>(creator)) {
+        add(creator, "Size", "Distance");
+        add(creator, "Distance2", "Distance 2");
+    }
+    else if (freecad_cast<Shell*>(creator)) {
+        add(creator, "Size", "Thickness");
+    }
+    else if (freecad_cast<Draft*>(creator)) {
+        add(creator, "Angle", "Angle");
+    }
+    else if (auto primitive = freecad_cast<Primitive*>(creator)) {
+        for (const char* p : {"Length", "Width", "Height", "Radius", "TubeRadius", "Pitch"}) {
+            add(primitive, p, p);
+        }
+    }
+    return out;
+}
+
+bool Design::setDrivingDimension(App::DocumentObject* owner, const std::string& path, double value, std::string& error)
+{
+    // Sketch-Bemaßung "Constraints[i]"
+    if (path.rfind("Constraints[", 0) == 0) {
+        auto sk = freecad_cast<Sketcher::SketchObject*>(owner);
+        const int i = std::atoi(path.c_str() + std::strlen("Constraints["));
+        if (!sk || i < 0 || i >= sk->Constraints.getSize()) {
+            error = "This dimension no longer exists";
+            return false;
+        }
+        const App::ObjectIdentifier id = sk->Constraints.createPath(i);
+        if (auto param = boundParameter(sk, id)) {
+            return setDrivingDimension(param->getContainer() ? static_cast<App::DocumentObject*>(param->getContainer())
+                                                             : nullptr,
+                                       param->getName(), value, error);
+        }
+        if (sk->getExpression(id).expression) {
+            error = "This value comes from a formula; change it in Parameters";
+            return false;
+        }
+        const bool angle = sk->Constraints.getValues()[i]->Type == Sketcher::Angle;
+        if (sk->setDatum(i, angle ? value * M_PI / 180 : value) != Sketcher::SketchSolveStatus::Success) {
+            error = "The sketch cannot take this value";
+            return false;
+        }
+        owner->getDocument()->recompute();
+        return true;
+    }
+    auto q = owner ? freecad_cast<App::PropertyQuantity*>(owner->getPropertyByName(path.c_str())) : nullptr;
+    if (!q) {
+        error = "This value cannot be changed here";
+        return false;
+    }
+    const App::ObjectIdentifier id(*q);
+    if (auto param = boundParameter(owner, id)) {  // am Parameter ändern, die Formel bleibt
+        return setDrivingDimension(static_cast<App::DocumentObject*>(param->getContainer()), param->getName(), value, error);
+    }
+    if (const auto info = owner->getExpression(id); info.expression) {
+        // Parameter, dessen Wert eine Zahl ist: Zahl ersetzen; sonst gehört der Wert zu einer Formel
+        if (!freecad_cast<App::VarSet*>(owner) || info.expression->getDeps().size() > 0) {
+            error = "This value comes from a formula; change it in Parameters";
+            return false;
+        }
+        std::ostringstream text;
+        text << value << ' ' << (q->getUnit() == Base::Unit::Angle ? "deg" : q->getUnit() == Base::Unit::Length ? "mm" : "");
+        owner->setExpression(id, std::shared_ptr<App::Expression>(App::Expression::parse(owner, text.str()).release()));
+    }
+    else {
+        q->setValue(value);
+    }
+    owner->getDocument()->recompute();
+    return true;
 }
 
 Design::Body* Design::newBody(Feature* feature, App::Part* component)

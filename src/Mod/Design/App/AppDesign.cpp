@@ -44,6 +44,10 @@ public:
         add_varargs_method("physicalMaterials", &Module::physicalMaterials, "physicalMaterials(): [(name, uuid)]");
         add_varargs_method("collisions", &Module::collisions,
                            "collisions(component): [(body inside, body outside)] that overlap");
+        add_varargs_method("drivingDimensions", &Module::drivingDimensions,
+                           "drivingDimensions(body, 'FaceN'): [{owner, path, label, value, angle, expression, anchor}]");
+        add_varargs_method("setDrivingDimension", &Module::setDrivingDimension,
+                           "setDrivingDimension(owner, path, value): set and recompute; ValueError explains why not");
         add_varargs_method("stableRef", &Module::stableRef,
                            "stableRef(obj, element): (obj, element) with a body replaced by its timeline state");
         initialize("MyCAD Design: components, bodies and timeline features");
@@ -181,6 +185,31 @@ private:
             list.append(Py::TupleN(py(a), py(b)));
         }
         return list;
+    }
+    Py::Object drivingDimensions(const Py::Tuple& args)
+    {
+        Py::List list;
+        for (const auto& d : Design::drivingDimensions(obj<Body>(args[0]), Py::String(args[1]).as_std_string())) {
+            Py::Dict item;
+            item["owner"] = py(d.owner);
+            item["path"] = Py::String(d.path);
+            item["label"] = Py::String(d.label);
+            item["value"] = Py::Float(d.value);
+            item["angle"] = Py::Boolean(d.angle);
+            item["expression"] = Py::String(d.expression);
+            item["anchor"] = Py::TupleN(Py::Float(d.anchor.x), Py::Float(d.anchor.y), Py::Float(d.anchor.z));
+            list.append(item);
+        }
+        return list;
+    }
+    Py::Object setDrivingDimension(const Py::Tuple& args)
+    {
+        std::string error;
+        if (!Design::setDrivingDimension(obj(args[0]), Py::String(args[1]).as_std_string(),
+                                         double(Py::Float(args[2])), error)) {
+            throw Py::ValueError(error);
+        }
+        return Py::None();
     }
     Py::Object stableRef(const Py::Tuple& args)
     {

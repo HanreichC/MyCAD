@@ -26,6 +26,8 @@ std::vector<ScribbleRead::Line> readScribble(const Design::Scribble* scribble);
 
 /// Parameter-Tabelle des Designs (App::VarSet "Parameters" in der Root-Komponente), wie Fusions "Change Parameters"
 DesignGuiExport App::DocumentObject* parameters(App::Document* doc, bool create);
+/// Idee 2: Karte mit den Maßen einer angetippten Körperfläche (einmal beim Laden des Moduls)
+DesignGuiExport void startFaceDimensions();
 /// Parameternamen in einem Ausdruck auf die Tabelle beziehen: "Width * 2" -> "Parameters.Width * 2"
 DesignGuiExport std::string parameterExpression(App::Document* doc, const std::string& text);
 /// Rückweg für die Anzeige: "Parameters.Width * 2" -> "Width * 2"

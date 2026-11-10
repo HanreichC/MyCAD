@@ -760,4 +760,22 @@ public:
     }
 };
 
+/// @name Idee 2: Maße, die eine Fläche treiben (Fläche antippen, Zahl ändern)
+///@{
+struct DrivingDimension
+{
+    App::DocumentObject* owner = nullptr;  ///< Feature oder Skizze
+    std::string path;                      ///< Property ("Distance") oder Skizzenbemaßung ("Constraints[3]")
+    std::string label;                     ///< englisch (bzw. Name der Bemaßung)
+    double value = 0;                      ///< mm bzw. Grad
+    bool angle = false;
+    std::string expression;                ///< Formel, wenn der Wert daran hängt (z. B. ein Parameter)
+    Base::Vector3d anchor;                 ///< Mitte der Fläche, global (Anzeige am Modell)
+};
+/// Werte, die diese Fläche des Bodies erzeugen; leer, wenn keiner (z. B. eingefügte Geometrie)
+DesignExport std::vector<DrivingDimension> drivingDimensions(Body* body, const std::string& face);
+/// Wert setzen und neu rechnen; hängt er an einem Parameter, ändert sich der Parameter. false mit error, wenn nicht
+DesignExport bool setDrivingDimension(App::DocumentObject* owner, const std::string& path, double value, std::string& error);
+///@}
+
 }  // namespace Design

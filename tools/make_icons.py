@@ -90,6 +90,7 @@ ICONS = {
     "Window_Help": '<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.6a2.4 2.4 0 1 1 3.3 2.2c-.6.3-1 .8-1 1.5v.6"/>' + DOT.format(12, 16.6).replace('r="1.7"', 'r="1.1"'),
     "Start_Recent": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     "Start_Search": '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>',
+    "MyCAD_Search": '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>',  # Befehlssuche (Strg+K)
     "Nav_Rotate": '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/>',
     "Nav_Pan": '<path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
     "Nav_Zoom": '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M8 10.5h5M10.5 8v5"/>',

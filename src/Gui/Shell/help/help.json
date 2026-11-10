@@ -364,6 +364,68 @@
    ]
   },
   {
+   "id": "start_dimensions",
+   "group": "start",
+   "icon": "Design_Measure",
+   "commands": [],
+   "title": {
+    "en": "Change a size on the model",
+    "de": "Maße am Modell ändern"
+   },
+   "keywords": {
+    "en": [
+     "dimension",
+     "size",
+     "change",
+     "height",
+     "width",
+     "diameter",
+     "tap",
+     "click face",
+     "edit value"
+    ],
+    "de": [
+     "Maß",
+     "Größe",
+     "ändern",
+     "Höhe",
+     "Breite",
+     "Durchmesser",
+     "antippen",
+     "Fläche anklicken",
+     "Wert ändern"
+    ]
+   },
+   "summary": {
+    "en": "Click a face of a body: the sizes that make it appear right next to it. Type a new value and press Enter – no need to find the step in the timeline.",
+    "de": "Klicke eine Fläche eines Körpers an: die Maße, die sie erzeugen, erscheinen direkt daneben. Tippe einen neuen Wert und drücke Enter – ohne den Schritt in der Zeitleiste zu suchen."
+   },
+   "steps": {
+    "en": [
+     "Click a face, e.g. the top of a block. A small card shows e.g. Distance (height of the extrusion), a hole wall shows Diameter and Depth, a rounded face its Radius, a side face the dimensions of its sketch line.",
+     "Type the new value and press Enter. The model updates at once; Ctrl+Z takes it back.",
+     "If a size comes from a parameter, the parameter changes – everything else that uses it follows."
+    ],
+    "de": [
+     "Klicke eine Fläche an, z. B. die Oberseite eines Blocks. Eine kleine Karte zeigt z. B. Abstand (Höhe der Extrusion), eine Bohrungswand Durchmesser und Tiefe, eine Rundung ihren Radius, eine Seitenfläche die Maße ihrer Skizzenlinie.",
+     "Tippe den neuen Wert und drücke Enter. Das Modell rechnet sofort neu; Strg+Z nimmt es zurück.",
+     "Kommt ein Maß aus einem Parameter, ändert sich der Parameter – alles andere, das ihn nutzt, folgt."
+    ]
+   },
+   "see": [
+    "start_timeline",
+    "Design_Parameters"
+   ],
+   "tips": {
+    "en": [
+     "Hold the mouse over a field to see its formula."
+    ],
+    "de": [
+     "Halte die Maus über ein Feld, um seine Formel zu sehen."
+    ]
+   }
+  },
+  {
    "id": "start_timeline",
    "group": "start",
    "icon": "Design_Parameters",

@@ -169,6 +169,20 @@ A("sketch_basics", "start", "Design_CreateSketch", ("Sketching basics", "Skizzen
          "Eine Skizze änderst du später per Doppelklick in der Zeitleiste unten oder im Browser links.")],
   see=["Design_CreateSketch", "sketch_dimension", "sketch_construction", "sketch_finish"])
 
+A("start_dimensions", "start", "Design_Measure", ("Change a size on the model", "Maße am Modell ändern"),
+  (["dimension", "size", "change", "height", "width", "diameter", "tap", "click face", "edit value"],
+   ["Maß", "Größe", "ändern", "Höhe", "Breite", "Durchmesser", "antippen", "Fläche anklicken", "Wert ändern"]),
+  ("Click a face of a body: the sizes that make it appear right next to it. Type a new value and press Enter – no need to find the step in the timeline.",
+   "Klicke eine Fläche eines Körpers an: die Maße, die sie erzeugen, erscheinen direkt daneben. Tippe einen neuen Wert und drücke Enter – ohne den Schritt in der Zeitleiste zu suchen."),
+  [("Click a face, e.g. the top of a block. A small card shows e.g. Distance (height of the extrusion), a hole wall shows Diameter and Depth, a rounded face its Radius, a side face the dimensions of its sketch line.",
+    "Klicke eine Fläche an, z. B. die Oberseite eines Blocks. Eine kleine Karte zeigt z. B. Abstand (Höhe der Extrusion), eine Bohrungswand Durchmesser und Tiefe, eine Rundung ihren Radius, eine Seitenfläche die Maße ihrer Skizzenlinie."),
+   ("Type the new value and press Enter. The model updates at once; Ctrl+Z takes it back.",
+    "Tippe den neuen Wert und drücke Enter. Das Modell rechnet sofort neu; Strg+Z nimmt es zurück."),
+   ("If a size comes from a parameter, the parameter changes – everything else that uses it follows.",
+    "Kommt ein Maß aus einem Parameter, ändert sich der Parameter – alles andere, das ihn nutzt, folgt.")],
+  tips=[("Hold the mouse over a field to see its formula.", "Halte die Maus über ein Feld, um seine Formel zu sehen.")],
+  see=["start_timeline", "Design_Parameters"])
+
 A("start_timeline", "start", "Design_Parameters", ("Timeline and changes", "Zeitleiste und Änderungen"),
   (["timeline", "history", "edit", "roll back", "suppress", "undo", "change later", "error", "red"],
    ["Zeitleiste", "Verlauf", "bearbeiten", "zurücksetzen", "unterdrücken", "rückgängig", "später ändern", "Fehler", "rot"]),
