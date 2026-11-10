@@ -2,6 +2,7 @@
 
 #include "Features.h"
 
+#include <App/Datums.h>
 #include <App/Document.h>
 #include <App/DocumentObjectGroup.h>
 #include <App/Part.h>
@@ -14,6 +15,8 @@
 #include <Base/Placement.h>
 #include <App/Application.h>
 #include <Base/Console.h>
+#include <Mod/Material/App/MaterialManager.h>
+#include <Mod/Material/App/Materials.h>
 #include <Mod/PartDesign/App/FeatureHole.h>
 #include <Mod/Part/App/ExtrusionHelper.h>
 #include <Mod/Part/App/TopoShapeOpCode.h>
@@ -55,7 +58,9 @@
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <TopoDS_Solid.hxx>
 #include <BRepOffset_MakeOffset.hxx>
+#include <BRepAdaptor_CompCurve.hxx>
 #include <BRepAdaptor_Curve.hxx>
+#include <GCPnts_AbscissaPoint.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
@@ -75,6 +80,7 @@
 #include <gp_Pln.hxx>
 
 #include <algorithm>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -90,11 +96,12 @@ const char* ThinEnums[] = {"Inside", "Outside", "Center", nullptr};
 const char* AxisEnums[] = {"Sketch X", "Sketch Y", "X", "Y", "Z", nullptr};
 const char* XYZEnums[] = {"X", "Y", "Z", nullptr};
 const char* PlaneEnums[] = {"XY", "XZ", "YZ", nullptr};
-const char* PatternEnums[] = {"Rectangular", "Circular", nullptr};
+const char* PatternEnums[] = {"Rectangular", "Circular", "Path", nullptr};
 const char* HoleEnums[] = {"Simple", "Counterbore", "Countersink", nullptr};
 const char* PrimitiveEnums[] = {"Box", "Cylinder", "Sphere", "Torus", "Coil", nullptr};
 const char* CenterEnums[] = {"Origin", "Body center", nullptr};
 const char* RibEnums[] = {"Rib", "Web", nullptr};
+const char* ChamferEnums[] = {"Equal distance", "Two distances", "Distance and angle", nullptr};
 const char* EmbossEnums[] = {"Emboss", "Deboss", nullptr};
 const char* JointEnums[] = {"Rigid", "Revolute", "Slider", "Cylindrical", nullptr};
 const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
@@ -254,6 +261,77 @@ bool planarFrame(const TopoDS_Face& face, gp_Pnt& center, gp_Vec& normal)
         normal.Reverse();
     }
     return true;
+}
+
+/// Achse eines frei gewählten Bezugs, global. Ebenen (Ursprung, Konstruktion, ebene Fläche): Normale durch einen
+/// Punkt der Ebene, planar = true. Achsen und gerade Kanten: ihre Richtung. Zylinderflächen und Kreiskanten: ihre
+/// Mittelachse. Leerer Bezug oder etwas anderes: false.
+bool referenceAxis(const App::PropertyLinkSub& link, gp_Ax1& axis, bool& planar)
+{
+    App::DocumentObject* obj = link.getValue();
+    if (!obj) {
+        return false;
+    }
+    const auto& subs = link.getSubValues();
+    const std::string sub = subs.empty() ? std::string() : subs.front();
+    planar = false;
+    if (sub.empty()) {
+        if (auto datum = freecad_cast<App::DatumElement*>(obj)) {  // Ursprungsebene oder -achse
+            const Base::Placement p = datum->globalPlacement();
+            const Base::Vector3d d = p.getRotation().multVec(datum->getBaseDirection());
+            const Base::Vector3d o = p.getPosition();
+            if (d.Length() < Precision::Confusion()) {
+                return false;  // Ursprungspunkt
+            }
+            axis = gp_Ax1(gp_Pnt(o.x, o.y, o.z), gp_Dir(d.x, d.y, d.z));
+            planar = obj->isDerivedFrom<App::Plane>();
+            return true;
+        }
+    }
+    // Konstruktionsebene/-achse (Form = eine Fläche bzw. Kante) oder ein Element eines Körpers
+    Part::TopoShape shape = Part::Feature::getTopoShape(
+        obj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform | Part::ShapeOption::NeedSubElement,
+        sub.empty() ? nullptr : sub.c_str());
+    if (sub.empty()) {
+        if (shape.countSubShapes(TopAbs_FACE) == 1) {
+            shape = shape.getSubTopoShape(TopAbs_FACE, 1);
+        }
+        else if (shape.countSubShapes(TopAbs_FACE) == 0 && shape.countSubShapes(TopAbs_EDGE) == 1) {
+            shape = shape.getSubTopoShape(TopAbs_EDGE, 1);
+        }
+    }
+    const TopoDS_Shape s = shape.getShape();
+    if (s.IsNull()) {
+        return false;
+    }
+    if (s.ShapeType() == TopAbs_FACE) {
+        BRepAdaptor_Surface surface(TopoDS::Face(s));
+        if (surface.GetType() == GeomAbs_Plane) {
+            gp_Pnt center;
+            gp_Vec normal;
+            planarFrame(TopoDS::Face(s), center, normal);
+            axis = gp_Ax1(center, gp_Dir(normal));
+            planar = true;
+            return true;
+        }
+        if (surface.GetType() == GeomAbs_Cylinder) {
+            axis = surface.Cylinder().Axis();
+            return true;
+        }
+        return false;
+    }
+    if (s.ShapeType() == TopAbs_EDGE) {
+        BRepAdaptor_Curve curve(TopoDS::Edge(s));
+        if (curve.GetType() == GeomAbs_Line) {
+            axis = gp_Ax1(curve.Value(curve.FirstParameter()), curve.Line().Direction());
+            return true;
+        }
+        if (curve.GetType() == GeomAbs_Circle) {
+            axis = curve.Circle().Axis();
+            return true;
+        }
+    }
+    return false;
 }
 
 /// Mehrere Werkzeugkörper zu einem vereinen
@@ -810,6 +888,236 @@ void Design::stableRef(App::DocumentObject*& obj, std::string& element)
         obj = tip;
         element = name;
     }
+}
+
+namespace
+{
+/// a braucht b – ohne a's eigene Körper-Kette (BaseFeatures), die beim Umsortieren neu verbunden wird
+bool dependsOn(const App::DocumentObject* a, const App::DocumentObject* b)
+{
+    std::set<const App::DocumentObject*> seen;
+    std::vector<const App::DocumentObject*> todo;
+    std::vector<App::Property*> props;
+    a->getPropertyList(props);
+    for (App::Property* prop : props) {
+        if (std::strcmp(prop->getName(), "BaseFeatures") != 0) {
+            for (auto o : a->getOutListOfProperty(prop)) {
+                todo.push_back(o);
+            }
+        }
+    }
+    while (!todo.empty()) {
+        const App::DocumentObject* o = todo.back();
+        todo.pop_back();
+        if (o == b) {
+            return true;
+        }
+        if (o && seen.insert(o).second) {
+            for (auto next : o->getOutList()) {
+                todo.push_back(next);
+            }
+        }
+    }
+    return false;
+}
+}  // namespace
+
+bool Design::moveInTimeline(App::DocumentObject* obj, int to, std::string& error)
+{
+    App::Document* doc = obj->getDocument();
+    auto prop = timelineProperty(doc, true);
+    auto items = prop->getValues();
+    std::erase(items, nullptr);
+    const int from = static_cast<int>(std::ranges::find(items, obj) - items.begin());
+    if (from >= static_cast<int>(items.size())) {
+        error = "Not in the timeline";
+        return false;
+    }
+    to = std::clamp(to, 0, static_cast<int>(items.size()) - 1);
+    if (to == from) {
+        return true;
+    }
+    for (int i = std::min(from, to); i <= std::max(from, to); ++i) {
+        App::DocumentObject* other = items[i];
+        if (other == obj) {
+            continue;
+        }
+        if (to < from ? dependsOn(obj, other) : dependsOn(other, obj)) {
+            error = std::string(to < from ? "It needs " : "It is needed by ") + other->Label.getValue();
+            return false;
+        }
+    }
+    // Ein Feature, das Bodies verändert, an der neuen Stelle in deren Kette einhängen
+    auto feature = freecad_cast<Feature*>(obj);
+    std::vector<Body*> bodies;
+    if (feature && feature->BaseFeatures.getSize() > 0) {
+        for (auto b : feature->Bodies.getValues()) {
+            if (auto body = freecad_cast<Body*>(b)) {
+                bodies.push_back(body);
+            }
+        }
+        detachFromBodies(feature);
+    }
+    items.erase(items.begin() + from);
+    items.insert(items.begin() + to, obj);
+    prop->setValues(items);
+    if (!bodies.empty()) {
+        auto marker = markerProperty(doc);
+        const int saved = marker->getValue();
+        marker->setValue(to);  // Zustand der Bodies direkt vor der neuen Stelle
+        attachToBodies(feature, bodies);
+        marker->setValue(saved);
+    }
+    for (auto o : doc->getObjectsOfType(Feature::getClassTypeId())) {
+        o->touch();
+    }
+    doc->recompute();
+    return true;
+}
+
+bool Design::setTimelineGroup(const std::vector<App::DocumentObject*>& objs, const std::string& name)
+{
+    if (objs.empty()) {
+        return false;
+    }
+    const auto items = timeline(objs.front()->getDocument());
+    std::vector<long> idx;
+    for (auto o : objs) {
+        idx.push_back(std::ranges::find(items, o) - items.begin());
+    }
+    std::ranges::sort(idx);
+    if (idx.back() >= static_cast<long>(items.size()) || idx.back() - idx.front() + 1 != static_cast<long>(idx.size())) {
+        return false;  // nur aufeinanderfolgende Einträge
+    }
+    for (auto o : objs) {
+        auto group = freecad_cast<App::PropertyString*>(o->getPropertyByName("TimelineGroup"));
+        if (!group) {
+            group = static_cast<App::PropertyString*>(
+                o->addDynamicProperty("App::PropertyString", "TimelineGroup", "Design", "Group in the timeline", App::Prop_Hidden));
+        }
+        group->setValue(name);
+    }
+    return true;
+}
+
+std::string Design::timelineGroup(const App::DocumentObject* obj)
+{
+    auto group = freecad_cast<App::PropertyString*>(obj->getPropertyByName("TimelineGroup"));
+    return group ? group->getValue() : std::string();
+}
+
+const std::vector<Design::PhysicalMaterial>& Design::physicalMaterials()
+{
+    static const std::vector<PhysicalMaterial> list = {
+        {"Aluminum", "9bf060e9-1663-44a2-88e2-2ff6ee858efe"},
+        {"Steel", "90bbd8ef-8623-4d78-b3bf-e0bdb9b74dd3"},
+        {"Cast Iron", "1826c364-d26a-43fb-8f61-288281236836"},
+        {"Titanium", "f8013463-8008-4063-818c-ab6884cfa015"},
+        {"Wood", "b588224e-e8d6-47ad-ba1f-a058333fd1c6"},
+        {"PLA", "93861244-fbbe-41a9-a7e0-aeed53abd782"},
+        {"PETG", "f73004e3-6fb4-4591-8be7-89d1370be312"},
+        {"ABS", "73371529-2983-47dd-b988-6739a2e20029"},
+        {"Nylon", "9d59dc3b-ce66-4bec-82c9-b962082e7c9e"},
+        {"Acrylic", "f255cd82-91d5-4e97-9032-1843128a2eaa"},
+        {"Glass", "3e3a3e13-04a4-410e-8e36-bbd83ca66847"},
+        {"Concrete", "26042aa5-56e6-4d99-8b63-dd8b9ea5a37a"},
+    };
+    return list;
+}
+
+std::string Design::physicalMaterialFor(const std::string& appearance, const std::string& group)
+{
+    const auto has = [&appearance](const char* word) { return appearance.find(word) != std::string::npos; };
+    const auto uuid = [](const char* name) {
+        for (const auto& m : physicalMaterials()) {
+            if (std::strcmp(m.name, name) == 0) {
+                return std::string(m.uuid);
+            }
+        }
+        return std::string();
+    };
+    // ponytail: Zuordnung über Namen und Gruppe; Messing, Kupfer, Gummi, Stein und Lacke bleiben offen (keine passende
+    // Karte bzw. Farbe sagt nichts über den Werkstoff)
+    if (group == "Anodized" || has("Aluminum")) {
+        return uuid("Aluminum");
+    }
+    if (has("Steel") || has("Chrome")) {
+        return uuid("Steel");
+    }
+    if (has("Iron")) {
+        return uuid("Cast Iron");
+    }
+    if (has("Titanium")) {
+        return uuid("Titanium");
+    }
+    if (group == "Wood") {
+        return uuid("Wood");
+    }
+    if (has("PLA")) {
+        return uuid("PLA");
+    }
+    if (has("PETG")) {
+        return uuid("PETG");
+    }
+    if (has("Nylon")) {
+        return uuid("Nylon");
+    }
+    if (has("Acrylic")) {
+        return uuid("Acrylic");
+    }
+    if (group == "Glass") {
+        return uuid("Glass");
+    }
+    if (has("Concrete")) {
+        return uuid("Concrete");
+    }
+    if (group == "Plastic") {
+        return uuid("ABS");
+    }
+    return {};
+}
+
+bool Design::setPhysicalMaterial(Part::Feature* body, const std::string& uuid, bool chosen)
+{
+    try {
+        auto material = Materials::MaterialManager::getManager().getMaterial(QString::fromStdString(uuid));
+        if (!material) {
+            return false;
+        }
+        body->ShapeMaterial.setValue(*material);
+    }
+    catch (const Base::Exception&) {
+        return false;
+    }
+    auto flag = freecad_cast<App::PropertyBool*>(body->getPropertyByName("PhysicalMaterialChosen"));
+    if (!flag) {
+        flag = static_cast<App::PropertyBool*>(body->addDynamicProperty(
+            "App::PropertyBool", "PhysicalMaterialChosen", "Design", "Material picked by the user", App::Prop_Hidden));
+    }
+    flag->setValue(chosen);
+    return true;
+}
+
+bool Design::physicalMaterialChosen(const App::DocumentObject* body)
+{
+    auto flag = freecad_cast<App::PropertyBool*>(body->getPropertyByName("PhysicalMaterialChosen"));
+    return flag && flag->getValue();
+}
+
+double Design::mass(const Part::Feature* body)
+{
+    const Materials::Material& material = body->ShapeMaterial.getValue();
+    if (!material.hasPhysicalProperty(QStringLiteral("Density"))) {
+        return 0;
+    }
+    const Base::Quantity density = material.getPhysicalQuantity(QStringLiteral("Density"));
+    const TopoDS_Shape shape = body->Shape.getShape().getShape();
+    if (shape.IsNull()) {
+        return 0;
+    }
+    GProp_GProps props;
+    BRepGProp::VolumeProperties(shape, props);
+    return density.getValue() * props.Mass();  // intern kg/mm³ mal mm³
 }
 
 Design::Body* Design::newBody(Feature* feature, App::Part* component)
@@ -1485,10 +1793,25 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
     Part::TopoShape res(0, getDocument()->getStringHasher());
     try {
         if (fillet) {
-            res.makeElementFillet(shape, edges, size, size);
+            auto f = static_cast<Fillet*>(this);
+            const double end = f->Variable.getValue() ? f->RadiusEnd.getValue() : size;
+            if (end < Precision::Confusion()) {
+                return new App::DocumentObjectExecReturn("Radius must be greater than zero");
+            }
+            res.makeElementFillet(shape, edges, size, end);
         }
         else {
-            res.makeElementChamfer(shape, edges, Part::ChamferType::equalDistance, size, size);
+            auto c = static_cast<Chamfer*>(this);
+            const long type = c->Type.getValue();
+            const double second = type == 1 ? c->Distance2.getValue() : type == 2 ? c->ChamferAngle.getValue() : size;
+            if (type == 1 && second < Precision::Confusion()) {
+                return new App::DocumentObjectExecReturn("Distance must be greater than zero");
+            }
+            if (type == 2 && (second <= 0 || second >= 90)) {
+                return new App::DocumentObjectExecReturn("The chamfer angle must be between 0° and 90°");
+            }
+            res.makeElementChamfer(shape, edges, static_cast<Part::ChamferType>(type), size, second, nullptr,
+                                   c->FlipSide.getValue() ? Part::Flip::flip : Part::Flip::none);
         }
     }
     catch (const Standard_Failure&) {
@@ -1503,6 +1826,44 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
 
 PROPERTY_SOURCE(Design::Fillet, Design::DressUp)
 PROPERTY_SOURCE(Design::Chamfer, Design::DressUp)
+
+Fillet::Fillet()
+{
+    ADD_PROPERTY_TYPE(Variable, (false), "Parameters", App::Prop_None, "Variable radius");
+    ADD_PROPERTY_TYPE(RadiusEnd, (2.0), "Parameters", App::Prop_None, "Radius at the end of the edge");
+    RadiusEnd.setStatus(App::Property::Hidden, true);
+}
+
+void Fillet::onChanged(const App::Property* prop)
+{
+    if (prop == &Variable) {
+        RadiusEnd.setStatus(App::Property::Hidden, !Variable.getValue());
+    }
+    DressUp::onChanged(prop);
+}
+
+Chamfer::Chamfer()
+{
+    ADD_PROPERTY_TYPE(Type, (0L), "Parameters", App::Prop_None, "How the chamfer is measured");
+    Type.setEnums(ChamferEnums);
+    ADD_PROPERTY_TYPE(Distance2, (2.0), "Parameters", App::Prop_None, "Distance on the other face");
+    ADD_PROPERTY_TYPE(ChamferAngle, (45.0), "Parameters", App::Prop_None, "Angle of the chamfer");
+    ADD_PROPERTY_TYPE(FlipSide, (false), "Parameters", App::Prop_None, "Swap the two faces");
+    for (App::Property* p : std::initializer_list<App::Property*> {&Distance2, &ChamferAngle, &FlipSide}) {
+        p->setStatus(App::Property::Hidden, true);
+    }
+}
+
+void Chamfer::onChanged(const App::Property* prop)
+{
+    if (prop == &Type) {
+        const long type = Type.getValue();
+        Distance2.setStatus(App::Property::Hidden, type != 1);
+        ChamferAngle.setStatus(App::Property::Hidden, type != 2);
+        FlipSide.setStatus(App::Property::Hidden, type == 0);
+    }
+    DressUp::onChanged(prop);
+}
 
 // ---------------------------------------------------------------------------------------------
 
@@ -1592,6 +1953,8 @@ Move::Move()
     RotationAxis.setEnums(XYZEnums);
     ADD_PROPERTY_TYPE(Angle, (0.0), "Move", App::Prop_None, "Rotation angle");
     ADD_PROPERTY_TYPE(Alignment, (Base::Placement()), "Move", App::Prop_Hidden, "Alignment (Align)");
+    ADD_PROPERTY_TYPE(AxisReference, (nullptr), "Parameters", App::Prop_None, "Axis, edge or round face to rotate around");
+    AxisReference.setScope(App::LinkScope::Global);
     Operation.setStatus(App::Property::Hidden, true);
 }
 
@@ -1607,9 +1970,18 @@ App::DocumentObjectExecReturn* Move::compute()
         const Base::Matrix4D toGlobal = Design::componentOf(Bodies[i])->globalPlacement().toMatrix();
         Base::BoundBox3d bb = base.getBoundBox().Transformed(toGlobal);
         bb = bb.Transformed(Alignment.getValue().toMatrix());  // gedreht wird um die Mitte nach dem Ausrichten
-        Base::Vector3d axis;
+        Base::Vector3d axis, center = bb.GetCenter();
         axis[RotationAxis.getValue()] = 1;
-        Base::Placement rot(Base::Vector3d(), Base::Rotation(axis, Angle.getValue() * M_PI / 180.0), bb.GetCenter());
+        if (AxisReference.getValue()) {  // frei gewählte Achse (bei einer Ebene: ihre Normale durch ihren Punkt)
+            gp_Ax1 ref;
+            bool planar = false;
+            if (!referenceAxis(AxisReference, ref, planar)) {
+                return new App::DocumentObjectExecReturn("Rotate around an axis, a straight or round edge or a round face");
+            }
+            axis = Base::Vector3d(ref.Direction().X(), ref.Direction().Y(), ref.Direction().Z());
+            center = Base::Vector3d(ref.Location().X(), ref.Location().Y(), ref.Location().Z());
+        }
+        Base::Placement rot(Base::Vector3d(), Base::Rotation(axis, Angle.getValue() * M_PI / 180.0), center);
         Base::Placement move(Translation.getValue(), Base::Rotation());
         Base::Matrix4D mat = inComponent(Bodies[i], (move * rot * Alignment.getValue()).toMatrix());
         // Geometrie wirklich umrechnen (copy): eine bloße Lage würde Part::Feature beim Speichern im Body überschreiben
@@ -1632,7 +2004,17 @@ Mirror::Mirror()
     SourceFeatures.setScope(App::LinkScope::Global);
     ADD_PROPERTY_TYPE(Plane, (2L), "Mirror", App::Prop_None, "Mirror plane");
     Plane.setEnums(PlaneEnums);
+    ADD_PROPERTY_TYPE(PlaneReference, (nullptr), "Parameters", App::Prop_None, "Plane or flat face to mirror at");
+    PlaneReference.setScope(App::LinkScope::Global);
     Operation.setStatus(App::Property::Hidden, true);
+}
+
+void Mirror::onChanged(const App::Property* prop)
+{
+    if (prop == &PlaneReference) {  // ein Bezug ersetzt die Ursprungsebene
+        Plane.setStatus(App::Property::ReadOnly, PlaneReference.getValue() != nullptr);
+    }
+    Feature::onChanged(prop);
 }
 
 App::DocumentObjectExecReturn* Mirror::compute()
@@ -1643,7 +2025,15 @@ App::DocumentObjectExecReturn* Mirror::compute()
         return new App::DocumentObjectExecReturn("Select one or more bodies");
     }
     static const gp_Dir normals[] = {gp::DZ(), gp::DY(), gp::DX()};
-    const gp_Ax2 plane(gp::Origin(), normals[Plane.getValue()]);
+    gp_Ax2 plane(gp::Origin(), normals[Plane.getValue()]);
+    if (PlaneReference.getValue()) {
+        gp_Ax1 ref;
+        bool planar = false;
+        if (!referenceAxis(PlaneReference, ref, planar) || !planar) {
+            return new App::DocumentObjectExecReturn("Mirror at a plane or a flat face");
+        }
+        plane = gp_Ax2(ref.Location(), ref.Direction());
+    }
     std::vector<Part::TopoShape> results;
     for (size_t i = 0; i < sources.size(); ++i) {
         auto state = freecad_cast<Feature*>(states[i]);
@@ -1689,16 +2079,73 @@ Pattern::Pattern()
     ADD_PROPERTY_TYPE(Axis, (2L), "Pattern", App::Prop_None, "Axis of a circular pattern (through the origin)");
     Axis.setEnums(XYZEnums);
     ADD_PROPERTY_TYPE(Angle, (360.0), "Pattern", App::Prop_None, "Total angle of a circular pattern");
+    ADD_PROPERTY_TYPE(Direction1Reference, (nullptr), "Parameters", App::Prop_None, "Edge, axis or plane for the first direction");
+    ADD_PROPERTY_TYPE(Direction2Reference, (nullptr), "Parameters", App::Prop_None, "Edge, axis or plane for the second direction");
+    ADD_PROPERTY_TYPE(AxisReference, (nullptr), "Parameters", App::Prop_None, "Axis, edge or round face of a circular pattern");
+    ADD_PROPERTY_TYPE(Path, (nullptr), "Parameters", App::Prop_None, "Edges to repeat along");
+    ADD_PROPERTY_TYPE(FollowPath, (false), "Parameters", App::Prop_None, "Rotate copies along the path");
+    for (auto link : {&Direction1Reference, &Direction2Reference, &AxisReference, &Path}) {
+        link->setScope(App::LinkScope::Global);
+    }
     Operation.setValue(1L);
+    updateVisibility();
 }
 
-std::vector<Base::Matrix4D> Pattern::transforms() const
+void Pattern::onChanged(const App::Property* prop)
+{
+    if (prop == &Type || prop == &Direction1Reference || prop == &Direction2Reference || prop == &AxisReference) {
+        updateVisibility();
+    }
+    Feature::onChanged(prop);
+}
+
+void Pattern::onDocumentRestored()
+{
+    updateVisibility();
+    Feature::onDocumentRestored();
+}
+
+/// Bezüge passend zum Typ zeigen; ein gesetzter Bezug sperrt die X/Y/Z-Auswahl, die er ersetzt
+void Pattern::updateVisibility()
+{
+    const long type = Type.getValue();
+    Direction1Reference.setStatus(App::Property::Hidden, type != 0);
+    Direction2Reference.setStatus(App::Property::Hidden, type != 0);
+    AxisReference.setStatus(App::Property::Hidden, type != 1);
+    Path.setStatus(App::Property::Hidden, type != 2);
+    FollowPath.setStatus(App::Property::Hidden, type != 2);
+    Direction1.setStatus(App::Property::ReadOnly, Direction1Reference.getValue() != nullptr);
+    Direction2.setStatus(App::Property::ReadOnly, Direction2Reference.getValue() != nullptr);
+    Axis.setStatus(App::Property::ReadOnly, AxisReference.getValue() != nullptr);
+}
+
+std::vector<Base::Matrix4D> Pattern::transforms(std::string& error) const
 {
     std::vector<Base::Matrix4D> transforms;
+    // Richtung aus einem Bezug (Kante/Achse: entlang, Ebene/Fläche: senkrecht) oder X/Y/Z
+    const auto direction = [&error](const App::PropertyLinkSub& ref, long xyz, Base::Vector3d& d) {
+        d = Base::Vector3d();
+        if (!ref.getValue()) {
+            d[xyz] = 1;
+            return true;
+        }
+        gp_Ax1 axis;
+        bool planar = false;
+        if (!referenceAxis(ref, axis, planar)) {
+            error = "Choose an edge, an axis or a flat face as direction";
+            return false;
+        }
+        d = Base::Vector3d(axis.Direction().X(), axis.Direction().Y(), axis.Direction().Z());
+        return true;
+    };
     if (Type.getValue() == 0) {
         Base::Vector3d d1, d2;
-        d1[Direction1.getValue()] = Spacing1.getValue();
-        d2[Direction2.getValue()] = Spacing2.getValue();
+        if (!direction(Direction1Reference, Direction1.getValue(), d1)
+            || !direction(Direction2Reference, Direction2.getValue(), d2)) {
+            return {};
+        }
+        d1 *= Spacing1.getValue();
+        d2 *= Spacing2.getValue();
         for (long i = 0; i < Count1.getValue(); ++i) {
             for (long j = 0; j < Count2.getValue(); ++j) {
                 if (i || j) {
@@ -1709,32 +2156,106 @@ std::vector<Base::Matrix4D> Pattern::transforms() const
             }
         }
     }
-    else {
+    else if (Type.getValue() == 1) {
         const long n = Count1.getValue();
         const double total = Angle.getValue();
         const bool full = std::abs(total - 360.0) < Precision::Angular();
         const double step = n > 1 ? (full ? total / n : total / (n - 1)) : 0;
-        Base::Vector3d axis;
+        Base::Vector3d axis, center;
         axis[Axis.getValue()] = 1;
-        for (long k = 1; k < n; ++k) {
-            transforms.push_back(Base::Placement(Base::Vector3d(), Base::Rotation(axis, k * step * M_PI / 180.0)).toMatrix());
+        if (AxisReference.getValue()) {
+            gp_Ax1 ref;
+            bool planar = false;
+            if (!referenceAxis(AxisReference, ref, planar)) {
+                error = "Choose an axis, a straight or round edge or a round face";
+                return {};
+            }
+            axis = Base::Vector3d(ref.Direction().X(), ref.Direction().Y(), ref.Direction().Z());
+            center = Base::Vector3d(ref.Location().X(), ref.Location().Y(), ref.Location().Z());
         }
+        for (long k = 1; k < n; ++k) {
+            transforms.push_back(
+                Base::Placement(Base::Vector3d(), Base::Rotation(axis, k * step * M_PI / 180.0), center).toMatrix());
+        }
+    }
+    else {
+        // Entlang eines Pfads: Kopien im Abstand Spacing1 (Bogenlänge) ab dem Pfadanfang
+        App::DocumentObject* obj = Path.getValue();
+        if (!obj) {
+            error = "Click the edges of the path";
+            return {};
+        }
+        const auto opts = Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform;
+        std::vector<Part::TopoShape> edges;
+        for (const auto& sub : Path.getSubValues()) {
+            if (!sub.empty()) {
+                edges.push_back(Part::Feature::getTopoShape(obj, opts | Part::ShapeOption::NeedSubElement, sub.c_str()));
+            }
+        }
+        if (edges.empty()) {  // ganze Skizze bzw. Objekt
+            edges = Part::Feature::getTopoShape(obj, opts).getSubTopoShapes(TopAbs_EDGE);
+        }
+        BRepBuilderAPI_MakeWire wire;
+        for (const auto& e : edges) {
+            if (!e.isNull() && e.getShape().ShapeType() == TopAbs_EDGE) {
+                wire.Add(TopoDS::Edge(e.getShape()));
+            }
+        }
+        if (!wire.IsDone()) {
+            error = "The path must be connected edges";
+            return {};
+        }
+        BRepAdaptor_CompCurve curve(wire.Wire());
+        const double length = GCPnts_AbscissaPoint::Length(curve);
+        gp_Pnt p0;
+        gp_Vec t0;
+        curve.D1(curve.FirstParameter(), p0, t0);
+        for (long k = 1; k < Count1.getValue(); ++k) {
+            const double s = k * Spacing1.getValue();
+            if (s > length + Precision::Confusion()) {
+                error = "The copies do not fit on the path; reduce Count or Spacing";
+                return {};
+            }
+            GCPnts_AbscissaPoint at(curve, s, curve.FirstParameter());
+            gp_Pnt p;
+            gp_Vec t;
+            curve.D1(at.Parameter(), p, t);
+            gp_Trsf trsf;
+            trsf.SetTranslation(p0, p);
+            if (FollowPath.getValue() && t0.Magnitude() > Precision::Confusion() && t.Magnitude() > Precision::Confusion()
+                && !t0.IsParallel(t, Precision::Angular())) {
+                gp_Trsf turn;  // erst am Anfang des Pfads mitdrehen, dann an die neue Stelle schieben
+                turn.SetRotation(gp_Ax1(p0, gp_Dir(t0.Crossed(t))), t0.Angle(t));
+                trsf.Multiply(turn);
+            }
+            Base::Matrix4D m;
+            for (int r = 0; r < 3; ++r) {
+                for (int c = 0; c < 4; ++c) {
+                    m[r][c] = trsf.Value(r + 1, c + 1);
+                }
+            }
+            transforms.push_back(m);
+        }
+    }
+    if (transforms.empty() && error.empty()) {
+        error = "Count must be at least 2";
     }
     return transforms;
 }
 
 App::DocumentObjectExecReturn* Pattern::compute()
 {
-    const std::vector<Base::Matrix4D> transforms = this->transforms();
+    std::string error;
+    const std::vector<Base::Matrix4D> transforms = this->transforms(error);
     if (transforms.empty()) {
-        return new App::DocumentObjectExecReturn("Count must be at least 2");
+        return new App::DocumentObjectExecReturn(error);
     }
     auto copiesOf = [&](const Part::TopoShape& shape) {
         std::vector<Part::TopoShape> copies;
-        for (const auto& m : transforms) {
+        for (const auto& m : transforms) {  // Lagen sind global, das Werkzeug liegt in der Komponente des Musters
             copies.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
-                                 .makeElementTransform(shape, m, nullptr, Part::CheckScale::noScaleCheck,
-                                                       Part::CopyType::copy));
+                                 .makeElementTransform(shape, inComponent(this, m), nullptr,
+                                                       Part::CheckScale::noScaleCheck, Part::CopyType::copy));
         }
         return copies;
     };
@@ -1767,7 +2288,6 @@ App::DocumentObjectExecReturn* Pattern::compute()
         return new App::DocumentObjectExecReturn("Select a feature or bodies to pattern");
     }
     Part::TopoShape tool;
-    std::string error;
     if (!source->makeTool(tool, error)) {
         return new App::DocumentObjectExecReturn(error);
     }

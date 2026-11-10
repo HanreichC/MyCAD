@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
+# runs: 2  (tests/run_all.sh startet ihn zweimal mit demselben Home: erst umstellen, dann prüfen)
 """Deutsche Oberfläche. Mit eigenem Home zweimal ausführen (die Sprache wirkt nach einem Neustart):
     MYCAD_HOME=/tmp/de tests/gui/run.sh tests/gui/test_german.py /tmp/de1   → stellt auf Deutsch, beendet
     MYCAD_HOME=/tmp/de tests/gui/run.sh tests/gui/test_german.py /tmp/de2   → prüft und macht Bilder

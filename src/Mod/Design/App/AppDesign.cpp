@@ -31,6 +31,17 @@ public:
         add_varargs_method("rollbackMarker", &Module::rollbackMarker, "rollbackMarker(doc): active entries, -1 = all");
         add_varargs_method("setRollbackMarker", &Module::setRollbackMarker, "setRollbackMarker(doc, n): roll back");
         add_varargs_method("componentOf", &Module::componentOf, "componentOf(obj): component containing obj");
+        add_varargs_method("moveInTimeline", &Module::moveInTimeline,
+                           "moveInTimeline(obj, index): move; raises ValueError naming the dependency when not allowed");
+        add_varargs_method("setTimelineGroup", &Module::setTimelineGroup,
+                           "setTimelineGroup([objs], name): group consecutive entries ('' ungroups); False if not consecutive");
+        add_varargs_method("timelineGroup", &Module::timelineGroup, "timelineGroup(obj): name of its group or ''");
+        add_varargs_method("mass", &Module::mass, "mass(body): mass in kg from volume and the density of ShapeMaterial");
+        add_varargs_method("physicalMaterialFor", &Module::physicalMaterialFor,
+                           "physicalMaterialFor(appearance, group): UUID of the matching material card or ''");
+        add_varargs_method("setPhysicalMaterial", &Module::setPhysicalMaterial,
+                           "setPhysicalMaterial(body, uuid[, chosen=True]): set ShapeMaterial; False if unknown");
+        add_varargs_method("physicalMaterials", &Module::physicalMaterials, "physicalMaterials(): [(name, uuid)]");
         add_varargs_method("stableRef", &Module::stableRef,
                            "stableRef(obj, element): (obj, element) with a body replaced by its timeline state");
         initialize("MyCAD Design: components, bodies and timeline features");
@@ -117,6 +128,49 @@ private:
     Py::Object componentOf(const Py::Tuple& args)
     {
         return py(Design::componentOf(obj(args[0])));
+    }
+    Py::Object moveInTimeline(const Py::Tuple& args)
+    {
+        std::string error;
+        if (!Design::moveInTimeline(obj(args[0]), static_cast<int>(Py::Long(args[1])), error)) {
+            throw Py::ValueError(error);
+        }
+        return Py::None();
+    }
+    Py::Object setTimelineGroup(const Py::Tuple& args)
+    {
+        std::vector<App::DocumentObject*> objs;
+        for (const auto& item : Py::Sequence(args[0])) {
+            objs.push_back(obj(item));
+        }
+        return Py::Boolean(Design::setTimelineGroup(objs, Py::String(args[1]).as_std_string()));
+    }
+    Py::Object timelineGroup(const Py::Tuple& args)
+    {
+        return Py::String(Design::timelineGroup(obj(args[0])));
+    }
+    Py::Object mass(const Py::Tuple& args)
+    {
+        return Py::Float(Design::mass(obj<Part::Feature>(args[0])));
+    }
+    Py::Object physicalMaterialFor(const Py::Tuple& args)
+    {
+        return Py::String(Design::physicalMaterialFor(Py::String(args[0]).as_std_string(),
+                                                      Py::String(args[1]).as_std_string()));
+    }
+    Py::Object setPhysicalMaterial(const Py::Tuple& args)
+    {
+        const bool chosen = args.size() < 3 || bool(Py::Boolean(args[2]));
+        return Py::Boolean(
+            Design::setPhysicalMaterial(obj<Part::Feature>(args[0]), Py::String(args[1]).as_std_string(), chosen));
+    }
+    Py::Object physicalMaterials(const Py::Tuple&)
+    {
+        Py::List list;
+        for (const auto& m : Design::physicalMaterials()) {
+            list.append(Py::TupleN(Py::String(m.name), Py::String(m.uuid)));
+        }
+        return list;
     }
     Py::Object stableRef(const Py::Tuple& args)
     {

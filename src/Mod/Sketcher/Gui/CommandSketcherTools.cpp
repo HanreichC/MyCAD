@@ -2476,6 +2476,9 @@ void CmdSketcherOffset::activated(int iMsg)
             }
 
             const Part::Geometry* geo = Obj->getGeometry(geoId);
+            if (!geo) {  // MyCAD: Auswahl verweist auf eine Kante, die es nicht (mehr) gibt; stürzte sonst ab
+                continue;
+            }
             if (!isPoint(*geo)
                 && !isBSplineCurve(*geo)
                 && !isEllipse(*geo)

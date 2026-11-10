@@ -357,7 +357,7 @@ public:
         , context(context)
         , done(std::move(done))
     {
-        Gui::getMainWindow()->showMessage(T("Click a face or plane…"));
+        Gui::getMainWindow()->showMessage(T("Click a face, edge or plane…"));
     }
 
 private:
@@ -421,7 +421,10 @@ public:
         , generic(hasParameters(feature))
         , extrude(freecad_cast<Design::Extrude*>(feature))
         , revolve(freecad_cast<Design::Revolve*>(feature))
-        , dressUp(generic ? nullptr : freecad_cast<Design::DressUp*>(feature))
+        // Rundung und Fase behalten ihre Kanten- und Größenzeile, auch mit eigenen Parametern
+        , dressUp(generic && !feature->isDerivedFrom<Design::Fillet>() && !feature->isDerivedFrom<Design::Chamfer>()
+                      ? nullptr
+                      : freecad_cast<Design::DressUp*>(feature))
         , shell(freecad_cast<Design::Shell*>(feature))
         , combine(freecad_cast<Design::Combine*>(feature))
         , move(freecad_cast<Design::Move*>(feature))
@@ -556,7 +559,7 @@ public:
         }
         if (pattern) {
             holeType = new QComboBox;
-            holeType->addItems({T("Rectangular"), T("Circular")});
+            holeType->addItems({T("Rectangular"), T("Circular"), T("Along Path")});
             holeType->setCurrentIndex(pattern->Type.getValue());
             auto xyz = [](long index) {
                 auto box = new QComboBox;
@@ -1047,7 +1050,7 @@ private:
         const auto text = [link, button] {
             App::DocumentObject* obj = link->getValue();
             const auto& subs = link->getSubValues();
-            button->setText(button->isChecked() ? T("Click a face or plane…")
+            button->setText(button->isChecked() ? T("Click a face, edge or plane…")
                             : !obj             ? T("Select")
                                                : QString::fromUtf8(obj->Label.getValue())
                                                      + (subs.empty() || subs.front().empty()
@@ -1122,10 +1125,12 @@ private:
             move->Translation.setValue(Base::Vector3d(moveX->value().getValue(), moveY->value().getValue(),
                                                       moveZ->value().getValue()));
             move->RotationAxis.setValue(axis->currentIndex());
+            axis->setEnabled(!move->AxisReference.getValue());  // eine gewählte Achse ersetzt X/Y/Z
             move->Angle.setValue(distance->value().getValue());
         }
         if (mirror) {
             mirror->Plane.setValue(axis->currentIndex());
+            axis->setEnabled(!mirror->PlaneReference.getValue());  // eine gewählte Ebene ersetzt XY/XZ/YZ
         }
         if (hole) {
             const int type = holeType->currentIndex();
@@ -1155,7 +1160,7 @@ private:
             showRow(sinkAngle, type == 2);
         }
         if (pattern) {
-            const bool rect = holeType->currentIndex() == 0;
+            const bool rect = holeType->currentIndex() == 0, circular = holeType->currentIndex() == 1;
             pattern->Type.setValue(holeType->currentIndex());
             pattern->Direction1.setValue(dir1->currentIndex());
             pattern->Count1.setValue(count1->value());
@@ -1166,11 +1171,15 @@ private:
             pattern->Axis.setValue(axis->currentIndex());
             pattern->Angle.setValue(std::abs(sinkAngle->value().getValue()));
             pattern->Operation.setValue(simpleOp->currentIndex() + 1L);
-            for (QWidget* w : std::initializer_list<QWidget*> {dir1, distance, dir2, count2, distance2}) {
+            for (QWidget* w : std::initializer_list<QWidget*> {dir1, dir2, count2, distance2}) {
                 showRow(w, rect);
             }
-            showRow(axis, !rect);
-            showRow(sinkAngle, !rect);
+            showRow(distance, !circular);  // Abstand: rechteckig und entlang Pfad
+            showRow(axis, circular);
+            showRow(sinkAngle, circular);
+            dir1->setEnabled(!pattern->Direction1Reference.getValue());
+            dir2->setEnabled(!pattern->Direction2Reference.getValue());
+            axis->setEnabled(!pattern->AxisReference.getValue());
             showRow(simpleOp, pattern->SourceBodies.getSize() == 0);  // Körper-Muster: neue Bodies, keine Operation
         }
         for (const auto& [prop, field] : paramRows) {

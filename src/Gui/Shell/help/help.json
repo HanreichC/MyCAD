@@ -422,12 +422,16 @@
     "en": [
      "A red step has a problem; hold the mouse over it to read why.",
      "Suppress switches a step off without deleting it.",
-     "Undo (Ctrl+Z) reverses the last action, also deleting."
+     "Undo (Ctrl+Z) reverses the last action, also deleting.",
+     "Drag a step onto another to move it there. If it needs something that would then come later (its sketch, a face), it stays and MyCAD says why.",
+     "Ctrl+click several neighbouring steps, right-click and choose Group Selected Steps. The group button folds them away; right-click it to rename or ungroup."
     ],
     "de": [
      "Ein roter Schritt hat ein Problem; halte die Maus darüber, um den Grund zu lesen.",
      "Unterdrücken schaltet einen Schritt aus, ohne ihn zu löschen.",
-     "Rückgängig (Strg+Z) nimmt die letzte Aktion zurück, auch Löschen."
+     "Rückgängig (Strg+Z) nimmt die letzte Aktion zurück, auch Löschen.",
+     "Zieh einen Schritt auf einen anderen, um ihn dorthin zu schieben. Braucht er etwas, das dann später käme (seine Skizze, eine Fläche), bleibt er stehen und MyCAD sagt, warum.",
+     "Strg+Klick auf mehrere benachbarte Schritte, Rechtsklick und Gewählte Schritte gruppieren. Der Gruppenknopf klappt sie zusammen; Rechtsklick darauf benennt sie um oder löst sie auf."
     ]
    }
   },
@@ -636,12 +640,16 @@
     "en": [
      "3MF keeps units and is the best choice for modern slicers. STEP keeps exact curves for other CAD programs.",
      "DXF writes each sketch flat in its own plane, on a layer named after the sketch. Good for laser cutters and CNC.",
-     "You can also right-click bodies in the browser or the design name and choose Export."
+     "You can also right-click bodies in the browser or the design name and choose Export.",
+     "3MF keeps each body as its own part with name and colour, so the slicer shows them separately. How finely curves become triangles (STL and 3MF) is set in Settings → General → Export resolution.",
+     "STEP keeps colours, names and components."
     ],
     "de": [
      "3MF behält die Einheiten und ist für moderne Slicer die beste Wahl. STEP behält exakte Rundungen für andere CAD-Programme.",
      "DXF schreibt jede Skizze flach in ihrer eigenen Ebene, auf einem Layer mit dem Namen der Skizze. Gut für Laserschneider und CNC.",
-     "Du kannst auch Körper im Browser oder den Designnamen rechts anklicken und Exportieren wählen."
+     "Du kannst auch Körper im Browser oder den Designnamen rechts anklicken und Exportieren wählen.",
+     "3MF behält jeden Körper als eigenes Teil mit Name und Farbe, der Slicer zeigt sie also getrennt. Wie fein Rundungen zu Dreiecken werden (STL und 3MF), stellst du unter Einstellungen → Allgemein → Export-Auflösung ein.",
+     "STEP behält Farben, Namen und Komponenten."
     ]
    }
   },
@@ -1903,7 +1911,15 @@
     "en": [
      [
       "Type",
-      "Rectangular (rows and columns) or Circular (around an axis through the origin)."
+      "Rectangular (rows and columns), Circular (around an axis) or Along Path (along edges you click)."
+     ],
+     [
+      "Direction 1 Reference, Axis Reference",
+      "Instead of X, Y or Z: click an edge, an axis, a flat face (its normal) or a round face (its axis), e.g. to repeat along a slanted edge."
+     ],
+     [
+      "Path, Rotate copies along the path",
+      "With Along Path: Spacing is measured along the path; the copies can turn with it."
      ],
      [
       "Direction, Count, Spacing",
@@ -1917,7 +1933,15 @@
     "de": [
      [
       "Typ",
-      "Rechteckig (Reihen und Spalten) oder Kreisförmig (um eine Achse durch den Ursprung)."
+      "Rechteckig (Reihen und Spalten), Kreisförmig (um eine Achse) oder Entlang Pfad (entlang Kanten, die du anklickst)."
+     ],
+     [
+      "Bezug Richtung 1, Bezugsachse",
+      "Statt X, Y oder Z: klicke eine Kante, eine Achse, eine ebene Fläche (ihre Normale) oder eine runde Fläche (ihre Achse) an, z. B. um entlang einer schrägen Kante zu wiederholen."
+     ],
+     [
+      "Pfad, Kopien mit dem Pfad drehen",
+      "Bei Entlang Pfad: der Abstand wird entlang des Pfads gemessen; die Kopien können sich mitdrehen."
      ],
      [
       "Richtung, Anzahl, Abstand",
@@ -1989,12 +2013,20 @@
      [
       "Mirror plane",
       "XY plane, XZ plane or YZ plane through the origin."
+     ],
+     [
+      "Plane Reference",
+      "Or click any plane or flat face, e.g. a side of the body or a slanted construction plane."
      ]
     ],
     "de": [
      [
       "Spiegelebene",
       "XY-Ebene, XZ-Ebene oder YZ-Ebene durch den Ursprung."
+     ],
+     [
+      "Bezugsebene",
+      "Oder klicke eine beliebige Ebene oder ebene Fläche an, z. B. eine Seite des Körpers oder eine schräge Konstruktionsebene."
      ]
     ]
    },
@@ -2280,13 +2312,21 @@
     "en": [
      [
       "Radius",
-      "Size of the rounding."
+      "Size of the rounding. Edges that run on tangentially are rounded with it."
+     ],
+     [
+      "Variable radius, Radius End",
+      "The radius changes evenly from Radius at the start of the edge to Radius End."
      ]
     ],
     "de": [
      [
       "Radius",
-      "Größe der Rundung."
+      "Größe der Rundung. Kanten, die tangential weiterlaufen, werden mitgerundet."
+     ],
+     [
+      "Variabler Radius, Endradius",
+      "Der Radius ändert sich gleichmäßig von Radius am Anfang der Kante bis Endradius."
      ]
     ]
    },
@@ -2359,12 +2399,28 @@
      [
       "Distance",
       "How far the edge is cut back on both faces."
+     ],
+     [
+      "Type",
+      "Equal distance, Two distances (Distance and Distance 2) or Distance and angle (Chamfer Angle)."
+     ],
+     [
+      "Swap the two faces",
+      "Measures the distance on the other face."
      ]
     ],
     "de": [
      [
       "Abstand",
       "Wie weit die Kante auf beiden Flächen zurückgeschnitten wird."
+     ],
+     [
+      "Typ",
+      "Gleicher Abstand, Zwei Abstände (Abstand und Abstand 2) oder Abstand und Winkel (Fasenwinkel)."
+     ],
+     [
+      "Flächen tauschen",
+      "Misst den Abstand auf der anderen Fläche."
      ]
     ]
    },
@@ -2762,6 +2818,10 @@
      [
       "Rotate around, Angle",
       "Axis through the body centre and the rotation angle."
+     ],
+     [
+      "Axis Reference",
+      "Or turn around an edge, an axis or a round face you click – e.g. a hinge."
      ]
     ],
     "de": [
@@ -2772,6 +2832,10 @@
      [
       "Drehen um, Winkel",
       "Achse durch die Körpermitte und der Drehwinkel."
+     ],
+     [
+      "Bezugsachse",
+      "Oder drehe um eine Kante, Achse oder runde Fläche, die du anklickst – z. B. ein Scharnier."
      ]
     ]
    },
@@ -3501,13 +3565,13 @@
    "steps": {
     "en": [
      "In the toolbar at the top, in the INSPECT section, click Measure (key I). The Measure panel opens on the right.",
-     "Click a point, edge, face or body: the panel shows its Length, Radius, Diameter, Area, Volume or Size.",
+     "Click a point, edge, face or body: the panel shows its Length, Radius, Diameter, Area, Volume or Size. For a body also Mass, Material and Center of mass.",
      "Ctrl+click a second item to see the Distance and Angle between them.",
      "Close the panel with Close at the top of the panel or Esc."
     ],
     "de": [
      "Klicke in der Werkzeugleiste oben im Bereich PRÜFEN auf Messen (Taste I). Rechts öffnet sich das Panel Messen.",
-     "Klicke einen Punkt, eine Kante, Fläche oder einen Körper an: das Panel zeigt Länge, Radius, Durchmesser, Fläche, Volumen oder Größe.",
+     "Klicke einen Punkt, eine Kante, Fläche oder einen Körper an: das Panel zeigt Länge, Radius, Durchmesser, Fläche, Volumen oder Größe. Bei einem Körper auch Masse, Werkstoff und Schwerpunkt.",
      "Klicke mit Strg ein zweites an, um Abstand und Winkel dazwischen zu sehen.",
      "Schließe das Panel oben mit Schließen oder mit Esc."
     ]
@@ -3966,6 +4030,7 @@
    "tips": {
     "en": [
      "You can also drag a sphere straight onto a body in the view, without selecting it first.",
+     "Physical material sets what the body is made of, for its mass. From appearance follows the look (walnut → wood, PLA → PLA); pick a material to keep it.",
      "Right-click a sphere to add it to Favorites. In this design shows the materials you already use.",
      "Single faces only take the colour of a material. Textures, gloss and lacquer apply to whole bodies.",
      "Settings → General → Materials and Light switches each effect on or off: Realistic materials, Reflections, Relief and end grain, Contact shadow. Turn off whatever distracts you while you work.",
@@ -3973,6 +4038,7 @@
     ],
     "de": [
      "Du kannst eine Kugel auch direkt auf einen Körper in der Ansicht ziehen, ohne ihn vorher zu wählen.",
+     "Werkstoff legt fest, woraus der Körper ist, für seine Masse. Aus dem Aussehen folgt der Darstellung (Nussbaum → Holz, PLA → PLA); wähle einen Werkstoff, damit er bleibt.",
      "Ein Rechtsklick auf eine Kugel legt sie unter Favoriten ab. In diesem Design zeigt die Materialien, die du schon verwendest.",
      "Einzelne Flächen übernehmen nur die Farbe eines Materials. Texturen, Glanz und Lack gibt es für ganze Körper.",
      "Einstellungen → Allgemein → Materialien und Licht schaltet jeden Effekt einzeln an oder aus: Realistische Materialien, Spiegelungen, Relief und Hirnholz, Kontaktschatten. Schalte ab, was dich beim Arbeiten stört.",

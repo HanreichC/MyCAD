@@ -257,7 +257,7 @@ wenn sichtbar für Nutzer, ein Commit auf `main`.
 
 ---
 
-#### 10.0 Test-Fundament · 0.1–0.4 erledigt (2026-11-10), 0.5 läuft
+#### 10.0 Test-Fundament · erledigt (2026-11-10)
 
 | # | Aufgabe | Umsetzung |
 |---|---|---|
@@ -265,7 +265,7 @@ wenn sichtbar für Nutzer, ein Commit auf `main`.
 | 0.2 | GUI-Tests ohne Desktop | `tests/gui/run.sh` nimmt ohne `WAYLAND_DISPLAY` Xvfb (`QT_QPA_PLATFORM=xcb`); `run_all.sh` sammelt `FAIL`-Zeilen |
 | 0.3 | CI | `release.yml`: Unit-Tests (ctest), C-Checks, H-Tests und eine GUI-Auswahl vor dem AppImage. Rot = kein Release |
 | 0.4 | Gepinnter Container | `Dockerfile` auf festes Datum aus dem Arch Linux Archive; Aktualisieren = Datum ändern, Tests laufen lassen |
-| 0.5 | Grundlinie | alle vorhandenen GUI-Tests laufen lassen, Ergebnis festhalten; rote Tests vor 10.1 reparieren oder begründen |
+| 0.5 | Grundlinie | alle vorhandenen GUI-Tests laufen lassen, Ergebnis festhalten; rote Tests vor 10.1 reparieren oder begründen. Ergebnis: Absturz bei Skizzen-Offset (ungeprüfte Geometrie) behoben, Toolbar bleibt bei eingeklappter Seitenleiste mittig, Xvfb-Displays kollidierten, vier Tests waren veraltet, Bildrate und Zwei-GPU-Test gelten nur auf passender Hardware |
 
 Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Volumen). Der Läufer selbst ist der Test für 0.1–0.3.
 
@@ -293,12 +293,12 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 - `Clearance`: Spiel je Flanke (0 = Norm; Preset „3D-Druck“ 0,2 mm), wird in 10.5 wiederverwendet.
 - Tests H: Außen- und Innengewinde M8 ineinander: mit Spiel keine Überschneidung (Common-Volumen 0), ohne Spiel und mit Übermaß Überschneidung > 0; Profiltiefe 0,6134·P ± 1 %; gültiges Solid für M3 bis M24; zu kurze Fläche gibt Fehler mit Lösung.
 
-**L4 Freie Bezüge für Spiegeln, Muster, Drehen**
+**L4 Freie Bezüge für Spiegeln, Muster, Drehen** · erledigt (2026-11-10)
 - Neues `Reference` (LinkSub) bei Mirror, Pattern (Richtung 1/2, Achse), Move (Drehachse): Ursprungsebene/-achse, Konstruktionsebene/-achse, ebene Fläche, gerade Kante, Zylinderfläche (Achse). Ist es leer, gilt das alte Enum (alte Dateien laden unverändert).
 - Muster entlang Pfad (Kante oder Skizze) als dritter Typ.
 - Tests H: Spiegeln an schräger Konstruktionsebene (Schwerpunkt gespiegelt), an Körperfläche; Muster entlang Kante unter 30°; kreisförmig um Zylinderachse; entlang Bogen; alte Datei mit Enum lädt gleich.
 
-**L5 Rundung und Fase**
+**L5 Rundung und Fase** · erledigt (2026-11-10); die Tangentenkette macht OCCT selbst, ein Schalter entfällt
 - Tangentenkette: eine Kante wählt alle tangential anschließenden (Schalter, Standard an, wie in Fusion).
 - Rundung variabel: Start- und Endradius je Kante.
 - Fase: „Zwei Abstände“ und „Abstand und Winkel“, Seite tauschen.
@@ -311,17 +311,17 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 - Geschlossene Ketten (Viergelenk) brauchen einen echten Solver: **Entscheidung** OndselSolver aus FreeCAD übernehmen (LGPL, wie MyCAD). Erst wenn Ketten ohne Schleifen sauber laufen.
 - Tests H: Kette aus drei Komponenten folgt; Grenze klemmt den Wert; Konflikt meldet Fehler; Viergelenk schließt sich (nach Solver). G: Joint ziehen dreht die Komponente, Animation läuft und stoppt mit Esc.
 
-**L7 Timeline**
+**L7 Timeline** · erledigt (2026-11-10)
 - Ziehen zum Umsortieren, nur wenn die Abhängigkeiten es erlauben (sonst springt der Eintrag zurück, Hinweis nennt die Abhängigkeit).
 - Gruppen: Einträge markieren, „Gruppieren“, auf- und zuklappen, umbenennen.
 - Tests H: gültiges Umsortieren gibt dieselben Volumen; ungültiges wird abgelehnt; Gruppe übersteht Speichern/Laden; Undo stellt die Reihenfolge wieder her. G: Ziehen mit der Maus.
 
-**L8 Austausch**
+**L8 Austausch** · erledigt (2026-11-10); STEP-Farben über ImportGui (nur mit Oberfläche prüfbar)
 - 3MF mit Farben je Body (3MF Materials-Erweiterung) und Objektnamen; Auflösung grob/normal/fein (Abweichung 0,1/0,02/0,005 mm, Winkel) im Export-Dialog und in den Einstellungen.
 - STEP über `ImportGui` (Farben, Komponentenstruktur, Namen).
 - Tests H: 3MF entpacken und XML prüfen (Farben, Anzahl Objekte, Dreiecke steigen mit der Auflösung); STEP exportieren und wieder einlesen: gleiche Anzahl Komponenten, Farben, Volumen.
 
-**L9 Physisches Material und Gewicht**
+**L9 Physisches Material und Gewicht** · erledigt (2026-11-10)
 - Jeder Body hat ein physisches Material (Dichte aus `Mod/Material`); Appearance schlägt das passende vor (Walnuss → Holz, Alu eloxiert → Aluminium, PLA → PLA). Messen zeigt Masse und Schwerpunkt.
 - Tests H: 10-cm-Würfel Aluminium = 2,70 kg ± 1 %; Wechsel der Appearance setzt das Material, eigene Wahl bleibt. G: Messen zeigt Masse.
 

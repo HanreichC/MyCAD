@@ -1079,6 +1079,10 @@ void Gui::Shell::showSettings()
         }
     });
     addRow(generalCard, T("Projects folder"), folder);
+    // Wie fein gekrümmte Flächen beim Export als STL/3MF in Dreiecke zerlegt werden (DesignExport.QUALITY)
+    addRow(generalCard, T("Export resolution"),
+           segmented({T("Coarse"), T("Normal"), T("Fine")}, int(myParams()->GetInt("ExportQuality", 1)),
+                     [](int i) { myParams()->SetInt("ExportQuality", i); }));
     auto version = new QLabel(Gui::Shell::version());
     version->setTextInteractionFlags(Qt::TextSelectableByMouse);  // zum Kopieren in Fehlerberichte
     addRow(generalCard, T("Version"), version);

@@ -49,10 +49,33 @@ DesignExport void attachToBodies(Feature* feature, const std::vector<Body*>& bod
 DesignExport std::vector<std::string> detachFromBodies(Feature* feature);
 /// Skizze oder Feature aus der Timeline löschen und die Kette dahinter neu verbinden
 DesignExport void removeFromTimeline(App::DocumentObject* obj);
+/// Eintrag an Position to schieben. Geht nicht, wenn er dann vor etwas stünde, das er braucht (Skizze, Bezug), oder
+/// hinter etwas, das ihn braucht; error nennt es. Features auf demselben Body werden dabei neu verkettet.
+DesignExport bool moveInTimeline(App::DocumentObject* obj, int to, std::string& error);
+/// Aufeinanderfolgende Einträge zu einer Gruppe (name leer = Gruppe auflösen); false, wenn sie nicht aneinander liegen
+DesignExport bool setTimelineGroup(const std::vector<App::DocumentObject*>& objs, const std::string& name);
+DesignExport std::string timelineGroup(const App::DocumentObject* obj);
 /// New Body: neuer Body im Ordner "Bodies" von component (ohne: Komponente des Features), Ergebnis von feature
 DesignExport Body* newBody(Feature* feature, App::Part* component = nullptr);
 /// Neue, nicht angehängte Skizze mit Profiles-Begleiter in component, am Ende der Timeline (ohne Transaktion)
 DesignExport App::DocumentObject* newSketch(App::Part* component);
+///@}
+
+/// @name Physisches Material (Part::Feature::ShapeMaterial, Karten aus Mod/Material)
+///@{
+struct PhysicalMaterial
+{
+    const char* name;  ///< englisch, für die Auswahl
+    const char* uuid;  ///< Werkstoffkarte in Mod/Material/Resources/Materials/Standard
+};
+DesignExport const std::vector<PhysicalMaterial>& physicalMaterials();
+/// Werkstoff, der zu einer Appearance passt (Name und Gruppe wie im Appearance-Panel); leer bei Lack, Farbe, Gummi …
+DesignExport std::string physicalMaterialFor(const std::string& appearance, const std::string& group);
+/// Werkstoff setzen; chosen = vom Nutzer gewählt (eine spätere Appearance ändert ihn dann nicht mehr)
+DesignExport bool setPhysicalMaterial(Part::Feature* body, const std::string& uuid, bool chosen);
+DesignExport bool physicalMaterialChosen(const App::DocumentObject* body);
+/// Masse in kg aus Volumen und Dichte des Werkstoffs; 0, wenn der Werkstoff keine Dichte hat
+DesignExport double mass(const Part::Feature* body);
 ///@}
 
 /// Name ("FaceN", "EdgeN", "VertexN") des Elements in shape, das geometrisch element entspricht (Schwerpunkt + Größe)
@@ -224,15 +247,22 @@ protected:
     std::vector<Part::TopoShape> elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type);
 };
 
+/// Rundung; tangential anschließende Kanten rundet OCCT von selbst mit (Kette)
 class DesignExport Fillet: public DressUp
 {
     PROPERTY_HEADER_WITH_OVERRIDE(Design::Fillet);
 
 public:
+    Fillet();
+    App::PropertyBool Variable;      ///< Radius ändert sich linear vom Anfang (Size) zum Ende (RadiusEnd)
+    App::PropertyLength RadiusEnd;
     App::DocumentObjectExecReturn* compute() override
     {
         return run(true);
     }
+
+protected:
+    void onChanged(const App::Property* prop) override;
 };
 
 class DesignExport Chamfer: public DressUp
@@ -240,10 +270,18 @@ class DesignExport Chamfer: public DressUp
     PROPERTY_HEADER_WITH_OVERRIDE(Design::Chamfer);
 
 public:
+    Chamfer();
+    App::PropertyEnumeration Type;  ///< Equal distance, Two distances, Distance and angle
+    App::PropertyLength Distance2;
+    App::PropertyAngle ChamferAngle;
+    App::PropertyBool FlipSide;     ///< Abstand und Winkel auf der anderen Fläche messen
     App::DocumentObjectExecReturn* compute() override
     {
         return run(false);
     }
+
+protected:
+    void onChanged(const App::Property* prop) override;
 };
 
 /// Körper aushöhlen: Edges = zu öffnende Flächen, Size = Wandstärke
@@ -281,6 +319,7 @@ public:
     App::PropertyEnumeration RotationAxis;
     App::PropertyAngle Angle;
     App::PropertyPlacement Alignment;  ///< Align: vor Drehung und Verschiebung angewandt
+    App::PropertyLinkSub AxisReference;  ///< Drehachse frei (Achse, Kante, Zylinder); leer = RotationAxis durch die Mitte
     App::DocumentObjectExecReturn* compute() override;
 };
 
@@ -294,7 +333,11 @@ public:
     App::PropertyLinkListHidden SourceBodies;
     App::PropertyLinkList SourceFeatures;
     App::PropertyEnumeration Plane;
+    App::PropertyLinkSub PlaneReference;  ///< Spiegelebene frei (Ebene, ebene Fläche); leer = Plane
     App::DocumentObjectExecReturn* compute() override;
+
+protected:
+    void onChanged(const App::Property* prop) override;
 };
 
 /// Ein Feature (Extrude, Revolve, Hole) rechteckig oder kreisförmig wiederholen
@@ -316,10 +359,21 @@ public:
     App::PropertyLength Spacing2;
     App::PropertyEnumeration Axis;
     App::PropertyAngle Angle;
+    App::PropertyLinkSub Direction1Reference;  ///< Richtungen frei (Kante, Achse, Ebene/Fläche = Normale)
+    App::PropertyLinkSub Direction2Reference;
+    App::PropertyLinkSub AxisReference;        ///< Achse des Kreismusters frei (Achse, Kante, Zylinder)
+    App::PropertyLinkSub Path;                 ///< Typ "Path": Kanten, entlang derer wiederholt wird
+    App::PropertyBool FollowPath;              ///< Kopien drehen sich mit der Pfadrichtung
     App::DocumentObjectExecReturn* compute() override;
 
+protected:
+    void onChanged(const App::Property* prop) override;
+    void onDocumentRestored() override;
+
 private:
-    std::vector<Base::Matrix4D> transforms() const;
+    /// Lagen der Kopien, global; leer mit error, wenn ein Bezug nicht passt
+    std::vector<Base::Matrix4D> transforms(std::string& error) const;
+    void updateVisibility();
 };
 
 /// Bohrungen an allen Punkten einer Skizze (wie "Hole from sketch" in Fusion)

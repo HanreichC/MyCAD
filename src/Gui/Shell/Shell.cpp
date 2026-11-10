@@ -7,6 +7,7 @@
 #include "Theme.h"
 
 #include <App/Application.h>
+#include <Base/Interpreter.h>
 #include <Gui/Action.h>
 #include <Gui/Application.h>
 #include <Gui/BitmapFactory.h>
@@ -99,6 +100,7 @@
 #include <QSvgRenderer>
 #include <QtMath>
 #include <tuple>
+#include <QInputDialog>
 #include <QPointer>
 #include <QStatusBar>
 #include <QRegularExpression>
@@ -1166,6 +1168,8 @@ class TimelineButton: public QToolButton
 {
 public:
     std::function<void()> onDoubleClick;
+    /// Gezogen und losgelassen: Stelle in Koordinaten des Elternwidgets (der Timeline-Leiste)
+    std::function<void(QPoint)> onDrop;
 
 protected:
     void mouseDoubleClickEvent(QMouseEvent* event) override
@@ -1175,6 +1179,46 @@ protected:
             QTimer::singleShot(0, onDoubleClick);  // nicht mitten im Maus-Event den Edit-Modus starten
         }
     }
+    // Ziehen ohne QDrag: in den Glas-Panels (Proxy-Widgets in der 3D-Szene) kommt Drag & Drop nicht sicher an,
+    // gedrückt gehaltene Maus-Ereignisse schon
+    void mousePressEvent(QMouseEvent* event) override
+    {
+        pressPos = event->position().toPoint();
+        dragging = false;
+        QToolButton::mousePressEvent(event);
+    }
+    void mouseMoveEvent(QMouseEvent* event) override
+    {
+        if ((event->buttons() & Qt::LeftButton) && onDrop
+            && (event->position().toPoint() - pressPos).manhattanLength() >= QApplication::startDragDistance()) {
+            if (!dragging) {
+                dragging = true;
+                setDown(false);
+                setCursor(Qt::ClosedHandCursor);
+            }
+            event->accept();
+            return;
+        }
+        QToolButton::mouseMoveEvent(event);
+    }
+    void mouseReleaseEvent(QMouseEvent* event) override
+    {
+        if (!dragging) {
+            QToolButton::mouseReleaseEvent(event);
+            return;
+        }
+        dragging = false;
+        unsetCursor();
+        setDown(false);
+        event->accept();
+        const QPoint at = mapTo(parentWidget(), event->position().toPoint());
+        auto drop = onDrop;
+        QTimer::singleShot(0, [drop, at] { drop(at); });  // die Leiste wird danach neu aufgebaut
+    }
+
+private:
+    QPoint pressPos;
+    bool dragging = false;
 };
 
 void toggleMaximized()
@@ -2940,7 +2984,10 @@ void layout()
         }
     }
     const qreal right = r.width() - m - (cs.width() > 0 ? cs.width() + m : 0);
-    qreal barW = std::max<qreal>(100, std::min(bs.width(), right - left));
+    // Mittig bleiben (MyStyle § 7.3): nur so breit, wie es zentriert zwischen Kapsel und Fensterknöpfe passt;
+    // sonst bricht die Toolbar lieber in zwei Reihen um, als zur Seite zu rutschen
+    const qreal centered = 2 * std::min(r.width() / 2 - left, right - r.width() / 2);
+    qreal barW = std::max<qreal>(100, std::min({qreal(bs.width()), right - left, centered}));
     const qreal barH = barW < bs.width() ? bar->heightForWidth(int(barW)) : bs.height();
     if (barW < bs.width()) {  // Reihen ausgleichen: schmalste Breite mit gleich vielen Reihen
         int lo = 100, hi = int(barW);
@@ -3126,6 +3173,60 @@ protected:
         return false;
     }
 };
+
+/// Python-Ausdruck für ein Objekt (das Design-Modul hängt nicht an der Shell, die Shell spricht es über Python an)
+std::string pyObject(const App::DocumentObject* obj)
+{
+    return "App.getDocument('" + std::string(obj->getDocument()->getName()) + "').getObject('"
+        + obj->getNameInDocument() + "')";
+}
+
+/// Design-Funktion als eine Transaktion ausführen; Fehler (ValueError) als Hinweis zeigen. Liefert das Ergebnis
+/// (repr) oder leer bei Fehler.
+std::string runDesign(App::Document* doc, const char* transaction, const std::string& expr)
+{
+    doc->openTransaction(transaction);
+    try {
+        Base::PyGILStateLocker lock;
+        const std::string result = Base::Interpreter().runStringWithKey(
+            ("import FreeCAD as App, Design\n_r = repr(" + expr + ")").c_str(), "_r");
+        doc->commitTransaction();
+        return result;
+    }
+    catch (const Base::Exception& e) {
+        doc->abortTransaction();
+        QString text = QString::fromUtf8(e.what()).trimmed();
+        static const QRegularExpression needs(QStringLiteral("It (needs|is needed by) (.*)$"));
+        const auto m = needs.match(text);
+        if (m.hasMatch()) {
+            text = (m.captured(1) == QLatin1String("needs") ? T("This step cannot go before %1, which it needs.")
+                                                            : T("This step cannot go after %1, which needs it."))
+                       .arg(m.captured(2));
+        }
+        else {
+            const int at = text.lastIndexOf(QLatin1String("Error: "));  // "ValueError: Text" -> "Text"
+            if (at >= 0) {
+                text = text.mid(at + 7);
+            }
+        }
+        QMessageBox::information(getMainWindow(), T("Timeline"), text);
+        return {};
+    }
+}
+
+/// Gruppe eines Timeline-Eintrags ("" ohne)
+QString timelineGroupOf(const App::DocumentObject* obj)
+{
+    auto prop = freecad_cast<App::PropertyString*>(obj->getPropertyByName("TimelineGroup"));
+    return prop ? QString::fromUtf8(prop->getValue()) : QString();
+}
+
+/// Aufgeklappte Gruppen ("Dokument/Gruppe"); Gruppen sind anfangs zu wie in Fusion
+std::set<std::string>& openTimelineGroups()
+{
+    static std::set<std::string> open;
+    return open;
+}
 
 /// Objekt mit der Timeline-Reihenfolge (Root-Komponente des Design-Moduls), sonst nullptr
 App::DocumentObject* timelineHolder(App::Document* doc)
@@ -3411,6 +3512,35 @@ void syncNotes()
     }
 }
 
+void rebuildTimelineLater();
+
+/// Einträge einer Gruppe in Timeline-Reihenfolge
+std::vector<App::DocumentObject*> groupMembers(App::Document* doc, const QString& group)
+{
+    std::vector<App::DocumentObject*> members;
+    for (auto o : timelineItems(doc)) {
+        if (timelineGroupOf(o) == group) {
+            members.push_back(o);
+        }
+    }
+    return members;
+}
+
+/// Design.setTimelineGroup([…], name) als eine Transaktion; false, wenn die Einträge nicht aneinander liegen
+bool setGroup(App::Document* doc, const std::vector<App::DocumentObject*>& objs, const QString& name)
+{
+    std::string list = "[";
+    for (auto o : objs) {
+        list += pyObject(o) + ",";
+    }
+    list += "]";
+    QString quoted = name;
+    quoted.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('\''), QStringLiteral("\\'"));
+    const std::string ok = runDesign(doc, "Group", "Design.setTimelineGroup(" + list + ", '" + quoted.toStdString() + "')");
+    rebuildTimelineLater();
+    return ok == "True";
+}
+
 /// Timeline-Leiste neu aufbauen (nach jeder Änderung am Dokument, gebündelt)
 void rebuildTimeline()
 {
@@ -3475,8 +3605,62 @@ void rebuildTimeline()
         if (index == marker) {
             markerLine();
         }
+        // Gruppe: vor ihrem ersten Eintrag ein Knopf mit dem Namen; zugeklappt fehlen ihre Einträge
+        const QString group = timelineGroupOf(obj);
+        if (!group.isEmpty()) {
+            const std::string key = std::string(doc->getName()) + "/" + group.toStdString();
+            const bool open = openTimelineGroups().contains(key);
+            if (index == 0 || timelineGroupOf(items[index - 1]) != group) {
+                auto chip = new QToolButton;
+                chip->setObjectName(QStringLiteral("GlassButton"));
+                chip->setText(group);
+                chip->setToolButtonStyle(Qt::ToolButtonTextOnly);
+                chip->setFixedHeight(Token::WindowButton);
+                chip->setCheckable(true);
+                chip->setChecked(open);
+                chip->setToolTip(open ? T("Collapse group") : T("Expand group"));
+                chip->setAccessibleName(T("Group %1").arg(group));
+                chip->setProperty("timelineGroup", group);
+                QObject::connect(chip, &QToolButton::clicked, chip, [key] {
+                    auto& set = openTimelineGroups();
+                    set.contains(key) ? void(set.erase(key)) : void(set.insert(key));
+                    rebuildTimelineLater();
+                });
+                const std::string docName = doc->getName();
+                chip->setContextMenuPolicy(Qt::CustomContextMenu);
+                QObject::connect(chip, &QWidget::customContextMenuRequested, chip, [docName, group] {
+                    QMenu menu;
+                    QAction* rename = menu.addAction(T("Rename…"));
+                    QAction* ungroup = menu.addAction(T("Ungroup"));
+                    QAction* chosen = menu.exec(QCursor::pos());
+                    QTimer::singleShot(0, [docName, group, chosen, rename, ungroup] {
+                        App::Document* d = App::GetApplication().getDocument(docName.c_str());
+                        if (!d || !chosen) {
+                            return;
+                        }
+                        if (chosen == ungroup) {
+                            setGroup(d, groupMembers(d, group), QString());
+                        }
+                        else if (chosen == rename) {
+                            bool ok = false;
+                            const QString name = QInputDialog::getText(getMainWindow(), T("Rename Group"), T("Name"),
+                                                                       QLineEdit::Normal, group, &ok).trimmed();
+                            if (ok && !name.isEmpty()) {
+                                setGroup(d, groupMembers(d, group), name);
+                            }
+                        }
+                    });
+                });
+                lay->addWidget(chip);
+                ++count;
+            }
+            if (!open) {
+                continue;
+            }
+        }
         auto vp = gdoc->getViewProvider(obj);
         auto btn = new TimelineButton;
+        btn->setProperty("timelineIndex", index);
         btn->setObjectName(QStringLiteral("GlassButton"));
         // Timeline-Icon = Icon des Werkzeugs, das den Eintrag erzeugt hat ("Design::Extrude" -> "Design_Extrude")
         QString type = QString::fromLatin1(obj->getTypeId().getName()).replace(QStringLiteral("::"), QStringLiteral("_"));
@@ -3517,11 +3701,22 @@ void rebuildTimeline()
             if (auto prop = freecad_cast<App::PropertyBool*>(o->getPropertyByName("Suppressed"))) {
                 suppress = menu.addAction(prop->getValue() ? T("Unsuppress") : T("Suppress"));
             }
+            // Gruppieren: mehrere mit Strg+Klick gewählte Einträge; auflösen: Eintrag in einer Gruppe
+            std::vector<App::DocumentObjectT> picked;
+            const auto all = timelineItems(o->getDocument());
+            for (const auto& sel : Selection().getSelection(o->getDocument()->getName())) {
+                if (std::ranges::find(all, sel.pObject) != all.end()) {
+                    picked.emplace_back(sel.pObject);
+                }
+            }
+            const bool pickedThis = std::ranges::any_of(picked, [o](const auto& t) { return t.getObject() == o; });
+            QAction* group = picked.size() >= 2 && pickedThis ? menu.addAction(T("Group Selected Steps")) : nullptr;
+            QAction* ungroup = timelineGroupOf(o).isEmpty() ? nullptr : menu.addAction(T("Ungroup"));
             menu.addSeparator();
             QAction* remove = menu.addAction(T("Delete"));
             QAction* chosen = menu.exec(QCursor::pos());
             // Nach dem Menü ausführen, nicht innerhalb des Maus-Events
-            QTimer::singleShot(0, [ref, chosen, edit, rollback, suppress, remove] {
+            QTimer::singleShot(0, [ref, chosen, edit, rollback, suppress, remove, group, ungroup, picked] {
                 auto o = ref.getObject();
                 if (!o || !chosen) {
                     return;
@@ -3542,6 +3737,33 @@ void rebuildTimeline()
                     doc->recompute();
                     doc->commitTransaction();
                 }
+                else if (chosen == group) {
+                    std::vector<App::DocumentObject*> objs;
+                    for (const auto& t : picked) {
+                        if (auto p = t.getObject()) {
+                            objs.push_back(p);
+                        }
+                    }
+                    std::set<QString> names;
+                    for (auto item : timelineItems(doc)) {
+                        names.insert(timelineGroupOf(item));
+                    }
+                    int n = 1;
+                    while (names.contains(T("Group %1").arg(n))) {
+                        ++n;
+                    }
+                    const QString name = T("Group %1").arg(n);
+                    if (setGroup(doc, objs, name)) {
+                        openTimelineGroups().insert(std::string(doc->getName()) + "/" + name.toStdString());
+                    }
+                    else {
+                        QMessageBox::information(getMainWindow(), T("Timeline"),
+                                                 T("Only steps that follow each other can be grouped."));
+                    }
+                }
+                else if (chosen == ungroup) {
+                    setGroup(doc, groupMembers(doc, timelineGroupOf(o)), QString());
+                }
                 else if (chosen == remove) {
                     Selection().clearSelection();
                     Selection().addSelection(doc->getName(), o->getNameInDocument());
@@ -3552,10 +3774,31 @@ void rebuildTimeline()
         });
         QObject::connect(btn, &QToolButton::clicked, btn, [ref] {
             if (auto o = ref.getObject()) {
-                Selection().clearSelection();
+                if (!(QApplication::keyboardModifiers() & Qt::ControlModifier)) {  // Strg+Klick wählt dazu
+                    Selection().clearSelection();
+                }
                 Selection().addSelection(o->getDocument()->getName(), o->getNameInDocument());
             }
         });
+        // Ziehen und auf einem anderen Eintrag loslassen: an dessen Stelle schieben
+        const QPointer<QWidget> bar(box);
+        btn->onDrop = [ref, bar](QPoint at) {
+            auto o = ref.getObject();
+            if (!o || !bar || Control().activeDialog()) {
+                return;
+            }
+            int target = -1;
+            for (auto b : bar->findChildren<QToolButton*>()) {  // nur Einträge tragen timelineIndex
+                if (b->property("timelineIndex").isValid() && at.x() >= b->geometry().left()
+                    && at.x() <= b->geometry().right()) {
+                    target = b->property("timelineIndex").toInt();
+                }
+            }
+            if (target >= 0) {
+                runDesign(o->getDocument(), "Move in Timeline",
+                          "Design.moveInTimeline(" + pyObject(o) + ", " + std::to_string(target) + ")");
+            }
+        };
         btn->onDoubleClick = [ref] {
             auto o = ref.getObject();
             if (o && !Control().activeDialog()) {

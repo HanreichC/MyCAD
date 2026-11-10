@@ -20,7 +20,7 @@ if [ -e /run/.containerenv ] || [ -e /.dockerenv ]; then
             "$ROOT/build/bin/FreeCAD" "$SCRIPT" > "$OUT.log" 2>&1 || true
     else
         env "${ENV[@]}" QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE=1 timeout "${MYCAD_TIMEOUT:-180}" \
-            xvfb-run -a -s "-screen 0 1600x1000x24" "$ROOT/build/bin/FreeCAD" "$SCRIPT" > "$OUT.log" 2>&1 || true
+            xvfb-run -n $((100 + $$)) -s "-screen 0 1600x1000x24" "$ROOT/build/bin/FreeCAD" "$SCRIPT" > "$OUT.log" 2>&1 || true
     fi
 else
     PASS=(); for e in "${ENV[@]}"; do PASS+=(-e "$e"); done

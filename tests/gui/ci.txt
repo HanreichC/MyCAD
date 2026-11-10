@@ -1,0 +1,14 @@
+# GUI-Tests, die die CI vor jedem Release laufen lässt (tests/run_all.sh, GUI=ci). Alle: GUI=all.
+# Auswahl: die neuen Funktionen und je ein Test für Skizze, Körper, Timeline, Darstellung und Startseite.
+test_extrude_options.py
+test_hole_standard.py
+test_timeline_ui.py
+test_physical_ui.py
+test_rollback.py
+test_ring.py
+test_features.py
+test_errors.py
+test_viewcube.py
+test_appearance.py
+test_start.py
+test_german.py

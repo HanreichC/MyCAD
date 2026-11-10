@@ -3,9 +3,13 @@
 from harness import *
 
 
-def cube_click(x, y):  # Koordinaten relativ zum ViewCube (120x150, rechts unter der Kopfleiste: 12 + Höhe + 12)
-    close = [b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Close"][0]
-    v = view(); p = QtCore.QPoint(int(v.width() - 132 + x), int(12 + close.parentWidget().parentWidget().height() + 12 + y))
+def cube():
+    """der ViewCube: ein Element der 3D-Szene mit fester Größe 120 x 150"""
+    return [i for i in view().scene().items() if i.boundingRect().width() == 120 and i.boundingRect().height() == 150][0]
+
+
+def cube_click(x, y):  # Koordinaten relativ zum ViewCube
+    v = view(); p = v.mapFromScene(cube().mapToScene(QtCore.QPointF(x, y)))
     QtTest.QTest.mouseMove(v.viewport(), p)
     QtTest.QTest.mouseClick(v.viewport(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, p)
 
@@ -20,8 +24,8 @@ run([
     ("front", lambda: Gui.ActiveDocument.ActiveView.viewFront()),
     ("dir", lambda: L("front view dir=" + direction())),
     ("home", lambda: cube_click(19, 131)), ("wait", lambda: None),
-    ("dir", lambda: L("after home dir=" + direction() + " (iso erwartet ~(-0.58, 0.58, -0.58))")),
+    ("dir", lambda: check("home turns to the iso view", direction() == "(-0.58, 0.58, -0.58)", direction())),
     ("top face", lambda: cube_click(60, 40)), ("wait", lambda: None),
-    ("dir", lambda: L("after top dir=" + direction() + " (oben erwartet (0, 0, -1))")),
+    ("dir", lambda: check("top face looks down", direction() in ("(0.00, 0.00, -1.00)", "(-0.00, -0.00, -1.00)", "(0.00, -0.00, -1.00)", "(-0.00, 0.00, -1.00)"), direction())),
     ("home again", lambda: cube_click(19, 131)), ("wait", lambda: None), ("shot", lambda: shot("cube")),
 ])

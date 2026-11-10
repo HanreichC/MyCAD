@@ -38,6 +38,7 @@
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopoDS_Vertex.hxx>
 #include <gp_Pln.hxx>
+#include <QComboBox>
 #include <QLabel>
 #include <cstring>
 #include <App/ObjectIdentifier.h>
@@ -1793,12 +1794,30 @@ void exportBodies(App::Document* doc)
         objs += "App.getDocument('" + std::string(doc->getName()) + "').getObject('" + o->getNameInDocument() + "'),";
     }
     objs += "]";
-    const std::string module = (dxf || suffix == QLatin1String("step") || suffix == QLatin1String("stp")) ? "Import" : "Mesh";
-    const std::string call = dxf ? ".writeDXFObject(" : ".export(";
+    // 3MF: eigener Writer mit Farbe und Name je Body; STL in derselben Auflösung; STEP mit Farben und Struktur
+    static const char* qualities[] = {"coarse", "normal", "fine"};
+    static const double tolerances[] = {0.1, 0.02, 0.005};  // wie DesignExport.QUALITY
+    const long quality = std::clamp<long>(App::GetApplication()
+                                              .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")
+                                              ->GetInt("ExportQuality", 1),
+                                          0, 2);
+    const std::string target = "'" + path.toStdString() + "'";
+    std::string code;
+    if (dxf) {
+        code = "import Import\nImport.writeDXFObject(" + objs + ", " + target + ")";
+    }
+    else if (suffix == QLatin1String("step") || suffix == QLatin1String("stp")) {
+        code = "try:\n    import ImportGui as Step\nexcept ImportError:\n    import Import as Step\nStep.export(" + objs + ", "
+            + target + ")";
+    }
+    else if (suffix == QLatin1String("3mf")) {
+        code = "import DesignExport\nDesignExport.write_3mf(" + target + ", " + objs + ", '" + qualities[quality] + "')";
+    }
+    else {
+        code = "import Mesh\nMesh.export(" + objs + ", " + target + ", tolerance=" + std::to_string(tolerances[quality]) + ")";
+    }
     try {
-        Base::Interpreter().runString(
-            ("import FreeCAD as App, " + module + "\n" + module + call + objs + ", '" + path.toStdString() + "')").c_str()
-        );
+        Base::Interpreter().runString(("import FreeCAD as App\n" + code).c_str());
         Gui::getMainWindow()->showMessage(
             (dxf ? T("Exported %1 sketches to %2") : T("Exported %1 bodies to %2")).arg(objects.size()).arg(file)
         );
@@ -2120,10 +2139,15 @@ private:
     void update()
     {
         std::vector<TopoDS_Shape> shapes;
-        for (auto& sel : Gui::Selection().getSelectionEx()) {
+        const Part::Feature* whole = nullptr;  // genau ein ganzer Körper gewählt: Masse anzeigen
+        const auto selection = Gui::Selection().getSelectionEx();
+        for (auto& sel : selection) {
             std::vector<std::string> names = sel.getSubNames();
             if (names.empty()) {
                 names.emplace_back();
+                if (selection.size() == 1) {
+                    whole = freecad_cast<const Part::Feature*>(sel.getObject());
+                }
             }
             for (const auto& name : names) {
                 const Part::TopoShape s = Part::Feature::getTopoShape(
@@ -2174,6 +2198,13 @@ private:
                 default: {
                     BRepGProp::VolumeProperties(s, p);
                     row(T("Volume"), QStringLiteral("%1 mm³").arg(p.Mass(), 0, 'f', 2));
+                    if (const double kg = whole ? Design::mass(whole) : 0; kg > 0) {
+                        row(T("Mass"), kg < 1 ? QStringLiteral("%1 g").arg(kg * 1000, 0, 'f', 1)
+                                              : QStringLiteral("%1 kg").arg(kg, 0, 'f', 3));
+                        row(T("Material"), T(whole->ShapeMaterial.getValue().getName().toStdString().c_str()));
+                    }
+                    const gp_Pnt c = p.CentreOfMass();
+                    row(T("Center of mass"), QStringLiteral("%1, %2, %3").arg(length(c.X()), length(c.Y()), length(c.Z())));
                     GProp_GProps area;
                     BRepGProp::SurfaceProperties(s, area);
                     row(T("Area"), QStringLiteral("%1 mm²").arg(area.Mass(), 0, 'f', 2));
@@ -2321,6 +2352,47 @@ public:
             onFaces = true;
             lay->addWidget(Gui::Shell::segmented({T("Faces"), T("Body")}, 0, [this](int i) { onFaces = i == 0; }));
         }
+        // Physisches Material (Dichte für Masse): folgt der Appearance, bis man selbst einen Werkstoff wählt
+        if (!this->bodies.empty()) {
+            auto row = new QHBoxLayout;
+            auto label = new QLabel(T("Physical material"));
+            physical = new QComboBox;
+            physical->setAccessibleName(T("Physical material"));
+            physical->addItem(T("From appearance"));
+            for (const auto& m : Design::physicalMaterials()) {
+                physical->addItem(T(m.name), QString::fromLatin1(m.uuid));
+            }
+            auto first = freecad_cast<Part::Feature*>(this->bodies.front());
+            if (first && Design::physicalMaterialChosen(first)) {
+                physical->setCurrentIndex(std::max(0, physical->findData(first->ShapeMaterial.getValue().getUUID())));
+            }
+            QObject::connect(physical, &QComboBox::currentIndexChanged, physical, [this](int i) {
+                for (auto body : this->bodies) {
+                    auto part = freecad_cast<Part::Feature*>(body);
+                    if (!part) {
+                        continue;
+                    }
+                    if (i > 0) {
+                        Design::setPhysicalMaterial(part, physical->itemData(i).toString().toStdString(), true);
+                    }
+                    else {  // zurück zur Appearance: Werkstoff aus der aktuellen Appearance ableiten
+                        auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(
+                            Gui::Application::Instance->getViewProvider(body));
+                        const int index = vp ? Gui::Shell::bodyMaterialIndex(vp->ShapeAppearance[0]) : -1;
+                        const std::string uuid = index >= 0
+                            ? Design::physicalMaterialFor(list[index].name, list[index].category)
+                            : std::string();
+                        if (!uuid.empty() || Design::physicalMaterialChosen(part)) {
+                            Design::setPhysicalMaterial(part, uuid.empty() ? Design::physicalMaterials().front().uuid : uuid,
+                                                        false);
+                        }
+                    }
+                }
+            });
+            row->addWidget(label);
+            row->addWidget(physical, 1);
+            lay->addLayout(row);
+        }
         search = new QLineEdit;
         search->setPlaceholderText(T("Search materials"));
         search->setClearButtonEnabled(true);
@@ -2385,7 +2457,17 @@ private:
     {
         for (auto body : bodies) {
             auto f = faces.find(body);
-            applyMaterial(body, onFaces && f != faces.end() ? f->second : std::vector<int>(), material);
+            const bool wholeBody = !(onFaces && f != faces.end());
+            applyMaterial(body, wholeBody ? std::vector<int>() : f->second, material);
+            // Walnuss -> Holz, PLA -> PLA …: Masse stimmt ohne eigenen Schritt; eine eigene Wahl bleibt stehen
+            auto part = freecad_cast<Part::Feature*>(body);
+            const int index = Gui::Shell::bodyMaterialIndex(material);
+            if (wholeBody && part && index >= 0 && !Design::physicalMaterialChosen(part)) {
+                const std::string uuid = Design::physicalMaterialFor(list[index].name, list[index].category);
+                if (!uuid.empty()) {
+                    Design::setPhysicalMaterial(part, uuid, false);
+                }
+            }
         }
     }
 
@@ -2674,6 +2756,7 @@ private:
     std::vector<Gui::Shell::BodyMaterialEntry> list;
     bool onFaces = false;
     QLineEdit* search;
+    QComboBox* physical = nullptr;
     QWidget* content;
     QPointer<QWidget> viewport;
     DropFilter* dropFilter = nullptr;

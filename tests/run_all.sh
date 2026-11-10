@@ -45,7 +45,9 @@ if [ "${GUI:-ci}" != none ]; then
     if [ "${GUI:-ci}" = all ]; then list=(tests/gui/test_*.py); else mapfile -t list < <(grep -v '^#' tests/gui/ci.txt | sed '/^$/d; s|^|tests/gui/|'); fi
     export OUTDIR
     printf '%s\n' "${list[@]}" | xargs -P "${JOBS:-6}" -I{} sh -c \
-        'n=$(basename {} .py); MYCAD_HOME="$OUTDIR/home-$n" tests/gui/run.sh {} "$OUTDIR/$n" > /dev/null 2>&1; true'
+        'n=$(basename {} .py); export MYCAD_HOME="$OUTDIR/home-$n"
+         grep -q "^# runs: 2" {} && tests/gui/run.sh {} "$OUTDIR/$n-first" > /dev/null 2>&1  # z. B. erst Sprache umstellen
+         tests/gui/run.sh {} "$OUTDIR/$n" > /dev/null 2>&1; true'
     for t in "${list[@]}"; do
         n="$(basename "$t" .py)"
         if [ ! -s "$OUTDIR/$n.txt" ] || grep -q '^FAIL\|exc ' "$OUTDIR/$n.txt" || ! grep -q '^step done' "$OUTDIR/$n.txt"; then

@@ -3,9 +3,15 @@
 from harness import *
 
 
-def play(icon_index):  # 0 Anfang, 1 zurück, 2 vor, 3 Ende (die vier Knöpfe links in der Timeline)
-    btns = sorted([b for b in timeline() if not b.toolTip()], key=lambda b: b.mapToGlobal(QtCore.QPoint(0, 0)).x())
-    click(btns[icon_index])
+PLAY = ["Go to Start", "Step Back", "Step Forward", "Go to End"]  # die vier Knöpfe links in der Timeline
+
+
+def play(icon_index):  # 0 Anfang, 1 zurück, 2 vor, 3 Ende
+    click([b for b in timeline() if b.accessibleName() == PLAY[icon_index]][0])
+
+
+def marker():
+    return [x for x in doc().Objects if x.TypeId == "App::Part"][0].RollbackMarker
 
 
 def order():
@@ -18,12 +24,15 @@ run([
     ("Fillet", lambda: click(button("Design_Fillet"))), ("r2", lambda: type_into(0, "2 mm")), ("OK fillet", ok),
     ("state", lambda: L("filleted %s" % volumes())),
     ("back", lambda: play(1)),
-    ("state", lambda: L("rolled back %s marker=%d" % (volumes(), [x for x in doc().Objects if x.TypeId == "App::Part"][0].RollbackMarker))),
+    ("state", lambda: check("step back rolls the fillet back", marker() >= 0 and abs(body("Box").Shape.Volume - 24000) < 1,
+                            "%s marker=%d" % (volumes(), marker()))),
     ("pick top 2", lambda: Gui.Selection.addSelection(body("Box"), top_face(body("Box")))),
     ("Press Pull", lambda: click(button("Design_PressPull"))), ("+5", lambda: type_into(0, "5 mm")), ("OK pp", ok),
     ("state", lambda: L("inserted %s order=%s" % (volumes(), order()))),
     ("end", lambda: play(3)),
-    ("state", lambda: L("end %s zmax=%s order=%s errors=%s" % (volumes(), body("Box").Shape.BoundBox.ZMax, order(), errors()))),
+    ("state", lambda: check("forward to the end keeps the inserted press pull", marker() == -1 and not errors()
+                            and abs(body("Box").Shape.BoundBox.ZMax - 15) < 1e-6,
+                            "%s zmax=%s order=%s errors=%s" % (volumes(), body("Box").Shape.BoundBox.ZMax, order(), errors()))),
     ("undo", lambda: Gui.runCommand("Std_Undo")),
     ("state", lambda: L("after undo %s" % volumes())),
 ])

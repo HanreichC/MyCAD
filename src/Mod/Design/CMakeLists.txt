@@ -3,7 +3,7 @@
 disable_occt8_deprecation_warnings()
 
 add_subdirectory(App)
-set(Design_Scripts Init.py)
+set(Design_Scripts Init.py DesignExport.py)
 if(BUILD_GUI)
     list(APPEND Design_Scripts InitGui.py)
     add_subdirectory(Gui)
