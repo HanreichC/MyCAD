@@ -65,6 +65,8 @@
 #include <cerrno>
 #include <fcntl.h>
 #include <libinput.h>
+#include <QElapsedTimer> // TEMP-LOG
+#include <cstdio> // TEMP-LOG
 #include <libudev.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -258,6 +260,15 @@ protected:
     {
         if ((event->type() != QEvent::Wheel && event->type() != QEvent::NativeGesture) || !isViewport(obj)) {
             return false;
+        }
+        { // TEMP-LOG
+            static FILE* log = std::fopen("/workspace/build/trackpad.log", "w");
+            static QElapsedTimer clock; if (!clock.isValid()) clock.start();
+            if (event->type() == QEvent::Wheel) { auto w = static_cast<QWheelEvent*>(event);
+                std::fprintf(log, "%6lld W px=%d,%d ang=%d,%d ph=%d inv=%d\n", clock.elapsed(), w->pixelDelta().x(), w->pixelDelta().y(), w->angleDelta().x(), w->angleDelta().y(), int(w->phase()), int(w->inverted())); }
+            else { auto g = static_cast<QNativeGestureEvent*>(event);
+                std::fprintf(log, "%6lld G t=%d v=%.4f d=%.2f,%.2f f=%d\n", clock.elapsed(), int(g->gestureType()), g->value(), g->delta().x(), g->delta().y(), g->fingerCount()); }
+            std::fflush(log);
         }
         const bool mouseInvert = viewParams()->GetBool("InvertZoom", true);
         const bool padInvert = myParams()->GetBool("InvertTrackpadZoom", mouseInvert);
