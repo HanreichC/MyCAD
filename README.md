@@ -11,6 +11,8 @@ The workflow of Fusion 360 with the look of Liquid Glass. Built for Linux.
 
 ![MyCAD workspace](docs/images/workspace.png)
 
+**[Wiki](https://github.com/HanreichC/MyCAD/wiki)** · [Everything MyCAD can do](https://github.com/HanreichC/MyCAD/wiki/Funktionsuebersicht) · [Tutorial](https://github.com/HanreichC/MyCAD/wiki/Tutorial-Erstes-Teil) · [Download](https://github.com/HanreichC/MyCAD/releases/latest)
+
 </div>
 
 <br>
@@ -41,21 +43,43 @@ Fillet, trim, extend, split, offset, mirror, pattern, move and scale are all one
 
 Every closed region in a sketch is its own profile. Draw two circles inside each other, click the ring between them, and **Extrude** turns it into a tube, the same way it works in Fusion.
 
-**Create:** Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil · Hole · Thread · Pattern · Mirror
+**Create:** Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil · Hole · Screw Here · Thread · Pattern · Mirror
 
-**Modify:** Press Pull · Replace Face · Split Face · Fillet · Chamfer · Shell · Draft · Combine · Split Body · Move · Align · Scale
+**Modify:** Press Pull · Fit · Remove Face · Replace Face · Split Face · Fillet · Chamfer · Shell · Draft · Combine · Split Body · Move · Align · Scale
 
 **Construct:** Offset Plane · Plane at Angle · Midplane · Plane · Axis · Point
 
-**Inspect:** Measure · Section Analysis
+**Inspect:** Measure · Section Analysis · Print View
 
-Every step goes into the **Timeline**. Go back, change a dimension, and the rest of the design follows. With **Change Parameters** you can drive the whole model from named values and formulas.
+Extrude one side, symmetric, two sides, up to an object or through all, with a taper and as a thin wall. Holes follow ISO metric, metric fine, UNC and UNF, as clearance or tapped holes with the counterbore or countersink of the right screw. Threads are real and printable. Fillets can vary along an edge, patterns can follow a path, and mirror, pattern and move work with any plane, face, edge or axis.
+
+Every step goes into the **Timeline**. Go back, change a dimension, and the rest of the design follows. Drag steps into a new order, and group them into chips you can fold away. With **Change Parameters** you can drive the whole model from named values and formulas.
+
+<br>
+
+## Tap a face. Change a number.
+
+Click any face with no tool active and the dimensions that make it appear right next to it: the length of an extrusion, the sketch dimension behind a side face, the diameter of a hole, the radius of a fillet. Type a new value, press Enter, done. If the dimension is a parameter, the parameter changes, and so does the note it lives in.
+
+<br>
+
+## Errors that explain themselves.
+
+A fillet too big for its edge? The step turns red in the timeline, the panel says what went wrong in plain words, and it offers the largest radius that still works. One click sets it. The same goes for shells, threads, revolve axes and screws that are too short. When the model changes under a step and an edge might no longer be the one you meant, MyCAD picks the closest match, marks the step, and lets you check it.
+
+<br>
+
+## Find anything. Ctrl+K.
+
+Press **Ctrl+K** and type. The search finds commands, bodies and sketches, forgives typos, and understands English, German and the words other CAD programs use: *pocket*, *pad*, *push pull*, *Gewinde*, *Passung*, *slicer*. The ones you used last are at the top.
 
 <br>
 
 ## Parts that fit together.
 
 Create **components** and connect them with **joints**. Each component has its own bodies, sketches and origin, and all of it lives in a single design file.
+
+Joints come as **Rigid**, **Revolute**, **Slider**, **Cylindrical**, **Pin-Slot**, **Planar** and **Ball**, with limits for angle and travel. **Animate** swings a joint between its limits and shows when parts collide. Chains follow along, and **closed loops** like a four-bar linkage are solved together: the first joint drives, the others follow. **Measure** gives you the mass, material and center of mass of a body, with the material taken from its appearance.
 
 <br>
 
@@ -70,6 +94,8 @@ Create **components** and connect them with **joints**. Each component has its o
 Click **Note** in the toolbar and a yellow note lands on top of your model. Drag it wherever you want it. It sticks to that corner of the window and stays open while you go in and out of sketches.
 
 It can do the math too. End a line with `=` and the answer appears right after it: type `120 / 4 =` and you get `30`. Units work (`10 mm + 1 in =` gives `35.40 mm`), and so do the names from **Change Parameters**.
+
+And it is your parameter list. Write `Wall = 2 mm` and press Enter: that's a parameter now, ready for any dimension field. Formulas show their value (`Width = Wall * 20 → 40.00 mm`). Change the size on the model and the line in the note changes with it. Delete a line that a dimension still uses, and the parameter stays, with a note saying who needs it. Nothing gets lost quietly.
 
 Closed a note? It's still under **Notes** in the browser, double-click to open it again. Notes are saved in the design file, so they're still there next time you open it.
 
@@ -108,6 +134,14 @@ No pen tablet at hand? **Text** writes with the keyboard: click on the sheet and
 Then go 3D. **Move Sheet** lays the paper onto any face of your model, or stands it up along a line you drew, so you can sketch a wall or a rib right where it goes. Orbit around it and the paper fades, so you see your strokes and the model together.
 
 Happy with an idea? **Convert to Sketch** turns your lines, circles, ellipses and other shapes into a real sketch, joined up and ready to dimension and extrude. Your scribbles stay in the design under **Scribbles** in the browser.
+
+<br>
+
+## Write on it. The Red Pen.
+
+Mark up your model the way you'd mark up a drawing. Pick the **Red Pen**, write `R2` next to an edge, `M5` on a face, `+5` on a face you want thicker, or cross out a face to get rid of it. **Apply Corrections** reads what you wrote and turns each line into a card: `R2 → Fillet R2 on 1 edge`. Point at a card to see its target, **Show** to try it on the model, **Apply** to keep it. If two edges are equally close, the card asks which one instead of guessing.
+
+The red pen knows fillets (`R2`), chamfers (`C2`, `2×45°`), press-pull (`+5`, `−5`), tapped holes and threads (`M5`), holes and diameters (`Ø8`), fits (`H7`, `print`), patterns (`3×`), plain dimensions (`12`) and removing a face (`remove`, or a line through it). German works too: `Druck`, `weg`. Every correction becomes a normal step in the timeline.
 
 <br>
 
@@ -155,6 +189,24 @@ The woods, stone, leather, cork, fabric, carbon and brushed metals are real phot
 
 <br>
 
+## Made for makers.
+
+**Print View** shows on the model what your printer will struggle with: overhangs hatched red, faces on the bed dotted green, walls that are too thin cross-hatched yellow. Pick the face that should lie on the bed, then hit **Print**: MyCAD finds **OrcaSlicer**, **Bambu Studio**, **PrusaSlicer** or **UltiMaker Cura**, installed as a program, a **Flatpak** or an AppImage, and opens your design there as a colored 3MF, right side down.
+
+**Fit** makes a hole and its pin fit: with a little play for printing (tight, normal, loose) or exactly to ISO 286 (H7/g6, H7/h6, H7/k6, H7/p6, H8/f7), with the resulting play shown in microns. **Screw Here** joins two parts in one click: a clearance hole with counterbore or countersink in the top part, and a tapped hole, a hole for a heat-set insert or a nut trap in the bottom part, with the screw length picked from the standard. Threads have a 3D print setting that adds the play and warns when the pitch is too fine for a 0.4 mm nozzle.
+
+<br>
+
+## Never lose a thing.
+
+There is no save button to forget. MyCAD saves after every step, as soon as you pause for two seconds, and a new design gets its own folder in your projects folder. Closing never asks. If something crashes, at most the last two seconds are missing.
+
+Every saved state becomes a **version**, kept like Time Machine keeps backups: everything from the last day, then one per hour for a week, then one per day. **Ctrl+S** gives the current state a name. Open any version, **compare** it with today as a ghost over your model (added in green, removed in red, plus the list of changed steps), or **restore** it, which never deletes anything.
+
+Want to try something risky? Make a **variant**. Switch between the main design and its variants right in the browser, compare them, and make a variant the main design when it wins.
+
+<br>
+
 ## Speaks STEP. And STL. And DXF.
 
 **Export** to STL or 3MF for your 3D printer, or to STEP for any other CAD program. Sketches export as DXF, for example for laser cutters or CNC mills. **Import** STEP models, and bring DXF and SVG drawings straight into a sketch.
@@ -167,12 +219,18 @@ The woods, stone, leather, cork, fabric, carbon and brushed metals are real phot
 |---|---|
 | **Platform** | Linux, developed and tested on CachyOS with KDE Plasma (Wayland) |
 | **Interface** | Liquid Glass with a GPU glass shader, light and dark mode, English or German |
-| **Model** | Parametric, with a global timeline, components and joints |
+| **Model** | Parametric, with a global timeline (reorder, groups, roll back), components and joints |
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
-| **Solids** | 16 create, 12 modify and 6 construction tools |
-| **Notes** | Saved in the design, lines ending in `=` are calculated |
+| **Solids** | 17 create, 14 modify and 6 construction tools; standard holes, printable threads, Fit (ISO 286 and 3D print), Screw Here, Remove Face |
+| **Dimensions** | Tap a face to change the dimensions that make it; errors explain themselves and offer a value that works |
+| **Notes** | Saved in the design, lines ending in `=` are calculated, `Name = value` lines are parameters (both ways) |
+| **Red Pen** | Handwritten corrections on the model become features: R, C, ±, M, Ø, H7, 3×, dimensions, remove face |
+| **3D printing** | Print View (overhangs, bed, thin walls), print direction, Print to OrcaSlicer, Bambu Studio, PrusaSlicer and Cura (program, Flatpak, AppImage) |
+| **Saving** | Always saved, versions with Time Machine retention, compare as a ghost, restore, variants |
+| **Assembly** | 7 joint types with limits, animate with collisions, chains, closed loops solved with OndselSolver, mass and center of mass |
+| **Search** | Ctrl+K for commands, bodies and sketches, typo-tolerant, English and German |
 | **Scribbles** | Pen tablet with pressure, 7 shapes, fill, text, select and move with a color and delete bar, sheets in 3D, convert to sketch, handwriting tidy-up, offline handwriting recognition (find, CAD notation, written dimensions), Only the Sheet mode |
-| **Export** | STL · 3MF · STEP · DXF (sketches) |
+| **Export** | STL · 3MF (with colors) · STEP (with colors) · DXF (sketches) |
 | **Import** | STEP · DXF · SVG |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
@@ -196,9 +254,11 @@ The AppImage is built for current Arch-based systems such as CachyOS.
 
 <br>
 
-## Or build it yourself. In two commands.
+## Or build it yourself.
 
 ```sh
+git clone --recursive https://github.com/HanreichC/MyCAD.git   # --recursive fetches the joint solver
+cd MyCAD
 ./install.sh   # builds MyCAD in a Podman container and adds the `mycad` launcher and a menu entry
 mycad          # starts MyCAD
 ```
@@ -221,7 +281,9 @@ tests/gui/run.sh tests/gui/test_ring.py /tmp/ring   # log in /tmp/ring.txt, scre
 
 The scribble math runs without FreeCAD. [`tests/scribble_tidy_check.cpp`](tests/scribble_tidy_check.cpp) checks the handwriting tidy-up, [`tests/scribble_read_check.cpp`](tests/scribble_read_check.cpp) reads synthetic handwriting with the real model, and [`tests/gui/test_handwriting.py`](tests/gui/test_handwriting.py) writes with the mouse and a simulated pen tablet in the running app.
 
-The roadmap is in [`docs/PLAN.md`](docs/PLAN.md).
+All tests at once, inside the container: `GUI=ci tests/run_all.sh` (logic checks without FreeCAD, headless model tests, GUI tests).
+
+The roadmap is in [`docs/PLAN.md`](docs/PLAN.md). The [wiki](https://github.com/HanreichC/MyCAD/wiki) explains every feature and has tutorials; its pages also live in [`docs/wiki/`](docs/wiki).
 
 <br>
 
@@ -232,6 +294,8 @@ MyCAD is built on [FreeCAD](https://www.freecad.org), the free parametric CAD pr
 Like FreeCAD, MyCAD is licensed under the [LGPL-2.1-or-later](LICENSE).
 
 The material scans come from [Poly Haven](https://polyhaven.com) and [ambientCG](https://ambientcg.com), both CC0. [`src/Gui/Shell/textures/SOURCES.md`](src/Gui/Shell/textures/SOURCES.md) lists each one.
+
+Closed joint loops are solved with [OndselSolver](https://github.com/FreeCAD/OndselSolver) (LGPL-2.1), in the version maintained by the FreeCAD project.
 
 Handwriting recognition uses [DE·HTR v2](https://huggingface.co/naeyn/de-htr-web-v2) (Apache-2.0), trained on the ScaDS.AI German handwriting dataset (CC BY 4.0, Universität Leipzig) and fhswf/german_handwriting (AFL-3.0). Details in [`src/Mod/Design/Gui/htr/`](src/Mod/Design/Gui/htr/README.md).
 
