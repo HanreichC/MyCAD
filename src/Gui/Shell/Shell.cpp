@@ -3584,6 +3584,11 @@ const std::map<std::string, std::vector<std::string>>& searchSynonyms()
         {"Design_Thread", {"gewinde", "schraube", "bolt", "screw", "mutter", "nut", "druckgewinde"}},
         {"Design_Fastener", {"schraube hier", "schraube", "verschrauben", "screw", "bolt", "einschmelzmutter", "gewindeeinsatz",
                              "heat-set insert", "mutterfalle", "nut trap", "zylinderkopf", "senkkopf", "fastener"}},
+        {"Design_PrintView", {"druckansicht", "ueberhang", "overhang", "stuetzen", "support", "wandstaerke", "duenne wand",
+                              "druckbar", "printable", "3d-druck pruefen"}},
+        {"Design_PrintDown", {"druckrichtung", "auf das bett", "unterseite", "flach hinlegen", "lay flat", "print direction",
+                              "orientierung", "orientation"}},
+        {"Design_Print", {"drucken", "slicer", "3d-drucker", "orcaslicer", "bambu", "prusaslicer", "cura", "print", "printer"}},
         {"Design_Fit", {"passung", "spiel", "toleranz", "h7", "presspassung", "spielpassung", "clearance", "tolerance",
                         "druckspiel", "press fit"}},
         {"Design_Fillet", {"runden", "abrunden", "rundung", "round", "radius"}},
@@ -3598,7 +3603,7 @@ const std::map<std::string, std::vector<std::string>>& searchSynonyms()
         {"Design_Appearance", {"farbe", "material", "color", "werkstoff", "aussehen"}},
         {"Design_Parameters", {"parameter", "variable", "formel", "formula", "change parameters"}},
         {"Design_CreateSketch", {"skizze", "zeichnen", "draw", "sketch"}},
-        {"Design_Export", {"stl", "3mf", "step", "dxf", "drucken", "print", "speichern als"}},
+        {"Design_Export", {"stl", "3mf", "step", "dxf", "speichern als", "save as"}},
         {"Design_Import", {"einfuegen", "step", "dxf", "svg", "insert"}},
         {"Design_Note", {"notiz", "post-it", "rechnen", "taschenrechner", "calculator"}},
         {"Design_Scribble", {"stift", "pen", "idee", "zeichnen", "skizzieren", "handschrift"}},
@@ -4560,7 +4565,7 @@ void Gui::Shell::install()
     Application::Instance->commandManager().addCommand(new CmdSearch);  // vor der Toolbar, die ihn zeigt
 
     state.modelBar =
-        toolbar({"#FILE", "Std_New", "Std_Open", "Std_Save", "Design_Import", "Design_Export",
+        toolbar({"#FILE", "Std_New", "Std_Open", "Std_Save", "Design_Import", "Design_Export", "Design_Print",
                  "Std_Undo", "Std_Redo",
                  "#CREATE", "Design_CreateSketch", "Design_Extrude", "Design_Revolve",
                  "Design_Sweep|Design_Loft|Design_Rib|Design_Web|Design_Emboss",
@@ -4570,7 +4575,7 @@ void Gui::Shell::install()
                  "Design_Shell", "Design_Draft", "Design_Combine|Design_SplitBody", "Design_Move|Design_Align|Design_Scale",
                  "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",
-                 "#INSPECT", "Design_Measure", "Design_Section", "Std_ViewFitAll",
+                 "#INSPECT", "Design_Measure", "Design_Section", "Design_PrintView", "Std_ViewFitAll",
                  "#UTILITIES", "MyCAD_Search", "Design_Parameters", "Design_Appearance", "Design_Scribble", "Design_Note"});
     state.sketchBar =
         toolbar({"#CREATE", "Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",

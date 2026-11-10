@@ -1105,6 +1105,18 @@ void Gui::Shell::showSettings()
         playLay->addWidget(box, 1);
     }
     addRow(generalCard, T("3D print clearance"), play);
+    // Grenzen der Druckansicht (Design::printCheck): Überhang in Grad, kleinste Wand in mm
+    for (const auto& [key, label, fallback, suffix, top] :
+         {std::tuple {"OverhangAngle", "Overhang angle", 45.0, "°", 89.0}, std::tuple {"MinWall", "Minimum wall", 0.8, " mm", 10.0}}) {
+        auto box = new QDoubleSpinBox;
+        box->setRange(top > 50 ? 10 : 0.1, top);
+        box->setDecimals(top > 50 ? 0 : 2);
+        box->setSingleStep(top > 50 ? 5 : 0.1);
+        box->setSuffix(QString::fromUtf8(suffix));
+        box->setValue(myParams()->GetFloat(key, fallback));
+        QObject::connect(box, &QDoubleSpinBox::valueChanged, box, [key](double v) { myParams()->SetFloat(key, v); });
+        addRow(generalCard, T(label), box);
+    }
     auto version = new QLabel(Gui::Shell::version());
     version->setTextInteractionFlags(Qt::TextSelectableByMouse);  // zum Kopieren in Fehlerberichte
     addRow(generalCard, T("Version"), version);

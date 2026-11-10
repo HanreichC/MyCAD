@@ -55,6 +55,14 @@ public:
         add_varargs_method("syncNoteParameters", &Module::syncNoteParameters,
                            "syncNoteParameters(note): lines 'Name = expression' become parameters");
         add_varargs_method("parameterSet", &Module::parameterSet, "parameterSet(doc[, create=True]): the Parameters VarSet");
+        add_varargs_method("readCorrection", &Module::readCorrection,
+                           "readCorrection(doc, text, at, view): dict with kind, body, element, alternatives, text, error");
+        add_varargs_method("applyCorrection", &Module::applyCorrection,
+                           "applyCorrection(doc, text, at, view[, element]): new feature (ValueError if not possible)");
+        add_varargs_method("printCheck", &Module::printCheck,
+                           "printCheck(body[, up, angle, wall]): dict of overhang, bed and thin areas (mm²) and triangles");
+        add_varargs_method("printUp", &Module::printUp, "printUp(doc): print direction of the design (up)");
+        add_varargs_method("setPrintUp", &Module::setPrintUp, "setPrintUp(doc, vector): print direction (up)");
         add_varargs_method("fastenerAt", &Module::fastenerAt,
                            "fastenerAt(body, point, direction): screw from the top body into the next one below");
         add_varargs_method("stableRef", &Module::stableRef,
@@ -228,6 +236,75 @@ private:
     Py::Object parameterSet(const Py::Tuple& args)
     {
         return py(Design::parameterSet(doc(args), args.size() < 2 || bool(Py::Boolean(args[1]))));
+    }
+    static Base::Vector3d vector(const Py::Object& o)
+    {
+        if (!PyObject_TypeCheck(o.ptr(), &Base::VectorPy::Type)) {
+            throw Py::TypeError("expected a vector");
+        }
+        return *static_cast<Base::VectorPy*>(o.ptr())->getVectorPtr();
+    }
+    static Design::Correction correction(const Py::Tuple& args)
+    {
+        Design::Correction c = Design::readCorrection(doc(args), Py::String(args[1]).as_std_string(), vector(args[2]),
+                                                      vector(args[3]));
+        if (args.size() > 4) {  // Wahl bei Mehrdeutigkeit
+            c.element = Py::String(args[4]).as_std_string();
+        }
+        return c;
+    }
+    Py::Object readCorrection(const Py::Tuple& args)
+    {
+        const Design::Correction c = correction(args);
+        static const char* kinds[] = {"None", "Thread", "Diameter", "Fillet", "Chamfer", "Pattern", "Offset", "Fit", "Value"};
+        Py::Dict d;
+        d["kind"] = Py::String(kinds[int(c.command.kind)]);
+        d["body"] = py(c.body);
+        d["element"] = Py::String(c.element);
+        Py::List alternatives;
+        for (const auto& a : c.alternatives) {
+            alternatives.append(Py::String(a));
+        }
+        d["alternatives"] = alternatives;
+        d["text"] = Py::String(Design::describeCorrection(c));
+        d["error"] = Py::String(c.error);
+        return d;
+    }
+    Py::Object applyCorrection(const Py::Tuple& args)
+    {
+        std::string error;
+        App::DocumentObject* result = Design::applyCorrection(correction(args), error);
+        if (!result) {
+            throw Py::ValueError(error);
+        }
+        return py(result);
+    }
+    Py::Object printCheck(const Py::Tuple& args)
+    {
+        auto body = obj<Body>(args[0]);
+        Design::PrintCheckResult r;
+        if (args.size() > 1) {  // eigene Richtung und Grenzen (Koordinaten des Körpers)
+            r = Design::printCheck(body->Shape.getShape(), vector(args[1]),
+                                   args.size() > 2 ? PyFloat_AsDouble(args[2].ptr()) : 45.0,
+                                   args.size() > 3 ? PyFloat_AsDouble(args[3].ptr()) : 0.8);
+        }
+        else {
+            r = Design::printCheck(body);
+        }
+        Py::Dict d;
+        d["overhang"] = Py::Float(r.overhangArea);
+        d["bed"] = Py::Float(r.bedArea);
+        d["thin"] = Py::Float(r.thinArea);
+        return d;
+    }
+    Py::Object printUp(const Py::Tuple& args)
+    {
+        return Py::asObject(new Base::VectorPy(Design::printUp(doc(args))));
+    }
+    Py::Object setPrintUp(const Py::Tuple& args)
+    {
+        Design::setPrintUp(doc(args), vector(args[1]));
+        return Py::None();
     }
     Py::Object fastenerAt(const Py::Tuple& args)
     {

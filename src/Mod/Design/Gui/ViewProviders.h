@@ -32,6 +32,11 @@ DesignGuiExport void startFaceDimensions();
 DesignGuiExport std::string parameterExpression(App::Document* doc, const std::string& text);
 /// Rückweg für die Anzeige: "Parameters.Width * 2" -> "Width * 2"
 DesignGuiExport std::string displayExpression(App::Document* doc, const std::string& text);
+/// Idee 5: Druckansicht an allen Körpern an- oder ausschalten (Überhang, Bett, dünne Wand; Legende in der Ansicht)
+DesignGuiExport void setPrintView(bool on);
+DesignGuiExport bool printView();
+/// Druckansicht neu rechnen (nach geänderter Druckrichtung oder Grenze)
+DesignGuiExport void refreshPrintView();
 
 class DesignGuiExport ViewProviderBody: public PartGui::ViewProviderPartExt
 {
@@ -40,6 +45,14 @@ class DesignGuiExport ViewProviderBody: public PartGui::ViewProviderPartExt
 public:
     ViewProviderBody();
     QIcon getIcon() const override;
+    void attach(App::DocumentObject* obj) override;
+    void updateData(const App::Property* prop) override;
+    void onChanged(const App::Property* prop) override;
+    /// Druckansicht dieses Körpers neu aufbauen bzw. ausblenden
+    void refreshPrintOverlay();
+
+private:
+    class SoSwitch* printSwitch = nullptr;
 };
 
 /// Geschlossene Skizzen-Regionen: hellblau, halbtransparent, anklickbar, nicht im Browser.

@@ -243,6 +243,21 @@ A("Design_Import", "file", "Design_Import", ("Insert", "Einfügen"),
          "Klicke eine geschlossene Fläche einer eingefügten Zeichnung an und mache mit Extrudieren ein Teil daraus.")],
   see=["Design_Export", "Design_Extrude"])
 
+A("Design_Print", "file", "Design_Print", ("Print", "Drucken"),
+  (["print", "3d print", "slicer", "orcaslicer", "bambu studio", "prusaslicer", "printer", "3mf"],
+   ["drucken", "3D-Druck", "Slicer", "OrcaSlicer", "Bambu Studio", "PrusaSlicer", "Drucker", "3MF"]),
+  ("Opens the design in your slicer in one click: as a 3MF file with names and colours, the chosen bottom face on the bed.",
+   "Öffnet das Design mit einem Klick in deinem Slicer: als 3MF-Datei mit Namen und Farben, die gewählte Unterseite auf dem Bett."),
+  [("Optional: select the bodies to print; otherwise all visible bodies go to the slicer.",
+    "Optional: wähle die Körper aus, die gedruckt werden sollen; sonst gehen alle sichtbaren Körper an den Slicer."),
+   tool("FILE", ("Print", "Drucken")),
+   ("The first time, choose your slicer if more than one is installed. MyCAD remembers it.",
+    "Beim ersten Mal wähle deinen Slicer, wenn mehrere installiert sind. MyCAD merkt sich die Wahl.")],
+  tips=[("MyCAD finds OrcaSlicer, Bambu Studio and PrusaSlicer as programs, as Flatpak and as AppImage in ~/Applications. Without a slicer, Print saves a 3MF file instead.",
+         "MyCAD findet OrcaSlicer, Bambu Studio und PrusaSlicer als Programm, als Flatpak und als AppImage in ~/Applications. Ohne Slicer speichert Drucken stattdessen eine 3MF-Datei."),
+        ("Curves are as fine as the Export resolution in Settings.", "Rundungen sind so fein wie die Export-Auflösung in den Einstellungen.")],
+  see=["Design_PrintView", "Design_Export"])
+
 A("Design_Export", "file", "Design_Export", ("Export", "Exportieren"),
   (["export", "3mf", "stl", "step", "dxf", "3d print", "slicer", "laser", "save as stl", "save as step", "save as dxf"], ["exportieren", "3MF", "STL", "STEP", "DXF", "3D-Druck", "Slicer", "Laser", "als STL speichern", "als STEP speichern", "als DXF speichern"]),
   ("Saves bodies as 3MF or STL for 3D printing, or as STEP for other CAD programs. Saves sketches as DXF.",
@@ -800,6 +815,23 @@ A("Design_Joint", "assemble", "Design_Joint", ("Joint", "Gelenk"),
   see=["Design_NewComponent", "Design_Align"])
 
 # --- Prüfen ---------------------------------------------------------------------------------------------------------
+A("Design_PrintView", "inspect", "Design_PrintView", ("Print View", "Druckansicht"),
+  (["print view", "overhang", "support", "supports", "thin wall", "wall thickness", "printable", "bed", "orientation", "lay flat"],
+   ["Druckansicht", "Überhang", "Stützen", "dünne Wand", "Wandstärke", "druckbar", "Bett", "Orientierung", "flach hinlegen"]),
+  ("Shows right on the model what a 3D printer will struggle with: overhangs that need supports, faces that lie on the bed and walls that are too thin.",
+   "Zeigt direkt am Modell, womit ein 3D-Drucker Mühe hat: Überhänge, die Stützen brauchen, Flächen auf dem Bett und zu dünne Wände."),
+  [tool("INSPECT", ("Print View", "Druckansicht")),
+   ("Red stripes: overhang flatter than 45° – it needs supports. Green dots: lies on the bed. Yellow cross-hatch: wall thinner than 0.8 mm.",
+    "Rote Streifen: Überhang flacher als 45° – er braucht Stützen. Grüne Punkte: liegt auf dem Bett. Gelbe Kreuzschraffur: Wand dünner als 0,8 mm."),
+   ("To turn the part, click the face that should lie on the bed and then Choose Bottom Face in the legend.",
+    "Um das Teil zu drehen, klicke auf die Fläche, die auf dem Bett liegen soll, und dann in der Legende auf Unterseite wählen."),
+   ("Click Print View again to hide it.", "Klicke nochmal auf Druckansicht, um sie auszublenden.")],
+  tips=[("The limits (overhang angle, minimum wall) and the 3D print clearance are in Settings.",
+         "Die Grenzen (Überhang-Winkel, kleinste Wand) und das Spiel für den 3D-Druck stehen in den Einstellungen."),
+        ("The chosen bottom face is saved with the design and used by Print.",
+         "Die gewählte Unterseite wird mit dem Design gespeichert und von Drucken benutzt.")],
+  see=["Design_Print", "Design_Measure"])
+
 A("Design_Measure", "inspect", "Design_Measure", ("Measure", "Messen"),
   (["measure", "distance", "length", "angle", "area", "volume", "radius", "diameter", "size"], ["messen", "Abstand", "Länge", "Winkel", "Fläche", "Volumen", "Radius", "Durchmesser", "Größe"]),
   ("Shows lengths, distances, angles, radii, areas and volumes of what you click.", "Zeigt Längen, Abstände, Winkel, Radien, Flächen und Volumen von dem, was du anklickst."),

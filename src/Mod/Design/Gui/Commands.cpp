@@ -39,6 +39,8 @@
 #include <TopoDS_Vertex.hxx>
 #include <gp_Pln.hxx>
 #include <QComboBox>
+#include <QInputDialog>
+#include <QStandardPaths>
 #include <QLabel>
 #include <cstring>
 #include <App/ObjectIdentifier.h>
@@ -1829,6 +1831,104 @@ void importFile(App::Document* doc)
 
 /// Gewählte Bodies exportieren, ohne Auswahl alle sichtbaren. 3MF/STL über Mesh, STEP über Import.
 /// DXF: gewählte Skizzen, ohne Auswahl alle sichtbaren; jede flach in ihrer eigenen Ebene, eine Ebene (Layer) je Skizze.
+void exportBodies(App::Document* doc);
+
+/// Idee 5: die gewählte ebene Fläche liegt beim Drucken auf dem Bett (Druckrichtung = ihre Normale nach innen)
+void choosePrintBottom(App::Document* doc)
+{
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        auto b = freecad_cast<Design::Body*>(sel.getObject());
+        if (!b || sel.getSubNames().empty() || !isPlanarFace(b, sel.getSubNames().front())) {
+            continue;
+        }
+        const TopoDS_Face face = TopoDS::Face(b->Shape.getShape().getSubShape(sel.getSubNames().front().c_str()));
+        BRepAdaptor_Surface surface(face);
+        gp_Dir n = surface.Plane().Axis().Direction();
+        if (face.Orientation() == TopAbs_REVERSED) {
+            n.Reverse();  // aus dem Körper heraus
+        }
+        Base::Vector3d up(-n.X(), -n.Y(), -n.Z());
+        Design::componentOf(b)->globalPlacement().getRotation().multVec(up, up);
+        doc->openTransaction("Print Direction");
+        Design::setPrintUp(doc, up);
+        doc->commitTransaction();
+        Gui::Selection().clearSelection();
+        DesignGui::setPrintView(true);
+        return;
+    }
+    QMessageBox::information(Gui::getMainWindow(), T("Choose Bottom Face"), T("Click the flat face that should lie on the print bed."));
+}
+
+/// Idee 5: Drucken. Sichtbare (oder gewählte) Körper als 3MF mit Druckrichtung nach oben im Slicer öffnen; welcher
+/// Slicer, merkt sich MyCAD. Ohne Slicer: Export.
+void printBodies(App::Document* doc)
+{
+    const auto chosen = selectedBodies();
+    std::vector<App::DocumentObject*> bodies(chosen.begin(), chosen.end());
+    if (bodies.empty()) {
+        for (auto obj : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
+            if (obj->Visibility.getValue() && !static_cast<Design::Body*>(obj)->Shape.getShape().isNull()) {
+                bodies.push_back(obj);
+            }
+        }
+    }
+    if (bodies.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), T("Print"), T("There is no body to print."));
+        return;
+    }
+    ParameterGrp::handle params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+    QStringList names;
+    try {
+        Base::PyGILStateLocker lock;
+        const std::string found = Base::Interpreter().runStringWithKey(
+            "import DesignExport\n_r = '\\n'.join(n for n, c in DesignExport.find_slicers())", "_r");
+        names = QString::fromStdString(found).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    }
+    catch (const Base::Exception& e) {
+        Base::Console().error("Print: %s\n", e.what());
+    }
+    if (names.isEmpty()) {
+        QMessageBox::information(Gui::getMainWindow(), T("Print"),
+                                 T("No slicer found (OrcaSlicer, Bambu Studio or PrusaSlicer). Save a 3MF file and open it "
+                                   "in your slicer."));
+        exportBodies(doc);
+        return;
+    }
+    QString slicer = QString::fromStdString(params->GetASCII("Slicer", ""));
+    if (!names.contains(slicer)) {
+        bool ok = names.size() == 1;
+        slicer = ok ? names.front()
+                    : QInputDialog::getItem(Gui::getMainWindow(), T("Print"), T("Open in which slicer?"), names, 0, false, &ok);
+        if (!ok) {
+            return;
+        }
+        params->SetASCII("Slicer", slicer.toStdString());
+    }
+    static const char* qualities[] = {"coarse", "normal", "fine"};
+    const long quality = std::clamp<long>(params->GetInt("ExportQuality", 1), 0, 2);
+    QString folder = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QStringLiteral("/print");
+    QDir().mkpath(folder);
+    folder.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('\''), QStringLiteral("\\'"));
+    QString name = slicer;
+    name.replace(QLatin1Char('\''), QStringLiteral("\\'"));
+    std::string objs = "[";
+    for (auto o : bodies) {
+        objs += "App.getDocument('" + std::string(doc->getName()) + "').getObject('" + o->getNameInDocument() + "'),";
+    }
+    objs += "]";
+    try {
+        Base::PyGILStateLocker lock;
+        Base::Interpreter().runString(
+            ("import DesignExport, Design, FreeCAD as App\nDesignExport.open_in_slicer(" + objs + ", '" + folder.toStdString()
+             + "', dict(DesignExport.find_slicers())['" + name.toStdString() + "'], up=Design.printUp(App.getDocument('"
+             + doc->getName() + "')), quality='" + qualities[quality] + "')")
+                .c_str());
+    }
+    catch (const Base::Exception& e) {
+        QMessageBox::warning(Gui::getMainWindow(), T("Print"), T("The slicer could not be started: %1").arg(QString::fromUtf8(e.what())));
+    }
+}
+
 void exportBodies(App::Document* doc)
 {
     std::vector<App::DocumentObject*> bodies;
@@ -3393,6 +3493,17 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_SplitBody", "Split Body",
                                      "Split Body: select a body and a plane or face to split it with", "Part_Slice", "",
                                      startSplit));
+    mgr.addCommand(new DesignCommand("Design_PrintView", "Print View",
+                                     "Print View: shows overhangs, faces on the bed and thin walls; click again to hide",
+                                     "Std_ViewIvIssueCamPos", "", [](App::Document*) {
+                                         DesignGui::setPrintView(!DesignGui::printView());
+                                     }));
+    mgr.addCommand(new DesignCommand("Design_PrintDown", "Choose Bottom Face",
+                                     "Choose Bottom Face: click the flat face that lies on the print bed",
+                                     "Std_ViewBottom", "", choosePrintBottom));
+    mgr.addCommand(new DesignCommand("Design_Print", "Print",
+                                     "Print: opens the design in your slicer (OrcaSlicer, Bambu Studio, PrusaSlicer)",
+                                     "Std_Print", "", printBodies));
     mgr.addCommand(new DesignCommand("Design_Fit", "Fit",
                                      "Fit: select a hole and its pin (or flat faces) for a 3D print or ISO fit",
                                      "Part_Offset", "", startFit));

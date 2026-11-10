@@ -20,6 +20,10 @@
 #include <Mod/PartDesign/App/FeatureHole.h>
 #include "NoteParameters.h"
 #include "Fits.h"
+#include "PrintCheck.h"
+#include <BRepExtrema_DistShapeShape.hxx>
+#include <Mod/Part/App/Geometry.h>
+#include <Mod/Sketcher/App/SketchObject.h>
 #include <IntCurvesFace_ShapeIntersector.hxx>
 #include <gp_Lin.hxx>
 #include <Mod/Part/App/ExtrusionHelper.h>
@@ -1208,6 +1212,438 @@ double Design::mass(const Part::Feature* body)
     return density.getValue() * props.Mass();  // intern kg/mm³ mal mm³
 }
 
+Design::Feature* faceCreator(Design::Body* body, const TopoDS_Face& face);
+
+namespace
+{
+/// Welche Elemente eine Korrektur meint
+enum class Aim
+{
+    Edge,
+    Face,       ///< jede Fläche (Maß, Muster)
+    Flat,       ///< ebene Fläche
+    Round,      ///< Zylinderfläche
+    RoundOrFlat ///< Zylinder (Gewinde, Durchmesser), sonst eine Bohrung an der Stelle der ebenen Fläche
+};
+
+Aim aimOf(RedPen::Kind kind)
+{
+    switch (kind) {
+        case RedPen::Kind::Fillet:
+        case RedPen::Kind::Chamfer: return Aim::Edge;
+        case RedPen::Kind::Offset: return Aim::Flat;
+        case RedPen::Kind::Fit: return Aim::Round;
+        case RedPen::Kind::Thread:
+        case RedPen::Kind::Diameter: return Aim::RoundOrFlat;
+        default: return Aim::Face;
+    }
+}
+
+struct Candidate
+{
+    Design::Body* body;
+    std::string name;
+    double distance;  ///< quer zur Blickrichtung
+    double depth;     ///< entlang der Blickrichtung (kleiner = näher am Auge)
+    bool round;
+    Base::Vector3d point;  ///< global
+};
+}  // namespace
+
+Design::Correction Design::readCorrection(App::Document* doc, const std::string& text, const Base::Vector3d& at,
+                                          const Base::Vector3d& viewIn)
+{
+    Correction c;
+    c.text = text;
+    c.at = at;
+    c.command = RedPen::parse(text);
+    if (c.command.kind == RedPen::Kind::None) {
+        c.error = "Not a correction";
+        return c;
+    }
+    Base::Vector3d view = viewIn;
+    view.Normalize();
+    c.view = view;
+    const Aim aim = aimOf(c.command.kind);
+    std::vector<Candidate> candidates;
+    for (auto obj : doc->getObjectsOfType(Body::getClassTypeId())) {
+        auto body = static_cast<Body*>(obj);
+        Part::TopoShape shape = body->Shape.getShape();
+        if (!body->Visibility.getValue() || shape.isNull()) {
+            continue;
+        }
+        shape.setPlacement(Base::Placement());
+        // Sehstrahl durch die Tinte in den Koordinaten der Komponente
+        const Base::Placement inv = componentOf(body)->globalPlacement().inverse();
+        Base::Vector3d p = at, d = view;
+        inv.multVec(p, p);
+        inv.getRotation().multVec(d, d);
+        Base::BoundBox3d box = shape.getBoundBox();
+        box.Add(p);
+        const double reach = box.CalcDiagonalLength() * 2 + 10;
+        const TopoDS_Edge ray = BRepBuilderAPI_MakeEdge(gp_Pnt(p.x - d.x * reach, p.y - d.y * reach, p.z - d.z * reach),
+                                                        gp_Pnt(p.x + d.x * reach, p.y + d.y * reach, p.z + d.z * reach)).Edge();
+        const TopAbs_ShapeEnum type = aim == Aim::Edge ? TopAbs_EDGE : TopAbs_FACE;
+        const int count = shape.countSubShapes(type);
+        for (int i = 1; i <= count; ++i) {
+            const std::string name = (type == TopAbs_EDGE ? "Edge" : "Face") + std::to_string(i);
+            const TopoDS_Shape element = shape.getSubShape(name.c_str());
+            bool round = false;
+            if (type == TopAbs_FACE) {
+                const GeomAbs_SurfaceType s = BRepAdaptor_Surface(TopoDS::Face(element)).GetType();
+                round = s == GeomAbs_Cylinder;
+                if ((aim == Aim::Flat && s != GeomAbs_Plane) || (aim == Aim::Round && !round)
+                    || (aim == Aim::RoundOrFlat && !round && s != GeomAbs_Plane)) {
+                    continue;
+                }
+                // Muster: nur Flächen von Features, die etwas an den Körper setzen oder herausnehmen (nicht der Grundkörper)
+                Feature* creator = c.command.kind == RedPen::Kind::Pattern ? faceCreator(body, TopoDS::Face(element)) : nullptr;
+                Part::TopoShape tool;
+                std::string why;
+                if (c.command.kind == RedPen::Kind::Pattern
+                    && (!creator || creator->op() == Feature::Op::NewBody || !creator->makeTool(tool, why))) {
+                    continue;
+                }
+            }
+            BRepExtrema_DistShapeShape dist(element, ray);
+            if (!dist.IsDone() || dist.NbSolution() == 0) {
+                continue;
+            }
+            const gp_Pnt onRay = dist.PointOnShape2(1), onElement = dist.PointOnShape1(1);
+            Base::Vector3d point(onElement.X(), onElement.Y(), onElement.Z());
+            componentOf(body)->globalPlacement().multVec(point, point);
+            candidates.push_back({body, name, dist.Value(),
+                                  (Base::Vector3d(onRay.X(), onRay.Y(), onRay.Z()) - p) * d, round, point});
+        }
+    }
+    if (candidates.empty()) {
+        c.error = "There is nothing to correct near the ink";
+        return c;
+    }
+    // Gewinde und Durchmesser: eine runde Fläche in der Nähe geht vor (Tinte über einer Bohrung trifft deren Wand nicht)
+    const auto nearest = [](const std::vector<Candidate>& list) {
+        return std::ranges::min_element(list, [](const Candidate& a, const Candidate& b) {
+            return std::abs(a.distance - b.distance) > 1e-6 ? a.distance < b.distance : a.depth < b.depth;
+        });
+    };
+    if (aim == Aim::RoundOrFlat) {
+        std::vector<Candidate> round, flat;
+        for (const auto& k : candidates) {
+            (k.round ? round : flat).push_back(k);
+        }
+        candidates = !round.empty() && (flat.empty() || nearest(round)->distance <= nearest(flat)->distance + 1.0) ? round : flat;
+    }
+    const Candidate best = *nearest(candidates);
+    c.body = best.body;
+    c.element = best.name;
+    c.onModel = best.point;
+    // gleich nah und gleich tief (z. B. zwei parallele Kanten, die Tinte dazwischen): nicht raten
+    const double band = std::max(0.25 * best.distance, 0.3);
+    for (const auto& k : candidates) {
+        if (k.distance - best.distance < band && std::abs(k.depth - best.depth) < 0.5) {
+            c.alternatives.push_back(k.body == best.body ? k.name : std::string(k.body->getNameInDocument()) + "." + k.name);
+        }
+    }
+    if (c.alternatives.size() < 2) {
+        c.alternatives.clear();
+    }
+    return c;
+}
+
+std::string Design::describeCorrection(const Correction& c)
+{
+    const auto number = [](double v) {
+        std::ostringstream out;
+        out << v;
+        return out.str();
+    };
+    const bool round = c.element.rfind("Face", 0) == 0 && c.body
+        && BRepAdaptor_Surface(TopoDS::Face(c.body->Shape.getShape().getSubShape(c.element.c_str()))).GetType() == GeomAbs_Cylinder;
+    switch (c.command.kind) {
+        case RedPen::Kind::Fillet: return "Fillet R" + number(c.command.value) + " on 1 edge";
+        case RedPen::Kind::Chamfer: return "Chamfer " + number(c.command.value) + " mm on 1 edge";
+        case RedPen::Kind::Offset: return std::string(c.command.value > 0 ? "Pull face by " : "Push face by ")
+            + number(std::abs(c.command.value)) + " mm";
+        case RedPen::Kind::Thread: return round ? "Thread " + c.command.size : "Tapped hole " + c.command.size;
+        case RedPen::Kind::Diameter: return round ? "Diameter " + number(c.command.value) + " mm"
+                                                  : "Hole Ø" + number(c.command.value) + " mm";
+        case RedPen::Kind::Fit: return c.command.fit == "print" ? "3D print fit" : "Fit " + c.command.fit;
+        case RedPen::Kind::Pattern: return "Pattern " + std::to_string(c.command.count) + "×";
+        case RedPen::Kind::Value: return "Dimension " + number(c.command.value) + " mm";
+        default: return c.text;
+    }
+}
+
+namespace
+{
+/// Neues Feature in der Komponente des Bodys, in der Timeline, am Body
+template<class T>
+T* newFeature(Design::Body* body, const char* type, const char* name)
+{
+    App::Document* doc = body->getDocument();
+    auto f = static_cast<T*>(doc->addObject(type, name));
+    Design::componentOf(body)->addObject(f);
+    Design::addToTimeline(f);
+    return f;
+}
+
+/// Skizze auf der ebenen Fläche mit einem Punkt an point (global), für eine Bohrung
+Sketcher::SketchObject* pointSketch(Design::Body* body, const std::string& face, const Base::Vector3d& point)
+{
+    auto sk = static_cast<Sketcher::SketchObject*>(Design::newSketch(Design::componentOf(body)));
+    App::DocumentObject* owner = body;
+    std::string element = face;
+    Design::stableRef(owner, element);
+    sk->AttachmentSupport.setValue(owner, std::vector<std::string> {element});
+    sk->MapMode.setValue("FlatFace");
+    body->getDocument()->recompute();
+    Base::Vector3d local;
+    sk->globalPlacement().inverse().multVec(point, local);
+    Part::GeomPoint p(Base::Vector3d(local.x, local.y, 0));
+    sk->addGeometry(&p);
+    sk->Visibility.setValue(false);
+    return sk;
+}
+}  // namespace
+
+App::DocumentObject* Design::applyCorrection(const Correction& c, std::string& error)
+{
+    if (!c.error.empty() || !c.body) {
+        error = c.error.empty() ? "Nothing to correct" : c.error;
+        return nullptr;
+    }
+    Body* body = c.body;
+    App::Document* doc = body->getDocument();
+    const TopoDS_Shape element = body->Shape.getShape().getSubShape(c.element.c_str(), true);
+    if (element.IsNull()) {
+        error = "The element is gone";
+        return nullptr;
+    }
+    const bool round = element.ShapeType() == TopAbs_FACE
+        && BRepAdaptor_Surface(TopoDS::Face(element)).GetType() == GeomAbs_Cylinder;
+    const double v = c.command.value;
+    App::DocumentObject* result = nullptr;
+    switch (c.command.kind) {
+        case RedPen::Kind::Fillet:
+        case RedPen::Kind::Chamfer:
+        case RedPen::Kind::Offset: {
+            const bool fillet = c.command.kind == RedPen::Kind::Fillet, chamfer = c.command.kind == RedPen::Kind::Chamfer;
+            auto f = fillet ? static_cast<DressUp*>(newFeature<Fillet>(body, "Design::Fillet", "Fillet"))
+                : chamfer   ? static_cast<DressUp*>(newFeature<Chamfer>(body, "Design::Chamfer", "Chamfer"))
+                            : static_cast<DressUp*>(newFeature<PressPull>(body, "Design::PressPull", "PressPull"));
+            f->Edges.setValues(std::vector<std::string> {c.element});
+            if (auto pull = freecad_cast<PressPull*>(f)) {
+                pull->Distance.setValue(v);
+            }
+            else {
+                f->Size.setValue(v);
+            }
+            attachToBodies(f, {body});
+            result = f;
+            break;
+        }
+        case RedPen::Kind::Thread:
+        case RedPen::Kind::Diameter: {
+            if (round && c.command.kind == RedPen::Kind::Thread) {
+                auto t = newFeature<Thread>(body, "Design::Thread", "Thread");
+                t->Edges.setValues(std::vector<std::string> {c.element});
+                t->Standard.setValue(1L);
+                for (const auto& size : t->ThreadSize.getEnumVector()) {
+                    if (size.rfind(c.command.size + "x", 0) == 0) {
+                        t->ThreadSize.setValue(size.c_str());
+                    }
+                }
+                attachToBodies(t, {body});
+                result = t;
+            }
+            else if (round) {  // Durchmesser über das Maß, das die Fläche treibt (Idee 2)
+                for (const auto& d : drivingDimensions(body, c.element)) {
+                    const bool radius = d.label == "Radius";
+                    if (d.label == "Diameter" || radius) {
+                        std::string message;
+                        if (!setDrivingDimension(d.owner, d.path, radius ? v / 2 : v, message)) {
+                            error = message;
+                            return nullptr;
+                        }
+                        return d.owner;
+                    }
+                }
+                error = "No dimension sets this diameter";
+                return nullptr;
+            }
+            else {  // Bohrung an der Stelle auf der ebenen Fläche
+                auto sk = pointSketch(body, c.element, c.onModel);
+                auto hole = newFeature<Hole>(body, "Design::Hole", "Hole");
+                hole->Sketch.setValue(sk);
+                if (c.command.kind == RedPen::Kind::Thread) {
+                    hole->Standard.setValue(1L);
+                    for (const auto& size : hole->Size.getEnumVector()) {
+                        if (size.rfind(c.command.size + "x", 0) == 0) {
+                            hole->Size.setValue(size.c_str());
+                        }
+                    }
+                    hole->Kind.setValue(1L);
+                }
+                else {
+                    hole->Diameter.setValue(v);
+                }
+                hole->ThroughAll.setValue(true);
+                attachToBodies(hole, {body});
+                result = hole;
+            }
+            break;
+        }
+        case RedPen::Kind::Fit: {
+            auto f = newFeature<Fitting>(body, "Design::Fitting", "Fit");
+            f->Edges.setValues(std::vector<std::string> {c.element});
+            f->Fit.setValue(c.command.fit == "print" ? "3D print normal" : c.command.fit == "H8" ? "H8/f7" : "H7/g6");
+            attachToBodies(f, {body});
+            result = f;
+            break;
+        }
+        case RedPen::Kind::Value: {
+            const auto dims = drivingDimensions(body, c.element);
+            if (dims.empty()) {
+                error = "No dimension sets this face";
+                return nullptr;
+            }
+            std::string message;
+            if (!setDrivingDimension(dims.front().owner, dims.front().path, v, message)) {
+                error = message;
+                return nullptr;
+            }
+            return dims.front().owner;
+        }
+        case RedPen::Kind::Pattern: {
+            Feature* source = element.ShapeType() == TopAbs_FACE ? faceCreator(body, TopoDS::Face(element)) : nullptr;
+            Part::TopoShape tool;
+            std::string why;
+            if (!source || !source->makeTool(tool, why)) {
+                error = "Write 3× next to a face of an extrusion or hole";
+                return nullptr;
+            }
+            // Richtung: von der Fläche zur Tinte, quer zur Blickrichtung, auf die nächste Achse; Abstand 1,5 × Größe
+            // ponytail: nur X/Y/Z; schräge Muster im Muster-Dialog
+            Base::Vector3d toward = c.at - c.onModel;
+            toward -= c.view * (toward * c.view);  // quer zur Blickrichtung: wohin auf dem Bildschirm geschrieben
+            const double comps[3] = {std::abs(toward.x), std::abs(toward.y), std::abs(toward.z)};
+            const int axis = int(std::max_element(comps, comps + 3) - comps);
+            const Base::BoundBox3d box = tool.getBoundBox();
+            const double size[3] = {box.LengthX(), box.LengthY(), box.LengthZ()};
+            const double sign = (axis == 0 ? toward.x : axis == 1 ? toward.y : toward.z) < 0 ? -1 : 1;
+            auto p = newFeature<Pattern>(body, "Design::Pattern", "Pattern");
+            p->Source.setValue(source);
+            p->Operation.setValue(source->op() == Feature::Op::NewBody ? 1L : source->Operation.getValue());
+            p->Direction1.setValue(long(axis));
+            p->Count1.setValue(c.command.count);
+            p->Spacing1.setValue(sign * std::max(size[axis] * 1.5, 1.0));
+            std::vector<Body*> bodies;
+            for (auto b : source->Bodies.getValues()) {
+                if (auto sb = freecad_cast<Body*>(b)) {
+                    bodies.push_back(sb);
+                }
+            }
+            attachToBodies(p, bodies);
+            result = p;
+            break;
+        }
+        default:
+            error = "Not a correction";
+            return nullptr;
+    }
+    doc->recompute();
+    return result;
+}
+
+Design::PrintCheckResult Design::printCheck(Part::TopoShape shape, const Base::Vector3d& upIn, double maxAngle, double minWall)
+{
+    PrintCheckResult result;
+    shape.setPlacement(Base::Placement());
+    Base::Vector3d up = upIn;
+    if (up.Length() < 1e-12 || shape.isNull()) {
+        return result;
+    }
+    up.Normalize();
+    std::vector<Base::Vector3d> points;
+    std::vector<Data::ComplexGeoData::Facet> facets;
+    shape.getFaces(points, facets, 0.05);
+    double bed = 1e100;
+    for (const auto& p : points) {
+        bed = std::min(bed, p * up);
+    }
+    IntCurvesFace_ShapeIntersector inside;
+    if (minWall > 0) {
+        inside.Load(shape.getShape(), 1e-6);
+    }
+    // ponytail: Wanddicke je Dreieck per Strahl, O(Dreiecke × Flächen); über 50 000 Dreiecken nur jedes k-te geprüft
+    const size_t step = std::max<size_t>(1, facets.size() / 50000);
+    const double u[3] = {up.x, up.y, up.z};
+    for (size_t i = 0; i < facets.size(); ++i) {
+        const Base::Vector3d& a = points[facets[i].I1];
+        const Base::Vector3d& b = points[facets[i].I2];
+        const Base::Vector3d& c = points[facets[i].I3];
+        Base::Vector3d n = (b - a) % (c - a);
+        const double area = n.Length() / 2;
+        if (area < 1e-12) {
+            continue;
+        }
+        n.Normalize();
+        const auto add = [&](std::vector<Base::Vector3f>& list, double& sum) {
+            for (const auto* p : {&a, &b, &c}) {
+                list.emplace_back(float(p->x), float(p->y), float(p->z));
+            }
+            sum += area;
+        };
+        const double nn[3] = {n.x, n.y, n.z};
+        const double height = std::max({a * up, b * up, c * up}) - bed;
+        const PrintCheck::Kind kind = PrintCheck::classify(nn, u, maxAngle, height);
+        if (kind == PrintCheck::Kind::Overhang) {
+            add(result.overhang, result.overhangArea);
+        }
+        else if (kind == PrintCheck::Kind::Bed) {
+            add(result.bed, result.bedArea);
+        }
+        if (minWall > 0 && i % step == 0) {
+            // vom Mittelpunkt gegen die Normale ins Material: trifft der Strahl vor minWall wieder auf die Oberfläche,
+            // ist die Wand hier dünner
+            const Base::Vector3d m = (a + b + c) / 3 - n * 1e-4;
+            inside.Perform(gp_Lin(gp_Pnt(m.x, m.y, m.z), gp_Dir(-n.x, -n.y, -n.z)), 1e-6, minWall);
+            if (inside.IsDone() && inside.NbPnt() > 0) {
+                add(result.thin, result.thinArea);
+            }
+        }
+    }
+    return result;
+}
+
+Design::PrintCheckResult Design::printCheck(Body* body)
+{
+    ParameterGrp::handle params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+    Base::Vector3d up = printUp(body->getDocument());
+    componentOf(body)->globalPlacement().getRotation().inverse().multVec(up, up);
+    return printCheck(body->Shape.getShape(), up, params->GetFloat("OverhangAngle", 45), params->GetFloat("MinWall", 0.8));
+}
+
+Base::Vector3d Design::printUp(App::Document* doc)
+{
+    App::Part* part = root(doc, false);
+    auto prop = part ? freecad_cast<App::PropertyVector*>(part->getPropertyByName("PrintUp")) : nullptr;
+    return prop && prop->getValue().Length() > 1e-12 ? prop->getValue() : Base::Vector3d(0, 0, 1);
+}
+
+void Design::setPrintUp(App::Document* doc, const Base::Vector3d& up)
+{
+    App::Part* part = root(doc, true);
+    auto prop = freecad_cast<App::PropertyVector*>(part->getPropertyByName("PrintUp"));
+    if (!prop) {
+        prop = static_cast<App::PropertyVector*>(
+            part->addDynamicProperty("App::PropertyVector", "PrintUp", "Print", "Print direction (up)", App::Prop_Hidden));
+    }
+    Base::Vector3d v = up;
+    v.Normalize();
+    prop->setValue(v);
+}
+
 std::vector<std::pair<App::DocumentObject*, App::DocumentObject*>> Design::collisions(App::Part* moving)
 {
     std::vector<std::pair<App::DocumentObject*, App::DocumentObject*>> hits;
@@ -1334,6 +1770,25 @@ App::PropertyQuantity* boundParameter(App::DocumentObject* owner, const App::Obj
 }
 }  // namespace
 
+/// Feature, das eine Fläche des Bodys erzeugte: das letzte der Kette, in dessen Zustand davor es ihre Trägerfläche
+/// noch nicht gab
+Design::Feature* faceCreator(Design::Body* body, const TopoDS_Face& face)
+{
+    const std::string key = surfaceKey(face);
+    auto creator = freecad_cast<Design::Feature*>(body->Tip.getValue());
+    while (creator) {
+        const auto& bodies = creator->Bodies.getValues();
+        const auto idx = std::ranges::find(bodies, body) - bodies.begin();
+        const auto& bases = creator->BaseFeatures.getValues();
+        auto base = idx < static_cast<long>(bases.size()) ? freecad_cast<Design::Feature*>(bases[idx]) : nullptr;
+        if (!base || !hasSurface(base->shapeFor(body), key)) {
+            break;
+        }
+        creator = base;
+    }
+    return creator;
+}
+
 std::vector<Design::DrivingDimension> Design::drivingDimensions(Body* body, const std::string& faceName)
 {
     std::vector<DrivingDimension> out;
@@ -1343,25 +1798,13 @@ std::vector<Design::DrivingDimension> Design::drivingDimensions(Body* body, cons
         return out;
     }
     const TopoDS_Face face = TopoDS::Face(sub);
-    const std::string key = surfaceKey(face);
     GProp_GProps props;
     BRepGProp::SurfaceProperties(face, props);
     const gp_Pnt center = props.CentreOfMass();
     const Base::Vector3d anchor = componentOf(body)->globalPlacement().getPosition()
         + componentOf(body)->globalPlacement().getRotation().multVec(Base::Vector3d(center.X(), center.Y(), center.Z()));
 
-    // Erzeuger: das letzte Feature der Kette, in dessen Zustand davor es diese Trägerfläche noch nicht gab
-    auto creator = freecad_cast<Feature*>(body->Tip.getValue());
-    while (creator) {
-        const auto& bodies = creator->Bodies.getValues();
-        const auto idx = std::ranges::find(bodies, body) - bodies.begin();
-        const auto& bases = creator->BaseFeatures.getValues();
-        auto base = idx < static_cast<long>(bases.size()) ? freecad_cast<Feature*>(bases[idx]) : nullptr;
-        if (!base || !hasSurface(base->shapeFor(body), key)) {
-            break;
-        }
-        creator = base;
-    }
+    Feature* creator = faceCreator(body, face);
     if (!creator) {
         return out;
     }

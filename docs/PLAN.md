@@ -363,7 +363,7 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 - **Druckgewinde:** Gewinde (L3) mit Preset „3D-Druck“ und Hinweis bei zu kleiner Steigung.
 - Tests C: ISO-286-Tabelle (Ø20 H7 = 0/+21 µm, g6 = −7/−20 µm, Bereichsgrenzen 3/6/10/18/30/50/80 mm). H: Passung auf Welle Ø20 → gemessener Durchmesser im Toleranzfeld; 3D-Druck-Passung vergrößert die Bohrung um 2 × Spiel; Schraube M4 ISO 4762: Bohrungen koaxial, Durchmesser laut Tabelle, Einschmelzmutter-Loch; gleiche Funktion über Komponentengrenzen. G: Werkzeug aus der Befehlssuche, zwei Flächen klicken, Passung wählen.
 
-#### 10.6 Idee 5: Der Druck gehört in den Viewport
+#### 10.6 Idee 5: Der Druck gehört in den Viewport · erledigt (2026-11-10); Überhang, Bett und Wanddicke rechnet die App je Dreieck (`Design.printCheck`), die Ansicht legt gemusterte Overlays darüber (Schraffur, Punkte, Kreuz) statt den Material-Shader umzubauen; Grenzen in den Einstellungen; der Druck-3MF liegt mit der gewählten Unterseite nach unten
 
 - **Druckansicht** (Schalter in der Toolbar, wie ein Material): Überhänge über dem Grenzwinkel (Standard 45°) rot schraffiert, Flächen auf dem Bett grün, Wände unter der Mindestdicke (Standard 0,8 mm) gelb; Legende mit Text. Druckrichtung wählbar („Diese Fläche nach unten“).
 - Überhang im Shader (`BodyShading`), Wanddicke auf der CPU per Strahl gegen die Normale je Tessellierungspunkt (`ponytail:` O(Punkte × Flächen); Obergrenze 50 000 Punkte, darüber ausgedünnt).

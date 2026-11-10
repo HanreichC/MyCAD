@@ -643,6 +643,68 @@
    }
   },
   {
+   "id": "Design_Print",
+   "group": "file",
+   "icon": "Design_Print",
+   "commands": [],
+   "title": {
+    "en": "Print",
+    "de": "Drucken"
+   },
+   "keywords": {
+    "en": [
+     "print",
+     "3d print",
+     "slicer",
+     "orcaslicer",
+     "bambu studio",
+     "prusaslicer",
+     "printer",
+     "3mf"
+    ],
+    "de": [
+     "drucken",
+     "3D-Druck",
+     "Slicer",
+     "OrcaSlicer",
+     "Bambu Studio",
+     "PrusaSlicer",
+     "Drucker",
+     "3MF"
+    ]
+   },
+   "summary": {
+    "en": "Opens the design in your slicer in one click: as a 3MF file with names and colours, the chosen bottom face on the bed.",
+    "de": "Öffnet das Design mit einem Klick in deinem Slicer: als 3MF-Datei mit Namen und Farben, die gewählte Unterseite auf dem Bett."
+   },
+   "steps": {
+    "en": [
+     "Optional: select the bodies to print; otherwise all visible bodies go to the slicer.",
+     "In the toolbar at the top, in the FILE section, click Print.",
+     "The first time, choose your slicer if more than one is installed. MyCAD remembers it."
+    ],
+    "de": [
+     "Optional: wähle die Körper aus, die gedruckt werden sollen; sonst gehen alle sichtbaren Körper an den Slicer.",
+     "Klicke in der Werkzeugleiste oben im Bereich DATEI auf Drucken.",
+     "Beim ersten Mal wähle deinen Slicer, wenn mehrere installiert sind. MyCAD merkt sich die Wahl."
+    ]
+   },
+   "see": [
+    "Design_PrintView",
+    "Design_Export"
+   ],
+   "tips": {
+    "en": [
+     "MyCAD finds OrcaSlicer, Bambu Studio and PrusaSlicer as programs, as Flatpak and as AppImage in ~/Applications. Without a slicer, Print saves a 3MF file instead.",
+     "Curves are as fine as the Export resolution in Settings."
+    ],
+    "de": [
+     "MyCAD findet OrcaSlicer, Bambu Studio und PrusaSlicer als Programm, als Flatpak und als AppImage in ~/Applications. Ohne Slicer speichert Drucken stattdessen eine 3MF-Datei.",
+     "Rundungen sind so fein wie die Export-Auflösung in den Einstellungen."
+    ]
+   }
+  },
+  {
    "id": "Design_Export",
    "group": "file",
    "icon": "Design_Export",
@@ -3820,6 +3882,73 @@
      "Die erste Auswahl muss zur Komponente gehören, die sich bewegt; das Design selbst bleibt immer an seinem Platz.",
      "Gelenke stehen im Ordner Gelenke im Browser; Doppelklick ändert eines.",
      "Gelenke bauen aufeinander auf: ein Teil an einem bewegten Teil bewegt sich mit."
+    ]
+   }
+  },
+  {
+   "id": "Design_PrintView",
+   "group": "inspect",
+   "icon": "Design_PrintView",
+   "commands": [],
+   "title": {
+    "en": "Print View",
+    "de": "Druckansicht"
+   },
+   "keywords": {
+    "en": [
+     "print view",
+     "overhang",
+     "support",
+     "supports",
+     "thin wall",
+     "wall thickness",
+     "printable",
+     "bed",
+     "orientation",
+     "lay flat"
+    ],
+    "de": [
+     "Druckansicht",
+     "Überhang",
+     "Stützen",
+     "dünne Wand",
+     "Wandstärke",
+     "druckbar",
+     "Bett",
+     "Orientierung",
+     "flach hinlegen"
+    ]
+   },
+   "summary": {
+    "en": "Shows right on the model what a 3D printer will struggle with: overhangs that need supports, faces that lie on the bed and walls that are too thin.",
+    "de": "Zeigt direkt am Modell, womit ein 3D-Drucker Mühe hat: Überhänge, die Stützen brauchen, Flächen auf dem Bett und zu dünne Wände."
+   },
+   "steps": {
+    "en": [
+     "In the toolbar at the top, in the INSPECT section, click Print View.",
+     "Red stripes: overhang flatter than 45° – it needs supports. Green dots: lies on the bed. Yellow cross-hatch: wall thinner than 0.8 mm.",
+     "To turn the part, click the face that should lie on the bed and then Choose Bottom Face in the legend.",
+     "Click Print View again to hide it."
+    ],
+    "de": [
+     "Klicke in der Werkzeugleiste oben im Bereich PRÜFEN auf Druckansicht.",
+     "Rote Streifen: Überhang flacher als 45° – er braucht Stützen. Grüne Punkte: liegt auf dem Bett. Gelbe Kreuzschraffur: Wand dünner als 0,8 mm.",
+     "Um das Teil zu drehen, klicke auf die Fläche, die auf dem Bett liegen soll, und dann in der Legende auf Unterseite wählen.",
+     "Klicke nochmal auf Druckansicht, um sie auszublenden."
+    ]
+   },
+   "see": [
+    "Design_Print",
+    "Design_Measure"
+   ],
+   "tips": {
+    "en": [
+     "The limits (overhang angle, minimum wall) and the 3D print clearance are in Settings.",
+     "The chosen bottom face is saved with the design and used by Print."
+    ],
+    "de": [
+     "Die Grenzen (Überhang-Winkel, kleinste Wand) und das Spiel für den 3D-Druck stehen in den Einstellungen.",
+     "Die gewählte Unterseite wird mit dem Design gespeichert und von Drucken benutzt."
     ]
    }
   },

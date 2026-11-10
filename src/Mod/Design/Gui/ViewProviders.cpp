@@ -6,6 +6,7 @@
 #include <App/DocumentObjectGroup.h>
 #include <App/Part.h>
 #include <Gui/Application.h>
+#include <Gui/Command.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
@@ -47,6 +48,22 @@
 #include <Gui/View3DInventor.h>
 #include <Gui/View3DInventorViewer.h>
 #include <Inventor/SbVec3f.h>
+#include <Inventor/nodes/SoCoordinate3.h>
+#include <Inventor/nodes/SoFaceSet.h>
+#include <Inventor/nodes/SoFragmentShader.h>
+#include <Inventor/nodes/SoLightModel.h>
+#include <Inventor/nodes/SoMaterial.h>
+#include <Inventor/nodes/SoPickStyle.h>
+#include <Inventor/nodes/SoPolygonOffset.h>
+#include <Inventor/nodes/SoSeparator.h>
+#include <Inventor/nodes/SoShaderParameter.h>
+#include <Inventor/nodes/SoShaderProgram.h>
+#include <Inventor/nodes/SoSwitch.h>
+#include <Inventor/nodes/SoVertexShader.h>
+#include <QBrush>
+#include <QHBoxLayout>
+#include <QPixmap>
+#include <QVBoxLayout>
 
 #include <BRepAdaptor_Surface.hxx>
 #include <BRepGProp.hxx>
@@ -81,6 +98,265 @@ ViewProviderBody::ViewProviderBody()
 QIcon ViewProviderBody::getIcon() const
 {
     return Gui::BitmapFactory().pixmap("PartDesign_Body");
+}
+
+namespace
+{
+bool printViewOn = false;
+
+/// Muster der Druckansicht, damit nicht nur die Farbe trägt: 1 Schraffur (Überhang), 2 Punkte (Bett), 3 Kreuz (Wand).
+/// Lücken zeigen den Körper darunter.
+const char* const PrintVertex = R"(
+#version 120
+void main()
+{
+    gl_FrontColor = gl_Color;
+    gl_Position = ftransform();
+}
+)";
+const char* const PrintFragment = R"(
+#version 120
+uniform int pattern;
+void main()
+{
+    vec2 p = gl_FragCoord.xy;
+    if (pattern == 1 && mod(p.x + p.y, 9.0) >= 4.0) discard;
+    if (pattern == 2 && (mod(p.x, 6.0) >= 3.0 || mod(p.y, 6.0) >= 3.0)) discard;
+    if (pattern == 3 && mod(p.x + p.y, 9.0) >= 3.0 && mod(p.x - p.y, 9.0) >= 3.0) discard;
+    gl_FragColor = gl_Color;
+}
+)";
+
+SoSeparator* printLayer(const std::vector<Base::Vector3f>& triangles, const QColor& color, int pattern)
+{
+    auto sep = new SoSeparator;
+    auto material = new SoMaterial;
+    material->diffuseColor.setValue(float(color.redF()), float(color.greenF()), float(color.blueF()));
+    sep->addChild(material);
+    auto program = new SoShaderProgram;
+    auto vertex = new SoVertexShader;
+    vertex->sourceType = SoShaderObject::GLSL_PROGRAM;
+    vertex->sourceProgram = PrintVertex;
+    auto fragment = new SoFragmentShader;
+    fragment->sourceType = SoShaderObject::GLSL_PROGRAM;
+    fragment->sourceProgram = PrintFragment;
+    auto kind = new SoShaderParameter1i;
+    kind->name = "pattern";
+    kind->value = pattern;
+    fragment->parameter.addNode(kind);
+    program->shaderObject.addNode(vertex);
+    program->shaderObject.addNode(fragment);
+    sep->addChild(program);
+    auto coords = new SoCoordinate3;
+    coords->point.setNum(int(triangles.size()));
+    SbVec3f* points = coords->point.startEditing();
+    for (size_t i = 0; i < triangles.size(); ++i) {
+        points[i].setValue(triangles[i].x, triangles[i].y, triangles[i].z);
+    }
+    coords->point.finishEditing();
+    sep->addChild(coords);
+    auto faces = new SoFaceSet;
+    faces->numVertices.setNum(int(triangles.size() / 3));
+    int32_t* counts = faces->numVertices.startEditing();
+    std::fill(counts, counts + triangles.size() / 3, 3);
+    faces->numVertices.finishEditing();
+    sep->addChild(faces);
+    return sep;
+}
+
+/// Musterfeld für die Legende, wie in der Ansicht
+QPixmap swatch(const QColor& color, Qt::BrushStyle style)
+{
+    QPixmap pix(18, 18);
+    pix.fill(Qt::transparent);
+    QPainter p(&pix);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setPen(QPen(color, 1.5));
+    p.setBrush(QBrush(color, style));
+    p.drawRoundedRect(QRectF(1, 1, 16, 16), 3, 3);
+    return pix;
+}
+
+/// Legende der Druckansicht unten rechts in der aktiven Ansicht, mit den Knöpfen "Diese Fläche nach unten" und "Drucken"
+class PrintLegend
+{
+public:
+    void show(bool on)
+    {
+        auto view = qobject_cast<Gui::View3DInventor*>(Gui::getMainWindow()->activeWindow());
+        Gui::View3DInventorViewer* viewer = view ? view->getViewer() : nullptr;
+        if (!on || !viewer) {
+            if (panel) {
+                panel->hide();
+            }
+            timer.stop();
+            return;
+        }
+        if (!panel) {
+            build();
+        }
+        if (panel->scene() != viewer->scene()) {
+            if (panel->scene()) {
+                panel->scene()->removeItem(panel);
+            }
+            viewer->scene()->addItem(panel);
+        }
+        this->viewer = viewer;
+        const auto params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+        texts[0]->setText(T("Overhang over %1°").arg(params->GetFloat("OverhangAngle", 45)));
+        texts[2]->setText(T("Wall thinner than %1 mm").arg(params->GetFloat("MinWall", 0.8)));
+        place();
+        panel->show();
+        timer.start();
+    }
+
+private:
+    void build()
+    {
+        const auto& theme = Gui::Shell::theme();
+        auto content = new QWidget;
+        content->setObjectName(QStringLiteral("PrintLegend"));
+        auto lay = new QVBoxLayout(content);
+        lay->setContentsMargins(14, 12, 14, 12);
+        lay->setSpacing(6);
+        auto title = new QLabel(T("Print View"));
+        Gui::Shell::setTextStyle(title, Gui::Shell::Text::Headline);
+        lay->addWidget(title);
+        const std::pair<QColor, Qt::BrushStyle> rows[] = {
+            {theme.red, Qt::BDiagPattern}, {theme.green, Qt::Dense5Pattern}, {theme.yellow, Qt::DiagCrossPattern}};
+        for (int i = 0; i < 3; ++i) {
+            auto line = new QHBoxLayout;
+            auto icon = new QLabel;
+            icon->setPixmap(swatch(rows[i].first, rows[i].second));
+            line->addWidget(icon);
+            texts[i] = new QLabel(i == 1 ? T("Lies on the bed") : QString());  // Grenzen setzt show()
+            line->addWidget(texts[i], 1);
+            lay->addLayout(line);
+        }
+        auto buttons = new QHBoxLayout;
+        for (const auto& [text, command] : {std::pair {T("Choose Bottom Face"), "Design_PrintDown"},
+                                            std::pair {T("Print"), "Design_Print"}}) {
+            auto button = new QPushButton(text);
+            button->setAutoDefault(false);
+            QObject::connect(button, &QPushButton::clicked, button, [command] {
+                Gui::Application::Instance->commandManager().runCommandByName(command);
+            });
+            buttons->addWidget(button);
+        }
+        lay->addLayout(buttons);
+        panel = new Gui::Shell::GlassPanel(content, Gui::Shell::Token::RadiusPanel, true);
+        panel->setZValue(8);
+        timer.setInterval(250);  // Fenstergröße und Panels ändern sich: nachziehen
+        QObject::connect(&timer, &QTimer::timeout, [this] { place(); });
+    }
+
+    void place()
+    {
+        if (!panel || !viewer || !panel->scene()) {
+            return;
+        }
+        const QRectF area = panel->scene()->sceneRect();
+        const QSizeF size = panel->content()->sizeHint();
+        // unten rechts über der Timeline
+        panel->setGeometry(QRectF(area.right() - size.width() - 24, area.bottom() - size.height() - 96, size.width(), size.height()));
+    }
+
+    Gui::Shell::GlassPanel* panel = nullptr;
+    QLabel* texts[3] = {};
+    QPointer<Gui::View3DInventorViewer> viewer;
+    QTimer timer;
+};
+
+PrintLegend& legend()
+{
+    static PrintLegend l;
+    return l;
+}
+
+template<class F>
+void forEachBody(F f)
+{
+    for (App::Document* doc : App::GetApplication().getDocuments()) {
+        Gui::Document* gdoc = Gui::Application::Instance->getDocument(doc);
+        for (auto obj : gdoc ? doc->getObjectsOfType(Design::Body::getClassTypeId()) : std::vector<App::DocumentObject*>()) {
+            if (auto vp = dynamic_cast<ViewProviderBody*>(gdoc->getViewProvider(obj))) {
+                f(vp);
+            }
+        }
+    }
+}
+}  // namespace
+
+void DesignGui::setPrintView(bool on)
+{
+    printViewOn = on;
+    refreshPrintView();
+    legend().show(on);
+}
+
+bool DesignGui::printView()
+{
+    return printViewOn;
+}
+
+void DesignGui::refreshPrintView()
+{
+    forEachBody([](ViewProviderBody* vp) { vp->refreshPrintOverlay(); });
+}
+
+void ViewProviderBody::attach(App::DocumentObject* obj)
+{
+    PartGui::ViewProviderPartExt::attach(obj);
+    printSwitch = new SoSwitch;
+    printSwitch->whichChild = SO_SWITCH_NONE;
+    pcRoot->addChild(printSwitch);
+}
+
+void ViewProviderBody::updateData(const App::Property* prop)
+{
+    PartGui::ViewProviderPartExt::updateData(prop);
+    if (printViewOn && prop == &static_cast<Design::Body*>(getObject())->Shape) {
+        refreshPrintOverlay();
+    }
+}
+
+void ViewProviderBody::onChanged(const App::Property* prop)
+{
+    PartGui::ViewProviderPartExt::onChanged(prop);
+    if (printViewOn && prop == &Visibility) {
+        refreshPrintOverlay();
+    }
+}
+
+void ViewProviderBody::refreshPrintOverlay()
+{
+    if (!printSwitch) {
+        return;
+    }
+    printSwitch->removeAllChildren();
+    printSwitch->whichChild = SO_SWITCH_NONE;
+    auto body = freecad_cast<Design::Body*>(getObject());
+    if (!printViewOn || !body || !isShow() || body->Shape.getShape().isNull()) {
+        return;
+    }
+    const Design::PrintCheckResult check = Design::printCheck(body);
+    const auto& theme = Gui::Shell::theme();
+    auto sep = new SoSeparator;
+    auto pick = new SoPickStyle;
+    pick->style = SoPickStyle::UNPICKABLE;
+    sep->addChild(pick);
+    auto light = new SoLightModel;
+    light->model = SoLightModel::BASE_COLOR;
+    sep->addChild(light);
+    auto offset = new SoPolygonOffset;  // vor die Fläche, die es markiert (andere Dreiecke, sonst Z-Kampf)
+    offset->factor = -2;
+    offset->units = -2;
+    sep->addChild(offset);
+    sep->addChild(printLayer(check.bed, theme.green, 2));
+    sep->addChild(printLayer(check.overhang, theme.red, 1));
+    sep->addChild(printLayer(check.thin, theme.yellow, 3));
+    printSwitch->addChild(sep);
+    printSwitch->whichChild = 0;
 }
 
 // ---------------------------------------------------------------------------------------------

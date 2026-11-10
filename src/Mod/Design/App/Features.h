@@ -10,6 +10,8 @@
 
 #include <functional>
 
+#include "RedPen.h"
+
 namespace App
 {
 class Document;
@@ -83,6 +85,43 @@ DesignExport double mass(const Part::Feature* body);
 /// Körper der Komponente moving (mit Unterkomponenten), die einen Körper außerhalb durchdringen: Paare (innen, außen).
 /// ponytail: prüft jedes Paar mit einer booleschen Schnittmenge, für Baugruppen mit wenigen Dutzend Körpern gedacht
 DesignExport std::vector<std::pair<App::DocumentObject*, App::DocumentObject*>> collisions(App::Part* moving);
+
+/// Idee 1: Rotstift. Eine gelesene Zeile an einer Stelle des Modells wird eine Korrektur am nächsten passenden
+/// Element: Kante (R2, C2), ebene Fläche (+5, M5/Ø8 als Bohrung an der Stelle), runde Fläche (M5 Gewinde, Ø8, H7),
+/// Fläche mit Maß (12), Feature einer Fläche (3×).
+struct Correction
+{
+    std::string text;  ///< wie gelesen
+    RedPen::Command command;
+    Body* body = nullptr;
+    std::string element;                    ///< Ziel, z. B. "Edge3" (im Zustand des Bodys)
+    std::vector<std::string> alternatives;  ///< gleich nah (mit element): Auswahl statt Raten
+    Base::Vector3d at;                      ///< Mitte der Tinte (global)
+    Base::Vector3d onModel;                 ///< nächster Punkt am Ziel (global)
+    Base::Vector3d view;                    ///< Blickrichtung beim Schreiben (global, Länge 1)
+    std::string error;                      ///< nicht verstanden oder nichts in der Nähe (englisch)
+};
+/// view: Blickrichtung (in die Szene); die Tinte zielt entlang dieser Richtung auf das Modell
+DesignExport Correction readCorrection(App::Document* doc, const std::string& text, const Base::Vector3d& at,
+                                       const Base::Vector3d& view);
+/// Feature anlegen (Timeline); nullptr und error, wenn es nicht geht. Ohne Transaktion.
+DesignExport App::DocumentObject* applyCorrection(const Correction& correction, std::string& error);
+/// Kurzbeschreibung für die Karte, englisch: "Fillet R2 on 1 edge"
+DesignExport std::string describeCorrection(const Correction& correction);
+
+/// Idee 5: Druckansicht. Dreiecke (je drei Punkte) eines Körpers nach Überhang, Bettfläche und zu dünner Wand
+struct PrintCheckResult
+{
+    std::vector<Base::Vector3f> overhang, bed, thin;
+    double overhangArea = 0, bedArea = 0, thinArea = 0;
+};
+/// shape in eigenen Koordinaten (Placement wird ignoriert), up in denselben; maxAngle in Grad, minWall in mm (0: ohne)
+DesignExport PrintCheckResult printCheck(Part::TopoShape shape, const Base::Vector3d& up, double maxAngle, double minWall);
+/// Körper mit der Druckrichtung des Designs und den Grenzen aus den Einstellungen (Koordinaten seiner Komponente)
+DesignExport PrintCheckResult printCheck(Body* body);
+/// Druckrichtung des Designs (global, "nach oben"); Vorgabe +Z. Gespeichert am Wurzel-Bauteil.
+DesignExport Base::Vector3d printUp(App::Document* doc);
+DesignExport void setPrintUp(App::Document* doc, const Base::Vector3d& up);
 
 /// Name ("FaceN", "EdgeN", "VertexN") des Elements in shape, das geometrisch element entspricht (Schwerpunkt + Größe)
 DesignExport std::string elementName(const TopoDS_Shape& shape, const TopoDS_Shape& element);

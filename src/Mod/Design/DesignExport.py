@@ -48,15 +48,18 @@ def triangles(shape, quality):
     return mesh.Topology
 
 
-def write_3mf(path, bodies, quality="normal", colors=None):
+def write_3mf(path, bodies, quality="normal", colors=None, rotation=None):
     """bodies: Design-Bodies (oder Objekte mit Shape und Label); colors: {Name: (r, g, b)} überschreibt die Appearance.
-    Koordinaten global (Komponenten mit eigener Lage stehen richtig im Slicer)."""
+    Koordinaten global (Komponenten mit eigener Lage stehen richtig im Slicer); rotation dreht alles danach
+    (Druckrichtung nach +Z)."""
     colors = colors or {}
     palette, objects, build = [], [], []
     for index, body in enumerate(bodies):
         shape = body.Shape.copy()
         if hasattr(body, "getGlobalPlacement"):
             shape.Placement = body.getGlobalPlacement()
+        if rotation is not None:
+            shape.Placement = App.Placement(App.Vector(), rotation).multiply(shape.Placement)
         points, facets = triangles(shape, quality)
         rgb = colors.get(body.Name) or body_color(body) or (0.6, 0.6, 0.62)
         color = hex_color(rgb)
@@ -80,3 +83,66 @@ def write_3mf(path, bodies, quality="normal", colors=None):
         z.writestr("_rels/.rels", RELS)
         z.writestr("3D/3dmodel.model", model)
     return len(bodies)
+
+
+# --- Drucken: Slicer finden und mit dem 3MF öffnen (Idee 5) -----------------------------------------------------
+
+# (Name, Programmnamen im PATH, Flatpak-ID, Anfang des AppImage-Namens, Windows-Pfad unter Programme)
+SLICERS = [
+    ("OrcaSlicer", ["orca-slicer", "OrcaSlicer", "orcaslicer"], "io.github.softfever.OrcaSlicer", "OrcaSlicer",
+     "OrcaSlicer/orca-slicer.exe"),
+    ("Bambu Studio", ["bambu-studio", "BambuStudio"], "com.bambulab.BambuStudio", "Bambu_Studio",
+     "Bambu Studio/bambu-studio.exe"),
+    ("PrusaSlicer", ["prusa-slicer", "PrusaSlicer", "prusaslicer"], "com.prusa3d.PrusaSlicer", "PrusaSlicer",
+     "Prusa3D/PrusaSlicer/prusa-slicer.exe"),
+]
+
+
+def find_slicers(environ=None, home=None):
+    """Installierte Slicer als [(Name, Befehl als Liste)]: PATH, Flatpak, AppImage in ~/Applications, Programme"""
+    import os
+    import shutil
+    environ = os.environ if environ is None else environ
+    home = home or os.path.expanduser("~")
+    path = environ.get("PATH", "")
+    flatpaks = set()
+    flatpak = shutil.which("flatpak", path=path)
+    if flatpak:
+        for root in ("/var/lib/flatpak/app", os.path.join(home, ".local/share/flatpak/app")):
+            if os.path.isdir(root):
+                flatpaks.update(os.listdir(root))
+    apps = os.path.join(home, "Applications")
+    images = sorted(os.listdir(apps)) if os.path.isdir(apps) else []
+    found = []
+    for name, programs, flatpak_id, image, windows in SLICERS:
+        command = next(([p] for p in (shutil.which(n, path=path) for n in programs) if p), None)
+        if not command and flatpak_id in flatpaks:
+            command = [flatpak, "run", flatpak_id]
+        if not command:
+            hit = next((f for f in images if f.lower().startswith(image.lower()) and f.lower().endswith(".appimage")), None)
+            command = [os.path.join(apps, hit)] if hit else None
+        if not command:
+            for base in (environ.get("ProgramFiles"), environ.get("ProgramW6432")):
+                if base and os.path.isfile(os.path.join(base, windows)):
+                    command = [os.path.join(base, windows)]
+                    break
+        if command:
+            found.append((name, command))
+    return found
+
+
+def print_rotation(up):
+    """Drehung, die die Druckrichtung up auf +Z legt"""
+    return App.Rotation(up, App.Vector(0, 0, 1))
+
+
+def open_in_slicer(bodies, folder, command, up=None, quality="normal"):
+    """3MF der Bodies (Druckrichtung nach oben) in folder schreiben und den Slicer damit starten; liefert den Pfad"""
+    import os
+    import re
+    import subprocess
+    name = re.sub(r"[^\w.-]+", "_", bodies[0].Document.Label if bodies else "design") or "design"
+    path = os.path.join(folder, name + ".3mf")
+    write_3mf(path, bodies, quality, rotation=print_rotation(up) if up is not None else None)
+    subprocess.Popen(list(command) + [path], start_new_session=True)
+    return path
