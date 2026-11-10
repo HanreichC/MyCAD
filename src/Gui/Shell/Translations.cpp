@@ -7,6 +7,7 @@
 
 #include <App/Application.h>
 
+#include <QRegularExpression>
 #include <QTranslator>
 #include <string_view>
 #include <unordered_map>
@@ -384,6 +385,14 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Result would be empty", "Das Ergebnis wäre leer"},
         {"Distance must be greater than zero", "Der Abstand muss größer als null sein"},
         {"To Object", "Bis Objekt"},
+        {"Use radius %1 mm", "Radius %1 mm nehmen"},
+        {"Use distance %1 mm", "Abstand %1 mm nehmen"},
+        {"Use thickness %1 mm", "Dicke %1 mm nehmen"},
+        {"Use axis %1", "Achse %1 nehmen"},
+        {"Show Affected Edges", "Betroffene Kanten zeigen"},
+        {"Looks Right", "Stimmt so"},
+        {"The model changed under this step; check that it still uses the right edges or faces: ",
+         "Das Modell hat sich unter diesem Schritt geändert; prüfe, ob er noch die richtigen Kanten oder Flächen nimmt: "},
         {"Pin-Slot", "Stift-Schlitz"},
         {"Planar", "Planar"},
         {"Ball", "Kugel"},
@@ -950,4 +959,21 @@ void Gui::Shell::installTranslations()
         static Translator translator;
         QCoreApplication::installTranslator(&translator);
     }
+}
+
+QString Gui::Shell::fixText(const QString& label)
+{
+    static const QRegularExpression number(QStringLiteral("^Use (radius|distance|thickness) ([0-9.]+) mm$"));
+    static const QRegularExpression axis(QStringLiteral("^Use axis (.+)$"));
+    if (const auto m = number.match(label); m.hasMatch()) {
+        QString value = m.captured(2);
+        if (language() == QLatin1String("German")) {
+            value.replace(QLatin1Char('.'), QLatin1Char(','));
+        }
+        return T(("Use " + m.captured(1) + " %1 mm").toUtf8().constData()).arg(value);
+    }
+    if (const auto m = axis.match(label); m.hasMatch()) {
+        return T("Use axis %1").arg(T(m.captured(1).toUtf8().constData()));
+    }
+    return T(label.toUtf8().constData());
 }

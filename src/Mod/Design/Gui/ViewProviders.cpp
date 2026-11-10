@@ -633,6 +633,10 @@ public:
         status->setWordWrap(true);
         status->setStyleSheet(QStringLiteral("color: %1;").arg(Gui::Shell::theme().red.name()));
         form->addRow(status);
+        fixBox = new QWidget;  // Idee 6: ein Klick setzt den vorgeschlagenen Wert
+        fixLayout = new QVBoxLayout(fixBox);
+        fixLayout->setContentsMargins(0, 0, 0, 0);
+        form->addRow(fixBox);
         addTaskBox(w, false);
         apply();
         createArrow();
@@ -1226,6 +1230,53 @@ private:
 
         feature->getDocument()->recompute();
         status->setText(feature->isError() ? T(feature->getStatusString()) : QString());
+        showFixes();
+    }
+
+    /// Vorschläge des Features als Knöpfe; ein Klick setzt den Wert im Feature und im Feld des Dialogs
+    void showFixes()
+    {
+        while (QLayoutItem* item = fixLayout->takeAt(0)) {
+            delete item->widget();
+            delete item;
+        }
+        for (const auto& entry : feature->Fixes.getValues()) {
+            const QStringList parts = QString::fromStdString(entry).split(QLatin1Char('\t'));
+            if (parts.size() != 3) {
+                continue;
+            }
+            auto button = new QPushButton(Gui::Shell::fixText(parts[0]));
+            button->setAutoDefault(false);
+            const std::string prop = parts[1].toStdString();
+            const double value = parts[2].toDouble();
+            QObject::connect(button, &QPushButton::clicked, fixBox, [this, prop, value] {
+                QTimer::singleShot(0, fixBox, [this, prop, value] { applyFix(prop, value); });
+            });
+            fixLayout->addWidget(button);
+        }
+        fixBox->setVisible(fixLayout->count() > 0);
+    }
+
+    void applyFix(const std::string& prop, double value)
+    {
+        if (prop == "Size" && distance) {  // Radius, Abstand, Dicke stehen im ersten Maßfeld
+            distance->setValue(Base::Quantity(value, Base::Unit::Length));
+        }
+        else if (prop == "Axis" && axis) {
+            axis->setCurrentIndex(int(value));
+        }
+        else if (auto p = feature->getPropertyByName(prop.c_str())) {
+            if (auto e = freecad_cast<App::PropertyEnumeration*>(p)) {
+                e->setValue(long(value));
+            }
+            else if (auto q = freecad_cast<App::PropertyFloat*>(p)) {
+                q->setValue(value);
+            }
+            else if (auto b = freecad_cast<App::PropertyBool*>(p)) {
+                b->setValue(value != 0);
+            }
+        }
+        apply();
     }
 
     Design::Feature* feature;
@@ -1269,6 +1320,8 @@ private:
     QComboBox* body = nullptr;
     QLabel* bodyLabel = nullptr;
     QLabel* status = nullptr;
+    QWidget* fixBox = nullptr;
+    QVBoxLayout* fixLayout = nullptr;
     DragArrow* arrow = nullptr;
 };
 

@@ -80,6 +80,8 @@
 #include <gp_Pln.hxx>
 
 #include <algorithm>
+#include <functional>
+#include <sstream>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -1347,13 +1349,28 @@ Feature::Feature()
     ADD_PROPERTY_TYPE(Bodies, (nullptr), "Design", App::Prop_None, "Bodies changed by this feature");
     ADD_PROPERTY_TYPE(BaseFeatures, (nullptr), "Design", App::Prop_Hidden, "Previous feature per body");
     ADD_PROPERTY_TYPE(Suppressed, (false), "Design", App::Prop_None, "Skip this feature");
+    const auto output = App::PropertyType(App::Prop_Output | App::Prop_Hidden);
+    ADD_PROPERTY_TYPE(Fixes, (), "Design", output, "Suggested fixes: label, property, value");
+    ADD_PROPERTY_TYPE(ErrorElements, (), "Design", output, "Edges or faces the error or warning is about");
+    ADD_PROPERTY_TYPE(Warning, (""), "Design", App::Prop_Hidden, "Problem that does not stop the feature");
     // Zustände dürfen aus anderen Komponenten kommen (Move/Combine über Komponenten). Nur sichtbare Abhängigkeiten:
     // die versteckten Bodies-Listen global zu machen, erzeugt Kreise (Body -> Feature -> Body)
     BaseFeatures.setScope(App::LinkScope::Global);
 }
 
+void Feature::suggest(const std::string& label, const char* property, double value)
+{
+    auto fixes = Fixes.getValues();
+    std::ostringstream entry;
+    entry << label << '\t' << property << '\t' << value;
+    fixes.push_back(entry.str());
+    Fixes.setValues(fixes);
+}
+
 App::DocumentObjectExecReturn* Feature::execute()
 {
+    Fixes.setValues(std::vector<std::string>());
+    ErrorElements.setValues(std::vector<std::string>());
     if (Suppressed.getValue() || isRolledBack(this)) {  // unterdrückt oder hinter dem Rollback-Marker
         std::vector<Part::TopoShape> results;
         for (int i = 0; i < Bodies.getSize(); ++i) {
@@ -1708,6 +1725,11 @@ Revolve::Revolve()
 
 bool Revolve::makeTool(Part::TopoShape& tool, std::string& error) const
 {
+    return revolveAround(Axis.getValue(), tool, error);
+}
+
+bool Revolve::revolveAround(long axisIndex, Part::TopoShape& tool, std::string& error) const
+{
     Part::Feature* sketch = nullptr;
     const char* reason = nullptr;
     const auto faces = profileFaces(Profile, const_cast<App::PropertyStringList&>(ProfileKeys), sketch, reason);
@@ -1723,7 +1745,7 @@ bool Revolve::makeTool(Part::TopoShape& tool, std::string& error) const
 
     const Base::Placement pla = sketch->Placement.getValue();
     Base::Vector3d origin, dir;
-    switch (Axis.getValue()) {
+    switch (axisIndex) {
         case 0:
             origin = pla.getPosition();
             dir = pla.getRotation().multVec(Base::Vector3d(1, 0, 0));
@@ -1733,7 +1755,7 @@ bool Revolve::makeTool(Part::TopoShape& tool, std::string& error) const
             dir = pla.getRotation().multVec(Base::Vector3d(0, 1, 0));
             break;
         default:
-            dir[Axis.getValue() - 2] = 1;
+            dir[axisIndex - 2] = 1;
             break;
     }
     if (Reversed.getValue()) {
@@ -1761,6 +1783,15 @@ App::DocumentObjectExecReturn* Revolve::compute()
     Part::TopoShape tool;
     std::string error;
     if (!makeTool(tool, error)) {
+        // Eine Achse vorschlagen, um die es geht
+        for (long k = 0; k < static_cast<long>(Axis.getEnumVector().size()); ++k) {
+            Part::TopoShape probe;
+            std::string ignored;
+            if (k != Axis.getValue() && revolveAround(k, probe, ignored)) {
+                suggest(std::string("Use axis ") + Axis.getEnumVector()[k], "Axis", double(k));
+                break;
+            }
+        }
         return new App::DocumentObjectExecReturn(error);
     }
     return applyTool(tool);
@@ -1776,8 +1807,65 @@ DressUp::DressUp()
     ADD_PROPERTY_TYPE(Size, (1.0), "DressUp", App::Prop_None, "Radius or distance");
     ADD_PROPERTY_TYPE(ElementMaps, (), "DressUp", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
                       "Traceable names of the selected elements");
+    ADD_PROPERTY_TYPE(ElementHints, (), "DressUp", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Position and size of the selected elements");
     Operation.setStatus(App::Property::Hidden, true);  // verändert immer den eigenen Body
 }
+
+double DressUp::largestWorking(const std::function<bool(double)>& try_) const
+{
+    double lo = 0, hi = Size.getValue();
+    for (int i = 0; i < 12; ++i) {  // ponytail: 12 Versuche je Fehler, reicht auf 0,03 % der Größe genau
+        const double mid = (lo + hi) / 2;
+        (try_(mid) ? lo : hi) = mid;
+    }
+    return std::floor(lo * 100) / 100;  // abgerundet auf 0,01 mm: sicher noch gültig
+}
+
+namespace
+{
+/// "x y z Größe" eines Elements (Kante: Länge, Fläche: Inhalt)
+std::string elementHint(const TopoDS_Shape& s)
+{
+    GProp_GProps p;
+    if (s.ShapeType() == TopAbs_FACE) {
+        BRepGProp::SurfaceProperties(s, p);
+    }
+    else {
+        BRepGProp::LinearProperties(s, p);
+    }
+    std::ostringstream out;
+    out << p.CentreOfMass().X() << ' ' << p.CentreOfMass().Y() << ' ' << p.CentreOfMass().Z() << ' ' << p.Mass();
+    return out.str();
+}
+
+/// Element gleicher Art, das am besten zu hint passt (Lage und Größe); leer, wenn keins da ist
+std::string closestElement(const Part::TopoShape& shape, const std::string& name, const std::string& hint)
+{
+    std::istringstream in(hint);
+    double x = 0, y = 0, z = 0, size = 0;
+    if (!(in >> x >> y >> z >> size)) {
+        return {};
+    }
+    const bool face = name.rfind("Face", 0) == 0;
+    const TopAbs_ShapeEnum type = face ? TopAbs_FACE : TopAbs_EDGE;
+    std::string best;
+    double bestScore = 1e300;
+    const int count = shape.countSubShapes(type);
+    for (int i = 1; i <= count; ++i) {
+        const std::string candidate = (face ? "Face" : "Edge") + std::to_string(i);
+        std::istringstream h(elementHint(shape.getSubShape(candidate.c_str())));
+        double cx = 0, cy = 0, cz = 0, cs = 0;
+        h >> cx >> cy >> cz >> cs;
+        const double score = std::hypot(cx - x, cy - y, cz - z) + std::abs(cs - size) / std::max(1.0, size) * 10;
+        if (score < bestScore) {
+            bestScore = score;
+            best = candidate;
+        }
+    }
+    return best;
+}
+}  // namespace
 
 std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type)
 {
@@ -1786,13 +1874,18 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
     //    (z. B. wenn davor ein Feature eingefügt wurde), 3. sonst die ursprüngliche Nummer.
     std::vector<std::string> names = Edges.getValues();
     std::vector<std::string> maps = ElementMaps.getValues();
+    std::vector<std::string> hints = ElementHints.getValues();
     maps.resize(names.size());
+    hints.resize(names.size());
+    std::vector<std::string> uncertain;
     App::DocumentObject* base = BaseFeatures.getSize() ? BaseFeatures.getValues().front() : nullptr;
     for (size_t i = 0; i < names.size(); ++i) {
         if (!maps[i].empty()) {
+            bool found = false;
             const Data::IndexedName idx = shape.getIndexedName(Data::MappedName(maps[i]));
             if (idx) {
                 names[i] = idx.toString();
+                found = true;
             }
             else if (base) {
                 const auto related = Part::Feature::getRelatedElements(
@@ -1800,15 +1893,38 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
                 );
                 if (!related.isEmpty()) {
                     names[i] = related.front().index.toString();
+                    found = true;
                 }
+            }
+            // Name verloren: nicht still die alte Nummer nehmen, sondern das Element, das nach Lage und Größe am
+            // besten passt, und warnen (Idee 6, "War es diese Kante?")
+            if (!found) {
+                const std::string guess = closestElement(shape, names[i], hints[i]);
+                if (!guess.empty()) {
+                    names[i] = guess;
+                }
+                uncertain.push_back(names[i]);
             }
         }
         const Data::MappedName mapped = shape.getMappedName(Data::IndexedName(names[i].c_str()));
         if (mapped) {
             maps[i] = mapped.toString();
         }
+        const TopoDS_Shape sub = shape.getSubShape(names[i].c_str(), true);
+        if (!sub.IsNull()) {
+            hints[i] = elementHint(sub);
+        }
     }
     ElementMaps.setValues(maps);  // Ausgabe-Property: markiert das Feature nicht als geändert
+    ElementHints.setValues(hints);
+    if (!uncertain.empty()) {
+        std::string list;
+        for (const auto& n : uncertain) {
+            list += (list.empty() ? "" : ", ") + n;
+        }
+        Warning.setValue("The model changed under this step; check that it still uses the right edges or faces: " + list);
+        ErrorElements.setValues(uncertain);
+    }
 
     std::vector<Part::TopoShape> result;
     TopTools_IndexedMapOfShape seen;
@@ -1864,9 +1980,31 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
         }
     }
     catch (const Standard_Failure&) {
-        return new App::DocumentObjectExecReturn(failed);
+        res = Part::TopoShape();
     }
     if (res.isNull() || !res.isValid()) {
+        // Vorschlag: der größte Wert, der für diese Kanten noch geht (konstanter Radius bzw. gleicher Abstand)
+        const double best = largestWorking([&](double s) {
+            try {
+                Part::TopoShape probe(0, getDocument()->getStringHasher());
+                if (fillet) {
+                    probe.makeElementFillet(shape, edges, s, s);
+                }
+                else {
+                    probe.makeElementChamfer(shape, edges, Part::ChamferType::equalDistance, s, s);
+                }
+                return !probe.isNull() && probe.isValid();
+            }
+            catch (const Standard_Failure&) {
+                return false;
+            }
+        });
+        if (best > 0) {
+            std::ostringstream label;
+            label << (fillet ? "Use radius " : "Use distance ") << best << " mm";
+            suggest(label.str(), "Size", best);
+        }
+        ErrorElements.setValues(Edges.getValues());
         return new App::DocumentObjectExecReturn(failed);
     }
     setResults({res});
@@ -1934,16 +2072,33 @@ App::DocumentObjectExecReturn* Shell::compute()
     if (t < Precision::Confusion()) {
         return new App::DocumentObjectExecReturn("Thickness must be greater than zero");
     }
-    Part::TopoShape res(0, getDocument()->getStringHasher());
-    try {
-        // Ohne geöffnete Fläche entsteht ein geschlossener Hohlkörper
-        res.makeElementThickSolid(shape, faces, Outside.getValue() ? t : -t, 1e-6, true, false, 0,
-                                  Part::JoinType::intersection);
-    }
-    catch (const Standard_Failure&) {
-        return new App::DocumentObjectExecReturn("Shell failed: thickness too large?");
-    }
-    if (res.isNull() || !res.isValid()) {
+    const auto hollow = [&](double thickness) {  // ohne geöffnete Fläche entsteht ein geschlossener Hohlkörper
+        Part::TopoShape r(0, getDocument()->getStringHasher());
+        try {
+            r.makeElementThickSolid(shape, faces, Outside.getValue() ? thickness : -thickness, 1e-6, true, false, 0,
+                                    Part::JoinType::intersection);
+        }
+        catch (const Standard_Failure&) {
+            return Part::TopoShape();
+        }
+        if (r.isNull() || !r.isValid() || r.countSubShapes(TopAbs_SOLID) == 0) {
+            return Part::TopoShape();
+        }
+        // Plausibel? Eine Wand nach innen nimmt Material weg, eine nach außen kommt dazu (OCCT liefert bei zu dicken
+        // Wänden sonst gültige, aber unsinnige Körper)
+        GProp_GProps before, after;
+        BRepGProp::VolumeProperties(shape.getShape(), before);
+        BRepGProp::VolumeProperties(r.getShape(), after);
+        const bool sensible = Outside.getValue() ? after.Mass() > before.Mass() : after.Mass() > 0 && after.Mass() < before.Mass();
+        return sensible ? r : Part::TopoShape();
+    };
+    const Part::TopoShape res = hollow(t);
+    if (res.isNull()) {
+        if (const double best = largestWorking([&](double s) { return !hollow(s).isNull(); }); best > 0) {
+            std::ostringstream label;
+            label << "Use thickness " << best << " mm";
+            suggest(label.str(), "Size", best);
+        }
         return new App::DocumentObjectExecReturn("Shell failed: thickness too large?");
     }
     setResults({res});

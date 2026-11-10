@@ -17,6 +17,8 @@ class Material;
 
 namespace Gui::Shell
 {
+/// Beschriftung eines Vorschlags aus Design::Feature::Fixes übersetzen ("Use radius 3.8 mm" -> "Radius 3,8 mm nehmen")
+QString fixText(const QString& label);
 
 /// Ersetzt die klassische FreeCAD-Oberfläche durch die MyCAD-Oberfläche:
 /// 3D-Ansicht über das ganze Fenster, darüber schwebende Liquid-Glass-Panels.

@@ -14,3 +14,4 @@ test_start.py
 test_german.py
 test_search.py
 test_joint_motion.py
+test_fix_ui.py

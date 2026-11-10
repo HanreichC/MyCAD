@@ -333,7 +333,7 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 
 ---
 
-#### 10.2 Idee 6: Fehler, die sich erklären und reparieren
+#### 10.2 Idee 6: Fehler, die sich erklären und reparieren · erledigt (2026-11-10); markiert wird über die Auswahl (Akzentfarbe) statt Rot, Text und Symbol tragen die Bedeutung
 
 - **Fehlermodell:** Features melden `Code`, Text und Vorschläge (`Fix`: Beschriftung, Property, Wert). Die Timeline zeigt sie in einem Glas-Popover am Eintrag, der Viewport hebt die betroffenen Kanten/Flächen rot hervor (mit Symbol, nie nur Farbe).
 - **Vorschläge mit Rechnung:** Rundung/Fase zu groß → größter Wert, der noch geht (Bisektion, max. 12 Versuche; `ponytail:` Kosten = 12 Rundungen, reicht für einzelne Features). Shell zu dick, Gewinde zu kurz, Drehachse durch das Profil, Ziel nicht getroffen (Richtung tauschen), leeres Ergebnis bei Cut (Operation prüfen).

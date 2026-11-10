@@ -8,6 +8,8 @@
 #include <Mod/Design/DesignGlobal.h>
 #include <Mod/Part/App/PartFeature.h>
 
+#include <functional>
+
 namespace App
 {
 class Document;
@@ -143,6 +145,11 @@ public:
     App::PropertyLinkListHidden Bodies;  ///< betroffene Bodies (Hidden: Body hängt vom Feature ab, nicht umgekehrt)
     App::PropertyLinkList BaseFeatures;  ///< je Body das vorherige Feature (leer bei New Body)
     App::PropertyBool Suppressed;        ///< unterdrückt: Bodies bleiben unverändert (New Body: leer)
+    /// Idee 6: Fehler erklären und reparieren. Fixes: je Vorschlag "Beschriftung\tProperty\tWert" (beim Rechnen neu);
+    /// ErrorElements: betroffene Kanten/Flächen im Body-Zustand davor; Warning: Hinweis ohne Fehler (bleibt, bis bestätigt)
+    App::PropertyStringList Fixes;
+    App::PropertyStringList ErrorElements;
+    App::PropertyString Warning;
 
     Op op() const
     {
@@ -164,6 +171,9 @@ public:
         error = "This feature cannot be patterned";
         return false;
     }
+
+    /// Vorschlag merken: setzt man property auf value, geht das Feature wieder
+    void suggest(const std::string& label, const char* property, double value);
 
 protected:
     /// Eigentliche Berechnung (execute kümmert sich um Suppressed)
@@ -231,6 +241,9 @@ public:
 
     bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;
+
+private:
+    bool revolveAround(long axis, Part::TopoShape& tool, std::string& error) const;
 };
 
 /// Kanten-Features (Fillet, Chamfer): verändern genau einen Body.
@@ -244,8 +257,11 @@ public:
     App::PropertyStringList Edges;
     App::PropertyLength Size;  ///< Radius bzw. Fasenabstand
     App::PropertyStringList ElementMaps;  ///< verfolgbare Namen zu Edges (topologische Benennung)
+    App::PropertyStringList ElementHints;  ///< je Element "x y z Größe": wiederfinden, wenn der Name verloren geht
 
 protected:
+    /// größter Wert von Size (unter dem jetzigen), bei dem try_ gelingt; 0 wenn keiner (Bisektion, 12 Versuche)
+    double largestWorking(const std::function<bool(double)>& try_) const;
     App::DocumentObjectExecReturn* run(bool fillet);
     /// Gewählte Elemente des Bodies vor diesem Feature; Flächen werden bei expandFaces zu ihren Kanten
     std::vector<Part::TopoShape> elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type);

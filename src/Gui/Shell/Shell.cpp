@@ -3993,15 +3993,26 @@ void rebuildTimeline()
         btn->setIcon(commandIcon(type, vp ? vp->getIcon() : QIcon()));
         btn->setIconSize(QSize(Token::IconL, Token::IconL));
         btn->setFixedSize(Token::WindowButton, Token::WindowButton);
+        auto warningProp = freecad_cast<App::PropertyString*>(obj->getPropertyByName("Warning"));
+        const QString warning = warningProp ? QString::fromUtf8(warningProp->getValue()) : QString();
         btn->setToolTip(QString::fromUtf8(obj->Label.getValue())
-                        + (obj->isError() ? QStringLiteral("\n") + T(obj->getStatusString())
-                                          : QString()));
+                        + (obj->isError() ? QStringLiteral("\n") + T(obj->getStatusString()) : QString())
+                        + (warning.isEmpty() ? QString()
+                                             : QStringLiteral("\n") + T((warning.section(QLatin1String(": "), 0, 0).toStdString() + ": ").c_str())
+                                                   + warning.section(QLatin1String(": "), 1)));
         btn->setAccessibleName(QString::fromUtf8(obj->Label.getValue()));
         btn->setProperty("error", obj->isError());
         if (obj->isError()) {  // Farbe nie allein (C-5): Fehler-Symbol in die Ecke
             QPixmap pm = btn->icon().pixmap(QSize(Token::IconL, Token::IconL), btn->devicePixelRatioF());
             QPainter p(&pm);
             designIcon(QStringLiteral("Badge_Error"), &Theme::red).paint(&p, QRect(9, 9, 11, 11));
+            p.end();
+            btn->setIcon(pm);
+        }
+        else if (!warning.isEmpty()) {  // unsicherer Bezug: Warnsymbol (nie nur Farbe)
+            QPixmap pm = btn->icon().pixmap(QSize(Token::IconL, Token::IconL), btn->devicePixelRatioF());
+            QPainter p(&pm);
+            designIcon(QStringLiteral("Badge_Warning"), &Theme::orange).paint(&p, QRect(9, 9, 11, 11));
             p.end();
             btn->setIcon(pm);
         }
@@ -4035,11 +4046,26 @@ void rebuildTimeline()
             const bool pickedThis = std::ranges::any_of(picked, [o](const auto& t) { return t.getObject() == o; });
             QAction* group = picked.size() >= 2 && pickedThis ? menu.addAction(T("Group Selected Steps")) : nullptr;
             QAction* ungroup = timelineGroupOf(o).isEmpty() ? nullptr : menu.addAction(T("Ungroup"));
+            // Idee 6: Vorschläge des Features, betroffene Kanten zeigen, Warnung bestätigen
+            std::vector<std::pair<QAction*, std::string>> fixes;
+            if (auto list = freecad_cast<App::PropertyStringList*>(o->getPropertyByName("Fixes"))) {
+                for (const auto& entry : list->getValues()) {
+                    const QStringList parts = QString::fromStdString(entry).split(QLatin1Char('\t'));
+                    if (parts.size() == 3) {
+                        fixes.emplace_back(menu.addAction(fixText(parts[0])), entry);
+                    }
+                }
+            }
+            auto elements = freecad_cast<App::PropertyStringList*>(o->getPropertyByName("ErrorElements"));
+            QAction* showElements = elements && elements->getSize() ? menu.addAction(T("Show Affected Edges")) : nullptr;
+            auto warn = freecad_cast<App::PropertyString*>(o->getPropertyByName("Warning"));
+            QAction* looksRight = warn && *warn->getValue() ? menu.addAction(T("Looks Right")) : nullptr;
             menu.addSeparator();
             QAction* remove = menu.addAction(T("Delete"));
             QAction* chosen = menu.exec(QCursor::pos());
             // Nach dem Menü ausführen, nicht innerhalb des Maus-Events
-            QTimer::singleShot(0, [ref, chosen, edit, rollback, suppress, remove, group, ungroup, picked] {
+            QTimer::singleShot(0, [ref, chosen, edit, rollback, suppress, remove, group, ungroup, picked, fixes, showElements,
+                                   looksRight] {
                 auto o = ref.getObject();
                 if (!o || !chosen) {
                     return;
@@ -4086,6 +4112,27 @@ void rebuildTimeline()
                 }
                 else if (chosen == ungroup) {
                     setGroup(doc, groupMembers(doc, timelineGroupOf(o)), QString());
+                }
+                else if (chosen == looksRight) {
+                    doc->openTransaction("Confirm");
+                    static_cast<App::PropertyString*>(o->getPropertyByName("Warning"))->setValue("");
+                    doc->commitTransaction();
+                    rebuildTimelineLater();
+                }
+                else if (chosen == showElements) {  // im Zustand davor markieren (dort gibt es die Kanten noch)
+                    auto bases = freecad_cast<App::PropertyLinkList*>(o->getPropertyByName("BaseFeatures"));
+                    App::DocumentObject* base = bases && bases->getSize() ? bases->getValues().front() : o;
+                    Selection().clearSelection();
+                    for (const auto& name : static_cast<App::PropertyStringList*>(o->getPropertyByName("ErrorElements"))->getValues()) {
+                        Selection().addSelection(doc->getName(), base->getNameInDocument(), name.c_str());
+                    }
+                }
+                else if (auto fix = std::ranges::find(fixes, chosen, &std::pair<QAction*, std::string>::first); fix != fixes.end()) {
+                    const QStringList parts = QString::fromStdString(fix->second).split(QLatin1Char('\t'));
+                    runDesign(doc, "Fix", "setattr(" + pyObject(o) + ", '" + parts[1].toStdString() + "', "
+                                              + "(lambda o, v: int(v) if isinstance(getattr(o, '" + parts[1].toStdString()
+                                              + "'), str) else v)(" + pyObject(o) + ", " + parts[2].toStdString() + ")) or "
+                                              + pyObject(o) + ".Document.recompute()");
                 }
                 else if (chosen == remove) {
                     Selection().clearSelection();
