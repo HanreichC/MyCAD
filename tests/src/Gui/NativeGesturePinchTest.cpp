@@ -52,44 +52,40 @@ TEST(NativeGesturePinch, nonPositiveZoomValueIsClampedToNeutral)
     EXPECT_DOUBLE_EQ(tracker.event().deltaZoom, 1.25);
 }
 
-TEST(NativeGesturePinch, smallSpreadWhileShiftingDoesNotZoom)
+TEST(NativeGesturePinch, shiftingRecognisedAsPinchNeitherZoomsNorJumps)
 {
+    // echte Geste (Trackpad-Log 2026-11-10): Schieben, das libinput als Spreizen meldet, Maßstab am Ende 1,017
     NativeGesturePinch tracker;
     tracker.update(Qt::BeginNativeGesture, 0.0, SbVec2s(0, 0));
 
-    EXPECT_FALSE(tracker.update(Qt::ZoomNativeGesture, 0.03, SbVec2s(0, 0)));  // Finger laufen leicht auseinander
-    EXPECT_TRUE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(15.0F, 0.0F)));
-    EXPECT_EQ(tracker.event().deltaCenter, SbVec2f(15.0F, 0.0F));
-    EXPECT_DOUBLE_EQ(tracker.event().deltaZoom, 0.0);
-
-    // eingerastet auf Schieben: auch deutliches Spreizen zoomt in dieser Geste nicht mehr
+    EXPECT_FALSE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(35.15F, 39.30F)));
+    EXPECT_FALSE(tracker.update(Qt::ZoomNativeGesture, 0.0781, SbVec2s(0, 0)));  // eingerastet aufs Schieben
     EXPECT_FALSE(tracker.update(Qt::ZoomNativeGesture, 0.5, SbVec2s(0, 0)));
-    EXPECT_TRUE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(1.0F, 2.0F)));
-    EXPECT_EQ(tracker.event().deltaCenter, SbVec2f(1.0F, 2.0F));
+    EXPECT_FALSE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(1.0F, 2.0F)));
 }
 
-TEST(NativeGesturePinch, smallMovesAddUpUntilThePanLocks)
+TEST(NativeGesturePinch, smallSpreadBelowTheThresholdDoesNotZoom)
 {
     NativeGesturePinch tracker;
     tracker.update(Qt::BeginNativeGesture, 0.0, SbVec2s(0, 0));
 
+    EXPECT_FALSE(tracker.update(Qt::ZoomNativeGesture, 0.03, SbVec2s(0, 0)));
     EXPECT_FALSE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(0.0F, 8.0F)));
-    EXPECT_TRUE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(0.0F, 8.0F)));
-    EXPECT_EQ(tracker.event().deltaCenter, SbVec2f(0.0F, 16.0F));  // nichts geht verloren
+    EXPECT_TRUE(tracker.update(Qt::ZoomNativeGesture, 0.06, SbVec2s(0, 0)));  // zusammen über 8 %: einrasten
+    EXPECT_NEAR(tracker.event().deltaZoom, 1.03 * 1.06, 1e-9);                // nichts geht verloren
 }
 
 TEST(NativeGesturePinch, zoomLocksOutShifting)
 {
+    // echte Geste: libinputs erstes Spreiz-Ereignis trägt schon 17 %
     NativeGesturePinch tracker;
     tracker.update(Qt::BeginNativeGesture, 0.0, SbVec2s(0, 0));
 
-    EXPECT_TRUE(tracker.update(Qt::ZoomNativeGesture, 0.1, SbVec2s(0, 0)));
+    EXPECT_FALSE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(2.64F, -2.39F)));
+    EXPECT_TRUE(tracker.update(Qt::ZoomNativeGesture, 0.1680, SbVec2s(0, 0)));
     EXPECT_FALSE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(40.0F, 0.0F)));
-
-    // neue Geste: wieder offen
-    tracker.update(Qt::EndNativeGesture, 0.0, SbVec2s(0, 0));
-    tracker.update(Qt::BeginNativeGesture, 0.0, SbVec2s(0, 0));
-    EXPECT_TRUE(tracker.update(Qt::PanNativeGesture, 0.0, SbVec2s(0, 0), SbVec2f(40.0F, 0.0F)));
+    EXPECT_TRUE(tracker.update(Qt::ZoomNativeGesture, 0.0664, SbVec2s(0, 0)));
+    EXPECT_DOUBLE_EQ(tracker.event().deltaZoom, 1.0664);
 }
 
 TEST(NativeGesturePinch, rotateConvertsDegreesToRadiansAndInvertsDirection)

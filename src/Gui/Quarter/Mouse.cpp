@@ -190,9 +190,6 @@ MouseP::mouseWheelEvent(QWheelEvent * event)
                                       static_cast<float>(publ->quarter->devicePixelRatio())),
     SoMouseWheelEvent::isPreciseScroll(!pixels.isNull(), event->phase() != Qt::NoScrollPhase));
   this->wheel->setScrollBegin(event->phase() == Qt::ScrollBegin);
-  if (this->wheel->isPrecise()) {
-    SoMouseWheelEvent::naturalScroll = event->inverted();
-  }
 
   return this->wheel;
 }

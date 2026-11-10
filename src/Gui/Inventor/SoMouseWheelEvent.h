@@ -85,9 +85,6 @@ public:  // methods
     {
         return scrollBegin;
     }
-    /// MyCAD: "Natürliches Scrollen" des Systems (QWheelEvent::inverted) vom letzten Trackpad-Scrollen;
-    /// die Spreizgeste liefert rohe Fingerwege und dreht sie damit in dieselbe Richtung wie das Schieben
-    static inline bool naturalScroll = false;
     static bool isPreciseScroll(bool hasPixelDelta, bool hasScrollPhase)
     {
         return hasPixelDelta && hasScrollPhase;

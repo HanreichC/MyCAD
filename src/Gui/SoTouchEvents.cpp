@@ -33,7 +33,6 @@
 #include <Base/Tools.h>
 
 #include "SoTouchEvents.h"
-#include "Inventor/SoMouseWheelEvent.h"
 
 
 bool NativeGesturePinch::update(Qt::NativeGestureType type, double value, const SbVec2s& glPos, const SbVec2f& glDelta)
@@ -63,8 +62,8 @@ bool NativeGesturePinch::update(Qt::NativeGestureType type, double value, const 
             pinch.state = SoGestureEvent::SbGSEnd;
             active = false;
             break;
-        // ponytail: feste Schwellen (8 % Spreizen, 12 px Weg); bei Bedarf in die Trackpad-Einstellungen.
-        // Was bis zur Schwelle aufläuft, kommt beim Einrasten auf einmal: kein Ruck, nichts geht verloren.
+        // ponytail: feste Schwellen (8 % Spreizen, 12 px Weg), an echten Gesten gemessen: libinputs erstes Spreiz-
+        // Ereignis trägt schon 12-20 %, ein falsch erkanntes Schieben bleibt unter 2 %.
         case Qt::ZoomNativeGesture:
             pinch.state = SoGestureEvent::SbGSUpdate;
             pendingZoom *= (1.0 + value > 0.0) ? 1.0 + value : 1.0;
@@ -78,13 +77,13 @@ bool NativeGesturePinch::update(Qt::NativeGestureType type, double value, const 
         case Qt::PanNativeGesture:
             pinch.state = SoGestureEvent::SbGSUpdate;
             pendingPan += glDelta;
-            if (lock == Lock::Zoom || (lock == Lock::None && pendingPan.length() < 12.0F)) {
-                return false;
+            if (lock == Lock::None && pendingPan.length() >= 12.0F) {
+                lock = Lock::Pan;
             }
-            lock = Lock::Pan;
-            pinch.deltaCenter = pendingPan;
-            pendingPan = SbVec2f(0.0F, 0.0F);
-            break;
+            // Eine als Spreizen erkannte Schiebe-Geste bewegt nichts: ihr Weg ist ungedämpft (KDE dämpft nur Scrollen,
+            // je Touchpad anders), sie sprang 3,5-mal so schnell wie das Schieben. ponytail: Stillstand bei dieser
+            // seltenen Geste (1 von 10); mit der ScrollFactor des Geräts aus kcminputrc könnte sie mitschieben.
+            return false;
         case Qt::RotateNativeGesture:
             pinch.state = SoGestureEvent::SbGSUpdate;
             pinch.deltaAngle = -Base::toRadians(value);
@@ -262,12 +261,9 @@ const SoEvent* GesturesDevice::translateEvent(QEvent* event)
             ),
             this->widget->devicePixelRatio()
         );
-        // Fingerweg roh (unabhängig vom natürlichen Scrollen): in die Richtung drehen, in die 2-Finger-Schieben geht
-        const QPointF way = native->delta() * (SoMouseWheelEvent::naturalScroll ? 1.0 : -1.0);
-        const SbVec2f glDelta = SoMouseWheelEvent::toGlPixelDelta(
-            SbVec2f(static_cast<float>(way.x()), static_cast<float>(way.y())),
-            static_cast<float>(this->widget->devicePixelRatio())
-        );
+        // Weg der Fingermitte: nur sein Betrag zählt (Einrasten auf Schieben)
+        const float dpr = static_cast<float>(this->widget->devicePixelRatio());
+        const SbVec2f glDelta(static_cast<float>(native->delta().x()) * dpr, static_cast<float>(native->delta().y()) * dpr);
         if (!this->nativePinch.update(native->gestureType(), native->value(), pos, glDelta)) {
             return nullptr;
         }

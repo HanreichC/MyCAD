@@ -108,7 +108,7 @@ public:
 class GuiExport NativeGesturePinch
 {
 public:
-    /// glDelta: Weg der Fingermitte (PanNativeGesture) in GL-Pixeln, schon in Schieberichtung
+    /// glDelta: Weg der Fingermitte (PanNativeGesture) in GL-Pixeln; entscheidet nur, ob die Geste aufs Schieben einrastet
     bool update(Qt::NativeGestureType type, double value, const SbVec2s& glPos,
                 const SbVec2f& glDelta = SbVec2f(0.0F, 0.0F));
     const SoGesturePinchEvent& event() const

@@ -2704,8 +2704,7 @@ SbBool NavigationStyle::processPinchEvent(const SoGesturePinchEvent* const event
 
     if (event->deltaCenter != SbVec2f(0.0F, 0.0F)) {
         const float ratio = viewer->getSoRenderManager()->getViewportRegion().getViewportAspectRatio();
-        panCamera(camera, ratio, this->panningplane,
-                  normalizePixelPos(event->deltaCenter) * trackpadSpeed("TrackpadPanSpeed"), SbVec2f(0, 0));
+        panCamera(camera, ratio, this->panningplane, normalizePixelPos(event->deltaCenter), SbVec2f(0, 0));
     }
 
     if (action.zoom) {
