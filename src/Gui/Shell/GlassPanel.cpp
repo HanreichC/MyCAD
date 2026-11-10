@@ -362,6 +362,11 @@ QWidget* GlassPanel::content() const
 
 void GlassPanel::setGeometry(const QRectF& rect)
 {
+    // Panels, die im Takt der Kamera folgen, rufen das alle 50 ms auf: unverändert nichts tun, sonst zeichnet die
+    // ganze 3D-Szene ständig neu (CPU/Akku; mit Software-OpenGL war MyCAD dabei nie still)
+    if (rect.size() == size && rect.topLeft() == pos()) {
+        return;
+    }
     prepareGeometryChange();
     size = rect.size();
     setPos(rect.topLeft());

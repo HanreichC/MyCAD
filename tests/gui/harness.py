@@ -161,20 +161,52 @@ def top_face(b):
 START_PAGE = False  # True: Test beginnt auf der Startseite (ohne Design)
 
 
-def run(steps, delay=1300):
-    """Schritte nacheinander ausführen, Fehler protokollieren, am Ende Screenshot + Beenden"""
-    steps = list(steps) + [("shot", lambda: mw.grab().save(os.environ["OUT"] + ".png")), ("done", lambda: (App.saveParameter(), os._exit(0)))]  # wie beim Beenden: zurückgesetzte Einstellungen speichern
-    if not START_PAGE:  # MyCAD startet mit der Startseite; die meisten Tests brauchen gleich ein Design
-        steps.insert(0, ("design", lambda: App.ActiveDocument or Gui.runCommand("Std_New")))
+def _when_idle(fn, quiet=0.25, limit=10.0):
+    """fn aufrufen, sobald MyCAD mit allem fertig ist: 0,25 s lang kommt jeder 25-ms-Timer pünktlich dran.
+    Unter Last (CI: 8 GUI-Tests parallel mit Software-OpenGL) dauert das von selbst länger; nach 10 s geht es
+    trotzdem weiter, damit eine Daueranimation den Test nicht aufhält."""
+    import time
+    start = calm = last = time.monotonic()
 
-    def step(name, fn):
+    def tick():
+        nonlocal calm, last
+        now = time.monotonic()
+        if now - last > 0.045:  # Timer kam zu spät dran: es lief noch Arbeit (Neuberechnung, Zeichnen, Animation)
+            calm = now
+        last = now
+        if now - calm >= quiet or now - start >= limit:
+            if now - calm < quiet:  # Hinweis, kein Fehler: zeichnet MyCAD ständig neu, kostet das Akku
+                L("  busy: MyCAD kam %.0f s lang nicht zur Ruhe" % limit)
+            fn()
+        else:
+            QtCore.QTimer.singleShot(25, tick)
+    QtCore.QTimer.singleShot(25, tick)
+
+
+def _sequence(steps, delay, arm_first):
+    """Schritte nacheinander; jeder wartet delay und dann, bis MyCAD mit dem vorigen fertig ist. Kein fester Takt
+    mehr: auf einer langsamen CI kam ein Schritt sonst dran, bevor der Dialog des vorigen offen war."""
+    def next_step():
+        if not steps:
+            L("step done"); App.saveParameter(); os._exit(0)  # "step done": run_all.sh erkennt das saubere Ende
+        name, fn = steps.pop(0)
         L("step " + name)
+        arm = lambda: QtCore.QTimer.singleShot(delay, lambda: _when_idle(next_step))
+        if arm_first:  # run(): schon vorher, damit ein Schritt mit modalem Dialog den nächsten nicht blockiert
+            arm()
         try:
             fn()
         except Exception as e:
             L("  exc %s: %s" % (type(e).__name__, e))
-    for i, (name, fn) in enumerate(steps):
-        QtCore.QTimer.singleShot(5000 + i * delay, lambda n=name, f=fn: step(n, f))
+        if not arm_first:
+            arm()
+    QtCore.QTimer.singleShot(5000, lambda: _when_idle(next_step))
+
+
+def run(steps, delay=1300):
+    """Schritte nacheinander ausführen, Fehler protokollieren, am Ende Screenshot + Beenden"""
+    start = [] if START_PAGE else [("design", lambda: App.ActiveDocument or Gui.runCommand("Std_New"))]
+    _sequence(start + list(steps) + [("shot", lambda: mw.grab().save(os.environ["OUT"] + ".png"))], delay, True)
 
 
 def shot(name):
@@ -198,18 +230,6 @@ def activate():
 
 
 def in_order(steps, delay=1200):
-    """Schritte nacheinander statt im festen Takt von run(): nötig, wenn ein Schritt länger dauert (Tippen)"""
+    """Wie run(), aber der nächste Schritt wird erst nach dem Ende des vorigen gestellt (Tippen, lange Schritte)"""
     start = [] if START_PAGE else [("design", lambda: App.ActiveDocument or Gui.runCommand("Std_New"))]
-    steps = start + list(steps) + [("shot", lambda: mw.grab().save(os.environ["OUT"] + ".png"))]
-
-    def next_step():
-        if not steps:
-            L("step done"); App.saveParameter(); os._exit(0)  # "step done": run_all.sh erkennt das saubere Ende
-        name, fn = steps.pop(0)
-        L("step " + name)
-        try:
-            fn()
-        except Exception as e:
-            L("FAIL exception in %s: %s: %s" % (name, type(e).__name__, e))
-        QtCore.QTimer.singleShot(delay, next_step)
-    QtCore.QTimer.singleShot(5000, next_step)
+    _sequence(start + list(steps) + [("shot", lambda: mw.grab().save(os.environ["OUT"] + ".png"))], delay, False)

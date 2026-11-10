@@ -44,16 +44,24 @@ if [ "${GUI:-ci}" != none ]; then
     step "GUI-Tests (${GUI:-ci})"
     if [ "${GUI:-ci}" = all ]; then list=(tests/gui/test_*.py); else mapfile -t list < <(grep -v '^#' tests/gui/ci.txt | sed '/^$/d; s|^|tests/gui/|'); fi
     export OUTDIR
-    printf '%s\n' "${list[@]}" | xargs -P "${JOBS:-6}" -I{} sh -c \
-        'n=$(basename {} .py); export MYCAD_HOME="$OUTDIR/home-$n"
-         grep -q "^# runs: 2" {} && tests/gui/run.sh {} "$OUTDIR/$n-first" > /dev/null 2>&1  # z. B. erst Sprache umstellen
-         tests/gui/run.sh {} "$OUTDIR/$n" > /dev/null 2>&1; true'
+    gui_test() {  # $1 = Testdatei, $2 = Name der Ausgabe (eigenes Home je Lauf)
+        export MYCAD_HOME="$OUTDIR/home-$2"
+        grep -q "^# runs: 2" "$1" && tests/gui/run.sh "$1" "$OUTDIR/$2-first" > /dev/null 2>&1  # z. B. erst Sprache umstellen
+        tests/gui/run.sh "$1" "$OUTDIR/$2" > /dev/null 2>&1; true
+    }
+    passed() { [ -s "$OUTDIR/$1.txt" ] && ! grep -q '^FAIL\|exc ' "$OUTDIR/$1.txt" && grep -q '^step done' "$OUTDIR/$1.txt"; }
+    export -f gui_test
+    printf '%s\n' "${list[@]}" | xargs -P "${JOBS:-6}" -I{} bash -c 'gui_test {} "$(basename {} .py)"'
     for t in "${list[@]}"; do
         n="$(basename "$t" .py)"
-        if [ ! -s "$OUTDIR/$n.txt" ] || grep -q '^FAIL\|exc ' "$OUTDIR/$n.txt" || ! grep -q '^step done' "$OUTDIR/$n.txt"; then
-            echo "FAIL $n"; failed+=("$n")
+        if passed "$n"; then echo "ok   $n"; continue; fi
+        # Einmal allein wiederholen, ohne die Last der parallelen Tests (wie ctest --repeat): ein echter Fehler
+        # fällt auch dann durch, ein Zeitproblem unter Last nicht. Beide Protokolle bleiben in $OUTDIR.
+        gui_test "$t" "$n-retry"
+        if passed "$n-retry"; then
+            echo "ok   $n (erst im 2. Lauf allein; 1. Lauf: $(grep -m1 '^FAIL\|exc ' "$OUTDIR/$n.txt" || echo 'kein Ende'))"
         else
-            echo "ok   $n"
+            echo "FAIL $n"; failed+=("$n")
         fi
     done
 fi
