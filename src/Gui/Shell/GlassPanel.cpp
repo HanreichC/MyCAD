@@ -5,6 +5,7 @@
 
 #include <QGraphicsProxyWidget>
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsSceneWheelEvent>
 #include <QGraphicsView>
 #include <QGuiApplication>
 #include <QHash>
@@ -436,6 +437,11 @@ void GlassPanel::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidg
 void GlassPanel::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     event->accept();  // Klicks auf das Glas nicht an die 3D-Navigation durchreichen
+}
+
+void GlassPanel::wheelEvent(QGraphicsSceneWheelEvent* event)
+{
+    event->accept();  // Scrollen über dem Glas (auch am Listenende) zoomt nie das Modell
 }
 
 #include "moc_GlassPanel.cpp"
