@@ -275,6 +275,12 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::Hole>()) {
         return T("Hole");
     }
+    if (f->isDerivedFrom<Design::Fitting>()) {
+        return T("Fit");
+    }
+    if (f->isDerivedFrom<Design::Fastener>()) {
+        return T("Screw Here");
+    }
     if (f->isDerivedFrom<Design::PressPull>()) {
         return T("Press Pull");
     }
@@ -1038,6 +1044,9 @@ private:
             else if (auto link = freecad_cast<App::PropertyLinkSub*>(prop)) {
                 field = referenceButton(link);
             }
+            else if (auto text = freecad_cast<App::PropertyString*>(prop)) {
+                field = new QLabel(QString::fromUtf8(text->getValue()));  // Ausgabe, z. B. Spiel einer Passung
+            }
             if (field) {
                 form->addRow(label, field);
                 paramRows.emplace_back(prop, field);
@@ -1230,6 +1239,18 @@ private:
         }
 
         feature->getDocument()->recompute();
+        // Werte, die das Feature selbst setzt (Spiel der Passung, Länge nach Norm, Spiel aus den Einstellungen)
+        for (const auto& [prop, field] : paramRows) {
+            if (auto text = freecad_cast<App::PropertyString*>(prop); text && qobject_cast<QLabel*>(field)) {
+                static_cast<QLabel*>(field)->setText(QString::fromUtf8(text->getValue()));
+            }
+            auto q = freecad_cast<App::PropertyQuantity*>(prop);
+            auto box = qobject_cast<Gui::QuantitySpinBox*>(field);
+            if (q && box && !box->hasFocus() && std::abs(box->rawValue() - q->getValue()) > 1e-9) {
+                const QSignalBlocker block(box);
+                box->setValue(q->getValue());
+            }
+        }
         status->setText(feature->isError() ? T(feature->getStatusString()) : QString());
         showFixes();
     }
@@ -1412,23 +1433,10 @@ void ViewProviderFeature::unsetEdit(int)
 
 App::DocumentObject* DesignGui::parameters(App::Document* doc, bool create)
 {
-    App::Part* root = Design::root(doc, create);
-    if (!root) {
-        return nullptr;
-    }
-    for (auto obj : root->Group.getValues()) {
-        if (obj->isDerivedFrom<App::VarSet>() && std::strcmp(obj->Label.getValue(), "Parameters") == 0) {
-            return obj;
-        }
-    }
-    if (!create) {
-        return nullptr;
-    }
-    App::DocumentObject* set = doc->addObject("App::VarSet", "Parameters");
-    set->Label.setValue("Parameters");
-    root->addObject(set);
+    App::DocumentObject* set = Design::parameterSet(doc, create);
     // wie in Fusion nur über "Change Parameters" erreichbar, nicht im Browser
-    if (auto vp = freecad_cast<Gui::ViewProviderDocumentObject*>(Gui::Application::Instance->getViewProvider(set))) {
+    if (auto vp = set ? freecad_cast<Gui::ViewProviderDocumentObject*>(Gui::Application::Instance->getViewProvider(set))
+                      : nullptr) {
         vp->ShowInTree.setValue(false);
     }
     return set;
@@ -1437,44 +1445,16 @@ App::DocumentObject* DesignGui::parameters(App::Document* doc, bool create)
 namespace
 {
 /// Bezeichner im Text, die Parameter sind, ersetzen (nicht nach einem Punkt, also keine Objekt.Eigenschaft-Pfade)
-std::string mapParameters(App::Document* doc, const std::string& text, bool toTable)
-{
-    App::DocumentObject* set = DesignGui::parameters(doc, false);
-    if (!set) {
-        return text;
-    }
-    const std::string prefix = std::string(set->getNameInDocument()) + ".";
-    if (!toTable) {
-        std::string out = text;
-        for (size_t pos; (pos = out.find(prefix)) != std::string::npos;) {
-            out.erase(pos, prefix.size());
-        }
-        return out;
-    }
-    static const std::regex word(R"([A-Za-z_]\w*)");
-    std::string out;
-    size_t last = 0;
-    for (auto it = std::sregex_iterator(text.begin(), text.end(), word); it != std::sregex_iterator(); ++it) {
-        const size_t at = it->position();
-        const bool afterDot = at > 0 && text[at - 1] == '.';
-        App::Property* prop = afterDot ? nullptr : set->getPropertyByName(it->str().c_str());
-        out += text.substr(last, at - last);
-        out += prop && prop->getGroup() && std::strcmp(prop->getGroup(), "Parameters") == 0 ? prefix + it->str()
-                                                                                          : it->str();
-        last = at + it->length();
-    }
-    return out + text.substr(last);
-}
 }  // namespace
 
 std::string DesignGui::parameterExpression(App::Document* doc, const std::string& text)
 {
-    return mapParameters(doc, text, true);
+    return Design::toParameterExpression(doc, text);
 }
 
 std::string DesignGui::displayExpression(App::Document* doc, const std::string& text)
 {
-    return mapParameters(doc, text, false);
+    return Design::fromParameterExpression(doc, text);
 }
 
 // ---------------------------------------------------------------------------------------------

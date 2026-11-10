@@ -3308,7 +3308,9 @@ QString calculateLine(const NotePanel& note, QString line)
     line = line.mid(std::max(line.lastIndexOf(QLatin1Char(':')), line.lastIndexOf(QLatin1Char('='))) + 1).trimmed();
     static const QRegularExpression decimalComma(QStringLiteral(R"((\d),(\d))"));
     line.replace(decimalComma, QStringLiteral(R"(\1.\2)"));
-    if (line.isEmpty()) {
+    // ein bloßer Name ("Wand =") ist der Anfang einer Parameterzeile (Idee 3), keine Rechnung
+    static const QRegularExpression name(QStringLiteral(R"(^[^\W\d]\w*$)"), QRegularExpression::UseUnicodePropertiesOption);
+    if (line.isEmpty() || name.match(line).hasMatch()) {
         return {};
     }
     // Der Parser sucht bloße Namen am Besitzer: mit dem Parameter-Objekt als Besitzer gelten die Parameternamen
@@ -3336,13 +3338,54 @@ QString calculateLine(const NotePanel& note, QString line)
     }
 }
 
+/// Idee 3: Zeilen "Name = Ausdruck" der Notiz sind Parameter (Design.syncNoteParameters legt an, löscht, schreibt
+/// Werte und Fehler dahinter). Fehlerhinweise schreibt das Design englisch: hier hin und zurück übersetzt.
+void syncNoteParameters(App::DocumentObject* obj, QPlainTextEdit* edit)
+{
+    auto text = obj ? static_cast<App::PropertyString*>(obj->getPropertyByName("Text")) : nullptr;
+    auto defines = obj ? obj->getPropertyByName("Defines") : nullptr;
+    if (!text || !defines || (!std::strchr(text->getValue(), '=') && static_cast<App::PropertyStringList*>(defines)->getSize() == 0)) {
+        return;  // keine Zeile mit "=" und nichts angelegt: nichts abzugleichen
+    }
+    static const char* hints[] = {"Already defined in", "This name is used twice", "Choose another name",
+                                  "Not a value or formula", " is still used by "};
+    QString value = QString::fromUtf8(text->getValue());
+    for (const char* hint : hints) {
+        value.replace(T(hint), QString::fromUtf8(hint));
+    }
+    text->setValue(value.toStdString());
+    runDesign(obj->getDocument(), "Change Parameters", "Design.syncNoteParameters(" + pyObject(obj) + ")");
+    value = QString::fromUtf8(text->getValue());
+    for (const char* hint : hints) {
+        value.replace(QString::fromUtf8(hint), T(hint));
+    }
+    text->setValue(value.toStdString());
+    if (edit->toPlainText() != value) {  // Hinweise sind dazugekommen: Text erneuern, Schreibstelle behalten
+        const QTextCursor old = edit->textCursor();
+        const int line = old.blockNumber();
+        const int column = old.positionInBlock();
+        const QSignalBlocker block(edit);
+        edit->setPlainText(value);
+        QTextCursor cursor(edit->document()->findBlockByNumber(std::min(line, edit->document()->blockCount() - 1)));
+        cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, std::min(column, cursor.block().length() - 1));
+        edit->setTextCursor(cursor);
+    }
+}
+
 /// Textfeld im Post-it: "=" am Zeilenende rechnet, Esc gibt die Tastatur an die 3D-Ansicht zurück
 class NoteEdit: public QPlainTextEdit
 {
 public:
     std::function<QString(const QString&)> calculate;
+    std::function<void()> finished;  ///< Zeile fertig (Enter) oder Notiz verlassen: Parameter abgleichen
 
 protected:
+    void focusOutEvent(QFocusEvent* event) override
+    {
+        QPlainTextEdit::focusOutEvent(event);
+        finished();
+    }
+
     void keyPressEvent(QKeyEvent* event) override
     {
         if (event->key() == Qt::Key_Escape) {
@@ -3352,6 +3395,10 @@ protected:
             return;
         }
         QPlainTextEdit::keyPressEvent(event);
+        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+            finished();
+            return;
+        }
         QTextCursor cursor = textCursor();
         if (event->text() == QLatin1String("=") && cursor.atBlockEnd()) {
             const QString result = calculate(cursor.block().text());
@@ -3445,7 +3492,8 @@ NotePanel makeNotePanel(App::DocumentObject* obj)
     auto edit = new NoteEdit;
     edit->calculate = [note](const QString& line) { return calculateLine(note, line); };
     edit->setObjectName(QStringLiteral("NoteText"));
-    edit->setPlaceholderText(T("Write here or calculate: 120 / 4 ="));
+    edit->finished = [find, edit] { syncNoteParameters(find(), edit); };
+    edit->setPlaceholderText(T("Write here, calculate (120 / 4 =) or define a parameter (Wall = 2 mm)"));
     edit->setTabChangesFocus(true);
     edit->document()->setDocumentMargin(10);  // Text beginnt bündig mit dem Titel
     setTextStyle(edit, Text::Body);
@@ -3533,7 +3581,11 @@ const std::map<std::string, std::vector<std::string>>& searchSynonyms()
     static const std::map<std::string, std::vector<std::string>> words = {
         {"Design_Extrude", {"extrudieren", "pad", "pocket", "ziehen", "block", "platte", "tasche"}},
         {"Design_Hole", {"loch", "bohren", "drill", "bore", "gewindebohrung", "senkung", "screw hole"}},
-        {"Design_Thread", {"gewinde", "schraube", "bolt", "screw", "mutter", "nut"}},
+        {"Design_Thread", {"gewinde", "schraube", "bolt", "screw", "mutter", "nut", "druckgewinde"}},
+        {"Design_Fastener", {"schraube hier", "schraube", "verschrauben", "screw", "bolt", "einschmelzmutter", "gewindeeinsatz",
+                             "heat-set insert", "mutterfalle", "nut trap", "zylinderkopf", "senkkopf", "fastener"}},
+        {"Design_Fit", {"passung", "spiel", "toleranz", "h7", "presspassung", "spielpassung", "clearance", "tolerance",
+                        "druckspiel", "press fit"}},
         {"Design_Fillet", {"runden", "abrunden", "rundung", "round", "radius"}},
         {"Design_Chamfer", {"fase", "anfasen", "bevel"}},
         {"Design_Shell", {"aushoehlen", "hohl", "wandstaerke", "hollow"}},
@@ -4512,9 +4564,9 @@ void Gui::Shell::install()
                  "Std_Undo", "Std_Redo",
                  "#CREATE", "Design_CreateSketch", "Design_Extrude", "Design_Revolve",
                  "Design_Sweep|Design_Loft|Design_Rib|Design_Web|Design_Emboss",
-                 "Design_Box|Design_Cylinder|Design_Sphere|Design_Torus|Design_Coil", "Design_Hole|Design_Thread",
+                 "Design_Box|Design_Cylinder|Design_Sphere|Design_Torus|Design_Coil", "Design_Hole|Design_Fastener|Design_Thread",
                  "Design_Pattern", "Design_Mirror",
-                 "#MODIFY", "Design_PressPull|Design_ReplaceFace|Design_SplitFace", "Design_Fillet", "Design_Chamfer",
+                 "#MODIFY", "Design_PressPull|Design_Fit|Design_ReplaceFace|Design_SplitFace", "Design_Fillet", "Design_Chamfer",
                  "Design_Shell", "Design_Draft", "Design_Combine|Design_SplitBody", "Design_Move|Design_Align|Design_Scale",
                  "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",

@@ -18,6 +18,10 @@
 #include <Mod/Material/App/MaterialManager.h>
 #include <Mod/Material/App/Materials.h>
 #include <Mod/PartDesign/App/FeatureHole.h>
+#include "NoteParameters.h"
+#include "Fits.h"
+#include <IntCurvesFace_ShapeIntersector.hxx>
+#include <gp_Lin.hxx>
 #include <Mod/Part/App/ExtrusionHelper.h>
 #include <Mod/Part/App/TopoShapeOpCode.h>
 
@@ -80,6 +84,7 @@
 #include <gp_Pln.hxx>
 
 #include <algorithm>
+#include <regex>
 #include <iomanip>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
@@ -452,6 +457,80 @@ const std::vector<HeadTable>& headTables()
         return result;
     }();
     return tables;
+}
+
+/// Senkung einer Schraubennorm für ein Gewinde wie "M3x0.5": (Durchmesser, Tiefe); nullptr ohne Eintrag
+const std::pair<double, double>* headSize(const std::string& screw, const std::string& designation,
+                                          bool* countersink = nullptr, double* angle = nullptr)
+{
+    for (const auto& h : headTables()) {
+        if (h.name == screw && h.sizes.contains(designation)) {
+            if (countersink) {
+                *countersink = h.countersink;
+            }
+            if (angle) {
+                *angle = h.angle;
+            }
+            return &h.sizes.at(designation);
+        }
+    }
+    return nullptr;
+}
+
+/// Zylinderfläche einer Welle (Normale zeigt von der Achse weg), sonst einer Bohrung. Die Orientierung allein hängt
+/// davon ab, wie die Fläche entstand.
+bool isShaftFace(const TopoDS_Face& face)
+{
+    BRepAdaptor_Surface surface(face);
+    const gp_Ax1 axis = surface.Cylinder().Axis();
+    gp_Pnt mid;
+    gp_Vec du, dv;
+    surface.D1((surface.FirstUParameter() + surface.LastUParameter()) / 2,
+               (surface.FirstVParameter() + surface.LastVParameter()) / 2, mid, du, dv);
+    gp_Vec normal = du.Crossed(dv);
+    if (face.Orientation() == TopAbs_REVERSED) {
+        normal.Reverse();
+    }
+    const gp_Vec along(axis.Direction());
+    const gp_Vec fromAxis(axis.Location().Translated(along * gp_Vec(axis.Location(), mid).Dot(along)), mid);
+    return normal.Dot(fromAxis) > 0;
+}
+
+/// Flächen versetzen wie Fusions Offset Face (positiv: aus dem Körper heraus), die Nachbarn passen sich an
+bool offsetFaces(const TopoDS_Shape& shape, const std::vector<std::pair<TopoDS_Face, double>>& faces,
+                 Part::TopoShape& out)
+{
+    BRepOffset_MakeOffset offset;
+    offset.Initialize(shape, 0.0, 1e-6, BRepOffset_Skin, Standard_False, Standard_False, GeomAbs_Intersection);
+    for (const auto& [face, d] : faces) {
+        offset.SetOffsetOnFace(face, d);
+    }
+    try {
+        offset.MakeOffsetShape();
+    }
+    catch (const Standard_Failure&) {
+        return false;
+    }
+    if (!offset.IsDone() || offset.Shape().IsNull()) {
+        return false;
+    }
+    out = Part::TopoShape(offset.Shape());
+    return out.isValid() && out.countSubShapes(TopAbs_SOLID) > 0;
+}
+
+/// Bohrung ab ax (liegt lead über der Fläche) mit Senkung: type 1 Zylinder-, 2 Kegelsenkung (Radius head)
+std::vector<Part::TopoShape> holeShape(const gp_Ax2& ax, double r, double depth, long type, double head,
+                                       double headDepth, double angle, double lead)
+{
+    std::vector<Part::TopoShape> parts {Part::TopoShape(BRepPrimAPI_MakeCylinder(ax, r, depth).Shape())};
+    if (type == 1 && head > r) {
+        parts.emplace_back(BRepPrimAPI_MakeCylinder(ax, head, headDepth + lead).Shape());
+    }
+    else if (type == 2 && head > r) {
+        const double h = head / std::tan(angle * M_PI / 360.0);
+        parts.emplace_back(BRepPrimAPI_MakeCone(ax, head, 0, h + lead).Shape());
+    }
+    return parts;
 }
 
 TopoDS_Shape threadGrooves(const gp_Ax1& axis, double start, double length, double r, double pitch, bool external,
@@ -1480,6 +1559,308 @@ bool Design::setDrivingDimension(App::DocumentObject* owner, const std::string& 
     return true;
 }
 
+
+// --- Idee 3: Die Notiz ist die Parameterliste --------------------------------------------------------------------
+
+App::DocumentObject* Design::parameterSet(App::Document* doc, bool create)
+{
+    App::Part* r = root(doc, create);
+    if (!r) {
+        return nullptr;
+    }
+    for (auto obj : r->Group.getValues()) {
+        if (obj->isDerivedFrom<App::VarSet>() && std::strcmp(obj->Label.getValue(), "Parameters") == 0) {
+            return obj;
+        }
+    }
+    if (!create) {
+        return nullptr;
+    }
+    App::DocumentObject* set = doc->addObject("App::VarSet", "Parameters");
+    set->Label.setValue("Parameters");
+    r->addObject(set);
+    return set;
+}
+
+std::string Design::toParameterExpression(App::Document* doc, const std::string& text)
+{
+    App::DocumentObject* set = parameterSet(doc, false);
+    if (!set) {
+        return NoteParameters::identifier(text);
+    }
+    const std::string folded = NoteParameters::identifier(text);  // Wandstärke -> Wandstaerke
+    const std::string prefix = std::string(set->getNameInDocument()) + ".";
+    static const std::regex word(R"([A-Za-z_]\w*)");
+    std::string out;
+    size_t last = 0;
+    for (auto it = std::sregex_iterator(folded.begin(), folded.end(), word); it != std::sregex_iterator(); ++it) {
+        const size_t at = it->position();
+        const bool afterDot = at > 0 && folded[at - 1] == '.';
+        App::Property* prop = afterDot ? nullptr : set->getPropertyByName(it->str().c_str());
+        out += folded.substr(last, at - last);
+        out += prop && prop->getGroup() && std::strcmp(prop->getGroup(), "Parameters") == 0 ? prefix + it->str() : it->str();
+        last = at + it->length();
+    }
+    return out + folded.substr(last);
+}
+
+std::string Design::fromParameterExpression(App::Document* doc, const std::string& text)
+{
+    App::DocumentObject* set = parameterSet(doc, false);
+    if (!set) {
+        return text;
+    }
+    std::string out = text;
+    const std::string prefix = std::string(set->getNameInDocument()) + ".";
+    for (size_t pos; (pos = out.find(prefix)) != std::string::npos;) {
+        out.erase(pos, prefix.size());
+    }
+    // geschriebene Namen (mit Umlauten) stehen in der Beschreibung des Parameters
+    std::vector<App::Property*> props;
+    set->getPropertyList(props);
+    for (App::Property* p : props) {
+        const char* doc_ = p->getDocumentation();
+        if (p->getGroup() && std::strcmp(p->getGroup(), "Parameters") == 0 && doc_ && *doc_
+            && NoteParameters::identifier(doc_) == p->getName() && std::strcmp(doc_, p->getName()) != 0) {
+            const std::regex whole("\\b" + std::string(p->getName()) + "\\b");
+            out = std::regex_replace(out, whole, doc_);
+        }
+    }
+    return out;
+}
+
+namespace
+{
+bool syncingNotes = false;  ///< Notiz schreibt Parameter: die Gegenrichtung (parameterChanged) schweigt solange
+
+/// Wird der Parameter noch in einer Formel benutzt? Namen der Objekte, die ihn brauchen (Verweise lauten immer
+/// "Parameters.Name", siehe toParameterExpression)
+std::vector<std::string> parameterUsers(App::DocumentObject* set, const std::string& id)
+{
+    std::vector<std::string> users;
+    const std::regex reference(R"(\b)" + std::string(set->getNameInDocument()) + R"(\.)" + id + R"(\b)");
+    for (auto obj : set->getDocument()->getObjects()) {
+        for (const auto& [path, expr] : obj->ExpressionEngine.getExpressions()) {
+            if (!(obj == set && path.getPropertyName() == id) && std::regex_search(expr->toString(), reference)) {
+                users.emplace_back(obj == set ? "Parameters" : obj->Label.getValue());
+                break;
+            }
+        }
+    }
+    return users;
+}
+
+std::vector<std::string> splitLines(const std::string& text)
+{
+    std::vector<std::string> lines;
+    std::string line;
+    std::istringstream in(text);
+    while (std::getline(in, line)) {
+        lines.push_back(line);
+    }
+    if (!text.empty() && text.back() == '\n') {
+        lines.emplace_back();
+    }
+    return lines;
+}
+
+std::string joinLines(const std::vector<std::string>& lines)
+{
+    std::string out;
+    for (size_t i = 0; i < lines.size(); ++i) {
+        out += (i ? "\n" : "") + lines[i];
+    }
+    return out;
+}
+}  // namespace
+
+namespace
+{
+/// Werte hinter Formeln (→), Fehler hinter fehlerhafte Zeilen (⚠); ohne errors bleiben vorhandene Fehlerhinweise stehen
+void writeNoteHints(std::vector<std::string>& lines, App::DocumentObject* set, const std::map<size_t, std::string>* errorsIn)
+{
+    std::map<size_t, std::string> errors = errorsIn ? *errorsIn : std::map<size_t, std::string>();
+    for (size_t i = 0; set && i < lines.size(); ++i) {
+        const NoteParameters::Line line = NoteParameters::parse(lines[i]);
+        if (!line.definition || (!errorsIn && lines[i].find(" \xE2\x9A\xA0 ") != std::string::npos)) {
+            continue;
+        }
+        std::string value;
+        if (!errors.contains(i)) {
+            auto q = freecad_cast<App::PropertyQuantity*>(set->getPropertyByName(line.id.c_str()));
+            // Formel: Rechenzeichen oder ein anderer Parameter; eine bloße Zahl mit Einheit braucht keinen Hinweis
+            bool formula = line.expression.find_first_of("+-*/^()") != std::string::npos;
+            static const std::regex word(R"([A-Za-z_]\w*)");
+            const std::string folded = NoteParameters::identifier(line.expression);
+            for (auto it = std::sregex_iterator(folded.begin(), folded.end(), word); !formula && it != std::sregex_iterator(); ++it) {
+                App::Property* other = set->getPropertyByName(it->str().c_str());
+                formula = other && other->getGroup() && std::strcmp(other->getGroup(), "Parameters") == 0;
+            }
+            if (q && formula) {
+                value = q->getQuantityValue().getUserString();
+            }
+        }
+        lines[i] = NoteParameters::withHint(lines[i], value, errors.contains(i) ? errors[i] : std::string());
+    }
+}
+}  // namespace
+
+void Design::syncNoteParameters(Note* note)
+{
+    App::Document* doc = note->getDocument();
+    auto lines = splitLines(note->Text.getValue());
+    // Namen, die andere Notizen schon anlegen
+    std::map<std::string, std::string> others;
+    for (auto obj : doc->getObjectsOfType(Note::getClassTypeId())) {
+        if (obj != note) {
+            for (const auto& id : static_cast<Note*>(obj)->Defines.getValues()) {
+                others[id] = obj->Label.getValue();
+            }
+        }
+    }
+    const bool any = std::ranges::any_of(lines, [](const std::string& l) { return NoteParameters::parse(l).definition; });
+    App::DocumentObject* set = parameterSet(doc, any);
+    std::vector<std::string> defined;
+    std::map<size_t, std::string> errors;
+    syncingNotes = true;
+    for (size_t i = 0; set && i < lines.size(); ++i) {
+        const NoteParameters::Line line = NoteParameters::parse(lines[i]);
+        if (!line.definition) {
+            continue;
+        }
+        if (others.contains(line.id)) {
+            errors[i] = "Already defined in " + others[line.id];
+            continue;
+        }
+        if (std::ranges::find(defined, line.id) != defined.end()) {
+            errors[i] = "This name is used twice";
+            continue;
+        }
+        App::Property* prop = set->getPropertyByName(line.id.c_str());
+        if (prop && (!prop->getGroup() || std::strcmp(prop->getGroup(), "Parameters") != 0)) {
+            errors[i] = "Choose another name";
+            continue;
+        }
+        const bool created = !prop;
+        if (created) {
+            prop = set->addDynamicProperty("App::PropertyQuantity", line.id.c_str(), "Parameters", line.name.c_str());
+        }
+        // Dezimalkomma wie in den Rechenzeilen der Notiz: 2,5 -> 2.5
+        const std::string expression = std::regex_replace(line.expression, std::regex(R"((\d),(\d))"), "$1.$2");
+        try {
+            set->setExpression(App::ObjectIdentifier(*prop),
+                               std::shared_ptr<App::Expression>(
+                                   App::Expression::parse(set, toParameterExpression(doc, expression)).release()));
+            defined.push_back(line.id);
+        }
+        catch (const Base::Exception& e) {
+            if (created) {
+                set->removeDynamicProperty(line.id.c_str());
+            }
+            errors[i] = "Not a value or formula";
+        }
+    }
+    // weggefallene Zeilen: Parameter löschen, außer er wird noch gebraucht
+    std::vector<std::string> kept;
+    for (const auto& id : note->Defines.getValues()) {
+        if (std::ranges::find(defined, id) != defined.end() || !set || !set->getPropertyByName(id.c_str())) {
+            continue;
+        }
+        const auto users = parameterUsers(set, id);
+        if (users.empty()) {
+            set->removeDynamicProperty(id.c_str());
+            continue;
+        }
+        kept.push_back(id);
+        std::string list;
+        for (const auto& u : users) {
+            list += (list.empty() ? "" : ", ") + u;
+        }
+        const char* shown = set->getPropertyByName(id.c_str())->getDocumentation();
+        const std::string marker = "\xE2\x9A\xA0 " + std::string(shown && *shown ? shown : id.c_str()) + " is still used by ";
+        std::erase_if(lines, [&marker](const std::string& l) { return l.rfind(marker, 0) == 0; });
+        lines.push_back(marker + list);
+    }
+    // Hinweise der übrigen "noch benutzt"-Zeilen weg, wenn der Parameter wieder in der Notiz steht oder weg ist
+    std::erase_if(lines, [&](const std::string& l) {
+        if (l.rfind("\xE2\x9A\xA0 ", 0) != 0 || l.find(" is still used by ") == std::string::npos) {
+            return false;
+        }
+        const std::string name = l.substr(4, l.find(" is still used by ") - 4);
+        return std::ranges::find(kept, NoteParameters::identifier(name)) == kept.end();
+    });
+    doc->recompute();
+    writeNoteHints(lines, set, &errors);
+    for (const auto& id : kept) {
+        defined.push_back(id);
+    }
+    note->Defines.setValues(defined);
+    const std::string text = joinLines(lines);
+    if (text != note->Text.getValue()) {
+        note->Text.setValue(text);
+    }
+    syncingNotes = false;
+}
+
+void Design::refreshNoteValues(App::Document* doc)
+{
+    App::DocumentObject* set = parameterSet(doc, false);
+    if (!set || syncingNotes) {
+        return;
+    }
+    for (auto obj : doc->getObjectsOfType(Note::getClassTypeId())) {
+        auto note = static_cast<Note*>(obj);
+        if (note->Defines.getSize() == 0) {
+            continue;
+        }
+        auto lines = splitLines(note->Text.getValue());
+        writeNoteHints(lines, set, nullptr);
+        const std::string text = joinLines(lines);
+        if (text != note->Text.getValue()) {
+            syncingNotes = true;
+            note->Text.setValue(text);
+            syncingNotes = false;
+        }
+    }
+}
+
+void Design::parameterChanged(App::DocumentObject* set, const char* name)
+{
+    if (syncingNotes || !set) {
+        return;
+    }
+    App::Property* prop = set->getPropertyByName(name);
+    if (!prop || !prop->getGroup() || std::strcmp(prop->getGroup(), "Parameters") != 0) {
+        return;
+    }
+    const auto info = set->getExpression(App::ObjectIdentifier(*prop));
+    std::string expression = info.expression ? fromParameterExpression(set->getDocument(), info.expression->toString())
+                                             : static_cast<App::PropertyQuantity*>(prop)->getQuantityValue().getUserString();
+    for (auto obj : set->getDocument()->getObjectsOfType(Note::getClassTypeId())) {
+        auto note = static_cast<Note*>(obj);
+        const auto& ids = note->Defines.getValues();
+        if (std::ranges::find(ids, std::string(name)) == ids.end()) {
+            continue;
+        }
+        auto lines = splitLines(note->Text.getValue());
+        bool changed = false;
+        for (auto& l : lines) {
+            const NoteParameters::Line line = NoteParameters::parse(l);
+            if (line.definition && line.id == name
+                && toParameterExpression(set->getDocument(), line.expression)
+                       != toParameterExpression(set->getDocument(), expression)) {
+                l = line.name + " = " + expression;
+                changed = true;
+            }
+        }
+        if (changed) {  // die Werte der Formeln zieht refreshNoteValues nach dem Rechnen nach
+            syncingNotes = true;
+            note->Text.setValue(joinLines(lines));
+            syncingNotes = false;
+        }
+    }
+}
+
 Design::Body* Design::newBody(Feature* feature, App::Part* component)
 {
     App::Document* doc = feature->getDocument();
@@ -2118,6 +2499,7 @@ DressUp::DressUp()
                       "Traceable names of the selected elements");
     ADD_PROPERTY_TYPE(ElementHints, (), "DressUp", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
                       "Position and size of the selected elements");
+    ADD_PROPERTY_TYPE(ElementBodies, (), "DressUp", App::Prop_Hidden, "Index in Bodies of each selected element");
     Operation.setStatus(App::Property::Hidden, true);  // verändert immer den eigenen Body
 }
 
@@ -2176,8 +2558,10 @@ std::string closestElement(const Part::TopoShape& shape, const std::string& name
 }
 }  // namespace
 
-std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type)
+std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type, size_t body)
 {
+    const std::vector<long> owners = ElementBodies.getValues();
+    const auto mine = [&owners, body](size_t i) { return i < owners.size() ? size_t(owners[i]) == body : body == 0; };
     // Gewählte Elemente über ihre verfolgbaren Namen wiederfinden (topologische Benennung):
     // 1. derselbe Name existiert noch, 2. ein Element, das laut Entstehungsgeschichte daraus hervorging
     //    (z. B. wenn davor ein Feature eingefügt wurde), 3. sonst die ursprüngliche Nummer.
@@ -2187,8 +2571,11 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
     maps.resize(names.size());
     hints.resize(names.size());
     std::vector<std::string> uncertain;
-    App::DocumentObject* base = BaseFeatures.getSize() ? BaseFeatures.getValues().front() : nullptr;
+    App::DocumentObject* base = BaseFeatures.getSize() > int(body) ? BaseFeatures.getValues()[body] : nullptr;
     for (size_t i = 0; i < names.size(); ++i) {
+        if (!mine(i)) {
+            continue;
+        }
         if (!maps[i].empty()) {
             bool found = false;
             const Data::IndexedName idx = shape.getIndexedName(Data::MappedName(maps[i]));
@@ -2237,8 +2624,11 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
 
     std::vector<Part::TopoShape> result;
     TopTools_IndexedMapOfShape seen;
-    for (const auto& name : names) {
-        const Part::TopoShape sub = shape.getSubTopoShape(name.c_str(), true);
+    for (size_t i = 0; i < names.size(); ++i) {
+        if (!mine(i)) {
+            continue;
+        }
+        const Part::TopoShape sub = shape.getSubTopoShape(names[i].c_str(), true);
         for (const auto& el : sub.isNull() ? std::vector<Part::TopoShape>() : sub.getSubTopoShapes(type)) {
             if (seen.Add(el.getShape()) == seen.Extent()) {
                 result.push_back(el);
@@ -2984,14 +3374,8 @@ bool Hole::makeTool(Part::TopoShape& tool, std::string& error) const
     try {
         for (const auto& c : centers) {
             const gp_Ax2 ax(c.Translated(gp_Vec(dir) * -lead), dir);
-            std::vector<Part::TopoShape> parts {Part::TopoShape(BRepPrimAPI_MakeCylinder(ax, r, depth).Shape())};
-            if (HoleType.getValue() == 1 && head > r) {
-                parts.emplace_back(BRepPrimAPI_MakeCylinder(ax, head, HeadDepth.getValue() + lead).Shape());
-            }
-            else if (HoleType.getValue() == 2 && head > r) {
-                const double h = head / std::tan(CountersinkAngle.getValue() * M_PI / 360.0);
-                parts.emplace_back(BRepPrimAPI_MakeCone(ax, head, 0, h + lead).Shape());
-            }
+            std::vector<Part::TopoShape> parts = holeShape(ax, r, depth, HoleType.getValue(), head,
+                                                           HeadDepth.getValue(), CountersinkAngle.getValue(), lead);
             if (thread) {
                 const double minor = (thread->diameter - 1.082532 * thread->pitch) / 2;
                 // ab der Oberfläche bis eine Steigung vor den Grund (wie ein Gewindebohrer im Sackloch); die
@@ -3045,23 +3429,12 @@ App::DocumentObjectExecReturn* PressPull::compute()
     if (std::ranges::any_of(faces, [](const Part::TopoShape& f) {
             return BRepAdaptor_Surface(TopoDS::Face(f.getShape())).GetType() != GeomAbs_Plane;
         })) {
-        BRepOffset_MakeOffset offset;
-        offset.Initialize(shape.getShape(), 0.0, 1e-6, BRepOffset_Skin, Standard_False, Standard_False,
-                          GeomAbs_Intersection);
+        std::vector<std::pair<TopoDS_Face, double>> offsets;
         for (const auto& face : faces) {
-            offset.SetOffsetOnFace(TopoDS::Face(face.getShape()), d);
+            offsets.emplace_back(TopoDS::Face(face.getShape()), d);
         }
-        try {
-            offset.MakeOffsetShape();
-        }
-        catch (const Standard_Failure&) {
-            return new App::DocumentObjectExecReturn("Press Pull failed: distance too large?");
-        }
-        if (!offset.IsDone() || offset.Shape().IsNull()) {
-            return new App::DocumentObjectExecReturn("Press Pull failed: distance too large?");
-        }
-        Part::TopoShape res(offset.Shape());
-        if (!res.isValid() || res.countSubShapes(TopAbs_SOLID) == 0) {
+        Part::TopoShape res;
+        if (!offsetFaces(shape.getShape(), offsets, res)) {
             return new App::DocumentObjectExecReturn("Press Pull failed: distance too large?");
         }
         setResults({res});
@@ -3093,6 +3466,388 @@ App::DocumentObjectExecReturn* PressPull::compute()
     }
     setResults({res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched)});
     return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+namespace
+{
+const char* FittingEnums[] = {"3D print tight", "3D print normal", "3D print loose", "H7/g6", "H7/h6", "H7/k6",
+                              "H7/p6", "H8/f7", nullptr};
+
+/// Spiel je Seite für die Druck-Passungen 0 … 2 (Einstellungen, Vorgabe 0,1 / 0,2 / 0,3 mm)
+double printClearance(long fit)
+{
+    static const char* names[] = {"PrintFitTight", "PrintFitNormal", "PrintFitLoose"};
+    return App::GetApplication()
+        .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")
+        ->GetFloat(names[std::clamp<long>(fit, 0, 2)], 0.1 * (std::clamp<long>(fit, 0, 2) + 1));
+}
+
+std::string signedNumber(double v, int decimals)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(decimals) << std::showpos << (std::abs(v) < 1e-9 ? 0.0 : v);
+    return out.str();
+}
+}  // namespace
+
+PROPERTY_SOURCE(Design::Fitting, Design::DressUp)
+
+Fitting::Fitting()
+{
+    ADD_PROPERTY_TYPE(Fit, (1L), "Parameters", App::Prop_None, "3D print clearance or ISO 286 fit");
+    Fit.setEnums(FittingEnums);
+    ADD_PROPERTY_TYPE(Clearance, (printClearance(1)), "Parameters", App::Prop_None, "Clearance per side for 3D printing");
+    ADD_PROPERTY_TYPE(Nominal, (0.0), "Parameters", App::Prop_None,
+                      "Nominal diameter of the pair; 0 takes the diameter of the hole");
+    ADD_PROPERTY_TYPE(Play, (""), "Parameters", App::PropertyType(App::Prop_Output | App::Prop_ReadOnly),
+                      "Play on the diameter; negative is interference");
+    Size.setStatus(App::Property::Hidden, true);
+    Nominal.setStatus(App::Property::Hidden, true);  // Druck-Passung: kein Nennmaß nötig
+}
+
+void Fitting::onChanged(const App::Property* prop)
+{
+    if (prop == &Fit) {
+        const bool print = Fit.getValue() <= 2;
+        if (print && !isRestoring()) {
+            Clearance.setValue(printClearance(Fit.getValue()));
+        }
+        Clearance.setStatus(App::Property::Hidden, !print);
+        Nominal.setStatus(App::Property::Hidden, print);
+    }
+    DressUp::onChanged(prop);
+}
+
+App::DocumentObjectExecReturn* Fitting::compute()
+{
+    if (Bodies.getSize() < 1 || Bodies.getSize() > 2 || BaseFeatures.getSize() != Bodies.getSize()) {
+        return new App::DocumentObjectExecReturn("Select faces of one or two bodies");
+    }
+    const bool print = Fit.getValue() <= 2;
+    const double c = Clearance.getValue();
+    // gewählte Flächen je Body; Bohrungen und Wellen erkennen
+    std::vector<Part::TopoShape> shapes;
+    std::vector<std::vector<TopoDS_Face>> faces;
+    bool anyHole = false, anyRound = false;
+    double holeD = 0, shaftD = 0;
+    for (int i = 0; i < Bodies.getSize(); ++i) {
+        shapes.push_back(baseShape(i));
+        faces.emplace_back();
+        for (const auto& f : elements(shapes.back(), TopAbs_FACE, i)) {
+            const TopoDS_Face face = TopoDS::Face(f.getShape());
+            BRepAdaptor_Surface surface(face);
+            if (surface.GetType() == GeomAbs_Cylinder) {
+                anyRound = true;
+                const double d = 2 * surface.Cylinder().Radius();
+                (isShaftFace(face) ? shaftD : holeD) = d;
+                anyHole = anyHole || !isShaftFace(face);
+            }
+            else if (surface.GetType() != GeomAbs_Plane) {
+                return new App::DocumentObjectExecReturn("Select round or flat faces");
+            }
+            else if (!print) {
+                return new App::DocumentObjectExecReturn("ISO fits are for round faces; use a 3D print fit for flat faces");
+            }
+            faces.back().push_back(face);
+        }
+    }
+    if (std::ranges::all_of(faces, &std::vector<TopoDS_Face>::empty)) {
+        return new App::DocumentObjectExecReturn("Select round or flat faces");
+    }
+    const double nominal = Nominal.getValue() > 0 ? Nominal.getValue() : anyHole ? holeD : shaftD;
+    Fits::Deviation hole, shaft;
+    double minPlay = 0, maxPlay = 0;
+    if (!print && !Fits::fit(Fit.getValueAsString(), nominal, hole, shaft, minPlay, maxPlay)) {
+        return new App::DocumentObjectExecReturn("ISO fits go up to 500 mm");
+    }
+    std::vector<Part::TopoShape> results;
+    for (size_t i = 0; i < shapes.size(); ++i) {
+        std::vector<std::pair<TopoDS_Face, double>> offsets;
+        for (const auto& face : faces[i]) {
+            double d = -c;  // ebene Fläche: um das Spiel zurück
+            if (BRepAdaptor_Surface(face).GetType() == GeomAbs_Cylinder) {
+                const bool isShaft = isShaftFace(face);
+                const double r = BRepAdaptor_Surface(face).Cylinder().Radius();
+                if (print && isShaft && anyHole) {
+                    continue;  // Druck: die Bohrung bekommt das Spiel, die Welle bleibt
+                }
+                // Zielradius: Mittelmaß des Toleranzfelds (µm am Durchmesser) bzw. um das Spiel größer/kleiner
+                const double target = print ? r + (isShaft ? -c : c)
+                                            : nominal / 2 + (isShaft ? shaft.mean() : hole.mean()) / 2000;
+                // Offset zeigt aus dem Material: bei der Welle nach außen, bei der Bohrung zur Achse
+                d = isShaft ? target - r : r - target;
+            }
+            if (std::abs(d) > 1e-9) {
+                offsets.emplace_back(face, d);
+            }
+        }
+        Part::TopoShape res = shapes[i];
+        if (!offsets.empty() && !offsetFaces(shapes[i].getShape(), offsets, res)) {
+            return new App::DocumentObjectExecReturn("The fit could not be applied to these faces");
+        }
+        results.push_back(res);
+    }
+    Play.setValue(print ? signedNumber(anyRound ? 2 * c : c, 2) + " mm"
+                        : signedNumber(minPlay, 0) + " … " + signedNumber(maxPlay, 0) + " µm");
+    setResults(results);
+    return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+namespace
+{
+const char* ScrewEnums[] = {"ISO 4762", "ISO 10642", "ISO 7380", nullptr};
+const char* FastenerSizeEnums[] = {"M2", "M2.5", "M3", "M4", "M5", "M6", "M8", "M10", "M12", nullptr};
+const char* BottomEnums[] = {"Tapped hole", "Heat-set insert", "Nut trap", nullptr};
+
+/// Regelgewinde zu "M3"
+const PartDesign::Hole::ThreadDescription* metricThread(const std::string& size)
+{
+    for (const auto& t : *threadTable(1)) {
+        if (std::string(t.designation).rfind(size + "x", 0) == 0) {
+            return &t;
+        }
+    }
+    return nullptr;
+}
+
+/// Einschmelzmutter: Bohrung (Durchmesser, Tiefe). ponytail: übliche Werte für Ruthex-artige Muttern; andere
+/// Hersteller weichen ab, dann Durchmesser per Hand (eigenes Hole-Feature)
+bool insertHole(const std::string& size, double& diameter, double& depth)
+{
+    static const std::map<std::string, std::pair<double, double>> sizes = {
+        {"M2", {3.2, 4.0}}, {"M2.5", {3.6, 5.7}}, {"M3", {4.0, 5.7}}, {"M4", {5.6, 8.1}},
+        {"M5", {6.4, 9.5}}, {"M6", {8.0, 12.7}},  {"M8", {9.7, 12.7}}};
+    const auto it = sizes.find(size);
+    if (it == sizes.end()) {
+        return false;
+    }
+    std::tie(diameter, depth) = it->second;
+    return true;
+}
+
+/// Sechskantmutter ISO 4032: (Schlüsselweite, Höhe)
+std::pair<double, double> nutSize(const std::string& size)
+{
+    static const std::map<std::string, std::pair<double, double>> sizes = {
+        {"M2", {4, 1.6}},   {"M2.5", {5, 2}},   {"M3", {5.5, 2.4}},  {"M4", {7, 3.2}},    {"M5", {8, 4.7}},
+        {"M6", {10, 5.2}}, {"M8", {13, 6.8}}, {"M10", {16, 8.4}}, {"M12", {18, 10.8}}};
+    return sizes.at(size);
+}
+
+/// Längen nach ISO 4762 / 10642 / 7380 (Auswahl)
+constexpr double ScrewLengths[] = {3, 4, 5, 6, 8, 10, 12, 16, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 80, 90, 100, 110, 120};
+
+/// Schnittstellen der Geraden p + t·d mit shape, aufsteigend
+std::vector<double> crossings(const TopoDS_Shape& shape, const gp_Pnt& p, const gp_Dir& d)
+{
+    IntCurvesFace_ShapeIntersector inter;
+    inter.Load(shape, 1e-6);
+    inter.Perform(gp_Lin(p, d), -1e-3, 1e5);
+    std::vector<double> ts;
+    for (int i = 1; inter.IsDone() && i <= inter.NbPnt(); ++i) {
+        ts.push_back(inter.WParameter(i));
+    }
+    std::ranges::sort(ts);
+    return ts;
+}
+
+/// Sechskant-Prisma um die Achse ax, Schlüsselweite s, Höhe h
+TopoDS_Shape hexPrism(const gp_Ax2& ax, double s, double h)
+{
+    BRepBuilderAPI_MakePolygon poly;
+    const double r = s / 2 / std::cos(M_PI / 6);
+    for (int k = 0; k < 6; ++k) {
+        const double a = k * M_PI / 3;
+        poly.Add(ax.Location().Translated(gp_Vec(ax.XDirection()) * (r * std::cos(a))
+                                          + gp_Vec(ax.YDirection()) * (r * std::sin(a))));
+    }
+    poly.Close();
+    return BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(poly.Wire()).Face(), gp_Vec(ax.Direction()) * h).Shape();
+}
+}  // namespace
+
+PROPERTY_SOURCE(Design::Fastener, Design::Feature)
+
+Fastener::Fastener()
+{
+    ADD_PROPERTY_TYPE(Position, (Base::Vector3d()), "Fastener", App::Prop_Hidden, "Entry point on the top face");
+    ADD_PROPERTY_TYPE(Direction, (Base::Vector3d(0, 0, -1)), "Fastener", App::Prop_Hidden, "Into the parts");
+    ADD_PROPERTY_TYPE(Screw, (0L), "Parameters", App::Prop_None, "Screw standard");
+    Screw.setEnums(ScrewEnums);
+    ADD_PROPERTY_TYPE(Size, (2L), "Parameters", App::Prop_None, "Screw size");
+    Size.setEnums(FastenerSizeEnums);
+    ADD_PROPERTY_TYPE(Bottom, (0L), "Parameters", App::Prop_None, "What holds the screw in the lower part");
+    Bottom.setEnums(BottomEnums);
+    ADD_PROPERTY_TYPE(AutoLength, (true), "Parameters", App::Prop_None, "Pick the standard length that fits");
+    ADD_PROPERTY_TYPE(Length, (10.0), "Parameters", App::Prop_None, "Screw length");
+    Length.setStatus(App::Property::ReadOnly, true);  // folgt AutoLength
+    Operation.setValue(2L);  // Cut
+    Operation.setStatus(App::Property::Hidden, true);
+}
+
+void Fastener::onChanged(const App::Property* prop)
+{
+    if (prop == &AutoLength) {
+        Length.setStatus(App::Property::ReadOnly, AutoLength.getValue());
+    }
+    Feature::onChanged(prop);
+}
+
+App::DocumentObjectExecReturn* Fastener::compute()
+{
+    if (Bodies.getSize() != 2 || BaseFeatures.getSize() != 2) {
+        return new App::DocumentObjectExecReturn("Click the top face of a part that lies on another part");
+    }
+    const std::string size = Size.getValueAsString();
+    const PartDesign::Hole::ThreadDescription* t = metricThread(size);
+    Base::Vector3d dir = Direction.getValue();
+    if (!t || dir.Length() < Precision::Confusion()) {
+        return new App::DocumentObjectExecReturn("Choose a screw size");
+    }
+    dir.Normalize();
+    const std::string screw = Screw.getValueAsString();
+    bool countersink = false;
+    double angle = 90;
+    const auto* head = headSize(screw, t->designation, &countersink, &angle);
+    if (!head) {
+        return new App::DocumentObjectExecReturn(screw + " has no size " + size);
+    }
+    const double recess = countersink ? 0 : head->second;  // Kopf versenkt: Länge zählt ab dem Grund der Senkung
+
+    // Lage je Body in den Koordinaten seiner Komponente; die Parameter entlang der Achse sind überall gleich
+    std::vector<Part::TopoShape> shapes {baseShape(0), baseShape(1)};
+    std::vector<gp_Ax2> axes;
+    for (int i = 0; i < 2; ++i) {
+        const Base::Placement inv = Design::componentOf(Bodies[i])->globalPlacement().inverse();
+        Base::Vector3d p = Position.getValue(), d = dir;
+        inv.multVec(p, p);
+        inv.getRotation().multVec(d, d);
+        axes.emplace_back(gp_Pnt(p.x, p.y, p.z), gp_Dir(d.x, d.y, d.z));
+    }
+    const auto top = crossings(shapes[0].getShape(), axes[0].Location(), axes[0].Direction());
+    const auto exitTop = std::ranges::find_if(top, [](double v) { return v > 1e-4; });
+    if (exitTop == top.end()) {
+        return new App::DocumentObjectExecReturn("The point is not on the top part");
+    }
+    const double t1 = *exitTop;
+    const auto lower = crossings(shapes[1].getShape(), axes[1].Location(), axes[1].Direction());
+    const auto entry = std::ranges::find_if(lower, [t1](double v) { return v > t1 - 1e-4; });
+    if (entry == lower.end() || entry + 1 == lower.end()) {
+        return new App::DocumentObjectExecReturn("There is no second part below this point");
+    }
+    const double t2 = *entry, t3 = *(entry + 1);
+
+    // Länge: unter dem Kopf bis in das untere Teil, so weit wie es hält
+    const long bottom = Bottom.getValue();
+    const double nominal = t->diameter;
+    double insertD = 0, insertDepth = 0;
+    if (bottom == 1 && !insertHole(size, insertD, insertDepth)) {
+        return new App::DocumentObjectExecReturn("There is no heat-set insert for " + size
+                                                 + "; use a tapped hole or a nut trap");
+    }
+    const auto [nutWidth, nutHeight] = nutSize(size);
+    const double grip = t2 - recess;
+    const double needed = bottom == 0 ? grip + 1.5 * nominal  // ponytail: 1,5 × d hält in Kunststoff und Alu
+                        : bottom == 1 ? grip + insertDepth
+                                      : t3 - recess - 0.5;  // Mutterfalle: bis zur Unterseite, darf knapp drüber
+    double length = Length.getValue();
+    if (AutoLength.getValue()) {
+        const auto fits = std::ranges::find_if(ScrewLengths, [needed](double l) { return l >= needed - 1e-6; });
+        length = fits == std::end(ScrewLengths) ? ScrewLengths[std::size(ScrewLengths) - 1] : *fits;
+        if (std::abs(Length.getValue() - length) > 1e-9) {
+            Length.setValue(length);
+            Length.purgeTouched();
+        }
+    }
+    const double tip = recess + length;
+    if (tip < t2 + nominal) {  // nur bei Länge von Hand
+        const auto longer = std::ranges::find_if(ScrewLengths, [&](double l) { return recess + l >= t2 + nominal; });
+        if (longer != std::end(ScrewLengths)) {
+            suggest("Use a longer screw", "Length", *longer);
+        }
+        return new App::DocumentObjectExecReturn("The screw is too short to hold the lower part");
+    }
+
+    constexpr double lead = 0.01;
+    const auto at = [&](int i, double t) {
+        return gp_Ax2(axes[i].Location().Translated(gp_Vec(axes[i].Direction()) * t), axes[i].Direction());
+    };
+    // oben: Durchgang (ISO 273 mittel) mit Senkung
+    const double clearance = clearanceDiameter(1, *t, 1);
+    const Part::TopoShape upper = fuseAll(holeShape(at(0, -lead), clearance / 2, t1 + 2 * lead, countersink ? 2 : 1,
+                                                    head->first / 2, recess, angle, lead),
+                                          getDocument()->getStringHasher());
+    // unten: Kernloch, Einschmelzmutter oder Durchgang mit Mutterfalle an der Unterseite
+    std::vector<Part::TopoShape> lowerParts;
+    const double from = std::min(t1, t2) - lead;
+    if (bottom == 0) {
+        lowerParts.emplace_back(BRepPrimAPI_MakeCylinder(at(1, from), t->TapDrill / 2, tip + 1 - from).Shape());
+    }
+    else if (bottom == 1) {
+        lowerParts.emplace_back(
+            BRepPrimAPI_MakeCylinder(at(1, from), insertD / 2, std::max(t2 + insertDepth + 1, tip + 1) - from).Shape());
+    }
+    else {
+        constexpr double play = 0.15;  // Mutter muss beim Druck hineinpassen
+        lowerParts.emplace_back(BRepPrimAPI_MakeCylinder(at(1, from), clearance / 2, t3 + lead - from).Shape());
+        lowerParts.emplace_back(hexPrism(at(1, t3 - nutHeight - play), nutWidth + 2 * play, nutHeight + play + lead));
+    }
+    const Part::TopoShape lowerTool = fuseAll(lowerParts, getDocument()->getStringHasher());
+
+    std::vector<Part::TopoShape> results;
+    for (const auto& [shape, tool] : {std::pair {shapes[0], upper}, std::pair {shapes[1], lowerTool}}) {
+        Part::TopoShape res(0, getDocument()->getStringHasher());
+        res.makeElementCut({shape, tool});
+        if (res.isNull() || res.countSubShapes(TopAbs_SOLID) == 0) {
+            return new App::DocumentObjectExecReturn("The holes would cut the part apart");
+        }
+        results.push_back(res);
+    }
+    setResults(results);
+    return StdReturn;
+}
+
+Fastener* Design::makeFastener(Body* top, const Base::Vector3d& point, const Base::Vector3d& direction)
+{
+    App::Document* doc = top->getDocument();
+    Base::Vector3d dir = direction;
+    dir.Normalize();
+    // untere Komponente: der nächste andere Body auf der Achse
+    Body* lower = nullptr;
+    double nearest = 1e100;
+    for (auto obj : doc->getObjectsOfType(Body::getClassTypeId())) {
+        auto body = static_cast<Body*>(obj);
+        if (body == top || body->Shape.getShape().isNull()) {
+            continue;
+        }
+        const Base::Placement inv = body->globalPlacement().inverse();
+        Base::Vector3d p = point, d = dir;
+        inv.multVec(p, p);
+        inv.getRotation().multVec(d, d);
+        Part::TopoShape shape = body->Shape.getShape();
+        shape.setPlacement(Base::Placement());
+        const auto ts = crossings(shape.getShape(), gp_Pnt(p.x, p.y, p.z), gp_Dir(d.x, d.y, d.z));
+        const auto hit = std::ranges::find_if(ts, [](double v) { return v > 1e-4; });
+        if (hit != ts.end() && *hit < nearest) {
+            nearest = *hit;
+            lower = body;
+        }
+    }
+    if (!lower) {
+        throw Base::ValueError("There is no second part below this point");
+    }
+    auto fastener = static_cast<Fastener*>(doc->addObject("Design::Fastener", "Fastener"));
+    componentOf(top)->addObject(fastener);
+    addToTimeline(fastener);
+    fastener->Position.setValue(point);
+    fastener->Direction.setValue(dir);
+    attachToBodies(fastener, {top, lower});
+    doc->recompute();
+    return fastener;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -3526,6 +4281,8 @@ Thread::Thread()
     ADD_PROPERTY_TYPE(Clearance, (0.0), "Parameters", App::Prop_None,
                       "Clearance per side, e.g. 0.2 mm for 3D printing; negative gives interference");
     ADD_PROPERTY_TYPE(LeftHanded, (false), "Parameters", App::Prop_None, "Left-handed thread");
+    ADD_PROPERTY_TYPE(ForPrinting, (false), "Parameters", App::Prop_None,
+                      "Clearance for 3D printing; warns when the pitch is too fine to print");
     Size.setStatus(App::Property::Hidden, true);
     updateSizes();
 }
@@ -3534,6 +4291,12 @@ void Thread::onChanged(const App::Property* prop)
 {
     if (!isRestoring() && (prop == &Standard || prop == &ThreadSize)) {
         updateSizes();
+    }
+    if (prop == &ForPrinting) {
+        Clearance.setStatus(App::Property::Hidden, ForPrinting.getValue());  // das Spiel kommt dann von selbst
+    }
+    if (!isRestoring() && (prop == &ForPrinting || prop == &Standard || prop == &ThreadSize || prop == &Pitch)) {
+        checkPitch = true;
     }
     DressUp::onChanged(prop);
 }
@@ -3546,6 +4309,7 @@ void Thread::setupObject()
 
 void Thread::onDocumentRestored()
 {
+    checkPitch = false;  // ein Hinweis von damals steht noch in Warning
     updateSizes();
     DressUp::onDocumentRestored();
 }
@@ -3601,19 +4365,7 @@ App::DocumentObjectExecReturn* Thread::compute()
     const double r = cyl.Radius();
 
     // Welle: Rillen nach innen; Bohrung (Fläche zeigt zur Achse): Rillen nach außen. Beides wird abgezogen.
-    // Zeigt die Flächennormale von der Achse weg, ist es eine Welle (die Orientierung allein hängt von der Entstehung ab)
-    gp_Pnt mid;
-    gp_Vec du, dv;
-    surface.D1((surface.FirstUParameter() + surface.LastUParameter()) / 2,
-               (surface.FirstVParameter() + surface.LastVParameter()) / 2, mid, du, dv);
-    gp_Vec normal = du.Crossed(dv);
-    if (face.Orientation() == TopAbs_REVERSED) {
-        normal.Reverse();
-    }
-    const gp_Vec fromAxis(axis.Location().Translated(gp_Vec(axis.Direction())
-                                                     * gp_Vec(axis.Location(), mid).Dot(gp_Vec(axis.Direction()))),
-                          mid);
-    const bool external = normal.Dot(fromAxis) > 0;
+    const bool external = isShaftFace(face);
 
     // Steigung: aus der Norm (Auto: Größe nach dem Durchmesser der Fläche) oder frei
     double p = Pitch.getValue();
@@ -3637,14 +4389,19 @@ App::DocumentObjectExecReturn* Thread::compute()
     if (p < Precision::Confusion() || height < 2 * p) {
         return new App::DocumentObjectExecReturn("The face is too short for this pitch");
     }
-    if (std::abs(Clearance.getValue()) >= 0.3 * p) {
+    // 3D-Druck: Spiel der normalen Druck-Passung, höchstens ein Viertel der Steigung (sonst bleibt kein Gang übrig)
+    const double clearance = ForPrinting.getValue() ? std::min(printClearance(1) * 0.75, 0.25 * p) : Clearance.getValue();
+    if (checkPitch && ForPrinting.getValue() && p < 1 - 1e-9) {
+        Warning.setValue("A pitch below 1 mm prints poorly with a 0.4 mm nozzle; use M8 or larger, or a custom pitch of 1.5 mm");
+    }
+    checkPitch = false;
+    if (std::abs(clearance) >= 0.3 * p) {
         return new App::DocumentObjectExecReturn("Clearance must be smaller than a third of the pitch");
     }
     // ponytail: Gewinde läuft bis an die Flächenenden und ist dort abgeschnitten (kein Auslauf, keine Fase)
     Part::TopoShape res(0, getDocument()->getStringHasher());
     try {
-        const TopoDS_Shape tool = threadTool(axis, t0, height, r, p, external, LeftHanded.getValue(),
-                                             Clearance.getValue());
+        const TopoDS_Shape tool = threadTool(axis, t0, height, r, p, external, LeftHanded.getValue(), clearance);
         // Toleranz: die Enden der Rillen liegen genau in den Stirnflächen, ohne sie trennt OCCT nur Flächen auf
         res.makeElementCut({shape, Part::TopoShape(tool)}, nullptr, 1e-5);
     }
@@ -4192,11 +4949,13 @@ Note::Note()
     ADD_PROPERTY_TYPE(Corner, (3L), "Note", App::Prop_NoRecompute, "Window corner it stays in: bit 0 right, bit 1 bottom");
     ADD_PROPERTY_TYPE(OffsetX, (12L), "Note", App::Prop_NoRecompute, "Horizontal distance to that corner");
     ADD_PROPERTY_TYPE(OffsetY, (12L), "Note", App::Prop_NoRecompute, "Vertical distance to that corner");
+    ADD_PROPERTY_TYPE(Defines, (), "Note", App::PropertyType(App::Prop_Hidden | App::Prop_NoRecompute),
+                      "Parameters defined by lines of this note");
 }
 
 void Note::onBeforeChange(const App::Property* prop)
 {
-    if (prop != &Text && prop != &Corner && prop != &OffsetX && prop != &OffsetY && prop != &Visibility) {
+    if (prop != &Text && prop != &Corner && prop != &OffsetX && prop != &OffsetY && prop != &Visibility && prop != &Defines) {
         App::DocumentObject::onBeforeChange(prop);
     }
 }

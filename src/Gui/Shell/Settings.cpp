@@ -12,6 +12,7 @@
 #include <Gui/View3DInventorViewer.h>
 
 #include <QAbstractSpinBox>
+#include <QDoubleSpinBox>
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
@@ -1083,6 +1084,27 @@ void Gui::Shell::showSettings()
     addRow(generalCard, T("Export resolution"),
            segmented({T("Coarse"), T("Normal"), T("Fine")}, int(myParams()->GetInt("ExportQuality", 1)),
                      [](int i) { myParams()->SetInt("ExportQuality", i); }));
+    // Spiel je Seite für die Passungen "3D-Druck eng/normal/locker" (Design::Fitting, Idee 4)
+    auto play = new QWidget;
+    auto playLay = new QHBoxLayout(play);
+    playLay->setContentsMargins(0, 0, 0, 0);
+    static const char* plays[][2] = {{"PrintFitTight", "Tight"}, {"PrintFitNormal", "Normal"}, {"PrintFitLoose", "Loose"}};
+    for (int i = 0; i < 3; ++i) {
+        auto box = new QDoubleSpinBox;
+        box->setRange(0, 1);
+        box->setSingleStep(0.05);
+        box->setDecimals(2);
+        box->setSuffix(QStringLiteral(" mm"));
+        box->setValue(myParams()->GetFloat(plays[i][0], 0.1 * (i + 1)));
+        box->setAccessibleName(T(plays[i][1]));
+        box->setToolTip(T(plays[i][1]));
+        QObject::connect(box, &QDoubleSpinBox::valueChanged, box, [key = plays[i][0]](double v) { myParams()->SetFloat(key, v); });
+        auto label = new QLabel(T(plays[i][1]));
+        label->setBuddy(box);
+        playLay->addWidget(label);
+        playLay->addWidget(box, 1);
+    }
+    addRow(generalCard, T("3D print clearance"), play);
     auto version = new QLabel(Gui::Shell::version());
     version->setTextInteractionFlags(Qt::TextSelectableByMouse);  // zum Kopieren in Fehlerberichte
     addRow(generalCard, T("Version"), version);

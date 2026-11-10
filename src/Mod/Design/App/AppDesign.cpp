@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
+#include <App/Application.h>
 #include <App/Document.h>
+#include <App/VarSet.h>
+#include <cstring>
 #include <App/DocumentObjectPy.h>
 #include <App/DocumentPy.h>
 #include <App/Part.h>
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
 #include <Base/PyObjectBase.h>
+#include <Base/VectorPy.h>
 #include <CXX/Extensions.hxx>
 
 #include "Features.h"
@@ -48,6 +52,11 @@ public:
                            "drivingDimensions(body, 'FaceN'): [{owner, path, label, value, angle, expression, anchor}]");
         add_varargs_method("setDrivingDimension", &Module::setDrivingDimension,
                            "setDrivingDimension(owner, path, value): set and recompute; ValueError explains why not");
+        add_varargs_method("syncNoteParameters", &Module::syncNoteParameters,
+                           "syncNoteParameters(note): lines 'Name = expression' become parameters");
+        add_varargs_method("parameterSet", &Module::parameterSet, "parameterSet(doc[, create=True]): the Parameters VarSet");
+        add_varargs_method("fastenerAt", &Module::fastenerAt,
+                           "fastenerAt(body, point, direction): screw from the top body into the next one below");
         add_varargs_method("stableRef", &Module::stableRef,
                            "stableRef(obj, element): (obj, element) with a body replaced by its timeline state");
         initialize("MyCAD Design: components, bodies and timeline features");
@@ -211,6 +220,30 @@ private:
         }
         return Py::None();
     }
+    Py::Object syncNoteParameters(const Py::Tuple& args)
+    {
+        Design::syncNoteParameters(obj<Note>(args[0]));
+        return Py::None();
+    }
+    Py::Object parameterSet(const Py::Tuple& args)
+    {
+        return py(Design::parameterSet(doc(args), args.size() < 2 || bool(Py::Boolean(args[1]))));
+    }
+    Py::Object fastenerAt(const Py::Tuple& args)
+    {
+        const auto vec = [](const Py::Object& o) {
+            if (!PyObject_TypeCheck(o.ptr(), &Base::VectorPy::Type)) {
+                throw Py::TypeError("expected a vector");
+            }
+            return *static_cast<Base::VectorPy*>(o.ptr())->getVectorPtr();
+        };
+        try {
+            return py(Design::makeFastener(obj<Body>(args[0]), vec(args[1]), vec(args[2])));
+        }
+        catch (const Base::ValueError& e) {
+            throw Py::ValueError(e.what());
+        }
+    }
     Py::Object stableRef(const Py::Tuple& args)
     {
         App::DocumentObject* o = obj(args[0]);
@@ -232,6 +265,17 @@ PyMOD_INIT_FUNC(Design)
         PyMOD_Return(nullptr);
     }
     PyObject* mod = Base::Interpreter().addModule(new Design::Module);
+
+    // Idee 3: ändert sich ein Parameter anderswo (Maß am Modell, Parameter-Dialog), zieht die Notiz nach
+    App::GetApplication().signalChangedObject.connect([](const App::DocumentObject& obj, const App::Property& prop) {
+        if (obj.isDerivedFrom<App::VarSet>() && std::strcmp(obj.Label.getValue(), "Parameters") == 0 && prop.getName()) {
+            Design::parameterChanged(const_cast<App::DocumentObject*>(&obj), prop.getName());
+        }
+    });
+
+    App::GetApplication().signalRecomputed.connect([](const App::Document& doc) {
+        Design::refreshNoteValues(const_cast<App::Document*>(&doc));
+    });
 
     Design::Body::init();
     Design::Profiles::init();
@@ -256,6 +300,8 @@ PyMOD_INIT_FUNC(Design)
     Design::Scale::init();
     Design::Split::init();
     Design::Thread::init();
+    Design::Fitting::init();
+    Design::Fastener::init();
     Design::Rib::init();
     Design::ReplaceFace::init();
     Design::SplitFace::init();

@@ -67,6 +67,10 @@
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <BRep_Tool.hxx>
+#include <BRepGProp_Face.hxx>
+#include <GeomAPI_ProjectPointOnSurf.hxx>
+#include <TopExp.hxx>
+#include <TopoDS.hxx>
 #include <GeomConvert.hxx>
 #include <Geom_BezierCurve.hxx>
 #include <Geom_Ellipse.hxx>
@@ -853,6 +857,108 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
     Design::attachToBodies(feature, {body});
     doc->recompute();
     startEditing(feature, false, nullptr);
+}
+
+/// Idee 4: Passung. Flächen aus einem oder zwei Bodies (Bohrung und Welle, oder ebene Flächen beim 3D-Druck)
+void startFit(App::Document* doc)
+{
+    std::vector<Design::Body*> bodies;
+    std::vector<std::string> faces;
+    std::vector<long> owners;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        auto b = freecad_cast<Design::Body*>(sel.getObject());
+        if (!b || !Design::stateAtMarker(b)) {
+            continue;
+        }
+        for (const auto& sub : sel.getSubNames()) {
+            auto it = std::ranges::find(bodies, b);
+            if (sub.rfind("Face", 0) != 0 || (it == bodies.end() && bodies.size() == 2)) {
+                continue;
+            }
+            if (it == bodies.end()) {
+                bodies.push_back(b);
+                it = bodies.end() - 1;
+            }
+            faces.push_back(sub);
+            owners.push_back(it - bodies.begin());
+        }
+    }
+    if (faces.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), T("Fit"),
+                                 T("Select the faces that fit together, e.g. a hole and its pin."));
+        return;
+    }
+    doc->openTransaction("Fit");
+    auto fit = static_cast<Design::Fitting*>(doc->addObject("Design::Fitting", "Fit"));
+    Design::componentOf(bodies.front())->addObject(fit);
+    Design::addToTimeline(fit);
+    fit->Edges.setValues(faces);
+    fit->ElementBodies.setValues(owners);
+    Design::attachToBodies(fit, bodies);
+    doc->recompute();
+    startEditing(fit, false, nullptr);
+}
+
+/// Idee 4: Schraube hier. Ein Klick auf die Oberseite (oder die Kante einer runden Bohrung darin): von dort in das
+/// Teil darunter. Rechnet in den Koordinaten der Komponente und gibt global weiter.
+void startFastener(App::Document* doc)
+{
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        auto b = freecad_cast<Design::Body*>(sel.getObject());
+        if (!b || sel.getSubNames().empty() || !Design::stateAtMarker(b)) {
+            continue;
+        }
+        const std::string sub = sel.getSubNames().front();
+        const Part::TopoShape shape = b->Shape.getShape();
+        const TopoDS_Shape element = shape.getSubShape(sub.c_str(), true);
+        const Base::Placement toGlobal = Design::componentOf(b)->globalPlacement();
+        // Fläche und Punkt darauf: geklickter Punkt, bei einer Kreiskante deren Mitte auf der ebenen Nachbarfläche
+        TopoDS_Face face;
+        gp_Pnt point;
+        if (!element.IsNull() && element.ShapeType() == TopAbs_FACE && !sel.getPickedPoints().empty()) {
+            face = TopoDS::Face(element);
+            Base::Vector3d p = sel.getPickedPoints().front();
+            toGlobal.inverse().multVec(p, p);
+            point = gp_Pnt(p.x, p.y, p.z);
+        }
+        else if (!element.IsNull() && element.ShapeType() == TopAbs_EDGE) {
+            BRepAdaptor_Curve curve(TopoDS::Edge(element));
+            if (curve.GetType() == GeomAbs_Circle) {
+                point = curve.Circle().Location();
+                TopTools_IndexedDataMapOfShapeListOfShape owners;
+                TopExp::MapShapesAndAncestors(shape.getShape(), TopAbs_EDGE, TopAbs_FACE, owners);
+                const int i = owners.FindIndex(element);
+                for (TopTools_ListIteratorOfListOfShape it(i ? owners(i) : TopTools_ListOfShape()); it.More(); it.Next()) {
+                    if (BRepAdaptor_Surface(TopoDS::Face(it.Value())).GetType() == GeomAbs_Plane) {
+                        face = TopoDS::Face(it.Value());
+                    }
+                }
+            }
+        }
+        if (face.IsNull() || BRepAdaptor_Surface(face).GetType() != GeomAbs_Plane) {
+            continue;
+        }
+        GeomAPI_ProjectPointOnSurf project(point, BRep_Tool::Surface(face));
+        double u = 0, v = 0;
+        project.LowerDistanceParameters(u, v);
+        gp_Pnt onFace;
+        gp_Vec normal;
+        BRepGProp_Face(face).Normal(u, v, onFace, normal);  // zeigt aus dem Körper heraus
+        Base::Vector3d p(point.X(), point.Y(), point.Z()), d(-normal.X(), -normal.Y(), -normal.Z());
+        toGlobal.multVec(p, p);
+        toGlobal.getRotation().multVec(d, d);
+        doc->openTransaction("Screw Here");
+        try {
+            startEditing(Design::makeFastener(b, p, d), false, nullptr);
+        }
+        catch (const Base::ValueError& e) {
+            doc->abortTransaction();
+            QMessageBox::information(Gui::getMainWindow(), T("Screw Here"), T(e.what()));
+        }
+        return;
+    }
+    QMessageBox::information(Gui::getMainWindow(), T("Screw Here"),
+                             T("Click the flat top face where the screw goes in, or the edge of a round hole in it."));
 }
 
 /// Extrude: Skizzenprofile, oder wie in Fusion eine ebene Körperfläche (zieht sie wie Press Pull heraus)
@@ -2839,6 +2945,20 @@ void showParameters(App::Document* doc)
             auto value = new QTableWidgetItem(QString::fromStdString(prop->getQuantityValue().getUserString()));
             value->setFlags(Qt::ItemIsEnabled);
             table->setItem(r, 2, value);
+            // aus einer Notiz (Idee 3): dort steht er, dort wird er gelöscht
+            const App::DocumentObject* source = nullptr;
+            for (auto note : doc->getObjectsOfType(Design::Note::getClassTypeId())) {
+                const auto& defined = static_cast<Design::Note*>(note)->Defines.getValues();
+                if (std::ranges::find(defined, name) != defined.end()) {
+                    source = note;
+                }
+            }
+            if (source) {
+                auto from = new QLabel(T("In note %1").arg(QString::fromUtf8(source->Label.getValue())));
+                from->setContentsMargins(8, 0, 8, 0);
+                table->setCellWidget(r, 3, from);
+                continue;
+            }
             auto remove = new QPushButton(T("Remove"));
             remove->setAutoDefault(false);
             QObject::connect(remove, &QPushButton::clicked, table, [&, set, name] {
@@ -3273,6 +3393,12 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_SplitBody", "Split Body",
                                      "Split Body: select a body and a plane or face to split it with", "Part_Slice", "",
                                      startSplit));
+    mgr.addCommand(new DesignCommand("Design_Fit", "Fit",
+                                     "Fit: select a hole and its pin (or flat faces) for a 3D print or ISO fit",
+                                     "Part_Offset", "", startFit));
+    mgr.addCommand(new DesignCommand("Design_Fastener", "Screw Here",
+                                     "Screw Here: click the top face of a part that lies on another part",
+                                     "PartDesign_Hole", "", startFastener));
     mgr.addCommand(new DesignCommand("Design_Thread", "Thread", "Thread: select a cylindrical face of a body",
                                      "PartDesign_Hole", "", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Thread", "Thread");

@@ -258,13 +258,14 @@ public:
     App::PropertyLength Size;  ///< Radius bzw. Fasenabstand
     App::PropertyStringList ElementMaps;  ///< verfolgbare Namen zu Edges (topologische Benennung)
     App::PropertyStringList ElementHints;  ///< je Element "x y z Größe": wiederfinden, wenn der Name verloren geht
+    App::PropertyIntegerList ElementBodies;  ///< je Element der Index in Bodies (leer: alle zu Bodies[0])
 
 protected:
     /// größter Wert von Size (unter dem jetzigen), bei dem try_ gelingt; 0 wenn keiner (Bisektion, 12 Versuche)
     double largestWorking(const std::function<bool(double)>& try_) const;
     App::DocumentObjectExecReturn* run(bool fillet);
-    /// Gewählte Elemente des Bodies vor diesem Feature; Flächen werden bei expandFaces zu ihren Kanten
-    std::vector<Part::TopoShape> elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type);
+    /// Gewählte Elemente von Bodies[body] vor diesem Feature (shape = dessen Zustand)
+    std::vector<Part::TopoShape> elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type, size_t body = 0);
 };
 
 /// Rundung; tangential anschließende Kanten rundet OCCT von selbst mit (Kette)
@@ -589,6 +590,7 @@ public:
     App::PropertyLength Pitch;
     App::PropertyDistance Clearance;  ///< Spiel je Seite (3D-Druck), negativ = Übermaß
     App::PropertyBool LeftHanded;
+    App::PropertyBool ForPrinting;  ///< Idee 4: Spiel für den 3D-Druck, Hinweis bei zu feiner Steigung
     App::DocumentObjectExecReturn* compute() override;
 
 protected:
@@ -599,6 +601,7 @@ protected:
 
 private:
     void updateSizes();
+    bool checkPitch = true;  ///< Druck-Hinweis nur nach einer Änderung (sonst käme er nach "Sieht richtig aus" wieder)
 };
 
 /// Eingefügte Geometrie (STEP): je Solid ein neuer Body, ohne Verlauf (wie Fusions Base Feature)
@@ -625,6 +628,49 @@ public:
     App::PropertyDistance Distance;
     App::DocumentObjectExecReturn* compute() override;
 };
+
+/// Idee 4: Passung. Runde Flächen auf das Mittelmaß einer ISO-286-Passung (H7/g6 …: Bohrung und Welle, auch in
+/// zwei Bodies), beim 3D-Druck die Bohrung (sonst die Welle bzw. ebene Flächen) um das Spiel versetzt
+class DesignExport Fitting: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Fitting);
+
+public:
+    Fitting();
+    App::PropertyEnumeration Fit;   ///< 3D print tight/normal/loose, H7/g6, H7/h6, H7/k6, H7/p6, H8/f7
+    App::PropertyLength Clearance;  ///< Spiel je Seite beim 3D-Druck (Vorgabe aus den Einstellungen)
+    App::PropertyLength Nominal;    ///< Nennmaß der Paarung; 0 = Durchmesser der Bohrung (sonst der Welle)
+    App::PropertyString Play;       ///< Ausgabe: Spiel am Durchmesser, z. B. "+7 … +41 µm"; negativ = Übermaß
+    App::DocumentObjectExecReturn* compute() override;
+
+protected:
+    void onChanged(const App::Property* prop) override;
+};
+
+/// Idee 4: Schraube hier. Ein Punkt auf der oberen Komponente und die Richtung hinein: oben Durchgang mit Senkung
+/// nach Schraubennorm, unten Gewinde-Kernloch, Einschmelzmutter oder Mutterfalle; die Länge schlägt es vor
+class DesignExport Fastener: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Fastener);
+
+public:
+    Fastener();
+    App::PropertyVector Position;     ///< Eintrittspunkt auf der Oberfläche (global)
+    App::PropertyVector Direction;    ///< in die Teile hinein (global)
+    App::PropertyEnumeration Screw;   ///< ISO 4762, ISO 10642, ISO 7380
+    App::PropertyEnumeration Size;    ///< M2 … M12
+    App::PropertyEnumeration Bottom;  ///< Tapped hole, Heat-set insert, Nut trap
+    App::PropertyBool AutoLength;
+    App::PropertyLength Length;  ///< Schraubenlänge nach Norm (Zylinder-/Flachkopf: unter dem Kopf, Senkkopf: gesamt)
+    App::DocumentObjectExecReturn* compute() override;
+
+protected:
+    void onChanged(const App::Property* prop) override;
+};
+
+/// Schraube an point (global, auf top) in Richtung direction; die untere Komponente ist der nächste Body dahinter.
+/// Wirft Base::ValueError, wenn dort keiner ist.
+DesignExport Fastener* makeFastener(Body* top, const Base::Vector3d& point, const Base::Vector3d& direction);
 
 /// Joint wie in Fusion: setzt die bewegliche Komponente so, dass ihr Bezug (Fläche, Kante, Bohrung, Punkt) auf dem der
 /// Gegenstelle liegt. Rigid, Revolute (Angle), Slider (Offset), Cylindrical (beides). Die Komponente übernimmt
@@ -693,6 +739,7 @@ public:
     App::PropertyInteger Corner;  ///< Bit 0: rechts, Bit 1: unten
     App::PropertyInteger OffsetX;
     App::PropertyInteger OffsetY;
+    App::PropertyStringList Defines;  ///< Parameter (Property-Namen), die Zeilen dieser Notiz anlegen (Idee 3)
 
     const char* getViewProviderName() const override
     {
@@ -776,6 +823,22 @@ struct DrivingDimension
 DesignExport std::vector<DrivingDimension> drivingDimensions(Body* body, const std::string& face);
 /// Wert setzen und neu rechnen; hängt er an einem Parameter, ändert sich der Parameter. false mit error, wenn nicht
 DesignExport bool setDrivingDimension(App::DocumentObject* owner, const std::string& path, double value, std::string& error);
+///@}
+
+/// @name Idee 3: Die Notiz ist die Parameterliste
+///@{
+/// Parameter-Set des Designs (VarSet "Parameters" in der Wurzel), auf Wunsch angelegt
+DesignExport App::DocumentObject* parameterSet(App::Document* doc, bool create);
+/// Ausdruck mit Parameter-Namen, auch mit Umlauten ("Wandstärke * 2"), als Property-Ausdruck ("Parameters.Wandstaerke * 2")
+DesignExport std::string toParameterExpression(App::Document* doc, const std::string& text);
+/// Gegenrichtung zum Anzeigen: ohne "Parameters.", mit den geschriebenen Namen
+DesignExport std::string fromParameterExpression(App::Document* doc, const std::string& text);
+/// Zeilen "Name = Ausdruck" in Parameter übernehmen; schreibt Werte (→) und Fehler (⚠) in die Zeilen
+DesignExport void syncNoteParameters(Note* note);
+/// Ein Parameter hat sich anderswo geändert (Maß am Modell, Parameter-Dialog): die Zeile der Notiz nachziehen
+DesignExport void parameterChanged(App::DocumentObject* set, const char* name);
+/// nach dem Rechnen: Werte hinter den Formeln aller Notizen aktualisieren
+DesignExport void refreshNoteValues(App::Document* doc);
 ///@}
 
 }  // namespace Design

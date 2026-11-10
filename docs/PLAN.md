@@ -347,7 +347,7 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 - Timeline bleibt für Fortgeschrittene, man muss sie nicht mehr kennen.
 - Tests H: Quader aus Extrude: Deckfläche → Distance; Seitenfläche → Skizzenmaß; Bohrung → Durchmesser; Rundung → Radius; Grundkörper; Wert setzen ändert Volumen wie erwartet; nach Einfügen eines Features davor findet es noch dieselben Maße; Maß mit Parameter gibt den Parameter zurück. G: Fläche klicken, Chip erscheint, „30“ tippen, Enter, Körper ändert sich, Strg+Z stellt zurück; Tastatur-Bedienung (Tab, Esc).
 
-#### 10.4 Idee 3: Die Notiz ist die Parameterliste
+#### 10.4 Idee 3: Die Notiz ist die Parameterliste · erledigt (2026-11-10); abgeglichen wird bei Enter und beim Verlassen der Notiz, nicht bei jedem Tastendruck; Werte stehen als „40.00 mm“ wie in den Rechenzeilen
 
 - Zeilen `Name = Ausdruck` in einer Notiz (ohne `=` am Ende) legen Parameter an oder ändern sie. Rechenzeilen (`… =`) bleiben wie heute.
 - Hinter einer Parameterzeile mit Formel steht der Wert grau („Breite = Wand * 20 → 40 mm“). Doppelte Namen in zwei Notizen: die zweite Zeile bekommt Fehlersymbol und Text.
@@ -356,7 +356,7 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 - Zwei Richtungen: Ändert man den Parameter im Dialog oder am Modell (10.3), ändert sich die Zeile in der Notiz. Der Parameter-Dialog zeigt die Quelle („Notiz 2“).
 - Tests C: Zeilen-Parser (Definition, Rechnung, Kommentar, Dezimalkomma, Einheiten, Umlaute, ungültige Namen, Leerzeichen). H: Notiztext → Parameter; Formel zwischen Parametern; Feature folgt; Löschen eines benutzten Parameters bleibt erhalten; Konflikt; Rückweg Parameter → Notiz; Speichern/Laden. G: in Notiz tippen, Körper ändert sich; Wert am Modell ändern, Notiz zeigt den neuen Wert.
 
-#### 10.5 Idee 4: Werkzeuge für den Zweck
+#### 10.5 Idee 4: Werkzeuge für den Zweck · erledigt (2026-11-10); Passung ist ein Feature über bis zu zwei Bodies und setzt beim Druck nur die Bohrung (sonst die Welle bzw. ebene Flächen) zurück; „Schraube hier“ nimmt einen Klick auf die Oberseite oder eine Kreiskante, das untere Teil ist der nächste Body auf der Achse; ISO 7380 als Kopftabelle ergänzt; Einschmelzmuttern M2–M8 nach gängigen Messingeinsätzen
 
 - **Passung:** zwei Flächen (Welle/Bohrung oder zwei ebene Flächen) wählen, Passung aussuchen: ISO 286 (H7/g6, H7/h6, H7/k6, H7/p6, H8/f7) oder 3D-Druck (eng/normal/locker, Werte in den Einstellungen, Standard 0,1/0,2/0,3 mm je Seite). Ein Timeline-Feature versetzt die Fläche auf das Mittelmaß und zeigt das Spiel an.
 - **Schraube hier:** Punkt oder Achse durch zwei Komponenten wählen, Schraube aussuchen (ISO 4762, ISO 10642, ISO 7380; M2 bis M12; Länge vorgeschlagen). Ein Feature macht in der oberen Komponente Durchgang plus Senkung, in der unteren Gewinde, Einschmelzmutter-Loch (3D-Druck) oder Mutterfalle.

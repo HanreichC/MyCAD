@@ -177,6 +177,7 @@ set(PartDesignHoleDefines
     Resources/Hole/iso4762.json
     Resources/Hole/iso4762-fine.json
     Resources/Hole/iso7046.json
+    Resources/Hole/iso7380.json
 )
 
 add_custom_target(PartDesignHole ALL SOURCES

@@ -1808,6 +1808,219 @@
    ]
   },
   {
+   "id": "Design_Fastener",
+   "group": "create",
+   "icon": "Design_Fastener",
+   "commands": [],
+   "title": {
+    "en": "Screw Here",
+    "de": "Schraube hier"
+   },
+   "keywords": {
+    "en": [
+     "screw",
+     "bolt",
+     "fastener",
+     "heat-set insert",
+     "insert",
+     "nut trap",
+     "nut",
+     "socket head",
+     "countersunk",
+     "button head",
+     "m3",
+     "screw two parts"
+    ],
+    "de": [
+     "Schraube",
+     "verschrauben",
+     "Einschmelzmutter",
+     "Gewindeeinsatz",
+     "Mutterfalle",
+     "Mutter",
+     "Zylinderkopf",
+     "Senkkopf",
+     "Flachkopf",
+     "M3",
+     "zwei Teile verschrauben"
+    ]
+   },
+   "summary": {
+    "en": "Screws two parts together in one step: a clearance hole with a counterbore in the top part, and below a tapped hole, a hole for a heat-set insert or a nut trap. The screw length is picked for you.",
+    "de": "Verschraubt zwei Teile in einem Schritt: oben eine Durchgangsbohrung mit Senkung, unten ein Kernloch, ein Loch für eine Einschmelzmutter oder eine Mutterfalle. Die Schraubenlänge sucht MyCAD aus."
+   },
+   "steps": {
+    "en": [
+     "Click the flat top face of the upper part where the screw goes in – or the edge of a round hole there, to hit its center exactly.",
+     "In the toolbar at the top, in the CREATE section, click the small arrow ▾ next to Hole and choose Screw Here. The button now shows Screw Here, so next time one click is enough.",
+     "A panel opens on the right; the model shows a live preview of the result.",
+     "Choose Screw, Size and what holds it at the Bottom, then click OK at the top of the panel."
+    ],
+    "de": [
+     "Klicke auf die ebene Oberseite des oberen Teils, wo die Schraube hineingeht – oder auf die Kante einer runden Bohrung dort, um genau ihre Mitte zu treffen.",
+     "Klicke in der Werkzeugleiste oben im Bereich ERSTELLEN auf den kleinen Pfeil ▾ neben Bohrung und wähle Schraube hier. Der Knopf zeigt danach Schraube hier, beim nächsten Mal reicht also ein Klick.",
+     "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
+     "Wähle Schraube, Größe und was sie Unten hält, dann klicke oben im Panel auf OK."
+    ]
+   },
+   "see": [
+    "Design_Hole",
+    "Design_Thread",
+    "Design_Fit"
+   ],
+   "options": {
+    "en": [
+     [
+      "Screw",
+      "ISO 4762 socket head (counterbore), ISO 10642 countersunk (flush) or ISO 7380 button head."
+     ],
+     [
+      "Size",
+      "M2 to M12."
+     ],
+     [
+      "Bottom",
+      "Tapped hole: core hole to cut or print the thread into. Heat-set insert: hole for a brass insert you melt in. Nut trap: hex pocket on the underside for a nut."
+     ],
+     [
+      "Length",
+      "The shortest standard length that holds: 1.5 × the diameter in a tapped hole, the length of the insert, or through to the nut. Untick the length choice to type your own."
+     ]
+    ],
+    "de": [
+     [
+      "Schraube",
+      "ISO 4762 Zylinderkopf (Senkung), ISO 10642 Senkkopf (bündig) oder ISO 7380 Flachkopf."
+     ],
+     [
+      "Größe",
+      "M2 bis M12."
+     ],
+     [
+      "Unten",
+      "Kernloch: Loch, in das das Gewinde geschnitten oder gedruckt wird. Einschmelzmutter: Loch für einen Messingeinsatz, den du einschmilzt. Mutterfalle: Sechskant-Tasche an der Unterseite für eine Mutter."
+     ],
+     [
+      "Länge",
+      "Die kürzeste Normlänge, die hält: 1,5 × Durchmesser im Kernloch, die Länge der Einschmelzmutter oder bis durch die Mutter. Nimm den Haken bei der Längenwahl weg, um selbst eine einzutippen."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "The lower part is the next body behind the point; it may sit in another component.",
+     "Heat-set insert holes follow common brass inserts (e.g. M3: Ø4 mm, 5.7 mm long). For other inserts use Hole with your own diameter."
+    ],
+    "de": [
+     "Das untere Teil ist der nächste Körper hinter dem Punkt; es darf in einer anderen Komponente liegen.",
+     "Die Löcher für Einschmelzmuttern folgen gängigen Messingeinsätzen (z. B. M3: Ø4 mm, 5,7 mm lang). Für andere Einsätze nimm Bohrung mit eigenem Durchmesser."
+    ]
+   }
+  },
+  {
+   "id": "Design_Fit",
+   "group": "modify",
+   "icon": "Design_Fit",
+   "commands": [],
+   "title": {
+    "en": "Fit",
+    "de": "Passung"
+   },
+   "keywords": {
+    "en": [
+     "fit",
+     "clearance",
+     "tolerance",
+     "h7",
+     "g6",
+     "press fit",
+     "play",
+     "3d print clearance",
+     "iso 286"
+    ],
+    "de": [
+     "Passung",
+     "Spiel",
+     "Toleranz",
+     "H7",
+     "g6",
+     "Presspassung",
+     "Spielpassung",
+     "Druckspiel",
+     "ISO 286"
+    ]
+   },
+   "summary": {
+    "en": "Makes a hole and its pin fit: for 3D printing with a little play, or exactly to an ISO fit such as H7/g6. The play shows in the panel.",
+    "de": "Lässt Bohrung und Welle zusammenpassen: für den 3D-Druck mit etwas Spiel oder genau nach einer ISO-Passung wie H7/g6. Das Spiel steht im Panel."
+   },
+   "steps": {
+    "en": [
+     "Click the round face of the hole and, if you like, the round face of the pin (Ctrl+click). They may belong to two bodies.",
+     "In the toolbar at the top, in the MODIFY section, click the small arrow ▾ next to Press Pull and choose Fit. The button now shows Fit, so next time one click is enough.",
+     "A panel opens on the right; the model shows a live preview of the result.",
+     "Choose the Fit and click OK at the top of the panel."
+    ],
+    "de": [
+     "Klicke die runde Fläche der Bohrung an und, wenn du willst, die runde Fläche der Welle (Strg+Klick). Sie dürfen zu zwei Körpern gehören.",
+     "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf den kleinen Pfeil ▾ neben Drücken/Ziehen und wähle Passung. Der Knopf zeigt danach Passung, beim nächsten Mal reicht also ein Klick.",
+     "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
+     "Wähle die Passung und klicke oben im Panel auf OK."
+    ]
+   },
+   "see": [
+    "Design_Fastener",
+    "Design_Thread",
+    "Design_PressPull"
+   ],
+   "options": {
+    "en": [
+     [
+      "Fit",
+      "3D print tight, normal or loose: the hole gets wider by the clearance on each side (without a hole the pin gets thinner, flat faces move back). H7/g6 slides, H7/h6 is a snug sliding fit, H7/k6 a transition fit, H7/p6 a press fit, H8/f7 runs freely."
+     ],
+     [
+      "Clearance",
+      "Only for 3D print fits: play on each side. The defaults (0.1 / 0.2 / 0.3 mm) are in Settings."
+     ],
+     [
+      "Nominal",
+      "Only for ISO fits: the size both parts share. 0 takes the diameter of the hole."
+     ],
+     [
+      "Play",
+      "Play on the diameter, from smallest to largest; a minus means interference."
+     ]
+    ],
+    "de": [
+     [
+      "Passung",
+      "3D-Druck eng, normal oder locker: die Bohrung wird je Seite um das Spiel weiter (ohne Bohrung wird die Welle dünner, ebene Flächen gehen zurück). H7/g6 gleitet, H7/h6 ist eine enge Gleitpassung, H7/k6 eine Übergangspassung, H7/p6 ein Presssitz, H8/f7 läuft frei."
+     ],
+     [
+      "Spiel",
+      "Nur bei 3D-Druck: Luft je Seite. Die Vorgaben (0,1 / 0,2 / 0,3 mm) stehen in den Einstellungen."
+     ],
+     [
+      "Nennmaß",
+      "Nur bei ISO-Passungen: das Maß, das beide Teile teilen. 0 nimmt den Durchmesser der Bohrung."
+     ],
+     [
+      "Spiel",
+      "Spiel am Durchmesser, vom kleinsten bis zum größten; ein Minus heißt Übermaß."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "ISO fits move each face to the middle of its tolerance field, so a measured model shows the fit you will get from a good workshop."
+    ],
+    "de": [
+     "ISO-Passungen setzen jede Fläche in die Mitte ihres Toleranzfelds; ein gemessenes Modell zeigt so die Passung, die eine gute Werkstatt liefert."
+    ]
+   }
+  },
+  {
    "id": "Design_Thread",
    "group": "create",
    "icon": "Design_Thread",
@@ -1855,7 +2068,8 @@
     ]
    },
    "see": [
-    "Design_Hole"
+    "Design_Hole",
+    "Design_Fastener"
    ],
    "options": {
     "en": [
@@ -1898,11 +2112,13 @@
    "tips": {
     "en": [
      "The thread runs over the whole face and ends flush at both ends; a shoulder or the bottom of a hole stays untouched.",
-     "The face must be at least two turns long."
+     "The face must be at least two turns long.",
+     "Tick “Clearance for 3D printing” and MyCAD adds the play by itself and warns when the pitch is too fine for a 0.4 mm nozzle (below 1 mm, i.e. smaller than M8)."
     ],
     "de": [
      "Das Gewinde läuft über die ganze Fläche und endet bündig an beiden Enden; eine Schulter oder der Grund einer Bohrung bleibt unberührt.",
-     "Die Fläche muss mindestens zwei Gänge lang sein."
+     "Die Fläche muss mindestens zwei Gänge lang sein.",
+     "Setz den Haken bei „Spiel für den 3D-Druck“: MyCAD gibt das Spiel selbst dazu und warnt, wenn die Steigung für eine 0,4-mm-Düse zu fein ist (unter 1 mm, also kleiner als M8)."
     ]
    },
    "images": [
@@ -3808,14 +4024,17 @@
    },
    "see": [
     "sketch_dimension",
-    "start_timeline"
+    "start_timeline",
+    "Design_Note"
    ],
    "tips": {
     "en": [
-     "Names use letters, digits and _ only, no spaces."
+     "Names use letters, digits and _ only, no spaces.",
+     "Quicker: write Width = 40 mm into a note. Parameters from a note show “In note …” and are changed or deleted there."
     ],
     "de": [
-     "Namen bestehen nur aus Buchstaben, Ziffern und _, ohne Leerzeichen."
+     "Namen bestehen nur aus Buchstaben, Ziffern und _, ohne Leerzeichen.",
+     "Schneller: Schreib Breite = 40 mm in eine Notiz. Parameter aus einer Notiz zeigen „In Notiz …“ und werden dort geändert oder gelöscht."
     ]
    }
   },
@@ -3835,7 +4054,9 @@
      "sticky note",
      "calculator",
      "calculate",
-     "memo"
+     "memo",
+     "parameter",
+     "variable"
     ],
     "de": [
      "Notiz",
@@ -3843,17 +4064,21 @@
      "Haftnotiz",
      "Taschenrechner",
      "rechnen",
-     "Merkzettel"
+     "Merkzettel",
+     "Parameter",
+     "Variable"
     ]
    },
    "summary": {
-    "en": "A note that floats over the view and stays open in sketches too. It is saved in the design, and a line ending in = is calculated.",
-    "de": "Eine Notiz, die über der Ansicht schwebt und auch in Skizzen offen bleibt. Sie wird im Design gespeichert, und eine Zeile mit = am Ende wird berechnet."
+    "en": "A note that floats over the view and stays open in sketches too. It is saved in the design, a line ending in = is calculated, and a line like Wall = 2 mm defines a parameter.",
+    "de": "Eine Notiz, die über der Ansicht schwebt und auch in Skizzen offen bleibt. Sie wird im Design gespeichert, eine Zeile mit = am Ende wird berechnet, und eine Zeile wie Wand = 2 mm legt einen Parameter fest."
    },
    "steps": {
     "en": [
      "In the toolbar at the top, in the UTILITIES section, click Note.",
      "Type your text. To calculate, end a line with =, e.g. 120 / 4 = and the result appears behind it.",
+     "To define a parameter, write Name = value or formula, e.g. Wall = 2 mm or Width = Wall * 20, and press Enter. Behind a formula the note shows its value: → 40.00 mm.",
+     "Use the name in any number field, e.g. Distance = Width. Change the line in the note, click into the view, and the design follows. Change the dimension on the model and the note follows.",
      "Drag the note by its title to any place. It stays in the nearest window corner, also when the window changes size.",
      "Click the x to close the note. It stays in the browser under Notes; double-click it there to open it again.",
      "To remove a note for good, select it in the browser and press Delete."
@@ -3861,6 +4086,8 @@
     "de": [
      "Klicke in der Werkzeugleiste oben im Bereich WERKZEUGE auf Notiz.",
      "Tippe deinen Text. Zum Rechnen beende eine Zeile mit =, z. B. 120 / 4 =, dann erscheint dahinter das Ergebnis.",
+     "Um einen Parameter festzulegen, schreib Name = Wert oder Formel, z. B. Wand = 2 mm oder Breite = Wand * 20, und drück Enter. Hinter einer Formel zeigt die Notiz ihren Wert: → 40.00 mm.",
+     "Nutze den Namen in einem beliebigen Zahlenfeld, z. B. Abstand = Breite. Änder die Zeile in der Notiz, klick in die Ansicht, und das Design folgt. Änderst du das Maß am Modell, folgt die Notiz.",
      "Zieh die Notiz an ihrem Titel an einen beliebigen Platz. Sie bleibt in der nächsten Fensterecke, auch wenn sich die Fenstergröße ändert.",
      "Klicke auf das x, um die Notiz zu schließen. Sie bleibt im Browser unter Notizen; ein Doppelklick dort öffnet sie wieder.",
      "Um eine Notiz endgültig zu entfernen, wähle sie im Browser aus und drücke Entf."
@@ -3872,11 +4099,15 @@
    "tips": {
     "en": [
      "Calculations understand + - * / and brackets, units such as 10 mm + 1 in, and your parameter names.",
-     "Undo does not change notes: while typing, Ctrl+Z only takes back your text."
+     "Undo does not change notes: while typing, Ctrl+Z only takes back your text.",
+     "A line marked with ⚠ did not become a parameter, e.g. because the name is used twice. Nothing is lost silently: if you delete the line of a parameter that the design still uses, the parameter stays and the note says where it is used.",
+     "Umlauts are fine: Wandstärke = 2,5 mm works."
     ],
     "de": [
      "Rechnungen verstehen + - * / und Klammern, Einheiten wie 10 mm + 1 in und deine Parameternamen.",
-     "Rückgängig ändert keine Notizen: Beim Tippen nimmt Strg+Z nur deinen Text zurück."
+     "Rückgängig ändert keine Notizen: Beim Tippen nimmt Strg+Z nur deinen Text zurück.",
+     "Eine Zeile mit ⚠ wurde kein Parameter, z. B. weil der Name zweimal vorkommt. Nichts geht still verloren: Löschst du die Zeile eines Parameters, den das Design noch nutzt, bleibt der Parameter, und die Notiz sagt, wo er gebraucht wird.",
+     "Umlaute gehen: Wandstärke = 2,5 mm funktioniert."
     ]
    }
   },

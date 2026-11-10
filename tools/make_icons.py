@@ -137,6 +137,8 @@ ICONS = {
                    '<path d="M8.6 7v10M15.4 7v10"/><path d="M8.6 17a3.4 1.3 0 0 0 6.8 0"/>',
     "Design_NewComponent": '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
     # Ändern
+    "Design_Fit": '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/><path d="M14.6 9.4l2.3-2.3M9.4 14.6l-2.3 2.3"/>',
+    "Design_Fastener": '<path d="M7 3h10v4H7z"/><path d="M10 7v12l2 2 2-2V7"/><path d="M10 10.5l4 1.5M10 14l4 1.5"/>',
     "Design_PressPull": '<path d="M4 14l8-4 8 4-8 4z"/><path d="M12 13V3M9 6l3-3 3 3"/>',
     "Design_Fillet": '<path d="M4 20v-6A10 10 0 0 1 14 4h6"/><path d="M4 4h3M4 4v3"/>',
     "Design_Chamfer": '<path d="M4 20v-8l8-8h8"/><path d="M4 4h3M4 4v3"/>',
