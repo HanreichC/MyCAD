@@ -1297,10 +1297,13 @@ void toggleBrowser();
 
 /// Fensterknöpfe wie unter KDE: minimieren, maximieren/wiederherstellen, schließen. Liegen in einer eigenen Glas-Kapsel
 /// rechts oben, darin nichts anderes (MyStyle W-1)
+/// Fensterknöpfe rechts oben. MyCAD weicht hier bewusst von MyStyle W-1/W-7 ab (Chris, 2026-11-10): Zurück und
+/// Startseite stehen vorne in derselben Kapsel, durch einen Trenner abgesetzt, statt unten in der Seitenleiste
+/// (Navigation gehört nach oben, W-5: nichts Wichtiges an den unteren Rand)
 class WindowControls: public QWidget
 {
 public:
-    WindowControls()
+    explicit WindowControls(std::function<void()> backAction = {}, const QString& backTip = {}, bool home = false)
     {
         setObjectName(QStringLiteral("GlassContent"));
         auto lay = new QHBoxLayout(this);
@@ -1319,12 +1322,34 @@ public:
             lay->addWidget(btn);
             return btn;
         };
+        if (backAction) {
+            back = button("Window_Back", "GlassButton", backTip, backAction);
+        }
+        if (home) {
+            button("Window_Home", "GlassButton", T("Home"), showStartPage);
+        }
+        if (backAction || home) {
+            separator = new QFrame;
+            separator->setObjectName(QStringLiteral("ToolbarSeparator"));
+            separator->setFixedSize(9, 28);
+            lay->addWidget(separator);
+            onlyBack = !home;
+        }
         button("Window_Minimize", "GlassButton", T("Minimize"), [] { getMainWindow()->showMinimized(); });
         maximize = button("Window_Maximize", "GlassButton", T("Maximize"), toggleMaximized);
         // Schließen: rot beim Überfahren, Glyph dann weiß (autoRaise zeichnet das Icon im Zustand Active)
         button("Window_Close", "WindowClose", T("Close"), [] { getMainWindow()->close(); })->setAutoRaise(true);
         getMainWindow()->installEventFilter(this);
         update();
+    }
+
+    /// Zurück nur zeigen, wenn es wohin geht (Startseite: ein Design ist offen); ohne Startseite-Knopf auch den Trenner
+    void setBackVisible(bool visible)
+    {
+        if (back) {
+            back->setVisible(visible);
+            separator->setVisible(visible || !onlyBack);
+        }
     }
 
 protected:
@@ -1344,6 +1369,9 @@ private:
         maximize->setToolTip(max ? T("Restore") : T("Maximize"));
     }
     QToolButton* maximize;
+    QToolButton* back = nullptr;
+    QFrame* separator = nullptr;
+    bool onlyBack = false;
 };
 
 /// Kopf jeder Seitenleiste: App-Name auf Höhe der Titelzeile (W-1, W-2), rechts daneben bei Bedarf ein Knopf
@@ -1364,8 +1392,8 @@ QWidget* sidebarHead(QToolButton* toggle = nullptr)
 }
 
 /// Fuß jeder Seitenleiste: App-Aktionen über der Version (W-7). home, help: Einträge zu Startseite und Hilfe (nicht auf
-/// der jeweiligen Seite selbst); back: Zurück-Eintrag vorne, wird in backRow abgelegt
-QWidget* sidebarFooter(bool home, bool help = true, const QString& backText = {}, std::function<void()> back = {}, QToolButton** backRow = nullptr)
+/// der jeweiligen Seite selbst). Zurück steht in den Fensterknöpfen (WindowControls)
+QWidget* sidebarFooter(bool home, bool help = true)
 {
     auto foot = new QWidget;
     auto lay = new QVBoxLayout(foot);
@@ -1386,12 +1414,6 @@ QWidget* sidebarFooter(bool home, bool help = true, const QString& backText = {}
         lay->addWidget(btn);
         return btn;
     };
-    if (back) {
-        QToolButton* btn = row("Window_Back", backText, backText, back);
-        if (backRow) {
-            *backRow = btn;
-        }
-    }
     if (home) {
         row("Window_Home", T("Home"), T("Home"), showStartPage);
     }
@@ -1743,7 +1765,7 @@ public:
         folderLabel->setContentsMargins(10, 0, 0, 0);
         folderLabel->setWordWrap(true);
         sideLay->addWidget(folderLabel);
-        sideLay->addWidget(sidebarFooter(false, true, T("Back to Design"), [this] { hide(); }, &backRow));
+        sideLay->addWidget(sidebarFooter(false, true));
         side->installEventFilter(&grip);
 
         // --- Designs (unter den Glasflächen, damit deren Schatten sichtbar bleiben) ---
@@ -1773,7 +1795,7 @@ public:
         controlsCard->setParent(this);
         auto controlsLay = new QHBoxLayout(controlsCard);
         controlsLay->setContentsMargins(GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
-        controls = new WindowControls;
+        controls = new WindowControls([this] { hide(); }, T("Back to Design"));
         controls->installEventFilter(&grip);
         controlsLay->addWidget(controls);
         side->raise();  // der durchsichtige Schattenrand der Leiste darf die ersten Zeilen der Seitenleiste nicht verdecken
@@ -1787,7 +1809,7 @@ public:
     {
         const bool wasVisible = isVisible();
         rebuild();
-        backRow->setVisible(anyDesignOpen());
+        controls->setBackVisible(anyDesignOpen());
         setGeometry(getMainWindow()->rect());
         place();
         show();
@@ -1962,7 +1984,6 @@ private:
     GlassCard* side;
     GlassCard* barCard;
     GlassCard* controlsCard;
-    QToolButton* backRow = nullptr;
     WindowEdge* edge;
     WindowControls* controls;
     QScrollArea* scroll;
@@ -2058,7 +2079,7 @@ public:
         listLay->addStretch();
         list->setWidget(listWidget);
         sideLay->addWidget(list);
-        sideLay->addWidget(sidebarFooter(true, false, T("Back"), [this] { hide(); }));
+        sideLay->addWidget(sidebarFooter(false, false));
         QObject::connect(rowGroup, &QButtonGroup::idClicked, this, [this](int i) { showArticle(i); });
 
         // Artikel
@@ -2107,7 +2128,7 @@ public:
         controlsCard->setParent(this);
         auto controlsLay = new QHBoxLayout(controlsCard);
         controlsLay->setContentsMargins(GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow, GlassCard::Shadow);
-        controls = new WindowControls;
+        controls = new WindowControls([this] { hide(); }, T("Back"), true);
         controls->installEventFilter(&grip);
         controlsLay->addWidget(controls);
         side->raise();  // der durchsichtige Schattenrand der Leiste darf die ersten Zeilen der Seitenleiste nicht verdecken
@@ -4928,7 +4949,7 @@ void Gui::Shell::install()
     if (frameless()) {
         state.corners = new WindowCorners;
         state.titleGrip = new TitleGrip;
-        state.windowControls = new WindowControls;
+        state.windowControls = new WindowControls({}, {}, true);
         state.windowPanel = new GlassPanel(state.windowControls, Token::RadiusCapsule);
         for (QWidget* w : {header, state.modelBar, state.sketchBar, state.scribbleBar, static_cast<QWidget*>(state.windowControls)}) {
             w->installEventFilter(windowGrip());
@@ -4968,7 +4989,7 @@ void Gui::Shell::install()
         head->setContentsMargins(8, 0, 8, 0);
         sideLay->addWidget(head);
         sideLay->addWidget(tree, 1);
-        auto foot = sidebarFooter(true);
+        auto foot = sidebarFooter(!frameless());  // rahmenlos steht die Startseite in den Fensterknöpfen
         foot->setContentsMargins(8, 0, 8, 0);
         sideLay->addWidget(foot);
         state.browser = new GlassPanel(side, Token::RadiusPanel);  // normales Glas wie MyPods' Seitenleiste: das Design scheint durch
