@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "Shell.h"
+#include "CommandSearch.h"
 #include "GlassPanel.h"
 #include "ViewCube.h"
 #include "Settings.h"
@@ -101,6 +102,8 @@
 #include <QtMath>
 #include <tuple>
 #include <QInputDialog>
+#include <sstream>
+#include <QListWidget>
 #include <QPointer>
 #include <QStatusBar>
 #include <QRegularExpression>
@@ -189,6 +192,13 @@ QToolButton#GlassProminent:pressed, QPushButton#Prominent:pressed { background: 
 QToolButton#GlassProminent:focus, QPushButton#Prominent:focus { border: 2px solid @focusRing; padding: 0 14px; }
 
 QFrame#TimelineMarker { background: @accent; border-radius: 2px; }
+/* Befehlssuche (MyStyle 9.1/9.3): Feld fill.tertiary r 8 mit Fokusring, Treffer wie Seitenleisten-Zeilen */
+QWidget#CommandSearch QLineEdit { background: @fillTertiary; border: 2px solid transparent; border-radius: 8px; min-height: 26px; padding: 0 8px; }
+QWidget#CommandSearch QLineEdit:focus { border-color: @focusRing; }
+QWidget#CommandSearch QListWidget { background: transparent; border: none; outline: 0; }
+QWidget#CommandSearch QListWidget::item { border-radius: 8px; padding: 4px 8px; min-height: 26px; color: @labelPrimary; }
+QWidget#CommandSearch QListWidget::item:hover { background: @fillTertiary; }
+QWidget#CommandSearch QListWidget::item:selected { background: @fillSecondary; color: @labelPrimary; }
 /* Seitenleisten-Zeilen: r 12, Hover fill.tertiary, aktiv fill.secondary + SemiBold */
 QToolButton#PaletteRow { border: 2px solid transparent; border-radius: 12px; padding: 0 8px; text-align: left; background: transparent; }
 QToolButton#PaletteRow:hover { background: @fillTertiary; }
@@ -2950,6 +2960,8 @@ void setNotePosition(App::DocumentObject* note, const QPointF& pos, const QRectF
     set("OffsetY", qRound(bottom ? r.height() - pos.y() - NoteHeight : pos.y()));
 }
 
+void placeSearch(const QRectF& r, qreal top);
+
 void layout()
 {
     if (!state.scene) {
@@ -3004,6 +3016,7 @@ void layout()
     }
     const qreal headerH = std::max<qreal>(barH, Token::BarHeight);  // eine höhere Toolbar macht nur die Titelzeile höher
     state.header->setGeometry(QRectF(std::max(left, std::min((r.width() - barW) / 2, right - barW)), m, barW, headerH));
+    placeSearch(r, m + headerH + m);
     bar->setGeometry(QRectF(0, (headerH - barH) / 2, barW, barH).toRect());
     if (state.titleGrip) {
         state.titleGrip->setRect(0, 0, r.width(), m + headerH);
@@ -3509,6 +3522,316 @@ void syncNotes()
                 edit->setFocus();
             });
         }
+    }
+}
+
+// --- Befehlssuche (Strg+K) ---------------------------------------------------------------------------------------
+
+/// Weitere Suchwörter je Befehl: deutsch und englisch, dazu Begriffe aus anderen CAD-Programmen
+const std::map<std::string, std::vector<std::string>>& searchSynonyms()
+{
+    static const std::map<std::string, std::vector<std::string>> words = {
+        {"Design_Extrude", {"extrudieren", "pad", "pocket", "ziehen", "block", "platte", "tasche"}},
+        {"Design_Hole", {"loch", "bohren", "drill", "bore", "gewindebohrung", "senkung", "screw hole"}},
+        {"Design_Thread", {"gewinde", "schraube", "bolt", "screw", "mutter", "nut"}},
+        {"Design_Fillet", {"runden", "abrunden", "rundung", "round", "radius"}},
+        {"Design_Chamfer", {"fase", "anfasen", "bevel"}},
+        {"Design_Shell", {"aushoehlen", "hohl", "wandstaerke", "hollow"}},
+        {"Design_PressPull", {"druecken", "ziehen", "offset face", "push pull"}},
+        {"Design_Combine", {"boolean", "vereinigen", "abziehen", "union", "subtract", "schneiden"}},
+        {"Design_Mirror", {"spiegeln", "symmetrisch", "symmetry"}},
+        {"Design_Pattern", {"muster", "array", "kopien", "wiederholen", "reihe"}},
+        {"Design_Move", {"verschieben", "drehen", "rotate", "translate", "bewegen"}},
+        {"Design_Measure", {"messen", "abstand", "distance", "masse", "gewicht", "weight", "mass", "volumen"}},
+        {"Design_Appearance", {"farbe", "material", "color", "werkstoff", "aussehen"}},
+        {"Design_Parameters", {"parameter", "variable", "formel", "formula", "change parameters"}},
+        {"Design_CreateSketch", {"skizze", "zeichnen", "draw", "sketch"}},
+        {"Design_Export", {"stl", "3mf", "step", "dxf", "drucken", "print", "speichern als"}},
+        {"Design_Import", {"einfuegen", "step", "dxf", "svg", "insert"}},
+        {"Design_Note", {"notiz", "post-it", "rechnen", "taschenrechner", "calculator"}},
+        {"Design_Scribble", {"stift", "pen", "idee", "zeichnen", "skizzieren", "handschrift"}},
+        {"Design_Joint", {"gelenk", "verbindung", "baugruppe", "assembly"}},
+        {"Design_NewComponent", {"komponente", "teil", "part", "baugruppe"}},
+        {"Design_Section", {"schnitt", "schnittansicht", "clip"}},
+        {"Design_Revolve", {"drehen", "rotieren", "lathe", "drehteil"}},
+        {"Design_Loft", {"uebergang", "aushaengen"}},
+        {"Design_Sweep", {"pfad", "rohr", "pipe"}},
+        {"MyCAD_Settings", {"einstellungen", "optionen", "preferences", "sprache", "language"}},
+    };
+    return words;
+}
+
+ParameterGrp::handle shellParams()
+{
+    return App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+}
+
+/// zuletzt benutzte Suchtreffer, neuester zuerst (höchstens 8)
+std::vector<std::string> recentSearches()
+{
+    std::vector<std::string> keys;
+    std::stringstream in(shellParams()->GetASCII("RecentSearches", ""));
+    for (std::string key; std::getline(in, key, '\n');) {
+        if (!key.empty()) {
+            keys.push_back(key);
+        }
+    }
+    return keys;
+}
+
+void rememberSearch(const std::string& key)
+{
+    auto keys = recentSearches();
+    std::erase(keys, key);
+    keys.insert(keys.begin(), key);
+    keys.resize(std::min<size_t>(keys.size(), 8));
+    std::string out;
+    for (const auto& k : keys) {
+        out += k + "\n";
+    }
+    shellParams()->SetASCII("RecentSearches", out.c_str());
+}
+
+struct SearchHit
+{
+    std::string key;  ///< Befehlsname oder "Dokument/Objekt"
+    QString label;
+    QString detail;   ///< Tastenkürzel oder Art des Objekts
+    QIcon icon;
+    std::function<void()> run;
+    int score = 0;
+};
+
+GlassPanel* searchPanel = nullptr;
+QLineEdit* searchField = nullptr;
+QListWidget* searchList = nullptr;
+std::vector<SearchHit> searchHits;
+
+void hideSearch()
+{
+    if (searchPanel && searchPanel->isVisible()) {
+        searchPanel->hide();
+        if (auto view = qobject_cast<View3DInventor*>(getMainWindow()->activeWindow())) {
+            view->getViewer()->setFocus();  // Tasten wieder an die 3D-Ansicht
+        }
+    }
+}
+
+void runSearchHit(int row)
+{
+    if (row < 0 || row >= int(searchHits.size())) {
+        return;
+    }
+    const SearchHit hit = searchHits[row];
+    hideSearch();
+    rememberSearch(hit.key);
+    QTimer::singleShot(0, hit.run);  // nicht im Tastenereignis der Suche
+}
+
+/// Treffer zur Eingabe: Befehle, die gerade gehen, und Körper, Skizzen und Parameter des aktiven Designs
+void refreshSearch()
+{
+    const std::string query = searchField->text().toStdString();
+    const auto recent = recentSearches();
+    std::vector<SearchHit> hits;
+    static const std::set<std::string> standard = {"Std_New", "Std_Open", "Std_Save", "Std_SaveAs", "Std_Undo", "Std_Redo",
+                                              "Std_ViewFitAll", "Std_ViewIsometric", "Std_ViewTop", "Std_ViewFront",
+                                              "Std_ViewRight", "MyCAD_Settings"};
+    for (Gui::Command* cmd : Application::Instance->commandManager().getAllCommands()) {
+        const std::string name = cmd->getName();
+        const bool sketch = name.rfind("Sketcher_", 0) == 0;
+        const bool design = name.rfind("Design_", 0) == 0 && name.rfind("Design_Scribble", 0) != 0;
+        if ((!design && !standard.contains(name) && !(sketch && state.sketchMode)) || name == "MyCAD_Search"
+            || !cmd->isActive()) {
+            continue;
+        }
+        const char* english = cmd->getMenuText();
+        if (!english || !*english) {
+            continue;
+        }
+        QString label = T(english);
+        label.remove(QLatin1Char('&'));
+        auto synonyms = searchSynonyms().contains(name) ? searchSynonyms().at(name) : std::vector<std::string>();
+        synonyms.push_back(name);
+        const int score = CommandSearch::score(query, {label.toStdString(), english}, synonyms);
+        if (score > 0) {
+            const char* accel = cmd->getAccel();
+            hits.push_back({name, label, accel ? QString::fromLatin1(accel) : QString(),
+                            commandIcon(QString::fromLatin1(name), QIcon()), [name] {
+                                Application::Instance->commandManager().runCommandByName(name.c_str());
+                            }, score});
+        }
+    }
+    if (App::Document* doc = App::GetApplication().getActiveDocument(); doc && !query.empty()) {
+        static const Base::Type body = Base::Type::fromName("Design::Body");
+        static const Base::Type sketch = Base::Type::fromName("Sketcher::SketchObject");
+        for (App::DocumentObject* obj : doc->getObjects()) {
+            const bool isBody = !body.isBad() && obj->getTypeId().isDerivedFrom(body);
+            const bool isSketch = !sketch.isBad() && obj->getTypeId().isDerivedFrom(sketch);
+            if (!isBody && !isSketch) {
+                continue;
+            }
+            const int score = CommandSearch::score(query, {obj->Label.getValue()});
+            if (score > 0) {
+                const App::DocumentObjectT ref(obj);
+                hits.push_back({std::string(doc->getName()) + "/" + obj->getNameInDocument(),
+                                QString::fromUtf8(obj->Label.getValue()), isBody ? T("Body") : T("Sketch"),
+                                commandIcon(isBody ? QStringLiteral("Design_Body") : QStringLiteral("Design_CreateSketch"), QIcon()),
+                                [ref, isBody] {
+                                    auto o = ref.getObject();
+                                    if (!o) {
+                                        return;
+                                    }
+                                    Selection().clearSelection();
+                                    Selection().addSelection(o->getDocument()->getName(), o->getNameInDocument());
+                                    auto gd = Application::Instance->getDocument(o->getDocument());
+                                    if (isBody) {
+                                        Application::Instance->commandManager().runCommandByName("Std_ViewFitSelection");
+                                    }
+                                    else if (gd) {
+                                        gd->setEdit(gd->getViewProvider(o));
+                                    }
+                                },
+                                score});
+            }
+        }
+    }
+    // Beste Treffer zuerst; bei gleicher Güte die zuletzt benutzten
+    const auto rank = [&recent](const SearchHit& h) {
+        const auto it = std::ranges::find(recent, h.key);
+        return h.score * 10 + (it == recent.end() ? 0 : 8 - int(it - recent.begin()));
+    };
+    std::ranges::stable_sort(hits, [&rank](const SearchHit& a, const SearchHit& b) { return rank(a) > rank(b); });
+    if (query.empty()) {  // ohne Eingabe nur die zuletzt benutzten
+        std::erase_if(hits, [&recent](const SearchHit& h) { return std::ranges::find(recent, h.key) == recent.end(); });
+    }
+    hits.resize(std::min<size_t>(hits.size(), 10));
+    searchHits = hits;
+    searchList->clear();
+    for (const auto& h : searchHits) {
+        auto item = new QListWidgetItem(h.icon, h.detail.isEmpty() ? h.label : h.label + QStringLiteral("    ") + h.detail);
+        item->setData(Qt::AccessibleTextRole, h.label);
+        item->setData(Qt::UserRole, QString::fromStdString(h.key));
+        searchList->addItem(item);
+    }
+    searchList->setCurrentRow(searchHits.empty() ? -1 : 0);
+    searchList->setVisible(!searchHits.empty());
+    searchPanel->content()->adjustSize();
+    layout();
+}
+
+/// Pfeiltasten und Enter im Suchfeld steuern die Liste, Esc schließt
+class SearchKeys: public QObject
+{
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (event->type() == QEvent::FocusOut && obj == searchField) {
+            QTimer::singleShot(0, [] {  // Klick daneben schließt (Klick in die Liste nicht)
+                if (searchPanel && !searchList->hasFocus() && !searchField->hasFocus()) {
+                    hideSearch();
+                }
+            });
+        }
+        if (event->type() != QEvent::KeyPress) {
+            return false;
+        }
+        const int key = static_cast<QKeyEvent*>(event)->key();
+        const int row = searchList->currentRow();
+        if (key == Qt::Key_Down || key == Qt::Key_Up) {
+            const int next = std::clamp(row + (key == Qt::Key_Down ? 1 : -1), 0, std::max(0, searchList->count() - 1));
+            searchList->setCurrentRow(next);
+            return true;
+        }
+        if (key == Qt::Key_Return || key == Qt::Key_Enter) {
+            runSearchHit(row);
+            return true;
+        }
+        if (key == Qt::Key_Escape) {
+            hideSearch();
+            return true;
+        }
+        return false;
+    }
+};
+
+void showCommandSearch()
+{
+    if (!state.scene) {
+        return;
+    }
+    if (!searchPanel) {
+        auto box = new QWidget;
+        box->setObjectName(QStringLiteral("CommandSearch"));
+        box->setFixedWidth(520);
+        auto lay = new QVBoxLayout(box);
+        lay->setContentsMargins(12, 12, 12, 12);
+        lay->setSpacing(8);
+        searchField = new QLineEdit;
+        searchField->setPlaceholderText(T("Search commands and the design"));
+        searchField->setAccessibleName(T("Search"));
+        searchField->setClearButtonEnabled(true);
+        searchList = new QListWidget;
+        searchList->setAccessibleName(T("Results"));
+        searchList->setFrameShape(QFrame::NoFrame);
+        searchList->setIconSize(QSize(Token::IconL, Token::IconL));
+        searchList->setFocusPolicy(Qt::NoFocus);
+        searchList->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+        searchList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        lay->addWidget(searchField);
+        lay->addWidget(searchList);
+        static SearchKeys keys;
+        searchField->installEventFilter(&keys);
+        QObject::connect(searchField, &QLineEdit::textChanged, searchField, [] { refreshSearch(); });
+        QObject::connect(searchList, &QListWidget::itemClicked, searchList,
+                         [](QListWidgetItem* item) { runSearchHit(searchList->row(item)); });
+        searchPanel = new GlassPanel(box, Token::RadiusPanel, true);
+        searchPanel->setZValue(10);  // über Inspector und Timeline
+    }
+    if (searchPanel->scene() != state.scene) {
+        state.scene->addItem(searchPanel);
+    }
+    searchPanel->show();  // erst sichtbar, dann auslegen: sonst bekommt das Glas die Größe vor dem Inhalt
+    searchField->clear();
+    refreshSearch();
+    searchField->setFocus();
+}
+
+class CmdSearch: public Gui::Command
+{
+public:
+    CmdSearch()
+        : Command("MyCAD_Search")
+    {
+        sGroup = "Tools";
+        sMenuText = "Search";
+        sToolTipText = "Find a command, body or sketch by typing";
+        sStatusTip = sToolTipText;
+        sWhatsThis = "MyCAD_Search";
+        sPixmap = "Start_Search";
+        sAccel = "Ctrl+K";
+        eType = 0;
+    }
+    const char* className() const override
+    {
+        return "CmdSearch";
+    }
+
+protected:
+    void activated(int) override
+    {
+        showCommandSearch();
+    }
+};
+
+/// mittig unter der Kopfleiste (aus layout())
+void placeSearch(const QRectF& r, qreal top)
+{
+    if (searchPanel && searchPanel->isVisible()) {
+        QWidget* box = searchPanel->content();
+        box->adjustSize();
+        const QSizeF s(box->width(), box->sizeHint().height());
+        searchPanel->setGeometry(QRectF((r.width() - s.width()) / 2, top, s.width(), s.height()));
     }
 }
 
@@ -4135,6 +4458,7 @@ void Gui::Shell::install()
     // Design-Modul laden (Create Sketch, Extrude, …), egal welche Workbench zuletzt aktiv war
     Application::Instance->activateWorkbench("DesignWorkbench");
     registerSettings();
+    Application::Instance->commandManager().addCommand(new CmdSearch);  // vor der Toolbar, die ihn zeigt
 
     state.modelBar =
         toolbar({"#FILE", "Std_New", "Std_Open", "Std_Save", "Design_Import", "Design_Export",
@@ -4148,7 +4472,7 @@ void Gui::Shell::install()
                  "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",
                  "#INSPECT", "Design_Measure", "Design_Section", "Std_ViewFitAll",
-                 "#UTILITIES", "Design_Parameters", "Design_Appearance", "Design_Scribble", "Design_Note"});
+                 "#UTILITIES", "MyCAD_Search", "Design_Parameters", "Design_Appearance", "Design_Scribble", "Design_Note"});
     state.sketchBar =
         toolbar({"#CREATE", "Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
                  "Sketcher_CompCreateConic", "Sketcher_CompCreateArc", "Sketcher_CompSlot",
@@ -4297,6 +4621,7 @@ void Gui::Shell::install()
         prefs->setShortcut(QKeySequence());  // Ctrl+, öffnet MyCAD_Settings
     }
     commandAction("MyCAD_Settings");
+    commandAction("MyCAD_Search");  // Strg+K
 
     hideChrome();
     Application::Instance->signalActivateWorkbench.connect([](const char*) { hideChromeLater(); });

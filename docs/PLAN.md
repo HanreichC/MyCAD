@@ -325,7 +325,7 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 - Jeder Body hat ein physisches Material (Dichte aus `Mod/Material`); Appearance schlägt das passende vor (Walnuss → Holz, Alu eloxiert → Aluminium, PLA → PLA). Messen zeigt Masse und Schwerpunkt.
 - Tests H: 10-cm-Würfel Aluminium = 2,70 kg ± 1 %; Wechsel der Appearance setzt das Material, eigene Wahl bleibt. G: Messen zeigt Masse.
 
-**L10 Befehlssuche**
+**L10 Befehlssuche** · erledigt (2026-11-10); `S` ist schon „Skizze“, daher nur `Strg+K` und die Lupe in WERKZEUGE
 - `S` oder `Strg+K` öffnet eine Suche (Glas-Popover): Befehle EN/DE mit Synonymen („Bohrung“, „Loch“, „hole“), zuletzt benutzte oben, Tastenkürzel daneben; Objekte im Design (Bodies, Skizzen, Parameter) als zweite Gruppe.
 - Tests C: Ranking (Präfix vor Teilwort vor Synonym, Umlaute, Tippfehler um 1 Zeichen). G: Tippen „boh“, Enter startet Bohrung; Esc schließt; Tastatur und Fokusring.
 

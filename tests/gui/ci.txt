@@ -12,3 +12,4 @@ test_viewcube.py
 test_appearance.py
 test_start.py
 test_german.py
+test_search.py

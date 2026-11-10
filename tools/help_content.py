@@ -855,6 +855,20 @@ A("Design_Appearance", "utilities", "Design_Appearance", ("Appearance", "Darstel
          "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Allgemein → Körpermaterial ein.")],
   see=["settings"])
 
+A("search", "utilities", "MyCAD_Search", ("Search", "Suchen"),
+  (["search", "find", "command", "palette", "ctrl+k", "where is", "tool"], ["suchen", "finden", "Befehl", "Palette", "Strg+K", "wo ist", "Werkzeug"]),
+  ("Finds any tool, body or sketch by typing a few letters – in German or English, also with a typo.",
+   "Findet jedes Werkzeug, jeden Körper und jede Skizze, wenn du ein paar Buchstaben tippst – auf Deutsch oder Englisch, auch mit Tippfehler."),
+  [("Press Ctrl+K, or click the magnifier in the UTILITIES section of the toolbar.",
+    "Drücke Strg+K oder klicke die Lupe im Bereich WERKZEUGE der Werkzeugleiste."),
+   ("Type what you want to do, e.g. hole, loch, fillet or the name of a body. The best match is at the top.",
+    "Tippe, was du tun willst, z. B. Bohrung, loch, Rundung oder den Namen eines Körpers. Der beste Treffer steht oben."),
+   ("Press Enter (or click a result): a tool starts, a body is selected and shown, a sketch opens. Esc closes the search.",
+    "Drücke Enter (oder klicke einen Treffer an): ein Werkzeug startet, ein Körper wird gewählt und gezeigt, eine Skizze öffnet sich. Esc schließt die Suche.")],
+  tips=[("With an empty field the search shows what you used last.", "Mit leerem Feld zeigt die Suche, was du zuletzt benutzt hast."),
+        ("The key shortcut of a tool stands next to its name.", "Das Tastenkürzel eines Werkzeugs steht neben seinem Namen.")],
+  commands=["MyCAD_Search"], see=["settings"])
+
 A("settings", "utilities", "MyCAD_Settings", ("Settings", "Einstellungen"),
   (["settings", "preferences", "language", "german", "english", "mouse", "keys", "glass", "liquid glass", "dark mode", "light mode",
     "contrast", "material", "projects folder", "zoom direction"],
