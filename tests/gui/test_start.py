@@ -75,7 +75,8 @@ run([
     ("new", lambda: real_click(page().findChild(QtWidgets.QPushButton, "Prominent"))), ("wait", lambda: None),
     ("after new", lambda: report("nach New Design")),
     ("body", save), ("save", store),
-    ("close", lambda: App.closeDocument(App.ActiveDocument.Name)), ("wait", lambda: None),
+    # die Startseite baut ihre Kacheln nach dem Schließen auf (Vorschaubilder aus den Dateien): unter Last dauert das
+    ("close", lambda: App.closeDocument(App.ActiveDocument.Name)), ("wait", lambda: None), ("wait", lambda: None), ("wait", lambda: None),
     ("closed", lambda: report("nach Schließen")), ("shot page", lambda: shot("page")),
     ("open tile", lambda: real_click(tile("Bracket"))), ("wait", lambda: None), ("wait", lambda: None),
     ("opened", lambda: report("nach Klick auf Kachel")),

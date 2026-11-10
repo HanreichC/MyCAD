@@ -3587,6 +3587,8 @@ const std::map<std::string, std::vector<std::string>>& searchSynonyms()
         {"Design_Thread", {"gewinde", "schraube", "bolt", "screw", "mutter", "nut", "druckgewinde"}},
         {"Design_Fastener", {"schraube hier", "schraube", "verschrauben", "screw", "bolt", "einschmelzmutter", "gewindeeinsatz",
                              "heat-set insert", "mutterfalle", "nut trap", "zylinderkopf", "senkkopf", "fastener"}},
+        {"Design_RemoveFace", {"flaeche entfernen", "flaeche loeschen", "delete face", "remove face", "defeature",
+                               "fase entfernen", "rundung entfernen", "bohrung schliessen", "weg"}},
         {"Design_RedPen", {"rotstift", "korrektur", "korrigieren", "anmerken", "markup", "red pen", "redline", "handschrift",
                            "aufs modell schreiben"}},
         {"Design_PrintView", {"druckansicht", "ueberhang", "overhang", "stuetzen", "support", "wandstaerke", "duenne wand",
@@ -4030,7 +4032,8 @@ void startAlwaysSave()
         const qint64 now = QDateTime::currentMSecsSinceEpoch();
         for (App::Document* doc : App::GetApplication().getDocuments()) {
             Gui::Document* gdoc = Application::Instance->getDocument(doc);
-            if (!gdoc || !gdoc->isModified() || doc->testStatus(App::Document::TempDoc)
+            // offene Transaktion: mitten in einer Aktion (Werkzeug, Vorschau des Rotstifts) – erst danach speichern
+            if (!gdoc || !gdoc->isModified() || doc->hasPendingTransaction() || doc->testStatus(App::Document::TempDoc)
                 || doc->testStatus(App::Document::PartialDoc) || now - lastChange[doc->getName()] < 2000) {
                 continue;
             }
@@ -4802,7 +4805,7 @@ void Gui::Shell::install()
                  "Design_Sweep|Design_Loft|Design_Rib|Design_Web|Design_Emboss",
                  "Design_Box|Design_Cylinder|Design_Sphere|Design_Torus|Design_Coil", "Design_Hole|Design_Fastener|Design_Thread",
                  "Design_Pattern", "Design_Mirror",
-                 "#MODIFY", "Design_PressPull|Design_Fit|Design_ReplaceFace|Design_SplitFace", "Design_Fillet", "Design_Chamfer",
+                 "#MODIFY", "Design_PressPull|Design_Fit|Design_RemoveFace|Design_ReplaceFace|Design_SplitFace", "Design_Fillet", "Design_Chamfer",
                  "Design_Shell", "Design_Draft", "Design_Combine|Design_SplitBody", "Design_Move|Design_Align|Design_Scale",
                  "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",

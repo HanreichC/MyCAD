@@ -119,3 +119,31 @@ class Pattern(DesignTest):
         self.assertEqual((p.TypeId, p.Count1, p.Direction1), ("Design::Pattern", 3, "X"))
         self.assertNoErrors()
         self.assertVolume(b, 40 * 20 * 5 + 3 * math.pi * 4 * 3)
+
+
+class Remove(DesignTest):
+    def test_weg_on_a_fillet_takes_it_away(self):
+        f, b = box(self.doc, 20, 20, 10)
+        apply(self.doc, "R2", V(10, -2, 30))
+        self.assertVolume(b, 4000 - (4 - math.pi) * 20)
+        c = read(self.doc, "weg", V(10, 0.3, 30))  # über der Rundung (sie liegt bei y = 0 … 2 an der Oberkante)
+        self.assertEqual(c["kind"], "Remove")
+        self.assertEqual(c["text"], "Remove face")
+        r = apply(self.doc, "weg", V(10, 0.3, 30))
+        self.assertEqual(r.TypeId, "Design::RemoveFace")
+        self.assertNoErrors()
+        self.assertVolume(b, 4000)
+
+    def test_remove_face_closes_a_hole(self):
+        _, b = box(self.doc, 20, 20, 10)
+        extrude(self.doc, sketch(self.doc, circle(10, 10, 3)), 10, op="Cut", bodies=[b])
+        hole = "Face%d" % [i for i, f in enumerate(b.Shape.Faces, 1) if f.Surface.TypeId != "Part::GeomPlane"][0]
+        dress(self.doc, "Design::RemoveFace", b, [hole])
+        self.assertNoErrors()
+        self.assertVolume(b, 4000)
+
+    def test_a_face_that_cannot_go_says_so(self):
+        _, b = box(self.doc, 20, 20, 10)
+        r = dress(self.doc, "Design::RemoveFace", b, [top_face(b)])  # Oberseite eines Quaders: nichts kann sie ersetzen
+        self.assertTrue(failed(r))
+        self.assertIn("cannot be removed", r.getStatusString())

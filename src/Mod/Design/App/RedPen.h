@@ -5,7 +5,7 @@
 /// Idee 1: Handschrift ist der Befehl. Grammatik der Rotstift-Korrekturen, robust gegen typische Lesefehler der
 /// Handschrifterkennung (S/5, O/0, l/1, Z/2, B/8, x/×, Leerzeichen, Dezimalkomma):
 ///   M5 Gewinde/Gewindebohrung · Ø8 Durchmesser/Bohrung · R2 Rundung · C2 oder 2×45° Fase · 3× Muster
-///   +5 / −5 Fläche ziehen/drücken · H7 oder "Druck" Passung · 12 Maß setzen
+///   +5 / −5 Fläche ziehen/drücken · H7 oder "Druck" Passung · 12 Maß setzen · "weg" (oder durchgestrichen) Fläche entfernen
 /// Ohne FreeCAD, damit es sich allein prüfen lässt: tests/red_pen_check.cpp
 
 #include <cstdlib>
@@ -25,7 +25,8 @@ enum class Kind
     Pattern,   ///< count
     Offset,    ///< value mit Vorzeichen
     Fit,       ///< fit = "H7" oder "print"
-    Value      ///< value: Maß der Fläche setzen
+    Value,     ///< value: Maß der Fläche setzen
+    Remove     ///< Fläche entfernen (Wort "weg" oder ein Strich durch die Fläche)
 };
 
 struct Command
@@ -97,6 +98,11 @@ inline Command parse(const std::string& raw)
     std::string lower;
     for (char c : t) {
         lower += char(std::tolower(static_cast<unsigned char>(c)));
+    }
+    if (lower == "weg" || lower == "entfernen" || lower == "remove" || lower == "delete" || lower == "loeschen"
+        || lower == "l\xC3\xB6schen") {
+        cmd.kind = Kind::Remove;
+        return cmd;
     }
     if (lower == "druck" || lower == "print" || lower == "3d" || lower == "3ddruck") {
         cmd.kind = Kind::Fit;

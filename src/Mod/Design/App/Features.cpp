@@ -1371,6 +1371,7 @@ std::string Design::describeCorrection(const Correction& c)
         case RedPen::Kind::Fit: return c.command.fit == "print" ? "3D print fit" : "Fit " + c.command.fit;
         case RedPen::Kind::Pattern: return "Pattern " + std::to_string(c.command.count) + "×";
         case RedPen::Kind::Value: return "Dimension " + number(c.command.value) + " mm";
+        case RedPen::Kind::Remove: return "Remove face";
         default: return c.text;
     }
 }
@@ -1492,6 +1493,13 @@ App::DocumentObject* Design::applyCorrection(const Correction& c, std::string& e
                 attachToBodies(hole, {body});
                 result = hole;
             }
+            break;
+        }
+        case RedPen::Kind::Remove: {
+            auto f = newFeature<RemoveFace>(body, "Design::RemoveFace", "RemoveFace");
+            f->Edges.setValues(std::vector<std::string> {c.element});
+            attachToBodies(f, {body});
+            result = f;
             break;
         }
         case RedPen::Kind::Fit: {
@@ -3850,6 +3858,47 @@ App::DocumentObjectExecReturn* Hole::compute()
 
 // ---------------------------------------------------------------------------------------------
 
+PROPERTY_SOURCE(Design::RemoveFace, Design::DressUp)
+
+RemoveFace::RemoveFace()
+{
+    Size.setStatus(App::Property::Hidden, true);
+}
+
+App::DocumentObjectExecReturn* RemoveFace::compute()
+{
+    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+        return new App::DocumentObjectExecReturn("Select faces of one body");
+    }
+    const Part::TopoShape shape = baseShape(0);
+    const auto faces = elements(shape, TopAbs_FACE);
+    if (faces.empty()) {
+        return new App::DocumentObjectExecReturn("Select the faces to remove");
+    }
+    Part::TopoShape res;
+    try {
+        res = shape.makeElementDefeaturing(faces);
+    }
+    catch (const Base::Exception&) {
+        res = Part::TopoShape();
+    }
+    catch (const Standard_Failure&) {
+        res = Part::TopoShape();
+    }
+    // OCCT gibt manchmal still die unveränderte Form zurück (etwa für die Oberseite eines Quaders)
+    const auto volume = [](const Part::TopoShape& s) {
+        GProp_GProps props;
+        BRepGProp::VolumeProperties(s.getShape(), props);
+        return props.Mass();
+    };
+    if (res.isNull() || !res.isValid() || res.countSubShapes(TopAbs_SOLID) == 0
+        || (res.countSubShapes(TopAbs_FACE) == shape.countSubShapes(TopAbs_FACE) && std::abs(volume(res) - volume(shape)) < 1e-9)) {
+        return new App::DocumentObjectExecReturn("This face cannot be removed: the faces around it cannot close the gap");
+    }
+    setResults({res});
+    return StdReturn;
+}
+
 PROPERTY_SOURCE(Design::PressPull, Design::DressUp)
 
 PressPull::PressPull()
@@ -5499,9 +5548,7 @@ App::DocumentObjectExecReturn* Joint::solveLoop(const std::vector<Joint*>& group
                 case Cylindrical: kind = Solver::Kind::Cylindrical; break;
                 case Planar: kind = Solver::Kind::Planar; break;
                 case Ball: kind = Solver::Kind::Ball; break;
-                default:
-                    return new App::DocumentObjectExecReturn(std::string(j->Label.getValue())
-                                                             + ": a pin-slot joint cannot close a loop yet");
+                default: kind = Solver::Kind::PinSlot; break;
             }
         }
         links.push_back({j->getNameInDocument(), kind, componentOf(j->Origin2.getValue())->getNameInDocument(),
@@ -5511,6 +5558,32 @@ App::DocumentObjectExecReturn* Joint::solveLoop(const std::vector<Joint*>& group
     std::string error;
     if (!Solver::solve(parts, links, error)) {
         return new App::DocumentObjectExecReturn(error);
+    }
+    // Grenzen der frei folgenden Joints: wo der Mechanismus sie verlassen müsste, sagen statt still überschreiten
+    for (size_t i = 0; i < group.size(); ++i) {
+        Joint* j = group[i];
+        if (!j->Limited.getValue() || links[i].kind == Solver::Kind::Fixed) {
+            continue;
+        }
+        const auto pose = [&parts](const std::string& name) {
+            return std::ranges::find(parts, name, &Solver::Part::name)->pose;
+        };
+        const Base::Placement rel = (pose(links[i].a) * links[i].onA).inverse() * (pose(links[i].b) * links[i].onB);
+        Base::Vector3d axis;
+        double angle = 0;
+        rel.getRotation().getRawValue(axis, angle);
+        angle = std::remainder((axis.z < 0 ? -angle : angle) * 180 / M_PI, 360.0);
+        const double offset = j->Type.getValue() == PinSlot || j->Type.getValue() == Planar ? rel.getPosition().x : rel.getPosition().z;
+        const auto outside = [](double v, const App::PropertyQuantity& lo, const App::PropertyQuantity& hi) {
+            return v < std::min(lo.getValue(), hi.getValue()) - 1e-6 || v > std::max(lo.getValue(), hi.getValue()) + 1e-6;
+        };
+        if (j->turns() && outside(angle, j->AngleMin, j->AngleMax)) {
+            return new App::DocumentObjectExecReturn(std::string(j->Label.getValue()) + " would have to turn past its limits (to "
+                                                     + std::to_string(int(std::round(angle))) + " degrees)");
+        }
+        if (j->slides() && outside(offset, j->OffsetMin, j->OffsetMax)) {
+            return new App::DocumentObjectExecReturn(std::string(j->Label.getValue()) + " would have to slide past its limits");
+        }
     }
     // nur der erste Joint einer Komponente setzt ihre Lage (an ihn ist Placement gebunden)
     auto moving = static_cast<App::Part*>(Moving.getValue());

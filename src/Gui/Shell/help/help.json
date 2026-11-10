@@ -3958,13 +3958,15 @@
      "The first selection must belong to the component that moves; the design itself always stays in place.",
      "Joints are listed in the Joints folder of the browser; double-click one to change it.",
      "Joints can build on each other: a part joined to a moving part moves along.",
-     "Closed chains work too, e.g. a four-bar linkage: give the last part a second joint back to the frame. The first joint of the chain drives it with its angle or distance, the others follow."
+     "Closed chains work too, e.g. a four-bar linkage: give the last part a second joint back to the frame. The first joint of the chain drives it with its angle or distance, the others follow. Before you close the chain, turn the parts roughly the way it should sit.",
+     "In a closed chain, limits on a following joint are checked: if the mechanism would have to pass them, the joint says so."
     ],
     "de": [
      "Die erste Auswahl muss zur Komponente gehören, die sich bewegt; das Design selbst bleibt immer an seinem Platz.",
      "Gelenke stehen im Ordner Gelenke im Browser; Doppelklick ändert eines.",
      "Gelenke bauen aufeinander auf: ein Teil an einem bewegten Teil bewegt sich mit.",
-     "Geschlossene Ketten gehen auch, z. B. ein Viergelenk: gib dem letzten Teil ein zweites Gelenk zurück zum Gestell. Das erste Gelenk der Kette treibt sie mit seinem Winkel oder Weg, die anderen folgen."
+     "Geschlossene Ketten gehen auch, z. B. ein Viergelenk: gib dem letzten Teil ein zweites Gelenk zurück zum Gestell. Das erste Gelenk der Kette treibt sie mit seinem Winkel oder Weg, die anderen folgen. Dreh die Teile vor dem Schließen grob so, wie die Kette sitzen soll.",
+     "In einer geschlossenen Kette werden die Grenzen der folgenden Gelenke geprüft: müsste der Mechanismus darüber hinaus, sagt es das Gelenk."
     ]
    }
   },
@@ -4324,6 +4326,65 @@
    }
   },
   {
+   "id": "Design_RemoveFace",
+   "group": "modify",
+   "icon": "Design_RemoveFace",
+   "commands": [],
+   "title": {
+    "en": "Remove Face",
+    "de": "Fläche entfernen"
+   },
+   "keywords": {
+    "en": [
+     "remove face",
+     "delete face",
+     "defeature",
+     "remove fillet",
+     "remove chamfer",
+     "close hole",
+     "simplify"
+    ],
+    "de": [
+     "Fläche entfernen",
+     "Fläche löschen",
+     "Rundung entfernen",
+     "Fase entfernen",
+     "Bohrung schließen",
+     "vereinfachen"
+    ]
+   },
+   "summary": {
+    "en": "Takes faces out of a body, e.g. a fillet, a chamfer or a hole: the faces around them grow over the gap.",
+    "de": "Nimmt Flächen aus einem Körper, z. B. eine Rundung, Fase oder Bohrung: die Flächen ringsum wachsen über die Lücke."
+   },
+   "steps": {
+    "en": [
+     "Click the faces to remove (Ctrl+click for more).",
+     "In the toolbar at the top, in the MODIFY section, click the small arrow ▾ next to Press Pull and choose Remove Face. The button now shows Remove Face, so next time one click is enough.",
+     "A panel opens on the right; the model shows a live preview of the result."
+    ],
+    "de": [
+     "Klicke die Flächen an, die weg sollen (Strg+Klick für mehrere).",
+     "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf den kleinen Pfeil ▾ neben Drücken/Ziehen und wähle Fläche entfernen. Der Knopf zeigt danach Fläche entfernen, beim nächsten Mal reicht also ein Klick.",
+     "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau."
+    ]
+   },
+   "see": [
+    "Design_PressPull",
+    "Design_RedPen"
+   ],
+   "tips": {
+    "en": [
+     "Works well on imported STEP parts, which have no history to change.",
+     "If the faces around cannot close the gap (e.g. the top of a box), the step says so."
+    ],
+    "de": [
+     "Hilft besonders bei importierten STEP-Teilen, die keinen Verlauf zum Ändern haben.",
+     "Können die Flächen ringsum die Lücke nicht schließen (etwa die Oberseite eines Quaders), sagt der Schritt das."
+    ]
+   }
+  },
+  {
    "id": "Design_RedPen",
    "group": "utilities",
    "icon": "Design_RedPen",
@@ -4364,13 +4425,13 @@
      "In the toolbar at the top, in the UTILITIES section, click the small arrow ▾ next to Scribble and choose Red Pen. The button now shows Red Pen, so next time one click is enough.",
      "Write with the pen (or the mouse) where the change belongs. The model shows through the sheet.",
      "Click Apply Corrections in the palette. A card shows each correction; point at it to see its target in the model.",
-     "Click Apply on a card, or Apply All. Ctrl+Z takes a correction back."
+     "Show puts the result into the model on trial; Hide takes it out again. Apply keeps it, Apply All does all cards. Ctrl+Z takes a correction back."
     ],
     "de": [
      "Klicke in der Werkzeugleiste oben im Bereich WERKZEUGE auf den kleinen Pfeil ▾ neben Scribble und wähle Rotstift. Der Knopf zeigt danach Rotstift, beim nächsten Mal reicht also ein Klick.",
      "Schreib mit dem Stift (oder der Maus) dorthin, wo die Änderung hingehört. Das Modell scheint durch das Blatt.",
      "Klicke in der Palette auf Korrekturen ausführen. Eine Karte zeigt jede Korrektur; zeig darauf, um ihr Ziel im Modell zu sehen.",
-     "Klicke auf einer Karte auf Ausführen oder auf Alle ausführen. Strg+Z nimmt eine Korrektur zurück."
+     "Zeigen setzt das Ergebnis probehalber ins Modell; Ausblenden nimmt es wieder heraus. Ausführen behält es, Alle ausführen erledigt alle Karten. Strg+Z nimmt eine Korrektur zurück."
     ]
    },
    "see": [
@@ -4410,6 +4471,10 @@
      [
       "12",
       "Sets the dimension that drives the face to 12 mm."
+     ],
+     [
+      "A line through a face, or weg",
+      "Removes the face, e.g. a fillet or chamfer; the faces around it close the gap."
      ]
     ],
     "de": [
@@ -4444,6 +4509,10 @@
      [
       "12",
       "Setzt das Maß, das die Fläche treibt, auf 12 mm."
+     ],
+     [
+      "Ein Strich durch eine Fläche oder weg",
+      "Entfernt die Fläche, z. B. eine Rundung oder Fase; die Flächen ringsum schließen die Lücke."
      ]
     ]
    },

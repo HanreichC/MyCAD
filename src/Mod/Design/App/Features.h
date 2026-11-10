@@ -657,6 +657,17 @@ public:
     App::DocumentObjectExecReturn* compute() override;
 };
 
+/// Flächen entfernen wie Fusions "Delete Face": die Nachbarflächen wachsen über die Lücke (Defeaturing), z. B. eine
+/// Fase, Rundung, Bohrung oder Tasche verschwindet wieder
+class DesignExport RemoveFace: public DressUp
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::RemoveFace);
+
+public:
+    RemoveFace();
+    App::DocumentObjectExecReturn* compute() override;
+};
+
 /// Ebene Flächen herausziehen (positiv) oder hineindrücken (negativ)
 class DesignExport PressPull: public DressUp
 {

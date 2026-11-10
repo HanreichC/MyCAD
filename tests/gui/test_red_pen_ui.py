@@ -14,6 +14,7 @@ import design  # noqa: E402
 
 state = {}
 DOWN = App.Vector(0, 0, -1)
+wait_step = ("wait", lambda: None)
 
 
 def setup():
@@ -37,6 +38,31 @@ def panel_shown():
 
 def apply_button(text):
     return [b for b in visible(QtWidgets.QPushButton) if b.accessibleName() == "Apply " + text][0]
+
+
+def chamfers():
+    return [o for o in doc().Objects if o.TypeId == "Design::Chamfer"]
+
+
+def show_button(text):
+    return [b for b in visible(QtWidgets.QPushButton) if b.accessibleName() == "Show " + text][0]
+
+
+def strike_over_fillet():
+    """Scribble mit einem waagerechten Strich über der Rundung an der vorderen Oberkante (von oben geschrieben)"""
+    sc = doc().addObject("Design::Scribble", "Scribble")
+    sc.Sheet = App.Placement(App.Vector(0, 0, 30), App.Rotation())
+    pts = [App.Vector(5 + k * 0.5, 0.6, 30) for k in range(21)]
+    sc.Points = pts
+    sc.Widths = [0.4] * len(pts)
+    sc.Tools = [1]
+    sc.Kinds = [0]
+    sc.Colors = [(1.0, 0.22, 0.24, 1.0)]
+    sc.Normals = [App.Vector(0, 0, 1)]
+    sc.Counts = [len(pts)]
+    doc().recompute()
+    state["scribble"] = sc
+    Gui.ActiveDocument.setEdit(sc.Name)
 
 
 def fillets():
@@ -77,5 +103,23 @@ in_order([
     ("two", lambda: check("the chosen edge gets its own fillet", len(fillets()) == 2)),
     ("undo", lambda: Gui.runCommand("Std_Undo")),
     ("undone", lambda: check("ctrl+z takes the last correction back", len(fillets()) == 1, str(len(fillets())))),
+    ("preview cards", lambda: DesignGui.showCorrections(doc(), [("C1", App.Vector(-2, 10, 30), DOWN)])),
+    ("show", lambda: show_button("C1").click()),
+    ("shown", lambda: check("show puts the chamfer into the model on trial", len(chamfers()) == 1 and doc().HasPendingTransaction)),
+    ("hide", lambda: show_button("C1").click()),
+    ("hidden", lambda: check("hide takes it out again", len(chamfers()) == 0 and not doc().HasPendingTransaction)),
+    ("show again", lambda: show_button("C1").click()),
+    ("keep", lambda: apply_button("C1").click()),
+    ("kept", lambda: check("apply keeps what was shown", len(chamfers()) == 1 and not doc().HasPendingTransaction)),
+    ("volume", lambda: state.update({"before strike": state["body"].Shape.Volume})),
+    ("strike", strike_over_fillet), wait_step,
+    ("read ink", lambda: Gui.runCommand("Design_ScribbleCorrect")), wait_step,
+    ("struck", lambda: check("a line through the fillet reads as remove", any(b.accessibleName() == "Apply weg" for b in visible(QtWidgets.QPushButton)),
+                             str([b.accessibleName() for b in visible(QtWidgets.QPushButton)]))),
+    ("remove", lambda: apply_button("weg").click()),
+    ("removed", lambda: check("and takes the fillet away (the body grows back)",
+                              any(o.TypeId == "Design::RemoveFace" for o in doc().Objects)
+                              and state["body"].Shape.Volume > state["before strike"] + 10, "%.2f -> %.2f" % (state["before strike"], state["body"].Shape.Volume))),
+    ("finish", lambda: Gui.runCommand("Design_ScribbleFinish")),
     ("errors", lambda: check("no errors", not errors(), str(errors()))),
 ])

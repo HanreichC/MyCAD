@@ -188,6 +188,26 @@ class Loops(DesignTest):
             # die Lochachse zeigt nach unten (wie bei offenen Ketten): der Winkel zählt um -Z
             self.assertAlmostEqual(abs(math.degrees(math.atan2(tip.y, tip.x))), angle, places=3)
 
+    def test_limits_of_a_following_joint_are_kept(self):
+        j1, j4, crank, coupler, rocker = self.four_bar()
+        j4.Limited = True
+        j4.AngleMin, j4.AngleMax = -180, 180
+        self.doc.recompute()
+        self.assertNoErrors()
+        j4.AngleMin, j4.AngleMax = -0.5, 0.5  # so eng geht das Viergelenk nicht
+        self.doc.recompute()
+        self.assertTrue(failed(j4))
+        self.assertIn("past its limits", j4.getStatusString())
+
+    def test_pin_slot_closes_a_loop(self):
+        j1, j4, crank, coupler, rocker = self.four_bar()
+        j4.Type = "Pin-Slot"  # das Ende der Schwinge gleitet im Schlitz des Stegs (entlang X)
+        self.doc.recompute()
+        self.assertNoErrors()
+        end = hole_center(*rocker, 20)
+        self.assertLess(abs(end.y), 1e-4, str(end))
+        self.assertLess(abs(end.z - 1), 1e-4, str(end))
+
     def test_straight_chain_still_closes(self):
         j1, j4, crank, coupler, rocker = self.four_bar(bend=0)  # gestreckt: singulär, der Solver knickt selbst
         self.assertNoErrors()

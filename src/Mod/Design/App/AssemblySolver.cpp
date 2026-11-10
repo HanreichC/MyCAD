@@ -9,6 +9,8 @@
 #include <OndselSolver/ASMTCylindricalJoint.h>
 #include <OndselSolver/ASMTFixedJoint.h>
 #include <OndselSolver/ASMTMarker.h>
+#include <OndselSolver/ASMTParallelAxesJoint.h>
+#include <OndselSolver/ASMTPointInLineJoint.h>
 #include <OndselSolver/ASMTPart.h>
 #include <OndselSolver/ASMTPlanarJoint.h>
 #include <OndselSolver/ASMTRevoluteJoint.h>
@@ -133,6 +135,29 @@ bool solveOnce(std::vector<Design::Solver::Part>& parts, const std::vector<Desig
             mb->setName(l.name + "B");
             setPose(mb, l.onB);
             solverParts[l.b]->addMarker(mb);
+            if (l.kind == Kind::PinSlot) {
+                // Schlitz: Punkt auf der Linie entlang X (dafür Rahmen, deren Z die X-Achse ist), Achsen parallel
+                const Base::Placement alongX(Base::Vector3d(), Base::Rotation(Base::Vector3d(0, 1, 0), M_PI / 2));
+                auto sa = CREATE<ASMTMarker>::With();
+                sa->setName(l.name + "SlotA");
+                setPose(sa, l.onA * alongX);
+                solverParts[l.a]->addMarker(sa);
+                auto sb = CREATE<ASMTMarker>::With();
+                sb->setName(l.name + "SlotB");
+                setPose(sb, l.onB * alongX);
+                solverParts[l.b]->addMarker(sb);
+                auto inLine = CREATE<ASMTPointInLineJoint>::With();
+                inLine->setName(l.name + "Slot");
+                inLine->setMarkerI("/MyCAD/" + l.a + "/" + l.name + "SlotA");
+                inLine->setMarkerJ("/MyCAD/" + l.b + "/" + l.name + "SlotB");
+                assembly->addJoint(inLine);
+                auto parallel = CREATE<ASMTParallelAxesJoint>::With();
+                parallel->setName(l.name);
+                parallel->setMarkerI("/MyCAD/" + l.a + "/" + l.name + "A");
+                parallel->setMarkerJ("/MyCAD/" + l.b + "/" + l.name + "B");
+                assembly->addJoint(parallel);
+                continue;
+            }
             auto j = joint(l.kind);
             j->setName(l.name);
             j->setMarkerI("/MyCAD/" + l.a + "/" + l.name + "A");
@@ -173,6 +198,7 @@ bool solveOnce(std::vector<Design::Solver::Part>& parts, const std::vector<Desig
                 case Kind::Slider: ok = off < 1e-4 && axis && xa * xb > 1 - 1e-8; break;
                 case Kind::Cylindrical: ok = off < 1e-4 && axis; break;
                 case Kind::Planar: ok = std::abs(d * za) < 1e-4 && axis; break;
+                case Kind::PinSlot: ok = (d - xa * (d * xa)).Length() < 1e-4 && axis; break;
             }
             if (!ok) {
                 error = "The joints cannot all be met (" + l.name + ")";

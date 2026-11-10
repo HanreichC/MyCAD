@@ -256,7 +256,7 @@ private:
     Py::Object readCorrection(const Py::Tuple& args)
     {
         const Design::Correction c = correction(args);
-        static const char* kinds[] = {"None", "Thread", "Diameter", "Fillet", "Chamfer", "Pattern", "Offset", "Fit", "Value"};
+        static const char* kinds[] = {"None", "Thread", "Diameter", "Fillet", "Chamfer", "Pattern", "Offset", "Fit", "Value", "Remove"};
         Py::Dict d;
         d["kind"] = Py::String(kinds[int(c.command.kind)]);
         d["body"] = py(c.body);
@@ -369,6 +369,7 @@ PyMOD_INIT_FUNC(Design)
     Design::Pattern::init();
     Design::Hole::init();
     Design::PressPull::init();
+    Design::RemoveFace::init();
     Design::Import::init();
     Design::Sweep::init();
     Design::Loft::init();

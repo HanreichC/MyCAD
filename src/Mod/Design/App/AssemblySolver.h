@@ -27,7 +27,8 @@ enum class Kind
     Slider,       ///< schieben entlang Z
     Cylindrical,  ///< drehen um und schieben entlang Z
     Planar,       ///< in der XY-Ebene schieben, um Z drehen
-    Ball          ///< um den gemeinsamen Ursprung drehen
+    Ball,         ///< um den gemeinsamen Ursprung drehen
+    PinSlot       ///< um Z drehen und entlang X (Schlitz) schieben
 };
 
 /// Gelenk zwischen zwei Teilen: die Rahmen onA (in a) und onB (in b) liegen nach dem Lösen wie die Art es verlangt

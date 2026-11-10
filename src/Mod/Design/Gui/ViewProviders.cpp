@@ -306,6 +306,7 @@ QString correctionText(const Design::Correction& c)
         case RedPen::Kind::Fit: return c.command.fit == "print" ? T("3D print fit") : T("Fit %1").arg(QString::fromStdString(c.command.fit));
         case RedPen::Kind::Pattern: return T("Pattern %1×").arg(c.command.count);
         case RedPen::Kind::Value: return T("Dimension %1 mm").arg(n(v));
+        case RedPen::Kind::Remove: return T("Remove face");
         default: return QString::fromStdString(c.text);
     }
 }
@@ -346,6 +347,7 @@ public:
             }
             return;
         }
+        hidePreview();
         corrections = list;
         docName = doc->getName();
         if (!panel) {
@@ -372,6 +374,9 @@ public:
         auto all = new QPushButton(T("Apply All"));
         all->setAutoDefault(false);
         QObject::connect(all, &QPushButton::clicked, all, [this] {
+            if (previewing >= 0) {
+                apply(size_t(previewing));  // die gezeigte zuerst übernehmen
+            }
             for (size_t i = 0; i < corrections.size(); ++i) {
                 apply(i);
             }
@@ -379,6 +384,7 @@ public:
         auto close = new QPushButton(T("Close"));
         close->setAutoDefault(false);
         QObject::connect(close, &QPushButton::clicked, close, [this] {
+            hidePreview();
             QTimer::singleShot(0, [this] { panel->hide(); });
         });
         bottom->addWidget(all);
@@ -407,6 +413,7 @@ private:
     {
         QLabel* status = nullptr;
         QPushButton* apply = nullptr;
+        QPushButton* show = nullptr;
         QComboBox* choice = nullptr;
         bool done = false;
     };
@@ -428,8 +435,25 @@ private:
         QObject::connect(r.apply, &QPushButton::clicked, r.apply, [this, i] { apply(i); });
         auto discard = new QPushButton(T("Discard"));
         discard->setAutoDefault(false);
+        r.show = new QPushButton(T("Show"));
+        r.show->setAutoDefault(false);
+        r.show->setAccessibleName(T("Show") + QLatin1Char(' ') + QString::fromStdString(c.text));
+        r.show->setToolTip(T("Show the result in the model; Apply keeps it"));
+        QObject::connect(r.show, &QPushButton::clicked, r.show, [this, i] {
+            if (previewing == int(i)) {
+                hidePreview();
+            }
+            else {
+                showPreview(i);
+            }
+        });
+        line->addWidget(r.show);
         QObject::connect(discard, &QPushButton::clicked, discard, [this, i] {
+            if (previewing == int(i)) {
+                hidePreview();
+            }
             rows[i].done = true;
+            rows[i].show->setEnabled(false);
             rows[i].apply->setEnabled(false);
             rows[i].status->setText(T("Discarded"));
             rows[i].status->show();
@@ -453,6 +477,7 @@ private:
         r.status->setWordWrap(true);
         r.status->setVisible(!c.error.empty());
         r.apply->setEnabled(c.error.empty());
+        r.show->setEnabled(c.error.empty());
         lay->addWidget(r.status);
         rows.push_back(r);
         new HoverSelect(w, [this, i](bool on) { highlight(i, on); });
@@ -473,6 +498,42 @@ private:
         }
     }
 
+    /// Vorschau: das Feature probehalber anlegen (offene Transaktion); Ausblenden nimmt es zurück, Ausführen behält es.
+    /// Solange sie offen ist, speichert MyCAD nicht (Shell: keine offene Transaktion).
+    void showPreview(size_t i)
+    {
+        hidePreview();
+        App::Document* doc = App::GetApplication().getDocument(docName.c_str());
+        if (!doc || rows[i].done) {
+            return;
+        }
+        Design::Correction c = corrections[i];
+        c.element = target(i);
+        std::string error;
+        Gui::Selection().clearSelection();
+        doc->openTransaction("Red Pen");
+        if (!Design::applyCorrection(c, error)) {
+            doc->abortTransaction();
+            rows[i].status->setText(T(error.c_str()));
+            rows[i].status->show();
+            return;
+        }
+        previewing = int(i);
+        rows[i].show->setText(T("Hide"));
+    }
+
+    void hidePreview()
+    {
+        if (previewing < 0) {
+            return;
+        }
+        rows[size_t(previewing)].show->setText(T("Show"));
+        previewing = -1;
+        if (App::Document* doc = App::GetApplication().getDocument(docName.c_str())) {
+            doc->abortTransaction();
+        }
+    }
+
     void apply(size_t i)
     {
         Row& r = rows[i];
@@ -483,6 +544,18 @@ private:
         if (!doc) {
             return;
         }
+        if (previewing == int(i)) {  // gezeigt: genau das behalten
+            previewing = -1;
+            doc->commitTransaction();
+            r.done = true;
+            r.apply->setEnabled(false);
+            r.show->setEnabled(false);
+            r.show->setText(T("Show"));
+            r.status->setText(T("Done"));
+            r.status->show();
+            return;
+        }
+        hidePreview();
         Design::Correction c = corrections[i];
         c.element = target(i);
         std::string error;
@@ -492,6 +565,7 @@ private:
             doc->commitTransaction();
             r.done = true;
             r.apply->setEnabled(false);
+            r.show->setEnabled(false);
             r.status->setText(T("Done"));
             r.status->show();
         }
@@ -504,6 +578,7 @@ private:
 
     std::vector<Design::Correction> corrections;
     std::vector<Row> rows;
+    int previewing = -1;  ///< Karte, deren Ergebnis gerade probehalber im Modell steht
     std::string docName;
     Gui::Shell::GlassPanel* panel = nullptr;
     QWidget* content = nullptr;

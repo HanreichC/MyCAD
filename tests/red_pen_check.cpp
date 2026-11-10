@@ -48,6 +48,9 @@ int main()
     assert(parse("H7").kind == Kind::Fit && parse("H7").fit == "H7");
     assert(parse("Druck").kind == Kind::Fit && parse("Druck").fit == "print");
     assert(parse("DRUCK").fit == "print");
+    // Fläche entfernen
+    assert(parse("weg").kind == Kind::Remove && parse("Entfernen").kind == Kind::Remove);
+    assert(parse("l\xC3\xB6schen").kind == Kind::Remove && parse("remove").kind == Kind::Remove);
     // Maß
     assert(is(parse("12"), Kind::Value, 12));
     assert(is(parse("12,5 mm"), Kind::Value, 12.5));

@@ -433,9 +433,43 @@ void readCorrections(DesignGui::ViewProviderScribble* vp)
     auto scribble = static_cast<Design::Scribble*>(vp->getObject());
     App::Document* doc = scribble->getDocument();
     const auto strokes = scribble->strokes();
+    const Base::Matrix4D toSheet = scribble->Sheet.getValue().inverse().toMatrix();
+    // Durchgestrichen: ein gerader, eher waagerechter Freihand-Strich auf diesem Blatt, allein (eine geschriebene 1 steht
+    // senkrecht, ein Minus gehört zu einer Zeile mit Zahl) heißt "weg". Die Erkennung liest so einen Strich meist gar nicht.
+    const auto straightAcross = [&](size_t i) {
+        const auto& s = strokes[i];
+        if (s.kind != Design::Scribble::Free || s.tool == Design::Scribble::Marker || s.points.size() < 2) {
+            return false;
+        }
+        double path = 0;
+        for (size_t k = 1; k < s.points.size(); ++k) {
+            path += (s.points[k] - s.points[k - 1]).Length();
+        }
+        const Base::Vector3d a = toSheet * s.points.front(), b = toSheet * s.points.back();
+        return std::abs(a.z) < 1e-3 && std::abs(b.z) < 1e-3 && path > 1e-6 && (b - a).Length() > 0.95 * path
+            && std::abs(b.x - a.x) > std::abs(b.y - a.y);
+    };
+    auto lines = DesignGui::readScribble(scribble);
+    std::set<size_t> written;  // Striche, die zu einer gelesenen Zeile mit mehr als einem Strich gehören
+    for (const auto& line : lines) {
+        if (line.strokes.size() > 1) {
+            written.insert(line.strokes.begin(), line.strokes.end());
+        }
+    }
+    std::erase_if(lines, [&](const ScribbleRead::Line& line) { return line.strokes.size() == 1 && straightAcross(line.strokes.front()); });
+    for (size_t i = 0; i < strokes.size(); ++i) {
+        if (!written.count(i) && straightAcross(i)) {
+            ScribbleRead::Line strike;
+            strike.text = QStringLiteral("weg");
+            strike.strokes = {i};
+            lines.push_back(strike);
+        }
+    }
     std::vector<Design::Correction> corrections;
-    for (ScribbleRead::Line& line : DesignGui::readScribble(scribble)) {
-        ScribbleRead::correct(line);
+    for (ScribbleRead::Line& line : lines) {
+        if (line.text != QLatin1String("weg") || line.strokes.size() != 1 || !straightAcross(line.strokes.front())) {
+            ScribbleRead::correct(line);
+        }
         Base::Vector3d center, normal;
         size_t count = 0;
         for (size_t i : line.strokes) {
@@ -3712,6 +3746,11 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_OffsetPlane", "Offset Plane",
                                      "Offset Plane: select a plane or planar face", "PartDesign_Plane", "",
                                      startOffsetPlane));
+    mgr.addCommand(new DesignCommand("Design_RemoveFace", "Remove Face",
+                                     "Remove Face: select faces of a body, e.g. a fillet or a hole; the faces around close the gap",
+                                     "Part_Defeaturing", "", [](App::Document* doc) {
+                                         startDressUp(doc, "Design::RemoveFace", "RemoveFace");
+                                     }));
     mgr.addCommand(new DesignCommand("Design_PressPull", "Press Pull", "Press Pull: select planar faces of a body",
                                      "Part_Extrude", "Q", [](App::Document* doc) {
                                          startDressUp(doc, "Design::PressPull", "PressPull");
