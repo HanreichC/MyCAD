@@ -4241,6 +4241,141 @@
    }
   },
   {
+   "id": "Design_RedPen",
+   "group": "utilities",
+   "icon": "Design_RedPen",
+   "commands": [],
+   "title": {
+    "en": "Red Pen",
+    "de": "Rotstift"
+   },
+   "keywords": {
+    "en": [
+     "red pen",
+     "correction",
+     "markup",
+     "redline",
+     "handwriting",
+     "write on the model",
+     "r2",
+     "m5",
+     "fillet by hand"
+    ],
+    "de": [
+     "Rotstift",
+     "Korrektur",
+     "korrigieren",
+     "anmerken",
+     "Handschrift",
+     "aufs Modell schreiben",
+     "R2",
+     "M5"
+    ]
+   },
+   "summary": {
+    "en": "Write corrections straight on the model like on a drawing: R2 next to an edge, M5 on a face, +5 on a face. MyCAD reads them and turns each one into a normal step in the timeline after you confirm it.",
+    "de": "Schreib Korrekturen direkt aufs Modell wie auf eine Zeichnung: R2 neben eine Kante, M5 auf eine Fläche, +5 auf eine Fläche. MyCAD liest sie und macht aus jeder einen normalen Schritt in der Zeitleiste, nachdem du sie bestätigt hast."
+   },
+   "steps": {
+    "en": [
+     "In the toolbar at the top, in the UTILITIES section, click the small arrow ▾ next to Scribble and choose Red Pen. The button now shows Red Pen, so next time one click is enough.",
+     "Write with the pen (or the mouse) where the change belongs. The model shows through the sheet.",
+     "Click Apply Corrections in the palette. A card shows each correction; point at it to see its target in the model.",
+     "Click Apply on a card, or Apply All. Ctrl+Z takes a correction back."
+    ],
+    "de": [
+     "Klicke in der Werkzeugleiste oben im Bereich WERKZEUGE auf den kleinen Pfeil ▾ neben Scribble und wähle Rotstift. Der Knopf zeigt danach Rotstift, beim nächsten Mal reicht also ein Klick.",
+     "Schreib mit dem Stift (oder der Maus) dorthin, wo die Änderung hingehört. Das Modell scheint durch das Blatt.",
+     "Klicke in der Palette auf Korrekturen ausführen. Eine Karte zeigt jede Korrektur; zeig darauf, um ihr Ziel im Modell zu sehen.",
+     "Klicke auf einer Karte auf Ausführen oder auf Alle ausführen. Strg+Z nimmt eine Korrektur zurück."
+    ]
+   },
+   "see": [
+    "Design_Scribble",
+    "start_dimensions"
+   ],
+   "options": {
+    "en": [
+     [
+      "R2",
+      "Fillet with radius 2 on the nearest edge."
+     ],
+     [
+      "C2 or 2×45°",
+      "Chamfer of 2 mm on the nearest edge."
+     ],
+     [
+      "+5 / −5",
+      "Pull out or push in the face by 5 mm."
+     ],
+     [
+      "M5",
+      "On a flat face: tapped hole M5 right there. On a pin: M5 thread."
+     ],
+     [
+      "Ø8",
+      "On a flat face: hole of 8 mm. On a hole or pin: its diameter becomes 8 mm."
+     ],
+     [
+      "H7 or Druck",
+      "Fit for the hole: ISO H7 or a 3D print clearance."
+     ],
+     [
+      "3×",
+      "Repeats the feature of that face three times, in the direction you wrote it."
+     ],
+     [
+      "12",
+      "Sets the dimension that drives the face to 12 mm."
+     ]
+    ],
+    "de": [
+     [
+      "R2",
+      "Rundung mit Radius 2 an der nächsten Kante."
+     ],
+     [
+      "C2 oder 2×45°",
+      "Fase von 2 mm an der nächsten Kante."
+     ],
+     [
+      "+5 / −5",
+      "Fläche um 5 mm herausziehen oder hineindrücken."
+     ],
+     [
+      "M5",
+      "Auf einer ebenen Fläche: Gewindebohrung M5 genau dort. An einem Bolzen: Gewinde M5."
+     ],
+     [
+      "Ø8",
+      "Auf einer ebenen Fläche: Bohrung mit 8 mm. An einer Bohrung oder einem Bolzen: ihr Durchmesser wird 8 mm."
+     ],
+     [
+      "H7 oder Druck",
+      "Passung für die Bohrung: ISO H7 oder Spiel für den 3D-Druck."
+     ],
+     [
+      "3×",
+      "Wiederholt das Feature dieser Fläche dreimal, in die Richtung, in die du es geschrieben hast."
+     ],
+     [
+      "12",
+      "Setzt das Maß, das die Fläche treibt, auf 12 mm."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "If two edges are equally close, the card asks which one instead of guessing.",
+     "The ink stays in the scribble Corrections, so you can see later what was changed and why."
+    ],
+    "de": [
+     "Sind zwei Kanten gleich nah, fragt die Karte, welche gemeint ist, statt zu raten.",
+     "Die Tinte bleibt im Scribble Korrekturen; so siehst du später, was geändert wurde und warum."
+    ]
+   }
+  },
+  {
    "id": "Design_Scribble",
    "group": "utilities",
    "icon": "Design_Scribble",

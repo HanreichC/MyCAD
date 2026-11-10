@@ -15,6 +15,7 @@ namespace Design
 class Body;
 class Joint;
 class Scribble;
+struct Correction;
 }
 
 namespace DesignGui
@@ -37,6 +38,9 @@ DesignGuiExport void setPrintView(bool on);
 DesignGuiExport bool printView();
 /// Druckansicht neu rechnen (nach geänderter Druckrichtung oder Grenze)
 DesignGuiExport void refreshPrintView();
+/// Idee 1: Karten der gelesenen Rotstift-Korrekturen in der Ansicht (Ausführen, Verwerfen, Alle ausführen; bei
+/// gleich nahen Zielen eine Auswahl, Zeigen hebt das Ziel hervor). Leere Liste schließt sie.
+DesignGuiExport void showCorrections(App::Document* doc, const std::vector<Design::Correction>& corrections);
 
 class DesignGuiExport ViewProviderBody: public PartGui::ViewProviderPartExt
 {

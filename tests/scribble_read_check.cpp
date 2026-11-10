@@ -5,6 +5,7 @@
 //       $(pkg-config --libs Qt6Gui) -lonnxruntime -o /tmp/read && /tmp/read build/htr/model.onnx [/tmp/bilder]
 // Schreibt synthetische Druckschrift (sauber und verkrakelt) und liest sie; der zweite Pfad speichert die Zeilenbilder.
 
+#include <Mod/Design/App/RedPen.h>
 #include <Mod/Design/Gui/ScribbleRead.h>
 
 #include <QDir>
@@ -91,6 +92,12 @@ const std::map<QChar, Glyph>& glyphs()
         m[QLatin1Char('2')] = {.82, {{{.1, -1.25}, {.3, -1.58}, {.58, -1.5}, {.65, -1.1}, {.1, 0}, {.1, 0}, {.75, 0}}}};
         m[QLatin1Char('4')] = {.9, {{{.58, 0}, {.58, -1.6}, {.58, -1.6}, {.05, -.5}, {.05, -.5}, {.82, -.5}}}};
         m[QLatin1Char('5')] = {.8, {{{.68, -1.6}, {.18, -1.6}, {.18, -1.6}, {.13, -.88}, {.13, -.88}, {.45, -.98}, {.7, -.72}, {.68, -.22}, {.42, 0}, {.08, -.14}}}};
+        m[QLatin1Char('R')] = {.82, {{{.1, 0}, {.1, -1.6}}, {{.1, -1.6}, {.45, -1.6}, {.68, -1.42}, {.66, -1.0}, {.42, -.84}, {.1, -.84}},
+                                     {{.36, -.84}, {.76, 0}}}};
+        m[QLatin1Char('M')] = {1.15, {{{.08, 0}, {.12, -1.6}, {.12, -1.6}, {.55, -.6}, {.55, -.6}, {.98, -1.6}, {.98, -1.6}, {1.02, 0}}}};
+        m[QLatin1Char('8')] = {.8, {arc(.4, -1.22, .24, .36, -90, -450, 14), arc(.4, -.42, .3, .42, -90, -450, 16)}};
+        m[QLatin1Char('3')] = {.78, {{{.12, -1.5}, {.35, -1.62}, {.6, -1.5}, {.62, -1.15}, {.35, -.88}, {.62, -.72}, {.68, -.35},
+                                     {.45, -.02}, {.12, -.1}}}};
         m[QChar(0x00D7)] = {.72, {{{.12, -.82}, {.58, -.18}}, {{.58, -.82}, {.12, -.18}}}};  // ×
         m[QChar(0x00B0)] = {.42, {arc(.2, -1.45, .13, .16, -90, -450, 12)}};               // °
         for (auto& [c, glyph] : m) {
@@ -312,6 +319,25 @@ int main(int argc, char** argv)
         }
     }
     assert(degrees >= 2);
+
+    // Rotstift (Idee 1): kurze Korrekturen lesen und als Befehl verstehen; die Erkennung darf mal danebenliegen
+    const std::pair<const char*, RedPen::Kind> corrections[] = {{"R2", RedPen::Kind::Fillet}, {"M5", RedPen::Kind::Thread},
+                                                                {"Ø8", RedPen::Kind::Diameter}, {"3×", RedPen::Kind::Pattern}};
+    for (const auto& [text, kind] : corrections) {
+        int understood = 0;
+        for (const unsigned seed : {1U, 2U, 3U}) {
+            std::vector<Stroke> ink = write({QString::fromUtf8(text)}, 0.3, seed);
+            auto lines = ScribbleRead::read(ink);
+            assert(lines.size() == 1);
+            const QString raw = lines[0].text;
+            ScribbleRead::correct(lines[0]);
+            const RedPen::Command c = RedPen::parse(lines[0].text.toStdString());
+            understood += c.kind == kind;
+            std::printf("Rotstift %s: [%s] -> [%s] %s\n", text, raw.toUtf8().constData(), lines[0].text.toUtf8().constData(),
+                        c.kind == kind ? "ok" : "falsch");
+        }
+        assert(understood >= 2);
+    }
     std::puts("ok");
     return 0;
 }

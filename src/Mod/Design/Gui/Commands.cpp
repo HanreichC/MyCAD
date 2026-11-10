@@ -330,6 +330,29 @@ private:
     }
 };
 
+/// Neues Scribble in der aktiven Komponente, im Ordner "Scribbles" (ohne Transaktion)
+App::DocumentObject* newScribble(App::Document* doc)
+{
+    App::Part* root = activeContainer(doc);
+    auto scribble = doc->addObject("Design::Scribble", "Scribble");
+    App::DocumentObjectGroup* folder = Design::folder(root, "Scribbles");
+    folder->addObject(scribble);
+    // im Browser zwischen Skizzen und Notizen: ein neuer Ordner käme sonst hinter einen schon vorhandenen "Notes"
+    auto items = root->Group.getValues();
+    const auto notes = std::find_if(items.begin(), items.end(), [](App::DocumentObject* obj) {
+        std::string name = obj->getNameInDocument();
+        name.erase(name.find_last_not_of("0123456789") + 1);
+        return obj->isDerivedFrom<App::DocumentObjectGroup>() && name == "Notes";
+    });
+    const auto mine = std::find(items.begin(), items.end(), folder);
+    if (notes < mine && mine != items.end()) {
+        items.erase(mine);
+        items.insert(notes, folder);
+        root->Group.setValues(items);
+    }
+    return scribble;
+}
+
 /// Neues Scribble in der aktiven Komponente; das Zeichenblatt öffnet sich gleich (XY-Ebene, Kamera gerade darauf)
 class ScribbleCommand: public DesignCommand
 {
@@ -351,29 +374,85 @@ private:
     static void run(App::Document* doc)
     {
         doc->openTransaction("New Scribble");
-        App::Part* root = activeContainer(doc);
-        auto scribble = doc->addObject("Design::Scribble", "Scribble");
-        App::DocumentObjectGroup* folder = Design::folder(root, "Scribbles");
-        folder->addObject(scribble);
-        // im Browser zwischen Skizzen und Notizen: ein neuer Ordner käme sonst hinter einen schon vorhandenen "Notes"
-        auto items = root->Group.getValues();
-        const auto notes = std::find_if(items.begin(), items.end(), [](App::DocumentObject* obj) {
-            std::string name = obj->getNameInDocument();
-            name.erase(name.find_last_not_of("0123456789") + 1);
-            return obj->isDerivedFrom<App::DocumentObjectGroup>() && name == "Notes";
-        });
-        const auto mine = std::find(items.begin(), items.end(), folder);
-        if (notes < mine && mine != items.end()) {
-            items.erase(mine);
-            items.insert(notes, folder);
-            root->Group.setValues(items);
-        }
+        auto scribble = newScribble(doc);
         doc->recompute();
         doc->commitTransaction();
         Gui::Document* gdoc = Gui::Application::Instance->getDocument(doc);
         gdoc->setEdit(gdoc->getViewProvider(scribble));
     }
 };
+
+/// Idee 1: Rotstift. Ein Korrektur-Scribble mit Transparentpapier, das Blatt quer zur Blickrichtung vor dem Modell,
+/// roter Fineliner: aufs Modell schreiben (R2 an eine Kante, M5 auf eine Fläche …), dann "Korrekturen ausführen"
+void startRedPen(App::Document* doc)
+{
+    auto view = qobject_cast<Gui::View3DInventor*>(Gui::getMainWindow()->activeWindow());
+    if (!view) {
+        return;
+    }
+    Gui::View3DInventorViewer* viewer = view->getViewer();
+    const SbRotation orientation = viewer->getCameraOrientation();
+    float q[4];
+    orientation.getValue(q[0], q[1], q[2], q[3]);
+    const Base::Rotation rotation(q[0], q[1], q[2], q[3]);
+    const Base::Vector3d toEye = rotation.multVec(Base::Vector3d(0, 0, 1));
+    Base::BoundBox3d box;
+    for (auto obj : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
+        auto body = static_cast<Design::Body*>(obj);
+        if (body->Visibility.getValue() && !body->Shape.getShape().isNull()) {
+            Part::TopoShape shape = body->Shape.getShape();
+            shape.setPlacement(Design::componentOf(body)->globalPlacement());
+            box.Add(shape.getBoundBox());
+        }
+    }
+    const Base::Vector3d center = box.IsValid() ? box.GetCenter() : Base::Vector3d();
+    const double ahead = box.IsValid() ? box.CalcDiagonalLength() / 2 + 1 : 0;  // vor dem Modell, damit die Tinte vorn liegt
+    doc->openTransaction("Red Pen");
+    auto scribble = static_cast<Design::Scribble*>(newScribble(doc));
+    scribble->Label.setValue(T("Corrections").toStdString());
+    scribble->Sheet.setValue(Base::Placement(center + toEye * ahead, rotation));
+    scribble->Tracing.setValue(true);
+    doc->recompute();
+    doc->commitTransaction();
+    DesignGui::ViewProviderScribble::setTool(DesignGui::ViewProviderScribble::Tool::Pen);
+    DesignGui::ViewProviderScribble::setColor(Base::Color(0xFF383CFFu));
+    Gui::Document* gdoc = Gui::Application::Instance->getDocument(doc);
+    gdoc->setEdit(gdoc->getViewProvider(scribble));
+}
+
+/// Gelesene Zeilen des Scribbles als Rotstift-Korrekturen: Tinte zielt entlang der Blatt-Normale aufs Modell
+void readCorrections(DesignGui::ViewProviderScribble* vp)
+{
+    auto scribble = static_cast<Design::Scribble*>(vp->getObject());
+    App::Document* doc = scribble->getDocument();
+    const auto strokes = scribble->strokes();
+    std::vector<Design::Correction> corrections;
+    for (ScribbleRead::Line& line : DesignGui::readScribble(scribble)) {
+        ScribbleRead::correct(line);
+        Base::Vector3d center, normal;
+        size_t count = 0;
+        for (size_t i : line.strokes) {
+            for (const auto& p : strokes[i].points) {
+                center += p;
+                ++count;
+            }
+            normal = strokes[i].normal;
+        }
+        if (!count) {
+            continue;
+        }
+        Design::Correction c = Design::readCorrection(doc, line.text.toStdString(), center / double(count), -normal);
+        if (c.command.kind != RedPen::Kind::None) {  // Notizen und Skizzen auf dem Blatt bleiben einfach Tinte
+            corrections.push_back(c);
+        }
+    }
+    if (corrections.empty()) {
+        QMessageBox::information(Gui::getMainWindow(), T("Apply Corrections"),
+                                 T("No corrections found. Write for example R2 next to an edge, M5 on a face or +5 on a face."));
+        return;
+    }
+    DesignGui::showCorrections(doc, corrections);
+}
 
 /// Befehl im offenen Scribble (Toolbar und Palette des Zeichenmodus)
 class ScribbleTool: public DesignCommand
@@ -3493,6 +3572,9 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_SplitBody", "Split Body",
                                      "Split Body: select a body and a plane or face to split it with", "Part_Slice", "",
                                      startSplit));
+    mgr.addCommand(new DesignCommand("Design_RedPen", "Red Pen",
+                                     "Red Pen: write corrections straight on the model, e.g. R2 next to an edge or M5 on a face",
+                                     nullptr, "", startRedPen));
     mgr.addCommand(new DesignCommand("Design_PrintView", "Print View",
                                      "Print View: shows overhangs, faces on the bed and thin walls; click again to hide",
                                      "Std_ViewIvIssueCamPos", "", [](App::Document*) {
@@ -3581,6 +3663,10 @@ void CreateDesignCommands()
                                             auto scribble = static_cast<Design::Scribble*>(vp->getObject());
                                             scribble->Tracing.setValue(!scribble->Tracing.getValue());
                                         }));
+        mgr.addCommand(new ScribbleTool("Design_ScribbleCorrect", "Apply Corrections",
+                                        "Apply Corrections: what you wrote on the model (R2, M5, Ø8, +5, 3×, H7, 12) becomes "
+                                        "features, after you confirm each one",
+                                        readCorrections));
         mgr.addCommand(new ScribbleTool("Design_ScribbleToSketch", "Convert to Sketch",
                                         "Convert to Sketch: lines, circles and rectangles on this sheet become sketch "
                                         "geometry you can dimension and extrude. Written sizes like Ø12, R5 or 40 next "

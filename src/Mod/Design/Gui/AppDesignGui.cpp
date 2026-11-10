@@ -8,6 +8,8 @@
 #include <Gui/Application.h>
 #include <Gui/Shell/Shell.h>
 #include <App/VarSet.h>
+#include <App/DocumentPy.h>
+#include <Base/VectorPy.h>
 #include <Gui/Document.h>
 #include <Gui/ViewProviderDocumentObject.h>
 #include <Mod/Design/App/Features.h>
@@ -27,7 +29,26 @@ public:
     Module()
         : Py::ExtensionModule<Module>("DesignGui")
     {
+        add_varargs_method("showCorrections", &Module::showCorrections,
+                           "showCorrections(doc, [(text, at, view), ...]): red pen cards as if read from ink");
         initialize("MyCAD Design GUI");
+    }
+
+private:
+    Py::Object showCorrections(const Py::Tuple& args)
+    {
+        if (!PyObject_TypeCheck(args[0].ptr(), &App::DocumentPy::Type)) {
+            throw Py::TypeError("expected a document");
+        }
+        App::Document* doc = static_cast<App::DocumentPy*>(args[0].ptr())->getDocumentPtr();
+        const auto vec = [](const Py::Object& o) { return *static_cast<Base::VectorPy*>(o.ptr())->getVectorPtr(); };
+        std::vector<Design::Correction> list;
+        for (const auto& item : Py::List(args[1])) {
+            const Py::Tuple t(item);
+            list.push_back(Design::readCorrection(doc, Py::String(t[0]).as_std_string(), vec(t[1]), vec(t[2])));
+        }
+        DesignGui::showCorrections(doc, list);
+        return Py::None();
     }
 };
 

@@ -3584,6 +3584,8 @@ const std::map<std::string, std::vector<std::string>>& searchSynonyms()
         {"Design_Thread", {"gewinde", "schraube", "bolt", "screw", "mutter", "nut", "druckgewinde"}},
         {"Design_Fastener", {"schraube hier", "schraube", "verschrauben", "screw", "bolt", "einschmelzmutter", "gewindeeinsatz",
                              "heat-set insert", "mutterfalle", "nut trap", "zylinderkopf", "senkkopf", "fastener"}},
+        {"Design_RedPen", {"rotstift", "korrektur", "korrigieren", "anmerken", "markup", "red pen", "redline", "handschrift",
+                           "aufs modell schreiben"}},
         {"Design_PrintView", {"druckansicht", "ueberhang", "overhang", "stuetzen", "support", "wandstaerke", "duenne wand",
                               "druckbar", "printable", "3d-druck pruefen"}},
         {"Design_PrintDown", {"druckrichtung", "auf das bett", "unterseite", "flach hinlegen", "lay flat", "print direction",
@@ -4576,7 +4578,7 @@ void Gui::Shell::install()
                  "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",
                  "#INSPECT", "Design_Measure", "Design_Section", "Design_PrintView", "Std_ViewFitAll",
-                 "#UTILITIES", "MyCAD_Search", "Design_Parameters", "Design_Appearance", "Design_Scribble", "Design_Note"});
+                 "#UTILITIES", "MyCAD_Search", "Design_Parameters", "Design_Appearance", "Design_Scribble|Design_RedPen", "Design_Note"});
     state.sketchBar =
         toolbar({"#CREATE", "Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
                  "Sketcher_CompCreateConic", "Sketcher_CompCreateArc", "Sketcher_CompSlot",
@@ -4619,6 +4621,7 @@ void Gui::Shell::install()
                                        {{"Look At", "Design_ScribbleLookAt", "Palette_LookAt"},
                                         {"Tracing Paper", "Design_ScribbleTracing", "Palette_Tracing"},
                                         {"Only the Sheet", "Design_ScribbleFocus", "Design_ScribbleFocus"},
+                                        {"Apply Corrections", "Design_ScribbleCorrect", "Design_RedPen"},
                                         {"Convert to Sketch", "Design_ScribbleToSketch", "Tree_Sketch"}},
                                        "Design_ScribbleFinish", "Finish Scribble");
     scribbleFindField = new QLineEdit;

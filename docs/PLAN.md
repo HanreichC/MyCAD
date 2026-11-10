@@ -379,7 +379,7 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 - **Varianten:** „Was wäre wenn“: Kopie als Variante, Umschalten im Browser, vergleichen wie oben, „Übernehmen“ macht die Variante zum Hauptstand (der alte wird Version). Kein Zusammenführen.
 - Tests C: Aufbewahrungsregel (welche Versionen bleiben bei gegebenen Zeitstempeln). H: Version nur bei Änderung; Wiederherstellen ergibt dieselben Volumen; Vergleich findet hinzugefügte, entfernte und geänderte Features; Variante anlegen, ändern, umschalten, übernehmen; Wiederherstellung nach simuliertem Absturz. G: Versionsliste, Vergleich anzeigen, Variante wechseln.
 
-#### 10.8 Idee 1: Handschrift ist der Befehl
+#### 10.8 Idee 1: Handschrift ist der Befehl · erledigt bis auf „Fläche durchstreichen“ (2026-11-10); Rotstift ist ein Scribble mit Transparentpapier, Blatt zur Kamera vor dem Modell; die Tinte zielt entlang der Blatt-Normale aufs Modell (`Design.readCorrection`); die Vorschau hebt das Ziel hervor (das fertige Ergebnis zeigt sie noch nicht); `3×` mustert entlang der nächsten Achse X/Y/Z mit 1,5 × Größe Abstand. Offen: durchgestrichene Fläche → Fläche entfernen
 
 - **Rotstift:** Scribble direkt aufs Modell (Striche liegen auf den Flächen). Gelesene Zeilen werden zu Befehlen am nächsten Element:
   - `M5` an Punkt/Kreuz → Gewindebohrung; an Zylinder → Gewinde

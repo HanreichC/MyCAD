@@ -287,6 +287,235 @@ void forEachBody(F f)
 }
 }  // namespace
 
+namespace
+{
+/// Text der Karte (übersetzt)
+QString correctionText(const Design::Correction& c)
+{
+    const auto n = [](double v) { return QString::number(v, 'g', 6); };
+    const double v = c.command.value;
+    const bool round = c.body && c.element.rfind("Face", 0) == 0
+        && BRepAdaptor_Surface(TopoDS::Face(c.body->Shape.getShape().getSubShape(c.element.c_str()))).GetType()
+            == GeomAbs_Cylinder;
+    switch (c.command.kind) {
+        case RedPen::Kind::Fillet: return T("Fillet R%1 on 1 edge").arg(n(v));
+        case RedPen::Kind::Chamfer: return T("Chamfer %1 mm on 1 edge").arg(n(v));
+        case RedPen::Kind::Offset: return (v > 0 ? T("Pull face by %1 mm") : T("Push face by %1 mm")).arg(n(std::abs(v)));
+        case RedPen::Kind::Thread: return (round ? T("Thread %1") : T("Tapped hole %1")).arg(QString::fromStdString(c.command.size));
+        case RedPen::Kind::Diameter: return (round ? T("Diameter %1 mm") : T("Hole Ø%1 mm")).arg(n(v));
+        case RedPen::Kind::Fit: return c.command.fit == "print" ? T("3D print fit") : T("Fit %1").arg(QString::fromStdString(c.command.fit));
+        case RedPen::Kind::Pattern: return T("Pattern %1×").arg(c.command.count);
+        case RedPen::Kind::Value: return T("Dimension %1 mm").arg(n(v));
+        default: return QString::fromStdString(c.text);
+    }
+}
+
+/// Zeigen auf eine Karte hebt ihr Ziel im Modell hervor (Vorschau, wo es wirkt)
+class HoverSelect: public QObject
+{
+public:
+    HoverSelect(QWidget* row, std::function<void(bool)> hover)
+        : QObject(row)
+        , hover(std::move(hover))
+    {
+        row->installEventFilter(this);
+    }
+
+protected:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        if (event->type() == QEvent::Enter || event->type() == QEvent::Leave) {
+            hover(event->type() == QEvent::Enter);
+        }
+        return false;
+    }
+
+private:
+    std::function<void(bool)> hover;
+};
+
+class CorrectionCards
+{
+public:
+    void show(App::Document* doc, const std::vector<Design::Correction>& list)
+    {
+        auto view = qobject_cast<Gui::View3DInventor*>(Gui::getMainWindow()->activeWindow());
+        if (list.empty() || !view) {
+            if (panel) {
+                panel->hide();
+            }
+            return;
+        }
+        corrections = list;
+        docName = doc->getName();
+        if (!panel) {
+            content = new QWidget;
+            content->setObjectName(QStringLiteral("Corrections"));
+            panel = new Gui::Shell::GlassPanel(content, Gui::Shell::Token::RadiusPanel, true);
+            panel->setZValue(9);
+        }
+        delete content->layout();
+        for (QWidget* w : content->findChildren<QWidget*>(Qt::FindDirectChildrenOnly)) {
+            delete w;
+        }
+        auto lay = new QVBoxLayout(content);
+        lay->setContentsMargins(14, 12, 14, 12);
+        lay->setSpacing(8);
+        auto title = new QLabel(T("Corrections"));
+        Gui::Shell::setTextStyle(title, Gui::Shell::Text::Headline);
+        lay->addWidget(title);
+        rows.clear();
+        for (size_t i = 0; i < corrections.size(); ++i) {
+            lay->addWidget(row(i));
+        }
+        auto bottom = new QHBoxLayout;
+        auto all = new QPushButton(T("Apply All"));
+        all->setAutoDefault(false);
+        QObject::connect(all, &QPushButton::clicked, all, [this] {
+            for (size_t i = 0; i < corrections.size(); ++i) {
+                apply(i);
+            }
+        });
+        auto close = new QPushButton(T("Close"));
+        close->setAutoDefault(false);
+        QObject::connect(close, &QPushButton::clicked, close, [this] {
+            QTimer::singleShot(0, [this] { panel->hide(); });
+        });
+        bottom->addWidget(all);
+        bottom->addWidget(close);
+        lay->addLayout(bottom);
+        Gui::View3DInventorViewer* viewer = view->getViewer();
+        if (panel->scene() != viewer->scene()) {
+            if (panel->scene()) {
+                panel->scene()->removeItem(panel);
+            }
+            viewer->scene()->addItem(panel);
+        }
+        // rechts unter dem ViewCube; neue Zeilen haben ihre Größe erst, wenn sie gezeigt sind: danach nochmal messen
+        const auto place = [this, viewer] {
+            const QRectF area = viewer->scene()->sceneRect();
+            const QSizeF size = content->sizeHint().expandedTo(QSize(320, 0));
+            panel->setGeometry(QRectF(area.right() - size.width() - 24, area.top() + 300, size.width(), size.height()));
+        };
+        place();
+        panel->show();
+        QTimer::singleShot(0, panel, place);
+    }
+
+private:
+    struct Row
+    {
+        QLabel* status = nullptr;
+        QPushButton* apply = nullptr;
+        QComboBox* choice = nullptr;
+        bool done = false;
+    };
+
+    QWidget* row(size_t i)
+    {
+        const Design::Correction& c = corrections[i];
+        auto w = new QWidget;
+        auto lay = new QVBoxLayout(w);
+        lay->setContentsMargins(0, 0, 0, 0);
+        lay->setSpacing(4);
+        auto line = new QHBoxLayout;
+        auto text = new QLabel(QStringLiteral("%1  →  %2").arg(QString::fromStdString(c.text), correctionText(c)));
+        line->addWidget(text, 1);
+        Row r;
+        r.apply = new QPushButton(T("Apply"));
+        r.apply->setAutoDefault(false);
+        r.apply->setAccessibleName(T("Apply") + QLatin1Char(' ') + QString::fromStdString(c.text));
+        QObject::connect(r.apply, &QPushButton::clicked, r.apply, [this, i] { apply(i); });
+        auto discard = new QPushButton(T("Discard"));
+        discard->setAutoDefault(false);
+        QObject::connect(discard, &QPushButton::clicked, discard, [this, i] {
+            rows[i].done = true;
+            rows[i].apply->setEnabled(false);
+            rows[i].status->setText(T("Discarded"));
+            rows[i].status->show();
+        });
+        line->addWidget(r.apply);
+        line->addWidget(discard);
+        lay->addLayout(line);
+        if (!c.alternatives.empty()) {  // gleich nah: wählen statt raten, die Wahl zeigt sich im Modell
+            r.choice = new QComboBox;
+            r.choice->setAccessibleName(T("Which one?"));
+            for (const auto& a : c.alternatives) {
+                r.choice->addItem(QString::fromStdString(a));
+            }
+            QObject::connect(r.choice, &QComboBox::currentIndexChanged, r.choice, [this, i](int) { highlight(i, true); });
+            auto pick = new QHBoxLayout;
+            pick->addWidget(new QLabel(T("Which one?")));
+            pick->addWidget(r.choice, 1);
+            lay->addLayout(pick);
+        }
+        r.status = new QLabel(c.error.empty() ? QString() : T(c.error.c_str()));
+        r.status->setWordWrap(true);
+        r.status->setVisible(!c.error.empty());
+        r.apply->setEnabled(c.error.empty());
+        lay->addWidget(r.status);
+        rows.push_back(r);
+        new HoverSelect(w, [this, i](bool on) { highlight(i, on); });
+        return w;
+    }
+
+    std::string target(size_t i) const
+    {
+        return rows[i].choice ? rows[i].choice->currentText().toStdString() : corrections[i].element;
+    }
+
+    void highlight(size_t i, bool on)
+    {
+        Gui::Selection().clearSelection();
+        const Design::Correction& c = corrections[i];
+        if (on && c.body && c.body->isAttachedToDocument() && !target(i).empty() && target(i).find('.') == std::string::npos) {
+            Gui::Selection().addSelection(docName.c_str(), c.body->getNameInDocument(), target(i).c_str());
+        }
+    }
+
+    void apply(size_t i)
+    {
+        Row& r = rows[i];
+        if (r.done || !corrections[i].error.empty()) {
+            return;
+        }
+        App::Document* doc = App::GetApplication().getDocument(docName.c_str());
+        if (!doc) {
+            return;
+        }
+        Design::Correction c = corrections[i];
+        c.element = target(i);
+        std::string error;
+        Gui::Selection().clearSelection();
+        doc->openTransaction("Red Pen");
+        if (Design::applyCorrection(c, error)) {
+            doc->commitTransaction();
+            r.done = true;
+            r.apply->setEnabled(false);
+            r.status->setText(T("Done"));
+            r.status->show();
+        }
+        else {
+            doc->abortTransaction();
+            r.status->setText(T(error.c_str()));
+            r.status->show();
+        }
+    }
+
+    std::vector<Design::Correction> corrections;
+    std::vector<Row> rows;
+    std::string docName;
+    Gui::Shell::GlassPanel* panel = nullptr;
+    QWidget* content = nullptr;
+};
+}  // namespace
+
+void DesignGui::showCorrections(App::Document* doc, const std::vector<Design::Correction>& corrections)
+{
+    static CorrectionCards cards;
+    cards.show(doc, corrections);
+}
+
 void DesignGui::setPrintView(bool on)
 {
     printViewOn = on;
