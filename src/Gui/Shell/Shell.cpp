@@ -14,6 +14,7 @@
 #include <Gui/BitmapFactory.h>
 #include <Gui/Command.h>
 #include <Gui/Control.h>
+#include <Gui/TaskView/TaskView.h>
 #include <Gui/Document.h>
 #include <Gui/Selection/Selection.h>
 #include <Gui/ViewProviderDocumentObject.h>
@@ -3246,6 +3247,18 @@ protected:
                     QApplication::sendEvent(note.edit, event);
                     return true;
                 }
+            }
+        }
+        // Esc im 3D-Fenster bricht ein Panel ohne Bearbeitungsmodus (Appearance, Measure …) ab wie Cancel; Panels mit
+        // Bearbeitungsmodus bekommen es über ViewProvider::eventCallback
+        if (type == QEvent::KeyPress && static_cast<QKeyEvent*>(event)->key() == Qt::Key_Escape
+            && qobject_cast<View3DInventorViewer*>(obj) && Control().activeDialog()) {
+            auto gdoc = Application::Instance->activeDocument();
+            auto panel = Control().taskPanel();
+            if (gdoc && !gdoc->getInEdit() && panel && !static_cast<View3DInventorViewer*>(obj)->isSelecting()) {
+                QKeyEvent esc(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+                QApplication::sendEvent(panel, &esc);
+                return true;
             }
         }
         // Esc beendet wie in Fusion das Skizzen-Werkzeug, auch wenn ein Maßfeld den Fokus hat (FreeCAD bricht dort

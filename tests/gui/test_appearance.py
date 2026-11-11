@@ -102,5 +102,11 @@ run([
     ("ok 4", ok),
     ("undo", lambda: [Gui.runCommand("Std_Undo") for _ in range(3)]),  # Ziehen, Fläche, erstes Panel (das zweite blieb leer)
     ("after undo", lambda: check("Undo restores the look", color() == (0.56, 0.57, 0.59), str(color()))),
+    ("activate", activate),
+    ("open esc", lambda: open_panel("Box")),
+    # Fokus nicht im Panel (etwa nach Esc in einer Notiz): Esc im 3D-Fenster schließt es trotzdem
+    ("unfocus", lambda: Gui.ActiveDocument.ActiveView.graphicsView().scene().clearFocus()),
+    ("esc", esc),
+    ("esc closes", lambda: check("Esc closes the Appearance panel", not Gui.Control.activeDialog())),
     ("restore", lambda: P.SetString("MaterialFavorites", favs)),
 ])

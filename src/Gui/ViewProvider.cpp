@@ -50,9 +50,10 @@
 #include "ViewProvider.h"
 #include "ActionFunction.h"
 #include "Application.h"
+#include "Control.h"
+#include "TaskView/TaskView.h"
 #include "BitmapFactory.h"
 #include "Document.h"
-#include "DockWindowManager.h"
 #include "SoFCDB.h"
 #include "SoFullPathHelper.h"
 #include "View3DInventor.h"
@@ -252,8 +253,8 @@ void ViewProvider::eventCallback(void* ud, SoEventCallback* node)
                                 }
                             }
 
-                            DockWindowManager* pDockMgr = DockWindowManager::instance();
-                            if (QWidget* widget = pDockMgr->getDockWindow("Tasks")) {
+                            // MyCAD: das Aufgaben-Panel sitzt in einem Glass-Panel, nicht im Dock "Tasks"
+                            if (QWidget* widget = Control().taskPanel()) {
                                 auto* ev
                                     = new QKeyEvent(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
                                 qApp->postEvent(widget, ev);

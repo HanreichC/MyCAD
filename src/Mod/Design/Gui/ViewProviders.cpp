@@ -1419,9 +1419,10 @@ public:
 
     bool reject() override
     {
+        // erst verwerfen: resetEdit schließt die Transaktion ab, danach gäbe es nichts mehr zu verwerfen
         App::Document* doc = feature->getDocument();
-        Gui::Application::Instance->getDocument(doc)->resetEdit();
         doc->abortTransaction();
+        Gui::Application::Instance->getDocument(doc)->resetEdit();
         doc->recompute();
         return true;
     }
@@ -2249,8 +2250,8 @@ public:
     {
         timer->stop();
         App::Document* doc = joint->getDocument();
+        doc->abortTransaction();  // vor resetEdit, das die Transaktion abschlösse
         Gui::Application::Instance->getDocument(doc)->resetEdit();
-        doc->abortTransaction();
         doc->recompute();
         return true;
     }

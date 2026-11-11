@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Press Pull: Oberseite herausziehen, Seitenfläche hineindrücken (Volumen nachrechenbar)."""
+"""Press Pull: Esc verwirft wie Cancel; Oberseite herausziehen, Seitenfläche hineindrücken (Volumen nachrechenbar)."""
 from harness import *
 
 
@@ -9,6 +9,14 @@ def side_face(b):  # Fläche mit kleinstem x (linke Seite)
 
 run([
     ("setup", lambda: make_body(rect(0, 0, 60, 40), 0, 10, "Box")),
+    ("pick esc", lambda: Gui.Selection.addSelection(body("Box"), top_face(body("Box")))),
+    ("Press Pull esc", lambda: click(button("Design_PressPull"))),
+    # Fokus nicht im Panel (etwa nach einem Klick in die Ansicht): Esc geht über das 3D-Fenster
+    ("unfocus", lambda: Gui.ActiveDocument.ActiveView.graphicsView().scene().clearFocus()),
+    ("esc", esc),
+    ("discarded", lambda: check("Esc discards the Press Pull", not Gui.Control.activeDialog() and volumes() == [("Box", 24000.0, True)]
+                                and not [o for o in doc().Objects if o.TypeId == "Design::PressPull"], str(volumes()))),
+    ("clear", Gui.Selection.clearSelection),
     ("pick top", lambda: Gui.Selection.addSelection(body("Box"), top_face(body("Box")))),
     ("Press Pull", lambda: click(button("Design_PressPull"))),
     ("+5", lambda: type_into(0, "5 mm")),
