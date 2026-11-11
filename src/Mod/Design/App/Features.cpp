@@ -1251,6 +1251,41 @@ struct Candidate
 };
 }  // namespace
 
+double Design::modelDepth(App::Document* doc, const Base::Vector3d& at, const Base::Vector3d& intoIn)
+{
+    Base::Vector3d into = intoIn;
+    into.Normalize();
+    std::optional<std::pair<double, double>> best;  // (Abstand zum Strahl, Tiefe): erst der nächste, dann der vordere
+    for (auto obj : doc->getObjectsOfType(Body::getClassTypeId())) {
+        auto body = static_cast<Body*>(obj);
+        Part::TopoShape shape = body->Shape.getShape();
+        if (!body->Visibility.getValue() || shape.isNull()) {
+            continue;
+        }
+        shape.setPlacement(componentOf(body)->globalPlacement());
+        // nur die Flächen: ein Volumenkörper hieße für den Strahl durch ihn hindurch überall "Abstand 0"
+        TopoDS_Compound faces;
+        BRep_Builder builder;
+        builder.MakeCompound(faces);
+        for (TopExp_Explorer f(shape.getShape(), TopAbs_FACE); f.More(); f.Next()) {
+            builder.Add(faces, f.Current());
+        }
+        Base::BoundBox3d box = shape.getBoundBox();
+        box.Add(at);
+        const Base::Vector3d end = at + into * (box.CalcDiagonalLength() * 2 + 10);
+        const TopoDS_Edge ray = BRepBuilderAPI_MakeEdge(gp_Pnt(at.x, at.y, at.z), gp_Pnt(end.x, end.y, end.z)).Edge();
+        BRepExtrema_DistShapeShape dist(faces, ray);
+        for (int i = 1; dist.IsDone() && i <= dist.NbSolution(); ++i) {
+            const gp_Pnt q = dist.PointOnShape2(i);
+            const std::pair<double, double> c {dist.Value(), (Base::Vector3d(q.X(), q.Y(), q.Z()) - at) * into};
+            if (!best || c.first < best->first - 1e-6 || (c.first < best->first + 1e-6 && c.second < best->second)) {
+                best = c;
+            }
+        }
+    }
+    return best ? std::max(0.0, best->second) : 0.0;
+}
+
 Design::Correction Design::readCorrection(App::Document* doc, const std::string& text, const Base::Vector3d& at,
                                           const Base::Vector3d& viewIn)
 {
@@ -5647,6 +5682,8 @@ Scribble::Scribble()
     ADD_PROPERTY_TYPE(Normals, (), "Scribble", hidden, "Normal of the sheet each stroke lies on");
     ADD_PROPERTY_TYPE(Sheet, (Base::Placement()), "Scribble", App::Prop_NoRecompute, "Current drawing sheet (its XY plane)");
     ADD_PROPERTY_TYPE(Tracing, (false), "Scribble", App::Prop_NoRecompute, "Tracing paper: the model shows through the sheet");
+    ADD_PROPERTY_TYPE(Depths, (), "Scribble", hidden, "Red pen: how far behind the sheet the model lies under each stroke");
+    ADD_PROPERTY_TYPE(OnModel, (false), "Scribble", hidden, "Red pen: each stroke shows on the model under it");
     Placement.setStatus(App::Property::Hidden, true);
 }
 
@@ -5673,6 +5710,7 @@ std::vector<Scribble::Stroke> Scribble::strokes() const
         s.kind = Kinds[int(i)];
         s.color = Colors[int(i)];
         s.normal = Normals[int(i)];
+        s.depth = Depths.getSize() == int(n) ? Depths[int(i)] : 0;
         at += count;
     }
     return result;
@@ -5681,7 +5719,7 @@ std::vector<Scribble::Stroke> Scribble::strokes() const
 void Scribble::setStrokes(const std::vector<Stroke>& strokes)
 {
     std::vector<Base::Vector3d> points, normals;
-    std::vector<double> widths;
+    std::vector<double> widths, depths;
     std::vector<long> counts, tools, kinds;
     std::vector<Base::Color> colors;
     for (const Stroke& s : strokes) {
@@ -5692,6 +5730,7 @@ void Scribble::setStrokes(const std::vector<Stroke>& strokes)
         kinds.push_back(s.kind);
         colors.push_back(s.color);
         normals.push_back(s.normal);
+        depths.push_back(s.depth);
     }
     // Counts zuletzt: erst dann passen die Listen wieder zusammen (die Ansicht zeichnet nur zusammenpassende)
     Points.setValues(points);
@@ -5700,5 +5739,6 @@ void Scribble::setStrokes(const std::vector<Stroke>& strokes)
     Kinds.setValues(kinds);
     Colors.setValues(colors);
     Normals.setValues(normals);
+    Depths.setValues(depths);
     Counts.setValues(counts);
 }

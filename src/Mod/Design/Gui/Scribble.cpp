@@ -894,6 +894,20 @@ void ViewProviderScribble::Private::rebuild(bool editOnly)
     const bool gliding = glideTick.isActive() && glide.from + glide.before.size() <= strokes.size();
     const double t = gliding ? std::min(1.0, double(glide.clock.elapsed()) / GlideMs) : 1.0;
     const double k = t * t * (3 - 2 * t);  // sanft an- und auslaufen
+    // Rotstift: die Punkte bleiben auf dem Blatt (Lesen, Schönschrift), gezeigt wird der Strich auf dem Modell, knapp
+    // davor (sonst flimmert er mit der Fläche). ponytail: entlang der Blatt-Normale statt des Sehstrahls verschoben,
+    // perspektivisch rückt die Tinte beim Absetzen etwas zur Bildmitte; genau wäre der Sehstrahl beim Schreiben
+    const auto onModel = [](Stroke s) {
+        if (s.depth > 0) {
+            Base::Vector3d by = s.normal;
+            by.Normalize();
+            by *= -std::max(0.0, s.depth - 0.2);
+            for (auto& q : s.points) {
+                q += by;
+            }
+        }
+        return s;
+    };
     for (const bool fills : {true, false}) {  // Flächen zuerst: die Linien liegen darüber
         for (int i = 0; i < int(strokes.size()); ++i) {
             const Stroke& s = strokes[size_t(i)];
@@ -914,14 +928,14 @@ void ViewProviderScribble::Private::rebuild(bool editOnly)
                 }
             }
             if (!editOnly) {
-                displayInk->addChild(strokeNode(s));
+                displayInk->addChild(strokeNode(onModel(s)));
             }
-            editInk->addChild(strokeNode(shifted));
+            editInk->addChild(strokeNode(onModel(shifted)));
             if (s.tool != Design::Scribble::Marker && s.kind != Design::Scribble::Fill) {
                 if (!editOnly) {
-                    displayInk->addChild(hairlineNode(s));
+                    displayInk->addChild(hairlineNode(onModel(s)));
                 }
-                editInk->addChild(hairlineNode(shifted));
+                editInk->addChild(hairlineNode(onModel(shifted)));
             }
             // offene Striche rasten an ihren Enden ein (Freihand, Linie, Pfeil)
             if (!s.points.empty()
@@ -1385,6 +1399,13 @@ void ViewProviderScribble::Private::release(const QPointF& pos)
     const bool writing = current.kind == Design::Scribble::Free && current.tool != Design::Scribble::Marker;
     if (!writing && writingFrom >= 0) {
         tidyWriting();
+    }
+    if (object()->OnModel.getValue()) {  // Rotstift: die Anzeige rückt den Strich auf das Modell unter ihm
+        Base::Vector3d center;
+        for (const auto& p : current.points) {
+            center += p;
+        }
+        current.depth = Design::modelDepth(doc, center / double(current.points.size()), -current.normal);
     }
     doc->openTransaction("Scribble");
     auto all = object()->strokes();

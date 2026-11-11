@@ -101,6 +101,9 @@ struct Correction
     Base::Vector3d view;                    ///< Blickrichtung beim Schreiben (global, Länge 1)
     std::string error;                      ///< nicht verstanden oder nichts in der Nähe (englisch)
 };
+/// Rotstift: wie weit hinter at (entlang into) die Oberfläche eines sichtbaren Körpers liegt, sonst sein nächster Punkt
+/// (Tinte neben einer Kante); 0 ohne Körper
+DesignExport double modelDepth(App::Document* doc, const Base::Vector3d& at, const Base::Vector3d& into);
 /// view: Blickrichtung (in die Szene); die Tinte zielt entlang dieser Richtung auf das Modell
 DesignExport Correction readCorrection(App::Document* doc, const std::string& text, const Base::Vector3d& at,
                                        const Base::Vector3d& view);
@@ -841,6 +844,7 @@ public:
         long kind = Free;
         Base::Color color;
         Base::Vector3d normal {0, 0, 1};  ///< Blatt-Normale: das Band des Strichs liegt in dieser Ebene
+        double depth = 0;  ///< Rotstift: so weit hinter dem Blatt (entlang -normal) liegt das Modell; nur die Anzeige rückt dorthin
     };
 
     Scribble();
@@ -853,6 +857,8 @@ public:
     App::PropertyVectorList Normals;
     App::PropertyPlacement Sheet;  ///< aktuelles Zeichenblatt: die XY-Ebene dieser Lage
     App::PropertyBool Tracing;     ///< Transparentpapier: das Modell scheint durchs Blatt
+    App::PropertyFloatList Depths; ///< Stroke::depth je Strich (fehlt in älteren Dateien: 0)
+    App::PropertyBool OnModel;     ///< Rotstift: jeder Strich zeigt sich auf dem Modell unter ihm, nicht auf dem Blatt davor
 
     /// leer, solange die Listen nicht zusammenpassen (mitten in einem Undo)
     std::vector<Stroke> strokes() const;

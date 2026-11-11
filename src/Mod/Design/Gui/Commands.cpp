@@ -427,6 +427,7 @@ void startRedPen(App::Document* doc)
     scribble->Label.setValue(T("Corrections").toStdString());
     scribble->Sheet.setValue(Base::Placement(center + toEye * ahead, rotation));
     scribble->Tracing.setValue(true);
+    scribble->OnModel.setValue(true);  // die Tinte zeigt sich auf dem Modell, nicht auf dem Blatt davor
     doc->recompute();
     doc->commitTransaction();
     DesignGui::ViewProviderScribble::setTool(DesignGui::ViewProviderScribble::Tool::Pen);
