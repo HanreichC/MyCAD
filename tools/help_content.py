@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Inhalt der MyCAD-Hilfe (Englisch + Deutsch). Erzeugt src/Gui/Shell/help/help.json und help.qrc:
 #   python3 tools/help_content.py
-# Bilder: tools/help_images.py (läuft in MyCAD) legt sie unter src/Gui/Shell/help/images/<id>.jpg ab.
+# Bilder: tools/help_images.py (läuft in MyCAD) legt sie unter src/Gui/Shell/help/images/<id>.jpg ab, Erklär-Clips als <id>.gif (gehen vor).
 # Alle Namen (Werkzeugleiste, Dropdowns, Dialogfelder) entsprechen der Oberfläche; geprüft am 14.10.2026 mit
 # einem Abzug der laufenden App in beiden Sprachen. Neue Texte bitte genauso gegen die Oberfläche prüfen.
 import json
@@ -1492,8 +1492,10 @@ def main():
     for a in ARTICLES:
         a = dict(a)
         caption = a.pop("caption", None)
-        if (images / (a["id"] + ".jpg")).exists():  # Bild von tools/help_images.py
-            a["images"] = [{"file": a["id"] + ".jpg", "caption": caption or {"en": "", "de": ""}}]
+        for ext in (".gif", ".jpg"):  # Erklär-Clip vor Standbild (beide von tools/help_images.py)
+            if (images / (a["id"] + ext)).exists():
+                a["images"] = [{"file": a["id"] + ext, "caption": caption or {"en": "", "de": ""}}]
+                break
         data["articles"].append(a)
     text = json.dumps(data, ensure_ascii=False, indent=1) + "\n"
     if "--check" in sys.argv:  # tests/run_all.sh: help.json muss aus dieser Datei erzeugt sein (nie von Hand ändern)
@@ -1502,11 +1504,12 @@ def main():
         sys.exit(0 if same else 1)
     # UTF-8 ausdrücklich: unter Windows schriebe Python sonst cp1252 und bräche mitten in der Datei ab
     (HELP / "help.json").write_text(text, encoding="utf-8")
-    files = ["help.json"] + sorted("images/" + p.name for p in images.glob("*.jpg"))
+    used = {img["file"] for a in data["articles"] for img in a.get("images", [])}
+    files = ["help.json"] + sorted("images/" + f for f in used)  # nur, was ein Artikel zeigt (Standbild hinter Clip nicht)
     (HELP / "help.qrc").write_text('<RCC>\n    <qresource prefix="/mycad/help">\n'
                                    + "".join("        <file>%s</file>\n" % f for f in files) + "    </qresource>\n</RCC>\n",
                                    encoding="utf-8")
-    print("%d Artikel, %d Bilder" % (len(ARTICLES), len(files) - 1))
+    print("%d Artikel, %d Bilder, davon %d Clips" % (len(ARTICLES), len(files) - 1, sum(f.endswith(".gif") for f in files)))
 
 
 if __name__ == "__main__":

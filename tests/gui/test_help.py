@@ -62,6 +62,23 @@ def content():
     check("every article has title, summary and content in both languages", not problems, str(problems[:5]))
 
 
+clip = {}
+
+
+def grab_article(key):
+    """Bild des Artikels (ohne Text-Cursor); ein Erklär-Clip (GIF) muss sich darin bewegen"""
+    v = page().findChild(QtWidgets.QTextBrowser, "HelpArticle")
+    clip[key] = v.viewport().grab().toImage()
+
+
+def clip_plays():
+    a, b = clip["a"], clip["b"]
+    changed = sum(a.pixel(x, y) != b.pixel(x, y) for x in range(0, a.width(), 8) for y in range(0, a.height(), 8))
+    gif = any(i["file"].endswith(".gif") for x in json.load(open("/workspace/src/Gui/Shell/help/help.json"))["articles"]
+              if x["id"] == "Design_Extrude" for i in x.get("images", []))
+    check("an article with an explainer clip plays it", not gif or changed > 20, "geaenderte Stichproben %d" % changed)
+
+
 def article_text():
     return page().findChild(QtWidgets.QTextBrowser, "HelpArticle").document().toPlainText()
 
@@ -77,5 +94,6 @@ run([
     ("search", lambda: search("donut")), ("searched", lambda: (report("nach Suche + Enter"), shot("revolve"))),
     ("hover", f1_over_extrude), ("wait", lambda: None), ("f1", press_f1), ("wait", lambda: None),
     ("after f1", lambda: report("F1 über Extrude")),
+    ("clip a", lambda: grab_article("a")), ("wait", lambda: None), ("clip b", lambda: grab_article("b")), ("clip", clip_plays),
     ("esc", lambda: QtTest.QTest.keyClick(page(), QtCore.Qt.Key_Escape)), ("closed", lambda: report("nach Esc")),
 ])

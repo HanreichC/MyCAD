@@ -34,7 +34,87 @@ def _pos(w):
 
 
 def click(w):
-    QtTest.QTest.mouseClick(view().viewport(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, _pos(w))
+    p = _pos(w)
+    record_click(view().viewport().mapToGlobal(p.toPoint() if hasattr(p, "toPoint") else p))
+    QtTest.QTest.mouseClick(view().viewport(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, p)
+
+
+# --- Aufnahme als GIF (Erklär-Clips der Hilfe, tools/help_images.py) ------------------------------------------------
+_rec = {}
+
+
+def record_start(path, width=880, fps=8, left=306):
+    """Fenster laufend aufnehmen, bis record_stop(); Klicks (click, record_click) bekommen einen Kreis, weil das Bild
+    den Mauszeiger nicht enthält. left: so viel links weglassen (die Seitenleiste gehört nicht zur Erklärung);
+    880 breit = Inhaltsbreite auf GitHub, die Hilfe zeigt den Clip kleiner"""
+    import time
+    timer = QtCore.QTimer()
+    _rec.clear()
+    _rec.update(path=path, width=width, ms=1000 // fps, frames=[], clicks=[], timer=timer, clock=time.monotonic, busy=0.0, left=left)
+    timer.setInterval(_rec["ms"])
+    timer.timeout.connect(_record_frame)
+    timer.start()
+    _keep.append(timer)
+    _record_frame()
+
+
+def record_click(global_point):
+    if _rec:
+        p = mw.mapFromGlobal(global_point)
+        _rec["clicks"].append((p.x(), p.y(), _rec["clock"]()))
+
+
+def _record_frame():
+    if QtCore.QThread.currentThread().loopLevel() > 1:
+        return  # nie in einer verschachtelten Ereignisschleife: das Bild griffe mitten in einen Umbau der Szene (Absturz)
+    now = _rec["clock"]()
+    img = mw.grab().toImage().convertToFormat(QtGui.QImage.Format_RGB888)
+    painter = QtGui.QPainter(img)
+    painter.setRenderHint(QtGui.QPainter.Antialiasing)
+    for x, y, t0 in _rec["clicks"]:
+        age = now - t0
+        if 0 <= age < 0.7:  # Klick: Kreis wächst und blendet aus
+            c = QtGui.QColor(0, 136, 255)
+            c.setAlphaF(0.85 * (1 - age / 0.7))
+            painter.setPen(QtGui.QPen(c, 4))
+            painter.setBrush(QtCore.Qt.NoBrush)
+            r = 10 + 26 * age / 0.7
+            painter.drawEllipse(QtCore.QPointF(x, y), r, r)
+    painter.end()
+    img = img.copy(_rec["left"], 0, img.width() - _rec["left"], img.height())
+    _rec["frames"].append((img.scaledToWidth(_rec["width"], QtCore.Qt.SmoothTransformation), now))
+    _rec["busy"] += _rec["clock"]() - now
+
+
+def record_stop(hold=1.5, longest=1.2):
+    """Aufnahme beenden und als GIF speichern. Gleiche Bilder hintereinander werden eins; was länger still steht (Warten
+    auf den nächsten Schritt), zeigt der Clip höchstens longest Sekunden. Das letzte Bild steht hold Sekunden, dann
+    beginnt der Clip von vorn. Eine Palette für alle Bilder: Unverändertes bleibt gleich, die GIF speichert nur Änderungen."""
+    from PIL import Image
+    _rec["timer"].stop()
+    _record_frame()
+    frames, times = [], []
+    last = None
+    for q, t in _rec["frames"]:
+        raw = bytes(q.constBits())
+        if raw == last:
+            continue
+        last = raw
+        frames.append(Image.frombuffer("RGB", (q.width(), q.height()), raw, "raw", "RGB", q.bytesPerLine(), 1))
+        times.append(t)
+    times.append(_rec["frames"][-1][1])
+    durations = [max(_rec["ms"], min(int((b - a) * 1000), int(longest * 1000))) for a, b in zip(times, times[1:])]
+    durations[-1] += int(hold * 1000)
+    w, h = frames[0].size
+    sample = Image.new("RGB", (w, h * 3))  # Palette aus Anfang, Mitte und Ende: Oberfläche und Ergebnis
+    for i, f in enumerate((frames[0], frames[len(frames) // 2], frames[-1])):
+        sample.paste(f, (0, h * i))
+    palette = sample.quantize(255, method=Image.Quantize.MEDIANCUT)
+    frames = [f.quantize(palette=palette, dither=Image.Dither.NONE) for f in frames]
+    frames[0].save(_rec["path"], save_all=True, append_images=frames[1:], duration=durations, loop=0, optimize=False)
+    L("GIF %s: %d Bilder, %.1f s, %d KB" % (os.path.basename(_rec["path"]), len(frames), sum(durations) / 1000,
+                                           os.path.getsize(_rec["path"]) // 1024))
+    _rec.clear()
 
 
 def dclick(w):
@@ -168,10 +248,14 @@ def _when_idle(fn, quiet=0.25, limit=10.0):
     import time
     start = calm = last = time.monotonic()
 
+    recorded = [_rec.get("busy", 0.0)]
+
     def tick():
         nonlocal calm, last
         now = time.monotonic()
-        if now - last > 0.045:  # Timer kam zu spät dran: es lief noch Arbeit (Neuberechnung, Zeichnen, Animation)
+        own = _rec.get("busy", 0.0) - recorded[0]  # eine laufende GIF-Aufnahme (record_start) ist keine Arbeit von MyCAD
+        recorded[0] = _rec.get("busy", 0.0)
+        if now - last - own > 0.045:  # Timer kam zu spät dran: es lief noch Arbeit (Neuberechnung, Zeichnen, Animation)
             calm = now
         last = now
         if now - calm >= quiet or now - start >= limit:

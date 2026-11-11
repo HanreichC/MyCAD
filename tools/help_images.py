@@ -3,7 +3,8 @@
 Werte, OK) und speichert den Bildausschnitt als src/Gui/Shell/help/images/<artikel>.png. Danach help_content.py.
     MYCAD_HOME=/tmp/helphome MYCAD_TIMEOUT=1800 tests/gui/run.sh tools/help_images.py /tmp/helpimg
     python3 tools/help_content.py
-Nur einzelne Artikel: HELP_ONLY=Design_Revolve,sketch_line vor den Aufruf setzen."""
+Nur einzelne Artikel: HELP_ONLY=Design_Revolve,sketch_line vor den Aufruf setzen.
+Erklär-Clips: HELP_GIF=1 nimmt jedes Beispiel als <artikel>.gif auf (vom leeren Design bis zum Ergebnis)."""
 import math
 import os
 import sys
@@ -11,9 +12,11 @@ import sys
 sys.path.insert(0, "/workspace/tests/gui")
 import Sketcher
 from harness import *
+import harness
 
 OUT = "/workspace/src/Gui/Shell/help/images"
 ONLY = [s for s in os.environ.get("HELP_ONLY", "").split(",") if s]
+GIF = bool(os.environ.get("HELP_GIF"))
 steps = []
 st = {}
 V = App.Vector
@@ -133,9 +136,20 @@ def dump_dialog(cmd):
     json.dump(DIALOGS, open(os.environ["OUT"] + ".dialogs.json", "w"), ensure_ascii=False, indent=1)
 
 
+def use(cmd):
+    """Werkzeug wie von Hand über seinen Knopf in der Toolbar (im Clip als Klick sichtbar)"""
+    try:  # Kreis auf dem Knopf zeigt, was geklickt wird; ausgelöst wird direkt (ein Klick kommt nicht immer an)
+        b = button(cmd)
+        p = harness._pos(b)
+        record_click(view().viewport().mapToGlobal(p.toPoint() if hasattr(p, "toPoint") else p))
+    except RuntimeError:
+        pass
+    Gui.runCommand(cmd)
+
+
 def feature(cmd, *setup, wait_before=1):
     """Werkzeug-Befehl mit offenem Dialog: Felder setzen, OK"""
-    step(cmd, lambda: Gui.runCommand(cmd))
+    step(cmd, lambda: use(cmd))
     wait(wait_before)
     for s in setup:
         step("set", s)
@@ -174,14 +188,20 @@ def scenario(article, build, view="iso", zoom=0, edit=None, fixed=False):
         return
     step("new " + article, lambda: Gui.runCommand("Std_New"))
     wait()
+    if GIF:
+        step("record", lambda: record_start(os.path.join(OUT, article + ".gif")))
     build()
     if edit:  # Skizze im Bearbeiten-Modus zeigen (von oben)
         step("edit", lambda: Gui.ActiveDocument.setEdit(st[edit].Name))
         wait()
         shot(article, "none", zoom)
+        if GIF:  # vor dem Verlassen: ein Bild mitten im Abbau der Skizzen-Ansicht brachte MyCAD zum Absturz
+            step("stop", record_stop)
         step("leave", lambda: Gui.ActiveDocument.resetEdit())
     else:
         shot(article, view, zoom, fixed)
+        if GIF:
+            step("stop", record_stop)
     step("close", lambda: App.closeDocument(doc().Name))
     wait()
 

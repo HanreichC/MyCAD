@@ -83,6 +83,7 @@
 #include <QPlainTextEdit>
 #include <QTextBlock>
 #include <QTextCursor>
+#include <QMovie>
 #include <QTextDocument>
 #include <QTextFrame>
 #include <QTreeWidget>
@@ -2239,18 +2240,39 @@ a { color: %3; text-decoration: none; }
                                       "<td style=\"padding-left:12px; vertical-align:middle\"><h1>%2</h1></td></tr></table>")
                            .arg(iconUrl.toString(), esc(localized(a, "title").toString()));
         html += QStringLiteral("<p class=\"summary\">%1</p>").arg(esc(localized(a, "summary").toString()));
-        for (const QJsonValue v : a.value(QStringLiteral("images")).toArray()) {
-            const QJsonObject img = v.toObject();
-            const QString caption = localized(img, "caption").toString();
-            const QString file = QStringLiteral(":/mycad/help/images/") + img.value(QStringLiteral("file")).toString();
-            // selbst auf 560 px skalieren: mit width-Attribut reserviert Qt die Originalhöhe (große Lücke darunter)
-            const QUrl picture(QStringLiteral("picture:%1").arg(file));
-            QImage image = QImage(file).scaledToWidth(Token::ContentMaxWidth, Qt::SmoothTransformation);
+        qDeleteAll(movies);  // Clips des vorigen Artikels anhalten
+        movies.clear();
+        // selbst auf 560 px skalieren: mit width-Attribut reserviert Qt die Originalhöhe (große Lücke darunter)
+        auto fit = [](QImage image) {
+            image = image.scaledToWidth(Token::ContentMaxWidth, Qt::SmoothTransformation);
             if (theme().dark) {  // helle Bildschirmfotos im Dunkeln leicht abdunkeln (MyStyle D-4)
                 QPainter dim(&image);
                 dim.fillRect(image.rect(), QColor(0, 0, 0, 38));
             }
-            doc->addResource(QTextDocument::ImageResource, picture, image);
+            return image;
+        };
+        for (const QJsonValue v : a.value(QStringLiteral("images")).toArray()) {
+            const QJsonObject img = v.toObject();
+            const QString caption = localized(img, "caption").toString();
+            const QString file = QStringLiteral(":/mycad/help/images/") + img.value(QStringLiteral("file")).toString();
+            const QUrl picture(QStringLiteral("picture:%1").arg(file));
+            if (file.endsWith(QLatin1String(".gif"))) {
+                // Erklär-Clip: jedes neue Bild ersetzt die Ressource; Bewegung reduzieren zeigt nur das erste (MyStyle M-5)
+                auto movie = new QMovie(file, QByteArray(), this);
+                movies.append(movie);
+                movie->jumpToFrame(0);
+                doc->addResource(QTextDocument::ImageResource, picture, fit(movie->currentImage()));
+                QObject::connect(movie, &QMovie::frameChanged, this, [this, movie, picture, fit] {
+                    view->document()->addResource(QTextDocument::ImageResource, picture, fit(movie->currentImage()));
+                    view->viewport()->update();
+                });
+                if (!theme().reduceMotion) {
+                    movie->start();
+                }
+            }
+            else {
+                doc->addResource(QTextDocument::ImageResource, picture, fit(QImage(file)));
+            }
             html += QStringLiteral("<p style=\"margin-bottom:0; line-height:100%\"><img src=\"%1\">%2</p>")
                         .arg(picture.toString(),
                              caption.isEmpty() ? QString() : QStringLiteral("<br><span class=\"caption\">%1</span>").arg(esc(caption)));
@@ -2365,6 +2387,7 @@ a { color: %3; text-decoration: none; }
     WindowEdge* edge;
     WindowControls* controls;
     QTextBrowser* view;
+    QList<QMovie*> movies;  ///< Erklär-Clips (GIF) des offenen Artikels
     QLineEdit* search;
     int current = -1;
 };
