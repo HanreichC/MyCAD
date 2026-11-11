@@ -36,7 +36,7 @@ def check(tag):
 
 def settings():
     def act():
-        d = [w for w in visible(QtWidgets.QDialog) if w.windowTitle() == "Settings"][0]
+        d = [w for w in visible(QtWidgets.QDialog) if w.objectName() == "Settings"][0]
         check("Einstellungen")
         d.grab().save(os.environ["OUT"] + ".settings.png")
         d.accept()

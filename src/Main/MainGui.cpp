@@ -107,18 +107,6 @@ static bool inGuiMode()
         || App::Application::Config()["RunMode"] == "Internal";
 }
 
-#if defined(FC_OS_LINUX) || defined(FC_OS_BSD)
-static bool desktopFileIsAvailable(const QString& desktopFileName)
-{
-    const QString desktopFile = desktopFileName + QStringLiteral(".desktop");
-    return !QStandardPaths::locate(QStandardPaths::ApplicationsLocation, desktopFile).isEmpty();
-}
-#else
-static bool desktopFileIsAvailable(const QString&)
-{
-    return true;
-}
-#endif
 
 static void displayInfo(const std::string& msg, bool preformatted = true)
 {
@@ -295,14 +283,12 @@ int main(int argc, char** argv)
 #if defined(FC_OS_LINUX)
         chooseGpu();  // braucht die Einstellungen, also nach init; OpenGL lädt erst die QApplication
 #endif
-        // To set the window icon on Wayland, the desktop file has to be available to the
-        // compositor. Qt also uses the desktop file name to register with the portal registry.
-        const QString desktopFileName = QString::fromStdString(
-            App::Application::Config()["DesktopFileName"]
+        // Wayland: die App-ID sucht der Compositor des Rechners in dessen mycad.desktop. Immer setzen, nicht nur
+        // wenn die Datei im eigenen Home liegt: im Container und in Tests (eigenes Home) fehlt sie dort, dann hieß
+        // die App-ID "FreeCAD" und KDE zeigte das Logo eines installierten FreeCAD
+        QGuiApplication::setDesktopFileName(
+            QString::fromStdString(App::Application::Config()["DesktopFileName"])
         );
-        if (desktopFileIsAvailable(desktopFileName)) {
-            QGuiApplication::setDesktopFileName(desktopFileName);
-        }
 
         std::map<std::string, std::string>::iterator it = App::Application::Config().find(
             "NavigationStyle"

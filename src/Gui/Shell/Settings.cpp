@@ -928,12 +928,27 @@ void Gui::Shell::showSettings()
             updateStyle();
         });
     };
+    /// rollt, wenn das Fenster niedriger ist als die Seite (sonst quetschte Qt die Zeilen, Controls lagen auf den
+    /// Trennlinien); will so hoch sein wie die Seite
+    struct PageScroll: QScrollArea
+    {
+        QSize sizeHint() const override
+        {
+            return widget() ? widget()->sizeHint() : QScrollArea::sizeHint();
+        }
+    };
     auto newPage = [pages] {
+        auto scroll = new PageScroll;
+        scroll->setWidgetResizable(true);
+        scroll->setFrameShape(QFrame::NoFrame);
+        scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        scroll->viewport()->setAutoFillBackground(false);
         auto page = new QWidget;
         auto l = new QVBoxLayout(page);
         l->setContentsMargins(0, 0, 0, 0);
         l->setSpacing(4);
-        pages->addWidget(page);
+        scroll->setWidget(page);
+        pages->addWidget(scroll);
         return l;
     };
 
@@ -1099,11 +1114,10 @@ void Gui::Shell::showSettings()
     addRow(generalCard, T("Export resolution"),
            segmented({T("Coarse"), T("Normal"), T("Fine")}, int(myParams()->GetInt("ExportQuality", 1)),
                      [](int i) { myParams()->SetInt("ExportQuality", i); }));
-    // Spiel je Seite für die Passungen "3D-Druck eng/normal/locker" (Design::Fitting, Idee 4)
-    auto play = new QWidget;
-    auto playLay = new QHBoxLayout(play);
-    playLay->setContentsMargins(0, 0, 0, 0);
-    static const char* plays[][2] = {{"PrintFitTight", "Tight"}, {"PrintFitNormal", "Normal"}, {"PrintFitLoose", "Loose"}};
+    // Spiel je Seite für die Passungen "3D-Druck eng/normal/locker" (Design::Fitting, Idee 4); je eine Zeile wie die
+    // anderen Zahlenfelder: alle drei in einer Zeile ließen dem Label keinen Platz, es wurde abgeschnitten
+    static const char* plays[][2] = {
+        {"PrintFitTight", "Clearance tight"}, {"PrintFitNormal", "Clearance normal"}, {"PrintFitLoose", "Clearance loose"}};
     for (int i = 0; i < 3; ++i) {
         auto box = new QDoubleSpinBox;
         box->setRange(0, 1);
@@ -1111,15 +1125,9 @@ void Gui::Shell::showSettings()
         box->setDecimals(2);
         box->setSuffix(QStringLiteral(" mm"));
         box->setValue(myParams()->GetFloat(plays[i][0], 0.1 * (i + 1)));
-        box->setAccessibleName(T(plays[i][1]));
-        box->setToolTip(T(plays[i][1]));
         QObject::connect(box, &QDoubleSpinBox::valueChanged, box, [key = plays[i][0]](double v) { myParams()->SetFloat(key, v); });
-        auto label = new QLabel(T(plays[i][1]));
-        label->setBuddy(box);
-        playLay->addWidget(label);
-        playLay->addWidget(box, 1);
+        addRow(generalCard, T(plays[i][1]), box);
     }
-    addRow(generalCard, T("3D print clearance"), play);
     // Grenzen der Druckansicht (Design::printCheck): Überhang in Grad, kleinste Wand in mm
     for (const auto& [key, label, fallback, suffix, top] :
          {std::tuple {"OverhangAngle", "Overhang angle", 45.0, "°", 89.0}, std::tuple {"MinWall", "Minimum wall", 0.8, " mm", 10.0}}) {
@@ -1398,6 +1406,10 @@ void Gui::Shell::showSettings()
     keys->addStretch();
 
     updateStyle();
+    // so hoch wie die längste Seite, höchstens so hoch wie der Bildschirm (dann rollt die Seite); ohne das zeigte Qt
+    // den Dialog in der Mindesthöhe der Rollflächen
+    dlg.resize(dlg.sizeHint().boundedTo(getMainWindow()->screen()->availableGeometry().size()
+                                        - QSize(0, 2 * Token::WindowInset)));
     window->setFocusPolicy(Qt::ClickFocus);  // kein Fokusring beim Öffnen; Tab führt zu den Bedienelementen
     window->setFocus();
     dlg.exec();

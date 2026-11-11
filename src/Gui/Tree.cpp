@@ -503,6 +503,18 @@ void TreeWidgetItemDelegate::initStyleOption(QStyleOptionViewItem* option, const
             size.width() * TreeWidget::getIconSize() / size.height(),
             TreeWidget::getIconSize()
         );
+        // MyCAD: auf der Akzent-Auswahl Symbole weiß (MyStyle labelOnAccent), sonst lässt Qt sie mit dem Akzent
+        // verblassen und Auge und blaue Symbole verschwinden
+        if (option->state.testFlag(QStyle::State_Selected)) {
+            QPixmap white = option->icon.pixmap(size);
+            QPainter p(&white);
+            p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+            p.fillRect(white.rect(), Qt::white);
+            p.end();
+            option->icon = QIcon();
+            option->icon.addPixmap(white, QIcon::Normal);
+            option->icon.addPixmap(white, QIcon::Selected);
+        }
     }
 
     if (isOnlyNameColumnDisplayed()) {

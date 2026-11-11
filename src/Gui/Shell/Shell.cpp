@@ -256,6 +256,10 @@ QLineEdit { selection-background-color: @accent; selection-color: @labelOnAccent
 #GlassContent QTreeView::item:hover { background: @fillTertiary; }
 #GlassContent QTreeView::item:selected { background: @accent; color: @labelOnAccent; }
 #GlassContent QTreeView::branch:selected, #GlassContent QTreeView::branch:hover { background: transparent; }
+/* Pfeile als Bild: hat eine ::branch-Regel nur einen Hintergrund (oben), zeichnet Qt den Pfeil nicht, er verschwand
+   bei Auswahl und Hover */
+#GlassContent QTreeView::branch:has-children:closed { image: url(:/mycad/icons/Tree_Closed.svg); }
+#GlassContent QTreeView::branch:has-children:open { image: url(:/mycad/icons/Tree_Open.svg); }
 /* Seit Qt 6.5 färbt ::item auch die Einrückung links der Zeile. Die Zeile selbst zeichnet der Browser über ein
    unsichtbares zweites QTreeView (siehe TreeWidgetItemDelegate), der Browser selbst bleibt deshalb ohne Hintergrund. */
 #GlassContent Gui--TreeWidget::item:selected, #GlassContent Gui--TreeWidget::item:hover { background: transparent; }

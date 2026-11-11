@@ -97,6 +97,8 @@
         <file>Notify_Warning.svg</file>
         <file>Notify_Info.svg</file>
         <file>Chevron_Down.svg</file>
+        <file>Tree_Closed.svg</file>
+        <file>Tree_Open.svg</file>
         <file>Timeline_Start.svg</file>
         <file>Timeline_Back.svg</file>
         <file>Timeline_Forward.svg</file>
