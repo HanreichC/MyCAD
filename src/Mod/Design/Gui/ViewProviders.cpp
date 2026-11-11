@@ -3,6 +3,7 @@
 #include "ViewProviders.h"
 
 #include <App/Document.h>
+#include <Base/Tools.h>
 #include <App/DocumentObjectGroup.h>
 #include <App/Part.h>
 #include <Gui/Application.h>
@@ -2003,7 +2004,14 @@ private:
             bodyLabel->setVisible(showBody);
         }
 
-        feature->getDocument()->recompute();
+        {
+            // Live-Vorschau bei jedem Tastendruck: ein Zwischenstand ("0.00 mm" beim Tippen von 10 auf 2) meldet sonst
+            // einen Fehler unter dem ViewCube, der stehen bleibt, obwohl der Wert gleich wieder stimmt. Den Fehler zeigt
+            // das Panel selbst (status), beim OK fragt es nach
+            Base::ObjectStatusLocker<App::Document::Status, App::Document> quiet(App::Document::IgnoreErrorOnRecompute,
+                                                                                 feature->getDocument());
+            feature->getDocument()->recompute();
+        }
         // Werte, die das Feature selbst setzt (Spiel der Passung, Länge nach Norm, Spiel aus den Einstellungen)
         for (const auto& [prop, field] : paramRows) {
             if (auto text = freecad_cast<App::PropertyString*>(prop); text && qobject_cast<QLabel*>(field)) {
@@ -2344,6 +2352,9 @@ private:
     }
     void recompute()
     {
+        // Live-Vorschau: Fehler zeigt das Panel selbst, keine Meldung unter dem ViewCube für jeden Zwischenstand
+        Base::ObjectStatusLocker<App::Document::Status, App::Document> quiet(App::Document::IgnoreErrorOnRecompute,
+                                                                             joint->getDocument());
         joint->getDocument()->recompute();
         QString text = joint->isError() ? T(joint->getStatusString()) : QString();
         if (collide->isChecked() && !joint->isError()) {
