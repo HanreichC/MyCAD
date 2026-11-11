@@ -19,6 +19,7 @@ def insert(path, command="Design_Import"):
         L("  dialog=%s" % bool(d))
         name = [e for e in d[0].findChildren(QtWidgets.QLineEdit) if e.isVisible()][0]
         name.setText(path); d[0].accept()
+        activate()  # ohne Fenstermanager (Xvfb) wird das Hauptfenster nach dem Dialog nicht wieder aktiv: Hinweise fielen aus
 
     def boxes():
         for m in visible(QtWidgets.QMessageBox):
@@ -50,6 +51,9 @@ run([
     ("svg", lambda: report_sketch("logo")),
     ("select plate", lambda: (Gui.Selection.clearSelection(), Gui.Selection.addSelection(sketch("plate")))),
     ("export dxf", lambda: insert(DXF, "Design_Export")), ("wait", lambda: None),
+    ("exported", lambda: check("export says where the file went (notice, not the hidden status bar)",
+                               any("Exported 1 sketch to" in w.text() for w in visible(QtWidgets.QLabel) if w.inherits("Gui::NotificationLabel")),
+                               str([w.text() for w in visible(QtWidgets.QLabel) if w.inherits("Gui::NotificationLabel")]))),
     ("insert export", lambda: (Gui.Selection.clearSelection(), insert(DXF))), ("wait", lambda: None),
     ("dxf roundtrip", lambda: report_sketch("plate_export")),
     ("errors", lambda: L("errors=%s" % errors())),

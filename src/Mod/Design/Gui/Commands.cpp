@@ -11,6 +11,7 @@
 #include <Gui/Document.h>
 #include <Gui/QuantitySpinBox.h>
 #include <Gui/TaskView/TaskDialog.h>
+#include <Base/Console.h>
 #include <Base/Interpreter.h>
 #include <Gui/ActiveObjectList.h>
 #include <Gui/MainWindow.h>
@@ -391,6 +392,13 @@ private:
 
 /// Idee 1: Rotstift. Ein Korrektur-Scribble mit Transparentpapier, das Blatt quer zur Blickrichtung vor dem Modell,
 /// roter Fineliner: aufs Modell schreiben (R2 an eine Kante, M5 auf eine Fläche …), dann "Korrekturen ausführen"
+/// Hinweis wie MyCADs übrige Meldungen: Benachrichtigung unter dem ViewCube, verschwindet von selbst
+void notify(const QString& text)
+{
+    Base::Console().send<Base::LogStyle::Notification, Base::IntendedRecipient::User, Base::ContentType::Translated>(
+        "MyCAD", "{}", text.toStdString());
+}
+
 void startRedPen(App::Document* doc)
 {
     auto view = qobject_cast<Gui::View3DInventor*>(Gui::getMainWindow()->activeWindow());
@@ -2349,9 +2357,11 @@ void exportBodies(App::Document* doc)
     }
     try {
         Base::Interpreter().runString(("import FreeCAD as App\n" + code).c_str());
-        Gui::getMainWindow()->showMessage(
-            (dxf ? T("Exported %1 sketches to %2") : T("Exported %1 bodies to %2")).arg(objects.size()).arg(file)
-        );
+        // als Hinweis unter dem ViewCube (Benachrichtigung): die Statusleiste ist in MyCAD ausgeblendet
+        const QString done = objects.size() == 1
+            ? (dxf ? T("Exported 1 sketch to %1") : T("Exported 1 body to %1")).arg(file)
+            : (dxf ? T("Exported %1 sketches to %2") : T("Exported %1 bodies to %2")).arg(objects.size()).arg(file);
+        notify(done);
     }
     catch (const Base::Exception& e) {
         QMessageBox::warning(Gui::getMainWindow(), T("Export"), QString::fromUtf8(e.what()));

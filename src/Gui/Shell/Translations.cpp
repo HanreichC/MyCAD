@@ -171,6 +171,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"3MF for 3D printing (*.3mf);;STL (*.stl);;STEP (*.step *.stp);;DXF sketches (*.dxf)", "3MF für den 3D-Druck (*.3mf);;STL (*.stl);;STEP (*.step *.stp);;DXF-Skizzen (*.dxf)"},
         {"Exported %1 bodies to %2", "%1 Körper nach %2 exportiert"},
         {"Exported %1 sketches to %2", "%1 Skizzen nach %2 exportiert"},
+        {"Exported 1 body to %1", "1 Körper nach %1 exportiert"},
+        {"Exported 1 sketch to %1", "1 Skizze nach %1 exportiert"},
         {"Create a sketch on a face of a body and place points where the holes go.", "Erstelle eine Skizze auf einer Körperfläche und setze Punkte, wo die Bohrungen hin sollen."},
         {"Pattern", "Muster"},
         {"Select bodies, or an Extrude, Revolve or Hole in the timeline first.", "Wähle zuerst Körper oder eine Extrusion, Drehung oder Bohrung in der Zeitleiste."},
