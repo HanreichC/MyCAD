@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Bemaßen wie in Fusion. Rechteck (Ecken verbunden, waagrecht/senkrecht):
-1. Dimension auf der unteren Kante, 50 eintippen, Enter → treibendes Maß, Kante 50 lang
+1. Dimension auf der unteren Kante, Parameter "Width" (45 mm) eintippen, Enter → an den Parameter gebundenes Maß
 2. Dimension auf der oberen Kante: überbestimmt → getriebenes Maß (Referenz) statt zu verschwinden
 3. Doppelklick auf die rechte Kante → Längeneingabe, 20 + Enter → Kante 20 lang
 4. Doppelklick auf die linke Kante: überbestimmt → getriebenes Maß"""
@@ -66,18 +66,32 @@ def enter_value(text):
     box.lineEdit().selectAll(); QtTest.QTest.keyClicks(box, text); QtTest.QTest.keyClick(box, QtCore.Qt.Key_Return)
 
 
+def param():
+    import Design
+    s = Design.parameterSet(doc())
+    s.addProperty("App::PropertyQuantity", "Width", "Parameters")
+    s.setExpression("Width", "45 mm"); doc().recompute()
+
+
+def bound():
+    expr = S["sk"].ExpressionEngine
+    check("a parameter name binds the sketch dimension", any(e.endswith("Width") for _, e in expr)
+          and abs(S["sk"].Geometry[0].length() - 45) < 1e-6, "%s length=%.2f" % (expr, S["sk"].Geometry[0].length()))
+
+
 def report(tag):
     dims = [(c.First, round(c.Value, 2), c.Driving) for c in S["sk"].Constraints if c.Type == "Distance"]
     L("%s: lengths=%s dims=%s redundant=%s" % (tag, [round(g.length(), 2) for g in S["sk"].Geometry], dims, S["sk"].RedundantConstraints))
 
 
 run([
+    ("activate", activate), ("param", param),
     ("Create Sketch", lambda: click(button("Design_CreateSketch"))),
     ("pick XY", lambda: Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XY_Plane")][0])),
     ("setup", setup), ("zoom0", zoom),
     ("dim bottom", lambda: dimension("Edge1")), ("wait", lambda: shot("place")),
-    ("type 50", lambda: enter_value("50")),
-    ("report1", lambda: report("1 bottom=50")),
+    ("type Width", lambda: enter_value("Width")),
+    ("report1", lambda: report("1 bottom=Width")), ("bound", bound),
     ("esc", esc),
     ("dim top", lambda: dimension("Edge3")), ("wait2", lambda: None),
     ("report2", lambda: report("2 top redundant")),

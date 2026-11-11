@@ -14,6 +14,7 @@
 #include <Gui/ViewProviderDocumentObject.h>
 #include <Mod/Design/App/Features.h>
 #include <Mod/Sketcher/App/SketchObject.h>
+#include <Mod/Sketcher/Gui/EditDatumDialog.h>
 
 #include "ViewProviders.h"
 
@@ -127,6 +128,7 @@ PyMOD_INIT_FUNC(DesignGui)
         });
     });
     DesignGui::startFaceDimensions();
+    SketcherGui::datumExpression = DesignGui::parameterExpression;  // Skizzenmaße nehmen Parameternamen
     // Profilflächen nicht über die Skizze legen, solange sie bearbeitet wird
     Gui::Application::Instance->signalInEdit.connect([](const Gui::ViewProviderDocumentObject& vp) {
         DesignGui::setProfilesVisible(vp, false);

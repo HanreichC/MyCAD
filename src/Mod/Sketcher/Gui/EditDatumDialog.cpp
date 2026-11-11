@@ -29,6 +29,7 @@
 #include <QDialog>
 
 
+#include <App/Expression.h>
 #include <Base/Tools.h>
 #include <Gui/Application.h>
 #include <Gui/CommandT.h>
@@ -55,6 +56,8 @@
 
 
 using namespace SketcherGui;
+
+std::function<std::string(App::Document*, const std::string&)> SketcherGui::datumExpression;
 
 /* TRANSLATOR SketcherGui::EditDatumDialog */
 
@@ -205,6 +208,22 @@ int EditDatumDialog::exec(bool atCursor)
             this,
             &EditDatumDialog::formEditorOpened
         );
+        // MyCAD: ein Parametername oder eine Formel damit ("Width * 2") ist für die Spinbox keine Zahl; er bindet
+        // das Maß wie die Feature-Felder. Unbekannte Namen bleiben als ungültige Eingabe markiert.
+        connect(ui_ins_datum->labelEdit, &Gui::QuantitySpinBox::inputRejected, &dlg, [this, &dlg] {
+            const std::string text = ui_ins_datum->labelEdit->text().trimmed().toStdString();
+            try {
+                std::shared_ptr<App::Expression> expr(
+                    App::Expression::parse(sketch, datumExpression ? datumExpression(sketch->getDocument(), text) : text)
+                        .release());
+                if (!expr->getDepObjects().empty()) {
+                    sketch->setExpression(sketch->Constraints.createPath(ConstrNbr), expr);
+                    dlg.accept();
+                }
+            }
+            catch (const Base::Exception&) {
+            }
+        });
         connect(ui_ins_datum->rbRadius, &QRadioButton::toggled, this, &EditDatumDialog::typeChanged);
         connect(&dlg, &QDialog::accepted, this, &EditDatumDialog::accepted);
         connect(&dlg, &QDialog::rejected, this, &EditDatumDialog::rejected);

@@ -25,8 +25,17 @@
 #pragma once
 
 #include <QObject>
+#include <functional>
 #include <memory>
+#include <string>
 
+#include <Mod/Sketcher/SketcherGlobal.h>
+
+
+namespace App
+{
+class Document;
+}
 
 namespace Sketcher
 {
@@ -40,6 +49,9 @@ class ViewProviderSketch;
 class Ui_InsertDatum;
 
 bool checkConstraintName(const Sketcher::SketchObject* sketch, std::string constraintName);
+
+/// MyCAD: getippter Text mit Parameternamen als Ausdruck ("Width * 2" -> "Parameters.Width * 2"); setzt DesignGui
+SketcherGuiExport extern std::function<std::string(App::Document*, const std::string&)> datumExpression;
 
 class EditDatumDialog: public QObject
 {
