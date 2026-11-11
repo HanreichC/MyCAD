@@ -78,14 +78,15 @@ class DrawSketchHandlerTranslate: public DrawSketchHandlerTranslateBase
     friend DSHTranslateControllerBase;
 
 public:
-    explicit DrawSketchHandlerTranslate(std::vector<int> listOfGeoIds)
+    // MyCAD: copies/rows > 1 start as an array (Rectangular Array)
+    explicit DrawSketchHandlerTranslate(std::vector<int> listOfGeoIds, int copies = 1, int rows = 1)
         : listOfGeoIds(listOfGeoIds)
         , deleteOriginal(false)
         , cloneConstraints(false)
         , firstDirectionSymmetric(false)
         , secondDirectionSymmetric(false)
-        , numberOfCopies(1)
-        , secondNumberOfCopies(1)
+        , numberOfCopies(copies)
+        , secondNumberOfCopies(rows)
     {}
 
     DrawSketchHandlerTranslate(const DrawSketchHandlerTranslate&) = delete;
@@ -658,8 +659,8 @@ void DSHTranslateController::configureToolWidget()
         QApplication::translate("TaskSketcherTool_p5_translate", "Rows")
     );
 
-    toolWidget->setParameter(OnViewParameter::First, 1.0);
-    toolWidget->setParameter(OnViewParameter::Second, 1.0);
+    toolWidget->setParameter(OnViewParameter::First, handler->numberOfCopies);
+    toolWidget->setParameter(OnViewParameter::Second, handler->secondNumberOfCopies);
     toolWidget->configureParameterUnit(OnViewParameter::First, Base::Unit());
     toolWidget->configureParameterUnit(OnViewParameter::Second, Base::Unit());
     toolWidget->configureParameterMin(OnViewParameter::First, 1.0);      // NOLINT

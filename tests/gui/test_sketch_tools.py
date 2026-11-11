@@ -219,6 +219,12 @@ def note_frame():
     check("note text has no frame, also with focus", e.frameWidth() == 0 and corner == inner, "frame=%d %s %s" % (e.frameWidth(), corner.name(), inner.name()))
 
 
+def esc_tool():
+    """Esc nur, solange ein Werkzeug läuft: ohne Werkzeug verließe Esc die Skizze"""
+    if view().viewport().cursor().shape() == QtCore.Qt.BitmapCursor:
+        esc()
+
+
 def tangent_setup():
     clear()
     arc = Part.ArcOfCircle(Part.Circle(V(12, 0, 0), V(0, 0, 1), 16), -math.pi / 2, math.pi / 2)
@@ -240,6 +246,17 @@ def tangent_result():
     check("Tangent on joined ends asks nothing (no FreeCAD substitution dialog)", ok and "Tangent" in [c.Type for c in sketch().Constraints], why)
 
 
+def array_panel():
+    ok, why = no_dialog()
+    vals = [b.text() for b in visible(QtWidgets.QAbstractSpinBox) if b.parentWidget() and "SketcherToolDefaultWidget" in b.parentWidget().metaObject().className()]
+    check("Rectangular Array: no separate window, Elements and Rows in the tool panel (2 x 2)", ok and vals[:2] == ["2", "2"], "%s %s" % (why, vals))
+
+
+def array_result():
+    g = [x for x in sketch().Geometry if isinstance(x, Part.LineSegment)]
+    check("Rectangular Array: three clicks make a 2 x 2 grid", len(g) == 4, str(len(g)))
+
+
 import Sketcher
 
 in_order([
@@ -258,6 +275,16 @@ in_order([
     ("tangent setup", tangent_setup),
     ("tangent", lambda: QtCore.QTimer.singleShot(0, lambda: Gui.runCommand("Sketcher_ConstrainTangent"))), wait,
     ("tangent ok", tangent_result),
+    # Rechteckige Anordnung im Werkzeug-Panel statt im FreeCAD-Fenster
+    ("array setup", lambda: (clear(), sketch().addGeometry(Part.LineSegment(V(-10, 0, 0), V(0, 0, 0))), doc().recompute(),
+                             Gui.Selection.clearSelection(), Gui.Selection.addSelection(sketch(), "Edge1"))),
+    ("array", lambda: QtCore.QTimer.singleShot(0, lambda: Gui.runCommand("Sketcher_RectangularArray"))), wait,
+    ("array panel", array_panel),
+    ("array base", lambda: press(0, 0)), wait,
+    ("array copy", lambda: press(20, 0)), wait,
+    ("array row", lambda: press(0, 20)), wait,
+    ("array ok", array_result),
+    ("esc array", esc_tool), wait,
     # 2 Versatz
     ("zoom", lambda: (sketch().addGeometry(Part.Circle(V(0, 0, 0), V(0, 0, 1), 60)), doc().recompute(), fit())), wait,
     ("line", line_setup),

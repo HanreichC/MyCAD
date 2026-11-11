@@ -7191,14 +7191,14 @@
      "Select the geometry first (Ctrl+click for several lines or points) or a box: drag from left to right around it.",
      "In the sketch toolbar at the top, in the MODIFY section, click Pattern. (If the button shows another tool, click the small arrow ▾ next to it and choose Pattern.)",
      "Choose via the arrow ▾: Rectangular Array (rows and columns) or Rotate / Polar Transform (around a point).",
-     "Rectangular Array first asks in a small window for Columns and Rows (and whether the spacing is equal); then click where the next copy goes. Rotate / Polar Transform: set Elements (the original counts) in the Tool Parameters, then click the centre, the start and the end of the angle."
+     "Rectangular Array: set Elements (per row, the original counts) and Rows in the Tool Parameters (2 × 2 to start), then click the base point, where the next copy goes and where the next row goes. Rotate / Polar Transform: set Elements (the original counts) in the Tool Parameters, then click the centre, the start and the end of the angle."
     ],
     "de": [
      "Diese Werkzeuge liegen in der Skizzen-Werkzeugleiste, die erscheint, während du eine Skizze bearbeitest (ERSTELLEN → Skizze oder Doppelklick auf eine Skizze).",
      "Wähle zuerst die Geometrie (Strg+Klick für mehrere Linien oder Punkte) oder zieh ein Rechteck von links nach rechts darum.",
      "Klicke in der Skizzen-Werkzeugleiste oben im Bereich ÄNDERN auf Muster. (Zeigt der Knopf ein anderes Werkzeug, klicke auf den kleinen Pfeil ▾ daneben und wähle Muster.)",
      "Wähle über den Pfeil ▾: Rechteckige Anordnung (Reihen und Spalten) oder Drehen / Kreisförmig anordnen (um einen Punkt).",
-     "Rechteckige Anordnung fragt zuerst in einem kleinen Fenster nach Spalten und Zeilen (und ob die Abstände gleich sind); dann klickst du, wo die nächste Kopie hin soll. Drehen / Kreisförmig anordnen: stelle Elemente (das Original zählt mit) in den Werkzeugparametern ein und klicke dann die Mitte, den Anfang und das Ende des Winkels."
+     "Rechteckige Anordnung: stelle Elemente (je Reihe, das Original zählt mit) und Reihen in den Werkzeugparametern ein (anfangs 2 × 2) und klicke dann den Bezugspunkt, wo die nächste Kopie hin soll und wo die nächste Reihe hin soll. Drehen / Kreisförmig anordnen: stelle Elemente (das Original zählt mit) in den Werkzeugparametern ein und klicke dann die Mitte, den Anfang und das Ende des Winkels."
     ]
    },
    "see": [

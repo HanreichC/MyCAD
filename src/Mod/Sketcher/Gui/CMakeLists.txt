@@ -32,7 +32,6 @@ set(SketcherGui_UIC_SRCS
     SketcherSettingsGrid.ui
     SketcherSettingsAppearance.ui
     SketcherSettingsDisplay.ui
-    SketchRectangularArrayDialog.ui
     SketcherRegularPolygonDialog.ui
 )
 
@@ -158,8 +157,6 @@ SET(SketcherGui_SRCS
     SketchMirrorDialog.h
     SketcherSettings.cpp
     SketcherSettings.h
-    SketchRectangularArrayDialog.h
-    SketchRectangularArrayDialog.cpp
     SketcherRegularPolygonDialog.h
     SketcherRegularPolygonDialog.cpp
     SnapManager.cpp
