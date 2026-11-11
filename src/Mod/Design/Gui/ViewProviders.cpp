@@ -35,6 +35,7 @@
 #include <QMouseEvent>
 #include <App/ObjectIdentifier.h>
 #include <App/Expression.h>
+#include <App/QuantityInput.h>
 #include <App/VarSet.h>
 #include <QDoubleSpinBox>
 #include <QFontMetricsF>
@@ -1671,7 +1672,8 @@ private:
         auto filter = new CommitFilter;
         filter->setParent(box);
         filter->commit = [this, box, edit, quantity, path, doc, show] {
-            const QString text = edit->text().trimmed();
+            // Dezimalkomma wie in den Maßfeldern ("2,5"), sonst hielte das ein Parameter-Ausdruck für unbekannt
+            const QString text = QString::fromStdString(App::decimalCommaAsPoint(edit->text().trimmed().toStdString()));
             try {
                 Base::Quantity::parse(text.toStdString());
                 // Nur eine getippte Zahl ersetzt den Ausdruck; der angezeigte Wert des Ausdrucks ("20.00 mm" beim

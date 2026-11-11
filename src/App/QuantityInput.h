@@ -135,4 +135,9 @@ AppExport QuantityInputResult interpretQuantityInput(
     const QuantityConstraints& constraints
 );
 
+/// MyCAD: Komma als Dezimalzeichen neben dem Punkt ("2,5" wie "2.5"): ein Komma zwischen zwei Ziffern außerhalb von
+/// Klammern wird zum Punkt (in Klammern trennt es Argumente: max(2,3)). Gleich lang, Fehlerstellen passen weiter.
+/// Nur dort, wo ein Komma kein Tausendertrenner sein kann (interpretQuantityInput prüft das am Gebietsschema)
+AppExport std::string decimalCommaAsPoint(std::string_view input);
+
 }  // namespace App

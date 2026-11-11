@@ -60,6 +60,7 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QDockWidget>
 #include <QFontDatabase>
 #include <QFrame>
@@ -2647,6 +2648,18 @@ class MenuPolisher: public QObject
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
+        // Dezimalkomma auch in einfachen Zahlenfeldern: QDoubleSpinBox prüft nach dem Gebietsschema und verwarf mit Punkt
+        // das Komma; Maßfelder (QuantitySpinBox) nehmen es beim Auswerten (App::interpretQuantityInput)
+        if (event->type() == QEvent::KeyPress && static_cast<QKeyEvent*>(event)->text() == QLatin1String(",")) {
+            auto edit = qobject_cast<QLineEdit*>(obj);
+            auto box = edit ? qobject_cast<QDoubleSpinBox*>(edit->parentWidget()) : nullptr;
+            if (box && box->locale().decimalPoint() == QLatin1Char('.')) {
+                auto key = static_cast<QKeyEvent*>(event);
+                QKeyEvent dot(QEvent::KeyPress, Qt::Key_Period, key->modifiers(), QStringLiteral("."));
+                QCoreApplication::sendEvent(edit, &dot);
+                return true;
+            }
+        }
         if (event->type() == QEvent::Polish) {
             if (auto box = qobject_cast<QMessageBox*>(obj); box && !box->property("glass").toBool()) {
                 makeAlert(box);

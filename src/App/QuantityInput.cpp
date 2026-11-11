@@ -359,8 +359,22 @@ std::unique_ptr<App::Expression> applyWholeInputUnitToExpression(
 
 }  // namespace
 
+std::string App::decimalCommaAsPoint(std::string_view input)
+{
+    std::string text(input);
+    int depth = 0;
+    const auto digit = [](char c) { return c >= '0' && c <= '9'; };
+    for (std::size_t i = 0; i < text.size(); ++i) {
+        depth += text[i] == '(' ? 1 : text[i] == ')' ? -1 : 0;
+        if (text[i] == ',' && depth == 0 && i > 0 && i + 1 < text.size() && digit(text[i - 1]) && digit(text[i + 1])) {
+            text[i] = '.';
+        }
+    }
+    return text;
+}
+
 App::QuantityInputResult App::interpretQuantityInput(
-    const std::string_view input,
+    std::string_view input,
     const QuantityInputGrammar grammar,
     const ObjectIdentifier& path,
     const QuantityInputUnit& implicitUnit,
@@ -369,6 +383,13 @@ App::QuantityInputResult App::interpretQuantityInput(
     const QuantityConstraints& constraints
 )
 {
+    // MyCAD: ein Komma, das hier kein Tausendertrenner sein kann, ist ein Dezimalkomma ("2,5" wie "2.5"); vorher wurde
+    // es still verworfen. MyCADs Gebietsschema (C) gruppiert gar nicht; wo "," gruppiert (en_US), bleibt "1,010" = 1010
+    std::string decimalComma;
+    if (locale.decimalSeparator == "." && (locale.groupingSeparator != "," || locale.primaryGroupingSize == 0)) {
+        decimalComma = decimalCommaAsPoint(input);
+        input = decimalComma;
+    }
     const auto first = firstInputCharacter(input);
     if (first == input.size()) {
         return incomplete(phase, InputDiagnosticKind::IncompleteNumber, first);
