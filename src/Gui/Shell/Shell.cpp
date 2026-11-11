@@ -2542,6 +2542,12 @@ protected:
             if (auto dialog = qobject_cast<QDialog*>(obj); dialog && dialog->parentWidget()) {
                 dialog->installEventFilter(Scrim::instance());
             }
+            // FreeCADs Toolbars (MyCAD zeigt sie nie, siehe hideChrome) ohne Platz im Fensterlayout: Qt legt das Layout
+            // beim Einblenden sofort neu an, die 3D-Ansicht wurde kleiner und wieder groß (graues Bild beim Betreten
+            // der Skizze)
+            if (auto bar = qobject_cast<QToolBar*>(obj); bar && bar->parentWidget() == getMainWindow()) {
+                bar->setMaximumSize(0, 0);
+            }
             if (auto menu = qobject_cast<QMenu*>(obj)) {
                 menu->setAttribute(Qt::WA_TranslucentBackground);
                 menu->setWindowFlags(menu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
@@ -2560,6 +2566,12 @@ protected:
                     edit->setTextMargins(left, 0, 0, 0);
                 }
             }
+        }
+        // FreeCADs Toolbars gleich beim Einblenden wieder verstecken (Werkbank- und Bearbeitungswechsel, z. B. beim
+        // Betreten der Skizze): erst im nächsten Durchlauf (hideChromeLater) blitzten sie ein Bild lang auf
+        else if (event->type() == QEvent::ShowToParent && qobject_cast<QToolBar*>(obj)
+                 && static_cast<QWidget*>(obj)->parentWidget() == getMainWindow()) {
+            static_cast<QWidget*>(obj)->hide();
         }
         return false;
     }
@@ -3300,9 +3312,23 @@ protected:
             }
             return false;
         }
-        if (type == QEvent::Show && state.sketchMode && obj->inherits("Gui::TaskView::TaskBox")
+        // FreeCADs Sketcher-Panels (Sketch Edit, Constraints, Elements) gleich beim Einblenden verstecken, sonst
+        // blitzen sie beim Betreten der Skizze und bei jedem Werkzeugstart ein Bild lang auf. Beim Betreten ist
+        // state.sketchMode noch nicht gesetzt, die Skizze aber schon in Bearbeitung. Show ohne ShowToParent (der
+        // Panel-Bereich selbst erscheint) erst im nächsten Durchlauf: mitten im Show-Event verstecken mag Qt nicht
+        if ((type == QEvent::ShowToParent || type == QEvent::Show) && obj->inherits("Gui::TaskView::TaskBox")
             && QByteArray(obj->metaObject()->className()).startsWith("SketcherGui::")) {
-            QTimer::singleShot(0, static_cast<QWidget*>(obj), &QWidget::hide);
+            static const Base::Type sketch = Base::Type::fromName("Sketcher::SketchObject");
+            auto gdoc = Application::Instance->activeDocument();
+            auto vp = gdoc ? dynamic_cast<ViewProviderDocumentObject*>(gdoc->getInEdit()) : nullptr;
+            if (state.sketchMode || (vp && !sketch.isBad() && vp->getObject()->getTypeId().isDerivedFrom(sketch))) {
+                if (type == QEvent::ShowToParent) {
+                    static_cast<QWidget*>(obj)->hide();
+                }
+                else {
+                    QTimer::singleShot(0, static_cast<QWidget*>(obj), &QWidget::hide);
+                }
+            }
         }
         return false;
     }

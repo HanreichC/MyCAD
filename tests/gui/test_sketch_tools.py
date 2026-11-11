@@ -219,6 +219,34 @@ def note_frame():
     check("note text has no frame, also with focus", e.frameWidth() == 0 and corner == inner, "frame=%d %s %s" % (e.frameWidth(), corner.name(), inner.name()))
 
 
+class Flash(QtCore.QObject):
+    """Malt eine FreeCAD-Toolbar oder ein Sketcher-Panel (außer den Werkzeug-Optionen), oder ändert die 3D-Ansicht
+    ihre Größe (graues Bild), während die Skizze aufgeht, ein Werkzeug startet oder die Skizze zugeht?"""
+    seen = []
+
+    def eventFilter(self, obj, ev):
+        if isinstance(obj, QtWidgets.QWidget):
+            cn = obj.metaObject().className()
+            if ev.type() == QtCore.QEvent.Paint and (isinstance(obj, QtWidgets.QToolBar) or (
+                    cn.startswith("SketcherGui::Task") and "TaskSketcherTool" not in cn)):
+                self.seen.append("paint " + cn + "/" + obj.objectName())
+            elif ev.type() == QtCore.QEvent.Resize and cn == "Gui::View3DInventorViewer" and ev.oldSize().isValid():
+                self.seen.append("resize %s" % (ev.size().toTuple(),))
+        return False
+
+
+flash = Flash()
+
+
+def flash_on():
+    flash.seen.clear(); QtWidgets.QApplication.instance().installEventFilter(flash)
+
+
+def flash_off(what):
+    QtWidgets.QApplication.instance().removeEventFilter(flash)
+    check("no FreeCAD toolbar or panel flashes, view keeps its size: " + what, not flash.seen, str(sorted(set(flash.seen))))
+
+
 def focus_after_esc():
     fi = view().scene().focusItem()
     inner = fi.widget().focusWidget() if fi is not None and hasattr(fi, "widget") and fi.widget() else None
@@ -290,8 +318,10 @@ import Sketcher
 
 in_order([
     ("activate", activate),
+    ("flash on", flash_on),
     ("sketch", tool("Design_CreateSketch")),
     ("pick XY", lambda: Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XY_Plane")][0])), wait, wait,
+    ("flash off", lambda: flash_off("entering the sketch")),
     # 1 Konstruktionsmodus
     ("row off", lambda: check("construction row starts off", palette_row().isCheckable() and not palette_row().isChecked())),
     ("toggle", lambda: click(palette_row())), wait,
@@ -300,8 +330,10 @@ in_order([
     ("toggle off", lambda: click(button("Sketcher_ToggleConstruction"))), wait,
     ("row off 2", lambda: check("both off again", not palette_row().isChecked() and not button("Sketcher_ToggleConstruction").isChecked())),
     ("zoom 0", lambda: (sketch().addGeometry(Part.Circle(V(0, 0, 0), V(0, 0, 1), 60)), doc().recompute(), fit())), wait,
-    # Werkzeug starten und mit Esc wegstecken: Fokus zurück in die 3D-Ansicht
+    # Werkzeug starten und mit Esc wegstecken: Fokus zurück in die 3D-Ansicht, kein Aufblitzen
+    ("flash on 2", flash_on),
     ("circle tool", lambda: (activate(), click(button("Sketcher_CompCreateConic")))), wait,
+    ("flash off 2", lambda: flash_off("starting a tool")),
     ("esc tool", esc), wait,
     ("focus", focus_after_esc),
     # Tangential an verbundenen Enden: keine FreeCAD-Rückfrage
@@ -375,7 +407,9 @@ in_order([
     ("esc 5", esc), wait,
     ("free", lambda: check("Shift draws freely", abs(angle_of() - round(angle_of())) > 1e-3, "got %.4f" % angle_of())),
     ("cleanup", clear),
+    ("flash on 3", flash_on),
     ("finish", lambda: click(button("Sketcher_LeaveSketch"))), wait,
+    ("flash off 3", lambda: flash_off("leaving the sketch")),
     # 5 Felder
     ("body", setup_body), wait,
     # 7 Extrude auf Körperfläche
