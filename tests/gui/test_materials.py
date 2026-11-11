@@ -110,6 +110,22 @@ def top():
     cam.height.setValue(cam.height.getValue() * 2)  # Boden rund um den Klotz sichtbar
 
 
+def tones(key):
+    """Kiste im Vorgabe-Material (Stahl), Iso-Ansicht: Helligkeit in der Mitte von Deckel, Vorder- und rechter Seite"""
+    v = Gui.ActiveDocument.ActiveView
+    img = view().viewport().grab().toImage()
+    def at(p):
+        x, y = v.getPointOnViewport(App.Vector(*p))
+        return round(255 * lum(img, int(x), int(img.height() - y)))
+    saved[key] = [at((20, 15, 25)), at((20, 0, 12.5)), at((40, 15, 12.5))]
+
+
+def tone_box():
+    b = doc().addObject("Part::Box", "Tones"); b.Length, b.Width, b.Height = 40, 30, 25
+    doc().recompute()
+    Gui.ActiveDocument.ActiveView.viewIsometric(); Gui.SendMsgToActiveView("ViewFit")
+
+
 def showcase():
     """Holz lackiert, gebürstetes Aluminium, Carbon, Glas, PLA mit Schichten nebeneinander"""
     for i, (name, mat) in enumerate([
@@ -126,6 +142,16 @@ def showcase():
 
 in_order([
     ("all on", lambda: [P.SetBool(k, True) for k in ("RealisticMaterials", "Reflections", "SurfaceDetail", "ContactShadow")]),
+    # Studio (Vorgabe): jede Fläche ihr eigener Tonwert, sonst wirken Körper flach (im Raum waren Deckel und Vorderseite gleich)
+    ("tone box", tone_box), ("wait", lambda: None), ("studio tones", lambda: tones("studio")), ("shot tones", lambda: shot("tones")),
+    ("three tones", lambda: check("Studio light: the default material shows three distinct shades, top > front > right",
+                                  saved["studio"][0] > saved["studio"][1] + 12 and saved["studio"][1] > saved["studio"][2] + 12,
+                                  str(saved["studio"]))),
+    ("room", lambda: P.SetInt("Lighting", 1)), ("wait", lambda: None), ("room tones", lambda: tones("room")),
+    ("room switch", lambda: check("Lighting Room switches the environment", saved["room"] != saved["studio"],
+                                  "studio %s room %s" % (saved["studio"], saved["room"]))),
+    ("studio", lambda: P.SetInt("Lighting", 0)),
+    ("hide tone box", lambda: setattr(Gui.ActiveDocument.getObject("Tones"), "Visibility", False)),
     ("sphere", sphere), ("wait", lambda: None),
     ("measure pbr", lambda: measure("pbr")),
     ("shot pbr", lambda: shot("pbr")),

@@ -1005,13 +1005,16 @@ void Gui::Shell::showSettings()
         material->setIconSize(thumb);
         material->setMaxVisibleItems(16);
     }
-    material->setCurrentIndex(material->findData(int(myParams()->GetInt("BodyMaterial", 0))));
+    material->setCurrentIndex(material->findData(int(myParams()->GetInt("BodyMaterial", Gui::Shell::DefaultBodyMaterial))));
     QObject::connect(material, &QComboBox::currentIndexChanged, [material](int i) {
         Gui::Shell::setBodyMaterial(material->itemData(i).toInt());
     });
     // Materialien und Licht der Körper (BodyShading.h): jedes einzeln abschaltbar, wenn es beim Arbeiten stört; wirkt sofort
     auto materialCard = addCard(general, T("Materials and Light"));
     addRow(materialCard, T("Body material"), material);
+    // Studio: Licht von links oben, jede Fläche hat ihren Tonwert (CAD). Raum: weich wie die Browser-Vorschau (three.js)
+    addRow(materialCard, T("Lighting"), segmented({T("Studio"), T("Room")}, int(myParams()->GetInt("Lighting", 0)),
+                                                  [](int i) { myParams()->SetInt("Lighting", i); }));
     auto realistic = new Switch(myParams()->GetBool("RealisticMaterials", true));
     addRow(materialCard, T("Realistic materials"), realistic);
     std::vector<Switch*> needsRealistic;  // ohne realistische Materialien wirkungslos: abgeblendet (MyStyle: 0,4)

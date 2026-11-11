@@ -528,7 +528,8 @@ const BodyMaterial& bodyMaterial()
 {
     const long i = App::GetApplication()
                        .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")
-                       ->GetInt("BodyMaterial", 0);
+                       ->GetInt("BodyMaterial", DefaultBodyMaterial);
+    static_assert(std::string_view(bodyMaterials[DefaultBodyMaterial].name) == "Steel");
     return bodyMaterials[std::clamp(i, 0L, long(std::size(bodyMaterials)) - 1)];
 }
 
@@ -5200,6 +5201,12 @@ QPixmap Gui::Shell::materialPreview(int index, int size, qreal ratio)
     // Die Kugeln stehen in einer Ebene quer zum Blick, leicht von oben gesehen: Boden und Decke spiegeln sich.
     constexpr int Cell = 128, Columns = 12;
     static QImage sheet;
+    static long lighting = -1;  // anderes Licht (Einstellung "Licht"): neu rendern
+    const long now = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetInt("Lighting", 0);
+    if (now != lighting) {
+        sheet = QImage();
+        lighting = now;
+    }
     const int count = int(std::size(bodyMaterials));
     const int rows = (count + Columns - 1) / Columns;
     if (sheet.isNull()) {

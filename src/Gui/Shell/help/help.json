@@ -5397,6 +5397,7 @@
      "Physical material sets what the body is made of, for its mass. From appearance follows the look (walnut → wood, PLA → PLA); pick a material to keep it.",
      "Right-click a sphere to add it to Favorites. In this design shows the materials you already use.",
      "Single faces only take the colour of a material. Textures, gloss and lacquer apply to whole bodies.",
+     "Settings → General → Materials and Light: Lighting Studio (light from the top left, every face of a body gets its own shade – best for modelling) or Room (soft all round, like a product preview in the browser).",
      "Settings → General → Materials and Light switches each effect on or off: Realistic materials, Reflections, Relief and end grain, Contact shadow. Turn off whatever distracts you while you work.",
      "The default look of new bodies is set in Settings → General → Body material."
     ],
@@ -5405,6 +5406,7 @@
      "Werkstoff legt fest, woraus der Körper ist, für seine Masse. Aus dem Aussehen folgt der Darstellung (Nussbaum → Holz, PLA → PLA); wähle einen Werkstoff, damit er bleibt.",
      "Ein Rechtsklick auf eine Kugel legt sie unter Favoriten ab. In diesem Design zeigt die Materialien, die du schon verwendest.",
      "Einzelne Flächen übernehmen nur die Farbe eines Materials. Texturen, Glanz und Lack gibt es für ganze Körper.",
+     "Einstellungen → Allgemein → Materialien und Licht: Licht Studio (Licht von links oben, jede Fläche eines Körpers hat ihren eigenen Ton – am besten zum Konstruieren) oder Raum (weich von überall, wie eine Produktvorschau im Browser).",
      "Einstellungen → Allgemein → Materialien und Licht schaltet jeden Effekt einzeln an oder aus: Realistische Materialien, Spiegelungen, Relief und Hirnholz, Kontaktschatten. Schalte ab, was dich beim Arbeiten stört.",
      "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Allgemein → Körpermaterial ein."
     ]
@@ -5535,7 +5537,7 @@
    "steps": {
     "en": [
      "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Show tool names and Show grid (the grid on the ground plane under the bodies).",
-     "Materials and Light: Body material for new bodies, and switches for Realistic materials, Reflections, Relief and end grain and Contact shadow.",
+     "Materials and Light: Body material for new bodies (Steel unless you choose another), Lighting (Studio or Room), and switches for Realistic materials, Reflections, Relief and end grain and Contact shadow.",
      "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart) and Projects folder.",
      "3D printing: Export resolution (how fine curves become in STL and 3MF), 3D print clearance for the Fit tool (tight, normal, loose), and Overhang angle and Minimum wall for the Print View.",
      "Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
@@ -5545,7 +5547,7 @@
     ],
     "de": [
      "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
-     "Materialien und Licht: Körpermaterial für neue Körper und Schalter für Realistische Materialien, Spiegelungen, Relief und Hirnholz und Kontaktschatten.",
+     "Materialien und Licht: Körpermaterial für neue Körper (Stahl, solange du nichts anderes wählst), Licht (Studio oder Raum) und Schalter für Realistische Materialien, Spiegelungen, Relief und Hirnholz und Kontaktschatten.",
      "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart) und Projektordner.",
      "3D-Druck: Export-Auflösung (wie fein Rundungen in STL und 3MF werden), Spiel beim 3D-Druck für die Passung (eng, normal, locker) sowie Überhang-Winkel und kleinste Wand für die Druckansicht.",
      "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen.",

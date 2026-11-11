@@ -135,7 +135,7 @@ uniform int coin_light_model;     // von Coin: 0 = Grundfarbe (Auswahl, Vorauswa
 uniform int coin_texunit0_model;  // von Coin: 0 = keine Textur auf Stufe 0
 uniform sampler2D baseMap;        // Stufe 0: Farbe des Fotoscans oder eigenes Bild
 uniform sampler2D surfaceMap;     // Stufe 1: Normale x/y und Rauheit des Fotoscans (tools/fetch_textures.py)
-uniform sampler2D envMap;         // Stufe 2: Umgebung "Raum", 6 Ebenen 512x256 untereinander, 16 Bit, Wert² * 128
+uniform sampler2D envMap;         // Stufe 2: Umgebung "Studio" oder "Raum", 6 Ebenen 512x256 untereinander, 16 Bit, Wert² * 128
 uniform float exposure;
 uniform int detail;               // 1: Oberflächen-Karten, Hirnholz, Druckschichten (Einstellung "Relief und Hirnholz")
 uniform int reflections;          // 0: keine Spiegelbilder, nur weicher Glanz (Einstellung "Spiegelungen")
@@ -343,11 +343,23 @@ SoShaderParameter1i* reflections()
     return node;
 }
 
+/// Umgebung (Einstellung "Licht"): 0 Studio, 1 Raum (tools/make_environment.py)
+SoSwitch* environment()
+{
+    static SoSwitch* node = [] {
+        auto sw = new SoSwitch;
+        sw->addChild(imageBinder(QStringLiteral(":/mycad/environment/studio.png"), EnvUnit, false));
+        sw->addChild(imageBinder(QStringLiteral(":/mycad/environment/room.png"), EnvUnit, false));
+        return sw;
+    }();
+    return node;
+}
+
 SoSwitch* root()
 {
     static SoSwitch* node = [] {
         auto group = new SoGroup;
-        group->addChild(imageBinder(QStringLiteral(":/mycad/environment/room.png"), EnvUnit, false));
+        group->addChild(environment());
         auto vertex = new SoVertexShader;
         vertex->sourceType = SoShaderObject::GLSL_PROGRAM;
         vertex->sourceProgram = Vertex;
@@ -397,7 +409,7 @@ class QualityObserver: public ParameterGrp::ObserverType
 public:
     void OnChange(ParameterGrp::SubjectType&, ParameterGrp::MessageType reason) override
     {
-        static const std::set<std::string> names {"RealisticMaterials", "Reflections", "SurfaceDetail", "ContactShadow"};
+        static const std::set<std::string> names {"RealisticMaterials", "Reflections", "SurfaceDetail", "ContactShadow", "Lighting"};
         if (reason && names.contains(reason)) {
             Gui::Shell::applyRenderQuality();
         }
@@ -424,6 +436,7 @@ void Gui::Shell::applyRenderQuality()
     auto p = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
     root()->whichChild = p->GetBool("RealisticMaterials", true) ? 0 : SO_SWITCH_NONE;  // aus: Phong wie früher
     detail()->value = p->GetBool("SurfaceDetail", true) ? 1 : 0;
+    environment()->whichChild = int(std::clamp(p->GetInt("Lighting", 0), 0L, 1L));
     reflections()->value = p->GetBool("Reflections", true) ? 1 : 0;
     for (ContactShadow* shadow : shadows()) {
         setShadow(shadow, p->GetBool("ContactShadow", true));

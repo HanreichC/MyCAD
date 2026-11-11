@@ -8,7 +8,7 @@ from PySide6 import QtGui
 from harness import *
 
 grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
-old = grp.GetInt("BodyMaterial", 0)
+old = grp.GetInt("BodyMaterial", 29)  # Vorgabe Stahl (Shell.h DefaultBodyMaterial)
 state = {}
 FILE = os.path.join(tempfile.mkdtemp(), "texture.FCStd")
 
@@ -140,8 +140,8 @@ in_order([
                                check("neuer Körper bekommt die Vorgabe-Textur", textured(state["new"]) and sum(patch(state["new"])[0]) > 400),
                                check("eigene Textur bleibt beim Wechsel", textured(state["box"]) and sum(patch(state["box"])[0]) < 360),
                                shot("default"))),
-    ("back", lambda: pick_default("Space Gray")), ("wait", lambda: None), ("wait", lambda: None),
-    ("back check", lambda: (report("zurück auf Space Gray", state["new"]), check("Vorgabe zurück nimmt die Textur vom Standard-Körper", not textured(state["new"])),
+    ("back", lambda: pick_default("Steel")), ("wait", lambda: None), ("wait", lambda: None),
+    ("back check", lambda: (report("zurück auf Stahl", state["new"]), check("Vorgabe zurück nimmt die Textur vom Standard-Körper", not textured(state["new"])),
                             check("eigene Textur bleibt auch dann", textured(state["box"])))),
     ("restore", lambda: grp.SetInt("BodyMaterial", old)),
 ], delay=1500)

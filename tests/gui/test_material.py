@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Körper-Material: neue Körper sind Space Gray; in den Einstellungen "Body material" -> Clay färbt Körper mit
-Standard-Look um, ein Körper mit eigener Farbe bleibt. Am Ende wieder Space Gray (Einstellung des Benutzers)."""
+"""Körper-Material: neue Körper sind Stahl (Vorgabe); in den Einstellungen "Body material" -> Clay färbt Körper mit
+Standard-Look um, ein Körper mit eigener Farbe bleibt. Am Ende wieder Stahl (Einstellung des Benutzers)."""
 from harness import *
 
 grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
-old = grp.GetInt("BodyMaterial", 0)
+old = grp.GetInt("BodyMaterial", 29)  # Vorgabe Stahl (Shell.h DefaultBodyMaterial)
 state = {}
 
 
@@ -39,13 +39,13 @@ import os
 run([
     ("bodies", bodies),
     ("fit", lambda: (Gui.ActiveDocument.ActiveView.viewIsometric(), Gui.SendMsgToActiveView("ViewFit"))),
-    ("shot gray", lambda: shot("gray")), ("start", lambda: report("start (Space Gray = #5C6169)")),
+    ("shot gray", lambda: shot("gray")), ("start", lambda: report("start (Steel = #8F9296)")),
     ("clay", lambda: pick("Clay")), ("wait", lambda: None),
     ("after", lambda: report("nach Clay (#E8DED1, eigene Farbe bleibt #FF3333)")),
     ("shot", lambda: shot("clay")),
     ("titanium", lambda: pick("Natural Titanium")), ("wait", lambda: None),
     ("after titanium", lambda: report("nach Natural Titanium (#B8B2A7)")), ("shot titanium", lambda: shot("titanium")),
-    ("back", lambda: pick("Space Gray")), ("wait", lambda: None),
+    ("back", lambda: pick("Steel")), ("wait", lambda: None),
     ("final", lambda: report("zurück")),
     ("restore", lambda: grp.SetInt("BodyMaterial", old)),
 ])

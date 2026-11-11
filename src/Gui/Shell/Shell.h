@@ -51,6 +51,8 @@ struct BodyMaterialEntry
     const char* family;    ///< Varianten (Farben, Finish) teilen sich eine Familie
 };
 std::vector<BodyMaterialEntry> bodyMaterialList();
+/// Material neuer Körper ohne eigene Wahl: Stahl, satiniert (wie im CAD üblich; mittelgrau hebt sich vom hellen Boden ab)
+constexpr int DefaultBodyMaterial = 29;
 App::Material bodyMaterialAppearance(int index);
 const char* defaultBodyTexture();  ///< Textur neuer Körper oder nullptr
 /// Kugel mit dem Material, gerendert wie im Modell (alle auf einmal beim ersten Aufruf), rund ausgeschnitten

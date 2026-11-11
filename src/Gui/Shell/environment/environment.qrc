@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/mycad/environment">
         <file>room.png</file>
+        <file>studio.png</file>
     </qresource>
 </RCC>

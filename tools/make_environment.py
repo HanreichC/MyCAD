@@ -4,12 +4,17 @@
 Googles model-viewer): ein grauer Raum mit sechs Kisten am Boden und sechs hellen Lichtflächen, die Wände von einer
 Punktleuchte unter der Decke beleuchtet. Hier per Strahlverfolgung nachgerechnet, mit denselben absoluten Werten, damit
 MyCAD aussieht wie die Vorschau im Browser (Belichtung 1, Tonwertkurve PBR Neutral).
-Erzeugt src/Gui/Shell/environment/room.png: ein Atlas aus 6 Equirect-Bildern 512x256 untereinander (Z oben, u = atan2(y, x),
+Dazu "Studio" für die CAD-Ansicht: der Raum ist so gleichmäßig hell, dass in der Iso-Ansicht Deckel und Vorderseite
+gleich aussehen und Metallflächen flach wirken. Das Studio hat eine große Lichtfläche links oben vorn (von der
+Standard-Iso-Ansicht aus), eine schwache rechts, einen Lichtstreifen oben und einen dunklen Boden: Grau 50 % kommt in
+der Iso-Ansicht auf rund 158 / 122 / 97 (Deckel / vorne / rechts) statt 144 / 133 / 99.
+Erzeugt src/Gui/Shell/environment/room.png und studio.png: je ein Atlas aus 6 Equirect-Bildern 512x256 untereinander (Z oben, u = atan2(y, x),
 v = Winkel von oben), 16 Bit je Kanal, Wurzel-kodiert (Strahlung = Wert² * 128; ohne RGBM, das beim Filtern Stufen macht):
     0 fast scharf (Sigma 0,04 wie three.js), 1-4 Glanz für Rauheit 0,25 / 0,5 / 0,75 / 1, 5 Streulicht (Kosinus, = Bestrahlung / pi).
-python3 tools/make_environment.py"""
+python3 tools/make_environment.py [room] [studio]"""
 import pathlib
 import struct
+import sys
 import zlib
 
 import numpy as np
@@ -84,9 +89,50 @@ def radiance(d3):
     return np.repeat(value[..., None], 3, -1)
 
 
-def render(w, h, ss=3):
+def unit(azimuth, elevation):
+    a, e = np.radians(azimuth), np.radians(elevation)
+    return np.array([np.cos(e) * np.cos(a), np.cos(e) * np.sin(a), np.sin(e)])
+
+
+def softbox(d, azimuth, elevation, width, height, power, soft=0.15):
+    """Rechteckige Lichtfläche um die Richtung (Grad, Z oben, Azimut 0 = +X), Breite/Höhe als Winkel, weicher Rand"""
+    c = unit(azimuth, elevation)
+    u = np.cross([0.0, 0.0, 1.0], c)
+    u /= np.linalg.norm(u)
+    v = np.cross(c, u)
+    dc = d @ c
+    x, y = (d @ u) / np.maximum(dc, 1e-6), (d @ v) / np.maximum(dc, 1e-6)
+    hx, hy = np.tan(np.radians(width / 2)), np.tan(np.radians(height / 2))
+    edge = lambda q, half: np.clip((half - np.abs(q)) / (soft * half) + 0.5, 0, 1)
+    return np.where(dc > 0, power * edge(x, hx) * edge(y, hy), 0.0)
+
+
+def studio(d):
+    """Studio in Z-oben-Koordinaten. Die Iso-Kamera steht bei (1, -1, 1): links oben vorn ist Azimut ~240°."""
+    z = d[..., 2]
+    azimuth = np.degrees(np.arctan2(d[..., 1], d[..., 0]))
+    # Boden mittelgrau wie ein beleuchteter Tisch, vorn links heller: Metall spiegelt ihn in den Seiten (Iso-Ansicht),
+    # die Vorderseite wird heller als rechts. Dunkel wären Metallseiten schwarz (Space Gray wirft nur 11 % zurück).
+    floor = 0.50 + 0.25 * np.clip(np.cos(np.radians(azimuth - 240)), 0, 1) * np.clip(-z * 3, 0, 1)
+    value = np.where(z >= 0, 0.28 + 0.30 * z, floor)
+    value = value + softbox(d, 240, 50, 70, 50, 4.6)   # Hauptlicht links oben vorn
+    value = value + softbox(d, 15, 18, 40, 45, 2.0)    # Aufheller rechts
+    value = value + softbox(d, 150, 82, 90, 14, 2.5)   # Lichtstreifen oben
+    value = value + softbox(d, 135, 35, 50, 30, 1.5)   # Gegenlicht hinten links: dahin spiegelt ein Deckel in der Iso-Ansicht
+    # kleine, sehr helle Lichtflächen: glänzende Rundungen bekommen scharfe Glanzpunkte wie im Raum, die Tonwerte der
+    # Flächen ändern sie kaum (wenig Raumwinkel)
+    value = value + softbox(d, 255, 42, 9, 7, 14.0, soft=0.3)
+    value = value + softbox(d, 320, 24, 6, 12, 10.0, soft=0.3)
+    value = value + softbox(d, 195, 22, 5, 14, 9.0, soft=0.3)
+    value *= 0.78  # Weiß behält Luft unter dem Clipping, sonst sind Deckel und Vorderseite gleich hell
+    return np.repeat(value[..., None], 3, -1)
+
+
+def render(w, h, ss=3, scene="room"):
     """Equirect mit Überabtastung; Z oben: three.js (x, y, z) = (x, z, -y)"""
     d, _ = directions(w * ss, h * ss)
+    if scene == "studio":
+        return studio(d).reshape(h, ss, w, ss, 3).mean((1, 3))
     d3 = np.stack([d[..., 0], d[..., 2], -d[..., 1]], -1)
     return radiance(d3).reshape(h, ss, w, ss, 3).mean((1, 3))
 
@@ -126,9 +172,8 @@ def save_png16(path, rgb):
                      + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
 
 
-def main():
-    OUT.mkdir(parents=True, exist_ok=True)
-    sharp = render(W, H, ss=4)
+def build(scene):
+    sharp = render(W, H, ss=4, scene=scene)
     mid = sharp.reshape(128, 2, 256, 2, 3).mean((1, 3))  # 256 x 128
     small = mid.reshape(64, 2, 128, 2, 3).mean((1, 3))   # 128 x 64
     # wie PMREMGenerator.fromScene(scene, 0.04): leicht weich (Sigma 0,04 rad, Keule cos^625), auch gegen Kanten am Pol
@@ -140,14 +185,22 @@ def main():
         exponent = max(1.0, (2 / (alpha * alpha) - 2) / 4)
         levels.append(upscale(blur(src, *size, exponent), W, H))
     levels.append(upscale(blur(small, 64, 32, 1.0), W, H))  # Streulicht: Kosinus-Keule
-    save_png16(OUT / "room.png", np.concatenate([encode(l) for l in levels], 0))
-    (OUT / "environment.qrc").write_text('<RCC>\n    <qresource prefix="/mycad/environment">\n        <file>room.png</file>\n'
-                                         '    </qresource>\n</RCC>\n', newline="\n")
+    path = OUT / (scene + ".png")
+    save_png16(path, np.concatenate([encode(l) for l in levels], 0))
     for i, l in enumerate(levels):
-        print("Ebene %d: Mittel %.2f, Max %.2f" % (i, l.mean(), l.max()))
+        print("%s Ebene %d: Mittel %.2f, Max %.2f" % (scene, i, l.mean(), l.max()))
     s = levels[-1]
     print("Streulicht oben %.2f, Seite %.2f, unten %.2f" % (s[0].mean(), s[H // 2].mean(), s[-1].mean()))
-    print("-> %s (%d KB)" % (OUT / "room.png", (OUT / "room.png").stat().st_size // 1024))
+    print("-> %s (%d KB)" % (path, path.stat().st_size // 1024))
+
+
+def main():
+    OUT.mkdir(parents=True, exist_ok=True)
+    scenes = sys.argv[1:] or ["room", "studio"]
+    for scene in scenes:
+        build(scene)
+    (OUT / "environment.qrc").write_text('<RCC>\n    <qresource prefix="/mycad/environment">\n        <file>room.png</file>\n'
+                                         '        <file>studio.png</file>\n    </qresource>\n</RCC>\n', newline="\n")
 
 
 if __name__ == "__main__":

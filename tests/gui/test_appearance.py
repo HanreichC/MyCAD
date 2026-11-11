@@ -101,6 +101,6 @@ run([
     ("shot drop", lambda: shot("drop")),
     ("ok 4", ok),
     ("undo", lambda: [Gui.runCommand("Std_Undo") for _ in range(3)]),  # Ziehen, Fläche, erstes Panel (das zweite blieb leer)
-    ("after undo", lambda: check("Undo restores the look", color() == (0.36, 0.38, 0.41), str(color()))),
+    ("after undo", lambda: check("Undo restores the look", color() == (0.56, 0.57, 0.59), str(color()))),
     ("restore", lambda: P.SetString("MaterialFavorites", favs)),
 ])
