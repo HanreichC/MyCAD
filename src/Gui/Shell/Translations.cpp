@@ -189,6 +189,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Appearance", "Darstellung"},
         {"%1 selected", "%1 ausgewählt"},
         {"%1 bodies", "%1 Körper"},
+        {"1 body", "1 Körper"},
         {"Color", "Farbe"},
         {"Parameters", "Parameter"},
         {"Use the names in any dimension field, e.g. “Width * 2”.", "Verwende die Namen in jedem Maßfeld, z. B. „Breite * 2“."},

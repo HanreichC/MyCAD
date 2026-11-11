@@ -1226,8 +1226,8 @@ public:
             simpleOp = new QComboBox;
             simpleOp->addItems({T("Join"), T("Cut"), T("Intersect")});
             simpleOp->setCurrentIndex(std::max(0L, combine->Operation.getValue() - 1));
-            form->addRow(T("Tools"),
-                         new QLabel(T("%1 bodies").arg(combine->ToolBodies.getSize())));
+            const int tools = combine->ToolBodies.getSize();
+            form->addRow(T("Tools"), new QLabel(tools == 1 ? T("1 body") : T("%1 bodies").arg(tools)));
             form->addRow(T("Operation"), simpleOp);
             check = new QCheckBox(T("Keep tools"));
             check->setChecked(combine->KeepTools.getValue());

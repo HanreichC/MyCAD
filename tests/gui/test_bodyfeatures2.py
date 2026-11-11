@@ -75,5 +75,10 @@ run([
                                    header() == ["Remove Face"] and {"Faces", "1 selected"} <= labels() and not {"Distance", "Edges"} & labels(),
                                    "%s %s" % (header(), [l.text() for l in visible(QtWidgets.QLabel)]))),
     ("remove cancel", cancel),
+    ("combine sel", lambda: (select(body("B")), Gui.Selection.addSelection(body("D")))),
+    ("combine", lambda: Gui.Control.activeDialog() or Gui.runCommand("Design_Combine")),
+    ("one body", lambda: check("Combine panel: 1 body (singular)", "1 body" in [l.text() for l in visible(QtWidgets.QLabel)],
+                               str([l.text() for l in visible(QtWidgets.QLabel)]))),
+    ("combine cancel", cancel),
     ("shot", lambda: shot("features2")),
 ])
