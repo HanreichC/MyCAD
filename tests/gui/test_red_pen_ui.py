@@ -69,6 +69,19 @@ def fillets():
     return [o for o in doc().Objects if o.TypeId == "Design::Fillet"]
 
 
+def read_empty():
+    """Apply Corrections ohne lesbare Tinte; ein Meldungsfenster würde den Test anhalten: merken und schließen"""
+    def boxes():
+        state["boxes"] = [m.text() for m in visible(QtWidgets.QMessageBox)]
+        [m.close() for m in visible(QtWidgets.QMessageBox)]
+    QtCore.QTimer.singleShot(1500, boxes)
+    Gui.runCommand("Design_ScribbleCorrect")
+
+
+def notices():
+    return [w.text() for w in visible(QtWidgets.QLabel) if w.inherits("Gui::NotificationLabel")]
+
+
 def hover_first():
     row = apply_button("R2").parentWidget()
     QtWidgets.QApplication.sendEvent(row, QtCore.QEvent(QtCore.QEvent.Enter))
@@ -83,6 +96,10 @@ in_order([
                                and Gui.ActiveDocument.getInEdit().Object.Tracing)),
     ("palette", lambda: check("the palette offers Apply Corrections",
                               any(b.text() == "Apply Corrections" for b in visible(QtWidgets.QToolButton)))),
+    ("empty", read_empty), wait_step,
+    ("no alert", lambda: check("nothing to read: a notice instead of a message box",
+                               not state.get("boxes") and any("No corrections found" in t for t in notices()),
+                               "%s %s" % (state.get("boxes"), notices()))),
     ("finish", lambda: Gui.runCommand("Design_ScribbleFinish")),
     ("cards", cards),
     ("shown", lambda: check("the cards appear", panel_shown())),

@@ -495,9 +495,8 @@ void readCorrections(DesignGui::ViewProviderScribble* vp)
             corrections.push_back(c);
         }
     }
-    if (corrections.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Apply Corrections"),
-                                 T("No corrections found. Write for example R2 next to an edge, M5 on a face or +5 on a face."));
+    if (corrections.empty()) {  // nur ein Hinweis, kein Meldungsfenster (MyStyle: keine Alerts nur zur Information)
+        notify(T("No corrections found. Write for example R2 next to an edge, M5 on a face or +5 on a face."));
         return;
     }
     DesignGui::showCorrections(doc, corrections);
