@@ -299,6 +299,9 @@ def _check_fields():
             up = w.style().subControlRect(QtWidgets.QStyle.ComplexControl.CC_SpinBox, opt, QtWidgets.QStyle.SubControl.SC_SpinBoxUp, w)
             if up.width() > 0 and w.buttonSymbols() != QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons:
                 why.append("arrow buttons")
+            edit = w.lineEdit()
+            if w.width() > 30 and edit is not None and edit.width() < 10:  # Text hat keinen Platz (Stylesheet ohne subcontrol-origin)
+                why.append("edit field %d px wide" % edit.width())
         key = (type(w).__name__, w.objectName(), w.accessibleName(), w.window().windowTitle())
         if why and key not in _field_fails:
             _field_fails.add(key)

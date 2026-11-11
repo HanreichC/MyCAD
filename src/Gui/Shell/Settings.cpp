@@ -775,7 +775,9 @@ QComboBox QAbstractItemView { background: @glassOpaqueTop; border: 1px solid @gl
 QAbstractSpinBox { background: @fillTertiary; border: 2px solid transparent; border-radius: 8px; padding: 2px 8px; min-height: 22px;
     selection-background-color: @accent; selection-color: @labelOnAccent; }
 QAbstractSpinBox:focus { border-color: @focusRing; }
-QAbstractSpinBox::up-button, QAbstractSpinBox::down-button { width: 0; border: none; }
+/* subcontrol-origin: sonst schrumpft bei Feldern ohne Knöpfe (NoButtons, z. B. die Wertfelder in der Skizze) das
+   Eingabefeld auf 1 px, sobald das Feld Rand oder Innenabstand hat: der Text ist unsichtbar */
+QAbstractSpinBox::up-button, QAbstractSpinBox::down-button { width: 0; border: none; subcontrol-origin: border; }
 QSlider { min-height: 24px; }
 QSlider::groove:horizontal { height: 4px; background: @fillSecondary; border-radius: 2px; }
 QSlider::sub-page:horizontal { background: @accent; border-radius: 2px; }

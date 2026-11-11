@@ -231,7 +231,9 @@ QLineEdit:focus, QAbstractSpinBox:focus, QComboBox:focus,
 /* Post-it: ohne Rahmen, auch mit Fokus (ausdrücklicher Wunsch; den Fokus zeigt die Einfügemarke) */
 #GlassContent QPlainTextEdit#NoteText { background: transparent; border: none; color: @noteLabel; placeholder-text-color: @noteLabelTertiary;
     selection-background-color: @accent; selection-color: @labelOnAccent; }
-QAbstractSpinBox::up-button, QAbstractSpinBox::down-button { width: 0; border: none; }
+/* subcontrol-origin: sonst schrumpft bei Feldern ohne Knöpfe (NoButtons, z. B. die Wertfelder in der Skizze) das
+   Eingabefeld auf 1 px, sobald das Feld Rand oder Innenabstand hat: der Text ist unsichtbar */
+QAbstractSpinBox::up-button, QAbstractSpinBox::down-button { width: 0; border: none; subcontrol-origin: border; }
 QComboBox::drop-down { border: none; width: 20px; }
 QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
 QLineEdit { selection-background-color: @accent; selection-color: @labelOnAccent; }
