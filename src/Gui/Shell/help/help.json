@@ -261,7 +261,16 @@
       false
      ]
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "start_overview.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "start_tutorial_print",
@@ -420,7 +429,16 @@
       true
      ]
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "start_tutorial_print.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "start_tutorial_assembly",
@@ -556,7 +574,16 @@
       true
      ]
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "start_tutorial_assembly.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "start_shortcuts",
@@ -720,7 +747,16 @@
       "Einstellungen"
      ]
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "start_shortcuts.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "start_first",
@@ -803,7 +839,7 @@
    },
    "images": [
     {
-     "file": "start_first.jpg",
+     "file": "start_first.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -883,7 +919,16 @@
      "Die Ansicht dreht um den Körper unter dem Cursor (Einstellungen → Drehen um), so bleibt das betrachtete Detail an seinem Platz.",
      "Zoom in die falsche Richtung? Einstellungen → Tempo & Zoom → Zoom umkehren (Mausrad), beim Spreizen Einstellungen → Trackpad → Zoom umkehren."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "start_navigation.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "sketch_basics",
@@ -998,7 +1043,7 @@
    },
    "images": [
     {
-     "file": "sketch_basics.jpg",
+     "file": "sketch_basics.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -1066,7 +1111,16 @@
     "de": [
      "Halte die Maus über ein Feld, um seine Formel zu sehen."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "start_dimensions.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "start_timeline",
@@ -1140,7 +1194,16 @@
      "Zieh einen Schritt auf einen anderen, um ihn dorthin zu schieben. Braucht er etwas, das dann später käme (seine Skizze, eine Fläche), bleibt er stehen und MyCAD sagt, warum.",
      "Strg+Klick auf mehrere benachbarte Schritte, Rechtsklick und Gewählte Schritte gruppieren. Der Gruppenknopf klappt sie zusammen; Rechtsklick darauf benennt sie um oder löst sie auf."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "start_timeline.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "file_basics",
@@ -1226,7 +1289,16 @@
      "Den Projektordner wählst du in Einstellungen → Allgemein → Projektordner; neue Designs bekommen dort einen eigenen Ordner.",
      "Beim Schließen fragt MyCAD nie nach dem Speichern: alles ist schon gesichert."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "file_basics.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Versions",
@@ -1296,7 +1368,16 @@
      "Stürzt MyCAD oder dein Rechner ab, öffne das Design einfach wieder: höchstens die letzten zwei Sekunden fehlen.",
      "Versionen und Varianten liegen neben der Design-Datei in den Ordnern versions und variants."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Versions.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Import",
@@ -1358,7 +1439,16 @@
     "de": [
      "Klicke eine geschlossene Fläche einer eingefügten Zeichnung an und mache mit Extrudieren ein Teil daraus."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Import.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Print",
@@ -1426,7 +1516,16 @@
      "MyCAD findet OrcaSlicer, Bambu Studio, PrusaSlicer und UltiMaker Cura als Programm, als Flatpak und als AppImage in ~/Applications. Ohne Slicer speichert Drucken stattdessen eine 3MF-Datei.",
      "Rundungen sind so fein wie die Export-Auflösung in den Einstellungen."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Print.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Export",
@@ -1501,7 +1600,16 @@
      "3MF behält jeden Körper als eigenes Teil mit Name und Farbe, der Slicer zeigt sie also getrennt. Wie fein Rundungen zu Dreiecken werden (STL und 3MF), stellst du unter Einstellungen → Allgemein → Export-Auflösung ein.",
      "STEP behält Farben, Namen und Komponenten."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Export.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_CreateSketch",
@@ -1569,7 +1677,7 @@
    },
    "images": [
     {
-     "file": "Design_CreateSketch.jpg",
+     "file": "Design_CreateSketch.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -1842,7 +1950,7 @@
    },
    "images": [
     {
-     "file": "Design_Revolve.jpg",
+     "file": "Design_Revolve.gif",
      "caption": {
       "en": "A circle beside the axis becomes a donut.",
       "de": "Ein Kreis neben der Achse wird zum Donut."
@@ -1930,7 +2038,7 @@
    },
    "images": [
     {
-     "file": "Design_Sweep.jpg",
+     "file": "Design_Sweep.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -2023,7 +2131,7 @@
    },
    "images": [
     {
-     "file": "Design_Loft.jpg",
+     "file": "Design_Loft.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -2106,7 +2214,7 @@
    },
    "images": [
     {
-     "file": "Design_Rib.jpg",
+     "file": "Design_Rib.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -2193,7 +2301,7 @@
    },
    "images": [
     {
-     "file": "Design_Web.jpg",
+     "file": "Design_Web.gif",
      "caption": {
       "en": "Two crossing webs inside a shelled tray.",
       "de": "Zwei sich kreuzende Stege in einer ausgehöhlten Wanne."
@@ -2279,7 +2387,7 @@
    },
    "images": [
     {
-     "file": "Design_Emboss.jpg",
+     "file": "Design_Emboss.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -2419,7 +2527,7 @@
    },
    "images": [
     {
-     "file": "primitives.jpg",
+     "file": "primitives.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -2585,7 +2693,7 @@
    },
    "images": [
     {
-     "file": "Design_Hole.jpg",
+     "file": "Design_Hole.gif",
      "caption": {
       "en": "Three counterbored holes at three sketch points.",
       "de": "Drei Bohrungen mit Senkung an drei Skizzenpunkten."
@@ -2701,7 +2809,16 @@
      "Das untere Teil ist der nächste Körper hinter dem Punkt; es darf in einer anderen Komponente liegen.",
      "Die Löcher für Einschmelzmuttern folgen gängigen Messingeinsätzen (z. B. M3: Ø4 mm, 5,7 mm lang). Für andere Einsätze nimm Bohrung mit eigenem Durchmesser."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Fastener.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Fit",
@@ -2804,7 +2921,16 @@
     "de": [
      "ISO-Passungen setzen jede Fläche in die Mitte ihres Toleranzfelds; ein gemessenes Modell zeigt so die Passung, die eine gute Werkstatt liefert."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Fit.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Thread",
@@ -2909,7 +3035,7 @@
    },
    "images": [
     {
-     "file": "Design_Thread.jpg",
+     "file": "Design_Thread.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -3021,7 +3147,7 @@
    },
    "images": [
     {
-     "file": "Design_Pattern.jpg",
+     "file": "Design_Pattern.gif",
      "caption": {
       "en": "One peg repeated 4 × 2 times.",
       "de": "Ein Zapfen, 4 × 2-mal wiederholt."
@@ -3106,7 +3232,7 @@
    },
    "images": [
     {
-     "file": "Design_Mirror.jpg",
+     "file": "Design_Mirror.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -3190,7 +3316,7 @@
    },
    "images": [
     {
-     "file": "Design_PressPull.jpg",
+     "file": "Design_PressPull.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -3258,7 +3384,7 @@
    },
    "images": [
     {
-     "file": "Design_ReplaceFace.jpg",
+     "file": "Design_ReplaceFace.gif",
      "caption": {
       "en": "Left: the top face was moved up to the plane. Right: the same box before.",
       "de": "Links: die Oberseite wurde bis zur Ebene verschoben. Rechts: derselbe Quader vorher."
@@ -3315,7 +3441,7 @@
    ],
    "images": [
     {
-     "file": "Design_SplitFace.jpg",
+     "file": "Design_SplitFace.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -3492,7 +3618,7 @@
    },
    "images": [
     {
-     "file": "Design_Chamfer.jpg",
+     "file": "Design_Chamfer.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -3577,7 +3703,7 @@
    },
    "images": [
     {
-     "file": "Design_Shell.jpg",
+     "file": "Design_Shell.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -3665,7 +3791,7 @@
    },
    "images": [
     {
-     "file": "Design_Draft.jpg",
+     "file": "Design_Draft.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -3751,7 +3877,7 @@
    },
    "images": [
     {
-     "file": "Design_Combine.jpg",
+     "file": "Design_Combine.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -3816,7 +3942,7 @@
    },
    "images": [
     {
-     "file": "Design_SplitBody.jpg",
+     "file": "Design_SplitBody.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -3915,7 +4041,7 @@
    },
    "images": [
     {
-     "file": "Design_Move.jpg",
+     "file": "Design_Move.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -3971,6 +4097,15 @@
    "see": [
     "Design_Move",
     "Design_Joint"
+   ],
+   "images": [
+    {
+     "file": "Design_Align.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
    ]
   },
   {
@@ -4042,7 +4177,16 @@
       "Um den Ursprung oder die Körpermitte skalieren."
      ]
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Scale.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Delete",
@@ -4088,7 +4232,16 @@
     "de": [
      "Rückgängig (Strg+Z) holt es zurück."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Delete.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_OffsetPlane",
@@ -4148,7 +4301,7 @@
    },
    "images": [
     {
-     "file": "Design_OffsetPlane.jpg",
+     "file": "Design_OffsetPlane.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -4208,7 +4361,16 @@
     "de": [
      "Konstruktionsebenen, -achsen und -punkte erscheinen im Ordner Konstruktion im Browser und lassen sich wie die Ursprungsebenen nutzen – z. B. zum Skizzieren."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_AnglePlane.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Midplane",
@@ -4265,7 +4427,7 @@
    },
    "images": [
     {
-     "file": "Design_Midplane.jpg",
+     "file": "Design_Midplane.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -4322,7 +4484,16 @@
     "de": [
      "Konstruktionsebenen, -achsen und -punkte erscheinen im Ordner Konstruktion im Browser und lassen sich wie die Ursprungsebenen nutzen – z. B. zum Skizzieren."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Plane.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Axis",
@@ -4376,7 +4547,7 @@
    },
    "images": [
     {
-     "file": "Design_Axis.jpg",
+     "file": "Design_Axis.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -4436,7 +4607,16 @@
     "de": [
      "Konstruktionsebenen, -achsen und -punkte erscheinen im Ordner Konstruktion im Browser und lassen sich wie die Ursprungsebenen nutzen – z. B. zum Skizzieren."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Point.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_NewComponent",
@@ -4491,7 +4671,16 @@
     "de": [
      "Extrudieren und die anderen Erstellen-Werkzeuge legen einen neuen Körper auch direkt in eine neue Komponente: Vorgang → Neue Komponente."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_NewComponent.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Joint",
@@ -4611,7 +4800,16 @@
      "Geschlossene Ketten gehen auch, z. B. ein Viergelenk: gib dem letzten Teil ein zweites Gelenk zurück zum Gestell. Das erste Gelenk der Kette treibt sie mit seinem Winkel oder Weg, die anderen folgen. Dreh die Teile vor dem Schließen grob so, wie die Kette sitzen soll.",
      "In einer geschlossenen Kette werden die Grenzen der folgenden Gelenke geprüft: müsste der Mechanismus darüber hinaus, sagt es das Gelenk."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Joint.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_PrintView",
@@ -4678,7 +4876,16 @@
      "Die Grenzen (Überhang-Winkel, kleinste Wand) und das Spiel für den 3D-Druck stehen in den Einstellungen.",
      "Die gewählte Unterseite wird mit dem Design gespeichert und von Drucken benutzt."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_PrintView.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Measure",
@@ -4733,6 +4940,15 @@
    },
    "see": [
     "Design_Section"
+   ],
+   "images": [
+    {
+     "file": "Design_Measure.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
    ]
   },
   {
@@ -4781,7 +4997,7 @@
    ],
    "images": [
     {
-     "file": "Design_Section.jpg",
+     "file": "Design_Section.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -4828,6 +5044,15 @@
    },
    "see": [
     "start_navigation"
+   ],
+   "images": [
+    {
+     "file": "Std_ViewFitAll.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
    ]
   },
   {
@@ -4893,7 +5118,16 @@
      "Namen bestehen nur aus Buchstaben, Ziffern und _, ohne Leerzeichen.",
      "Schneller: Schreib Breite = 40 mm in eine Notiz. Parameter aus einer Notiz zeigen „In Notiz …“ und werden dort geändert oder gelöscht."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Parameters.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Note",
@@ -4966,7 +5200,16 @@
      "Eine Zeile mit ⚠ wurde kein Parameter, z. B. weil der Name zweimal vorkommt. Nichts geht still verloren: Löschst du die Zeile eines Parameters, den das Design noch nutzt, bleibt der Parameter, und die Notiz sagt, wo er gebraucht wird.",
      "Umlaute gehen: Wandstärke = 2,5 mm funktioniert."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Note.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_RemoveFace",
@@ -5025,7 +5268,16 @@
      "Hilft besonders bei importierten STEP-Teilen, die keinen Verlauf zum Ändern haben.",
      "Können die Flächen ringsum die Lücke nicht schließen (etwa die Oberseite eines Quaders), sagt der Schritt das."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_RemoveFace.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_RedPen",
@@ -5168,7 +5420,16 @@
      "Sind zwei Kanten gleich nah, fragt die Karte, welche gemeint ist, statt zu raten.",
      "Die Tinte bleibt im Scribble Korrekturen; so siehst du später, was geändert wurde und warum."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_RedPen.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Scribble",
@@ -5338,7 +5599,16 @@
      "Handschrift suchen oben in der Palette durchsucht, was du auf diesem Blatt geschrieben hast. Tippe Ø12 oder ein Wort; Enter wählt den nächsten Treffer aus und schiebt die Ansicht dorthin.",
      "Schreib Maße wie Ø12, R5 oder 40 neben einen Kreis oder eine Linie: In Skizze umwandeln macht daraus die Bemaßung dieses Kreises oder dieser Linie."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Scribble.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Appearance",
@@ -5425,7 +5695,7 @@
    },
    "images": [
     {
-     "file": "Design_Appearance.jpg",
+     "file": "Design_Appearance.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -5492,7 +5762,16 @@
      "Mit leerem Feld zeigt die Suche, was du zuletzt benutzt hast.",
      "Das Tastenkürzel eines Werkzeugs steht neben seinem Namen."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "search.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "settings",
@@ -5580,7 +5859,16 @@
      "Eine neue Sprache wirkt nach einem Neustart von MyCAD.",
      "Tasten als Maustasten bleiben beim Schreiben normale Tasten, z. B. beim Umbenennen."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "settings.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "sketch_line",
@@ -5644,7 +5932,7 @@
    },
    "images": [
     {
-     "file": "sketch_line.jpg",
+     "file": "sketch_line.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -5703,7 +5991,7 @@
    ],
    "images": [
     {
-     "file": "sketch_polyline.jpg",
+     "file": "sketch_polyline.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -5773,7 +6061,7 @@
    ],
    "images": [
     {
-     "file": "sketch_rectangle.jpg",
+     "file": "sketch_rectangle.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -5840,7 +6128,7 @@
    ],
    "images": [
     {
-     "file": "sketch_circle.jpg",
+     "file": "sketch_circle.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -5906,7 +6194,7 @@
    ],
    "images": [
     {
-     "file": "sketch_arc.jpg",
+     "file": "sketch_arc.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -5968,7 +6256,7 @@
    ],
    "images": [
     {
-     "file": "sketch_slot.jpg",
+     "file": "sketch_slot.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6040,7 +6328,7 @@
    ],
    "images": [
     {
-     "file": "sketch_polygon.jpg",
+     "file": "sketch_polygon.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6102,7 +6390,7 @@
    ],
    "images": [
     {
-     "file": "sketch_bspline.jpg",
+     "file": "sketch_bspline.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6162,7 +6450,7 @@
    ],
    "images": [
     {
-     "file": "sketch_conic.jpg",
+     "file": "sketch_conic.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6219,7 +6507,7 @@
    ],
    "images": [
     {
-     "file": "sketch_point.jpg",
+     "file": "sketch_point.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6276,6 +6564,15 @@
    },
    "see": [
     "Design_Emboss"
+   ],
+   "images": [
+    {
+     "file": "sketch_text.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
    ]
   },
   {
@@ -6340,7 +6637,7 @@
    },
    "images": [
     {
-     "file": "sketch_project.jpg",
+     "file": "sketch_project.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6402,7 +6699,7 @@
    ],
    "images": [
     {
-     "file": "sketch_fillet.jpg",
+     "file": "sketch_fillet.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6471,7 +6768,7 @@
    ],
    "images": [
     {
-     "file": "sketch_trim.jpg",
+     "file": "sketch_trim.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6531,7 +6828,7 @@
    ],
    "images": [
     {
-     "file": "sketch_offset.jpg",
+     "file": "sketch_offset.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6590,7 +6887,7 @@
    ],
    "images": [
     {
-     "file": "sketch_mirror.jpg",
+     "file": "sketch_mirror.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6653,7 +6950,7 @@
    ],
    "images": [
     {
-     "file": "sketch_pattern.jpg",
+     "file": "sketch_pattern.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6716,7 +7013,7 @@
    ],
    "images": [
     {
-     "file": "sketch_move.jpg",
+     "file": "sketch_move.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6774,7 +7071,7 @@
    ],
    "images": [
     {
-     "file": "sketch_construction.jpg",
+     "file": "sketch_construction.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6858,7 +7155,7 @@
    },
    "images": [
     {
-     "file": "sketch_dimension.jpg",
+     "file": "sketch_dimension.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6924,7 +7221,7 @@
    },
    "images": [
     {
-     "file": "sketch_coincident.jpg",
+     "file": "sketch_coincident.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -6985,7 +7282,7 @@
    ],
    "images": [
     {
-     "file": "sketch_horver.jpg",
+     "file": "sketch_horver.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -7044,7 +7341,7 @@
    ],
    "images": [
     {
-     "file": "sketch_parallel.jpg",
+     "file": "sketch_parallel.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -7100,7 +7397,7 @@
    ],
    "images": [
     {
-     "file": "sketch_tangent.jpg",
+     "file": "sketch_tangent.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -7164,7 +7461,7 @@
    },
    "images": [
     {
-     "file": "sketch_equal.jpg",
+     "file": "sketch_equal.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -7218,7 +7515,7 @@
    ],
    "images": [
     {
-     "file": "sketch_symmetric.jpg",
+     "file": "sketch_symmetric.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -7282,7 +7579,7 @@
    },
    "images": [
     {
-     "file": "sketch_block.jpg",
+     "file": "sketch_block.gif",
      "caption": {
       "en": "",
       "de": ""
@@ -7334,6 +7631,15 @@
    "see": [
     "Design_Extrude",
     "sketch_basics"
+   ],
+   "images": [
+    {
+     "file": "sketch_finish.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
    ]
   }
  ]
