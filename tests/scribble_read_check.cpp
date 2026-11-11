@@ -15,6 +15,8 @@
 #include <map>
 #include <numeric>
 #include <random>
+#include <set>
+#include <tuple>
 
 using namespace ScribbleTidy;
 
@@ -100,6 +102,9 @@ const std::map<QChar, Glyph>& glyphs()
                                      {.45, -.02}, {.12, -.1}}}};
         m[QChar(0x00D7)] = {.72, {{{.12, -.82}, {.58, -.18}}, {{.58, -.82}, {.12, -.18}}}};  // ×
         m[QChar(0x00B0)] = {.42, {arc(.2, -1.45, .13, .16, -90, -450, 12)}};               // °
+        m[QLatin1Char('C')] = {.85, {arc(.45, -.8, .38, .8, -45, -315, 16)}};
+        m[QLatin1Char('.')] = {.3, {arc(.12, -.06, .05, .05, -90, -450, 8)}};
+        m[QLatin1Char(',')] = {.3, {{{.16, -.1}, {.14, .05}, {.06, .25}}}};
         for (auto& [c, glyph] : m) {
             for (Poly& s : glyph.strokes) {
                 s = spline(s);
@@ -203,6 +208,8 @@ void checkNotation()
     assert(has(expect("012", "Ø12"), K::Slash));
     assert(has(expect("Bohrung ol2", "Bohrung Ø12"), K::Slash));
     assert(has(expect("D12", "Ø12"), K::Slash));  // durchgestrichener Kreis, als D gelesen (applyInk sieht den Strich)
+    assert(has(expect("DA.5", "Ø4.5"), K::Slash));  // Ø4.5: die 4 als A gelesen
+    assert(has(expect("BA,5", "Ø4,5"), K::Slash));
     assert(expect("Bohrung Ø12", "Bohrung Ø12").empty());
     assert(has(expect("Fase 2xA5", "Fase 2×45°"), K::Degree));
     assert(expect("Fase 2x45o", "Fase 2×45°").empty());  // ° war schon da, als o gelesen
@@ -321,9 +328,11 @@ int main(int argc, char** argv)
     assert(degrees >= 2);
 
     // Rotstift (Idee 1): kurze Korrekturen lesen und als Befehl verstehen; die Erkennung darf mal danebenliegen
-    const std::pair<const char*, RedPen::Kind> corrections[] = {{"R2", RedPen::Kind::Fillet}, {"M5", RedPen::Kind::Thread},
-                                                                {"Ø8", RedPen::Kind::Diameter}, {"3×", RedPen::Kind::Pattern}};
-    for (const auto& [text, kind] : corrections) {
+    const std::tuple<const char*, RedPen::Kind, double> corrections[] = {
+        {"R2", RedPen::Kind::Fillet, 2},     {"M5", RedPen::Kind::Thread, 5},     {"Ø8", RedPen::Kind::Diameter, 8},
+        {"3×", RedPen::Kind::Pattern, 0},    {"Ø5", RedPen::Kind::Diameter, 5},   {"Ø4.5", RedPen::Kind::Diameter, 4.5},
+        {"Ø4,5", RedPen::Kind::Diameter, 4.5}, {"C1", RedPen::Kind::Chamfer, 1}};
+    for (const auto& [text, kind, value] : corrections) {
         int understood = 0;
         for (const unsigned seed : {1U, 2U, 3U}) {
             std::vector<Stroke> ink = write({QString::fromUtf8(text)}, 0.3, seed);
@@ -332,12 +341,38 @@ int main(int argc, char** argv)
             const QString raw = lines[0].text;
             ScribbleRead::correct(lines[0]);
             const RedPen::Command c = RedPen::parse(lines[0].text.toStdString());
-            understood += c.kind == kind;
+            const bool ok = c.kind == kind && (value == 0 || std::abs(c.value - value) < 1e-9);
+            understood += ok;
             std::printf("Rotstift %s: [%s] -> [%s] %s\n", text, raw.toUtf8().constData(), lines[0].text.toUtf8().constData(),
-                        c.kind == kind ? "ok" : "falsch");
+                        ok ? "ok" : "falsch");
         }
         assert(understood >= 2);
     }
+    // Mehrere Korrekturen auf einer Höhe (zwei Bohrungen links und rechts): jede ist eine eigene Zeile, sonst liest
+    // es "Ø4.5 Ø4.5" und versteht keine
+    int separate = 0;
+    for (const unsigned seed : {1U, 2U, 3U}) {
+        std::vector<Stroke> ink = write({QString::fromUtf8("Ø4.5")}, 0.3, seed);
+        for (Stroke s : write({QStringLiteral("R2")}, 0.3, seed + 10)) {
+            for (auto& p : s) {
+                p.x += 60;  // 15 x-Höhen weiter rechts
+            }
+            ink.push_back(s);
+        }
+        auto lines = ScribbleRead::read(ink);
+        std::printf("zwei auf einer Höhe:");
+        for (auto& l : lines) {
+            ScribbleRead::correct(l);
+            std::printf(" [%s]", l.text.toUtf8().constData());
+        }
+        std::printf("\n");
+        std::multiset<RedPen::Kind> kinds;
+        for (const auto& l : lines) {
+            kinds.insert(RedPen::parse(l.text.toStdString()).kind);
+        }
+        separate += kinds == std::multiset<RedPen::Kind> {RedPen::Kind::Diameter, RedPen::Kind::Fillet};
+    }
+    assert(separate >= 2);
     std::puts("ok");
     return 0;
 }

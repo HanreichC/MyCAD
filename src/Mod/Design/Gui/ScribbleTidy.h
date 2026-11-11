@@ -109,7 +109,8 @@ inline double typicalHeight(const std::vector<Stroke>& S)
     return quant(hs, 0.6);
 }
 
-/// Zeilen in Schreibreihenfolge: neue Zeile, wenn der Stift weit nach links und nach unten springt oder weit weg ist.
+/// Zeilen in Schreibreihenfolge: neue Zeile, wenn der Stift weit nach links und nach unten springt oder weit weg ist
+/// (darüber, darunter oder weit rechts).
 /// y nach unten; Ergebnis von oben nach unten sortiert.
 inline std::vector<std::vector<size_t>> groupLines(const std::vector<Stroke>& S, double h)
 {
@@ -123,8 +124,10 @@ inline std::vector<std::vector<size_t>> groupLines(const std::vector<Stroke>& S,
     for (size_t i = 0; i < S.size(); ++i) {
         const Box b = box(S[i]);
         const double cy = (b.minY + b.maxY) / 2;
+        // weit rechts neben der Zeile (mehr als drei Zeichenhöhen Lücke, kein Wortabstand) beginnt etwas Eigenes:
+        // zwei Rotstift-Korrekturen auf einer Höhe sind zwei Zeilen
         if (lines.empty() || std::abs(cy - lines.back().cy) > 1.6 * h
-            || (b.minX < lines.back().maxX - 3 * h && cy > lines.back().cy + 0.7 * h)) {
+            || (b.minX < lines.back().maxX - 3 * h && cy > lines.back().cy + 0.7 * h) || b.minX > lines.back().maxX + 3 * h) {
             lines.emplace_back();
         }
         Line& L = lines.back();

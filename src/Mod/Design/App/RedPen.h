@@ -153,8 +153,8 @@ inline Command parse(const std::string& raw)
         cmd.value = v;
         return cmd;
     }
-    // Fase C2 oder 2×45
-    if ((first == 'C' || first == 'c') && isNumber(rest, v)) {
+    // Fase C2 oder 2×45; ein schmales C liest die Erkennung oft als "(" (ohne schließende Klammer)
+    if ((first == 'C' || first == 'c' || (first == '(' && rest.find(')') == std::string::npos)) && isNumber(rest, v)) {
         cmd.kind = Kind::Chamfer;
         cmd.value = v;
         return cmd;

@@ -214,15 +214,17 @@ std::vector<InkEdit> correct(Line& line)
     const auto insert = [&c](qsizetype i, QChar ch, double x) { c.insert(c.begin() + i, {ch, x, 1.0F}); };
     const QChar Dia(0x00D8), Times(0x00D7), Deg(0x00B0), PlusMinus(0x00B1);
 
+    static const QString letters = QStringLiteral("AlISBZOo"), digits = QStringLiteral("41158200");
     // Kreis am Wortanfang vor einer Ziffer ist ein Durchmesser (das Modell kennt Ø nicht): o12, O12, 012, b12, ø12, und
-    // ein durchgestrichener Kreis kommt oft als D12 an (D steht in Notizen ohnehin oft für Durchmesser);
-    // die 1 dahinter liest es oft als l: ol2
+    // ein durchgestrichener Kreis kommt oft als D12 oder B12 an (D steht in Notizen ohnehin oft für Durchmesser);
+    // die erste Ziffer dahinter liest es oft als ähnlichen Buchstaben: ol2, DA.5 (Ø4.5)
     for (qsizetype i = 0; i < qsizetype(c.size()); ++i) {
         const QChar ch = at(i);
-        const bool one = (at(i + 1) == QLatin1Char('l') || at(i + 1) == QLatin1Char('I')) && digit(i + 2);
-        if (at(i - 1) == QLatin1Char(' ') && QStringLiteral("oO0bdDøØ").contains(ch) && (digit(i + 1) || one)) {
-            if (one) {
-                c[size_t(i + 1)].c = QLatin1Char('1');
+        const qsizetype k = letters.indexOf(at(i + 1));
+        const bool lookalike = k >= 0 && (digit(i + 2) || at(i + 2) == QLatin1Char('.') || at(i + 2) == QLatin1Char(','));
+        if (at(i - 1) == QLatin1Char(' ') && QStringLiteral("oO0bBdDøØ").contains(ch) && (digit(i + 1) || lookalike)) {
+            if (lookalike) {
+                c[size_t(i + 1)].c = digits[k];
             }
             if (ch != Dia && ch != QChar(0x00F8)) {
                 edits.push_back({InkEdit::Slash, c[size_t(i)].x, c[size_t(i + 1)].x});
@@ -237,7 +239,6 @@ std::vector<InkEdit> correct(Line& line)
         }
     }
     // ähnliche Buchstaben in Zahlen sind Ziffern: 2xA5 → 2x45, l2 → 12
-    static const QString letters = QStringLiteral("AlISBZOo"), digits = QStringLiteral("41158200");
     for (qsizetype i = 0; i < qsizetype(c.size()); ++i) {
         const qsizetype k = letters.indexOf(at(i));
         const bool numberBefore = digit(i - 1) || ((at(i - 1).toLower() == QLatin1Char('x') || at(i - 1) == Times) && digit(i - 2));
