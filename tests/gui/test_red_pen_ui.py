@@ -82,6 +82,24 @@ def notices():
     return [w.text() for w in visible(QtWidgets.QLabel) if w.inherits("Gui::NotificationLabel")]
 
 
+def glass(w):
+    """Glasfläche eines Panels in der Szene (der Proxy des Inhalts ist so groß wie das Glas)"""
+    while w.parentWidget():
+        w = w.parentWidget()
+    return w.graphicsProxyWidget().sceneBoundingRect()
+
+
+def cards_free():
+    """Korrektur-Karten bei offenem Scribble: nicht über oder unter der Scribble-Palette"""
+    palette = [b for b in visible(QtWidgets.QToolButton) if b.text() == "Apply Corrections"][0]
+    cards = [w for w in visible(QtWidgets.QWidget) if w.objectName() == "Corrections"][0]
+    return not glass(cards).intersects(glass(palette)), "cards %s palette %s" % (glass(cards).getRect(), glass(palette).getRect())
+
+
+def close_cards():
+    [b for b in visible(QtWidgets.QPushButton) if b.text() == "Close" and b.parentWidget().objectName() == "Corrections"][0].click()
+
+
 def hover_first():
     row = apply_button("R2").parentWidget()
     QtWidgets.QApplication.sendEvent(row, QtCore.QEvent(QtCore.QEvent.Enter))
@@ -100,6 +118,9 @@ in_order([
     ("no alert", lambda: check("nothing to read: a notice instead of a message box",
                                not state.get("boxes") and any("No corrections found" in t for t in notices()),
                                "%s %s" % (state.get("boxes"), notices()))),
+    ("cards in scribble", cards), wait_step,
+    ("cards free", lambda: check("cards next to an open scribble keep clear of its palette", *cards_free())),
+    ("close cards", close_cards),
     ("finish", lambda: Gui.runCommand("Design_ScribbleFinish")),
     ("cards", cards),
     ("shown", lambda: check("the cards appear", panel_shown())),

@@ -180,6 +180,26 @@ QPixmap swatch(const QColor& color, Qt::BrushStyle style)
     return pix;
 }
 
+/// Lage eines Panels, die kein anderes sichtbares Glas-Panel der Szene überdeckt (Scribble-Palette, Post-its,
+/// Korrektur-Karten, Legende): so lange nach unten (down) bzw. oben schieben, bis es frei ist, aber in der Szene bleiben
+QRectF freeSpot(const Gui::Shell::GlassPanel* self, QRectF rect, bool down)
+{
+    const QRectF area = self->scene()->sceneRect();
+    for (bool moved = true; moved && rect.top() >= area.top() && rect.bottom() <= area.bottom();) {
+        moved = false;
+        for (QGraphicsItem* item : self->scene()->items()) {
+            auto other = dynamic_cast<Gui::Shell::GlassPanel*>(item);
+            const QRectF glass = other ? other->mapRectToScene(other->shape().boundingRect()) : QRectF();
+            if (other && other != self && other->isVisible() && glass.intersects(rect)) {
+                rect.moveTop(down ? glass.bottom() + 12 : glass.top() - 12 - rect.height());
+                moved = true;
+            }
+        }
+    }
+    rect.moveTop(std::clamp(rect.top(), area.top(), area.bottom() - rect.height()));
+    return rect;
+}
+
 /// Legende der Druckansicht unten rechts in der aktiven Ansicht, mit den Knöpfen "Diese Fläche nach unten" und "Drucken"
 class PrintLegend
 {
@@ -261,7 +281,8 @@ private:
         const QRectF area = panel->scene()->sceneRect();
         const QSizeF size = panel->content()->sizeHint();
         // unten rechts über der Timeline
-        panel->setGeometry(QRectF(area.right() - size.width() - 24, area.bottom() - size.height() - 96, size.width(), size.height()));
+        panel->setGeometry(
+            freeSpot(panel, QRectF(area.right() - size.width() - 24, area.bottom() - size.height() - 96, size.width(), size.height()), false));
     }
 
     QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
@@ -404,7 +425,7 @@ public:
         const auto place = [this, viewer] {
             const QRectF area = viewer->scene()->sceneRect();
             const QSizeF size = content->sizeHint().expandedTo(QSize(320, 0));
-            panel->setGeometry(QRectF(area.right() - size.width() - 24, area.top() + 300, size.width(), size.height()));
+            panel->setGeometry(freeSpot(panel, QRectF(area.right() - size.width() - 24, area.top() + 300, size.width(), size.height()), true));
         };
         place();
         panel->show();
@@ -674,7 +695,7 @@ public:
             }
             const QRectF area = viewer->scene()->sceneRect();
             const QSizeF size = content->sizeHint().expandedTo(QSize(260, 0));
-            panel->setGeometry(QRectF(area.right() - size.width() - 24, area.top() + 300, size.width(), size.height()));
+            panel->setGeometry(freeSpot(panel, QRectF(area.right() - size.width() - 24, area.top() + 300, size.width(), size.height()), true));
         };
         place();
         panel->show();

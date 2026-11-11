@@ -51,6 +51,20 @@ def legend_shown():
     return any(w.objectName() == "PrintLegend" for w in visible(QtWidgets.QWidget))
 
 
+def glass(w):
+    """Glasfläche eines Panels in der Szene (der Proxy des Inhalts ist so groß wie das Glas)"""
+    while w.parentWidget():
+        w = w.parentWidget()
+    return w.graphicsProxyWidget().sceneBoundingRect()
+
+
+def legend_free():
+    legend = [w for w in visible(QtWidgets.QWidget) if w.objectName() == "PrintLegend"][0]
+    notes = [e for e in visible(QtWidgets.QPlainTextEdit) if e.objectName() == "NoteText"]
+    return bool(notes) and not any(glass(legend).intersects(glass(n)) for n in notes), "legend %s notes %s" % (
+        glass(legend).getRect(), [glass(n).getRect() for n in notes])
+
+
 def legend_button(text):
     return [b for b in visible(QtWidgets.QPushButton) if b.text() == text][0]
 
@@ -68,6 +82,8 @@ in_order([
     ("on", lambda: Gui.runCommand("Design_PrintView")),
     ("legend", lambda: check("the print view shows its legend", legend_shown())),
     ("red", lambda: check("the overhang of the hat is hatched red", red_pixels() > state["red"] + 50, "%d -> %d" % (state["red"], red_pixels()))),
+    ("note", lambda: click(button("Design_Note"))), ("wait", lambda: None),
+    ("legend free", lambda: check("a post-it (bottom right) does not cover the legend", *legend_free())),
     ("shot", lambda: shot("print")),
     ("pick top", pick_hat_top),
     ("bottom", lambda: legend_button("Choose Bottom Face").click()),
