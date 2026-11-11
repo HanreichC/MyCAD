@@ -190,7 +190,8 @@
       "Look and feel",
       [
        "Liquid Glass interface, light and dark, English or German; 119 materials with photo scans, reflections and contact shadow.",
-       "12 navigation styles, keys as mouse buttons, pen tablets with pressure; export STL, 3MF, STEP and DXF, import STEP, DXF and SVG."
+       "12 navigation styles, keys as mouse buttons, pen tablets with pressure; export STL, 3MF, STEP and DXF, import STEP, DXF and SVG.",
+       "New bodies are steel; the Studio light gives every face of a body its own shade (Settings → General → Materials and Light, or Room for a soft preview)."
       ],
       false
      ]
@@ -256,7 +257,8 @@
       "Aussehen und Bedienung",
       [
        "Liquid-Glass-Oberfläche, hell und dunkel, Deutsch oder Englisch; 119 Materialien mit Fotoscans, Spiegelungen und Kontaktschatten.",
-       "12 Navigationsstile, Tasten als Maustasten, Grafiktabletts mit Druck; Export als STL, 3MF, STEP und DXF, Import von STEP, DXF und SVG."
+       "12 Navigationsstile, Tasten als Maustasten, Grafiktabletts mit Druck; Export als STL, 3MF, STEP und DXF, Import von STEP, DXF und SVG.",
+       "Neue Körper sind aus Stahl; das Licht Studio gibt jeder Fläche eines Körpers ihren eigenen Ton (Einstellungen → Allgemein → Materialien und Licht, oder Raum für eine weiche Vorschau)."
       ],
       false
      ]
@@ -333,7 +335,7 @@
       "2. Sketch and body",
       [
        "Create Sketch (S) and click the XY plane. Draw a rectangle.",
-       "With Dimension click one side and type Width, the other side Depth. Finish the sketch.",
+       "With Dimension click one side and type 60, the other side 30. Finish the sketch.",
        "Extrude (E), click the rectangle, type Thickness as distance, click OK."
       ],
       true
@@ -342,7 +344,7 @@
       "3. Double-click a face, change a number",
       [
        "With no tool active, double-click the top face. A card shows the distance; type 6 and press Enter.",
-       "The plate gets thicker and the note now says Thickness = 6 mm. It works the other way round too: change Width in the note, click into the view."
+       "The plate gets thicker and the note now says Thickness = 6 mm. It works the other way round too: change Thickness in the note, click into the view."
       ],
       true
      ],
@@ -369,7 +371,7 @@
        "INSPECT → Print View: red stripes are overhangs, green dots lie on the bed, yellow cross-hatching is a wall that is too thin.",
        "Ctrl+S (Save Version) and name the state, e.g. First print.",
        "Print in the legend opens the plate in your slicer, right side down.",
-       "Later: FILE → Versions → First print → Compare shows what changed since then."
+       "Later: FILE → small arrow next to Save Version → Versions → First print → Compare shows what changed since then."
       ],
       true
      ]
@@ -388,7 +390,7 @@
       "2. Skizze und Körper",
       [
        "Skizze erstellen (S) und die XY-Ebene anklicken. Ein Rechteck zeichnen.",
-       "Mit Bemaßung eine Seite anklicken und Breite tippen, die andere Seite Tiefe. Skizze fertig stellen.",
+       "Mit Bemaßung eine Seite anklicken und 60 tippen, die andere Seite 30. Skizze fertig stellen.",
        "Extrudieren (E), das Rechteck anklicken, als Abstand Dicke tippen, OK."
       ],
       true
@@ -397,7 +399,7 @@
       "3. Fläche doppelklicken, Zahl ändern",
       [
        "Ohne Werkzeug die Oberseite doppelklicken. Eine Karte zeigt den Abstand; 6 tippen und Enter.",
-       "Die Platte wird dicker, und in der Notiz steht jetzt Dicke = 6 mm. Andersherum geht es auch: Breite in der Notiz ändern, in die Ansicht klicken."
+       "Die Platte wird dicker, und in der Notiz steht jetzt Dicke = 6 mm. Andersherum geht es auch: Dicke in der Notiz ändern, in die Ansicht klicken."
       ],
       true
      ],
@@ -424,7 +426,7 @@
        "PRÜFEN → Druckansicht: rote Streifen sind Überhänge, grüne Punkte liegen auf dem Bett, gelbe Kreuzschraffur ist eine zu dünne Wand.",
        "Strg+S (Version sichern) und dem Stand einen Namen geben, z. B. Erster Druck.",
        "Drucken in der Legende öffnet die Platte in deinem Slicer, richtig herum.",
-       "Später: DATEI → Versionen → Erster Druck → Vergleichen zeigt, was sich seitdem geändert hat."
+       "Später: DATEI → kleiner Pfeil neben Version sichern → Versionen → Erster Druck → Vergleichen zeigt, was sich seitdem geändert hat."
       ],
       true
      ]
@@ -493,14 +495,14 @@
       "1. Base and lever",
       [
        "Build a base plate in the design itself; it never moves.",
-       "ASSEMBLE → New Component, then build a lever with a hole in it. It belongs to the new component."
+       "ASSEMBLE → Component (New Component), then build a lever with a hole in it. It belongs to the new component."
       ],
       true
      ],
      [
       "2. Joint",
       [
-       "Joint (J): first click the hole of the lever, then the place on the base it should sit.",
+       "Click the hole of the lever, Ctrl+click the place on the base it should sit (e.g. a pin), then Joint (J).",
        "Type Revolute; turn it with Angle. Tick Keep angle and distance within limits for a range, then Animate; Show collisions reports parts that touch."
       ],
       true
@@ -536,14 +538,14 @@
       "1. Grundplatte und Hebel",
       [
        "Bau eine Grundplatte im Design selbst; sie bewegt sich nie.",
-       "ZUSAMMENFÜGEN → Neue Komponente, dann einen Hebel mit Loch bauen. Er gehört zur neuen Komponente."
+       "ZUSAMMENFÜGEN → Komponente (Neue Komponente), dann einen Hebel mit Loch bauen. Er gehört zur neuen Komponente."
       ],
       true
      ],
      [
       "2. Gelenk",
       [
-       "Gelenk (J): zuerst die Bohrung des Hebels anklicken, dann die Stelle auf der Grundplatte, an die er soll.",
+       "Klick die Bohrung des Hebels an, mit Strg+Klick die Stelle auf der Grundplatte, an die er soll (z. B. einen Bolzen), dann Gelenk (J).",
        "Typ Drehung; mit Winkel drehen. Für einen Bereich Winkel und Weg in Grenzen halten anhaken, dann Animieren; Kollisionen zeigen meldet Teile, die sich berühren."
       ],
       true
@@ -673,6 +675,66 @@
       "Appearance (material of the selected body)"
      ],
      [
+      "I",
+      "Measure"
+     ],
+     [
+      "D / C / H / V / A",
+      "In a sketch: Dimension / Coincident / Horizontal / Vertical / horizontal or vertical, whichever is closer"
+     ],
+     [
+      "P / N / T / E / S / K, B",
+      "In a sketch: Parallel / Perpendicular / Tangent / Equal / Symmetric / Block (K, then B)"
+     ],
+     [
+      "G, L / G, M",
+      "In a sketch: Line / Polyline"
+     ],
+     [
+      "G, R / G, V / G, O",
+      "Rectangle / centred / rounded"
+     ],
+     [
+      "G, C / G, E, E",
+      "Circle / Ellipse"
+     ],
+     [
+      "G, A / G, S",
+      "Arc / Slot"
+     ],
+     [
+      "G, P, 3 … G, P, 8",
+      "Triangle … Octagon (G, P, 6 = hexagon)"
+     ],
+     [
+      "G, B, B / G, Y",
+      "B-Spline / Point"
+     ],
+     [
+      "G, X",
+      "Project edges"
+     ],
+     [
+      "G, F, F / G, F, C",
+      "Fillet / Chamfer"
+     ],
+     [
+      "G, T / G, Q / G, Z",
+      "Trim / Extend / Split"
+     ],
+     [
+      "G, N",
+      "Construction on/off"
+     ],
+     [
+      "Z, T / Z, S / Z, A",
+      "Offset / Mirror / Rectangular Array"
+     ],
+     [
+      "W / Z, P",
+      "Move / Rotate (polar pattern)"
+     ],
+     [
       "V / L / Tab",
       "In a scribble: Select / look straight at the sheet / Only the Sheet"
      ],
@@ -735,6 +797,66 @@
       "Darstellung (Material des gewählten Körpers)"
      ],
      [
+      "I",
+      "Messen"
+     ],
+     [
+      "D / C / H / V / A",
+      "In der Skizze: Bemaßung / Koinzident / Horizontal / Vertikal / waagrecht oder senkrecht, je nachdem, was näher liegt"
+     ],
+     [
+      "P / N / T / E / S / K, B",
+      "In der Skizze: Parallel / Senkrecht / Tangential / Gleich / Symmetrisch / Fixieren (K, dann B)"
+     ],
+     [
+      "G, L / G, M",
+      "In der Skizze: Linie / Polylinie"
+     ],
+     [
+      "G, R / G, V / G, O",
+      "Rechteck / vom Mittelpunkt / abgerundet"
+     ],
+     [
+      "G, C / G, E, E",
+      "Kreis / Ellipse"
+     ],
+     [
+      "G, A / G, S",
+      "Bogen / Langloch"
+     ],
+     [
+      "G, P, 3 … G, P, 8",
+      "Dreieck … Achteck (G, P, 6 = Sechseck)"
+     ],
+     [
+      "G, B, B / G, Y",
+      "B-Spline / Punkt"
+     ],
+     [
+      "G, X",
+      "Kanten projizieren"
+     ],
+     [
+      "G, F, F / G, F, C",
+      "Abrunden / Fase"
+     ],
+     [
+      "G, T / G, Q / G, Z",
+      "Stutzen / Verlängern / Teilen"
+     ],
+     [
+      "G, N",
+      "Konstruktion an/aus"
+     ],
+     [
+      "Z, T / Z, S / Z, A",
+      "Versatz / Spiegeln / Rechteckige Anordnung"
+     ],
+     [
+      "W / Z, P",
+      "Verschieben / Drehen (kreisförmig)"
+     ],
+     [
       "V / L / Tab",
       "Im Scribble: Auswählen / gerade aufs Blatt sehen / Nur das Blatt"
      ],
@@ -746,6 +868,14 @@
       "Strg+,",
       "Einstellungen"
      ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "In a sketch, S, E, H and A are sketch keys (Symmetric, Equal, Horizontal, horizontal or vertical), not Sketch, Extrude, Hole and Appearance."
+    ],
+    "de": [
+     "In der Skizze sind S, E, H und A Skizzen-Tasten (Symmetrisch, Gleich, Horizontal, waagrecht oder senkrecht), nicht Skizze, Extrudieren, Bohrung und Darstellung."
     ]
    },
    "images": [
@@ -792,11 +922,11 @@
    "steps": {
     "en": [
      "On the start page click the blue New Design button in the left panel. (Already in a design? In the toolbar at the top, FILE section, click New.)",
-     "The screen now shows: the browser on the left (everything in the design), the toolbar at the top, the window buttons and the view cube at the top right, and the timeline at the bottom.",
+     "The screen now shows: the browser on the left (everything in the design), the toolbar at the top, at the top right Home (back to the start page) next to the window buttons with the view cube below, and the timeline at the bottom.",
      "In the toolbar at the top, in the CREATE section, click Sketch.",
      "Three planes appear in the view. Click the flat one lying on the floor (XY). The view turns so you look straight onto it and the sketch toolbar appears.",
      "In the sketch toolbar at the top, in the CREATE section, click Rectangle.",
-     "Click once for the first corner, move the mouse and click again for the opposite corner. You can also type width and height into the small fields next to the cursor and press Enter.",
+     "Click once for the first corner. Small fields for width and height appear next to the cursor: type the width, Enter, the height, Enter – or move the mouse and click the opposite corner.",
      "Press Esc to put the rectangle tool away, then click the blue Finish Sketch button in the Sketch Palette on the right.",
      "Outside a sketch, its closed areas (profiles) are shown light orange. Click one to select it – it turns blue.",
      "In the toolbar at the top, in the CREATE section, click Extrude.",
@@ -806,11 +936,11 @@
     ],
     "de": [
      "Klicke auf der Startseite im linken Panel auf den blauen Knopf Neues Design. (Schon in einem Design? Klicke in der Werkzeugleiste oben im Bereich DATEI auf Neu.)",
-     "Du siehst jetzt: links den Browser (alles im Design), oben die Werkzeugleiste, oben rechts die Fensterknöpfe und den ViewCube und unten die Zeitleiste.",
+     "Du siehst jetzt: links den Browser (alles im Design), oben die Werkzeugleiste, oben rechts Start (zurück zur Startseite) neben den Fensterknöpfen, darunter den ViewCube, und unten die Zeitleiste.",
      "Klicke in der Werkzeugleiste oben im Bereich ERSTELLEN auf Skizze.",
      "In der Ansicht erscheinen drei Ebenen. Klicke die flach liegende Bodenebene (XY) an. Die Ansicht dreht sich, sodass du direkt darauf schaust, und die Skizzen-Werkzeugleiste erscheint.",
      "Klicke in der Skizzen-Werkzeugleiste oben im Bereich ERSTELLEN auf Rechteck.",
-     "Klicke einmal für die erste Ecke, bewege die Maus und klicke erneut für die gegenüberliegende Ecke. Du kannst Breite und Höhe auch in die kleinen Felder neben dem Cursor tippen und Enter drücken.",
+     "Klicke einmal für die erste Ecke. Neben dem Cursor erscheinen kleine Felder für Breite und Höhe: Breite tippen, Enter, Höhe tippen, Enter – oder die Maus bewegen und die gegenüberliegende Ecke anklicken.",
      "Drücke Esc, um das Rechteck-Werkzeug wegzulegen, und klicke dann in der Skizzenpalette rechts auf den blauen Knopf Skizze fertig stellen.",
      "Außerhalb einer Skizze sind ihre geschlossenen Flächen (Profile) hellorange. Ein Klick wählt eine aus – sie wird blau.",
      "Klicke in der Werkzeugleiste oben im Bereich ERSTELLEN auf Extrudieren.",
@@ -1573,13 +1703,13 @@
      "Optional: select the bodies or sketches to export in the view or in the browser (Ctrl+click for several). Without a selection all visible bodies or sketches are exported.",
      "In the toolbar at the top, in the FILE section, click Export.",
      "In the file dialog pick the type (3MF for 3D printing, STL, STEP, or DXF sketches), enter a name and click Save.",
-     "A message confirms how many bodies or sketches were written."
+     "MyCAD writes the file right away; open it in your slicer or CAD program."
     ],
     "de": [
      "Optional: Wähle die zu exportierenden Körper oder Skizzen in der Ansicht oder im Browser (Strg+Klick für mehrere). Ohne Auswahl werden alle sichtbaren Körper oder Skizzen exportiert.",
      "Klicke in der Werkzeugleiste oben im Bereich DATEI auf Exportieren.",
      "Wähle im Dateidialog den Typ (3MF für den 3D-Druck, STL, STEP oder DXF-Skizzen), gib einen Namen ein und klicke Speichern.",
-     "Eine Meldung bestätigt, wie viele Körper oder Skizzen geschrieben wurden."
+     "MyCAD schreibt die Datei sofort; öffne sie in deinem Slicer oder CAD-Programm."
     ]
    },
    "see": [
@@ -2778,7 +2908,7 @@
      ],
      [
       "Length",
-      "The shortest standard length that holds: 1.5 × the diameter in a tapped hole, the length of the insert, or through to the nut. Untick the length choice to type your own."
+      "The shortest standard length that holds: 1.5 × the diameter in a tapped hole, the length of the insert, or through to the nut. Untick “Pick the standard length that fits” to type your own."
      ]
     ],
     "de": [
@@ -2796,7 +2926,7 @@
      ],
      [
       "Länge",
-      "Die kürzeste Normlänge, die hält: 1,5 × Durchmesser im Kernloch, die Länge der Einschmelzmutter oder bis durch die Mutter. Nimm den Haken bei der Längenwahl weg, um selbst eine einzutippen."
+      "Die kürzeste Normlänge, die hält: 1,5 × Durchmesser im Kernloch, die Länge der Einschmelzmutter oder bis durch die Mutter. Nimm den Haken bei „Passende Normlänge wählen“ weg, um selbst eine einzutippen."
      ]
     ]
    },
@@ -3000,6 +3130,10 @@
      [
       "Left-handed thread",
       "Turns the other way."
+     ],
+     [
+      "Clearance for 3D printing",
+      "Adds the play for printing by itself (instead of the Clearance field) and warns when the pitch is too fine for a 0.4 mm nozzle."
      ]
     ],
     "de": [
@@ -3018,19 +3152,21 @@
      [
       "Linksgewinde",
       "Dreht andersherum."
+     ],
+     [
+      "Spiel für den 3D-Druck",
+      "Gibt das Spiel für den Druck selbst dazu (statt des Felds Spiel) und warnt, wenn die Steigung für eine 0,4-mm-Düse zu fein ist."
      ]
     ]
    },
    "tips": {
     "en": [
      "The thread runs over the whole face and ends flush at both ends; a shoulder or the bottom of a hole stays untouched.",
-     "The face must be at least two turns long.",
-     "Tick “Clearance for 3D printing” and MyCAD adds the play by itself and warns when the pitch is too fine for a 0.4 mm nozzle (below 1 mm, i.e. smaller than M8)."
+     "The face must be at least two turns long."
     ],
     "de": [
      "Das Gewinde läuft über die ganze Fläche und endet bündig an beiden Enden; eine Schulter oder der Grund einer Bohrung bleibt unberührt.",
-     "Die Fläche muss mindestens zwei Gänge lang sein.",
-     "Setz den Haken bei „Spiel für den 3D-Druck“: MyCAD gibt das Spiel selbst dazu und warnt, wenn die Steigung für eine 0,4-mm-Düse zu fein ist (unter 1 mm, also kleiner als M8)."
+     "Die Fläche muss mindestens zwei Gänge lang sein."
     ]
    },
    "images": [
@@ -3308,10 +3444,12 @@
    },
    "tips": {
     "en": [
-     "Key Q starts Press Pull directly."
+     "Key Q starts Press Pull directly.",
+     "Round faces work too: the side of a cylinder or a hole grows or shrinks by the Distance. They have no arrow, type the value."
     ],
     "de": [
-     "Die Taste Q startet Drücken/Ziehen direkt."
+     "Die Taste Q startet Drücken/Ziehen direkt.",
+     "Runde Flächen gehen auch: Die Mantelfläche eines Zylinders oder einer Bohrung wird um den Abstand größer oder kleiner. Dafür gibt es keinen Pfeil, tippe den Wert ein."
     ]
    },
    "images": [
@@ -3359,15 +3497,13 @@
      "Click the faces to move (Ctrl+click for several).",
      "Ctrl+click the target: a plane (e.g. an Offset Plane) or a face of another body.",
      "In the toolbar at the top, in the MODIFY section, click the small arrow ▾ next to Press Pull and choose Replace Face. The button now shows Replace Face, so next time one click is enough.",
-     "A panel opens on the right; the model shows a live preview of the result.",
-     "Click OK at the top of the panel. Cancel (next to it) or Esc discards the tool without changing anything."
+     "The faces change immediately; if the target does not work, a message says why. Ctrl+Z takes it back."
     ],
     "de": [
      "Klicke die zu verschiebenden Flächen an (Strg+Klick für mehrere).",
      "Klicke mit Strg die Zielebene (z. B. eine Versetzte Ebene) oder eine Fläche eines anderen Körpers an.",
      "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf den kleinen Pfeil ▾ neben Drücken/Ziehen und wähle Fläche ersetzen. Der Knopf zeigt danach Fläche ersetzen, beim nächsten Mal reicht also ein Klick.",
-     "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
-     "Klicke oben im Panel auf OK. Abbrechen (daneben) oder Esc verwirft das Werkzeug, ohne etwas zu ändern."
+     "Die Flächen ändern sich sofort; klappt es nicht, sagt eine Meldung warum. Strg+Z nimmt es zurück."
     ]
    },
    "see": [
@@ -3386,8 +3522,8 @@
     {
      "file": "Design_ReplaceFace.gif",
      "caption": {
-      "en": "Left: the top face was moved up to the plane. Right: the same box before.",
-      "de": "Links: die Oberseite wurde bis zur Ebene verschoben. Rechts: derselbe Quader vorher."
+      "en": "The top of the front box moves up to the top of the taller box.",
+      "de": "Die Oberseite des vorderen Quaders wandert bis zur Oberseite des höheren."
      }
     }
    ]
@@ -3424,15 +3560,13 @@
      "Click the faces to divide.",
      "Ctrl+click the cutting tool: a plane, a face or a sketch with lines across the face.",
      "In the toolbar at the top, in the MODIFY section, click the small arrow ▾ next to Press Pull and choose Split Face. The button now shows Split Face, so next time one click is enough.",
-     "A panel opens on the right; the model shows a live preview of the result.",
-     "Click OK at the top of the panel. Cancel (next to it) or Esc discards the tool without changing anything."
+     "The faces change immediately; if the target does not work, a message says why. Ctrl+Z takes it back."
     ],
     "de": [
      "Klicke die zu teilenden Flächen an.",
      "Klicke mit Strg das Schneidwerkzeug an: eine Ebene, eine Fläche oder eine Skizze mit Linien quer über die Fläche.",
      "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf den kleinen Pfeil ▾ neben Drücken/Ziehen und wähle Fläche teilen. Der Knopf zeigt danach Fläche teilen, beim nächsten Mal reicht also ein Klick.",
-     "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
-     "Klicke oben im Panel auf OK. Abbrechen (daneben) oder Esc verwirft das Werkzeug, ohne etwas zu ändern."
+     "Die Flächen ändern sich sofort; klappt es nicht, sagt eine Meldung warum. Strg+Z nimmt es zurück."
     ]
    },
    "see": [
@@ -3836,14 +3970,14 @@
    },
    "steps": {
     "en": [
-     "Click the target body first – the one that stays and changes.",
+     "Click the target body first (any face of it) – the one that stays and changes.",
      "Ctrl+click one or more tool bodies.",
      "In the toolbar at the top, in the MODIFY section, click Combine. (If the button shows another tool, click the small arrow ▾ next to it and choose Combine.)",
      "A panel opens on the right; the model shows a live preview of the result.",
      "Choose the Operation and click OK at the top of the panel. Tools shows how many tool bodies are used."
     ],
     "de": [
-     "Klicke zuerst den Zielkörper an – den, der bleibt und sich ändert.",
+     "Klicke zuerst den Zielkörper an (irgendeine seiner Flächen) – den, der bleibt und sich ändert.",
      "Klicke mit Strg einen oder mehrere Werkzeugkörper an.",
      "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf Kombinieren. (Zeigt der Knopf ein anderes Werkzeug, klicke auf den kleinen Pfeil ▾ daneben und wähle Kombinieren.)",
      "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
@@ -3916,16 +4050,14 @@
    },
    "steps": {
     "en": [
-     "Click the body, then Ctrl+click the plane or face to split with.",
+     "Select the body in the browser on the left (Bodies folder), then Ctrl+click the plane or face to split with.",
      "In the toolbar at the top, in the MODIFY section, click the small arrow ▾ next to Combine and choose Split Body. The button now shows Split Body, so next time one click is enough.",
-     "A panel opens on the right; the model shows a live preview of the result.",
-     "Click OK at the top of the panel. Cancel (next to it) or Esc discards the tool without changing anything."
+     "The body is split immediately; each piece becomes its own body (Box, Box (2) …)."
     ],
     "de": [
-     "Klicke den Körper an, dann mit Strg die Ebene oder Fläche, mit der geteilt wird.",
+     "Wähle den Körper im Browser links (Ordner Körper) aus, dann klicke mit Strg die Ebene oder Fläche an, mit der geteilt wird.",
      "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf den kleinen Pfeil ▾ neben Kombinieren und wähle Körper teilen. Der Knopf zeigt danach Körper teilen, beim nächsten Mal reicht also ein Klick.",
-     "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
-     "Klicke oben im Panel auf OK. Abbrechen (daneben) oder Esc verwirft das Werkzeug, ohne etwas zu ändern."
+     "Der Körper wird sofort geteilt; jedes Stück wird ein eigener Körper (Box, Box (2) …)."
     ]
    },
    "see": [
@@ -3983,14 +4115,14 @@
    },
    "steps": {
     "en": [
-     "Select one or more bodies (Ctrl+click for several).",
+     "Click the body (any face of it); Ctrl+click for several.",
      "In the toolbar at the top, in the MODIFY section, click Move (key M). (If the button shows Align or Scale, use the small arrow ▾ next to it.)",
      "A panel opens on the right; the model shows a live preview of the result.",
      "Type X distance, Y distance and Z distance, and if needed choose Rotate around and an Angle.",
      "Click OK at the top of the panel. Cancel (next to it) or Esc discards the tool without changing anything."
     ],
     "de": [
-     "Wähle einen oder mehrere Körper (Strg+Klick für mehrere).",
+     "Klicke den Körper an (irgendeine seiner Flächen); Strg+Klick für mehrere.",
      "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf Verschieben (Taste M). (Zeigt der Knopf Ausrichten oder Skalieren, nimm den kleinen Pfeil ▾ daneben.)",
      "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
      "Tippe X-Abstand, Y-Abstand und Z-Abstand ein und wähle bei Bedarf Drehen um und einen Winkel.",
@@ -4013,7 +4145,7 @@
      ],
      [
       "Axis Reference",
-      "Or turn around an edge, an axis or a round face you click – e.g. a hinge."
+      "Or turn around an edge, an axis or a round face you click – e.g. a hinge. The button waits for your click as soon as the panel opens."
      ]
     ],
     "de": [
@@ -4027,7 +4159,7 @@
      ],
      [
       "Bezugsachse",
-      "Oder drehe um eine Kante, Achse oder runde Fläche, die du anklickst – z. B. ein Scharnier."
+      "Oder drehe um eine Kante, Achse oder runde Fläche, die du anklickst – z. B. ein Scharnier. Der Knopf wartet gleich nach dem Öffnen des Panels auf deinen Klick."
      ]
     ]
    },
@@ -4141,13 +4273,13 @@
    },
    "steps": {
     "en": [
-     "Select one or more bodies.",
+     "Click the body (any face of it); Ctrl+click for several.",
      "In the toolbar at the top, in the MODIFY section, click the small arrow ▾ next to Move and choose Scale. The button now shows Scale, so next time one click is enough.",
      "A panel opens on the right; the model shows a live preview of the result.",
      "Type the Factor (2 = double size, 0.5 = half) and choose the centre, then click OK."
     ],
     "de": [
-     "Wähle einen oder mehrere Körper.",
+     "Klicke den Körper an (irgendeine seiner Flächen); Strg+Klick für mehrere.",
      "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf den kleinen Pfeil ▾ neben Verschieben und wähle Skalieren. Der Knopf zeigt danach Skalieren, beim nächsten Mal reicht also ein Klick.",
      "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
      "Tippe den Faktor ein (2 = doppelt so groß, 0,5 = halb so groß), wähle die Mitte und klicke OK."
@@ -4227,10 +4359,12 @@
    ],
    "tips": {
     "en": [
-     "Undo (Ctrl+Z) brings it back."
+     "Undo (Ctrl+Z) brings it back.",
+     "Deleting a step in the middle keeps the steps after it: they are recalculated without it."
     ],
     "de": [
-     "Rückgängig (Strg+Z) holt es zurück."
+     "Rückgängig (Strg+Z) holt es zurück.",
+     "Löschst du einen Schritt in der Mitte, bleiben die Schritte danach erhalten und rechnen ohne ihn weiter."
     ]
    },
    "images": [
@@ -4870,11 +5004,13 @@
    "tips": {
     "en": [
      "The limits (overhang angle, minimum wall) and the 3D print clearance are in Settings.",
-     "The chosen bottom face is saved with the design and used by Print."
+     "The chosen bottom face is saved with the design and used by Print.",
+     "Overhangs are on the underside: turn the view to look at the part from below."
     ],
     "de": [
      "Die Grenzen (Überhang-Winkel, kleinste Wand) und das Spiel für den 3D-Druck stehen in den Einstellungen.",
-     "Die gewählte Unterseite wird mit dem Design gespeichert und von Drucken benutzt."
+     "Die gewählte Unterseite wird mit dem Design gespeichert und von Drucken benutzt.",
+     "Überhänge liegen unten: dreh die Ansicht, um das Teil von unten zu sehen."
     ]
    },
    "images": [
@@ -4927,13 +5063,13 @@
    "steps": {
     "en": [
      "In the toolbar at the top, in the INSPECT section, click Measure (key I). The Measure panel opens on the right.",
-     "Click a point, edge, face or body: the panel shows its Length, Radius, Diameter, Area, Volume or Size. For a body also Mass, Material and Center of mass.",
+     "Click a point, edge, face or body: the panel shows its coordinates (X, Y, Z), Length, Radius, Diameter, Area, Volume or Size. For a body also Mass, Material and Center of mass.",
      "Ctrl+click a second item to see the Distance and Angle between them.",
      "Close the panel with Close at the top of the panel or Esc."
     ],
     "de": [
      "Klicke in der Werkzeugleiste oben im Bereich PRÜFEN auf Messen (Taste I). Rechts öffnet sich das Panel Messen.",
-     "Klicke einen Punkt, eine Kante, Fläche oder einen Körper an: das Panel zeigt Länge, Radius, Durchmesser, Fläche, Volumen oder Größe. Bei einem Körper auch Masse, Werkstoff und Schwerpunkt.",
+     "Klicke einen Punkt, eine Kante, Fläche oder einen Körper an: das Panel zeigt Koordinaten (X, Y, Z), Länge, Radius, Durchmesser, Fläche, Volumen oder Größe. Bei einem Körper auch Masse, Werkstoff und Schwerpunkt.",
      "Klicke mit Strg ein zweites an, um Abstand und Winkel dazwischen zu sehen.",
      "Schließe das Panel oben mit Schließen oder mit Esc."
     ]
@@ -4982,12 +5118,12 @@
    },
    "steps": {
     "en": [
-     "Click a plane (e.g. an origin plane) or a flat face where the view should be cut.",
+     "Click a plane in the browser (e.g. Origin → XZ plane) or a flat face in the view where the view should be cut.",
      "In the toolbar at the top, in the INSPECT section, click Section.",
      "Click Section again to switch the cut off."
     ],
     "de": [
-     "Klicke eine Ebene (z. B. eine Ursprungsebene) oder eine flache Fläche an, an der die Ansicht geschnitten werden soll.",
+     "Klicke eine Ebene im Browser (z. B. Ursprung → XZ-Ebene) oder eine flache Fläche in der Ansicht an, an der die Ansicht geschnitten werden soll.",
      "Klicke in der Werkzeugleiste oben im Bereich PRÜFEN auf Schnitt.",
      "Klicke noch einmal auf Schnitt, um den Schnitt auszuschalten."
     ]
@@ -5036,10 +5172,10 @@
    },
    "steps": {
     "en": [
-     "In the toolbar at the top, in the INSPECT section, click Fit All – or press V and then F."
+     "In the toolbar at the top, in the INSPECT section, click Fit All."
     ],
     "de": [
-     "Klicke in der Werkzeugleiste oben im Bereich PRÜFEN auf Alles zeigen – oder drücke V und dann F."
+     "Klicke in der Werkzeugleiste oben im Bereich PRÜFEN auf Alles zeigen."
     ]
    },
    "see": [
@@ -5112,10 +5248,12 @@
    "tips": {
     "en": [
      "Names use letters, digits and _ only, no spaces.",
+     "Cancel takes back every change made in the window.",
      "Quicker: write Width = 40 mm into a note. Parameters from a note show “In note …” and are changed or deleted there."
     ],
     "de": [
      "Namen bestehen nur aus Buchstaben, Ziffern und _, ohne Leerzeichen.",
+     "Abbrechen nimmt alle Änderungen im Fenster zurück.",
      "Schneller: Schreib Breite = 40 mm in eine Notiz. Parameter aus einer Notiz zeigen „In Notiz …“ und werden dort geändert oder gelöscht."
     ]
    },
@@ -5247,12 +5385,14 @@
     "en": [
      "Click the faces to remove (Ctrl+click for more).",
      "In the toolbar at the top, in the MODIFY section, click the small arrow ▾ next to Press Pull and choose Remove Face. The button now shows Remove Face, so next time one click is enough.",
-     "A panel opens on the right; the model shows a live preview of the result."
+     "A panel opens on the right; the model shows a live preview of the result.",
+     "Click OK at the top of the panel. Cancel (next to it) or Esc discards the tool without changing anything."
     ],
     "de": [
      "Klicke die Flächen an, die weg sollen (Strg+Klick für mehrere).",
      "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf den kleinen Pfeil ▾ neben Drücken/Ziehen und wähle Fläche entfernen. Der Knopf zeigt danach Fläche entfernen, beim nächsten Mal reicht also ein Klick.",
-     "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau."
+     "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
+     "Klicke oben im Panel auf OK. Abbrechen (daneben) oder Esc verwirft das Werkzeug, ohne etwas zu ändern."
     ]
    },
    "see": [
@@ -5320,13 +5460,13 @@
      "In the toolbar at the top, in the UTILITIES section, click the small arrow ▾ next to Scribble and choose Red Pen. The button now shows Red Pen, so next time one click is enough.",
      "Write with the pen (or the mouse) where the change belongs. The model shows through the sheet.",
      "Click Apply Corrections in the palette. A card shows each correction; point at it to see its target in the model.",
-     "Show puts the result into the model on trial; Hide takes it out again. Apply keeps it, Apply All does all cards. Ctrl+Z takes a correction back."
+     "Show puts the result into the model on trial; Hide takes it out again. Apply keeps it, Apply All does all cards. Ctrl+Z takes a correction back. Discard drops a card; Close puts the cards away."
     ],
     "de": [
      "Klicke in der Werkzeugleiste oben im Bereich WERKZEUGE auf den kleinen Pfeil ▾ neben Scribble und wähle Rotstift. Der Knopf zeigt danach Rotstift, beim nächsten Mal reicht also ein Klick.",
      "Schreib mit dem Stift (oder der Maus) dorthin, wo die Änderung hingehört. Das Modell scheint durch das Blatt.",
      "Klicke in der Palette auf Korrekturen ausführen. Eine Karte zeigt jede Korrektur; zeig darauf, um ihr Ziel im Modell zu sehen.",
-     "Zeigen setzt das Ergebnis probehalber ins Modell; Ausblenden nimmt es wieder heraus. Ausführen behält es, Alle ausführen erledigt alle Karten. Strg+Z nimmt eine Korrektur zurück."
+     "Zeigen setzt das Ergebnis probehalber ins Modell; Ausblenden nimmt es wieder heraus. Ausführen behält es, Alle ausführen erledigt alle Karten. Strg+Z nimmt eine Korrektur zurück. Verwerfen entfernt eine Karte; Schließen legt die Karten weg."
     ]
    },
    "see": [
@@ -5659,14 +5799,14 @@
      "Select one or more bodies (Ctrl+click for several), or single faces.",
      "In the toolbar at the top, in the UTILITIES section, click Appearance (key A). The panel opens on the right.",
      "Click a sphere to apply its material. The small dots under a sphere are its variants, such as colours or an oiled or lacquered finish. Search materials finds one by name.",
-     "With faces selected, choose Faces or Body at the top: Faces changes only the selected faces.",
+     "If you clicked faces in the view, choose Faces or Body at the top: Faces (preselected) changes only the clicked faces, Body the whole bodies.",
      "Click OK at the top of the panel. Cancel (next to it) or Esc discards the tool without changing anything."
     ],
     "de": [
      "Wähle einen oder mehrere Körper (Strg+Klick für mehrere) oder einzelne Flächen.",
      "Klicke in der Werkzeugleiste oben im Bereich WERKZEUGE auf Darstellung (Taste A). Rechts öffnet sich das Panel.",
      "Klicke eine Kugel, um ihr Material anzuwenden. Die kleinen Punkte darunter sind ihre Varianten, etwa Farben oder geölt und lackiert. Unter Materialien suchen findest du eines nach Namen.",
-     "Mit gewählten Flächen wählst du oben Flächen oder Körper: Flächen ändert nur die gewählten Flächen.",
+     "Hast du Flächen in der Ansicht angeklickt, wählst du oben Flächen oder Körper: Flächen (vorgewählt) ändert nur die angeklickten Flächen, Körper die ganzen Körper.",
      "Klicke oben im Panel auf OK. Abbrechen (daneben) oder Esc verwirft das Werkzeug, ohne etwas zu ändern."
     ]
    },
@@ -5830,7 +5970,7 @@
      "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Show tool names and Show grid (the grid on the ground plane under the bodies).",
      "Materials and Light: Body material for new bodies (Steel unless you choose another), Lighting (Studio or Room), and switches for Realistic materials, Reflections, Relief and end grain and Contact shadow.",
      "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart) and Projects folder.",
-     "3D printing: Export resolution (how fine curves become in STL and 3MF), 3D print clearance for the Fit tool (tight, normal, loose), and Overhang angle and Minimum wall for the Print View.",
+     "Further down under General: Export resolution (how fine curves become in STL and 3MF), 3D print clearance for the Fit tool (tight, normal, loose), and Overhang angle and Minimum wall for the Print View.",
      "Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
      "View: Camera, Rotate, Rotate around and Animate view changes.",
      "Speed & Zoom: Rotation speed, Zoom & scroll speed, Zoom towards the cursor, Invert zoom (mouse wheel). Trackpad: Two fingers pan (off: two-finger scrolling zooms like the scroll wheel), Invert zoom (pinch direction) and the speeds Rotate (3 fingers), Pan (2 fingers) and Zoom (pinch). Pen & Handwriting: Tidy handwriting after a pause and Tidying strength.",
@@ -5840,7 +5980,7 @@
      "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
      "Materialien und Licht: Körpermaterial für neue Körper (Stahl, solange du nichts anderes wählst), Licht (Studio oder Raum) und Schalter für Realistische Materialien, Spiegelungen, Relief und Hirnholz und Kontaktschatten.",
      "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart) und Projektordner.",
-     "3D-Druck: Export-Auflösung (wie fein Rundungen in STL und 3MF werden), Spiel beim 3D-Druck für die Passung (eng, normal, locker) sowie Überhang-Winkel und kleinste Wand für die Druckansicht.",
+     "Weiter unten unter Allgemein: Export-Auflösung (wie fein Rundungen in STL und 3MF werden), Spiel beim 3D-Druck für die Passung (eng, normal, locker) sowie Überhang-Winkel und kleinste Wand für die Druckansicht.",
      "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen.",
      "Ansicht: Kamera, Drehen, Drehen um und Ansichtswechsel animieren.",
      "Tempo & Zoom: Drehgeschwindigkeit, Zoom- & Scrollgeschwindigkeit, Zum Cursor hin zoomen, Zoom umkehren (Mausrad). Trackpad: Zwei Finger schieben (aus: Scrollen mit zwei Fingern zoomt wie das Mausrad), Zoom umkehren (Richtung beim Spreizen) und die Tempi Drehen (3 Finger), Schieben (2 Finger) und Zoomen (Spreizen). Stift & Handschrift: Handschrift nach einer Pause aufräumen und Stärke des Aufräumens.",
@@ -5923,11 +6063,13 @@
    "tips": {
     "en": [
      "Points snap onto existing points and lines; nearly horizontal or vertical lines get the matching constraint automatically.",
-     "Press M while drawing to switch how the line is defined (e.g. by length and angle)."
+     "Press M while drawing to switch how the line is defined (e.g. by length and angle).",
+     "Keys: G, L."
     ],
     "de": [
      "Punkte rasten an vorhandenen Punkten und Linien ein; fast waagrechte oder senkrechte Linien bekommen die passende Abhängigkeit automatisch.",
-     "Drücke beim Zeichnen M, um umzuschalten, wie die Linie bestimmt wird (z. B. über Länge und Winkel)."
+     "Drücke beim Zeichnen M, um umzuschalten, wie die Linie bestimmt wird (z. B. über Länge und Winkel).",
+     "Tasten: G, L."
     ]
    },
    "images": [
@@ -5989,6 +6131,16 @@
     "sketch_line",
     "sketch_basics"
    ],
+   "tips": {
+    "en": [
+     "Fillet (F) in the Tool Parameters rounds the corner between the current and the previous segment.",
+     "Keys: G, M."
+    ],
+    "de": [
+     "Abrundung (F) in den Werkzeugparametern rundet die Ecke zwischen dem aktuellen und dem vorigen Stück ab.",
+     "Tasten: G, M."
+    ]
+   },
    "images": [
     {
      "file": "sketch_polyline.gif",
@@ -6059,6 +6211,16 @@
     "sketch_dimension",
     "Design_Extrude"
    ],
+   "tips": {
+    "en": [
+     "In the Tool Parameters, Rounded corners (U) rounds the corners and Frame (J) adds a second rectangle at a constant distance.",
+     "Keys: G, R (rectangle), G, V (centred), G, O (rounded)."
+    ],
+    "de": [
+     "In den Werkzeugparametern rundet Abgerundete Ecken (U) die Ecken, und Rahmen (J) legt ein zweites Rechteck im festen Abstand dazu.",
+     "Tasten: G, R (Rechteck), G, V (vom Mittelpunkt), G, O (abgerundet)."
+    ]
+   },
    "images": [
     {
      "file": "sketch_rectangle.gif",
@@ -6126,6 +6288,14 @@
     "Design_Revolve",
     "Design_Extrude"
    ],
+   "tips": {
+    "en": [
+     "Keys: G, C (circle), G, E, E (ellipse)."
+    ],
+    "de": [
+     "Tasten: G, C (Kreis), G, E, E (Ellipse)."
+    ]
+   },
    "images": [
     {
      "file": "sketch_circle.gif",
@@ -6192,6 +6362,14 @@
     "sketch_fillet",
     "sketch_tangent"
    ],
+   "tips": {
+    "en": [
+     "Keys: G, A."
+    ],
+    "de": [
+     "Tasten: G, A."
+    ]
+   },
    "images": [
     {
      "file": "sketch_arc.gif",
@@ -6254,6 +6432,14 @@
    "see": [
     "Design_Extrude"
    ],
+   "tips": {
+    "en": [
+     "Keys: G, S."
+    ],
+    "de": [
+     "Tasten: G, S."
+    ]
+   },
    "images": [
     {
      "file": "sketch_slot.gif",
@@ -6326,6 +6512,14 @@
    "see": [
     "sketch_rectangle"
    ],
+   "tips": {
+    "en": [
+     "Keys: G, P and the number of corners, 3 to 8 (G, P, 6 = hexagon)."
+    ],
+    "de": [
+     "Tasten: G, P und die Eckenzahl, 3 bis 8 (G, P, 6 = Sechseck)."
+    ]
+   },
    "images": [
     {
      "file": "sketch_polygon.gif",
@@ -6388,6 +6582,14 @@
    "see": [
     "sketch_conic"
    ],
+   "tips": {
+    "en": [
+     "Keys: G, B, B."
+    ],
+    "de": [
+     "Tasten: G, B, B."
+    ]
+   },
    "images": [
     {
      "file": "sketch_bspline.gif",
@@ -6427,21 +6629,21 @@
     ]
    },
    "summary": {
-    "en": "Draws a conic curve between two points; how full it bulges is set by the rho value.",
-    "de": "Zeichnet einen Kegelschnitt zwischen zwei Punkten; wie stark er sich wölbt, bestimmt der Rho-Wert."
+    "en": "Draws a smooth conic curve between two points that bends towards a corner point.",
+    "de": "Zeichnet einen glatten Kegelschnitt zwischen zwei Punkten, der sich zu einem Eckpunkt hin wölbt."
    },
    "steps": {
     "en": [
      "These tools are in the sketch toolbar, which appears while you edit a sketch (CREATE → Sketch, or double-click a sketch).",
      "In the sketch toolbar at the top, in the CREATE section, click Conic.",
      "Click the start point and the end point, then the corner point where the two end tangents meet.",
-     "Extra options of the active tool appear in the Tool Parameters box below the Sketch Palette on the right."
+     "It starts as a parabola (rho 0.5); drag the corner point afterwards to change its shape."
     ],
     "de": [
      "Diese Werkzeuge liegen in der Skizzen-Werkzeugleiste, die erscheint, während du eine Skizze bearbeitest (ERSTELLEN → Skizze oder Doppelklick auf eine Skizze).",
      "Klicke in der Skizzen-Werkzeugleiste oben im Bereich ERSTELLEN auf Kegelschnitt.",
      "Klicke Start- und Endpunkt, dann den Eckpunkt, in dem sich die beiden Endtangenten treffen.",
-     "Zusätzliche Optionen des aktiven Werkzeugs stehen im Bereich Werkzeugparameter unter der Skizzenpalette rechts."
+     "Er beginnt als Parabel (Rho 0,5); zieh danach den Eckpunkt, um die Form zu ändern."
     ]
    },
    "see": [
@@ -6505,6 +6707,14 @@
     "Design_Hole",
     "sketch_dimension"
    ],
+   "tips": {
+    "en": [
+     "Keys: G, Y."
+    ],
+    "de": [
+     "Tasten: G, Y."
+    ]
+   },
    "images": [
     {
      "file": "sketch_point.gif",
@@ -6565,6 +6775,14 @@
    "see": [
     "Design_Emboss"
    ],
+   "tips": {
+    "en": [
+     "Mode (M) sets whether the second click gives the width or the height of the text."
+    ],
+    "de": [
+     "Modus (M) legt fest, ob der zweite Klick die Breite oder die Höhe des Textes bestimmt."
+    ]
+   },
    "images": [
     {
      "file": "sketch_text.gif",
@@ -6629,10 +6847,12 @@
    ],
    "tips": {
     "en": [
-     "Projected lines follow the model when it changes."
+     "Projected lines follow the model when it changes.",
+     "Keys: G, X."
     ],
     "de": [
-     "Projizierte Linien folgen dem Modell, wenn es sich ändert."
+     "Projizierte Linien folgen dem Modell, wenn es sich ändert.",
+     "Tasten: G, X."
     ]
    },
    "images": [
@@ -6684,19 +6904,29 @@
      "In the sketch toolbar at the top, in the MODIFY section, click Fillet. (If the button shows another tool, click the small arrow ▾ next to it and choose Fillet.)",
      "Choose Fillet or Chamfer via the arrow ▾ (or press M while the tool is active).",
      "Click the corner point – or the first line and then the second line.",
-     "Move the mouse for the size or type it, and click."
+     "The rounding (or bevel) appears right away in a size that fits; to set it exactly, give the arc a dimension afterwards. Preserve corner (U) in the Tool Parameters keeps the corner point so you can still dimension to it.",
+     "The tool stays active so you can draw the next shape; press Esc (or right-click) when you are done."
     ],
     "de": [
      "Diese Werkzeuge liegen in der Skizzen-Werkzeugleiste, die erscheint, während du eine Skizze bearbeitest (ERSTELLEN → Skizze oder Doppelklick auf eine Skizze).",
      "Klicke in der Skizzen-Werkzeugleiste oben im Bereich ÄNDERN auf Abrunden. (Zeigt der Knopf ein anderes Werkzeug, klicke auf den kleinen Pfeil ▾ daneben und wähle Abrunden.)",
      "Wähle Abrunden oder Fase über den Pfeil ▾ (oder drücke M, während das Werkzeug aktiv ist).",
      "Klicke den Eckpunkt an – oder die erste und dann die zweite Linie.",
-     "Bewege die Maus für die Größe oder tippe sie ein und klicke."
+     "Die Rundung (oder Fase) entsteht sofort in passender Größe; genau legst du sie danach mit einer Bemaßung am Bogen fest. Mit Eckpunkt behalten (U) in den Werkzeugparametern bleibt der Eckpunkt stehen, sodass du weiter an ihn bemaßen kannst.",
+     "Das Werkzeug bleibt aktiv, damit du gleich die nächste Form zeichnen kannst; drücke Esc (oder Rechtsklick), wenn du fertig bist."
     ]
    },
    "see": [
     "Design_Fillet"
    ],
+   "tips": {
+    "en": [
+     "Keys: G, F, F (fillet), G, F, C (chamfer)."
+    ],
+    "de": [
+     "Tasten: G, F, F (Abrunden), G, F, C (Fase)."
+    ]
+   },
    "images": [
     {
      "file": "sketch_fillet.gif",
@@ -6766,6 +6996,14 @@
    "see": [
     "sketch_fillet"
    ],
+   "tips": {
+    "en": [
+     "Keys: G, T (trim), G, Q (extend), G, Z (split)."
+    ],
+    "de": [
+     "Tasten: G, T (Stutzen), G, Q (Verlängern), G, Z (Teilen)."
+    ]
+   },
    "images": [
     {
      "file": "sketch_trim.gif",
@@ -6826,6 +7064,16 @@
    "see": [
     "Design_Shell"
    ],
+   "tips": {
+    "en": [
+     "One selected edge is enough: the whole connected outline is offset. Mode (M) in the Tool Parameters chooses round (Arc) or sharp (Intersection) corners.",
+     "Keys: Z, T."
+    ],
+    "de": [
+     "Eine gewählte Kante genügt: die ganze zusammenhängende Kontur wird versetzt. Modus (M) in den Werkzeugparametern wählt runde (Kreisbogen) oder spitze (Schnitt) Ecken.",
+     "Tasten: Z, T."
+    ]
+   },
    "images": [
     {
      "file": "sketch_offset.gif",
@@ -6885,6 +7133,14 @@
     "Design_Mirror",
     "sketch_construction"
    ],
+   "tips": {
+    "en": [
+     "Keys: Z, S."
+    ],
+    "de": [
+     "Tasten: Z, S."
+    ]
+   },
    "images": [
     {
      "file": "sketch_mirror.gif",
@@ -6935,19 +7191,27 @@
      "Select the geometry first (Ctrl+click for several lines or points) or a box: drag from left to right around it.",
      "In the sketch toolbar at the top, in the MODIFY section, click Pattern. (If the button shows another tool, click the small arrow ▾ next to it and choose Pattern.)",
      "Choose via the arrow ▾: Rectangular Array (rows and columns) or Rotate / Polar Transform (around a point).",
-     "Set the number of copies in the Tool Parameters, then click the reference points in the view."
+     "Rectangular Array first asks in a small window for Columns and Rows (and whether the spacing is equal); then click where the next copy goes. Rotate / Polar Transform: set Elements (the original counts) in the Tool Parameters, then click the centre, the start and the end of the angle."
     ],
     "de": [
      "Diese Werkzeuge liegen in der Skizzen-Werkzeugleiste, die erscheint, während du eine Skizze bearbeitest (ERSTELLEN → Skizze oder Doppelklick auf eine Skizze).",
      "Wähle zuerst die Geometrie (Strg+Klick für mehrere Linien oder Punkte) oder zieh ein Rechteck von links nach rechts darum.",
      "Klicke in der Skizzen-Werkzeugleiste oben im Bereich ÄNDERN auf Muster. (Zeigt der Knopf ein anderes Werkzeug, klicke auf den kleinen Pfeil ▾ daneben und wähle Muster.)",
      "Wähle über den Pfeil ▾: Rechteckige Anordnung (Reihen und Spalten) oder Drehen / Kreisförmig anordnen (um einen Punkt).",
-     "Stelle die Anzahl der Kopien in den Werkzeugparametern ein und klicke dann die Bezugspunkte in der Ansicht."
+     "Rechteckige Anordnung fragt zuerst in einem kleinen Fenster nach Spalten und Zeilen (und ob die Abstände gleich sind); dann klickst du, wo die nächste Kopie hin soll. Drehen / Kreisförmig anordnen: stelle Elemente (das Original zählt mit) in den Werkzeugparametern ein und klicke dann die Mitte, den Anfang und das Ende des Winkels."
     ]
    },
    "see": [
     "Design_Pattern"
    ],
+   "tips": {
+    "en": [
+     "Keys: Z, A (Rectangular Array), Z, P (Rotate / Polar Transform)."
+    ],
+    "de": [
+     "Tasten: Z, A (Rechteckige Anordnung), Z, P (Drehen / Kreisförmig anordnen)."
+    ]
+   },
    "images": [
     {
      "file": "sketch_pattern.gif",
@@ -7011,6 +7275,16 @@
    "see": [
     "sketch_pattern"
    ],
+   "tips": {
+    "en": [
+     "Elements and Rows in the Tool Parameters make copies instead of moving (Elements 1 = just move).",
+     "Key: W."
+    ],
+    "de": [
+     "Elemente und Reihen in den Werkzeugparametern erzeugen Kopien statt zu verschieben (Elemente 1 = nur verschieben).",
+     "Taste: W."
+    ]
+   },
    "images": [
     {
      "file": "sketch_move.gif",
@@ -7069,6 +7343,14 @@
    "see": [
     "sketch_basics"
    ],
+   "tips": {
+    "en": [
+     "Keys: G, N."
+    ],
+    "de": [
+     "Tasten: G, N."
+    ]
+   },
    "images": [
     {
      "file": "sketch_construction.gif",
@@ -7130,13 +7412,13 @@
      "These tools are in the sketch toolbar, which appears while you edit a sketch (CREATE → Sketch, or double-click a sketch).",
      "In the sketch toolbar at the top, in the CONSTRAINTS section, click Dimension.",
      "Click a line for its length, two points for their distance, a circle for its diameter, or two lines for the angle between them.",
-     "Move the mouse to place the dimension, click, type the value and press Enter."
+     "Move the mouse to place the dimension and click. In the small window type the value and press Enter (or OK); for a circle choose Radius or Diameter there."
     ],
     "de": [
      "Diese Werkzeuge liegen in der Skizzen-Werkzeugleiste, die erscheint, während du eine Skizze bearbeitest (ERSTELLEN → Skizze oder Doppelklick auf eine Skizze).",
      "Klicke in der Skizzen-Werkzeugleiste oben im Bereich ABHÄNGIGKEITEN auf Bemaßung.",
      "Klicke eine Linie für ihre Länge, zwei Punkte für ihren Abstand, einen Kreis für seinen Durchmesser oder zwei Linien für den Winkel dazwischen.",
-     "Bewege die Maus, um das Maß zu platzieren, klicke, tippe den Wert ein und drücke Enter."
+     "Bewege die Maus, um das Maß zu platzieren, und klicke. Tippe im kleinen Fenster den Wert ein und drücke Enter (oder OK); bei einem Kreis wählst du dort Radius oder Durchmesser."
     ]
    },
    "see": [
@@ -7146,11 +7428,15 @@
    "tips": {
     "en": [
      "Type a parameter name or a formula such as Width / 2 instead of a number.",
-     "Double-click an existing dimension to change its value."
+     "Double-click an existing dimension to change its value.",
+     "The first dimension of a sketch scales the whole drawing (the view zooms along), so the proportions stay as drawn. Draw roughly to size or start with the most important size.",
+     "Key: D."
     ],
     "de": [
      "Tippe statt einer Zahl einen Parameternamen oder eine Formel wie Breite / 2 ein.",
-     "Doppelklick auf ein vorhandenes Maß ändert seinen Wert."
+     "Doppelklick auf ein vorhandenes Maß ändert seinen Wert.",
+     "Das erste Maß einer Skizze skaliert die ganze Zeichnung (die Ansicht zoomt mit), die Proportionen bleiben wie gezeichnet. Zeichne ungefähr in der richtigen Größe oder beginne mit dem wichtigsten Maß.",
+     "Taste: D."
     ]
    },
    "images": [
@@ -7213,10 +7499,12 @@
    ],
    "tips": {
     "en": [
-     "An outline with a gap at one corner is not closed and gives no profile – Coincident closes it."
+     "An outline with a gap at one corner is not closed and gives no profile – Coincident closes it.",
+     "Key: C."
     ],
     "de": [
-     "Ein Umriss mit einer Lücke an einer Ecke ist nicht geschlossen und ergibt kein Profil – Koinzident schließt ihn."
+     "Ein Umriss mit einer Lücke an einer Ecke ist nicht geschlossen und ergibt kein Profil – Koinzident schließt ihn.",
+     "Taste: C."
     ]
    },
    "images": [
@@ -7268,13 +7556,13 @@
      "These tools are in the sketch toolbar, which appears while you edit a sketch (CREATE → Sketch, or double-click a sketch).",
      "Either select the geometry first and then click the tool, or click the tool first and then the geometry.",
      "In the sketch toolbar at the top, in the CONSTRAINTS section, click Horizontal. (If the button shows another tool, click the small arrow ▾ next to it and choose Horizontal.)",
-     "For vertical choose Vertical Constraint via the arrow ▾."
+     "For vertical choose Vertical Constraint via the arrow ▾. Keys: H horizontal, V vertical; A picks horizontal or vertical by itself, whichever is closer."
     ],
     "de": [
      "Diese Werkzeuge liegen in der Skizzen-Werkzeugleiste, die erscheint, während du eine Skizze bearbeitest (ERSTELLEN → Skizze oder Doppelklick auf eine Skizze).",
      "Entweder zuerst die Geometrie auswählen und dann das Werkzeug anklicken, oder zuerst das Werkzeug und dann die Geometrie.",
      "Klicke in der Skizzen-Werkzeugleiste oben im Bereich ABHÄNGIGKEITEN auf Horizontal. (Zeigt der Knopf ein anderes Werkzeug, klicke auf den kleinen Pfeil ▾ daneben und wähle Horizontal.)",
-     "Für senkrecht wähle Vertikal-Abhängigkeit über den Pfeil ▾."
+     "Für senkrecht wähle Vertikal-Abhängigkeit über den Pfeil ▾. Tasten: H waagrecht, V senkrecht; A wählt selbst waagrecht oder senkrecht, je nachdem, was näher liegt."
     ]
    },
    "see": [
@@ -7339,6 +7627,14 @@
    "see": [
     "sketch_horver"
    ],
+   "tips": {
+    "en": [
+     "Keys: P parallel, N perpendicular."
+    ],
+    "de": [
+     "Tasten: P parallel, N senkrecht."
+    ]
+   },
    "images": [
     {
      "file": "sketch_parallel.gif",
@@ -7395,6 +7691,14 @@
    "see": [
     "sketch_arc"
    ],
+   "tips": {
+    "en": [
+     "Key: T."
+    ],
+    "de": [
+     "Taste: T."
+    ]
+   },
    "images": [
     {
      "file": "sketch_tangent.gif",
@@ -7453,10 +7757,12 @@
    ],
    "tips": {
     "en": [
-     "Dimension one of them – the others follow."
+     "Dimension one of them – the others follow.",
+     "Key: E."
     ],
     "de": [
-     "Bemaße eines davon – die anderen folgen."
+     "Bemaße eines davon – die anderen folgen.",
+     "Taste: E."
     ]
    },
    "images": [
@@ -7501,11 +7807,13 @@
    "steps": {
     "en": [
      "These tools are in the sketch toolbar, which appears while you edit a sketch (CREATE → Sketch, or double-click a sketch).",
+     "Either select the geometry first and then click the tool, or click the tool first and then the geometry.",
      "In the sketch toolbar at the top, in the CONSTRAINTS section, click Symmetric.",
      "Click the two points, then the symmetry line (e.g. the vertical axis) or the centre point."
     ],
     "de": [
      "Diese Werkzeuge liegen in der Skizzen-Werkzeugleiste, die erscheint, während du eine Skizze bearbeitest (ERSTELLEN → Skizze oder Doppelklick auf eine Skizze).",
+     "Entweder zuerst die Geometrie auswählen und dann das Werkzeug anklicken, oder zuerst das Werkzeug und dann die Geometrie.",
      "Klicke in der Skizzen-Werkzeugleiste oben im Bereich ABHÄNGIGKEITEN auf Symmetrisch.",
      "Klicke die beiden Punkte, dann die Symmetrielinie (z. B. die senkrechte Achse) oder den Mittelpunkt."
     ]
@@ -7513,6 +7821,16 @@
    "see": [
     "sketch_mirror"
    ],
+   "tips": {
+    "en": [
+     "Pick two opposite corners and the origin to centre a rectangle. Two corners of a horizontal edge about the vertical axis conflict with Horizontal and turn red.",
+     "Key: S."
+    ],
+    "de": [
+     "Für ein mittiges Rechteck klicke zwei gegenüberliegende Ecken und den Ursprung an. Zwei Ecken einer waagrechten Kante zur senkrechten Achse widersprechen Horizontal und werden rot.",
+     "Taste: S."
+    ]
+   },
    "images": [
     {
      "file": "sketch_symmetric.gif",
@@ -7571,10 +7889,12 @@
    ],
    "tips": {
     "en": [
-     "Dimensions are usually the better choice: they keep the design editable."
+     "Dimensions are usually the better choice: they keep the design editable.",
+     "Keys: K, then B."
     ],
     "de": [
-     "Bemaßungen sind meist die bessere Wahl: das Design bleibt änderbar."
+     "Bemaßungen sind meist die bessere Wahl: das Design bleibt änderbar.",
+     "Tasten: K, dann B."
     ]
    },
    "images": [
