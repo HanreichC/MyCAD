@@ -39,9 +39,12 @@ run([
                            Gui.Selection.addSelection(doc().Name, body("A").Name, faces(body("A"), lambda f: abs(f.CenterOfMass.z - 20) < 1e-6)[0]))),
     ("align", lambda: Gui.runCommand("Design_Align")), ("ok", ok),
     ("align?", lambda: L("align: B %s (erwartet x -10..10 z 20..30) errors=%s" % (bb(body("B")), errors()))),
-    ("split sel", lambda: (select(body("A")), Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XZ_Plane")][0]))),
+    # wie ein Klick auf den Body in der Ansicht: der wählt eine Fläche, dann Strg+Klick auf die Ebene
+    ("split sel", lambda: (select(body("A"), [top_face(body("A"))]), Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XZ_Plane")][0]))),
     ("split", lambda: Gui.runCommand("Design_SplitBody")),
     ("split?", lambda: L("split: %s errors=%s" % ([(b.Label, round(b.Shape.Volume)) for b in doc().Objects if b.Label.startswith("A")], errors()))),
+    ("split ok", lambda: check("a face clicked on the body selects the body to split",
+                               len([b for b in doc().Objects if b.TypeId == "Design::Body" and b.Label.startswith("A")]) == 2)),
     ("thread sel", lambda: select(body("D"), faces(body("D"), lambda f: f.Surface.TypeId == "Part::GeomCylinder"))),
     ("thread", lambda: Gui.runCommand("Design_Thread")), ("wait", lambda: None), ("wait", lambda: None), ("thread dialog", lambda: shot("thread")), ("ok", ok), ("wait", lambda: None), ("wait", lambda: None),
     ("thread?", lambda: L("thread: D volume=%.0f (Zylinder %.0f, mit Gewinde kleiner) faces=%d errors=%s" % (

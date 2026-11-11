@@ -1353,10 +1353,14 @@ void startSplit(App::Document* doc)
     Design::Body* body = nullptr;
     App::DocumentObject* tool = nullptr;
     std::string element;
-    for (auto& sel : Gui::Selection().getSelectionEx()) {
+    auto selection = Gui::Selection().getSelectionEx();
+    for (auto& sel : selection) {
         App::DocumentObject* obj = sel.getObject();
         const auto& names = sel.getSubNames();
-        if (!body && freecad_cast<Design::Body*>(obj) && names.empty()) {
+        // ein Klick auf den Body in der Ansicht wählt eine Fläche: als Erstes gewählt und mit Werkzeug danach zählt er
+        // als der Body
+        const bool first = &sel == &selection.front() && selection.size() > 1;
+        if (!body && freecad_cast<Design::Body*>(obj) && (names.empty() || first)) {
             body = static_cast<Design::Body*>(obj);
         }
         else if (!tool && (isPlane(obj) || (names.size() == 1 && names.front().rfind("Face", 0) == 0))) {
