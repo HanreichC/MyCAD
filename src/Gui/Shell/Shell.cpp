@@ -4780,7 +4780,7 @@ void attach(View3DInventor* view)
         search.apply(root);
         if (SoPath* path = search.getPath()) {
             // Schatten werfen nur Körper (wie beim Material-Shader in ViewProviderExt): Skizzen, Profile, Scribbles,
-            // Ebenen und Achsen nicht
+            // Ebenen, Achsen und Punkte (Part::Datum ist auch ein Part::Feature) nicht
             QPointer<View3DInventor> owner(view);
             auto others = [owner] {
                 std::vector<SoSwitch*> list;
@@ -4788,6 +4788,7 @@ void attach(View3DInventor* view)
                 for (App::DocumentObject* obj : doc ? doc->getDocument()->getObjects() : std::vector<App::DocumentObject*>()) {
                     const bool solid = obj->isDerivedFrom(Base::Type::fromName("Part::Feature"))
                         && !obj->isDerivedFrom(Base::Type::fromName("Part::Part2DObject"))
+                        && !obj->isDerivedFrom(Base::Type::fromName("Part::Datum"))
                         && std::string_view(obj->getTypeId().getName()) != "Design::Profiles";
                     Gui::ViewProvider* vp = doc->getViewProvider(obj);
                     if (!solid && vp && vp->getModeSwitch() && !vp->getChildRoot()) {  // Gruppen (Komponenten) enthalten die Körper
