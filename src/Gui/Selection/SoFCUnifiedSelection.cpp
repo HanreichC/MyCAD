@@ -628,8 +628,18 @@ void SoFCUnifiedSelection::doAction(SoAction* action)
                     && !elementName.oldName.empty()) {      // If we have a shortened element name
                     subName = elementName.oldName.c_str();  // use it.
                 }
-                if (!selectionAction->SelChange.pSubName || !selectionAction->SelChange.pSubName[0]
-                    || vp->getDetailPath(subName, detailPath, true, detail)) {
+                // MyCAD: ein Objekt in einer Gruppe (Körper in einer Komponente) liegt in der Szene unter seinem
+                // obersten Elternteil; hervorgehoben wird es nur über den Pfad ab dort, wie bei einem Klick im Browser.
+                // Ohne ihn (Auswahl per Skript, Suche, Rotstift) bliebe die Auswahl unsichtbar
+                std::string path = subName ? subName : "";
+                ViewProvider* pathVp = vp;
+                if (auto parents = obj->getParents(); !parents.empty()) {
+                    if (auto top = Application::Instance->getViewProvider(parents.front().first)) {
+                        pathVp = top;
+                        path = parents.front().second + path;
+                    }
+                }
+                if (path.empty() || pathVp->getDetailPath(path.c_str(), detailPath, true, detail)) {
                     SoSelectionElementAction::Type type = SoSelectionElementAction::None;
                     if (selectionAction->SelChange.Type == SelectionChanges::AddSelection) {
                         if (detail) {

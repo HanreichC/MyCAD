@@ -23,6 +23,17 @@ def key(k):
     QtTest.QTest.keyClick(field(), k)
 
 
+def blue_pixels():
+    """Pixel in der Auswahlfarbe (Akzentblau) in der Ansicht"""
+    img = view().viewport().grab().toImage()
+    n = 0
+    for y in range(0, img.height(), 3):
+        for x in range(0, img.width(), 3):
+            c = img.pixelColor(x, y)
+            n += c.blue() > 150 and c.blue() > c.red() + 60
+    return n
+
+
 def open_search():
     activate()
     QtTest.QTest.keyClick(mw, QtCore.Qt.Key_K, QtCore.Qt.ControlModifier)
@@ -47,6 +58,7 @@ run([
     ("enter body", lambda: key(QtCore.Qt.Key_Return)),
     ("selected", lambda: check("enter selects the body", [o.Label for o in Gui.Selection.getSelection()] == ["Bracket"]
                               and not is_open(), str([o.Label for o in Gui.Selection.getSelection()]))),
+    ("highlighted", lambda: check("the body found by search is highlighted in the view", blue_pixels() > 500, str(blue_pixels()))),
     ("again", lambda: Gui.runCommand("MyCAD_Search")),
     ("measure", lambda: typed("meas")),
     ("run", lambda: key(QtCore.Qt.Key_Return)),
