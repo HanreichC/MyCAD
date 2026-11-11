@@ -183,9 +183,15 @@ def shot(article, view="iso", zoom=0, fixed=False):
     step("grab " + article, grab)
 
 
+SCENARIOS = {}
+
+
 def scenario(article, build, view="iso", zoom=0, edit=None, fixed=False):
-    if ONLY and article not in ONLY:
-        return
+    """Beispiel für einen Artikel anmelden; ein späteres (tools/help_clips/*.py) ersetzt ein früheres"""
+    SCENARIOS[article] = (build, view, zoom, edit, fixed)
+
+
+def _expand(article, build, view, zoom, edit, fixed):
     step("new " + article, lambda: Gui.runCommand("Std_New"))
     wait()
     if GIF:
@@ -498,4 +504,14 @@ scenario("sketch_project", project, edit="sk")
 for article, (geos, cons) in SKETCHES.items():
     scenario(article, lambda g=geos, c=cons, a=article: sk(g, c, CONSTRUCTION.get(a, ()), fillet=a == "sketch_fillet"), edit="sk")
 
+# Erklär-Clips je Bereich in eigenen Dateien: sie nutzen alles hier (step, wait, feature, use …) und melden mit
+# scenario() an, was sie zeigen; dasselbe Artikel-Kürzel ersetzt das Beispiel oben
+CLIPS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "help_clips")
+for name in sorted(os.listdir(CLIPS)) if os.path.isdir(CLIPS) else []:
+    if name.endswith(".py"):
+        exec(compile(open(os.path.join(CLIPS, name), encoding="utf-8").read(), name, "exec"), globals())
+
+for article, args in SCENARIOS.items():
+    if not ONLY or article in ONLY:
+        _expand(article, *args)
 run(steps, delay=900)
