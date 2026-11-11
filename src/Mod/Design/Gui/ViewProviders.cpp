@@ -263,7 +263,7 @@ private:
         panel->setGeometry(QRectF(area.right() - size.width() - 24, area.bottom() - size.height() - 96, size.width(), size.height()));
     }
 
-    Gui::Shell::GlassPanel* panel = nullptr;
+    QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
     QLabel* texts[3] = {};
     QPointer<Gui::View3DInventorViewer> viewer;
     QTimer timer;
@@ -582,7 +582,7 @@ private:
     std::vector<Row> rows;
     int previewing = -1;  ///< Karte, deren Ergebnis gerade probehalber im Modell steht
     std::string docName;
-    Gui::Shell::GlassPanel* panel = nullptr;
+    QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
     QWidget* content = nullptr;
 };
 }  // namespace
@@ -703,7 +703,7 @@ public:
 private:
     QPointer<Gui::View3DInventorViewer> viewer;
     SoSeparator* node = nullptr;
-    Gui::Shell::GlassPanel* panel = nullptr;
+    QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
 };
 }  // namespace
 
@@ -2573,8 +2573,8 @@ private:
     }
 
     std::vector<Design::DrivingDimension> dims;
-    Gui::View3DInventorViewer* viewer = nullptr;
-    Gui::Shell::GlassPanel* panel = nullptr;
+    QPointer<Gui::View3DInventorViewer> viewer;
+    QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
     QWidget* content = nullptr;
     QFormLayout* form = nullptr;
     QLabel* error = nullptr;

@@ -55,4 +55,12 @@ run([
     ("undone", lambda: check("ctrl+z takes it back", abs(body("Box").Shape.Volume - 1000) < 1e-6, str(body("Box").Shape.Volume))),
     ("clear", lambda: Gui.Selection.clearSelection()),
     ("gone", lambda: check("without a selected face the card disappears", not card_fields())),
+    # Die Karte lebt in der Szene des Designs: schließt es, stirbt sie mit (früher Absturz beim nächsten Doppelklick)
+    ("dclick 2", lambda: click_top(True)), ("card 2", lambda: check("card open again", bool(card_fields()))),
+    ("close", lambda: App.closeDocument(doc().Name)), ("new", lambda: Gui.runCommand("Std_New")),
+    ("setup 2", lambda: state.update(box=make_body(rect(0, 0, 20, 10), 0, 5, "Box"))),
+    ("fit 2", lambda: (Gui.Selection.clearSelection(), Gui.ActiveDocument.ActiveView.viewIsometric(), Gui.SendMsgToActiveView("ViewFit"))),
+    ("dclick 3", lambda: click_top(True)),
+    ("card 3", lambda: check("after closing a design the card works in the next one (no crash)",
+                             [b.accessibleName() for b in card_fields()] == ["Distance"], str([b.accessibleName() for b in card_fields()]))),
 ])
