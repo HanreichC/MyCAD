@@ -219,6 +219,12 @@ def note_frame():
     check("note text has no frame, also with focus", e.frameWidth() == 0 and corner == inner, "frame=%d %s %s" % (e.frameWidth(), corner.name(), inner.name()))
 
 
+def focus_after_esc():
+    fi = view().scene().focusItem()
+    inner = fi.widget().focusWidget() if fi is not None and hasattr(fi, "widget") and fi.widget() else None
+    check("Esc gives the keyboard focus back to the 3D view", fi is None, "%s %s" % (type(fi).__name__, inner.metaObject().className() if inner else None))
+
+
 def esc_tool():
     """Esc nur, solange ein Werkzeug läuft: ohne Werkzeug verließe Esc die Skizze"""
     if view().viewport().cursor().shape() == QtCore.Qt.BitmapCursor:
@@ -294,6 +300,10 @@ in_order([
     ("toggle off", lambda: click(button("Sketcher_ToggleConstruction"))), wait,
     ("row off 2", lambda: check("both off again", not palette_row().isChecked() and not button("Sketcher_ToggleConstruction").isChecked())),
     ("zoom 0", lambda: (sketch().addGeometry(Part.Circle(V(0, 0, 0), V(0, 0, 1), 60)), doc().recompute(), fit())), wait,
+    # Werkzeug starten und mit Esc wegstecken: Fokus zurück in die 3D-Ansicht
+    ("circle tool", lambda: (activate(), click(button("Sketcher_CompCreateConic")))), wait,
+    ("esc tool", esc), wait,
+    ("focus", focus_after_esc),
     # Tangential an verbundenen Enden: keine FreeCAD-Rückfrage
     ("tangent setup", tangent_setup),
     ("tangent", lambda: QtCore.QTimer.singleShot(0, lambda: Gui.runCommand("Sketcher_ConstrainTangent"))), wait,

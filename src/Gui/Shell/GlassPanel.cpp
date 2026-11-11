@@ -4,6 +4,7 @@
 #include "Theme.h"
 
 #include <QGraphicsProxyWidget>
+#include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsSceneWheelEvent>
 #include <QGraphicsView>
@@ -353,6 +354,17 @@ GlassPanel::GlassPanel(QWidget* content, qreal radius, bool textSurface)
     // die meiste Zeit, auch wenn sie gleich blieben
     proxy->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
     setZValue(10);
+}
+
+/// Verschwindet ein Panel mit dem Tastaturfokus (Werkzeug-Optionen nach Esc), geht der Fokus zurück an die
+/// 3D-Ansicht. Qt reichte ihn sonst an das nächste Panel weiter: Fokusrahmen auf "Look At" in der Sketch Palette.
+QVariant GlassPanel::itemChange(GraphicsItemChange change, const QVariant& value)
+{
+    QGraphicsItem* focus = scene() ? scene()->focusItem() : nullptr;
+    if (change == ItemVisibleChange && !value.toBool() && focus && (focus == proxy || proxy->isAncestorOf(focus))) {
+        focus->clearFocus();
+    }
+    return QGraphicsObject::itemChange(change, value);
 }
 
 QWidget* GlassPanel::content() const
