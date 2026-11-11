@@ -92,11 +92,14 @@ def tile_menu(name, entry, answer):
 
 def rename_to(text):
     d = visible(QtWidgets.QInputDialog)[0]
+    d.grab().save(os.environ["OUT"] + ".rename.png")  # Glas-Alert wie die Rückfragen, keine Titelleiste
+    L("  rename dialog: glass=%s frameless=%s" % (d.property("glass"), bool(d.windowFlags() & QtCore.Qt.FramelessWindowHint)))
     d.setTextValue(text); d.accept()
 
 
 def confirm_delete():
     box = visible(QtWidgets.QMessageBox)[0]
+    box.grab().save(os.environ["OUT"] + ".delete.png")
     L("  question: %s" % box.text().replace("\n", " "))
     [b for b in box.buttons() if b.text() == "Delete"][0].click()
 

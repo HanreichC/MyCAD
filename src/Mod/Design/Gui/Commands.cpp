@@ -2038,7 +2038,6 @@ void showVersions(App::Document* doc)
     dlg.setMinimumSize(560, 520);
     auto lay = new QVBoxLayout(&dlg);
     lay->setContentsMargins(24, 20, 24, 20);
-    lay->addWidget(Gui::Shell::sectionLabel(T("Versions")));
     auto list = new QListWidget;
     list->setAccessibleName(T("Versions"));
     list->setIconSize(QSize(64, 48));

@@ -431,6 +431,8 @@ A("file_basics", "file", "Std_Save", ("Designs and files", "Designs und Dateien"
     "Rückgängig (Strg+Z) und Wiederherstellen (Strg+Umschalt+Z) gehen in deinen Änderungen zurück und vor."),
    ("Home at the top right, next to the window buttons, opens the start page: recent designs and your projects folder, with search. The back arrow in the same place brings you back to your design.",
     "Start oben rechts neben den Fensterknöpfen öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Der Zurück-Pfeil an derselben Stelle bringt dich zurück zum Design."),
+   ("Right-click a design on the start page for Rename… (its project folder is renamed too) and Delete… (the file or project folder goes to the trash).",
+    "Rechtsklick auf ein Design der Startseite bietet Umbenennen… (der Projektordner heißt dann mit) und Löschen… (Datei bzw. Projektordner in den Papierkorb)."),
    ("The sidebar button next to the name MyCAD hides the browser for more room; it then moves to the top left corner and shows it again.",
     "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus; er rückt dann in die Ecke oben links und blendet ihn dort wieder ein."),
    ("Right-click the design name at the top of the browser (left) for Save Version, Save As…, Export…, Variants, Rename, Close and Delete….",

@@ -264,6 +264,16 @@ QLineEdit { selection-background-color: @accent; selection-color: @labelOnAccent
 #GlassContent QTabBar::tab { background: transparent; border: none; border-radius: 8px; padding: 4px 12px; margin: 2px; color: @labelSecondary; }
 #GlassContent QTabBar::tab:selected { background: @fillSecondary; color: @labelPrimary; }
 #GlassContent QSplitter::handle { background: @separator; height: 1px; }
+/* Listen und Tabellen in Dialogen (Inhalt L1 in der Glas-Karte): Material mit 1-px-Kante, Zeilen wie im Browser.
+   Aufgeklappte Auswahllisten liegen auch im Dialog, behalten aber ihre Popup-Optik */
+QDialog[glass="true"] QAbstractItemView { background: @materialFill; border: 1px solid @materialBorder; border-radius: 12px;
+    padding: 4px; outline: 0; gridline-color: @separator; }
+QDialog[glass="true"] QAbstractItemView::item { min-height: 28px; border-radius: 8px; padding: 0 6px; }
+QDialog[glass="true"] QAbstractItemView::item:hover { background: @fillTertiary; }
+QDialog[glass="true"] QAbstractItemView::item:selected { background: @accent; color: @labelOnAccent; }
+QDialog[glass="true"] QComboBox QAbstractItemView { background: @glassOpaqueTop; border: 1px solid @glassPopupBorder; border-radius: 0; }
+QDialog[glass="true"] QHeaderView, QDialog[glass="true"] QTableCornerButton::section { background: transparent; border: none; }
+QDialog[glass="true"] QHeaderView::section { background: transparent; border: none; color: @labelSecondary; font-weight: 600; padding: 4px 8px; }
 
 /* Scrollbar: Overlay-Kapsel ohne Spur, 6 breit, beim Überfahren 9 */
 QScrollBar:vertical { background: transparent; width: 9px; margin: 2px 0; }
@@ -274,7 +284,8 @@ QScrollBar::handle:horizontal { margin: 2px 0 1px 0; }
 QScrollBar::handle:hover { margin: 0; border-radius: 4px; }
 QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
 QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
-QDialogButtonBox { dialogbuttonbox-buttons-have-icons: 0; }
+/* Abbrechen links, Standard rechts (MyStyle Alert), auch unter KDE, das es umgekehrt ordnet */
+QDialogButtonBox { dialogbuttonbox-buttons-have-icons: 0; button-layout: 1; }
 
 /* Menüs: Text-Glas als Frost (eigenes Fenster ohne Blur), r 12, Innenabstand 4, Einträge 30 hoch r 8 */
 QMenu { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 @glassOpaqueTop, stop:1 @glassOpaqueBottom);
@@ -285,7 +296,7 @@ QMenu::item:disabled { color: @labelTertiary; }
 QMenu::separator { height: 1px; background: @separator; margin: 4px 8px; }
 QMenu::icon { padding-left: 8px; }
 QMessageBox, QDialog { background: @glassOpaqueTop; }
-QMessageBox[glass="true"] { background: transparent; }
+QMessageBox[glass="true"], QDialog[glass="true"] { background: transparent; }
 QMessageBox[glass="true"] QLabel#qt_msgbox_informativelabel { color: @labelSecondary; }
 /* Checkbox: 16, r 5, aus fill.secondary, an Akzent mit weißem Häkchen */
 QCheckBox::indicator { width: 16px; height: 16px; border-radius: 5px; border: none; background: @fillSecondary; }
@@ -2533,6 +2544,7 @@ class AlertPainter: public QObject
 {
 public:
     static constexpr int Shadow = 34;  // Schatten 28 weich + 6 nach unten
+    static constexpr int TitleHeight = 20 + 6;  // Headline-Zeile und Abstand zum Inhalt (MyStyle Alert)
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override
@@ -2541,6 +2553,13 @@ protected:
             auto box = static_cast<QWidget*>(obj);
             QPainter p(box);
             paintGlass(p, QRectF(box->rect()).adjusted(Shadow, Shadow, -Shadow, -Shadow), Token::RadiusPanel, true, true);
+            if (box->property("glassTitle").toBool()) {  // Titel statt Titelleiste, Headline oben im Glas
+                p.setFont(textFont(Text::Headline));
+                p.setPen(theme().labelPrimary);
+                const QRect line(Shadow + 22, Shadow + 20, box->width() - 2 * (Shadow + 22), 20);
+                p.drawText(line, Qt::AlignLeft | Qt::AlignVCenter,
+                           p.fontMetrics().elidedText(box->windowTitle(), Qt::ElideRight, line.width()));
+            }
         }
         return false;  // Text und Knöpfe zeichnet die Box selbst
     }
@@ -2594,30 +2613,36 @@ private:
 };
 
 /// Menüs mit runden Ecken: dafür brauchen sie einen transparenten, rahmenlosen Hintergrund.
-/// Liquid Glass: Meldungen und Rückfragen als rahmenlose Glas-Alerts (Titel fett im Text, Kapsel-Knöpfe)
+/// Liquid Glass: Meldungen, Rückfragen und alle anderen modalen Dialoge als rahmenlose Glas-Karten (L3), Titel im Glas
 class MenuPolisher: public QObject
 {
+    /// rahmenloses Fenster mit Text-Glas statt Titelleiste und Hintergrund
+    static void makeAlert(QWidget* box)
+    {
+        static AlertPainter painter;
+        box->setProperty("glass", true);
+        box->setAttribute(Qt::WA_TranslucentBackground);
+        box->setWindowFlags(box->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+        // Beim Polieren existiert das native Fenster schon ohne Alphakanal (der Schattenrand wäre schwarz):
+        // mit Alphakanal neu anlegen lassen
+        if (QWindow* window = box->windowHandle()) {
+            QSurfaceFormat format = window->format();
+            format.setAlphaBufferSize(8);
+            window->setFormat(format);
+            window->destroy();
+        }
+        box->installEventFilter(&painter);
+    }
+
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
         if (event->type() == QEvent::Polish) {
             if (auto box = qobject_cast<QMessageBox*>(obj); box && !box->property("glass").toBool()) {
-                static AlertPainter painter;
-                box->setProperty("glass", true);
-                box->setAttribute(Qt::WA_TranslucentBackground);
-                box->setWindowFlags(box->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-                // Beim Polieren existiert das native Fenster schon ohne Alphakanal (der Schattenrand wäre schwarz):
-                // mit Alphakanal neu anlegen lassen
-                if (QWindow* window = box->windowHandle()) {
-                    QSurfaceFormat format = window->format();
-                    format.setAlphaBufferSize(8);
-                    window->setFormat(format);
-                    window->destroy();
-                }
+                makeAlert(box);
                 // Innenabstand 20 oben, 22 seitlich, 18 unten (MyStyle § 7.1); QMessageBox bringt selbst etwa 10 mit
                 box->setContentsMargins(AlertPainter::Shadow + 12, AlertPainter::Shadow + 10, AlertPainter::Shadow + 12,
                                         AlertPainter::Shadow + 8);
-                box->installEventFilter(&painter);
                 // Titel Headline; Text und Zusatztext Callout in Sekundärfarbe ins Zusatztext-Feld: das bricht in
                 // Fensterbreite um (beim Haupttext schaltet Qt den Umbruch zum Bemessen ab, er würde abgeschnitten)
                 if (!box->windowTitle().isEmpty() && !Qt::mightBeRichText(box->text())) {
@@ -2647,6 +2672,29 @@ protected:
                 }
                 box->style()->unpolish(box);  // Stylesheet-Regeln für [glass="true"] greifen erst nach neuem Polieren
                 box->style()->polish(box);
+            }
+            // alle anderen modalen Dialoge (Maß in der Skizze, Name, Versionen …) ebenso, ohne Titelleiste: den Titel
+            // zeichnet AlertPainter. Nicht: Dateiauswahl (groß, muss sich ziehen lassen), schon rahmenlose (Einstellungen)
+            if (auto dialog = qobject_cast<QDialog*>(obj); dialog && dialog->isWindow() && dialog->parentWidget()
+                && !qobject_cast<QMessageBox*>(obj) && !obj->inherits("QFileDialog")
+                && !(dialog->windowFlags() & Qt::FramelessWindowHint) && !dialog->property("glass").toBool()) {
+                makeAlert(dialog);
+                dialog->setProperty("glassTitle", !dialog->windowTitle().isEmpty());
+                const int title = dialog->windowTitle().isEmpty() ? 0 : AlertPainter::TitleHeight;
+                // Innenabstand 20 oben, 22 seitlich, 18 unten (MyStyle § 7.1) statt dem des Layouts
+                dialog->setContentsMargins(AlertPainter::Shadow + 22, AlertPainter::Shadow + 20 + title, AlertPainter::Shadow + 22,
+                                           AlertPainter::Shadow + 18);
+                if (QLayout* lay = dialog->layout()) {
+                    lay->setContentsMargins(0, 0, 0, 0);
+                }
+                // Stylesheet-Regeln für [glass="true"] greifen erst nach neuem Polieren, auch bei schon polierten
+                // Kindern (eine Tabelle poliert ihren Kopf beim Bemessen, lange vor dem Einblenden)
+                QList<QWidget*> all = dialog->findChildren<QWidget*>();
+                all.prepend(dialog);
+                for (QWidget* w : all) {
+                    w->style()->unpolish(w);
+                    w->style()->polish(w);
+                }
             }
             if (auto dialog = qobject_cast<QDialog*>(obj); dialog && dialog->parentWidget()) {
                 dialog->installEventFilter(Scrim::instance());
