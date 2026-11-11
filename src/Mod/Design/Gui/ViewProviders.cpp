@@ -740,6 +740,17 @@ void DesignGui::refreshPrintView()
 void ViewProviderBody::attach(App::DocumentObject* obj)
 {
     PartGui::ViewProviderPartExt::attach(obj);
+    // Ein neuer Körper sieht aus wie die Vorgabe (Stahl …): der Werkstoff passt dazu, sonst misst Messen "Default"
+    // ohne Masse. Geladene Körper bringen ihren Werkstoff mit.
+    auto part = static_cast<Part::Feature*>(obj);
+    const int look = Gui::Shell::bodyMaterialIndex(ShapeAppearance[0]);
+    if (!obj->getDocument()->testStatus(App::Document::Restoring) && look >= 0 && !Design::physicalMaterialChosen(part)) {
+        const Gui::Shell::BodyMaterialEntry entry = Gui::Shell::bodyMaterialList()[size_t(look)];
+        const std::string uuid = Design::physicalMaterialFor(entry.name, entry.category);
+        if (!uuid.empty()) {
+            Design::setPhysicalMaterial(part, uuid, false);
+        }
+    }
     printSwitch = new SoSwitch;
     printSwitch->whichChild = SO_SWITCH_NONE;
     pcRoot->addChild(printSwitch);
@@ -747,6 +758,9 @@ void ViewProviderBody::attach(App::DocumentObject* obj)
 
 void ViewProviderBody::updateData(const App::Property* prop)
 {
+    if (prop == &static_cast<Design::Body*>(getObject())->ShapeMaterial) {
+        return;  // der Werkstoff folgt dem Aussehen, nie umgekehrt (FreeCAD färbte den Körper sonst nach der Werkstoffkarte)
+    }
     PartGui::ViewProviderPartExt::updateData(prop);
     if (printViewOn && prop == &static_cast<Design::Body*>(getObject())->Shape) {
         refreshPrintOverlay();
