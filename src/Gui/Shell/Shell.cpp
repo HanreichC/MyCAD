@@ -4082,6 +4082,7 @@ bool Gui::Shell::saveQuietly(App::Document* doc, const QString& title)
             ok = doc->saveAs(file.toUtf8().constData());
             if (ok) {
                 quietlyCreated() << QFileInfo(file).absoluteFilePath();
+                getMainWindow()->appendRecentFile(file);  // Startseite "Recent" wie nach Speichern unter
             }
         }
         else {

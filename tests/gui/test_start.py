@@ -67,6 +67,16 @@ def store():
     shutil.copy(FILE, os.path.join(FOLDER, "Legacy.FCStd"))  # Design aus der Zeit vor .mycad
 
 
+def recent_names():
+    box = [l for l in page().findChildren(QtWidgets.QLabel) if l.text() == "Recent"][0].parentWidget()
+    return [[l.text() for l in t.findChildren(QtWidgets.QLabel, "StartName")][0] for t in box.findChildren(QtWidgets.QWidget, "StartTile")]
+
+
+def save_version():
+    QtCore.QTimer.singleShot(800, lambda: visible(QtWidgets.QInputDialog)[0].accept())
+    Gui.runCommand("MyCAD_SaveVersion")
+
+
 # in_order: jeder Schritt wartet, bis der vorige fertig ist (Kamera-Animation, Dateidialog, Materialvorschauen)
 in_order([
     ("start", lambda: report("beim Start")),
@@ -90,5 +100,12 @@ in_order([
     ("searched", lambda: report("Suche 'xyz' (keine Kachel)")),
     ("search2", lambda: (page().findChild(QtWidgets.QLineEdit, "StartSearch").setText("brack"), report("Suche 'brack'"))),
     ("shot home", lambda: shot("home")), ("back2", lambda: page().hide()),
+    # ein neues Design, nur mit "Version sichern" (still in den Projektordner) gespeichert, steht auch unter Recent
+    ("new2", lambda: Gui.runCommand("Std_New")), ("wait", lambda: None),
+    ("body2", lambda: (setattr(App.ActiveDocument, "Label", "Clip"), make_body(rect(0, 0, 20, 20), 0, 5, "Clip"))),
+    ("version", save_version),
+    ("close2", lambda: App.closeDocument(App.ActiveDocument.Name)), ("wait", lambda: None),
+    ("home3", lambda: click([b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Home"][0])), ("wait", lambda: None),
+    ("recent", lambda: check("a design saved with Save Version is listed under Recent", "Clip" in recent_names(), str(recent_names()))),
     ("restore", lambda: grp.SetString("ProjectsFolder", old_folder) if old_folder else grp.RemString("ProjectsFolder")),
 ])
