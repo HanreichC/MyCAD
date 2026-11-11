@@ -123,7 +123,14 @@ ICONS = {
     "Notify_Error": '<circle cx="12" cy="12" r="10" fill="#FF3B30" stroke="none"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#FFFFFF" stroke-width="2.2"/>',
     "Notify_Warning": '<path d="M12 2.5L22.5 20.5h-21z" fill="#FF9500" stroke="#FF9500" stroke-width="1.5"/><path d="M12 9v5" stroke="#FFFFFF" stroke-width="2.2"/><circle cx="12" cy="17.3" r="1.3" fill="#FFFFFF" stroke="none"/>',
     "Notify_Info": '<circle cx="12" cy="12" r="10" fill="#007AFF" stroke="none"/><path d="M12 11v6" stroke="#FFFFFF" stroke-width="2.2"/><circle cx="12" cy="7.6" r="1.3" fill="#FFFFFF" stroke="none"/>',
-    "Chevron_Down": '<path d="M6 9l6 6 6-6" stroke="#8E8E93" stroke-width="2.6"/>',
+    # Indikatoren in Controls (MyStyle I-1: 2.0–2.2, fest systemGray, die Stylesheet-Bilder färbt niemand ein)
+    "Chevrons_UpDown": '<path d="M8 9.5l4-4 4 4M8 14.5l4 4 4-4" stroke="#8E8E93" stroke-width="2.2"/>',  # Pop-up-Button
+    "Menu_Chevron": '<path d="M6 9.4l6 6 6-6" stroke="#8E8E93" stroke-width="3.1"/>',  # Menü am Toolbar-Knopf, in 14 px
+    "Chevron_Right": '<path d="M9.5 6l6 6-6 6" stroke="#8E8E93" stroke-width="2.2"/>',  # Untermenü
+    "Chevron_Right_OnAccent": '<path d="M9.5 6l6 6-6 6" stroke="#FFFFFF" stroke-width="2.2"/>',
+    "Tree_Closed": '<path d="M9.6 7.8L15 12l-5.4 4.2z" fill="#8E8E93" stroke="#8E8E93" stroke-width="1.2"/>',  # Baum-Pfeile
+    "Tree_Open": '<path d="M7.8 9.6h8.4L12 15z" fill="#8E8E93" stroke="#8E8E93" stroke-width="1.2"/>',
+    "Status_Saved": '<circle cx="12" cy="12" r="8.5"/><path d="M8.4 12.3l2.5 2.5 4.8-5.3"/>',  # Gesichert, unten im Browser
     # Timeline
     "Timeline_Start": '<path d="M7 5v14M17 6l-7 6 7 6"/>',
     "Timeline_Back": '<path d="M15 6l-6 6 6 6"/>',

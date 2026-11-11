@@ -96,7 +96,10 @@
         <file>Notify_Error.svg</file>
         <file>Notify_Warning.svg</file>
         <file>Notify_Info.svg</file>
-        <file>Chevron_Down.svg</file>
+        <file>Chevrons_UpDown.svg</file>
+        <file>Menu_Chevron.svg</file>
+        <file>Chevron_Right.svg</file>
+        <file>Chevron_Right_OnAccent.svg</file>
         <file>Tree_Closed.svg</file>
         <file>Tree_Open.svg</file>
         <file>Status_Saved.svg</file>

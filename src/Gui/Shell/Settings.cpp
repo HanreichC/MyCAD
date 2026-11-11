@@ -767,8 +767,8 @@ QLabel#Chip { background: @fillTertiary; border-radius: 12px; padding: 0 10px; }
 QComboBox { background: transparent; border: 2px solid transparent; border-radius: 8px; padding: 2px 8px; min-height: 22px; color: @labelSecondary; }
 QComboBox:hover { background: @fillTertiary; }
 QComboBox:focus { border-color: @focusRing; }
-QComboBox::drop-down { border: none; width: 20px; }
-QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
+QComboBox::drop-down { border: none; width: 24px; }
+QComboBox::down-arrow { image: url(:/mycad/icons/Chevrons_UpDown.svg); width: 16px; height: 16px; }
 QComboBox QAbstractItemView { background: @glassOpaqueTop; border: 1px solid @glassPopupBorder; padding: 4px; outline: 0;
     selection-background-color: @accent; selection-color: @labelOnAccent; }
 /* Textfeld (9.3): 30 hoch, r 8, fill.tertiary, Fokus 2-px-Ring; Wert per Tippen, Pfeiltasten oder Mausrad */

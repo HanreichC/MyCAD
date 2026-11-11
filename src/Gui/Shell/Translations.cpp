@@ -58,7 +58,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Move", "Verschieben"},
         {"Export", "Exportieren"},
         {"Undo", "Rückgängig"},
-        {"Redo", "Wiederherstellen"},
+        {"Redo", "Wiederholen"},  // wie macOS; "Wiederherstellen" passte nicht unter den Knopf
         {"Create Sketch", "Skizze erstellen"},
         {"Extrude", "Extrudieren"},
         {"Press Pull", "Drücken/Ziehen"},

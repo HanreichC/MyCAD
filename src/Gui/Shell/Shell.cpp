@@ -180,10 +180,11 @@ QToolButton#GlassButton:pressed, QToolButton#GlassButton:checked { background: @
 QToolButton#GlassButton:focus, QToolButton#WindowClose:focus, QToolButton#PaletteRow:focus { border-color: @focusRing; }
 QToolButton#GlassButton:disabled { background: transparent; }
 QToolButton#GlassButton[names="true"] { border-radius: 12px; padding-top: 2px; }
-QToolButton#GlassButton[names="true"]::menu-arrow { subcontrol-position: bottom center; bottom: 9px; }
-QToolButton#GlassButton[popupMode="1"] { padding-right: 10px; }
-QToolButton#GlassButton::menu-button { border: none; width: 12px; }
-QToolButton#GlassButton::menu-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 9px; height: 9px; }
+QToolButton#GlassButton[names="true"]::menu-arrow { subcontrol-position: bottom center; bottom: 11px; }
+QToolButton#GlassButton[popupMode="1"] { padding-right: 14px; }
+QToolButton#GlassButton::menu-button { border: none; width: 14px; }
+/* Pfeil für das Menü am Knopf: kräftig genug, um ihn zu sehen und zu treffen (vorher 9 px, Linie 1 px) */
+QToolButton#GlassButton::menu-arrow { image: url(:/mycad/icons/Menu_Chevron.svg); width: 14px; height: 14px; }
 QToolButton#GlassButton[error="true"] { background: @errorFill; }
 QToolButton#WindowClose:hover { background: @red; }
 QToolButton#WindowClose:pressed { background: @redPressed; }
@@ -235,8 +236,9 @@ QLineEdit:focus, QAbstractSpinBox:focus, QComboBox:focus,
 /* subcontrol-origin: sonst schrumpft bei Feldern ohne Knöpfe (NoButtons, z. B. die Wertfelder in der Skizze) das
    Eingabefeld auf 1 px, sobald das Feld Rand oder Innenabstand hat: der Text ist unsichtbar */
 QAbstractSpinBox::up-button, QAbstractSpinBox::down-button { width: 0; border: none; subcontrol-origin: border; }
-QComboBox::drop-down { border: none; width: 20px; }
-QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
+QComboBox::drop-down { border: none; width: 24px; }
+/* Pop-up-Button (MyStyle): Auf/Ab-Chevrons 16 */
+QComboBox::down-arrow { image: url(:/mycad/icons/Chevrons_UpDown.svg); width: 16px; height: 16px; }
 QLineEdit { selection-background-color: @accent; selection-color: @labelOnAccent; }
 
 /* Standard-Buttons: Kapsel, fill.tertiary, gedrückt fill.secondary, Hover 1 px Weiß 35 %; Standard-Aktion = Akzent */
@@ -299,6 +301,8 @@ QMenu::item:selected { background: @accent; color: @labelOnAccent; }
 QMenu::item:disabled { color: @labelTertiary; }
 QMenu::separator { height: 1px; background: @separator; margin: 4px 8px; }
 QMenu::icon { padding-left: 8px; }
+QMenu::right-arrow { image: url(:/mycad/icons/Chevron_Right.svg); width: 14px; height: 14px; margin-right: 6px; }
+QMenu::right-arrow:selected { image: url(:/mycad/icons/Chevron_Right_OnAccent.svg); }
 QMessageBox, QDialog { background: @glassOpaqueTop; }
 QMessageBox[glass="true"], QDialog[glass="true"] { background: transparent; }
 QMessageBox[glass="true"] QLabel#qt_msgbox_informativelabel { color: @labelSecondary; }
@@ -869,25 +873,34 @@ void styleToolButton(QToolButton* btn)
     btn->setProperty("names", names);
     setTextStyle(btn, Text::Caption);
     if (names) {
-        // zu lange Namen in zwei Zeilen umbrechen statt abschneiden (MyStyle T-8)
-        const int width = dropdown ? 86 : 74;
+        // so breit wie der Name (wie in macOS-Toolbars), 60 bis 108; was dann noch zu lang ist, bricht an einem
+        // Leerzeichen oder nach "/" in zwei Zeilen um statt abgeschnitten zu werden (MyStyle T-8). Feste 74 schnitten
+        // einzelne lange Wörter ab ("Extrudier…"), bei Menü-Knöpfen fehlte der Pfeil in der Rechnung (Qt kürzte mittig)
+        constexpr int narrowest = 60, widest = 108;
+        const int extra = dropdown ? 12 + 14 : 12;  // Rand und Innenabstand, bei Menü-Knöpfen dazu der Pfeil (14)
         const QFontMetrics fm(btn->font());
         QString text = btn->property("label").toString();
-        if (fm.horizontalAdvance(text) > width - 8 && text.contains(QLatin1Char(' '))) {
-            int best = -1;
-            for (int i = text.indexOf(QLatin1Char(' ')); i >= 0; i = text.indexOf(QLatin1Char(' '), i + 1)) {
-                if (best < 0 || std::abs(2 * i - int(text.size())) < std::abs(2 * best - int(text.size()))) {
+        if (fm.horizontalAdvance(text) + extra > widest) {
+            int best = -1;  // Umbruch möglichst mittig: an einem Leerzeichen (fällt weg) oder nach "/" (bleibt stehen)
+            for (int i = 0; i < int(text.size()); ++i) {
+                if ((text[i] == QLatin1Char(' ') || text[i] == QLatin1Char('/'))
+                    && (best < 0 || std::abs(2 * i - int(text.size())) < std::abs(2 * best - int(text.size())))) {
                     best = i;
                 }
             }
-            text = fm.elidedText(text.left(best), Qt::ElideRight, width - 8) + QLatin1Char('\n')
-                + fm.elidedText(text.mid(best + 1), Qt::ElideRight, width - 8);
+            if (best > 0) {
+                const bool slash = text[best] == QLatin1Char('/');
+                text = text.left(best + (slash ? 1 : 0)) + QLatin1Char('\n') + text.mid(best + 1);
+            }
         }
-        else {
-            text = fm.elidedText(text, Qt::ElideRight, width - 8);
+        QStringList lines = text.split(QLatin1Char('\n'));
+        int need = 0;
+        for (QString& line : lines) {
+            line = fm.elidedText(line, Qt::ElideRight, widest - extra);  // nur was selbst bei 96 nicht passt
+            need = std::max(need, fm.horizontalAdvance(line));
         }
-        btn->setText(text);
-        btn->setFixedSize(width, 60);
+        btn->setText(lines.join(QLatin1Char('\n')));
+        btn->setFixedSize(std::clamp(need + extra, narrowest, widest), 60);
     }
     else {
         btn->setFixedSize(dropdown ? 46 : Token::WindowButton, Token::WindowButton);
@@ -970,6 +983,13 @@ private:
     {
         return item->widget() && item->widget()->objectName() == QLatin1String("ToolbarSeparator");
     }
+    /// Größe eines Elements; ist es allein breiter als die Fläche und kann selbst umbrechen (ein Toolbar-Abschnitt mit
+    /// vielen Werkzeugen), bekommt es die volle Breite und die Höhe dafür, statt über den Rand zu laufen
+    static QSize itemSize(QLayoutItem* item, int width)
+    {
+        const QSize s = item->sizeHint();
+        return s.width() > width && item->hasHeightForWidth() ? QSize(width, item->heightForWidth(width)) : s;
+    }
     int arrange(const QRect& rect, bool apply) const
     {
         const QRect area = rect.marginsRemoved(contentsMargins());
@@ -979,7 +999,7 @@ private:
             if (item->isEmpty()) {
                 continue;
             }
-            const int w = item->sizeHint().width();
+            const int w = itemSize(item, area.width()).width();
             if (x > 0 && x + w > area.width() && !separator(item)) {
                 rows.emplace_back();
                 x = 0;
@@ -999,13 +1019,13 @@ private:
         for (const auto& row : rows) {
             int rowWidth = -spacing(), rowHeight = 0;
             for (QLayoutItem* item : row) {
-                rowWidth += item->sizeHint().width() + spacing();
-                rowHeight = std::max(rowHeight, item->sizeHint().height());
+                rowWidth += itemSize(item, area.width()).width() + spacing();
+                rowHeight = std::max(rowHeight, itemSize(item, area.width()).height());
             }
             if (apply) {
                 int px = area.left() + (left ? 0 : std::max(0, (area.width() - rowWidth) / 2));
                 for (QLayoutItem* item : row) {
-                    const QSize s = item->sizeHint();
+                    const QSize s = itemSize(item, area.width());
                     item->setGeometry(QRect(QPoint(px, y + (rowHeight - s.height()) / 2), s));
                     px += s.width() + spacing();
                 }
@@ -1052,7 +1072,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
     auto lay = new FlowLayout(w);  // bricht um, wenn das Fenster schmal ist
     lay->setContentsMargins(10, 6, 10, 6);
     lay->setSpacing(2);
-    QHBoxLayout* row = nullptr;  // Knöpfe des aktuellen Abschnitts
+    FlowLayout* row = nullptr;  // Knöpfe des aktuellen Abschnitts; bricht um, wenn der Abschnitt allein zu breit ist
     auto section = [&](const QString& caption) {
         if (row) {
             auto sep = new QFrame;
@@ -1064,9 +1084,11 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         auto column = new QVBoxLayout(group);
         column->setContentsMargins(0, 0, 0, 0);
         column->setSpacing(0);
-        row = new QHBoxLayout;
+        auto buttons = new QWidget;
+        row = new FlowLayout(buttons);
+        row->setContentsMargins(0, 0, 0, 0);
         row->setSpacing(2);
-        column->addLayout(row);
+        column->addWidget(buttons);
         if (!caption.isEmpty()) {
             auto label = sectionLabel(caption);
             label->setAlignment(Qt::AlignCenter);

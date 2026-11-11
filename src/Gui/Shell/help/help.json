@@ -758,7 +758,7 @@
      ],
      [
       "Strg+Z / Strg+Umschalt+Z",
-      "Rückgängig / Wiederherstellen"
+      "Rückgängig / Wiederholen"
      ],
      [
       "Strg+N / Strg+O",
@@ -1401,7 +1401,7 @@
     "de": [
      "Neu (Strg+N) legt ein leeres Design an. Öffnen (Strg+O) lädt eine Design-Datei. Speichern musst du nie: MyCAD speichert nach jedem Schritt, ein neues Design bekommt einen eigenen Ordner in deinem Projektordner.",
      "Version sichern (Strg+S) gibt dem jetzigen Stand einen Namen, z. B. „Vor den Bohrungen“, damit du ihn unter Versionen wiederfindest.",
-     "Rückgängig (Strg+Z) und Wiederherstellen (Strg+Umschalt+Z) gehen in deinen Änderungen zurück und vor.",
+     "Rückgängig (Strg+Z) und Wiederholen (Strg+Umschalt+Z) gehen in deinen Änderungen zurück und vor.",
      "Start oben rechts neben den Fensterknöpfen öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Der Zurück-Pfeil an derselben Stelle bringt dich zurück zum Design.",
      "Rechtsklick auf ein Design der Startseite bietet Umbenennen… (der Projektordner heißt dann mit) und Löschen… (Datei bzw. Projektordner in den Papierkorb).",
      "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus; er rückt dann in die Ecke oben links und blendet ihn dort wieder ein.",
