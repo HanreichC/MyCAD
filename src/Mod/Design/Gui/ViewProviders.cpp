@@ -1429,12 +1429,6 @@ public:
                 }
             }
         }
-        // Combine ohne "Keep tools": Werkzeug-Bodies verschwinden wie in Fusion
-        if (combine) {
-            for (auto tool : combine->ToolBodies.getValues()) {
-                tool->Visibility.setValue(combine->KeepTools.getValue());
-            }
-        }
         App::Document* doc = feature->getDocument();
         doc->commitTransaction();
         Gui::Application::Instance->getDocument(doc)->resetEdit();
@@ -1875,6 +1869,11 @@ private:
         if (combine) {
             combine->Operation.setValue(simpleOp->currentIndex() + 1L);
             combine->KeepTools.setValue(check->isChecked());
+            // ohne "Keep tools" verschwinden die Werkzeug-Bodies wie in Fusion, schon in der Vorschau (sonst verdeckt
+            // das Werkzeug beim Cut das Ergebnis); Abbrechen nimmt das mit der Transaktion zurück
+            for (auto tool : combine->ToolBodies.getValues()) {
+                tool->Visibility.setValue(combine->KeepTools.getValue());
+            }
         }
         if (move) {
             move->Translation.setValue(Base::Vector3d(moveX->value().getValue(), moveY->value().getValue(),

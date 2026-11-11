@@ -106,6 +106,9 @@ run([
     ("combine", lambda: Gui.Control.activeDialog() or Gui.runCommand("Design_Combine")),
     ("one body", lambda: check("Combine panel: 1 body (singular)", "1 body" in [l.text() for l in visible(QtWidgets.QLabel)],
                                str([l.text() for l in visible(QtWidgets.QLabel)]))),
+    ("cut", lambda: choose("Cut", 1)),
+    ("tool hidden", lambda: check("Cut preview: the tool body no longer covers the result", not body("D").Visibility)),
     ("combine cancel", cancel),
+    ("tool back", lambda: check("Cancel shows the tool body again", body("D").Visibility)),
     ("shot", lambda: shot("features2")),
 ])
