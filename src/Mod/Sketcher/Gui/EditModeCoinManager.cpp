@@ -671,7 +671,8 @@ void EditModeCoinManager::ParameterObserver::initParameters()
          [this, drawingParameters = Client.drawingParameters](const std::string& param) {
              updateColor(drawingParameters.PreselectColor, param);
          }},
-        {"SelectionColor",
+        // MyCAD: own key; the 3D view's SelectionColor is blue, like the unconstrained sketch edges
+        {"SketchSelectionColor",
          [this, drawingParameters = Client.drawingParameters](const std::string& param) {
              updateColor(drawingParameters.SelectColor, param);
          }},

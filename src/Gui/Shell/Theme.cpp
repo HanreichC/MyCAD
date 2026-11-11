@@ -244,6 +244,7 @@ void Gui::Shell::reloadTheme()
     t.gray5 = pick("#E5E5EA", "#2C2C2E", "#D8D8DC", "#363638");
     t.redIC = ic("#E9152D", "#FF6165");
     t.orangeIC = ic("#C55300", "#FFA056");
+    t.greenIC = ic("#008932", "#4AD968");
     t.purpleIC = ic("#B02FC2", "#EA8DFF");
     t.fillPrimary = pick("#33787880", "#5C787880", "#47787880", "#70787880");
     t.fillSecondary = pick("#29787880", "#52787880", "#3D787880", "#66787880");

@@ -598,6 +598,9 @@ void applyTheme()
     view->SetUnsigned("FullyConstraintInternalAlignmentColor", packed(t.labelSecondary));
     view->SetUnsigned("ExternalColor", packed(t.purple));
     view->SetUnsigned("ExternalDefiningColor", packed(t.purpleIC));
+    // Auswahl in der Skizze grün (Kontrast-Variante): Blau heißt hier schon "unterbestimmt", ausgewählte Kanten sähen
+    // sonst aus wie alle anderen
+    view->SetUnsigned("SketchSelectionColor", packed(t.greenIC));
     for (const char* soft : {"SketchEdgeColor", "SketchVertexColor", "ConstrainedDimColor", "ConstrainedIcoColor", "CursorTextColor"}) {
         view->SetUnsigned(soft, packed(t.labelSecondary));
     }

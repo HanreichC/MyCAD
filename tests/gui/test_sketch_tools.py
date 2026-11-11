@@ -257,6 +257,24 @@ def array_result():
     check("Rectangular Array: three clicks make a 2 x 2 grid", len(g) == 4, str(len(g)))
 
 
+def edge_color():
+    """Farbe der Linie y=0 bei x=15 (kräftigstes Pixel quer zur Linie)"""
+    img = mw.grab().toImage(); vp = view().viewport()
+    c = vp.mapTo(mw, screen(15, 0))
+    return max((img.pixelColor(c.x(), c.y() + d) for d in range(-4, 5)), key=lambda q: q.hsvSaturation())
+
+
+def selection_color():
+    saved["plain"] = edge_color()
+    Gui.Selection.addSelection(sketch(), "Edge1")
+
+
+def selection_distinct():
+    a, b = saved["plain"], edge_color()
+    dh = abs(a.hsvHue() - b.hsvHue()); dh = min(dh, 360 - dh)
+    check("a selected sketch edge has clearly another colour than an unselected one", dh > 30, "%s -> %s" % (a.name(), b.name()))
+
+
 import Sketcher
 
 in_order([
@@ -285,6 +303,12 @@ in_order([
     ("array row", lambda: press(0, 20)), wait,
     ("array ok", array_result),
     ("esc array", esc_tool), wait,
+    # Auswahl in der Skizze deutlich anders als die unbestimmte Linie
+    ("sel setup", lambda: (clear(), sketch().addGeometry(Part.LineSegment(V(-30, 0, 0), V(30, 0, 0))), doc().recompute(),
+                           Gui.Selection.clearSelection(), move(0, 50))), wait,
+    ("select", selection_color), wait,
+    ("selected", selection_distinct),
+    ("shot selected", lambda: shot("selected")),
     # 2 Versatz
     ("zoom", lambda: (sketch().addGeometry(Part.Circle(V(0, 0, 0), V(0, 0, 1), 60)), doc().recompute(), fit())), wait,
     ("line", line_setup),

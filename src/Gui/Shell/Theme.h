@@ -33,7 +33,7 @@ struct Theme
     QColor labelPrimary, labelSecondary, labelTertiary, labelOnAccent;
     QColor accent, accentText, focusRing;
     QColor red, orange, yellow, green, blue, purple, gray, gray2, gray5;
-    QColor redIC, orangeIC, purpleIC;  ///< kräftigere Variante (Kontrast erhöhen) für "voll bestimmt" im Skizzenbild
+    QColor redIC, orangeIC, purpleIC, greenIC;  ///< kräftigere Variante (Kontrast erhöhen): "voll bestimmt", Auswahl im Skizzenbild
     QColor fillPrimary, fillSecondary, fillTertiary, fillQuaternary;
     QColor separator, separatorOpaque;
     QColor materialFill, materialBorder, materialThumb;
