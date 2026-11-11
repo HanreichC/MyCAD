@@ -1393,6 +1393,8 @@
      "Home at the top right, next to the window buttons, opens the start page: recent designs and your projects folder, with search. The back arrow in the same place brings you back to your design.",
      "Right-click a design on the start page for Rename… (its project folder is renamed too) and Delete… (the file or project folder goes to the trash).",
      "The sidebar button next to the name MyCAD hides the browser for more room; it then moves to the top left corner and shows it again.",
+     "Click the design name at the top of the browser to rename the design (a pencil shows when you point at it); its file and project folder get the new name too.",
+     "Bottom right in the browser, “Saved” shows when the current state of your design is on disk.",
      "Right-click the design name at the top of the browser (left) for Save Version, Save As…, Export…, Variants, Rename, Close and Delete….",
      "Delete… asks first. A saved file goes to the trash, so you can still get it back there."
     ],
@@ -1403,6 +1405,8 @@
      "Start oben rechts neben den Fensterknöpfen öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Der Zurück-Pfeil an derselben Stelle bringt dich zurück zum Design.",
      "Rechtsklick auf ein Design der Startseite bietet Umbenennen… (der Projektordner heißt dann mit) und Löschen… (Datei bzw. Projektordner in den Papierkorb).",
      "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus; er rückt dann in die Ecke oben links und blendet ihn dort wieder ein.",
+     "Ein Klick auf den Designnamen oben im Browser benennt das Design um (beim Darüberfahren zeigt sich ein Stift); Datei und Projektordner heißen danach mit.",
+     "Unten rechts im Browser steht „Gesichert“, wenn der aktuelle Stand deines Designs gespeichert ist.",
      "Rechtsklick auf den Designnamen ganz oben im Browser (links) bietet Version sichern, Speichern unter…, Exportieren…, Varianten, Umbenennen, Schließen und Löschen….",
      "Löschen… fragt vorher nach. Eine gespeicherte Datei kommt in den Papierkorb, du holst sie dort also noch zurück."
     ]
