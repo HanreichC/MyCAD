@@ -1048,8 +1048,11 @@ public:
     std::function<bool()> commit;
 
 protected:
-    bool eventFilter(QObject*, QEvent* event) override
+    bool eventFilter(QObject* obj, QEvent* event) override
     {
+        if (!static_cast<QWidget*>(obj)->isEnabled()) {
+            return false;  // Dialog geschlossen (TaskView sperrt die Felder): der Fokus geht, es gibt nichts zu übernehmen
+        }
         if (event->type() == QEvent::KeyPress) {
             const int key = static_cast<QKeyEvent*>(event)->key();
             return (key == Qt::Key_Return || key == Qt::Key_Enter) && commit();

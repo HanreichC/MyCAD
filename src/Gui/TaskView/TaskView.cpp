@@ -705,6 +705,16 @@ void TaskView::removeDialog(std::vector<TaskInfo>::iterator infoIt)
     addTaskWatcher();
 
     if (remove) {
+        // MyCAD: ein geschlossener Dialog reagiert nicht mehr. Bis deleteLater greift, kämen Tasten und Signale seiner
+        // Felder sonst noch in seinem Code an: Werte änderten sich nach OK, nach Cancel griffe er auf das verworfene
+        // Feature zu, und beim Löschen der Felder (~TaskDialog) liefe er halb abgebaut (Absturz in apply())
+        for (QWidget* widget : remove->ActiveDialog->getDialogContent()) {
+            widget->setEnabled(false);
+            widget->blockSignals(true);
+            for (QWidget* child : widget->findChildren<QWidget*>()) {
+                child->blockSignals(true);
+            }
+        }
         remove->ActiveDialog->closed();
         remove->ActiveDialog->emitDestructionSignal();
         // deleteLater: removeDialog läuft meist im clicked() eines Buttons, der selbst zu diesen Widgets gehört.

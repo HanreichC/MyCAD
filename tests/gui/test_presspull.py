@@ -7,6 +7,13 @@ def side_face(b):  # Fläche mit kleinstem x (linke Seite)
     return "Face%d" % (1 + min(range(len(b.Shape.Faces)), key=lambda k: b.Shape.Faces[k].CenterOfMass.x))
 
 
+def ok_then_type():
+    """Tasten, die noch ins Feld gehen, nachdem OK den Dialog geschlossen hat (er wird erst danach gelöscht)"""
+    box = sorted(visible(QtWidgets.QAbstractSpinBox), key=lambda w: w.mapToGlobal(QtCore.QPoint(0, 0)).y())[0]
+    ok()
+    box.lineEdit().selectAll(); QtTest.QTest.keyClicks(box.lineEdit(), "8"); QtTest.QTest.keyClick(box.lineEdit(), QtCore.Qt.Key_Return)
+
+
 run([
     ("setup", lambda: make_body(rect(0, 0, 60, 40), 0, 10, "Box")),
     ("pick esc", lambda: Gui.Selection.addSelection(body("Box"), top_face(body("Box")))),
@@ -20,7 +27,8 @@ run([
     ("pick top", lambda: Gui.Selection.addSelection(body("Box"), top_face(body("Box")))),
     ("Press Pull", lambda: click(button("Design_PressPull"))),
     ("+5", lambda: type_into(0, "5 mm")),
-    ("OK", ok), ("volumes", lambda: L("%s expect 36000" % volumes())),
+    ("OK", ok_then_type), ("volumes", lambda: L("%s expect 36000" % volumes())),
+    ("closed", lambda: check("keys after OK do not change the feature", volumes() == [("Box", 36000.0, True)], str(volumes()))),
     ("pick side", lambda: Gui.Selection.addSelection(body("Box"), side_face(body("Box")))),
     ("Press Pull 2", lambda: click(button("Design_PressPull"))),
     ("-3", lambda: type_into(0, "-3 mm")),
