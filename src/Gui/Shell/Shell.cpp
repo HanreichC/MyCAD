@@ -2545,6 +2545,17 @@ protected:
                 static_cast<QWidget*>(obj)->setAttribute(Qt::WA_TranslucentBackground);
             }
         }
+        // Zahlenfelder: Qt legt das Eingabefeld trotz padding an den linken Rand (nur rechts zählen Rand und
+        // Innenabstand), der Text klebte am Rand. Den fehlenden Abstand links (Rand 2 + Innenabstand 8 wie bei
+        // QLineEdit, MyStyle 9.3) als Textrand nachholen; die Breite des Felds rechnet ihn schon ein
+        else if (event->type() == QEvent::Resize) {
+            if (auto edit = qobject_cast<QLineEdit*>(obj); edit && qobject_cast<QAbstractSpinBox*>(edit->parentWidget())) {
+                const int left = std::max(0, 10 - edit->x());
+                if (edit->textMargins().left() != left) {
+                    edit->setTextMargins(left, 0, 0, 0);
+                }
+            }
+        }
         return false;
     }
 };

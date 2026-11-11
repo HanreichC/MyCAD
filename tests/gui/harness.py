@@ -307,6 +307,8 @@ def _check_fields():
             edit = w.lineEdit()
             if w.width() > 30 and edit is not None and edit.width() < 10:  # Text hat keinen Platz (Stylesheet ohne subcontrol-origin)
                 why.append("edit field %d px wide" % edit.width())
+            if edit is not None and edit.x() + edit.textMargins().left() < 8:  # Text klebt am linken Rand (MyStyle: 10 seitlich)
+                why.append("text %d px from the left edge" % (edit.x() + edit.textMargins().left()))
         key = (type(w).__name__, w.objectName(), w.accessibleName(), w.window().windowTitle())
         if why and key not in _field_fails:
             _field_fails.add(key)
