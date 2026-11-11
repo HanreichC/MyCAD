@@ -44,6 +44,7 @@ if [ "${GUI:-ci}" != none ]; then
     step "GUI-Tests (${GUI:-ci})"
     if [ "${GUI:-ci}" = all ]; then list=(tests/gui/test_*.py); else mapfile -t list < <(grep -v '^#' tests/gui/ci.txt | sed '/^$/d; s|^|tests/gui/|'); fi
     export OUTDIR
+    export MYCAD_TIMEOUT="${MYCAD_TIMEOUT:-600}"  # lange Tests (test_scribble, test_sketch_tools) brauchen unter Last mehr als 180 s
     gui_test() {  # $1 = Testdatei, $2 = Name der Ausgabe (eigenes Home je Lauf)
         export MYCAD_HOME="$OUTDIR/home-$2"
         grep -q "^# runs: 2" "$1" && tests/gui/run.sh "$1" "$OUTDIR/$2-first" > /dev/null 2>&1  # z. B. erst Sprache umstellen
