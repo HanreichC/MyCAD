@@ -4460,7 +4460,7 @@ Loft::Loft()
 {
     ADD_PROPERTY_TYPE(Sections, (nullptr), "Loft", App::Prop_None, "Profiles in order");
     ADD_PROPERTY_TYPE(Ruled, (false), "Parameters", App::Prop_None, "Straight transitions");
-    ADD_PROPERTY_TYPE(Closed, (false), "Parameters", App::Prop_None, "Connect the last profile back to the first");
+    ADD_PROPERTY_TYPE(Closed, (false), "Parameters", App::Prop_None, "Closed; connects the last profile back to the first");
 }
 
 bool Loft::makeTool(Part::TopoShape& tool, std::string& error) const

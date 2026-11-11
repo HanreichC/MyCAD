@@ -35,6 +35,23 @@ def header():
     return [h.text() for h in visible(QtWidgets.QToolButton) if h.property("class") == "header"]
 
 
+def cut_off():
+    """Texte im Feature-Panel, die nicht ganz zu sehen sind (MyStyle T-8): breiter als ihr Feld oder über den Rand des
+    340 px breiten Panels hinaus"""
+    bad = []
+    for w in visible(QtWidgets.QAbstractButton) + visible(QtWidgets.QLabel):
+        top, p, in_panel = w, w, False
+        while p.parentWidget():
+            p = top = p.parentWidget()
+            in_panel = in_panel or p.inherits("Gui::TaskView::TaskBox")
+        if not in_panel or not w.text() or (isinstance(w, QtWidgets.QLabel) and w.wordWrap()):
+            continue
+        right = w.mapTo(top, QtCore.QPoint(w.width(), 0)).x()
+        if w.sizeHint().width() > w.width() or right > 340:
+            bad.append((w.text(), w.sizeHint().width(), w.width(), right))
+    return bad
+
+
 def dialog_ok():
     QtCore.QTimer.singleShot(400, ok)
 
@@ -69,7 +86,8 @@ run([
     ("loft sketches", lambda: state.update(a=sketch(rect(90, -10, 110, 10)), b=sketch(circle(5, 100, 0), App.Placement(App.Vector(0, 0, 30), App.Rotation())))),
     ("loft sel", lambda: (Gui.Selection.clearSelection(), Gui.Selection.addSelection(doc().Name, state["a"][1].Name, "Face1"),
                           Gui.Selection.addSelection(doc().Name, state["b"][1].Name, "Face1"))),
-    ("loft", lambda: Gui.runCommand("Design_Loft")), ("ok", ok),
+    ("loft", lambda: Gui.runCommand("Design_Loft")),
+    ("loft texts", lambda: check("loft panel: every text fits (T-8)", not cut_off(), str(cut_off()))), ("ok", ok),
     ("loft?", lambda: vol("loft", 30 * (400 + math.pi * 25) / 2)),
     ("timeline", lambda: L("timeline=%s" % [o.Label for o in doc().Objects if o.TypeId.startswith("Design::") and o.TypeId not in ("Design::Body", "Design::Profiles")])),
     ("shot", lambda: shot("features")),

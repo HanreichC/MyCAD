@@ -37,6 +37,29 @@ def cancel():
     click([b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "Cancel"][0])
 
 
+def cut_off():
+    """Texte im Feature-Panel, die nicht ganz zu sehen sind (MyStyle T-8): breiter als ihr Feld oder über den Rand des
+    340 px breiten Panels hinaus"""
+    bad = []
+    for w in visible(QtWidgets.QAbstractButton) + visible(QtWidgets.QLabel):
+        top, p, in_panel = w, w, False
+        while p.parentWidget():
+            p = top = p.parentWidget()
+            in_panel = in_panel or p.inherits("Gui::TaskView::TaskBox")
+        if not in_panel or not w.text() or (isinstance(w, QtWidgets.QLabel) and w.wordWrap()):
+            continue
+        right = w.mapTo(top, QtCore.QPoint(w.width(), 0)).x()
+        if w.sizeHint().width() > w.width() or right > 340:
+            bad.append((w.text(), w.sizeHint().width(), w.width(), right))
+    return bad
+
+
+def references():
+    """Bezugs-Knöpfe im Muster-Panel von oben nach unten: (Text, wartet)"""
+    rows = [field(t) for t in ("Direction 1 Reference", "Direction 2 Reference")]
+    return [(b.text(), b.isChecked()) for b in rows]
+
+
 def set_pattern():
     boxes = [b for b in visible(QtWidgets.QSpinBox)]
     boxes[0].setValue(3)
@@ -46,6 +69,9 @@ run([
     ("setup", lambda: (make_body(rect(-10, -10, 10, 10), 0, 20, "A"), make_body(rect(40, -10, 60, 10), 0, 10, "B"),
                        make_body(rect(100, -10, 120, 10), 0, 10, "C"), make_body(circle(8, -60, 0), 0, 20, "D"))),
     ("pattern sel", lambda: select(body("C"))), ("pattern", lambda: Gui.runCommand("Design_Pattern")),
+    ("pattern texts", lambda: check("pattern panel: every text fits (T-8)", not cut_off(), str(cut_off()))),
+    ("references", lambda: check("only the first reference waits for a click", [w for t, w in references()] == [True, False],
+                                 str(references()))),
     ("count", set_pattern), ("ok", ok),
     ("pattern?", lambda: L("pattern: %s errors=%s" % ([(b.Label, round(b.Shape.Volume)) for b in doc().Objects if b.Label.startswith("C")], errors()))),
     ("align sel", lambda: (select(body("B"), faces(body("B"), lambda f: abs(f.CenterOfMass.z) < 1e-6)),
@@ -59,7 +85,8 @@ run([
     ("split ok", lambda: check("a face clicked on the body selects the body to split",
                                len([b for b in doc().Objects if b.TypeId == "Design::Body" and b.Label.startswith("A")]) == 2)),
     ("thread sel", lambda: select(body("D"), faces(body("D"), lambda f: f.Surface.TypeId == "Part::GeomCylinder"))),
-    ("thread", lambda: Gui.runCommand("Design_Thread")), ("wait", lambda: None), ("wait", lambda: None), ("thread dialog", lambda: shot("thread")), ("ok", ok), ("wait", lambda: None), ("wait", lambda: None),
+    ("thread", lambda: Gui.runCommand("Design_Thread")), ("wait", lambda: None), ("wait", lambda: None), ("thread dialog", lambda: shot("thread")),
+    ("thread texts", lambda: check("thread panel: every text fits (T-8)", not cut_off(), str(cut_off()))), ("ok", ok), ("wait", lambda: None), ("wait", lambda: None),
     ("thread?", lambda: L("thread: D volume=%.0f (Zylinder %.0f, mit Gewinde kleiner) faces=%d errors=%s" % (
         body("D").Shape.Volume, 3.14159265 * 64 * 20, len(body("D").Shape.Faces), errors()))),
     ("plate", lambda: make_body(rect(-140, -20, -100, 20) + circle(6, -120, 0), 0, 15, "E")),

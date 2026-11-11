@@ -2236,8 +2236,8 @@
       "Flat sides between the profiles instead of curved ones."
      ],
      [
-      "Connect the last profile back to the first",
-      "Closes the loft into a ring."
+      "Closed",
+      "Connects the last profile back to the first: the loft becomes a ring."
      ],
      [
       "Operation",
@@ -2250,8 +2250,8 @@
       "Flache Seiten zwischen den Profilen statt gewölbter."
      ],
      [
-      "Letztes Profil wieder mit dem ersten verbinden",
-      "Schließt die Erhebung zu einem Ring."
+      "Geschlossen",
+      "Verbindet das letzte Profil wieder mit dem ersten: die Erhebung wird zum Ring."
      ],
      [
       "Vorgang",

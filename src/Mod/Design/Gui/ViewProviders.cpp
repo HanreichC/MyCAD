@@ -1743,7 +1743,12 @@ private:
                 field = box;
             }
             else if (auto b = freecad_cast<App::PropertyBool*>(prop)) {
-                auto box = new QCheckBox(T(prop->getDocumentation()));
+                // "Kurzer Name; Erklärung": der Name ist die Beschriftung, die Erklärung der Tooltip (T-8: nichts abschneiden)
+                const std::string doc = prop->getDocumentation();
+                auto box = new QCheckBox(T(doc.substr(0, doc.find("; ")).c_str()));
+                if (doc.find("; ") != std::string::npos) {
+                    box->setToolTip(T(doc.c_str()));
+                }
                 box->setChecked(b->getValue());
                 QObject::connect(box, &QCheckBox::toggled, [this, b](bool on) {
                     b->setValue(on);
@@ -1800,7 +1805,7 @@ private:
         const auto text = [link, button] {
             App::DocumentObject* obj = link->getValue();
             const auto& subs = link->getSubValues();
-            button->setText(button->isChecked() ? T("Click a face, edge or plane…")
+            button->setText(button->isChecked() ? T("Click in the view…")
                             : !obj             ? T("Select")
                                                : QString::fromUtf8(obj->Label.getValue())
                                                      + (subs.empty() || subs.front().empty()
@@ -1956,11 +1961,15 @@ private:
                 box->blockSignals(false);
             }
         }
+        bool started = picker != nullptr;  // höchstens einer wartet von selbst: der oberste (Muster: Richtung 1)
         for (auto& [link, button] : referenceButtons) {
-            if (!link->testStatus(App::Property::Hidden) && !link->getValue() && !picker
+            if (!link->testStatus(App::Property::Hidden) && !link->getValue()
                 && !button->property("autoStarted").toBool()) {
                 button->setProperty("autoStarted", true);  // nur einmal von selbst, nicht nach jedem Abbrechen
-                QTimer::singleShot(0, button, [button] { button->setChecked(true); });
+                if (!started) {
+                    started = true;
+                    QTimer::singleShot(0, button, [button] { button->setChecked(true); });
+                }
             }
         }
         if (generic && taskBox) {  // Titel folgt z. B. dem Grundkörper-Typ

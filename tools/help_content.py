@@ -609,7 +609,7 @@ A("Design_Loft", "create", "Design_Loft", ("Loft", "Erhebung"),
    ("Click the profiles in order from bottom to top – Ctrl+click for the second and further.", "Klicke die Profile der Reihe nach von unten nach oben an – ab dem zweiten mit Strg+Klick."),
    tool("CREATE", ("Sweep", "Sweep"), ("Loft", "Erhebung")), PANEL, OK],
   options=[("Straight transitions", "Flat sides between the profiles instead of curved ones.", "Gerade Übergänge", "Flache Seiten zwischen den Profilen statt gewölbter."),
-           ("Connect the last profile back to the first", "Closes the loft into a ring.", "Letztes Profil wieder mit dem ersten verbinden", "Schließt die Erhebung zu einem Ring."),
+           ("Closed", "Connects the last profile back to the first: the loft becomes a ring.", "Geschlossen", "Verbindet das letzte Profil wieder mit dem ersten: die Erhebung wird zum Ring."),
            OPERATION],
   see=["Design_OffsetPlane", "Design_Sweep"])
 
