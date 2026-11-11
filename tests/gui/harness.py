@@ -21,7 +21,12 @@ def doc():
 
 
 def view():
-    v = [v for v in mw.findChildren(QtWidgets.QGraphicsView) if v.isVisible()][0]
+    """3D-Ansicht des aktiven Designs; die erste sichtbare wäre bei zwei offenen Designs oft die des anderen (dann
+    lenkte activate() den Fokus und das aktive Design dorthin um). Ohne Design: die Startseite."""
+    try:
+        v = Gui.ActiveDocument.ActiveView.graphicsView()
+    except Exception:
+        v = [v for v in mw.findChildren(QtWidgets.QGraphicsView) if v.isVisible()][0]
     _keep.append(v); return v
 
 

@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Tasten als Maustasten wie im echten Gebrauch: Shift = mittlere Maustaste (halten), Tastendruck geht an das
-fokussierte Widget (z. B. den Browser), Maus nur bewegt (Trackpad) -> Ansicht wird verschoben."""
+fokussierte Widget (z. B. den Browser), Maus nur bewegt (Trackpad) -> Ansicht wird verschoben.
+V, F passt die Ansicht ein, auch im zweiten offenen Design."""
 from harness import *
 
 grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
 old = grp.GetString("MouseKeys", "[]")
+S = {}
 
 
 def camera():
@@ -40,6 +42,14 @@ def drag_window(key):
     QtTest.QTest.keyRelease(win, key)
 
 
+def away():
+    """hineingezoomt und verschoben, Tastaturfokus im 3D-Fenster"""
+    from pivy import coin
+    cam = Gui.ActiveDocument.ActiveView.getCameraNode()
+    cam.height.setValue(3); cam.position.setValue(cam.position.getValue() + coin.SbVec3f(200, 0, 0))
+    activate()
+
+
 run([
     ("setup", lambda: make_body(rect(0, 0, 60, 40), 0, 15, "Box")),
     ("map", lambda: grp.SetString("MouseKeys", '[{"key":%d,"button":"middle","mode":"hold"}]' % int(QtCore.Qt.Key_Shift))),
@@ -53,4 +63,10 @@ run([
     ("window space", lambda: drag_window(QtCore.Qt.Key_Space)),
     ("after3", lambda: L("after space (window path)=%s  (Mitte = schieben, Richtung bleibt)" % camera())),
     ("restore", lambda: grp.SetString("MouseKeys", old)),
+    ("second design", lambda: Gui.runCommand("Std_New")),
+    ("box 2", lambda: make_body(rect(0, 0, 60, 40), 0, 15, "Box")),
+    ("fit", lambda: (Gui.SendMsgToActiveView("ViewFit"), S.update(fit=camera()))),
+    ("away", away),
+    ("V F", lambda: [QtTest.QTest.keyClick(mw.windowHandle(), k) for k in (QtCore.Qt.Key_V, QtCore.Qt.Key_F)]),
+    ("fitted", lambda: check("V, F fits the view", camera() == S["fit"], "%s, fit %s" % (camera(), S["fit"]))),
 ])
