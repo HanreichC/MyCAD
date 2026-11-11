@@ -99,19 +99,24 @@ SLICERS = [
      ["UltiMaker-Cura", "Ultimaker-Cura", "Ultimaker_Cura", "Cura"], "UltiMaker Cura/UltiMaker-Cura.exe"),
 ]
 FILE_FORWARDING = "--file-forwarding"  # Flatpak: die Datei kommt über das Dokumenten-Portal in die Sandbox
+# MyCAD im Container (Starter aus install.sh): Programmordner des Rechners liegen nur lesend unter dieser Wurzel, starten
+# geht über den Flatpak-Session-Helper des Rechners (host_spawn)
+HOST_ROOT = "MYCAD_HOST_ROOT"
 
 
 def find_slicers(environ=None, home=None):
-    """Installierte Slicer als [(Name, Befehl als Liste)]: PATH, Flatpak, AppImage in ~/Applications, Programme"""
+    """Installierte Slicer als [(Name, Befehl als Liste)]: PATH, Flatpak, AppImage in ~/Applications, Programme.
+    Im Container die des Rechners (unter HOST_ROOT eingebunden), mit Pfaden, wie der Rechner sie sieht"""
     import os
     import shutil
     environ = os.environ if environ is None else environ
     home = home or os.path.expanduser("~")
-    path = environ.get("PATH", "")
+    host = environ.get(HOST_ROOT, "")
+    path = os.pathsep.join(host + d for d in ("/usr/local/bin", "/usr/bin")) if host else environ.get("PATH", "")
     flatpaks = set()
     flatpak = shutil.which("flatpak", path=path)
     if flatpak:
-        for root in ("/var/lib/flatpak/app", os.path.join(home, ".local/share/flatpak/app")):
+        for root in (host + "/var/lib/flatpak/app", os.path.join(home, ".local/share/flatpak/app")):
             if os.path.isdir(root):
                 flatpaks.update(os.listdir(root))
     apps = os.path.join(home, "Applications")
@@ -131,8 +136,26 @@ def find_slicers(environ=None, home=None):
                     command = [os.path.join(base, windows)]
                     break
         if command:
-            found.append((name, command))
+            found.append((name, [c[len(host):] if host and c.startswith(host + "/") else c for c in command]))
     return found
+
+
+def host_spawn(argv, environ=None):
+    """Programm auf dem Rechner starten (aus dem Container): org.freedesktop.Flatpak.Development.HostCommand über die
+    Sitzungs-D-Bus, wie flatpak-spawn --host. Argumente als Byte-Listen, so stören Leerzeichen und Anführungszeichen nicht"""
+    import os
+    import subprocess
+
+    def ay(text):
+        return "[" + ", ".join(str(b) for b in os.fsencode(text) + b"\0") + "]"
+    done = subprocess.run(["gdbus", "call", "--session", "--dest", "org.freedesktop.Flatpak",
+                           "--object-path", "/org/freedesktop/Flatpak/Development",
+                           "--method", "org.freedesktop.Flatpak.Development.HostCommand",
+                           "@ay " + ay(os.path.expanduser("~")), "@aay [" + ", ".join(ay(a) for a in argv) + "]",
+                           "@a{uh} {}", "@a{ss} {}", "uint32 0"],
+                          capture_output=True, text=True, env=environ)
+    if done.returncode:
+        raise RuntimeError(done.stderr.strip() or "flatpak session helper not reachable")
 
 
 # Variablen, die MyCADs AppImage (AppRun) für sich setzt: der Slicer soll sie nicht erben
@@ -185,5 +208,8 @@ def open_in_slicer(bodies, folder, command, up=None, quality="normal"):
     name = re.sub(r"[^\w.-]+", "_", bodies[0].Document.Label if bodies else "design") or "design"
     path = os.path.join(folder, name + ".3mf")
     write_3mf(path, bodies, quality, rotation=print_rotation(up) if up is not None else None)
-    subprocess.Popen(slicer_arguments(command, path), env=slicer_environment(), start_new_session=True)
+    if os.environ.get(HOST_ROOT):
+        host_spawn(slicer_arguments(command, path))  # liegt in ~, das der Rechner unter demselben Pfad sieht
+    else:
+        subprocess.Popen(slicer_arguments(command, path), env=slicer_environment(), start_new_session=True)
     return path

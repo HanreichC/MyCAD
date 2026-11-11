@@ -97,6 +97,17 @@ class Slicer(DesignTest):
             self.assertEqual(DesignExport.slicer_arguments(found[0][1], "/tmp/a b.3mf"),
                              [flatpak, "run", "--file-forwarding", "com.ultimaker.cura", "@@", "/tmp/a b.3mf", "@@"])
 
+    def test_in_the_container_finds_cura_of_the_host(self):
+        """mycad-Starter: Rechner unter <root> eingebunden; der Befehl nennt die Pfade des Rechners"""
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as home:
+            os.makedirs(os.path.join(root, "usr/bin"))
+            fake_slicer(os.path.join(root, "usr/bin"), "flatpak")
+            fake_slicer(os.path.join(root, "usr/bin"), "prusa-slicer")
+            os.makedirs(os.path.join(root, "var/lib/flatpak/app/com.ultimaker.cura"))
+            self.assertEqual(DesignExport.find_slicers({"PATH": "", "MYCAD_HOST_ROOT": root}, home),
+                             [("PrusaSlicer", ["/usr/bin/prusa-slicer"]),
+                              ("UltiMaker Cura", ["/usr/bin/flatpak", "run", "--file-forwarding", "com.ultimaker.cura"])])
+
     def test_finds_cura_appimage(self):
         with tempfile.TemporaryDirectory() as home:
             os.makedirs(os.path.join(home, "Applications"))

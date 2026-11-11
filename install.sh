@@ -43,11 +43,20 @@ if [ -e /dev/nvidiactl ]; then
         NVIDIA+=(-v "\$file:\$file:ro")
     done
 fi
+# Slicer zum Drucken: Programmordner des Rechners nur lesend unter /run/host, zum Finden; gestartet werden sie über die
+# Sitzungs-D-Bus beim Flatpak-Session-Helper des Rechners (DesignExport.host_spawn). Damit kann der Container Programme
+# auf dem Rechner starten (bewusst so entschieden; das Home ist ohnehin beschreibbar eingebunden)
+HOST=()
+for dir in /usr/bin /usr/local/bin /var/lib/flatpak/app; do
+    [ -d "\$dir" ] && HOST+=(-v "\$dir:/run/host\$dir:ro")
+done
 # /dev/input + /run/udev: Touchpad selbst lesen (3 Finger drehen), braucht die udev-Regel aus jomaa.kb96trackpad.config
 exec podman run --rm --userns=keep-id --group-add keep-groups \\
-    --device /dev/dri "\${NVIDIA[@]}" \\
+    --device /dev/dri "\${NVIDIA[@]}" "\${HOST[@]}" \\
     -v "$ROOT:/workspace" -v "\$HOME:\$HOME" -w "\$PWD" \\
     -v "\$XDG_RUNTIME_DIR/\$WAYLAND_DISPLAY:/tmp/runtime/\$WAYLAND_DISPLAY" \\
+    -v "\$XDG_RUNTIME_DIR/bus:/tmp/runtime/bus" -e DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/runtime/bus \\
+    -e MYCAD_HOST_ROOT=/run/host \\
     -v /dev/input:/dev/input:ro -v /run/udev:/run/udev:ro \\
     -e HOME="\$HOME" -e XDG_RUNTIME_DIR=/tmp/runtime -e WAYLAND_DISPLAY="\$WAYLAND_DISPLAY" \\
     -e QT_QPA_PLATFORM=wayland \\
