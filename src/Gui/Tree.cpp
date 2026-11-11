@@ -68,6 +68,7 @@
 #include "ViewProviderDocumentObject.h"
 #include "Widgets.h"
 #include "Workbench.h"
+#include "Shell/Shell.h"
 
 
 FC_LOG_LEVEL_INIT("Tree", false, true, true)
@@ -466,7 +467,23 @@ void TreeWidgetItemDelegate::paint(
             }
         }
     }
+    // MyCAD: beim Umbenennen des Designs nur das Feld, sonst scheint der alte Name durch das halbdurchsichtige Feld
+    if (index.column() == 0 && tree->state() == QAbstractItemView::EditingState && tree->itemFromIndex(index)
+        && tree->itemFromIndex(index)->type() == TreeWidget::DocumentType) {
+        opt.text.clear();
+    }
     style->drawControl(QStyle::CE_ItemViewItem, &opt, painter, artificial);
+    // MyCAD: der Designname zeigt beim Überfahren einen Stift hinter dem Text, ein Klick benennt um (Shell.cpp)
+    if (index.column() == 0 && opt.state.testFlag(QStyle::State_MouseOver)) {
+        auto item = tree->itemFromIndex(index);
+        if (item && item->type() == TreeWidget::DocumentType && tree->state() != QAbstractItemView::EditingState) {
+            const int size = TreeWidget::getIconSize();
+            const QRect text = style->subElementRect(QStyle::SE_ItemViewItemText, &opt, opt.widget);
+            const int x = text.left() + QFontMetrics(opt.font).horizontalAdvance(opt.text) + 8;
+            painter->drawPixmap(QRect(x, opt.rect.center().y() - size / 2, size, size),
+                                BitmapFactory().pixmap("TreeRename"));
+        }
+    }
 }
 
 void TreeWidgetItemDelegate::initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const
@@ -560,6 +577,11 @@ QWidget* TreeWidgetItemDelegate::createEditor(
 ) const
 {
     auto ti = static_cast<QTreeWidgetItem*>(index.internalPointer());
+    if (ti->type() == TreeWidget::DocumentType && index.column() == 0) {
+        auto editor = new QLineEdit(parent);  // MyCAD: Designname umbenennen (DocumentItem::setData nimmt den Text)
+        editor->setMinimumWidth(180);  // so schmal wie der Text wurde der Name beim Tippen links abgeschnitten
+        return editor;
+    }
     if (ti->type() != TreeWidget::ObjectType || index.column() > 1) {
         return nullptr;
     }
@@ -4438,7 +4460,8 @@ DocumentItem::DocumentItem(const Gui::Document* doc, QTreeWidgetItem* parent)
     );
     // NOLINTEND
 
-    setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable /*|Qt::ItemIsEditable*/);
+    // MyCAD: umbenennbar (Klick auf den Namen, Kontextmenü); ohne das tat "Umbenennen" beim Design nichts
+    setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 
     treeName = getTree()->getTreeName();
 }
@@ -5507,6 +5530,7 @@ void DocumentItem::setData(int column, int role, const QVariant& value)
     if (role == Qt::EditRole) {
         QString label = value.toString();
         pDocument->getDocument()->Label.setValue((const char*)label.toUtf8());
+        Gui::Shell::labelEdited(pDocument->getDocument());  // MyCAD: Datei und Projektordner heißen mit
     }
 
     QTreeWidgetItem::setData(column, role, value);

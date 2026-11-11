@@ -70,6 +70,13 @@ bool saveQuietly(App::Document* doc, const QString& title = QString());
 /// Nach "Speichern unter": war before ein still angelegtes Design (eigener Ordner im Projektordner, in dieser
 /// Sitzung), ziehen seine Versionen zu after um und der alte Ordner kommt in den Papierkorb
 void savedAs(const QString& before, const QString& after);
+/// liegt die Datei in ihrem eigenen Projektordner (<Name>/<Name>.mycad, so legt saveQuietly sie an)?
+bool inOwnFolder(const QString& file);
+/// Design umbenennen: die Datei, im eigenen Projektordner auch der Ordner, die Versionen und die Liste "Recent"; ein
+/// offenes Design zeigt danach auf die neue Datei. Neuer Pfad, oder leer und error (übersetzt)
+QString renameDesignFile(const QString& file, const QString& name, QString& error);
+/// Der Benutzer hat das Design im Browser umbenannt: ein gespeichertes zieht mit Datei und Ordner nach
+void labelEdited(App::Document* doc);
 /// Stand dieses Builds aus Commit-Datum und -Hash, z. B. "2026.10.21 · b9d3cde" (Startseite, Einstellungen)
 QString version();
 

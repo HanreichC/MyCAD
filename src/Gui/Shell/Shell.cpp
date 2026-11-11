@@ -666,6 +666,7 @@ void overrideFreeCadIcons()
         {"Sketcher_Sketch", "Tree_Sketch", blue},
         {"TreeItemVisible", "Tree_Visible", grey},
         {"TreeItemInvisible", "Tree_Invisible", grey},
+        {"TreeRename", "Design_ScribblePencil", grey},  // Stift am Designnamen beim Überfahren (Tree.cpp)
         {"Sketcher_NotFullyConstrained", "Badge_Dot", t.orange},
         {":/icons/Warning.svg", "Badge_Warning", t.orange},
         {":/icons/info.svg", "Badge_Info", blue},
@@ -1421,7 +1422,8 @@ QWidget* sidebarHead(QToolButton* toggle = nullptr)
 
 /// Fuß jeder Seitenleiste: App-Aktionen über der Version (W-7). home, help: Einträge zu Startseite und Hilfe (nicht auf
 /// der jeweiligen Seite selbst). Zurück steht in den Fensterknöpfen (WindowControls)
-QWidget* sidebarFooter(bool home, bool help = true)
+/// status: steht rechts in der Zeile der Version, wie eine Statuszeile (nicht klickbar, z. B. "Gesichert")
+QWidget* sidebarFooter(bool home, bool help = true, QWidget* status = nullptr)
 {
     auto foot = new QWidget;
     auto lay = new QVBoxLayout(foot);
@@ -1455,7 +1457,17 @@ QWidget* sidebarFooter(bool home, bool help = true)
     version->setObjectName(QStringLiteral("Hint"));
     setTextStyle(version, Text::Caption);
     version->setContentsMargins(10, 6, 0, 0);
-    lay->addWidget(version);
+    if (status) {
+        auto line = new QHBoxLayout;
+        line->setContentsMargins(0, 0, 0, 0);
+        line->addWidget(version);
+        line->addStretch();
+        line->addWidget(status);
+        lay->addLayout(line);
+    }
+    else {
+        lay->addWidget(version);
+    }
     return foot;
 }
 
@@ -2035,9 +2047,7 @@ private:
     /// liegt die Datei in ihrem eigenen Projektordner (Name/Name.mycad, so legt Speichern sie an)?
     static bool inOwnFolder(const QFileInfo& fi)
     {
-        const QDir dir = fi.absoluteDir();
-        return dir.dirName() == fi.completeBaseName()
-            && QDir(Gui::Shell::projectsFolder()) == QDir(QFileInfo(dir.absolutePath()).absolutePath());
+        return Gui::Shell::inOwnFolder(fi.absoluteFilePath());
     }
 
     /// Datei in den Papierkorb, im eigenen Projektordner den ganzen Ordner (mit Versionen)
@@ -2073,36 +2083,10 @@ private:
         if (!ok || name.isEmpty() || name == fi.completeBaseName()) {
             return;
         }
-        const QDir dir = fi.absoluteDir();
-        const bool ownFolder = inOwnFolder(fi);
-        const QString newFolder = ownFolder ? QFileInfo(dir.absolutePath()).absolutePath() + QLatin1Char('/') + name : dir.absolutePath();
-        const QString newFile = newFolder + QLatin1Char('/') + name + QLatin1Char('.') + fi.suffix();
-        if (QFileInfo::exists(ownFolder ? newFolder : newFile)) {
-            QMessageBox::warning(getMainWindow(), T("Rename Design"), T("“%1” already exists. Choose another name.").arg(name));
-            return;
+        QString error;
+        if (Gui::Shell::renameDesignFile(file, name, error).isEmpty()) {
+            QMessageBox::warning(getMainWindow(), T("Rename Design"), error);
         }
-        if (!closeFile(file, true)) {
-            return;
-        }
-        const QString renamed = dir.absoluteFilePath(name + QLatin1Char('.') + fi.suffix());
-        if (!QFile::rename(file, renamed) || (ownFolder && !QDir().rename(dir.absolutePath(), newFolder))) {
-            QFile::rename(renamed, file);  // halb umbenannt: zurück
-            QMessageBox::warning(getMainWindow(), T("Rename Design"), T("“%1” could not be renamed. Check that you can write to %2.").arg(fi.completeBaseName(), dir.absolutePath()));
-            open();
-            return;
-        }
-        QDir(newFolder).rename(QStringLiteral("versions/") + fi.completeBaseName(), QStringLiteral("versions/") + name);
-        auto mru = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/RecentFiles");
-        for (const auto& [key, value] : mru->GetASCIIMap("MRU")) {
-            const QString path = QFileInfo(QString::fromUtf8(value.c_str())).absoluteFilePath();
-            if (path == fi.absoluteFilePath()) {
-                mru->SetASCII(key.c_str(), newFile.toUtf8().constData());
-            }
-            else if (path == newFile) {
-                mru->RemoveASCII(key.c_str());  // alter Eintrag gleichen Namens: sonst stünde das Design zweimal unter Recent
-            }
-        }
-        mru->SetInt("RecentFiles", mru->GetInt("RecentFiles", 4));  // meldet es RecentFilesAction, sonst schreibt sie den alten Pfad zurück
         open();
     }
 
@@ -2820,6 +2804,22 @@ protected:
             return false;
         }
         auto tree = qobject_cast<QTreeWidget*>(widget->parentWidget());
+        // Klick auf den Designnamen oben im Browser: umbenennen (beim Überfahren zeigt er einen Stift, Tree.cpp);
+        // Datei und Projektordner heißen danach mit (Gui::Shell::labelEdited)
+        if (tree && event->type() == QEvent::MouseButtonRelease) {
+            auto me = static_cast<QMouseEvent*>(event);
+            const QPoint pos = me->position().toPoint();
+            QTreeWidgetItem* item = tree->itemAt(pos);
+            if (me->button() == Qt::LeftButton && me->modifiers() == Qt::NoModifier && item
+                && item->type() == TreeWidget::DocumentType && tree->visualItemRect(item).contains(pos)) {
+                QTimer::singleShot(0, tree, [tree, index = QPersistentModelIndex(tree->indexAt(pos))] {
+                    if (index.isValid()) {
+                        tree->selectionModel()->select(index, QItemSelectionModel::Deselect);  // Feld auf ruhigem Grund
+                        tree->edit(index);
+                    }
+                });
+            }
+        }
         // Browser: Menü erst beim Loslassen der rechten Taste öffnen. Öffnet es schon beim Drücken (Qt-Standard unter
         // Linux), schluckt das Menü das Loslassen; Qt hält die Taste dann für gedrückt und Knöpfe in danach geöffneten
         // Dialogen (z. B. "Delete" in der Rückfrage) reagieren nicht auf Klicks
@@ -4214,6 +4214,87 @@ void Gui::Shell::savedAs(const QString& before, const QString& after)
     }
 }
 
+bool Gui::Shell::inOwnFolder(const QString& file)
+{
+    const QFileInfo fi(file);
+    const QDir dir = fi.absoluteDir();
+    return dir.dirName() == fi.completeBaseName() && QDir(projectsFolder()) == QDir(QFileInfo(dir.absolutePath()).absolutePath());
+}
+
+QString Gui::Shell::renameDesignFile(const QString& file, const QString& wanted, QString& error)
+{
+    const QFileInfo fi(file);
+    QString name = wanted.trimmed();
+    static const QRegularExpression unsafe(QStringLiteral(R"([/\\:*?"<>|])"));  // wie saveQuietly
+    name.remove(unsafe);
+    if (name.isEmpty() || name.startsWith(QLatin1Char('.'))) {
+        error = T("“%1” is not a valid name.").arg(wanted);
+        return {};
+    }
+    const QDir dir = fi.absoluteDir();
+    const bool ownFolder = inOwnFolder(file);
+    const QString newFolder = ownFolder ? QFileInfo(dir.absolutePath()).absolutePath() + QLatin1Char('/') + name : dir.absolutePath();
+    const QString newFile = newFolder + QLatin1Char('/') + name + QLatin1Char('.') + fi.suffix();
+    if (newFile == fi.absoluteFilePath()) {
+        return newFile;
+    }
+    if (QFileInfo::exists(ownFolder ? newFolder : newFile)) {
+        error = T("“%1” already exists. Choose another name.").arg(name);
+        return {};
+    }
+    const QString renamed = dir.absoluteFilePath(name + QLatin1Char('.') + fi.suffix());
+    if (!QFile::rename(file, renamed) || (ownFolder && !QDir().rename(dir.absolutePath(), newFolder))) {
+        QFile::rename(renamed, file);  // halb umbenannt: zurück
+        error = T("“%1” could not be renamed. Check that you can write to %2.").arg(fi.completeBaseName(), dir.absolutePath());
+        return {};
+    }
+    QDir(newFolder).rename(QStringLiteral("versions/") + fi.completeBaseName(), QStringLiteral("versions/") + name);
+    auto mru = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/RecentFiles");
+    for (const auto& [key, value] : mru->GetASCIIMap("MRU")) {
+        const QString path = QFileInfo(QString::fromUtf8(value.c_str())).absoluteFilePath();
+        if (path == fi.absoluteFilePath()) {
+            mru->SetASCII(key.c_str(), newFile.toUtf8().constData());
+        }
+        else if (path == newFile) {
+            mru->RemoveASCII(key.c_str());  // alter Eintrag gleichen Namens: sonst stünde das Design zweimal unter Recent
+        }
+    }
+    mru->SetInt("RecentFiles", mru->GetInt("RecentFiles", 4));  // meldet es RecentFilesAction, sonst schreibt sie den alten Pfad zurück
+    for (QString& f : quietlyCreated()) {
+        if (f == fi.absoluteFilePath()) {
+            f = newFile;
+        }
+    }
+    // ein offenes Design zeigt auf die neue Datei und heißt wie sie
+    for (App::Document* doc : App::GetApplication().getDocuments()) {
+        if (QFileInfo(QString::fromUtf8(doc->FileName.getValue())).absoluteFilePath() == fi.absoluteFilePath()) {
+            doc->FileName.setValue(newFile.toUtf8().constData());
+            if (QString::fromUtf8(doc->Label.getValue()) != wanted.trimmed()) {
+                doc->Label.setValue(name.toUtf8().constData());
+            }
+        }
+    }
+    return newFile;
+}
+
+void Gui::Shell::labelEdited(App::Document* doc)
+{
+    // nach dem Editor: eine Meldung mitten im Schließen des Editors ginge verloren
+    QTimer::singleShot(0, [name = std::string(doc->getName())] {
+        App::Document* doc = App::GetApplication().getDocument(name.c_str());
+        const QString file = doc ? QString::fromUtf8(doc->FileName.getValue()) : QString();
+        if (file.isEmpty()) {
+            return;  // noch nie gespeichert: das stille Speichern nimmt den Namen ohnehin
+        }
+        const QString label = QString::fromUtf8(doc->Label.getValue());
+        QString error;
+        if (renameDesignFile(file, label, error).isEmpty()) {
+            doc->Label.setValue(QFileInfo(file).completeBaseName().toUtf8().constData());  // Name passt wieder zur Datei
+            QMessageBox::warning(getMainWindow(), T("Rename Design"), error);
+        }
+    });
+}
+
 /// Idee 7: Varianten im Browser umschalten (Kontextmenü des Designs): Hauptdesign und Varianten, die offene mit Haken
 namespace
 {
@@ -5251,14 +5332,14 @@ void Gui::Shell::install()
         head->setContentsMargins(8, 0, 8, 0);
         sideLay->addWidget(head);
         sideLay->addWidget(tree, 1);
-        // "Gesichert" wie in MyNotes: nur wenn der Stand des aktiven Designs auf der Platte ist. Der Platz bleibt
-        // auch ausgeblendet, sonst spränge der Baum bei jeder Änderung
+        // "Gesichert" wie die Statuszeile in MyNotes: rechts in der Zeile der Version, klein und nicht klickbar; nur
+        // wenn der Stand des aktiven Designs auf der Platte ist. Der Platz bleibt auch ausgeblendet (kein Springen)
         auto saved = new QWidget;
         saved->setObjectName(QStringLiteral("SavedState"));
         auto savedLay = new QHBoxLayout(saved);
-        savedLay->setContentsMargins(20, 6, 8, 2);  // Symbol und Text bündig mit Hilfe und Einstellungen darunter
-        savedLay->setSpacing(2);
-        savedLay->addWidget(new IconLabel(designIcon(QStringLiteral("Status_Saved"), &Theme::labelSecondary), Token::IconM));
+        savedLay->setContentsMargins(0, 6, 2, 0);
+        savedLay->setSpacing(4);
+        savedLay->addWidget(new IconLabel(designIcon(QStringLiteral("Status_Saved"), &Theme::labelSecondary), 12));
         auto savedText = new QLabel(T("Saved"));
         savedText->setObjectName(QStringLiteral("Hint"));
         setTextStyle(savedText, Text::Caption);
@@ -5266,7 +5347,6 @@ void Gui::Shell::install()
         QSizePolicy keep = saved->sizePolicy();
         keep.setRetainSizeWhenHidden(true);
         saved->setSizePolicy(keep);
-        sideLay->addWidget(saved);
         auto savedCheck = new QTimer(saved);
         QObject::connect(savedCheck, &QTimer::timeout, saved, [saved] {
             Gui::Document* gdoc = Application::Instance->activeDocument();
@@ -5279,7 +5359,7 @@ void Gui::Shell::install()
         });
         savedCheck->start(500);
         saved->hide();
-        auto foot = sidebarFooter(!frameless());  // rahmenlos steht die Startseite in den Fensterknöpfen
+        auto foot = sidebarFooter(!frameless(), true, saved);  // rahmenlos steht die Startseite in den Fensterknöpfen
         foot->setContentsMargins(8, 0, 8, 0);
         sideLay->addWidget(foot);
         state.browser = new GlassPanel(side, Token::RadiusPanel);  // normales Glas wie MyPods' Seitenleiste: das Design scheint durch
