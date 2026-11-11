@@ -383,18 +383,22 @@ void DSHTextController::configureToolWidget()
         fontNames.sort(Qt::CaseInsensitive);
         toolWidget->setComboboxElements(WCombobox::SecondCombo, fontNames);
 
-        // 3. Set a sensible default font
+        // 3. Set a sensible default font. MyCAD: Inter like the UI, else a plain sans. The names are file names
+        // without suffix ("DejaVuSans", "arial"), so match those; any "...Sans" file before the first in the list
         QString defaultFontName;
-        if (fontNames.contains(QString::fromUtf8("osifont-lgpl3fe"), Qt::CaseInsensitive)) {
-            defaultFontName = QString::fromUtf8("osifont-lgpl3fe");
+        for (const char* want : {"Inter", "DejaVuSans", "Arial", "Helvetica", "segoeui", "LiberationSans-Regular",
+                                 "NotoSans-Regular", "osifont-lgpl3fe"}) {
+            if (fontNames.contains(QString::fromUtf8(want), Qt::CaseInsensitive)) {
+                defaultFontName = QString::fromUtf8(want);
+                break;
+            }
         }
-        else if (fontNames.contains(QString::fromUtf8("DejaVu Sans"), Qt::CaseInsensitive)) {
-            defaultFontName = QString::fromUtf8("DejaVu Sans");
+        for (const auto& name : fontNames) {
+            if (defaultFontName.isEmpty() && name.endsWith(QLatin1String("Sans"), Qt::CaseInsensitive)) {
+                defaultFontName = name;
+            }
         }
-        else if (fontNames.contains(QString::fromUtf8("Arial"), Qt::CaseInsensitive)) {
-            defaultFontName = QString::fromUtf8("Arial");
-        }
-        else if (!fontNames.isEmpty()) {
+        if (defaultFontName.isEmpty() && !fontNames.isEmpty()) {
             defaultFontName = fontNames.first();
         }
 

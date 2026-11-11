@@ -257,6 +257,11 @@ def array_result():
     check("Rectangular Array: three clicks make a 2 x 2 grid", len(g) == 4, str(len(g)))
 
 
+def text_font():
+    combos = [c.currentText() for c in visible(QtWidgets.QComboBox)]
+    check("Text tool starts with Inter", "Inter" in combos, str(combos))
+
+
 def edge_color():
     """Farbe der Linie y=0 bei x=15 (kräftigstes Pixel quer zur Linie)"""
     img = mw.grab().toImage(); vp = view().viewport()
@@ -303,6 +308,10 @@ in_order([
     ("array row", lambda: press(0, 20)), wait,
     ("array ok", array_result),
     ("esc array", esc_tool), wait,
+    # Text: Schrift Inter
+    ("text", lambda: Gui.runCommand("Sketcher_CreateText")), wait,
+    ("font", text_font),
+    ("esc text", esc_tool), wait,
     # Auswahl in der Skizze deutlich anders als die unbestimmte Linie
     ("sel setup", lambda: (clear(), sketch().addGeometry(Part.LineSegment(V(-30, 0, 0), V(30, 0, 0))), doc().recompute(),
                            Gui.Selection.clearSelection(), move(0, 50))), wait,

@@ -114,7 +114,9 @@ namespace SketcherGui
 QMap<QString, QString> findAvailableFontFiles()
 {
     QStringList files = filesInDirectories(
-        {QString::fromStdString(App::Application::getResourceDir() + "Mod/TechDraw/Resources/fonts/")}
+        {QString::fromStdString(App::Application::getResourceDir() + "Mod/TechDraw/Resources/fonts/"),
+         // MyCAD: the AppImage brings Inter along here (not known to fontconfig)
+         QString::fromStdString(App::Application::getHomePath() + "share/fonts/")}
     );
     files += platformFontFiles();
 
