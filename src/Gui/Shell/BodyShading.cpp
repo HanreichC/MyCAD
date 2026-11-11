@@ -501,6 +501,7 @@ struct ContactShadow
     SoNodeSensor* sensor;
     QTimer* timer;
     std::function<std::vector<SoSwitch*>()> others;  ///< Anzeige-Schalter von allem, was kein Körper ist
+    SbBox3f drawn;  ///< Umriss der ganzen Szene beim letzten Rendern der Maske
 };
 
 constexpr int MaskSize = 128;
@@ -536,6 +537,9 @@ void renderMask(ContactShadow* s)
         return;
     }
     s->sensor->detach();  // das eigene Rendern (und Ausblenden) soll nicht gleich das nächste auslösen
+    SoGetBoundingBoxAction all(SbViewportRegion(MaskSize, MaskSize));
+    all.apply(s->objects);
+    s->drawn = all.getBoundingBox();
     std::vector<std::pair<SoSwitch*, int>> hidden;
     for (SoSwitch* other : s->others()) {
         hidden.emplace_back(other, other->whichChild.getValue());
@@ -719,7 +723,18 @@ SoNode* Gui::Shell::contactShadow(SoNode* objects, std::function<std::vector<SoS
     s->timer->setSingleShot(true);
     s->timer->setInterval(400);
     QObject::connect(s->timer, &QTimer::timeout, [s] { renderMask(s); });
-    s->sensor = new SoNodeSensor([](void* data, SoSensor*) { static_cast<ContactShadow*>(data)->timer->start(); }, s);
+    s->sensor = new SoNodeSensor([](void* data, SoSensor*) {
+        auto s = static_cast<ContactShadow*>(data);
+        // Form geändert (anderer Umriss): der alte Schatten zeigte bis zum neuen Rendern den Grundriss der vorigen Form,
+        // etwa ein großes Rechteck unter einem neuen Zylinder; dann lieber kurz keiner. Auswahl und Vorauswahl ändern
+        // den Umriss nicht, der Schatten bleibt dabei stehen
+        SoGetBoundingBoxAction all(SbViewportRegion(MaskSize, MaskSize));
+        all.apply(s->objects);
+        if (all.getBoundingBox() != s->drawn) {
+            s->quad->point.setNum(0);
+        }
+        s->timer->start();
+    }, s);
     s->sensor->attach(s->objects);
     s->timer->start();
     shadows().push_back(s);

@@ -52,6 +52,28 @@ def cut_off():
     return bad
 
 
+def shadow_points():
+    """Ecken des Kontaktschattens (0: keiner): Viereck mit Maske (SoTexture2) und Shader in einem Separator"""
+    from pivy import coin
+    search = coin.SoSearchAction(); search.setType(coin.SoTexture2.getClassTypeId()); search.setInterest(coin.SoSearchAction.ALL)
+    search.apply(Gui.ActiveDocument.ActiveView.getSceneGraph())
+    for path in search.getPaths():
+        sep = path.getNodeFromTail(1)
+        kids = [sep.getChild(i) for i in range(sep.getNumChildren())]
+        coords = [k for k in kids if k.isOfType(coin.SoCoordinate3.getClassTypeId())]
+        if coords and any(k.isOfType(coin.SoShaderProgram.getClassTypeId()) for k in kids):
+            return coords[0].point.getNum()
+    return None
+
+
+def reshape():
+    """Form wechseln und gleich (vor dem neuen Rendern der Maske) nach dem Schatten sehen"""
+    state["before"] = shadow_points()
+    choose("Torus", 1)
+    QtTest.QTest.qWait(150)  # Szene-Sensoren laufen, die Maske (400 ms später) noch nicht
+    state["stale"] = shadow_points()
+
+
 def dialog_ok():
     QtCore.QTimer.singleShot(400, ok)
 
@@ -63,6 +85,10 @@ run([
     ("box", lambda: Gui.runCommand("Design_Box")),
     ("torus", lambda: choose("Torus", 3)),
     ("title", lambda: check("the panel title follows the type", header() == ["Torus"], str(header()))),
+    ("cylinder", reshape),
+    ("stale shadow", lambda: check("a new shape drops the old shadow at once", state["before"] == 4 and state["stale"] == 0,
+                                   "%s -> %s" % (state["before"], state["stale"]))),
+    ("shadow back", lambda: check("then the new shadow comes", shadow_points() == 4, str(shadow_points()))),
     ("back to box", lambda: choose("Torus", 0)), ("ok", ok),
     ("box?", lambda: vol("box", 8000)),
     ("cylinder", lambda: Gui.runCommand("Design_Cylinder")), ("ok", ok),
