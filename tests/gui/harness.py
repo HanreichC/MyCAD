@@ -2,7 +2,7 @@
 """Hilfen für GUI-Tests: echte Mausklicks auf Glass-Panels, Schritte mit Pause, Protokoll nach $OUT.txt."""
 import os
 import FreeCAD as App, FreeCADGui as Gui, Part
-from PySide6 import QtCore, QtWidgets, QtTest
+from PySide6 import QtCore, QtGui, QtWidgets, QtTest
 
 # Immer gespeichert (Idee 7) stört den festen Takt der Tests: aus, test_versions_ui schaltet es gezielt ein
 App.ParamGet("User parameter:BaseApp/Preferences/MyCAD").SetBool("AlwaysSave", False)
@@ -183,10 +183,46 @@ def _when_idle(fn, quiet=0.25, limit=10.0):
     QtCore.QTimer.singleShot(25, tick)
 
 
+_field_fails = set()
+
+
+def _check_fields():
+    """MyStyle-Textfelder überall (9.3), in jedem Zustand jedes GUI-Tests: kein sichtbares Feld in Qts Standard-Optik.
+    Auf 50 % Grau gerendert bleibt ein MyStyle-Feld grau (fill.tertiary ist durchscheinend), Qts Feld ist deckend
+    (weiß bzw. Verlauf); ein Zahlenfeld hat keine Pfeil-Knöpfe. Jedes Feld wird nur einmal gemeldet."""
+    for w in QtWidgets.QApplication.allWidgets():
+        if not isinstance(w, (QtWidgets.QLineEdit, QtWidgets.QAbstractSpinBox, QtWidgets.QComboBox)) \
+                or not w.isVisible() or w.width() < 12 or w.height() < 12:
+            continue
+        if isinstance(w, QtWidgets.QLineEdit) and isinstance(w.parentWidget(), (QtWidgets.QAbstractSpinBox, QtWidgets.QComboBox)):
+            continue  # das Eingabefeld im Zahlen-/Auswahlfeld zeichnet Qt ohne eigenen Rahmen
+        img = QtGui.QImage(w.size(), QtGui.QImage.Format_ARGB32)
+        img.fill(QtGui.QColor(128, 128, 128))
+        w.render(img, QtCore.QPoint(), QtGui.QRegion(), QtWidgets.QWidget.RenderFlag.DrawChildren)
+        why = []
+        for c in (img.pixelColor(w.width() // 2, 2), img.pixelColor(w.width() // 2, w.height() - 3)):  # Rand: kein Text
+            if max(abs(c.red() - 128), abs(c.green() - 128), abs(c.blue() - 128)) > 24:
+                why.append("opaque %s" % c.name())
+                break
+        if isinstance(w, QtWidgets.QAbstractSpinBox):
+            opt = QtWidgets.QStyleOptionSpinBox()
+            opt.initFrom(w)
+            opt.subControls = QtWidgets.QStyle.SubControl.SC_SpinBoxUp | QtWidgets.QStyle.SubControl.SC_SpinBoxDown
+            opt.buttonSymbols = w.buttonSymbols()
+            up = w.style().subControlRect(QtWidgets.QStyle.ComplexControl.CC_SpinBox, opt, QtWidgets.QStyle.SubControl.SC_SpinBoxUp, w)
+            if up.width() > 0 and w.buttonSymbols() != QtWidgets.QAbstractSpinBox.ButtonSymbols.NoButtons:
+                why.append("arrow buttons")
+        key = (type(w).__name__, w.objectName(), w.accessibleName(), w.window().windowTitle())
+        if why and key not in _field_fails:
+            _field_fails.add(key)
+            L("FAIL field not MyStyle: %s name=%r label=%r window=%r (%s)" % (key + (", ".join(why),)))
+
+
 def _sequence(steps, delay, arm_first):
     """Schritte nacheinander; jeder wartet delay und dann, bis MyCAD mit dem vorigen fertig ist. Kein fester Takt
     mehr: auf einer langsamen CI kam ein Schritt sonst dran, bevor der Dialog des vorigen offen war."""
     def next_step():
+        _check_fields()
         if not steps:
             L("step done"); App.saveParameter(); os._exit(0)  # "step done": run_all.sh erkennt das saubere Ende
         name, fn = steps.pop(0)

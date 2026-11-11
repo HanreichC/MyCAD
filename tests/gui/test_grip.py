@@ -29,13 +29,15 @@ def window():
     check("sidebar from top to bottom at the inset", sidebar.top() == 12 and abs(sidebar.bottom() - (view().height() - 12)) <= 1, str(sidebar))
     check("window buttons in their own capsule at the top right", capsule.top() == 12 and abs(capsule.height() - 44) <= 1 and abs(capsule.right() - (view().width() - 12)) <= 1, str(capsule))
     buttons = [b for b in visible(QtWidgets.QToolButton) if panel_rect(b) == capsule]
-    check("capsule holds exactly three buttons", len(buttons) == 3, str([b.toolTip() for b in buttons]))
+    # MyCAD-Ausnahme zu MyStyle W-1/W-7: Startseite vorne in der Kapsel, dann die drei Fensterknöpfe
+    order = [b.toolTip() for b in sorted(buttons, key=lambda b: harness._pos(b).x())]
+    check("capsule holds Home and the three window buttons", order == ["Home", "Minimize", "Maximize", "Close"], str(order))
     check("toolbar centered in the window, same top", bar.top() == 12 and abs(bar.center().x() - view().width() / 2) <= 2, str(bar))
     check("toolbar does not reach the sidebar", bar.left() > sidebar.right(), "%d %d" % (bar.left(), sidebar.right()))
     check("toolbar does not reach the window buttons", bar.right() < capsule.left(), "%d %d" % (bar.right(), capsule.left()))
     names = [l.text() for l in visible(QtWidgets.QLabel) if panel_rect(l) == sidebar]
     check("app name in the sidebar", "MyCAD" in names)
-    for t in ("Home", "Help (F1)", "Settings (Ctrl+,)"):
+    for t in ("Help (F1)", "Settings (Ctrl+,)"):
         check(t + " at the bottom of the sidebar", panel_rect(tip(t)) == sidebar and harness._pos(tip(t)).y() > sidebar.bottom() - 180)
     free = QtCore.QPoint(capsule.left() - 3, 20)
     check("free spot of the title row is the grip", bar.right() < free.x() and isinstance(view().itemAt(free), QtWidgets.QGraphicsRectItem), str(view().itemAt(free)))

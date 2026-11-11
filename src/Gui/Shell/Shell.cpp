@@ -166,8 +166,8 @@ QString styleSheet()
 * { color: @labelPrimary; }
 #GlassContent, #GlassContent QWidget { background: transparent; }
 /* Aufgeklappte Auswahlliste ist ein eigenes Fenster: deckend wie im Einstellungsfenster, sonst zeigt sie Schwarz */
-#GlassContent QComboBoxPrivateContainer { background: @glassOpaqueTop; }
-#GlassContent QComboBox QAbstractItemView { background: @glassOpaqueTop; border: 1px solid @glassPopupBorder; padding: 4px; outline: 0;
+QComboBoxPrivateContainer, #GlassContent QComboBoxPrivateContainer { background: @glassOpaqueTop; }
+QComboBox QAbstractItemView, #GlassContent QComboBox QAbstractItemView { background: @glassOpaqueTop; border: 1px solid @glassPopupBorder; padding: 4px; outline: 0;
     selection-background-color: @accent; selection-color: @labelOnAccent; }
 QToolTip { background: @glassOpaqueTop; color: @labelPrimary; border: 1px solid @glassPopupBorder; border-radius: 8px; padding: 4px 8px; }
 
@@ -216,18 +216,21 @@ QFrame#ToolbarSeparator { margin: 4px; }
 QLabel#Section, QLabel#Secondary, QLabel#StartDate, QLabel#StartCaption, QLabel#Hint { color: @labelSecondary; }
 
 #GlassContent QAbstractScrollArea { border: none; }
-/* Textfelder: 30 hoch, r 8, fill.tertiary, 10 seitlich, Fokus 2-px-Ring */
-#GlassContent QLineEdit, #GlassContent QAbstractSpinBox, #GlassContent QComboBox {
+/* Textfelder (MyStyle 9.3): 30 hoch, r 8, fill.tertiary, 10 seitlich, Fokus 2-px-Ring. Bewusst für jedes Feld der App,
+   damit keins in Qts Standard-Optik bleibt (Dialoge, Maßkarte …); die #GlassContent-Varianten schlagen dort
+   "background: transparent". Eigene Optik (Suchen, Post-it) über spezifischere Regeln. Prüft tests/gui/harness.py */
+QLineEdit, QAbstractSpinBox, QComboBox, #GlassContent QLineEdit, #GlassContent QAbstractSpinBox, #GlassContent QComboBox {
     background: @fillTertiary; border: 2px solid transparent; border-radius: 8px; padding: 2px 8px; min-height: 22px;
 }
 /* MyStyle-Abweichung: Auswahlfelder in FreeCADs Werkzeug-Formularen als Feld (fill.tertiary) statt randlos,
    weil dort kein Zeilenlabel links steht, an dem man den Pop-up-Button erkennt */
-#GlassContent QComboBox:hover { background: @fillSecondary; }
+QComboBox:hover, #GlassContent QComboBox:hover { background: @fillSecondary; }
+QLineEdit:focus, QAbstractSpinBox:focus, QComboBox:focus,
 #GlassContent QLineEdit:focus, #GlassContent QAbstractSpinBox:focus, #GlassContent QComboBox:focus { border-color: @focusRing; }
 /* Post-it: ohne Rahmen, auch mit Fokus (ausdrücklicher Wunsch; den Fokus zeigt die Einfügemarke) */
 #GlassContent QPlainTextEdit#NoteText { background: transparent; border: none; color: @noteLabel; placeholder-text-color: @noteLabelTertiary;
     selection-background-color: @accent; selection-color: @labelOnAccent; }
-#GlassContent QAbstractSpinBox::up-button, #GlassContent QAbstractSpinBox::down-button { width: 0; border: none; }
+QAbstractSpinBox::up-button, QAbstractSpinBox::down-button { width: 0; border: none; }
 QComboBox::drop-down { border: none; width: 20px; }
 QComboBox::down-arrow { image: url(:/mycad/icons/Chevron_Down.svg); width: 10px; height: 10px; }
 QLineEdit { selection-background-color: @accent; selection-color: @labelOnAccent; }
