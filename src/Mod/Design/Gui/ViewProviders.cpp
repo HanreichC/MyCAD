@@ -1634,8 +1634,10 @@ private:
             const QString text = edit->text().trimmed();
             try {
                 Base::Quantity::parse(text.toStdString());
-                if (feature->getExpression(path).expression) {
-                    feature->setExpression(path, nullptr);  // feste Zahl ersetzt den Ausdruck
+                // Nur eine getippte Zahl ersetzt den Ausdruck; der angezeigte Wert des Ausdrucks ("20.00 mm" beim
+                // Fokusverlust, etwa durch OK) ist nicht geändert
+                if (edit->isModified() && feature->getExpression(path).expression) {
+                    feature->setExpression(path, nullptr);
                     show();
                 }
                 return false;  // normale Eingabe

@@ -32,6 +32,7 @@ def height():
 
 
 run([
+    ("activate", activate),  # sonst bekommt das Feld keinen echten Fokus und OK kein FocusOut
     ("parameters", lambda: (QtCore.QTimer.singleShot(800, fill_dialog), Gui.runCommand("Design_Parameters"))),
     ("values", lambda: L("parameters: %s" % params())),
     ("Create Sketch", lambda: click(button("Design_CreateSketch"))),
@@ -44,5 +45,7 @@ run([
     ("height", lambda: L("height=%s (erwartet 20.0, Ausdruck=%s)" % (height(), [o.ExpressionEngine for o in doc().Objects if o.TypeId == "Design::Extrude"]))),
     ("width 80", lambda: ([o for o in doc().Objects if o.TypeId == "App::VarSet"][0].setExpression("Width", "80 mm"), doc().recompute())),
     ("height2", lambda: L("after Width=80: %s height=%s (erwartet 40.0)" % (params(), height()))),
+    # OK nimmt dem Feld den Fokus: das zeigt dann "20.00 mm", das darf die Bindung nicht als feste Zahl lösen
+    ("bound", lambda: check("OK keeps the typed parameter binding", height().startswith("40.0"), height())),
     ("errors", lambda: L("errors=%s" % errors())),
 ])
