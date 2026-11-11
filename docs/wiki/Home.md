@@ -30,7 +30,7 @@ depending on the language you picked. This wiki is the overview for everyone els
 
 - **Always saved.** No save button, no question when you close. Every state becomes a version you can compare and
   bring back.
-- **Tap a face, change a number.** Click a face and the sizes that make it appear right on the model.
+- **Double-click a face, change a number.** Double-click a face and the sizes that make it appear right on the model.
 - **Your note is your parameter list.** `Wall = 2 mm` in a note is a parameter any size field can use.
 - **Red Pen.** Write `R2` next to an edge, `M5` on a face, and MyCAD turns them into a fillet and a tapped hole.
 - **Errors explain themselves.** A fillet too big? MyCAD tells you which radius fits and sets it in one click.

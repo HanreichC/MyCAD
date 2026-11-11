@@ -57,9 +57,9 @@ Every step goes into the **Timeline**. Go back, change a dimension, and the rest
 
 <br>
 
-## Tap a face. Change a number.
+## Double-click a face. Change a number.
 
-Click any face with no tool active and the dimensions that make it appear right next to it: the length of an extrusion, the sketch dimension behind a side face, the diameter of a hole, the radius of a fillet. Type a new value, press Enter, done. If the dimension is a parameter, the parameter changes, and so does the note it lives in.
+Double-click any face with no tool active and the dimensions that make it appear right next to it: the length of an extrusion, the sketch dimension behind a side face, the diameter of a hole, the radius of a fillet. Type a new value, press Enter, done. If the dimension is a parameter, the parameter changes, and so does the note it lives in.
 
 <br>
 
@@ -222,7 +222,7 @@ Want to try something risky? Make a **variant**. Switch between the main design 
 | **Model** | Parametric, with a global timeline (reorder, groups, roll back), components and joints |
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
 | **Solids** | 17 create, 14 modify and 6 construction tools; standard holes, printable threads, Fit (ISO 286 and 3D print), Screw Here, Remove Face |
-| **Dimensions** | Tap a face to change the dimensions that make it; errors explain themselves and offer a value that works |
+| **Dimensions** | Double-click a face to change the dimensions that make it; errors explain themselves and offer a value that works |
 | **Notes** | Saved in the design, lines ending in `=` are calculated, `Name = value` lines are parameters (both ways) |
 | **Red Pen** | Handwritten corrections on the model become features: R, C, ±, M, Ø, H7, 3×, dimensions, remove face |
 | **3D printing** | Print View (overhangs, bed, thin walls), print direction, Print to OrcaSlicer, Bambu Studio, PrusaSlicer and Cura (program, Flatpak, AppImage) |

@@ -31,7 +31,7 @@ Width = Wall * 20        → 40.00 mm
 - Formulas show their value after the arrow. You never need to touch the arrow part; MyCAD rewrites it.
 - **Umlauts** work (`Wandstärke` is stored as `Wandstaerke`, both spellings work), and so does a decimal comma.
 - Every size field understands the names: an extrude distance `Wall`, a sketch dimension `Width / 2`.
-- **Both ways:** change the value on the model (tap a face) or in **Change Parameters**, and the line in the note
+- **Both ways:** change the value on the model (double-click a face) or in **Change Parameters**, and the line in the note
   changes.
 - **Problems** are marked with ⚠ after the line: a name used twice, a name already defined in another note, not a valid
   value.

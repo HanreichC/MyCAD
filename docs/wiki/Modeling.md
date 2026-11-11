@@ -87,10 +87,10 @@ step orange: **Show Affected Edges** or **Looks Right**.
 
 ## Change sizes on the model
 
-With no tool active, click a face: a glass card next to it shows the sizes that make it: the extrusion length of a top
-face, the sketch dimension of a side face, a hole diameter, a fillet radius. Type a number or formula, press **Enter**.
-If the size is a parameter, the parameter changes (and so does the note it's written in). A formula can't be
-overwritten here; change the parameter instead.
+With no tool active, double-click a face (a single click only selects it): a glass card next to it shows the sizes
+that make it: the extrusion length of a top face, the sketch dimension of a side face, a hole diameter, a fillet
+radius. Type a number or formula, press **Enter**. If the size is a parameter, the parameter changes (and so does the
+note it's written in). A formula can't be overwritten here; change the parameter instead.
 
 ## Command search
 

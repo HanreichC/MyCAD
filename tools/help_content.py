@@ -110,8 +110,8 @@ A("start_overview", "start", "MyCAD_Search", ("What MyCAD can do", "Was MyCAD al
        "Jeder Schritt landet in der Zeitleiste: zurückgehen, ändern, per Ziehen umsortieren, Schritte gruppieren."),
     ], False),
     (("Change sizes the easy way", "Maße einfach ändern"), [
-      ("Tap a face with no tool active: the sizes that make it appear next to it. Type a number, press Enter.",
-       "Tipp ohne Werkzeug auf eine Fläche: die Maße, die sie erzeugen, erscheinen daneben. Zahl tippen, Enter."),
+      ("Double-click a face with no tool active: the sizes that make it appear next to it. Type a number, press Enter.",
+       "Doppelklick ohne Werkzeug auf eine Fläche: die Maße, die sie erzeugen, erscheinen daneben. Zahl tippen, Enter."),
       ("Notes calculate (120 / 4 =) and are your parameter list: a line like Wall = 2 mm is a parameter for every size field, both ways.",
        "Notizen rechnen (120 / 4 =) und sind deine Parameterliste: eine Zeile wie Wand = 2 mm ist ein Parameter für jedes Maßfeld, in beide Richtungen."),
       ("Errors explain themselves and offer a value that works, e.g. the largest fillet radius that fits.",
@@ -181,9 +181,9 @@ A("start_tutorial_print", "start", "Design_Print", ("Tutorial: a bracket for 3D 
       ("Extrude (E), click the rectangle, type Thickness as distance, click OK.",
        "Extrudieren (E), das Rechteck anklicken, als Abstand Dicke tippen, OK."),
     ], True),
-    (("3. Tap a face, change a number", "3. Fläche antippen, Zahl ändern"), [
-      ("With no tool active, click the top face. A card shows the distance; type 6 and press Enter.",
-       "Ohne Werkzeug die Oberseite anklicken. Eine Karte zeigt den Abstand; 6 tippen und Enter."),
+    (("3. Double-click a face, change a number", "3. Fläche doppelklicken, Zahl ändern"), [
+      ("With no tool active, double-click the top face. A card shows the distance; type 6 and press Enter.",
+       "Ohne Werkzeug die Oberseite doppelklicken. Eine Karte zeigt den Abstand; 6 tippen und Enter."),
       ("The plate gets thicker and the note now says Thickness = 6 mm. It works the other way round too: change Width in the note, click into the view.",
        "Die Platte wird dicker, und in der Notiz steht jetzt Dicke = 6 mm. Andersherum geht es auch: Breite in der Notiz ändern, in die Ansicht klicken."),
     ], True),
@@ -358,12 +358,12 @@ A("sketch_basics", "start", "Design_CreateSketch", ("Sketching basics", "Skizzen
   see=["Design_CreateSketch", "sketch_dimension", "sketch_construction", "sketch_finish"])
 
 A("start_dimensions", "start", "Design_Measure", ("Change a size on the model", "Maße am Modell ändern"),
-  (["dimension", "size", "change", "height", "width", "diameter", "tap", "click face", "edit value"],
-   ["Maß", "Größe", "ändern", "Höhe", "Breite", "Durchmesser", "antippen", "Fläche anklicken", "Wert ändern"]),
-  ("Click a face of a body: the sizes that make it appear right next to it. Type a new value and press Enter – no need to find the step in the timeline.",
-   "Klicke eine Fläche eines Körpers an: die Maße, die sie erzeugen, erscheinen direkt daneben. Tippe einen neuen Wert und drücke Enter – ohne den Schritt in der Zeitleiste zu suchen."),
-  [("Click a face, e.g. the top of a block. A small card shows e.g. Distance (height of the extrusion), a hole wall shows Diameter and Depth, a rounded face its Radius, a side face the dimensions of its sketch line.",
-    "Klicke eine Fläche an, z. B. die Oberseite eines Blocks. Eine kleine Karte zeigt z. B. Abstand (Höhe der Extrusion), eine Bohrungswand Durchmesser und Tiefe, eine Rundung ihren Radius, eine Seitenfläche die Maße ihrer Skizzenlinie."),
+  (["dimension", "size", "change", "height", "width", "diameter", "double-click", "double-click face", "edit value"],
+   ["Maß", "Größe", "ändern", "Höhe", "Breite", "Durchmesser", "Doppelklick", "Fläche doppelklicken", "Wert ändern"]),
+  ("Double-click a face of a body: the sizes that make it appear right next to it. Type a new value and press Enter – no need to find the step in the timeline.",
+   "Doppelklicke eine Fläche eines Körpers: die Maße, die sie erzeugen, erscheinen direkt daneben. Tippe einen neuen Wert und drücke Enter – ohne den Schritt in der Zeitleiste zu suchen."),
+  [("Double-click a face, e.g. the top of a block (a single click only selects it). A small card shows e.g. Distance (height of the extrusion), a hole wall shows Diameter and Depth, a rounded face its Radius, a side face the dimensions of its sketch line.",
+    "Doppelklicke eine Fläche, z. B. die Oberseite eines Blocks (ein einfacher Klick wählt sie nur). Eine kleine Karte zeigt z. B. Abstand (Höhe der Extrusion), eine Bohrungswand Durchmesser und Tiefe, eine Rundung ihren Radius, eine Seitenfläche die Maße ihrer Skizzenlinie."),
    ("Type the new value and press Enter. The model updates at once; Ctrl+Z takes it back.",
     "Tippe den neuen Wert und drücke Enter. Das Modell rechnet sofort neu; Strg+Z nimmt es zurück."),
    ("If a size comes from a parameter, the parameter changes – everything else that uses it follows.",

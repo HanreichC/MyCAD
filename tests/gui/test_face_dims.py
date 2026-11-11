@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""10.3 Idee 2 in der Oberfläche: Fläche antippen zeigt ihre Maße am Modell, Enter rechnet neu, Strg+Z nimmt es
-zurück, ohne Auswahl verschwindet die Karte"""
+"""10.3 Idee 2 in der Oberfläche: ein Klick wählt die Fläche nur, ein Doppelklick zeigt ihre Maße am Modell, Enter
+rechnet neu, Strg+Z nimmt es zurück, ohne Auswahl verschwindet die Karte"""
 from harness import *
 
 state = {}
@@ -11,9 +11,25 @@ def card_fields():
             if b.parentWidget() and b.parentWidget().objectName() == "FaceDimensions"]
 
 
-def pick_top():
-    Gui.Selection.clearSelection()
-    Gui.Selection.addSelection(state["box"], top_face(state["box"]))
+def top_point():
+    """Mitte der Oberseite in Viewport-Koordinaten"""
+    bb = state["box"].Shape.BoundBox
+    p = Gui.ActiveDocument.ActiveView.getPointOnViewport(App.Vector(bb.Center.x, bb.Center.y, bb.ZMax))
+    vp = view().viewport(); dpr = vp.devicePixelRatioF()
+    return QtCore.QPoint(int(p[0] / dpr), int(vp.height() - p[1] / dpr))
+
+
+def click_top(double):
+    vp, p = view().viewport(), top_point()
+    QtTest.QTest.mouseMove(vp, p)
+    QtTest.QTest.mouseClick(vp, QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, p)
+    if double:
+        QtTest.QTest.mouseDClick(vp, QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, p)
+        QtTest.QTest.mouseRelease(vp, QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, p)
+
+
+def selected():
+    return [(s.ObjectName, n) for s in Gui.Selection.getSelectionEx() for n in s.SubElementNames]
 
 
 def enter_value(text):
@@ -25,8 +41,12 @@ def enter_value(text):
 
 run([
     ("setup", lambda: state.update(box=make_body(rect(0, 0, 20, 10), 0, 5, "Box"))),
-    ("pick", pick_top),
-    ("card", lambda: check("tapping the top face shows its distance", [b.accessibleName() for b in card_fields()] == ["Distance"],
+    ("fit", lambda: (Gui.Selection.clearSelection(), Gui.ActiveDocument.ActiveView.viewIsometric(), Gui.SendMsgToActiveView("ViewFit"))),
+    ("click", lambda: click_top(False)),
+    ("only selects", lambda: check("a single click selects the face but shows no card",
+                                   selected() == [(state["box"].Name, top_face(state["box"]))] and not card_fields(), str(selected()))),
+    ("dclick", lambda: click_top(True)),
+    ("card", lambda: check("double-clicking the top face shows its distance", [b.accessibleName() for b in card_fields()] == ["Distance"],
                            str([b.accessibleName() for b in card_fields()]))),
     ("shot", lambda: shot("card")),
     ("type", lambda: enter_value("12")),

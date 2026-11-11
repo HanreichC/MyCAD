@@ -61,7 +61,7 @@ Worth knowing:
 
 ## Sizes and parameters
 
-- **Tap a face, change a number:** click a face with no tool active and the sizes that make it appear on the model:
+- **Double-click a face, change a number:** double-click a face with no tool active and the sizes that make it appear on the model:
   extrusion length, the sketch dimension behind a side face, hole diameter, fillet radius. Type, Enter, done. Ctrl+Z works.
 - **Change Parameters:** named values and formulas (`Width = 40 mm`, `Height = Width / 4`) for every size field.
 - **A note is your parameter list:** `Wall = 2 mm` in a note creates the parameter; formulas show their value

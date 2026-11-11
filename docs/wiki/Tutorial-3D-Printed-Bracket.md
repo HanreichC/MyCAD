@@ -43,9 +43,9 @@ lists them too, marked "In note …".
 
 You have a 60 × 30 × 4 mm plate.
 
-## 4. Tap a face, change a number
+## 4. Double-click a face, change a number
 
-With no tool active, click the **top face** of the plate. A small glass card appears next to it with the size that
+With no tool active, double-click the **top face** of the plate. A small glass card appears next to it with the size that
 makes this face: Distance = Thickness. Type `6` and press **Enter**. The plate gets thicker, and the note now says
 `Thickness = 6 mm`. It works the other way round too: change the note to `Width = 80 mm`, click into the view, and the
 plate gets wider. **Ctrl+Z** takes back any change.

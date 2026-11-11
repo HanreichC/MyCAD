@@ -30,6 +30,8 @@
 #include <regex>
 #include <QLineEdit>
 #include <QKeyEvent>
+#include <QApplication>
+#include <QMouseEvent>
 #include <App/ObjectIdentifier.h>
 #include <App/Expression.h>
 #include <App/VarSet.h>
@@ -2410,15 +2412,33 @@ protected:
     }
 };
 
-/// Glas-Karte neben der angetippten Fläche: je treibendem Maß ein Feld. Enter rechnet neu (eine Transaktion, Strg+Z
-/// nimmt sie zurück), Esc lässt den Wert stehen. Hängt ein Maß an einem Parameter, ändert sich der Parameter.
-class FaceDimensions: public Gui::SelectionObserver
+/// Glas-Karte neben der doppelt angeklickten Fläche: je treibendem Maß ein Feld. Enter rechnet neu (eine Transaktion,
+/// Strg+Z nimmt sie zurück), Esc lässt den Wert stehen. Hängt ein Maß an einem Parameter, ändert sich der Parameter.
+/// Ein einfacher Klick wählt nur; jede andere Auswahl schließt die Karte.
+class FaceDimensions: public QObject, public Gui::SelectionObserver
 {
 public:
     FaceDimensions()
     {
         timer.setInterval(50);  // ponytail: folgt der Kamera im Takt statt über einen Coin-Sensor
         QObject::connect(&timer, &QTimer::timeout, [this] { place(); });
+        qApp->installEventFilter(this);
+    }
+
+protected:
+    /// Doppelklick ins 3D-Fenster (nicht auf eine Glas-Karte darin): der erste Klick hat die Fläche gewählt
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (event->type() != QEvent::MouseButtonDblClick
+            || static_cast<QMouseEvent*>(event)->button() != Qt::LeftButton) {
+            return false;
+        }
+        auto vp = qobject_cast<QWidget*>(obj);
+        auto view = vp ? dynamic_cast<Gui::View3DInventorViewer*>(vp->parentWidget()) : nullptr;
+        if (view && view->viewport() == vp && !view->itemAt(static_cast<QMouseEvent*>(event)->position().toPoint())) {
+            QTimer::singleShot(0, [this] { refresh(); });
+        }
+        return false;
     }
 
 private:
@@ -2426,16 +2446,31 @@ private:
     {
         if (msg.Type == Gui::SelectionChanges::AddSelection || msg.Type == Gui::SelectionChanges::RmvSelection
             || msg.Type == Gui::SelectionChanges::ClrSelection || msg.Type == Gui::SelectionChanges::SetSelection) {
-            QTimer::singleShot(0, [this] { refresh(); });
+            QTimer::singleShot(0, [this] {
+                if (shown != selectedFace()) {
+                    hide();
+                }
+            });
         }
     }
 
     void hide()
     {
         timer.stop();
+        shown.clear();
         if (panel) {
             panel->hide();
         }
+    }
+
+    /// "Objekt.FaceN", wenn genau eine Fläche gewählt ist
+    static std::string selectedFace()
+    {
+        const auto sel = Gui::Selection().getSelectionEx();
+        if (sel.size() != 1 || sel.front().getSubNames().size() != 1) {
+            return {};
+        }
+        return std::string(sel.front().getFeatName()) + "." + sel.front().getSubNames().front();
     }
 
     /// genau eine Körperfläche gewählt, kein Werkzeug offen: Maße zeigen
@@ -2461,6 +2496,7 @@ private:
         place();
         panel->show();
         timer.start();
+        shown = selectedFace();
     }
 
     void build()
@@ -2543,6 +2579,7 @@ private:
     QFormLayout* form = nullptr;
     QLabel* error = nullptr;
     QTimer timer;
+    std::string shown;  ///< Fläche, zu der die Karte offen ist
 };
 }  // namespace
 
