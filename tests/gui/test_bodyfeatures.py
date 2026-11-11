@@ -30,6 +30,11 @@ def vol(tag, expected):
     L("%s: body=%s volume=%.0f (erwartet ~%.0f) errors=%s" % (tag, b.Label, b.Shape.Volume, expected, errors()))
 
 
+def header():
+    """Titel des Feature-Panels"""
+    return [h.text() for h in visible(QtWidgets.QToolButton) if h.property("class") == "header"]
+
+
 def dialog_ok():
     QtCore.QTimer.singleShot(400, ok)
 
@@ -38,7 +43,10 @@ state = {}
 XZ = App.Placement(App.Vector(), App.Rotation(App.Vector(1, 0, 0), 90))  # Skizzen-Y = globales Z
 
 run([
-    ("box", lambda: Gui.runCommand("Design_Box")), ("ok", ok),
+    ("box", lambda: Gui.runCommand("Design_Box")),
+    ("torus", lambda: choose("Torus", 3)),
+    ("title", lambda: check("the panel title follows the type", header() == ["Torus"], str(header()))),
+    ("back to box", lambda: choose("Torus", 0)), ("ok", ok),
     ("box?", lambda: vol("box", 8000)),
     ("cylinder", lambda: Gui.runCommand("Design_Cylinder")), ("ok", ok),
     ("cylinder?", lambda: vol("cylinder", math.pi * 100 * 20)),

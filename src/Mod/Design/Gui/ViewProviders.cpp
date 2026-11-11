@@ -16,6 +16,7 @@
 #include <Gui/ViewProviderDocumentObject.h>
 #include <Mod/Sketcher/App/SketchObject.h>
 #include <Gui/TaskView/TaskDialog.h>
+#include <Gui/TaskView/TaskView.h>
 #include <Mod/Design/App/Features.h>
 
 #include <QCheckBox>
@@ -1376,7 +1377,7 @@ public:
         fixLayout = new QVBoxLayout(fixBox);
         fixLayout->setContentsMargins(0, 0, 0, 0);
         form->addRow(fixBox);
-        addTaskBox(w, false);
+        taskBox = static_cast<Gui::TaskView::TaskBox*>(addTaskBox(w, false));
         apply();
         createArrow();
     }
@@ -1962,10 +1963,8 @@ private:
                 QTimer::singleShot(0, button, [button] { button->setChecked(true); });
             }
         }
-        if (generic) {  // Titel folgt z. B. dem Grundkörper-Typ
-            if (auto box = form->parentWidget()) {
-                box->setWindowTitle(featureTitle(feature));
-            }
+        if (generic && taskBox) {  // Titel folgt z. B. dem Grundkörper-Typ
+            taskBox->setHeaderText(featureTitle(feature));
         }
         if (body) {
             const bool showBody = feature->op() != Design::Feature::Op::NewBody;
@@ -2055,6 +2054,7 @@ private:
     Design::Body* newBody = nullptr;
     App::Part* newComponent = nullptr;
     QFormLayout* form = nullptr;
+    Gui::TaskView::TaskBox* taskBox = nullptr;
     QComboBox* extent = nullptr;
     QComboBox* axis = nullptr;
     Gui::QuantitySpinBox* distance = nullptr;
