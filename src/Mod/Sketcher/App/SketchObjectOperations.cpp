@@ -712,11 +712,14 @@ std::unique_ptr<Constraint> getNewConstraintAtTrimCut(
     newConstr->First = cutGeoId;
     newConstr->FirstPos = cutPosId;
     newConstr->Second = cuttingGeoId;
-    if (isPointAtPosition(obj, cuttingGeoId, PointPos::start, cutPointVec)) {
+    // MyCAD: ein Vollkreis (Ellipse, periodischer Spline) hat keine Endpunkte, auch wenn der Schnitt auf seiner Naht
+    // liegt; Koinzidenz mit seinem "Start" wäre eine ungültige Bedingung (solve() == -5)
+    const bool hasEnds = !SketchObject::isClosedCurve(obj->getGeometry(cuttingGeoId));
+    if (hasEnds && isPointAtPosition(obj, cuttingGeoId, PointPos::start, cutPointVec)) {
         newConstr->Type = Sketcher::Coincident;
         newConstr->SecondPos = PointPos::start;
     }
-    else if (isPointAtPosition(obj, cuttingGeoId, PointPos::end, cutPointVec)) {
+    else if (hasEnds && isPointAtPosition(obj, cuttingGeoId, PointPos::end, cutPointVec)) {
         newConstr->Type = Sketcher::Coincident;
         newConstr->SecondPos = PointPos::end;
     }

@@ -474,6 +474,32 @@ TEST_F(SketchObjectTest, testTrimLineSegmentMid)
     EXPECT_TRUE(solverUpdated);
 }
 
+// MyCAD: der Schnitt liegt genau auf dem Parameter 0 eines Vollkreises; der hat keinen Start-/Endpunkt, also
+// Punkt-auf-Kurve statt Koinzidenz (vorher: ungültige Bedingung, solve() == -5)
+TEST_F(SketchObjectTest, testTrimLineEndAtFullCircleSeam)
+{
+    // Arrange
+    Part::GeomCircle circle;
+    circle.setCenter(Base::Vector3d(0.0, 0.0, 0.0));
+    circle.setRadius(15.0);
+    Part::GeomLineSegment lineSeg;
+    lineSeg.setPoints(Base::Vector3d(-35.0, 0.0, 0.0), Base::Vector3d(35.0, 0.0, 0.0));
+    int circleId = getObject()->addGeometry(&circle);
+    int geoId = getObject()->addGeometry(&lineSeg);
+
+    // Act
+    const auto result = getObject()->trim(geoId, Base::Vector3d(28.0, 0.0, 0.0));
+
+    // Assert
+    EXPECT_EQ(result, SketchSolveStatus::Success);
+    for (const auto* constr : getObject()->Constraints.getValues()) {
+        if (constr->Second == circleId) {
+            EXPECT_EQ(constr->Type, Sketcher::PointOnObject);
+        }
+    }
+    EXPECT_EQ(getObject()->solve(), SketchSolveStatus::Success);
+}
+
 TEST_F(SketchObjectTest, testTrimCircleEnd)
 {
     // Arrange
