@@ -106,9 +106,12 @@ def record_stop(hold=1.5, longest=1.2):
     durations = [max(_rec["ms"], min(int((b - a) * 1000), int(longest * 1000))) for a, b in zip(times, times[1:])]
     durations[-1] += int(hold * 1000)
     w, h = frames[0].size
-    sample = Image.new("RGB", (w, h * 3))  # Palette aus Anfang, Mitte und Ende: Oberfläche und Ergebnis
-    for i, f in enumerate((frames[0], frames[len(frames) // 2], frames[-1])):
-        sample.paste(f, (0, h * i))
+    # Palette aus bis zu 16 Bildern über den ganzen Clip: auch kurze Farben (blaue Auswahl, oranges Profil, rote
+    # Schraffur) bekommen eigene Einträge, sonst werden sie grau
+    picks = [frames[i * (len(frames) - 1) // 15] for i in range(16)] if len(frames) > 16 else frames
+    sample = Image.new("RGB", (w // 2, h // 2 * len(picks)))
+    for i, f in enumerate(picks):
+        sample.paste(f.resize((w // 2, h // 2)), (0, h // 2 * i))
     palette = sample.quantize(255, method=Image.Quantize.MEDIANCUT)
     frames = [f.quantize(palette=palette, dither=Image.Dither.NONE) for f in frames]
     frames[0].save(_rec["path"], save_all=True, append_images=frames[1:], duration=durations, loop=0, optimize=False)
