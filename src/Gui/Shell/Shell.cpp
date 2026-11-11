@@ -3231,6 +3231,21 @@ void layout()
     if (state.scribbleActions && !state.scribbleMode) {
         state.scribbleActions->setVisible(false);
     }
+
+    // Freier Teil der Ansicht, als Anteil: Fit All passt das Modell dort ein (View3DInventorViewer::viewBoundBox),
+    // zwischen Seitenleiste und Panels rechts, unter der Kopfleiste und über der Timeline
+    QRectF free(0, top, r.width(), (state.timeline && state.timeline->isVisible() ? state.timeline->pos().y() : r.height()) - top);
+    for (GlassPanel* p : {state.browser, state.inspector, state.palette, state.scribblePalette}) {
+        if (p && p->isVisible()) {
+            const QRectF glass = p->mapRectToScene(p->shape().boundingRect());
+            glass.center().x() < r.center().x() ? free.setLeft(std::max(free.left(), glass.right() + m))
+                                                : free.setRight(std::min(free.right(), glass.left() - m));
+        }
+    }
+    for (QGraphicsView* view : state.scene->views()) {
+        view->setProperty("freeArea", QRectF(free.x() / r.width(), free.y() / r.height(), free.width() / r.width(),
+                                             free.height() / r.height()));
+    }
 }
 
 /// Browser (Seitenleiste links) ein-/ausklappen; der Zustand bleibt über Neustarts (MyCAD/BrowserHidden)

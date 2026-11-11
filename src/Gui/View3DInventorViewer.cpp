@@ -4919,8 +4919,32 @@ void View3DInventorViewer::alignToSelection()
     }
 }
 
-void View3DInventorViewer::viewBoundBox(const SbBox3f& box)
+void View3DInventorViewer::viewBoundBox(const SbBox3f& bounds)
 {
+    SbBox3f box = bounds;
+    // MyCAD: in den freien Teil der Ansicht einpassen (zwischen Seitenleiste und Panels rechts). Die Shell legt ihn als
+    // Anteil der Ansicht in "freeArea" ab; eingepasst wird eine größere, verschobene Box, deren Mitte in der Mitte der
+    // Ansicht liegt, wenn die echte Box in der Mitte des freien Teils liegt.
+    const QRectF free = property("freeArea").toRectF();
+    SoCamera* camera = getSoRenderManager()->getCamera();
+    if (camera && !box.isEmpty() && free.isValid() && free != QRectF(0, 0, 1, 1)) {
+        const SbVec2s size = getSoRenderManager()->getViewportRegion().getViewportSizePixels();
+        const float w = size[0], h = size[1];
+        SbSphere sphere;
+        sphere.circumscribe(box);
+        // die Kugel füllt die kürzere Seite der Ansicht; sie soll die kürzere Seite des freien Teils füllen
+        const float r = sphere.getRadius() * std::min(w, h)
+            / std::max(1.0F, std::min(float(free.width()) * w, float(free.height()) * h));
+        const float perPixel = 2 * r / std::min(w, h);
+        SbVec3f right, up;
+        camera->orientation.getValue().multVec(SbVec3f(1, 0, 0), right);
+        camera->orientation.getValue().multVec(SbVec3f(0, 1, 0), up);
+        const SbVec3f center = sphere.getCenter() - right * (float(free.center().x() - 0.5) * w * perPixel)
+            + up * (float(free.center().y() - 0.5) * h * perPixel);
+        const float half = r / std::sqrt(3.0F);  // Würfel mit dieser Umkugel
+        box.setBounds(center - SbVec3f(half, half, half), center + SbVec3f(half, half, half));
+    }
+
     if (isAnimationEnabled()) {
         animatedViewAll(box, 10, 20);
     }

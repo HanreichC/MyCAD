@@ -19,6 +19,21 @@ def direction():
     return "(%.2f, %.2f, %.2f)" % (d.x, d.y, d.z)
 
 
+def fitted():
+    """Fit All: das Modell sitzt mittig im freien Bereich rechts neben der Seitenleiste, nicht unter ihr"""
+    tree = visible(QtWidgets.QTreeWidget)[0]
+    top = tree
+    while top.parentWidget():
+        top = top.parentWidget()
+    left = top.graphicsProxyWidget().sceneBoundingRect().right()  # rechter Rand der Seitenleiste
+    width = view().viewport().width()
+    av = Gui.ActiveDocument.ActiveView
+    b = body("Box").Shape.BoundBox
+    xs = [av.getPointOnViewport(App.Vector(x, y, z))[0] for x in (b.XMin, b.XMax) for y in (b.YMin, b.YMax) for z in (b.ZMin, b.ZMax)]
+    detail = "model x %.0f..%.0f, free area %.0f..%d" % (min(xs), max(xs), left, width)
+    check("Fit All centers the model in the free area", min(xs) > left and abs((min(xs) + max(xs)) / 2 - (left + width) / 2) < 0.05 * width, detail)
+
+
 run([
     ("setup", lambda: make_body(rect(0, 0, 60, 40), 0, 15, "Box")),
     ("front", lambda: Gui.ActiveDocument.ActiveView.viewFront()),
@@ -28,4 +43,6 @@ run([
     ("top face", lambda: cube_click(60, 40)), ("wait", lambda: None),
     ("dir", lambda: check("top face looks down", direction() in ("(0.00, 0.00, -1.00)", "(-0.00, -0.00, -1.00)", "(0.00, -0.00, -1.00)", "(-0.00, 0.00, -1.00)"), direction())),
     ("home again", lambda: cube_click(19, 131)), ("wait", lambda: None), ("shot", lambda: shot("cube")),
+    ("fit all", lambda: Gui.runCommand("Std_ViewFitAll")), ("wait", lambda: None),
+    ("fitted", fitted),
 ])
