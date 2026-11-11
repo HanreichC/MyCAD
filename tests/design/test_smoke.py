@@ -34,6 +34,21 @@ class Smoke(DesignTest):
         self.assertVolume(body, 1000)
         self.assertEqual(len(Design.timeline(self.doc)), 2)
 
+    def test_delete_keeps_the_face_of_a_later_step(self):
+        """Box, Rundung der senkrechten Kanten, Schale oben offen; Rundung löschen: die Schale bleibt oben offen
+        (Ober- und Unterseite gehen beide aus der Profilfläche hervor, früher nahm sie die erste: unten offen)"""
+        _, body = box(self.doc, 20, 10, 5)
+        verticals = ["Edge%d" % i for i, e in enumerate(body.Shape.Edges, 1)
+                     if abs(e.Vertexes[0].Point.z - e.Vertexes[1].Point.z) > 1]
+        fillet = dress(self.doc, "Design::Fillet", body, verticals, Size=2)
+        shell = dress(self.doc, "Design::Shell", body, [top_face(body)], Size=1)
+        Design.removeFromTimeline(fillet)
+        self.doc.recompute()
+        floors = [f for f in body.Shape.Faces if f.Surface.TypeId == "Part::GeomPlane" and abs(f.CenterOfMass.z - 1) < 1e-6]
+        self.assertEqual(len(floors), 1, "inner floor at z=1: the top is open")
+        self.assertEqual(shell.Warning, "")
+        self.assertNoErrors()
+
     def test_save_and_reload(self):
         _, body = box(self.doc, 20, 10, 5)
         dress(self.doc, "Design::Chamfer", body, [top_face(body)], Size=1)

@@ -2982,8 +2982,9 @@ std::string elementHint(const TopoDS_Shape& s)
     return out.str();
 }
 
-/// Element gleicher Art, das am besten zu hint passt (Lage und Größe); leer, wenn keins da ist
-std::string closestElement(const Part::TopoShape& shape, const std::string& name, const std::string& hint)
+/// Element gleicher Art, das am besten zu hint passt (Lage und Größe); leer, wenn keins da ist. among: nur unter diesen
+std::string closestElement(const Part::TopoShape& shape, const std::string& name, const std::string& hint,
+                           const std::vector<std::string>& among = {})
 {
     std::istringstream in(hint);
     double x = 0, y = 0, z = 0, size = 0;
@@ -2994,9 +2995,12 @@ std::string closestElement(const Part::TopoShape& shape, const std::string& name
     const TopAbs_ShapeEnum type = face ? TopAbs_FACE : TopAbs_EDGE;
     std::string best;
     double bestScore = 1e300;
-    const int count = shape.countSubShapes(type);
+    std::vector<std::string> candidates = among;
+    const int count = among.empty() ? shape.countSubShapes(type) : 0;
     for (int i = 1; i <= count; ++i) {
-        const std::string candidate = (face ? "Face" : "Edge") + std::to_string(i);
+        candidates.push_back((face ? "Face" : "Edge") + std::to_string(i));
+    }
+    for (const std::string& candidate : candidates) {
         std::istringstream h(elementHint(shape.getSubShape(candidate.c_str())));
         double cx = 0, cy = 0, cz = 0, cs = 0;
         h >> cx >> cy >> cz >> cs;
@@ -3039,8 +3043,15 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
                 const auto related = Part::Feature::getRelatedElements(
                     base, (std::string(Data::ELEMENT_MAP_PREFIX) + maps[i]).c_str()
                 );
-                if (!related.isEmpty()) {
-                    names[i] = related.front().index.toString();
+                // Ober- und Unterseite eines Prismas gehen beide aus derselben Profilfläche hervor: unter mehreren
+                // verwandten Elementen das nach Lage und Größe passendste, nicht einfach das erste
+                std::vector<std::string> among;
+                for (const auto& r : related) {
+                    among.push_back(r.index.toString());
+                }
+                if (!among.empty()) {
+                    const std::string best = among.size() > 1 ? closestElement(shape, names[i], hints[i], among) : "";
+                    names[i] = best.empty() ? among.front() : best;
                     found = true;
                 }
             }
