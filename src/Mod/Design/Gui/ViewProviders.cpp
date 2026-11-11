@@ -1037,6 +1037,9 @@ QString featureTitle(const Design::Feature* f)
     if (f->isDerivedFrom<Design::SplitFace>()) {
         return T("Split Face");
     }
+    if (f->isDerivedFrom<Design::RemoveFace>()) {
+        return T("Remove Face");
+    }
     if (auto emboss = freecad_cast<const Design::Emboss*>(f)) {
         return T(emboss->Type.getValueAsString());
     }
@@ -1200,6 +1203,9 @@ public:
             distance = quantityBox(Base::Unit::Length, pull->Distance.getValue());
             bindExpression(distance, &pull->Distance);
             form->addRow(T("Distance"), distance);
+        }
+        else if (feature->isDerivedFrom<Design::RemoveFace>()) {  // nur die Flächen, kein Maß
+            form->addRow(T("Faces"), new QLabel(T("%1 selected").arg(dressUp->Edges.getSize())));
         }
         else if (dressUp) {
             auto edges = new QLabel(T("%1 selected").arg(dressUp->Edges.getSize()));
@@ -1854,7 +1860,7 @@ private:
         if (auto pull = freecad_cast<Design::PressPull*>(feature)) {
             pull->Distance.setValue(distance->value().getValue());
         }
-        else if (dressUp) {
+        else if (dressUp && distance) {
             dressUp->Size.setValue(std::abs(distance->value().getValue()));
         }
         if (shell) {

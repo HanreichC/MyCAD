@@ -24,6 +24,19 @@ def circle(r, x, y):
     return [Part.Circle(App.Vector(x, y, 0), App.Vector(0, 0, 1), r)]
 
 
+def header():
+    """Titel des Feature-Panels"""
+    return [h.text() for h in visible(QtWidgets.QToolButton) if h.property("class") == "header"]
+
+
+def labels():
+    return {l.text() for l in visible(QtWidgets.QLabel)}
+
+
+def cancel():
+    click([b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "Cancel"][0])
+
+
 def set_pattern():
     boxes = [b for b in visible(QtWidgets.QSpinBox)]
     boxes[0].setValue(3)
@@ -56,5 +69,11 @@ run([
     ("inner", lambda: Gui.runCommand("Design_Thread")), ("wait", lambda: None), ("wait", lambda: None), ("ok", ok), ("wait", lambda: None),
     ("inner?", lambda: L("inner thread: E volume=%.0f (Platte mit Bohrung %.0f, Rillen nach außen -> kleiner) errors=%s" % (
         body("E").Shape.Volume, 40 * 40 * 15 - 3.14159265 * 36 * 15, errors()))),
+    ("remove sel", lambda: select(body("B"), faces(body("B"), lambda f: abs(f.CenterOfMass.x - body("B").Shape.BoundBox.XMax) < 1e-6))),
+    ("remove face", lambda: Gui.runCommand("Design_RemoveFace")),
+    ("remove panel", lambda: check("Remove Face panel: own title, Faces row, no Distance field",
+                                   header() == ["Remove Face"] and {"Faces", "1 selected"} <= labels() and not {"Distance", "Edges"} & labels(),
+                                   "%s %s" % (header(), [l.text() for l in visible(QtWidgets.QLabel)]))),
+    ("remove cancel", cancel),
     ("shot", lambda: shot("features2")),
 ])
