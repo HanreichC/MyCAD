@@ -608,6 +608,8 @@ void applyTheme()
     sketcher->SetBool("BSplinePoleWeightVisible", false);
     sketcher->SetBool("BSplineKnotMultiplicityVisible", false);
     sketcher->SetBool("BSplineDegreeVisible", false);
+    // Keine FreeCAD-Rückfrage, wenn Tangential an verbundenen Enden zur Endpunkt-Tangente wird: das Ergebnis sieht man
+    sketcher->SetBool("NotifyConstraintSubstitutions", false);
     // Skizzenraster: feine Linien wie Trennlinien, jede n-te etwas kräftiger
     sketcher->SetUnsigned("GridLineColor", packed(t.separatorOpaque));
     sketcher->SetUnsigned("GridDivLineColor", packed(t.gray2));

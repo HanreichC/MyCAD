@@ -219,6 +219,27 @@ def note_frame():
     check("note text has no frame, also with focus", e.frameWidth() == 0 and corner == inner, "frame=%d %s %s" % (e.frameWidth(), corner.name(), inner.name()))
 
 
+def tangent_setup():
+    clear()
+    arc = Part.ArcOfCircle(Part.Circle(V(12, 0, 0), V(0, 0, 1), 16), -math.pi / 2, math.pi / 2)
+    sketch().addGeometry([Part.LineSegment(V(-30, -16, 0), V(12, -16, 0)), arc])
+    sketch().addConstraint(Sketcher.Constraint("Coincident", 0, 2, 1, 1)); doc().recompute()
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(sketch(), "Edge1"); Gui.Selection.addSelection(sketch(), "Edge2")
+
+
+def no_dialog():
+    """Offene Fenster (QDialog) schließen; True, wenn keins offen war"""
+    dlgs = [w for w in QtWidgets.QApplication.topLevelWidgets() if w.isVisible() and isinstance(w, QtWidgets.QDialog)]
+    for d in dlgs:
+        d.reject()
+    return not dlgs, str([d.windowTitle() for d in dlgs])
+
+
+def tangent_result():
+    ok, why = no_dialog()
+    check("Tangent on joined ends asks nothing (no FreeCAD substitution dialog)", ok and "Tangent" in [c.Type for c in sketch().Constraints], why)
+
+
 import Sketcher
 
 in_order([
@@ -232,6 +253,11 @@ in_order([
     ("shot on", lambda: shot("construction")),
     ("toggle off", lambda: click(button("Sketcher_ToggleConstruction"))), wait,
     ("row off 2", lambda: check("both off again", not palette_row().isChecked() and not button("Sketcher_ToggleConstruction").isChecked())),
+    ("zoom 0", lambda: (sketch().addGeometry(Part.Circle(V(0, 0, 0), V(0, 0, 1), 60)), doc().recompute(), fit())), wait,
+    # Tangential an verbundenen Enden: keine FreeCAD-Rückfrage
+    ("tangent setup", tangent_setup),
+    ("tangent", lambda: QtCore.QTimer.singleShot(0, lambda: Gui.runCommand("Sketcher_ConstrainTangent"))), wait,
+    ("tangent ok", tangent_result),
     # 2 Versatz
     ("zoom", lambda: (sketch().addGeometry(Part.Circle(V(0, 0, 0), V(0, 0, 1), 60)), doc().recompute(), fit())), wait,
     ("line", line_setup),
