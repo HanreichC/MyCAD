@@ -2,6 +2,7 @@
 """Startseite: beim Start ohne Design sichtbar; "New Design" (Seitenleiste) öffnet ein Design; gespeichert und geschlossen erscheint
 es unter Recent und Projects (mit Vorschaubild, im eigenen Ordner Bracket/Bracket.mycad, ohne .FCBak-Sicherung; ein
 altes Legacy.FCStd im Projektordner erscheint auch); Kachel öffnet es wieder; Home zeigt die Seite, "Back" schließt sie.
+Rechtsklick auf eine Kachel benennt ein Design um oder löscht es.
 Projektordner für den Test im Ausgabeordner, danach wieder der des Benutzers."""
 import os
 import re
@@ -72,6 +73,34 @@ def recent_names():
     return [[l.text() for l in t.findChildren(QtWidgets.QLabel, "StartName")][0] for t in box.findChildren(QtWidgets.QWidget, "StartTile")]
 
 
+def tile_menu(name, entry, answer):
+    """Echter Rechtsklick auf die Kachel, echter Klick auf den Menüpunkt; answer füllt danach den Dialog aus"""
+    def pick():
+        QtCore.QTimer.singleShot(700, answer)  # vorher einplanen: der Dialog blockiert modal
+        m = visible(QtWidgets.QMenu)[0]
+        # das Menü öffnet beim Drücken; wie bei echter Maus geht das Loslassen an das Menü (dort noch ohne Wirkung)
+        QtTest.QTest.mouseRelease(m.windowHandle(), QtCore.Qt.RightButton, QtCore.Qt.NoModifier, QtCore.QPoint(-5, -5))
+        L("  menu=%s" % [a.text() for a in m.actions() if a.text()])
+        r = m.actionGeometry([a for a in m.actions() if a.text() == entry][0])
+        QtTest.QTest.mouseMove(m.windowHandle(), r.center())
+        QtTest.QTest.mouseClick(m.windowHandle(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, r.center())
+    QtCore.QTimer.singleShot(800, pick)
+    win, p = mw.windowHandle(), tile(name).mapTo(mw, tile(name).rect().center())
+    QtTest.QTest.mouseMove(win, p)
+    QtTest.QTest.mousePress(win, QtCore.Qt.RightButton, QtCore.Qt.NoModifier, p)  # kehrt erst nach dem Menü zurück
+
+
+def rename_to(text):
+    d = visible(QtWidgets.QInputDialog)[0]
+    d.setTextValue(text); d.accept()
+
+
+def confirm_delete():
+    box = visible(QtWidgets.QMessageBox)[0]
+    L("  question: %s" % box.text().replace("\n", " "))
+    [b for b in box.buttons() if b.text() == "Delete"][0].click()
+
+
 def save_version():
     QtCore.QTimer.singleShot(800, lambda: visible(QtWidgets.QInputDialog)[0].accept())
     Gui.runCommand("MyCAD_SaveVersion")
@@ -107,5 +136,13 @@ in_order([
     ("close2", lambda: App.closeDocument(App.ActiveDocument.Name)), ("wait", lambda: None),
     ("home3", lambda: click([b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Home"][0])), ("wait", lambda: None),
     ("recent", lambda: check("a design saved with Save Version is listed under Recent", "Clip" in recent_names(), str(recent_names()))),
+    # Rechtsklick auf eine Kachel: umbenennen (Projektordner und Recent ziehen mit), dann löschen (Ordner in den Papierkorb)
+    ("clear search", lambda: page().findChild(QtWidgets.QLineEdit, "StartSearch").clear()),
+    ("rename", lambda: tile_menu("Bracket", "Rename…", lambda: rename_to("Holder"))), ("wait", lambda: None),
+    ("renamed", lambda: check("rename moves the project folder and keeps the design under Recent",
+                              os.path.isfile(os.path.join(FOLDER, "Holder", "Holder.mycad")) and not os.path.exists(os.path.dirname(FILE))
+                              and "Holder" in recent_names() and "Holder" in tile_names() and "Bracket" not in tile_names(), str(tile_names()))),
+    ("delete", lambda: tile_menu("Holder", "Delete…", confirm_delete)), ("wait", lambda: None),
+    ("deleted", lambda: check("delete moves the project folder to the trash", not os.path.exists(os.path.join(FOLDER, "Holder")) and "Holder" not in tile_names(), str(tile_names()))),
     ("restore", lambda: grp.SetString("ProjectsFolder", old_folder) if old_folder else grp.RemString("ProjectsFolder")),
 ])

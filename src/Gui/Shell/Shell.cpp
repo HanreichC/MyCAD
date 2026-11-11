@@ -1940,8 +1940,12 @@ private:
         };
         auto tile = [&](const QString& file) {
             const QFileInfo fi(file);
-            return new StartTile(StartTile::picture(thumbnail(file), designIcon(QStringLiteral("Design_Box"))),
-                                 fi.completeBaseName(), when(fi.lastModified()), openFile(fi.absoluteFilePath()));
+            auto t = new StartTile(StartTile::picture(thumbnail(file), designIcon(QStringLiteral("Design_Box"))),
+                                   fi.completeBaseName(), when(fi.lastModified()), openFile(fi.absoluteFilePath()));
+            t->setContextMenuPolicy(Qt::CustomContextMenu);
+            QObject::connect(t, &QWidget::customContextMenuRequested, this,  // Maus oder Menütaste: Menü an der Kachel
+                             [this, t, path = fi.absoluteFilePath()](const QPoint& pos) { tileMenu(path, t->mapToGlobal(pos)); });
+            return t;
         };
 
         // zuletzt geöffnet (FreeCAD führt die Liste; Skripte und gelöschte Dateien überspringen)
@@ -1980,6 +1984,111 @@ private:
         lay->addStretch();
         scroll->setWidget(page);  // ersetzt (und löscht) den alten Inhalt
         applyFilter();
+    }
+
+    /// Kontextmenü einer Kachel: Design umbenennen oder in den Papierkorb legen
+    void tileMenu(const QString& file, const QPoint& at)
+    {
+        QMenu menu;
+        menu.addAction(T("Rename…"));
+        menu.addSeparator();
+        QAction* remove = menu.addAction(T("Delete…"));
+        QAction* chosen = menu.exec(at);
+        if (!chosen) {
+            return;
+        }
+        // erst nach dem Menü: open() baut die Kacheln neu und löscht dabei auch diese
+        QTimer::singleShot(0, this, [this, file, del = chosen == remove] { del ? deleteDesign(file) : renameDesign(file); });
+    }
+
+    /// offenes Design zur Datei schließen; mit ask fragt es bei Änderungen nach dem Speichern. false = abgebrochen
+    static bool closeFile(const QString& file, bool ask)
+    {
+        for (App::Document* doc : App::GetApplication().getDocuments()) {
+            if (QFileInfo(QString::fromUtf8(doc->FileName.getValue())) != QFileInfo(file)) {
+                continue;
+            }
+            Gui::Document* gdoc = Application::Instance->getDocument(doc);
+            if (ask && gdoc && !gdoc->canClose(true, true)) {
+                return false;
+            }
+            App::GetApplication().closeDocument(doc->getName());
+        }
+        return true;
+    }
+
+    /// liegt die Datei in ihrem eigenen Projektordner (Name/Name.mycad, so legt Speichern sie an)?
+    static bool inOwnFolder(const QFileInfo& fi)
+    {
+        const QDir dir = fi.absoluteDir();
+        return dir.dirName() == fi.completeBaseName()
+            && QDir(Gui::Shell::projectsFolder()) == QDir(QFileInfo(dir.absolutePath()).absolutePath());
+    }
+
+    /// Datei in den Papierkorb, im eigenen Projektordner den ganzen Ordner (mit Versionen)
+    void deleteDesign(const QString& file)
+    {
+        const QFileInfo fi(file);
+        const QString target = inOwnFolder(fi) ? fi.absolutePath() : file;
+        QMessageBox box(QMessageBox::Warning, T("Delete Design"),
+                        T("Delete “%1”? The file is moved to the trash:\n%2").arg(fi.completeBaseName(), target),
+                        QMessageBox::Cancel, getMainWindow());
+        QPushButton* remove = box.addButton(T("Delete"), QMessageBox::DestructiveRole);
+        box.setDefaultButton(QMessageBox::Cancel);
+        box.exec();
+        if (box.clickedButton() != remove) {
+            return;
+        }
+        closeFile(file, false);
+        if (!QFile::moveToTrash(target)) {
+            QMessageBox::warning(getMainWindow(), T("Delete Design"), T("“%1” could not be moved to the trash. Check that you can write to it.").arg(target));
+        }
+        open();
+    }
+
+    /// Datei umbenennen; liegt sie in ihrem eigenen Projektordner (Name/Name.mycad), den Ordner mit. Versionen
+    /// (versions/<Name> neben der Datei) wandern mit, die Liste "Recent" zeigt auf die neue Datei.
+    void renameDesign(const QString& file)
+    {
+        const QFileInfo fi(file);
+        bool ok = false;
+        const QString name = QInputDialog::getText(getMainWindow(), T("Rename Design"), T("Name"), QLineEdit::Normal,
+                                                   fi.completeBaseName(), &ok)
+                                 .trimmed();
+        if (!ok || name.isEmpty() || name == fi.completeBaseName()) {
+            return;
+        }
+        const QDir dir = fi.absoluteDir();
+        const bool ownFolder = inOwnFolder(fi);
+        const QString newFolder = ownFolder ? QFileInfo(dir.absolutePath()).absolutePath() + QLatin1Char('/') + name : dir.absolutePath();
+        const QString newFile = newFolder + QLatin1Char('/') + name + QLatin1Char('.') + fi.suffix();
+        if (QFileInfo::exists(ownFolder ? newFolder : newFile)) {
+            QMessageBox::warning(getMainWindow(), T("Rename Design"), T("“%1” already exists. Choose another name.").arg(name));
+            return;
+        }
+        if (!closeFile(file, true)) {
+            return;
+        }
+        const QString renamed = dir.absoluteFilePath(name + QLatin1Char('.') + fi.suffix());
+        if (!QFile::rename(file, renamed) || (ownFolder && !QDir().rename(dir.absolutePath(), newFolder))) {
+            QFile::rename(renamed, file);  // halb umbenannt: zurück
+            QMessageBox::warning(getMainWindow(), T("Rename Design"), T("“%1” could not be renamed. Check that you can write to %2.").arg(fi.completeBaseName(), dir.absolutePath()));
+            open();
+            return;
+        }
+        QDir(newFolder).rename(QStringLiteral("versions/") + fi.completeBaseName(), QStringLiteral("versions/") + name);
+        auto mru = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/RecentFiles");
+        for (const auto& [key, value] : mru->GetASCIIMap("MRU")) {
+            const QString path = QFileInfo(QString::fromUtf8(value.c_str())).absoluteFilePath();
+            if (path == fi.absoluteFilePath()) {
+                mru->SetASCII(key.c_str(), newFile.toUtf8().constData());
+            }
+            else if (path == newFile) {
+                mru->RemoveASCII(key.c_str());  // alter Eintrag gleichen Namens: sonst stünde das Design zweimal unter Recent
+            }
+        }
+        mru->SetInt("RecentFiles", mru->GetInt("RecentFiles", 4));  // meldet es RecentFilesAction, sonst schreibt sie den alten Pfad zurück
+        open();
     }
 
     /// Bereich (Alle / Recent / Projects) und Suchtext anwenden

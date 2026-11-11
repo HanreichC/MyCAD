@@ -1391,6 +1391,7 @@
      "Save Version (Ctrl+S) gives the current state a name, e.g. “Before the holes”, so you find it again under Versions.",
      "Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z) step backwards and forwards through your changes.",
      "Home at the top right, next to the window buttons, opens the start page: recent designs and your projects folder, with search. The back arrow in the same place brings you back to your design.",
+     "Right-click a design on the start page for Rename… (its project folder is renamed too) and Delete… (the file or project folder goes to the trash).",
      "The sidebar button next to the name MyCAD hides the browser for more room; it then moves to the top left corner and shows it again.",
      "Right-click the design name at the top of the browser (left) for Save Version, Save As…, Export…, Variants, Rename, Close and Delete….",
      "Delete… asks first. A saved file goes to the trash, so you can still get it back there."
@@ -1400,6 +1401,7 @@
      "Version sichern (Strg+S) gibt dem jetzigen Stand einen Namen, z. B. „Vor den Bohrungen“, damit du ihn unter Versionen wiederfindest.",
      "Rückgängig (Strg+Z) und Wiederherstellen (Strg+Umschalt+Z) gehen in deinen Änderungen zurück und vor.",
      "Start oben rechts neben den Fensterknöpfen öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Der Zurück-Pfeil an derselben Stelle bringt dich zurück zum Design.",
+     "Rechtsklick auf ein Design der Startseite bietet Umbenennen… (der Projektordner heißt dann mit) und Löschen… (Datei bzw. Projektordner in den Papierkorb).",
      "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus; er rückt dann in die Ecke oben links und blendet ihn dort wieder ein.",
      "Rechtsklick auf den Designnamen ganz oben im Browser (links) bietet Version sichern, Speichern unter…, Exportieren…, Varianten, Umbenennen, Schließen und Löschen….",
      "Löschen… fragt vorher nach. Eine gespeicherte Datei kommt in den Papierkorb, du holst sie dort also noch zurück."
