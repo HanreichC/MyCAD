@@ -16,6 +16,8 @@ panel, while you drag, or during a camera animation.
 
 Gives the current state a name, such as "Before the holes". Named versions are always kept.
 
+![Designs and files](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/file_basics.gif)
+
 ## Versions
 
 FILE section, arrow ▾ next to **Save Version** → **Versions**.
@@ -29,6 +31,8 @@ FILE section, arrow ▾ next to **Save Version** → **Versions**.
 - **Restore:** brings the state back. The state before stays as a version; restoring never deletes anything.
 
 Versions are stored next to the design file in `versions/<Name>/`.
+
+![Versions and variants](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Versions.gif)
 
 ## Variants: "what if"
 

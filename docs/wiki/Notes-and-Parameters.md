@@ -6,6 +6,8 @@
 when the window gets smaller, and stays open while you work on sketches. Closed notes are listed in the browser under
 **Notes**; double-click one to open it again. Notes are saved in the design.
 
+![Note](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Note.gif)
+
 ### Calculate
 
 A line that ends in `=` gets worked out (with a decimal point in English, a comma in German):
@@ -43,3 +45,5 @@ Width = Wall * 20        → 40.00 mm
 The classic way (UTILITIES → **Change Parameters**): a table with name, expression and value. **Add** creates a new
 parameter; change expressions right in the table. Parameters that come from a note say "In note …" and are changed
 there.
+
+![Change Parameters](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Parameters.gif)

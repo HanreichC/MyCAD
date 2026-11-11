@@ -37,6 +37,8 @@ Fillet, trim, extend, split, offset, mirror, pattern, move and scale are all one
 
 **Esc** puts the active tool away, and **Finish Sketch** takes you back to your model.
 
+![Sketching basics](src/Gui/Shell/help/images/sketch_basics.gif)
+
 <br>
 
 ## Click. And it's a solid.
@@ -55,11 +57,15 @@ Extrude one side, symmetric, two sides, up to an object or through all, with a t
 
 Every step goes into the **Timeline**. Go back, change a dimension, and the rest of the design follows. Drag steps into a new order, and group them into chips you can fold away. With **Change Parameters** you can drive the whole model from named values and formulas.
 
+![Extrude](src/Gui/Shell/help/images/Design_Extrude.gif)
+
 <br>
 
 ## Double-click a face. Change a number.
 
 Double-click any face with no tool active and the dimensions that make it appear right next to it: the length of an extrusion, the sketch dimension behind a side face, the diameter of a hole, the radius of a fillet. Type a new value, press Enter, done. If the dimension is a parameter, the parameter changes, and so does the note it lives in.
+
+![Change a size on the model](src/Gui/Shell/help/images/start_dimensions.gif)
 
 <br>
 
@@ -73,6 +79,8 @@ A fillet too big for its edge? The step turns red in the timeline, the panel say
 
 Press **Ctrl+K** and type. The search finds commands, bodies and sketches, forgives typos, and understands English, German and the words other CAD programs use: *pocket*, *pad*, *push pull*, *Gewinde*, *Passung*, *slicer*. The ones you used last are at the top.
 
+![Search](src/Gui/Shell/help/images/search.gif)
+
 <br>
 
 ## Parts that fit together.
@@ -80,6 +88,8 @@ Press **Ctrl+K** and type. The search finds commands, bodies and sketches, forgi
 Create **components** and connect them with **joints**. Each component has its own bodies, sketches and origin, and all of it lives in a single design file.
 
 Joints come as **Rigid**, **Revolute**, **Slider**, **Cylindrical**, **Pin-Slot**, **Planar** and **Ball**, with limits for angle and travel. **Animate** swings a joint between its limits and shows when parts collide. Chains follow along, and **closed loops** like a four-bar linkage are solved together: the first joint drives, the others follow. **Measure** gives you the mass, material and center of mass of a body, with the material taken from its appearance.
+
+![Joint](src/Gui/Shell/help/images/Design_Joint.gif)
 
 <br>
 
@@ -98,6 +108,8 @@ It can do the math too. End a line with `=` and the answer appears right after i
 And it is your parameter list. Write `Wall = 2 mm` and press Enter: that's a parameter now, ready for any dimension field. Formulas show their value (`Width = Wall * 20 → 40.00 mm`). Change the size on the model and the line in the note changes with it. Delete a line that a dimension still uses, and the parameter stays, with a note saying who needs it. Nothing gets lost quietly.
 
 Closed a note? It's still under **Notes** in the browser, double-click to open it again. Notes are saved in the design file, so they're still there next time you open it.
+
+![Note](src/Gui/Shell/help/images/Design_Note.gif)
 
 <br>
 
@@ -135,6 +147,8 @@ Then go 3D. **Move Sheet** lays the paper onto any face of your model, or stands
 
 Happy with an idea? **Convert to Sketch** turns your lines, circles, ellipses and other shapes into a real sketch, joined up and ready to dimension and extrude. Your scribbles stay in the design under **Scribbles** in the browser.
 
+![Scribble](src/Gui/Shell/help/images/Design_Scribble.gif)
+
 <br>
 
 ## Write on it. The Red Pen.
@@ -142,6 +156,8 @@ Happy with an idea? **Convert to Sketch** turns your lines, circles, ellipses an
 Mark up your model the way you'd mark up a drawing. Pick the **Red Pen**, write `R2` next to an edge, `M5` on a face, `+5` on a face you want thicker, or cross out a face to get rid of it. **Apply Corrections** reads what you wrote and turns each line into a card: `R2 → Fillet R2 on 1 edge`. Point at a card to see its target, **Show** to try it on the model, **Apply** to keep it. If two edges are equally close, the card asks which one instead of guessing.
 
 The red pen knows fillets (`R2`), chamfers (`C2`, `2×45°`), press-pull (`+5`, `−5`), tapped holes and threads (`M5`), holes and diameters (`Ø8`), fits (`H7`, `print`), patterns (`3×`), plain dimensions (`12`) and removing a face (`remove`, or a line through it). German works too: `Druck`, `weg`. Every correction becomes a normal step in the timeline.
+
+![Red Pen](src/Gui/Shell/help/images/Design_RedPen.gif)
 
 <br>
 
@@ -155,6 +171,8 @@ The red pen knows fillets (`R2`), chamfers (`C2`, `2×45°`), press-pull (`+5`, 
 
 The start page lists your recent designs and everything in your project folder, each with a large preview. Type a few letters into the search box to find a part, then click it to pick up where you left off. **Home** at the top right brings you back here at any time, and the back arrow next to it returns you to your design.
 
+![Designs and files](src/Gui/Shell/help/images/file_basics.gif)
+
 <br>
 
 ## Your hands. Your rules.
@@ -164,6 +182,8 @@ Choose from twelve navigation styles, including **Fusion 360**, **SolidWorks**, 
 You can map a key to a mouse button, for example **Shift** as the middle button, and then navigate with your touchpad. Shift still works as Shift when you type. MyCAD orbits around the body under your cursor. If you'd rather see names than icons, turn on **Show tool names**.
 
 Pen tablets work on Wayland with pressure and hover. The side buttons orbit and pan, even while the tip is on the paper. In KDE's **Drawing Tablet** settings you can give the buttons on your tablet keys: **E** for the eraser, **V** to select, **L** to look straight at the sheet, Ctrl+Z to undo. With **E** on a button, you can erase in one press even with a pen that has no eraser end, like the Huion Inspiroy H640P's.
+
+![Settings](src/Gui/Shell/help/images/settings.gif)
 
 <br>
 
@@ -187,11 +207,15 @@ Bodies stand in a photo studio: a large light from the top left, a softer one fr
 
 The woods, stone, leather, cork, fabric, carbon and brushed metals are real photo scans with their relief, and a wooden part shows end grain where it's cut. A soft shadow grounds every body on the grid. Under **Materials and Light** in the settings you choose the lighting and can switch each of these off on its own: realistic materials, reflections, relief and end grain, and the contact shadow. Turn off what gets in your way, or what your graphics card can't keep up with.
 
+![Appearance](src/Gui/Shell/help/images/Design_Appearance.gif)
+
 <br>
 
 ## Made for makers.
 
 **Print View** shows on the model what your printer will struggle with: overhangs hatched red, faces on the bed dotted green, walls that are too thin cross-hatched yellow. Pick the face that should lie on the bed, then hit **Print**: MyCAD finds **OrcaSlicer**, **Bambu Studio**, **PrusaSlicer** or **UltiMaker Cura**, installed as a program, a **Flatpak** or an AppImage, and opens your design there as a colored 3MF, right side down.
+
+![Print View](src/Gui/Shell/help/images/Design_PrintView.gif)
 
 **Fit** makes a hole and its pin fit: with a little play for printing (tight, normal, loose) or exactly to ISO 286 (H7/g6, H7/h6, H7/k6, H7/p6, H8/f7), with the resulting play shown in microns. **Screw Here** joins two parts in one click: a clearance hole with counterbore or countersink in the top part, and a tapped hole, a hole for a heat-set insert or a nut trap in the bottom part, with the screw length picked from the standard. Threads have a 3D print setting that adds the play and warns when the pitch is too fine for a 0.4 mm nozzle.
 
@@ -205,11 +229,15 @@ Every saved state becomes a **version**, kept like Time Machine keeps backups: e
 
 Want to try something risky? Make a **variant**. Switch between the main design and its variants right in the browser, compare them, and make a variant the main design when it wins.
 
+![Versions and variants](src/Gui/Shell/help/images/Design_Versions.gif)
+
 <br>
 
 ## Speaks STEP. And STL. And DXF.
 
 **Export** to STL or 3MF for your 3D printer, or to STEP for any other CAD program. Sketches export as DXF, for example for laser cutters or CNC mills. **Import** STEP models, and bring DXF and SVG drawings straight into a sketch.
+
+![Export](src/Gui/Shell/help/images/Design_Export.gif)
 
 <br>
 

@@ -18,10 +18,14 @@ it reads without color vision too:
 - Overhang angle and minimum wall are in **Settings**.
 - Click **Print View** again to hide it.
 
+  ![Print View](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_PrintView.gif)
+
 ## Print
 
 **Print** (FILE section, or in the legend) opens the visible (or selected) bodies in your slicer: as a 3MF with names and
 colors, the chosen bottom face down.
+
+![Print](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Print.gif)
 
 MyCAD finds:
 
@@ -49,6 +53,8 @@ Select a hole and its pin (or flat faces), **Fit** (MODIFY section):
   Both faces move to the middle of their tolerance field; the play shows in the panel, e.g. `+7 … +41 µm`.
 - The hole and the pin may be in two different bodies.
 
+  ![Fit](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Fit.gif)
+
 ## Screw Here
 
 Click the top face of the upper part (or the edge of a round hole), **Screw Here** (arrow ▾ next to Hole). The lower part
@@ -59,12 +65,18 @@ is the next body behind that point, even in another component.
   hexagon pocket on the underside).
 - **Length:** the shortest standard length that holds; pick one that's too short by hand and MyCAD suggests a longer one.
 
+  ![Screw Here](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Fastener.gif)
+
 ## Threads for printing
 
 On **Thread**, tick "Clearance for 3D printing": the play is added automatically (at most a quarter of the pitch), and
 below 1 mm pitch (smaller than M8) MyCAD warns that it prints poorly with a 0.4 mm nozzle.
 
+![Thread](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Thread.gif)
+
 ## Export
 
 **Export** as **3MF** (one object per body, with name and color), **STL**, **STEP** (with colors and structure) and
 **DXF** (sketches, e.g. for laser cutters and CNC).
+
+![Export](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Export.gif)

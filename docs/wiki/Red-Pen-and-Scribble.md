@@ -4,6 +4,8 @@
 
 **Scribble** (UTILITIES section) opens a drawing sheet with a fine dot grid. A pen tablet is best, the mouse works too.
 
+![Scribble](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Scribble.gif)
+
 - **Pens:** Pencil, Fineliner, Marker, in five colors; press harder for a thicker line. Erase with the back of the pen
   or key **E** (**E** again goes back to the pen).
 - **Clean shapes:** hold still for a moment at the end of a stroke and it becomes a line, circle or rectangle, snapping
@@ -28,6 +30,8 @@ Scribbles stay in the design under **Scribbles** in the browser.
 **Red Pen** (UTILITIES section, arrow ▾ next to Scribble) puts a see-through sheet in front of the model, facing you,
 with a red fineliner. Write corrections where they belong, like on a drawing. Then click **Apply Corrections** in the
 palette.
+
+![Red Pen](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_RedPen.gif)
 
 | You write | next to / on | MyCAD does |
 |---|---|---|

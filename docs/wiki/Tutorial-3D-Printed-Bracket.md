@@ -8,6 +8,8 @@ different.
 
 The built-in help has this tutorial too: **?** → Getting Started → *Tutorial: a bracket for 3D printing*.
 
+![Tutorial: a bracket for 3D printing](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_tutorial_print.gif)
+
 ---
 
 ## 1. New design, and no more saving

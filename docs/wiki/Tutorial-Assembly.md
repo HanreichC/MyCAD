@@ -5,6 +5,8 @@ linkage.
 
 The built-in help has a short version of this tutorial: **?** → Getting Started → *Tutorial: an assembly with joints*.
 
+![Tutorial: an assembly with joints](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_tutorial_assembly.gif)
+
 ---
 
 ## 1. Base plate and lever

@@ -7,6 +7,8 @@ A step-by-step example is in the [Tutorial: an assembly with joints](Tutorial-As
 **New Component** (ASSEMBLE section) creates a component with its own origin, bodies and sketches. What you build goes
 into the active component. Everything stays in one file. The design itself (the root) never moves.
 
+![New Component](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_NewComponent.gif)
+
 ## Joints
 
 **Joint** (key **J**): first an element on the component that moves (face, edge, hole, point), then the place it should go
@@ -25,6 +27,8 @@ to. Two flat faces lie on each other; **Flip** turns that around.
 - **Keep angle and distance within limits:** minimum and maximum for angle and travel.
 - **Animate:** the joint swings between its limits.
 - **Show collisions:** reports which parts touch while it moves.
+
+  ![Joint](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Joint.gif)
 
 ## Chains
 
@@ -47,3 +51,5 @@ closed. Then a solver (OndselSolver, as in FreeCAD's Assembly workbench) works o
 **Measure** shows volume, **mass**, **material** and **center of mass** for a whole body. The material comes from the
 **Appearance** (wood → wood, brushed aluminum → aluminum); choose it yourself under Appearance → Physical material and
 it stays.
+
+![Measure](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Measure.gif)
