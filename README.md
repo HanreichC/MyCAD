@@ -181,11 +181,11 @@ Switch to **Deutsch** in the settings and MyCAD is in German, from the toolbar d
 
 </div>
 
-Bodies stand in a gray room with bright light panels, much like a photo studio. Metal mirrors the panels, red lacquer shines under its clear coat, and glass stays see-through but still reflects. New bodies come in **Space Gray**. Pick another default in the settings and your existing bodies switch right away.
+Bodies stand in a photo studio: a large light from the top left, a softer one from the right, a gray floor. Every face of a body gets its own shade, so a part reads at a glance, even in the flat CAD view. Metal mirrors the lights, red lacquer shines under its clear coat, and glass stays see-through but still reflects. Prefer it softer? Switch **Lighting** to **Room**, the even light of a product preview in the browser. New bodies come in satin **Steel**. Pick another default in the settings and your existing bodies switch right away.
 
 **Appearance** has 119 materials: raw and polished metals, anodized aluminum in nine colors, powder coat, lacquer and metallic paint, matte, satin and glossy plastics, PLA that shows its print layers up close, rubber and silicone, glass and acrylic, woods raw, oiled or lacquered, stone and ceramics, leather, felt and carbon. Each one is a small sphere drawn the same way as your model, with its colors and finishes as dots underneath. Search by name, right-click to keep a favorite, and see at the top what this design already uses. Click a sphere to apply it to the selected bodies, or drag it straight onto a body. With single faces selected, only those faces change color.
 
-The woods, stone, leather, cork, fabric, carbon and brushed metals are real photo scans with their relief, and a wooden part shows end grain where it's cut. A soft shadow grounds every body on the grid. Under **Materials and Light** in the settings you can switch each of these off on its own: realistic materials, reflections, relief and end grain, and the contact shadow. Turn off what gets in your way, or what your graphics card can't keep up with.
+The woods, stone, leather, cork, fabric, carbon and brushed metals are real photo scans with their relief, and a wooden part shows end grain where it's cut. A soft shadow grounds every body on the grid. Under **Materials and Light** in the settings you choose the lighting and can switch each of these off on its own: realistic materials, reflections, relief and end grain, and the contact shadow. Turn off what gets in your way, or what your graphics card can't keep up with.
 
 <br>
 
@@ -235,7 +235,7 @@ Want to try something risky? Make a **variant**. Switch between the main design 
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
 | **Pen tablet** | Pressure and hover on Wayland, side buttons navigate, keys for tablet buttons (E eraser, V select, L look at) |
-| **Materials** | 119 in 12 groups (metal, anodized, coatings, plastic, 3D print, rubber, glass, wood, stone, fabric and leather, composites, Apple colors), 19 CC0 photo scans with relief, reflections of a room, clear coat, end grain, contact shadow |
+| **Materials** | 119 in 12 groups (metal, anodized, coatings, plastic, 3D print, rubber, glass, wood, stone, fabric and leather, composites, Apple colors), 19 CC0 photo scans with relief, studio or room lighting, clear coat, end grain, contact shadow |
 | **Core** | FreeCAD with OpenCascade |
 | **License** | LGPL-2.1-or-later |
 
@@ -271,7 +271,7 @@ The build runs inside a Podman container (`.devcontainer/`), so the compiler and
 
 ## For developers.
 
-The core of the interface lives in [`src/Gui/Shell/`](src/Gui/Shell) and the Fusion-style tools in [`src/Mod/Design/`](src/Mod/Design). [`tools/make_icons.py`](tools/make_icons.py) generates the icons. [`tools/fetch_textures.py`](tools/fetch_textures.py) downloads the photo scans for the materials, and [`tools/make_environment.py`](tools/make_environment.py) renders the room that metal and lacquer reflect. [`tests/gui/test_materials.py`](tests/gui/test_materials.py) checks reflections, end grain and the contact shadow.
+The core of the interface lives in [`src/Gui/Shell/`](src/Gui/Shell) and the Fusion-style tools in [`src/Mod/Design/`](src/Mod/Design). [`tools/make_icons.py`](tools/make_icons.py) generates the icons. [`tools/fetch_textures.py`](tools/fetch_textures.py) downloads the photo scans for the materials, and [`tools/make_environment.py`](tools/make_environment.py) renders the studio and the room that light the bodies. [`tests/gui/test_materials.py`](tests/gui/test_materials.py) checks the three shades of a box, reflections, end grain and the contact shadow.
 
 The GUI tests click through the app like a person would, with real mouse and keyboard events:
 

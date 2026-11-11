@@ -168,9 +168,11 @@ def show_scribbles_in_browser():
 
 
 def clear_focus():
+    """kein Fokus- und kein Hover-Ring im Bild: die Maus steht sonst noch über einer Kachel der Startseite"""
     widget = QtWidgets.QApplication.focusWidget()
     if widget:
         widget.clearFocus()
+    QtGui.QCursor.setPos(mw.mapToGlobal(QtCore.QPoint(mw.width() - 40, mw.height() - 40)))
 
 
 wait = ("wait", lambda: None)

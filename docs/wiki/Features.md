@@ -119,7 +119,8 @@ Worth knowing:
 
 - 119 materials (metals, anodized, coatings, plastics, PLA with print layers, rubber, glass, wood, stone, leather,
   carbon …), many as real photo scans with relief and end grain.
-- Reflections of a studio room, clear coat, contact shadow, each one can be turned off.
+- Studio lighting (every face its own shade) or a soft room; reflections, clear coat, contact shadow, each one can be
+  turned off.
 - Drag a material sphere onto a body; color single faces.
 
 ## Controls
