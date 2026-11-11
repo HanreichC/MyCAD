@@ -153,7 +153,7 @@ The red pen knows fillets (`R2`), chamfers (`C2`, `2×45°`), press-pull (`+5`, 
 
 </div>
 
-The start page lists your recent designs and everything in your project folder, each with a large preview. Type a few letters into the search box to find a part, then click it to pick up where you left off. **Home** in the sidebar brings you back here at any time.
+The start page lists your recent designs and everything in your project folder, each with a large preview. Type a few letters into the search box to find a part, then click it to pick up where you left off. **Home** at the top right brings you back here at any time, and the back arrow next to it returns you to your design.
 
 <br>
 

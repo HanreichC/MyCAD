@@ -642,6 +642,10 @@
       "Joint"
      ],
      [
+      "A",
+      "Appearance (material of the selected body)"
+     ],
+     [
       "V / L / Tab",
       "In a scribble: Select / look straight at the sheet / Only the Sheet"
      ],
@@ -698,6 +702,10 @@
      [
       "J",
       "Gelenk"
+     ],
+     [
+      "A",
+      "Darstellung (Material des gewählten Körpers)"
      ],
      [
       "V / L / Tab",
@@ -1189,7 +1197,7 @@
      "New (Ctrl+N) creates an empty design. Open (Ctrl+O) loads a design file. You never have to save: MyCAD saves after every step, a new design gets its own folder in your projects folder.",
      "Save Version (Ctrl+S) gives the current state a name, e.g. “Before the holes”, so you find it again under Versions.",
      "Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z) step backwards and forwards through your changes.",
-     "Home at the bottom of the sidebar opens the start page: recent designs and your projects folder, with search. Back to Design in the same place brings you back.",
+     "Home at the top right, next to the window buttons, opens the start page: recent designs and your projects folder, with search. The back arrow in the same place brings you back to your design.",
      "The sidebar button next to the name MyCAD hides the browser for more room; it then moves to the top left corner and shows it again.",
      "Right-click the design name at the top of the browser (left) for Save Version, Save As…, Export…, Variants, Rename, Close and Delete….",
      "Delete… asks first. A saved file goes to the trash, so you can still get it back there."
@@ -1198,7 +1206,7 @@
      "Neu (Strg+N) legt ein leeres Design an. Öffnen (Strg+O) lädt eine Design-Datei. Speichern musst du nie: MyCAD speichert nach jedem Schritt, ein neues Design bekommt einen eigenen Ordner in deinem Projektordner.",
      "Version sichern (Strg+S) gibt dem jetzigen Stand einen Namen, z. B. „Vor den Bohrungen“, damit du ihn unter Versionen wiederfindest.",
      "Rückgängig (Strg+Z) und Wiederherstellen (Strg+Umschalt+Z) gehen in deinen Änderungen zurück und vor.",
-     "Start unten in der Seitenleiste öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Zurück zum Design an derselben Stelle bringt dich zurück.",
+     "Start oben rechts neben den Fensterknöpfen öffnet die Startseite: zuletzt verwendete Designs und dein Projektordner, mit Suche. Der Zurück-Pfeil an derselben Stelle bringt dich zurück zum Design.",
      "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus; er rückt dann in die Ecke oben links und blendet ihn dort wieder ein.",
      "Rechtsklick auf den Designnamen ganz oben im Browser (links) bietet Version sichern, Speichern unter…, Exportieren…, Varianten, Umbenennen, Schließen und Löschen….",
      "Löschen… fragt vorher nach. Eine gespeicherte Datei kommt in den Papierkorb, du holst sie dort also noch zurück."
@@ -5183,6 +5191,10 @@
     "Design_ScribbleEllipse",
     "Design_ScribbleSheet",
     "Design_ScribbleBlack",
+    "Design_ScribbleBlue",
+    "Design_ScribbleRed",
+    "Design_ScribbleGreen",
+    "Design_ScribbleYellow",
     "Design_ScribbleLookAt",
     "Design_ScribbleTracing",
     "Design_ScribbleToSketch",
@@ -5542,7 +5554,7 @@
      "3D printing: Export resolution (how fine curves become in STL and 3MF), 3D print clearance for the Fit tool (tight, normal, loose), and Overhang angle and Minimum wall for the Print View.",
      "Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
      "View: Camera, Rotate, Rotate around and Animate view changes.",
-     "Speed & Zoom: Rotation speed, Zoom & scroll speed, Zoom towards the cursor, Invert zoom (mouse wheel). Trackpad: Two fingers pan (off: two-finger scrolling zooms like the scroll wheel), Invert zoom (pinch direction) and how strongly 3 fingers rotate, 2 fingers pan and pinching zooms.",
+     "Speed & Zoom: Rotation speed, Zoom & scroll speed, Zoom towards the cursor, Invert zoom (mouse wheel). Trackpad: Two fingers pan (off: two-finger scrolling zooms like the scroll wheel), Invert zoom (pinch direction) and the speeds Rotate (3 fingers), Pan (2 fingers) and Zoom (pinch). Pen & Handwriting: Tidy handwriting after a pause and Tidying strength.",
      "Keys tab: Add Key… turns a key into a mouse button, e.g. Shift as the middle button; choose the button and whether to Hold, Click, Double-click or Toggle."
     ],
     "de": [
@@ -5552,7 +5564,7 @@
      "3D-Druck: Export-Auflösung (wie fein Rundungen in STL und 3MF werden), Spiel beim 3D-Druck für die Passung (eng, normal, locker) sowie Überhang-Winkel und kleinste Wand für die Druckansicht.",
      "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen.",
      "Ansicht: Kamera, Drehen, Drehen um und Ansichtswechsel animieren.",
-     "Tempo & Zoom: Drehgeschwindigkeit, Zoom- & Scrollgeschwindigkeit, Zum Cursor hin zoomen, Zoom umkehren (Mausrad). Trackpad: Zwei Finger schieben (aus: Scrollen mit zwei Fingern zoomt wie das Mausrad), Zoom umkehren (Richtung beim Spreizen) und wie stark 3 Finger drehen, 2 Finger schieben und Spreizen zoomt.",
+     "Tempo & Zoom: Drehgeschwindigkeit, Zoom- & Scrollgeschwindigkeit, Zum Cursor hin zoomen, Zoom umkehren (Mausrad). Trackpad: Zwei Finger schieben (aus: Scrollen mit zwei Fingern zoomt wie das Mausrad), Zoom umkehren (Richtung beim Spreizen) und die Tempi Drehen (3 Finger), Schieben (2 Finger) und Zoomen (Spreizen). Stift & Handschrift: Handschrift nach einer Pause aufräumen und Stärke des Aufräumens.",
      "Reiter Tasten: Taste hinzufügen… macht eine Taste zur Maustaste, z. B. Umschalt als mittlere Taste; wähle die Maustaste und ob Halten, Klicken, Doppelklick oder Umschalten."
     ]
    },
@@ -5644,7 +5656,9 @@
    "id": "sketch_polyline",
    "group": "sketch_create",
    "icon": "Sketcher_CreatePolyline",
-   "commands": [],
+   "commands": [
+    "Sketcher_CreatePolyline"
+   ],
    "title": {
     "en": "Polyline",
     "de": "Polylinie"
@@ -6100,7 +6114,10 @@
    "id": "sketch_conic",
    "group": "sketch_create",
    "icon": "Sketcher_CreateConic",
-   "commands": [],
+   "commands": [
+    "Sketcher_CreateConic",
+    "Sketcher_CompCreateConic"
+   ],
    "title": {
     "en": "Conic",
     "de": "Kegelschnitt"
