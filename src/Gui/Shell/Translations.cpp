@@ -45,6 +45,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Export…", "Exportieren…"},
         {"Delete…", "Löschen…"},
         {"Delete Design", "Design löschen"},
+        {"Saved to %1", "Gesichert in %1"},
         {"Rename Design", "Design umbenennen"},
         {"“%1” already exists. Choose another name.", "„%1“ gibt es schon. Wähle einen anderen Namen."},
         {"“%1” could not be renamed. Check that you can write to %2.", "„%1“ ließ sich nicht umbenennen. Prüfe, ob du in %2 schreiben darfst."},

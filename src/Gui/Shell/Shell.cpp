@@ -5251,6 +5251,34 @@ void Gui::Shell::install()
         head->setContentsMargins(8, 0, 8, 0);
         sideLay->addWidget(head);
         sideLay->addWidget(tree, 1);
+        // "Gesichert" wie in MyNotes: nur wenn der Stand des aktiven Designs auf der Platte ist. Der Platz bleibt
+        // auch ausgeblendet, sonst spränge der Baum bei jeder Änderung
+        auto saved = new QWidget;
+        saved->setObjectName(QStringLiteral("SavedState"));
+        auto savedLay = new QHBoxLayout(saved);
+        savedLay->setContentsMargins(20, 6, 8, 2);  // Symbol und Text bündig mit Hilfe und Einstellungen darunter
+        savedLay->setSpacing(2);
+        savedLay->addWidget(new IconLabel(designIcon(QStringLiteral("Status_Saved"), &Theme::labelSecondary), Token::IconM));
+        auto savedText = new QLabel(T("Saved"));
+        savedText->setObjectName(QStringLiteral("Hint"));
+        setTextStyle(savedText, Text::Caption);
+        savedLay->addWidget(savedText, 1);
+        QSizePolicy keep = saved->sizePolicy();
+        keep.setRetainSizeWhenHidden(true);
+        saved->setSizePolicy(keep);
+        sideLay->addWidget(saved);
+        auto savedCheck = new QTimer(saved);
+        QObject::connect(savedCheck, &QTimer::timeout, saved, [saved] {
+            Gui::Document* gdoc = Application::Instance->activeDocument();
+            const QString file = gdoc ? QString::fromUtf8(gdoc->getDocument()->FileName.getValue()) : QString();
+            const bool ok = !file.isEmpty() && !gdoc->isModified();
+            if (ok != saved->isVisible()) {
+                saved->setVisible(ok);
+            }
+            saved->setToolTip(ok ? T("Saved to %1").arg(QDir::toNativeSeparators(file)) : QString());
+        });
+        savedCheck->start(500);
+        saved->hide();
         auto foot = sidebarFooter(!frameless());  // rahmenlos steht die Startseite in den Fensterknöpfen
         foot->setContentsMargins(8, 0, 8, 0);
         sideLay->addWidget(foot);
