@@ -33,7 +33,7 @@ once all tests pass.
 | `tools/help_content.py` | source of the built-in help (`python tools/help_content.py` writes `help.json`) |
 | `tools/make_icons.py` | generates the icons |
 | `docs/PLAN.md` | roadmap and status of everything |
-| `docs/wiki/` | this wiki as Markdown in the repo |
+| `docs/wiki/` | this wiki as Markdown in the repo; every push to main copies it to the GitHub wiki (`.github/workflows/wiki.yml`), so edit it here, not on GitHub |
 
 Logic that doesn't need FreeCAD lives in small headers, each with its own check: `NoteParameters.h`, `Fits.h`
 (ISO 286), `PrintCheck.h`, `RedPen.h`, `Gui/Shell/CommandSearch.h`, `Gui/ScribbleTidy.h`, `Gui/ScribbleShapes.h`.
