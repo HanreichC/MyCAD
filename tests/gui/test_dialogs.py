@@ -33,7 +33,8 @@ def theme(text):
 
 
 def message(name):
-    modal(name); click(button("Design_Combine"))
+    """Fehlerfenster (Hinweise wie "wähle erst …" erscheinen unter dem ViewCube, echte Fehler weiter als Fenster)"""
+    modal(name); QtWidgets.QMessageBox.warning(mw, "Export", "The file could not be written.")
 
 
 def version(name):
