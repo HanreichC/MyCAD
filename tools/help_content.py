@@ -1203,7 +1203,7 @@ A("Design_Section", "inspect", "Design_Section", ("Section Analysis", "Schnittan
   (["section", "cut view", "inside", "cross section", "look inside"], ["Schnitt", "Schnittansicht", "innen", "Querschnitt", "hineinschauen"]),
   ("Cuts the view open at a plane so you can look inside. The model itself is not changed.",
    "Schneidet die Ansicht an einer Ebene auf, damit du hineinschauen kannst. Das Modell selbst wird nicht verändert."),
-  [("Click a plane in the browser (e.g. Origin → XZ plane) or a flat face in the view where the view should be cut.",
+  [("Click a plane in the browser (e.g. Origin → XZ-plane) or a flat face in the view where the view should be cut.",
     "Klicke eine Ebene im Browser (z. B. Ursprung → XZ-Ebene) oder eine flache Fläche in der Ansicht an, an der die Ansicht geschnitten werden soll."),
    tool("INSPECT", ("Section", "Schnitt")),
    ("Click Section again to switch the cut off.", "Klicke noch einmal auf Schnitt, um den Schnitt auszuschalten.")],

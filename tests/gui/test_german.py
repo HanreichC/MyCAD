@@ -29,6 +29,15 @@ def texts():
     return found
 
 
+def tree_texts():
+    texts = set()
+    for tree in visible(QtWidgets.QTreeWidget):
+        it = QtWidgets.QTreeWidgetItemIterator(tree)
+        while it.value():
+            texts.add(it.value().text(0)); it += 1
+    return texts
+
+
 def check(tag):
     left = sorted(t for t in texts() if t in english)
     L("%s: noch englisch=%s" % (tag, left))
@@ -65,4 +74,5 @@ run([
     ("dialog", lambda: (check("Extrude-Dialog"), shot("extrude"))),
     ("ok", ok), ("wait", lambda: None),
     ("labels", lambda: L("Objektnamen=%s" % sorted(o.Label for o in doc().Objects if o.TypeId not in ("App::Line", "App::Plane", "App::Point", "Design::Profiles")))),
+    ("tree", lambda: harness.check("Browser: Ursprung deutsch (XZ-Ebene, X-Achse)", {"XZ-Ebene", "X-Achse"} <= tree_texts(), str(sorted(tree_texts())))),
 ])

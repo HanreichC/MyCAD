@@ -3648,7 +3648,7 @@ void toggleSection(App::Document* doc)
     const Base::Placement placement(Base::Vector3d(o.X(), o.Y(), o.Z()),
                                     Base::Rotation(Base::Vector3d(0, 0, 1), Base::Vector3d(n.X(), n.Y(), n.Z())));
     Gui::Selection().clearSelection();
-    viewer->toggleClippingPlane(1, false, false, placement);
+    viewer->toggleClippingPlane(1, false, true, placement);  // ohne FreeCADs Ziehgriffe: die Ebene legt die Auswahl fest
 }
 
 /// Ebene durch eine gerade Kante unter einem Winkel zur Bezugsebene (Fläche an der Kante, Skizzenebene oder gewählte Ebene)
@@ -4127,7 +4127,7 @@ void CreateDesignCommands()
                                      "Joint: select a snap point on the component to move, then where to join it",
                                      "Assembly_CreateJointFixed", "J", startJoint));
     mgr.addCommand(new DesignCommand("Design_NewComponent", "New Component",
-                                     "New Component: an empty part with its own origin (double-click to activate)",
+                                     "New Component: an empty part with its own origin, active right away",
                                      "Std_Part", "", startNewComponent));
     mgr.addCommand(new DesignCommand("Design_Chamfer", "Chamfer", "Chamfer: select edges or faces of a body",
                                      "PartDesign_Chamfer", "", [](App::Document* doc) {

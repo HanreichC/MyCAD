@@ -5500,7 +5500,7 @@
    },
    "steps": {
     "en": [
-     "Click a plane in the browser (e.g. Origin → XZ plane) or a flat face in the view where the view should be cut.",
+     "Click a plane in the browser (e.g. Origin → XZ-plane) or a flat face in the view where the view should be cut.",
      "In the toolbar at the top, in the INSPECT section, click Section.",
      "Click Section again to switch the cut off."
     ],
