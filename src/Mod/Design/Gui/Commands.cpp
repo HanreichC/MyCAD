@@ -2797,7 +2797,7 @@ private:
         }
         QStringList rows;
         auto row = [&rows](const QString& label, const QString& value) {
-            rows << QStringLiteral("<tr><td style='color:gray; padding-right:12px'>%1</td><td><b>%2</b></td></tr>")
+            rows << QStringLiteral("<tr><td style='color:gray; padding-right:12px'>%1</td><td style='white-space:nowrap'><b>%2</b></td></tr>")
                         .arg(label, value);
         };
         if (shapes.size() == 1) {
@@ -2837,7 +2837,14 @@ private:
                     if (const double kg = whole ? Design::mass(whole) : 0; kg > 0) {
                         row(T("Mass"), kg < 1 ? QStringLiteral("%1 g").arg(kg * 1000, 0, 'f', 1)
                                               : QStringLiteral("%1 kg").arg(kg, 0, 'f', 3));
-                        row(T("Material"), T(whole->ShapeMaterial.getValue().getName().toStdString().c_str()));
+                        // Anzeigename wie in der Auswahl des Aussehens-Panels statt des Kartennamens ("Steel-Generic")
+                        QString name = whole->ShapeMaterial.getValue().getName();
+                        for (const auto& m : Design::physicalMaterials()) {
+                            if (whole->ShapeMaterial.getValue().getUUID() == QLatin1String(m.uuid)) {
+                                name = QString::fromLatin1(m.name);
+                            }
+                        }
+                        row(T("Material"), T(name.toStdString().c_str()));
                     }
                     const gp_Pnt c = p.CentreOfMass();
                     row(T("Center of mass"), QStringLiteral("%1, %2, %3").arg(length(c.X()), length(c.Y()), length(c.Z())));
@@ -2845,7 +2852,7 @@ private:
                     BRepGProp::SurfaceProperties(s, area);
                     row(T("Area"), QStringLiteral("%1 mm²").arg(area.Mass(), 0, 'f', 2));
                     Bnd_Box box;
-                    BRepBndLib::Add(s, box);
+                    BRepBndLib::AddOptimal(s, box, false, false);  // ohne Toleranzzugabe: 80 × 40 statt 80,06 × 40,06
                     if (!box.IsVoid()) {
                         double x0, y0, z0, x1, y1, z1;
                         box.Get(x0, y0, z0, x1, y1, z1);
@@ -2886,9 +2893,10 @@ private:
                 row(T("Angle"), QStringLiteral("%1°").arg(angle, 0, 'f', 2));
             }
         }
-        result->setText(rows.isEmpty() ? T("Select a point, edge, face or body. "
-                                           "Select two to measure distance and angle.")
-                                       : QStringLiteral("<table>%1</table>").arg(rows.join(QString())));
+        result->setText(!rows.isEmpty() ? QStringLiteral("<table>%1</table>").arg(rows.join(QString()))
+                        : shapes.size() > 2 ? T("Select one or two items: one shows its sizes, two their distance and angle.")
+                                            : T("Select a point, edge, face or body. "
+                                                "Select two to measure distance and angle."));
     }
     QLabel* result;
 };

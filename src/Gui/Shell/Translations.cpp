@@ -1033,6 +1033,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Closed; connects the last profile back to the first", "Geschlossen; verbindet das letzte Profil wieder mit dem ersten"},
         {"Left-handed thread", "Linksgewinde"},
         {"Select a face, edge or point of the body to move, then the face, edge, point or plane to align it to.", "Wähle eine Fläche, Kante oder einen Punkt des zu bewegenden Körpers, dann die Fläche, Kante, den Punkt oder die Ebene, an der er ausgerichtet wird."},
+        {"Select one or two items: one shows its sizes, two their distance and angle.", "Wähle ein oder zwei Elemente: eines zeigt seine Maße, zwei ihren Abstand und Winkel."},
         {"Select a point, edge, face or body. Select two to measure distance and angle.", "Wähle einen Punkt, eine Kante, Fläche oder einen Körper. Wähle zwei, um Abstand und Winkel zu messen."},
         {"Select a straight edge, sketch line or axis (and optionally the plane or face to measure the angle from).", "Wähle eine gerade Kante, Skizzenlinie oder Achse (und optional die Ebene oder Fläche, von der aus der Winkel gemessen wird)."},
         // Hilfe

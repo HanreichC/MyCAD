@@ -422,12 +422,16 @@ Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9
 
 ## Offen nach der GIF-/Bug-Runde vom 12.11.2026
 
-- Rote Tests: test_components ("its folders have plain names, no 001" — Origin fehlt in der Liste?), test_construct ("Unit mismatch in minus operation" in den neuen Checks; Konstruktionsachsen und -punkte werfen Kontaktschatten, vermutlich durch die neue Deckkraft der Achsen bzw. die geänderte Schattenlogik).
-- Fast alle Fixes dieser Runde sind gebaut, aber nicht in der GUI geprüft (Testsuite sonst grün). Bewusst nicht erledigt: Korrekturkarte läuft nach Apply All über, Rotstift-R2 trifft unter Last die falsche Kante (readCorrection misst die Entfernung zur ganzen Sichtlinie), Measure (Größe +0,06 mm, Werkstoffname, Umbruch zwischen Zahl und Einheit), Section-Manipulator, reine Info-Meldungen per Modal, Geisterbild der Suchliste, Kopfzeile der Einstellungen, Aufblitzen der Maßkarte, Glitch in der Timeline, Popup der Slicer-Auswahl.
-- Alle GIFs neu aufnehmen, wenn die Fixes geprüft sind (HELP_GIF=1); file_start_page, browser und help haben noch keinen Clip.
+- Bugs: Korrekturkarte läuft nach Apply All über (place() nach Statuswechsel neu, erledigte Zeilen ohne Knöpfe);
+  Rotstift-R2 trifft unter Last die falsche Kante (readCorrection misst die Entfernung zur ganzen Sichtlinie statt zur
+  Fläche unter der Tinte); Section zeigt FreeCADs Clip-Manipulator; reine Info-Meldungen als Modal (Section ohne Auswahl,
+  Unterseite wählen ohne Fläche); Geisterbild der Suchliste; Aufblitzen der Maßkarte; Glitch der Timeline beim Hinzufügen;
+  Popup der Slicer-Auswahl ungestylt; Fit-Panel "Nominal 0.00 mm"; Deutsche Zahlen mit Punkt ("0.00 mm").
+- Clips: überzähliges Design "Unnamed" im Browser; nicht überarbeitet sind Axis-Ansicht, Point, OffsetPlane, AnglePlane,
+  NewComponent, Revolve, Fastener (Unterteil unsichtbar), Hole, Web, Measure (Panel deckt Modell), PrintView (Modell klein),
+  RemoveFace (Menü), ViewFitAll; Esc-Taste in sketch_dimension kommt grün heraus.
 
 ### Hilfetexte: noch offen
 - Design_Section: Beispiel "Ursprung → XZ-Ebene" gegen die tatsächliche Beschriftung im Browser prüfen (dort evtl. "XZ-plane").
 - Design_Thread: "Auto (M12)" erwähnen; sketch_text: ohne Text entsteht nichts; start_shortcuts: Skalieren "Z, X", Bogen-Langloch "G, 2, S".
 
-- Clip-Skripte: noch nicht überarbeitet sind Axis, Point, OffsetPlane, AnglePlane, NewComponent, Revolve, Fastener, Hole, Web, Measure, PrintView, RemoveFace, ViewFitAll; die Esc-Taste in sketch_dimension kommt grün statt grau heraus (Palette?).
