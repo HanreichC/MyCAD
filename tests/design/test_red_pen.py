@@ -34,6 +34,16 @@ class Target(DesignTest):
         self.assertVolume(self.b, 4000 - (4 - math.pi) * 20)
         self.assertEqual(c["text"], "Fillet R2 on 1 edge")
 
+    def test_r2_on_the_top_face_does_not_pick_a_hidden_edge(self):
+        """iso von vorn rechts oben, Tinte oben nahe der Vorderkante: dieselbe Sichtlinie geht genau durch die hintere
+        untere Kante (Abstand 0), die ist aber verdeckt; gemeint ist die Vorderkante oben"""
+        f, b = box(self.doc, 60, 40, 20, at=(100, 0))  # neben der Box aus setUp
+        view = V(-1, 1, -1); view.normalize()
+        c = read(self.doc, "R2", V(120, 4, 20), view)
+        edge = b.Shape.getElement(c["element"])
+        self.assertAlmostEqual(edge.BoundBox.ZMin, 20)  # oben
+        self.assertAlmostEqual(edge.BoundBox.YMax, 0)   # vorn
+
     def test_between_edges_is_ambiguous(self):
         c = read(self.doc, "R2", V(10, 10, 30))
         self.assertGreaterEqual(len(c["alternatives"]), 2)  # vier Kanten gleich weit: fragen statt raten

@@ -1453,6 +1453,17 @@ Design::Correction Design::readCorrection(App::Document* doc, const std::string&
         const double reach = box.CalcDiagonalLength() * 2 + 10;
         const TopoDS_Edge ray = BRepBuilderAPI_MakeEdge(gp_Pnt(p.x - d.x * reach, p.y - d.y * reach, p.z - d.z * reach),
                                                         gp_Pnt(p.x + d.x * reach, p.y + d.y * reach, p.z + d.z * reach)).Edge();
+        // Was die Sichtlinie deutlich hinter der ersten getroffenen Fläche streift, ist verdeckt: R2 oben an der Vorderkante
+        // traf sonst die hintere untere Kante, durch die dieselbe Linie genau hindurchgeht
+        double hidden = std::numeric_limits<double>::infinity();
+        {
+            IntCurvesFace_ShapeIntersector hit;
+            hit.Load(shape.getShape(), Precision::Confusion());
+            hit.Perform(gp_Lin(gp_Pnt(p.x, p.y, p.z), gp_Dir(d.x, d.y, d.z)), -reach, reach);
+            for (int k = 1; k <= hit.NbPnt(); ++k) {
+                hidden = std::min(hidden, hit.WParameter(k) + std::max(1.0, 0.1 * box.CalcDiagonalLength()));
+            }
+        }
         const TopAbs_ShapeEnum type = aim == Aim::Edge ? TopAbs_EDGE : TopAbs_FACE;
         const int count = shape.countSubShapes(type);
         for (int i = 1; i <= count; ++i) {
@@ -1480,6 +1491,9 @@ Design::Correction Design::readCorrection(App::Document* doc, const std::string&
                 continue;
             }
             const gp_Pnt onRay = dist.PointOnShape2(1), onElement = dist.PointOnShape1(1);
+            if ((Base::Vector3d(onRay.X(), onRay.Y(), onRay.Z()) - p) * d > hidden) {
+                continue;
+            }
             Base::Vector3d point(onElement.X(), onElement.Y(), onElement.Z());
             componentOf(body)->globalPlacement().multVec(point, point);
             candidates.push_back({body, name, dist.Value(),
