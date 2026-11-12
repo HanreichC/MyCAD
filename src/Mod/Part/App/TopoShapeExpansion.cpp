@@ -3200,12 +3200,27 @@ TopoShape& TopoShape::makeElementWires(
         );
     }
 
+    // Box around an edge's vertices, grown by their tolerances: edges whose boxes miss the wire's box
+    // can't connect, so they skip the costly MakeWire::Add (sketches with thousands of separate
+    // shapes, e.g. from a DXF, were quadratic in it). Same result, only fewer failing tries.
+    auto vertexBox = [](const TopoDS_Shape& shape) {
+        Bnd_Box box;
+        for (TopExp_Explorer xp(shape, TopAbs_VERTEX); xp.More(); xp.Next()) {
+            const TopoDS_Vertex& v = TopoDS::Vertex(xp.Current());
+            Bnd_Box b;
+            b.Add(BRep_Tool::Pnt(v));
+            b.Enlarge(2 * BRep_Tool::Tolerance(v));
+            box.Add(b);
+        }
+        return box;
+    };
+
     std::vector<TopoShape> wires;
-    std::list<TopoShape> edgeList;
+    std::list<std::pair<TopoShape, Bnd_Box>> edgeList;
 
     for (const auto& shape : shapes) {
         for (const auto& e : shape.getSubTopoShapes(TopAbs_EDGE)) {
-            edgeList.emplace_back(e);
+            edgeList.emplace_back(e, vertexBox(e.getShape()));
         }
     }
 
@@ -3218,12 +3233,13 @@ TopoShape& TopoShape::makeElementWires(
         BRepBuilderAPI_MakeWire mkWire;
         // add and erase first edge
         edges.clear();
-        edges.push_back(edgeList.front());
+        edges.push_back(edgeList.front().first);
         mkWire.Add(TopoDS::Edge(edges.back().getShape()));
         edges.back().setShape(mkWire.Edge(), false);
         if (output) {
-            (*output)[edges.back()] = edgeList.front();
+            (*output)[edges.back()] = edgeList.front().first;
         }
+        Bnd_Box wireBox = vertexBox(mkWire.Edge());
         edgeList.pop_front();
 
         TopoDS_Wire new_wire = mkWire.Wire();  // current new wire
@@ -3234,18 +3250,22 @@ TopoShape& TopoShape::makeElementWires(
         while (found) {
             found = false;
             for (auto it = edgeList.begin(); it != edgeList.end(); ++it) {
-                mkWire.Add(TopoDS::Edge(it->getShape()));
+                if (!wireBox.IsVoid() && !it->second.IsVoid() && wireBox.IsOut(it->second)) {
+                    continue;
+                }
+                mkWire.Add(TopoDS::Edge(it->first.getShape()));
                 if (mkWire.Error() != BRepBuilderAPI_DisconnectedWire) {
                     // edge added ==> remove it from list
                     found = true;
-                    edges.push_back(*it);
+                    edges.push_back(it->first);
                     // MakeWire will replace vertex of connected edge, which
                     // effectively creat a new edge. So we need to update the
                     // shape in order to preserve element mapping.
                     edges.back().setShape(mkWire.Edge(), false);
                     if (output) {
-                        (*output)[edges.back()] = *it;
+                        (*output)[edges.back()] = it->first;
                     }
+                    wireBox.Add(vertexBox(mkWire.Edge()));
                     edgeList.erase(it);
                     new_wire = mkWire.Wire();
                     break;

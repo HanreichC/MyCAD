@@ -971,6 +971,8 @@ private:
 
     SbVec2f getScreenCoordinates(SbVec2f sketchcoordinates) const;
     SbVec2f getScreenCoordinates(SbVec3f sketchcoordinates) const;
+    /// Same as getScreenCoordinates, with placement and camera taken once: for loops over many points
+    std::function<SbVec2f(const SbVec3f&)> getScreenProjector() const;
 
     QFont getApplicationFont() const;
 

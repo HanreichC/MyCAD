@@ -1620,9 +1620,18 @@ void SketchObject::getGeoVertexIndex(int VertexId, int& GeoId, PointPos& PosId) 
 
 int SketchObject::getVertexIndexGeoPos(int GeoId, PointPos PosId) const
 {
-    for (std::size_t i = 0; i < VertexId2GeoId.size(); i++) {
-        if (VertexId2GeoId[i] == GeoId && VertexId2PosId[i] == PosId)
-            return i;
+    // rebuildVertexIndex() writes two ascending runs, the geometry and then the external geometry
+    // (negative): binary search, a linear one per call was quadratic for sketches with many elements
+    const auto first = VertexId2GeoId.begin();
+    auto end = std::partition_point(first, VertexId2GeoId.end(), [](int id) { return id >= 0; });
+    auto begin = first;
+    if (GeoId < 0) {
+        begin = end;
+        end = VertexId2GeoId.end();
+    }
+    for (auto it = std::lower_bound(begin, end, GeoId); it != end && *it == GeoId; ++it) {
+        if (VertexId2PosId[it - first] == PosId)
+            return int(it - first);
     }
 
     return -1;

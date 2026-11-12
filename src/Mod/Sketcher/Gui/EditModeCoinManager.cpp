@@ -1429,9 +1429,8 @@ bool EditModeCoinManager::detectGeometryPreselection(
 )
 {
     const GeoList geolist = ViewProviderSketchCoinAttorney::getGeoList(viewProvider);
-    auto projectToScreen = [this](const SbVec3f& point) {
-        return ViewProviderSketchCoinAttorney::getScreenCoordinates(viewProvider, point);
-    };
+    // once per mouse move, not per curve point (DXF sketches have hundreds of thousands)
+    auto projectToScreen = ViewProviderSketchCoinAttorney::getScreenProjector(viewProvider);
     Base::Placement sketchPlacement = ViewProviderSketchCoinAttorney::getEditingPlacement(viewProvider);
 
     GeometryScreenPreselector screenPreselector {

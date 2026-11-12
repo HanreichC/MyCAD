@@ -670,25 +670,20 @@ void Sketch::calculateDependentParametersElements()
         return false;
     };
 
-    if (pDependencyGroups.size() > 1) {  // only if there is more than 1 group
-        size_t endcount = pDependencyGroups.size() - 1;
-
-        for (size_t i = 0; i < endcount; i++) {
-            if (havecommonelement(
-                    pDependencyGroups[i].begin(),
-                    pDependencyGroups[i].end(),
-                    pDependencyGroups[i + 1].begin(),
-                    pDependencyGroups[i + 1].end()
-                )) {
-                pDependencyGroups[i].insert(
-                    pDependencyGroups[i + 1].begin(),
-                    pDependencyGroups[i + 1].end()
-                );
-                pDependencyGroups.erase(pDependencyGroups.begin() + i + 1);
-                endcount--;
-            }
+    // one pass into a new list: erasing from the middle was quadratic with thousands of free
+    // parameters (each one is its own group)
+    std::vector<std::set<std::pair<int, Sketcher::PointPos>>> merged;
+    merged.reserve(pDependencyGroups.size());
+    for (auto& group : pDependencyGroups) {
+        if (!merged.empty()
+            && havecommonelement(merged.back().begin(), merged.back().end(), group.begin(), group.end())) {
+            merged.back().insert(group.begin(), group.end());
+        }
+        else {
+            merged.push_back(std::move(group));
         }
     }
+    pDependencyGroups = std::move(merged);
 }
 
 std::set<std::pair<int, Sketcher::PointPos>> Sketch::getDependencyGroup(int geoId, PointPos pos) const

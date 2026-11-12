@@ -158,6 +158,10 @@ public:
     Profiles();
     App::PropertyLink Sketch;
     App::PropertyStringList Signatures;  ///< je Profil die begrenzenden Skizzenkanten (für die Wiedererkennung)
+    /// Skizze in Bearbeitung (Profile dann ausgeblendet): Neuberechnen wartet bis danach, große DXF-Skizzen
+    /// brauchen dafür Sekunden, sonst bei jeder neuen Linie. skipped: währenddessen wäre es fällig gewesen.
+    bool paused = false;
+    bool skipped = false;
 
     App::DocumentObjectExecReturn* execute() override;
     const char* getViewProviderName() const override

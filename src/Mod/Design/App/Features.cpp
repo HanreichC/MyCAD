@@ -2606,6 +2606,10 @@ App::DocumentObjectExecReturn* Profiles::execute()
     if (!sketch) {
         return new App::DocumentObjectExecReturn("No sketch linked");
     }
+    if (paused) {
+        skipped = true;
+        return StdReturn;
+    }
     // In Skizzen-Koordinaten (XY-Ebene) rechnen, Ergebnis wieder auf die Skizzen-Lage setzen
     const TopoDS_Shape local = sketch->Shape.getShape().getShape().Located(TopLoc_Location());
     TopTools_ListOfShape edges;
@@ -2632,6 +2636,7 @@ App::DocumentObjectExecReturn* Profiles::execute()
     BRepAlgoAPI_Splitter splitter;
     splitter.SetArguments(args);
     splitter.SetTools(edges);
+    splitter.SetRunParallel(true);  // DXF-Importe bringen tausende Kanten mit
     splitter.Build();
     if (!splitter.IsDone()) {
         return new App::DocumentObjectExecReturn("Could not compute sketch profiles");

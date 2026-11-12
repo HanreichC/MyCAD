@@ -2,6 +2,7 @@
 
 #include <App/Application.h>
 #include <App/Document.h>
+#include <App/DocumentObserver.h>
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
 #include <CXX/Extensions.hxx>
@@ -58,6 +59,17 @@ void setProfilesVisible(const Gui::ViewProviderDocumentObject& vp, bool visible)
     if (auto profiles = Design::Profiles::forSketch(vp.getObject())) {
         if (!visible || vp.getObject()->Visibility.getValue()) {
             profiles->Visibility.setValue(visible);
+        }
+        // ausgeblendet heißt: Skizze in Bearbeitung, Profile erst danach neu berechnen
+        profiles->paused = !visible;
+        if (visible && std::exchange(profiles->skipped, false)) {
+            profiles->touch();
+            const App::DocumentObjectT target(profiles);
+            QTimer::singleShot(0, [target] {  // "Fertig" rechnet selbst neu, Abbrechen nicht
+                if (auto obj = target.getObject(); obj && obj->isTouched()) {
+                    obj->getDocument()->recompute();
+                }
+            });
         }
     }
 }

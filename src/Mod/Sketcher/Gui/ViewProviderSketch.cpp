@@ -3878,9 +3878,10 @@ bool ViewProviderSketch::isLineExtensionAutoConstraintHintVisible(
         return false;
     }
 
+    const auto projectToScreen = getScreenProjector();
     for (const auto& point : HintCurve) {
-        const SbVec2f screenCoordinates = getScreenCoordinates(
-            SbVec2f(static_cast<float>(point.x), static_cast<float>(point.y))
+        const SbVec2f screenCoordinates = projectToScreen(
+            SbVec3f(static_cast<float>(point.x), static_cast<float>(point.y), 0.0F)
         );
         if (screenCoordinates[0] < 0.0F || screenCoordinates[0] > width
             || screenCoordinates[1] < 0.0F || screenCoordinates[1] > height) {
@@ -5273,27 +5274,37 @@ SbVec2f ViewProviderSketch::getScreenCoordinates(SbVec2f sketchcoordinates) cons
 
 SbVec2f ViewProviderSketch::getScreenCoordinates(SbVec3f sketchcoordinates) const
 {
-    Base::Placement sketchPlacement = getEditingPlacement();
-    Base::Vector3d sketchPos(sketchPlacement.getPosition());
-    Base::Rotation sketchRot(sketchPlacement.getRotation());
+    return getScreenProjector()(sketchcoordinates);
+}
 
-    // get global coordinates from sketcher coordinates
-    Base::Vector3d pos(sketchcoordinates[0], sketchcoordinates[1], sketchcoordinates[2]);
-    sketchRot.multVec(pos, pos);
-    pos = pos + sketchPos;
-
+std::function<SbVec2f(const SbVec3f&)> ViewProviderSketch::getScreenProjector() const
+{
     Gui::MDIView* mdi = this->getActiveView();
     Gui::View3DInventor* view = qobject_cast<Gui::View3DInventor*>(mdi);
-    if (!view || !isInEditMode())
-        return SbVec2f(0, 0);
-
-    Gui::View3DInventorViewer* viewer = view->getViewer();
-    if (!viewer || !viewer->getSoRenderManager() || !viewer->getSoRenderManager()->getCamera()) {
-        return SbVec2f(0, 0);
+    Gui::View3DInventorViewer* viewer = view ? view->getViewer() : nullptr;
+    if (!viewer || !isInEditMode() || !viewer->getSoRenderManager()
+        || !viewer->getSoRenderManager()->getCamera()) {
+        return [](const SbVec3f&) { return SbVec2f(0, 0); };
     }
 
-    SbVec2s viewportPoint = viewer->getPointOnViewport(Base::convertTo<SbVec3f>(pos));
-    return SbVec2f(static_cast<float>(viewportPoint[0]), static_cast<float>(viewportPoint[1]));
+    // what View3DInventorViewer::getPointOnViewport does per point, with the matrices taken once
+    const Base::Placement sketchPlacement = getEditingPlacement();
+    const SbViewportRegion& vp = viewer->getSoRenderManager()->getViewportRegion();
+    const SbVec2s size = vp.getViewportSizePixels();
+    const SbMatrix projection = viewer->getSoRenderManager()->getCamera()
+        ->getViewVolume(vp.getViewportAspectRatio()).getMatrix();
+
+    return [sketchPlacement, size, projection](const SbVec3f& sketchcoordinates) {
+        // get global coordinates from sketcher coordinates
+        Base::Vector3d pos(sketchcoordinates[0], sketchcoordinates[1], sketchcoordinates[2]);
+        sketchPlacement.multVec(pos, pos);
+        SbVec3f pt;
+        projection.multVecMatrix(Base::convertTo<SbVec3f>(pos), pt);  // [-1, 1] on screen
+        return SbVec2f(
+            static_cast<float>(short(std::roundf((pt[0] + 1.0F) / 2.0F * size[0]))),
+            static_cast<float>(short(std::roundf((pt[1] + 1.0F) / 2.0F * size[1])))
+        );
+    };
 }
 
 QFont ViewProviderSketch::getApplicationFont() const

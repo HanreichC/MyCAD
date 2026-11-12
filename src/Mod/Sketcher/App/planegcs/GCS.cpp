@@ -53,6 +53,9 @@
 #include <iostream>
 #include <limits>
 #include <numbers>
+#include <numeric>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include <Base/Tools.h>
@@ -4726,19 +4729,11 @@ void System::undoSolution()
 void System::makeReducedJacobian(
     Eigen::MatrixXd& J,
     std::map<int, int>& jacobianconstraintmap,
-    GCS::VEC_pD& pdiagnoselist,
+    const GCS::VEC_pD& pdiagnoselist,
     std::map<int, int>& tagmultiplicity
 )
 {
-    // construct specific parameter list for diagonose ignoring driven constraint parameters
-    for (int j = 0; j < int(plist.size()); j++) {
-        auto result1 = std::ranges::find(pdrivenlist, plist[j]);
-
-        if (result1 == std::end(pdrivenlist)) {
-            pdiagnoselist.push_back(plist[j]);
-        }
-    }
-
+    // pdiagnoselist: parameters to diagnose (without driven constraint parameters), from diagnose()
 
     J = Eigen::MatrixXd::Zero(clist.size(), pdiagnoselist.size());
 
@@ -4814,6 +4809,113 @@ int System::diagnose(Algorithm alg)
     redundantTags.clear();
     partiallyRedundantTags.clear();
 
+    // Constraints that share no parameter form independent blocks with a block diagonal Jacobian:
+    // diagnosed block by block, as one matrix the QR decomposition grew much faster than linear
+    // (Eigen SparseQR: 800 unconstrained arcs, each with its two internal rules, took 22 s).
+    // Parameters no driving constraint touches (e.g. thousands of lines from a DXF) are trivially free.
+    const std::unordered_set<double*> unknowns(plist.begin(), plist.end());
+    const std::unordered_set<double*> driven(pdrivenlist.begin(), pdrivenlist.end());
+    std::vector<int> parent(clist.size());
+    std::iota(parent.begin(), parent.end(), 0);
+    auto root = [&parent](int i) {
+        while (parent[i] != i) {
+            i = parent[i] = parent[parent[i]];
+        }
+        return i;
+    };
+    std::unordered_map<double*, int> firstUser;  // parameter -> first driving constraint using it
+    for (int i = 0; i < int(clist.size()); ++i) {
+        if (!clist[i]->isDriving()) {
+            continue;
+        }
+        clist[i]->revertParams();
+        for (auto* p : clist[i]->params()) {
+            if (unknowns.contains(p) && !driven.contains(p)) {
+                auto [it, inserted] = firstUser.try_emplace(p, i);
+                if (!inserted) {
+                    parent[root(i)] = root(it->second);
+                }
+            }
+        }
+    }
+    struct Block
+    {
+        std::vector<Constraint*> constraints;
+        GCS::VEC_pD params;  // in plist order, like the single matrix before
+    };
+    std::map<int, Block> blocks;
+    for (int i = 0; i < int(clist.size()); ++i) {
+        if (clist[i]->isDriving()) {
+            blocks[root(i)].constraints.push_back(clist[i]);
+        }
+    }
+    GCS::VEC_pD pfreelist;
+    for (auto* p : plist) {
+        if (driven.contains(p)) {
+            continue;
+        }
+        auto it = firstUser.find(p);
+        if (it == firstUser.end()) {
+            pfreelist.push_back(p);
+        }
+        else {
+            blocks[root(it->second)].params.push_back(p);
+        }
+    }
+
+    hasDiagnosis = true;
+    int paramsNum = int(pfreelist.size()), rank = 0, nonredundantconstrNum = 0;
+    bool anyRows = false;
+    std::vector<Constraint*> allConstraints;
+    allConstraints.swap(clist);  // the block functions below work on clist
+    for (auto& [id, block] : blocks) {
+        clist.swap(block.constraints);
+        int blockParams = 0, blockRank = 0, blockNonredundant = 0;
+        if (diagnoseBlock(alg, block.params, blockParams, blockRank, blockNonredundant)) {
+            anyRows = true;
+        }
+        else {  // no driving tagged constraint: its parameters are free as well
+            pfreelist.insert(pfreelist.end(), block.params.begin(), block.params.end());
+        }
+        paramsNum += blockParams;
+        rank += blockRank;
+        nonredundantconstrNum += blockNonredundant;
+        clist.swap(block.constraints);
+    }
+    clist.swap(allConstraints);
+
+    dofs = paramsNum - rank;
+    if (paramsNum == rank && nonredundantconstrNum > rank) {  // over-constrained
+        dofs = paramsNum - nonredundantconstrNum;
+    }
+    if (!anyRows) {  // no driving tagged constraint at all (as before: no dependency information)
+        return dofs;
+    }
+    emptyDiagnoseMatrix = false;
+    setRedundantTags();
+
+    // free parameters are dependent, each one on its own (what their zero columns gave before)
+    for (auto* p : pfreelist) {
+        pDependentParametersGroups.push_back({p});
+        pDependentParameters.push_back(p);
+    }
+
+    return dofs;
+}
+
+bool System::diagnoseBlock(
+    Algorithm alg,
+    GCS::VEC_pD& pdiagnoselist,
+    int& paramsNum,
+    int& rank,
+    int& nonredundantconstrNum
+)
+{
+    // paramsNum, rank and nonredundantconstrNum of this block; false if it has no Jacobian rows
+    paramsNum = int(pdiagnoselist.size());
+    rank = 0;
+    nonredundantconstrNum = 0;
+
     // This QR diagnosis uses a reduced Jacobian matrix to calculate the rank of the system
     // and identify conflicting and redundant constraints.
     //
@@ -4827,10 +4929,6 @@ int System::diagnose(Algorithm alg)
     // the index those constraints would have in a full size Jacobian matrix
     std::map<int, int> jacobianconstraintmap;
 
-    // list of parameters to be diagnosed in this routine (removes value parameters from driven
-    // constraints)
-    GCS::VEC_pD pdiagnoselist;
-
     // tag multiplicity gives the number of solver constraints associated with the same tag
     // A tag generally corresponds to the Sketcher constraint index - There are special tag values,
     // like 0 and -1.
@@ -4838,18 +4936,13 @@ int System::diagnose(Algorithm alg)
 
     makeReducedJacobian(J, jacobianconstraintmap, pdiagnoselist, tagmultiplicity);
 
-    // this function will exit with a diagnosis and, unless overridden by functions below, with full
-    // DoFs
-    hasDiagnosis = true;
-    dofs = pdiagnoselist.size();
-
     // Use DenseQR for small to medium systems to avoid SparseQR rank issues.
     // SparseQR is known to fail rank detection on specific geometric structures (e.g. aligned slots).
     // 200 parameters roughly corresponds to ~100 points/curves, covering most complex sketches
     // where stability is preferred over pure O(N) performance.
     // See: https://github.com/FreeCAD/FreeCAD/issues/10903
     if (autoChooseAlgorithm) {
-        qrAlgorithm = dofs < autoQRThreshold ? EigenDenseQR : EigenSparseQR;
+        qrAlgorithm = int(pdiagnoselist.size()) < autoQRThreshold ? EigenDenseQR : EigenSparseQR;
     }
 
     // There is a legacy decision to use QR decomposition. I (abdullah) do not know all the
@@ -4909,18 +5002,14 @@ int System::diagnose(Algorithm alg)
 #endif
 
     if (J.rows() == 0) {
-        return dofs;
+        return false;
     }
-
-    // From here on, presuming `J.rows() > 0`.
-    emptyDiagnoseMatrix = false;
 
     if (qrAlgorithm == EigenDenseQR) {
 #ifdef PROFILE_DIAGNOSE
         Base::TimeElapsed DenseQR_start_time;
 #endif
 
-        int rank = 0;  // rank is not cheap to retrieve from qrJT in DenseQR
         Eigen::MatrixXd R;
         Eigen::FullPivHouseholderQR<Eigen::MatrixXd> qrJT;
         // Here we give the system the possibility to run the two QR decompositions in parallel,
@@ -4946,7 +5035,6 @@ int System::diagnose(Algorithm alg)
 
         makeDenseQRDecomposition(J, jacobianconstraintmap, qrJT, rank, R);
 
-        int paramsNum = qrJT.rows();
         int constrNum = qrJT.cols();
 
         // This function is legacy code that was used to obtain partial geometry dependency
@@ -4957,12 +5045,11 @@ int System::diagnose(Algorithm alg)
 
         fut.wait();  // wait for the execution of identifyDependentParametersSparseQR to finish
 
-        dofs = paramsNum - rank;  // unless overconstraint, which will be overridden below
+        nonredundantconstrNum = rank;  // unless conflicting or redundant constraints, see below
 
         // Detecting conflicting or redundant constraints
         if (constrNum > rank) {
             // conflicting or redundant constraints
-            int nonredundantconstrNum;
             identifyConflictingRedundantConstraints(
                 alg,
                 qrJT,
@@ -4974,9 +5061,6 @@ int System::diagnose(Algorithm alg)
                 rank,
                 nonredundantconstrNum
             );
-            if (paramsNum == rank && nonredundantconstrNum > rank) {  // over-constrained
-                dofs = paramsNum - nonredundantconstrNum;
-            }
         }
 
 #ifdef PROFILE_DIAGNOSE
@@ -4993,7 +5077,6 @@ int System::diagnose(Algorithm alg)
 # ifdef PROFILE_DIAGNOSE
         Base::TimeElapsed SparseQR_start_time;
 # endif
-        int rank = 0;
         Eigen::MatrixXd R;
         Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> SqrJT;
         // Here we give the system the possibility to run the two QR decompositions in parallel,
@@ -5031,16 +5114,14 @@ int System::diagnose(Algorithm alg)
             /*silent=*/false
         );
 
-        int paramsNum = SqrJT.rows();
         int constrNum = SqrJT.cols();
 
         fut.wait();  // wait for the execution of identifyDependentParametersSparseQR to finish
 
-        dofs = paramsNum - rank;  // unless overconstraint, which will be overridden below
+        nonredundantconstrNum = rank;  // unless conflicting or redundant constraints, see below
 
         // Detecting conflicting or redundant constraints
         if (constrNum > rank) {
-            int nonredundantconstrNum;
 
             identifyConflictingRedundantConstraints(
                 alg,
@@ -5053,11 +5134,6 @@ int System::diagnose(Algorithm alg)
                 rank,
                 nonredundantconstrNum
             );
-
-            if (paramsNum == rank && nonredundantconstrNum > rank) {
-                // over-constrained
-                dofs = paramsNum - nonredundantconstrNum;
-            }
         }
 
 # ifdef PROFILE_DIAGNOSE
@@ -5070,7 +5146,7 @@ int System::diagnose(Algorithm alg)
     }
 #endif
 
-    return dofs;
+    return true;
 }
 
 void System::makeDenseQRDecomposition(
@@ -5317,19 +5393,20 @@ void System::identifyDependentParameters(
     }
 #endif
 
-    pDependentParametersGroups.resize(qrJ.cols() - rank);
+    const size_t firstGroup = pDependentParametersGroups.size();  // earlier blocks keep theirs
+    pDependentParametersGroups.resize(firstGroup + qrJ.cols() - rank);
     for (int j = rank; j < qrJ.cols(); j++) {
         for (int row = 0; row < rank; row++) {
             if (fabs(Rparams(row, j)) > 1e-10) {
                 int origCol = qrJ.colsPermutation().indices()[row];
 
-                pDependentParametersGroups[j - rank].push_back(pdiagnoselist[origCol]);
+                pDependentParametersGroups[firstGroup + j - rank].push_back(pdiagnoselist[origCol]);
                 pDependentParameters.push_back(pdiagnoselist[origCol]);
             }
         }
         int origCol = qrJ.colsPermutation().indices()[j];
 
-        pDependentParametersGroups[j - rank].push_back(pdiagnoselist[origCol]);
+        pDependentParametersGroups[firstGroup + j - rank].push_back(pdiagnoselist[origCol]);
         pDependentParameters.push_back(pdiagnoselist[origCol]);
     }
 
@@ -5674,10 +5751,16 @@ void System::identifyConflictingRedundantConstraints(
 
     // exclude constraints tagged with zero
     conflictingTagsSet.erase(0);
+    conflictingTagsSet.insert(conflictingTags.begin(), conflictingTags.end());  // earlier blocks
 
     conflictingTags.resize(conflictingTagsSet.size());
     std::ranges::copy(conflictingTagsSet, conflictingTags.begin());
 
+    nonredundantconstrNum = constrNum;
+}
+
+void System::setRedundantTags()
+{
     // output of redundant tags
     SET_I redundantTagsSet, partiallyRedundantTagsSet;
     for (const auto& constr : redundant) {
@@ -5701,8 +5784,6 @@ void System::identifyConflictingRedundantConstraints(
 
     partiallyRedundantTags.resize(partiallyRedundantTagsSet.size());
     std::ranges::copy(partiallyRedundantTagsSet, partiallyRedundantTags.begin());
-
-    nonredundantconstrNum = constrNum;
 }
 
 void System::clearSubSystems()

@@ -98,6 +98,10 @@ private:
     static inline float getScaleFactor(const ViewProviderSketch& vp);
     static inline SbVec2f getScreenCoordinates(const ViewProviderSketch& vp, SbVec2f sketchcoordinates);
     static inline SbVec2f getScreenCoordinates(const ViewProviderSketch& vp, SbVec3f sketchcoordinates);
+    static inline std::function<SbVec2f(const SbVec3f&)> getScreenProjector(const ViewProviderSketch& vp)
+    {
+        return vp.getScreenProjector();
+    }
     static inline QFont getApplicationFont(const ViewProviderSketch& vp);
     static inline double getRotation(const ViewProviderSketch& vp, SbVec3f pos0, SbVec3f pos1);
     static inline int defaultApplicationFontSizePixels(const ViewProviderSketch& vp);

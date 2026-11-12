@@ -154,9 +154,19 @@ private:
     void makeReducedJacobian(
         Eigen::MatrixXd& J,
         std::map<int, int>& jacobianconstraintmap,
-        GCS::VEC_pD& pdiagnoselist,
+        const GCS::VEC_pD& pdiagnoselist,
         std::map<int, int>& tagmultiplicity
     );
+    /// diagnose() for one block of constraints sharing parameters (clist holds the block)
+    bool diagnoseBlock(
+        Algorithm alg,
+        GCS::VEC_pD& pdiagnoselist,
+        int& paramsNum,
+        int& rank,
+        int& nonredundantconstrNum
+    );
+    /// redundantTags and partiallyRedundantTags from the redundant constraints over all of clist
+    void setRedundantTags();
 
     void makeDenseQRDecomposition(
         const Eigen::MatrixXd& J,
