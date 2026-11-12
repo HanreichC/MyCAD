@@ -336,10 +336,11 @@ def ci_new_component():
     step("Design_Box", box_ok)
     wait()
     step("fit", lambda: ci_frame(2.0, 100))
-    step("open bodies", lambda: [ci_tree_item(n)[1].setExpanded(True) for n in ("Component", "Bodies0")])
+    step("open bodies", lambda: ci_tree_show("Component"))  # der Würfel liegt in der neuen (fetten, aktiven) Komponente
     wait(2)
-    step("double-click", lambda: ci_tree_click("Component", double=True))
-    wait(2)
+    # eine zweite neue Komponente kommt daneben, nicht hinein, und ist nun die aktive
+    step("second", lambda: use("Design_NewComponent"))
+    wait(3)
 
 
 # --- Prüfen ---------------------------------------------------------------------------------------------------------
