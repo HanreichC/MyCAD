@@ -903,6 +903,12 @@ public:
     {
         return scene() ? scene()->sceneRect() : QRectF();  // zeichnet überall, greift nur am Griff
     }
+    /// Fußpunkt verschieben (Extrude: Startversatz)
+    void setBase(const SbVec3f& b)
+    {
+        base = b;
+        update();
+    }
     QPainterPath shape() const override
     {
         QPainterPath path;
@@ -1548,9 +1554,10 @@ private:
         GProp_GProps props;
         BRepGProp::SurfaceProperties(faces, props);
         const gp_Pnt c = props.CentreOfMass();
+        arrowBase = SbVec3f(float(c.X()), float(c.Y()), float(c.Z()));
+        arrowDir = SbVec3f(float(normal.X()), float(normal.Y()), float(normal.Z()));
         arrow = new DragArrow(
-            viewer, SbVec3f(float(c.X()), float(c.Y()), float(c.Z())),
-            SbVec3f(float(normal.X()), float(normal.Y()), float(normal.Z())),
+            viewer, arrowBase + arrowDir * float(extrude ? extrude->StartOffset.getValue() : 0.0), arrowDir,
             [this] {
                 const double d = distance->value().getValue();
                 return extrude && flip->isChecked() ? -d : d;
@@ -1929,6 +1936,7 @@ private:
             showRow(distance2, ext == Design::Extrude::ExtentTwoSides);
             if (arrow) {
                 arrow->setVisible(byDistance);  // ohne Abstand gibt es nichts zu ziehen
+                arrow->setBase(arrowBase + arrowDir * float(extrude->StartOffset.getValue()));
             }
         }
         if (revolve) {
@@ -2156,6 +2164,7 @@ private:
     QFormLayout* form = nullptr;
     Gui::TaskView::TaskBox* taskBox = nullptr;
     QComboBox* extent = nullptr;
+    SbVec3f arrowBase, arrowDir;  ///< Fußpunkt und Richtung des Ziehpfeils ohne Startversatz
     QComboBox* axis = nullptr;
     Gui::QuantitySpinBox* distance = nullptr;
     Gui::QuantitySpinBox* distance2 = nullptr;

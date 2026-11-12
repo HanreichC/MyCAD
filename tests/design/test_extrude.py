@@ -59,6 +59,28 @@ class Extents(DesignTest):
         self.assertVolume(very_far, 2000 - PI * 9 * 5)
 
 
+class StartOffset(DesignTest):
+    def test_plate_above_sketch(self):
+        sk = sketch(self.doc, rect(0, 0, 10, 10))
+        f, body = extrude(self.doc, sk, 10, StartOffset=20)
+        self.assertVolume(body, 1000)
+        bb = body.Shape.BoundBox
+        self.assertAlmostEqual(bb.ZMin, 20, places=6)
+        self.assertAlmostEqual(bb.ZMax, 30, places=6)
+
+    def test_offset_ignores_flip(self):
+        sk = sketch(self.doc, rect(0, 0, 10, 10))
+        f, body = extrude(self.doc, sk, 10, StartOffset=-5, Reversed=True)
+        bb = body.Shape.BoundBox
+        self.assertAlmostEqual(bb.ZMin, -15, places=6)
+        self.assertAlmostEqual(bb.ZMax, -5, places=6)
+
+    def test_offset_with_symmetric(self):
+        sk = sketch(self.doc, rect(0, 0, 10, 10))
+        f, body = extrude(self.doc, sk, 10, StartOffset=20, Extent="Symmetric")
+        self.assertAlmostEqual(body.Shape.BoundBox.ZMin, 15, places=6)
+
+
 class ToObject(DesignTest):
     def test_up_to_face_of_other_body(self):
         top_sk = sketch(self.doc, rect(-5, -5, 25, 25), App.Placement(V(0, 0, 10), App.Rotation()))

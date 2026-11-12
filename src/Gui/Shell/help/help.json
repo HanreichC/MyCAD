@@ -2269,6 +2269,10 @@
       "How far the profile is pulled; a negative value goes the other way."
      ],
      [
+      "Start offset",
+      "Starts the body this far from the sketch plane instead of on it, e.g. Start offset 20 mm and Distance 10 mm gives a 10 mm plate from 20 to 30 mm. Negative values start below the sketch."
+     ],
+     [
       "To Object",
       "With To Object the button waits for your click on a face or plane; the body ends exactly there, also on slanted faces."
      ],
@@ -2297,6 +2301,10 @@
      [
       "Abstand",
       "Wie weit das Profil gezogen wird; ein negativer Wert geht in die andere Richtung."
+     ],
+     [
+      "Startversatz",
+      "Der Körper beginnt so weit von der Skizzenebene entfernt statt auf ihr, z. B. Startversatz 20 mm und Abstand 10 mm ergibt eine 10 mm dicke Platte von 20 bis 30 mm. Negative Werte beginnen unter der Skizze."
      ],
      [
       "Bis Objekt",

@@ -652,6 +652,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Clearance must be smaller than a third of the pitch", "Das Spiel muss kleiner als ein Drittel der Steigung sein"},
         {"All", "Alle"},
         {"Taper angle", "Verjüngungswinkel"},
+        {"Start offset", "Startversatz"},
         {"Thin wall", "Dünne Wand"},
         {"Thin side", "Wandseite"},
         {"Inside", "Innen"},

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""L1 im Dialog: Extrude "Bis Objekt" (Bezugsknopf wartet von selbst), Verjüngung, dünne Wand"""
+"""L1 im Dialog: Extrude "Bis Objekt" (Bezugsknopf wartet von selbst), Verjüngung, Startversatz, dünne Wand"""
 from harness import *
 
 state = {}
@@ -26,6 +26,10 @@ def pick_bottom_of_roof():
     roof = state["roof"]
     face = "Face%d" % (1 + min(range(len(roof.Shape.Faces)), key=lambda k: roof.Shape.Faces[k].CenterOfMass.z))
     Gui.Selection.addSelection(roof, face)
+
+
+def body_of(f):
+    return [b for b in doc().Objects if b.TypeId == "Design::Body" and b.Tip == f][0]
 
 
 def ref_button():
@@ -58,6 +62,10 @@ in_order([
     ("type taper", lambda: type_field("Taper angle", "10")),
     ("shot taper", lambda: shot("taper")),
     ("taper set", lambda: check("taper applied", abs(state["f"].TaperAngle.Value - 10) < 1e-6, str(state["f"].TaperAngle))),
+    ("type offset", lambda: type_field("Start offset", "20")),
+    ("shot offset", lambda: shot("startoffset")),
+    ("offset set", lambda: check("body starts 20 mm above the sketch", abs(body_of(state["f"]).Shape.BoundBox.ZMin - 20) < 1e-6,
+                                 str(body_of(state["f"]).Shape.BoundBox))),
     ("thin", lambda: checkbox("Thin wall").click()),
     ("thin set", lambda: check("thin wall on", state["f"].Thin, str([(c.text(), c.isChecked()) for c in visible(QtWidgets.QCheckBox)]))),
     ("thickness shown", lambda: check("thickness row shown", field("Thickness").isVisible())),

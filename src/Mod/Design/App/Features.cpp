@@ -2080,9 +2080,15 @@ std::vector<Design::DrivingDimension> Design::drivingDimensions(Body* body, cons
                 if (extrude->Reversed.getValue()) {
                     n = -n;
                 }
-                const double d = (Base::Vector3d(center.X(), center.Y(), center.Z()) - pla.getPosition()) * n;
+                const double offset = extrude->StartOffset.getValue();
+                // Abstand ab der versetzten Startebene (der Versatz geht immer entlang der Skizzennormalen)
+                const double d = (Base::Vector3d(center.X(), center.Y(), center.Z()) - pla.getPosition()) * n
+                    - (extrude->Reversed.getValue() ? -offset : offset);
                 const long ext = extrude->Extent.getValue();
-                if (ext == Extrude::ExtentTwoSides && d < -1e-6) {
+                if (std::abs(d) < 1e-6 && std::abs(offset) > 1e-6 && ext != Extrude::ExtentSymmetric) {
+                    add(extrude, "StartOffset", "Start offset");
+                }
+                else if (ext == Extrude::ExtentTwoSides && d < -1e-6) {
                     add(extrude, "Distance2", "Distance 2");
                 }
                 else if (std::abs(d) > 1e-6 || ext == Extrude::ExtentSymmetric) {
@@ -2851,6 +2857,8 @@ Extrude::Extrude()
     ADD_PROPERTY_TYPE(Distance2, (10.0), "Extrude", App::Prop_None, "Distance of the second side");
     ADD_PROPERTY_TYPE(Reversed, (false), "Extrude", App::Prop_None, "Flip direction");
     // Gruppe "Parameters": der Dialog baut die Felder selbst, Sichtbarkeit über Hidden (updateVisibility)
+    ADD_PROPERTY_TYPE(StartOffset, (0.0), "Parameters", App::Prop_None,
+                      "Start the extrusion this far from the sketch plane; negative goes below it");
     ADD_PROPERTY_TYPE(ToObject, (nullptr), "Parameters", App::Prop_None, "Face or plane to extrude to");
     ToObject.setScope(App::LinkScope::Global);
     ADD_PROPERTY_TYPE(TaperAngle, (0.0), "Parameters", App::Prop_None, "Taper angle; positive narrows the extrusion");
@@ -2894,6 +2902,16 @@ bool Extrude::makeTool(Part::TopoShape& tool, std::string& error) const
         return false;
     }
     const auto hasher = getDocument()->getStringHasher();
+    const Base::Vector3d normal = sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1));
+
+    // Startversatz: das Profil vorher parallel zur Skizzenebene verschieben, unabhängig von "Flip direction"
+    if (std::abs(StartOffset.getValue()) > Precision::Confusion()) {
+        Base::Matrix4D mov;
+        mov.move(normal * StartOffset.getValue());
+        for (auto& face : faces) {
+            face = Part::TopoShape(0, hasher).makeElementTransform(face, mov);
+        }
+    }
 
     // Dünne Wand: aus jeder Profilfläche ein Band entlang ihres Randes (Löcher bekommen auch eine Wand)
     if (Thin.getValue()) {
@@ -2937,10 +2955,7 @@ bool Extrude::makeTool(Part::TopoShape& tool, std::string& error) const
         }
     }
 
-    Base::Vector3d n = sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1));
-    if (Reversed.getValue()) {
-        n = -n;
-    }
+    Base::Vector3d n = Reversed.getValue() ? -normal : normal;
     gp_Dir dir(n.x, n.y, n.z);
 
     if (Extent.getValue() == ExtentToObject) {

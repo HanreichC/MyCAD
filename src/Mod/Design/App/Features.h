@@ -243,6 +243,7 @@ public:
     App::PropertyLength Distance;
     App::PropertyLength Distance2;
     App::PropertyBool Reversed;
+    App::PropertyDistance StartOffset;  ///< Profil vorher entlang der Skizzennormalen verschieben (Fusion: Start Versatz)
     App::PropertyLinkSub ToObject;  ///< Extent "To Object": Fläche oder Ebene
     App::PropertyAngle TaperAngle;  ///< positiv = schmaler (Entformung), nicht bei "To Object"
     App::PropertyBool Thin;         ///< dünne Wand entlang des Profilrands
