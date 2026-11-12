@@ -487,3 +487,5 @@ Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9
 
 ## s9
 - sketch_finish EN/DE: "or press Esc twice" → "or press Esc (twice if a tool is still active)" / "oder drücke Esc (zweimal, wenn noch ein Werkzeug aktiv ist)".
+
+- Clip-Skripte: noch nicht überarbeitet sind Axis, Point, OffsetPlane, AnglePlane, NewComponent, Revolve, Fastener, Hole, Web, Measure, PrintView, RemoveFace, ViewFitAll; die Esc-Taste in sketch_dimension kommt grün statt grau heraus (Palette?).

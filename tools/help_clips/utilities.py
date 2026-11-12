@@ -27,18 +27,6 @@ def ut_view():
     return v
 
 
-def ut_grab_start():
-    """Bild des Fensters; ist die Startseite offen, kommt sie obenauf: mw.grab() malte die Werkzeugleiste der 3D-Ansicht
-    (dahinter) über sie, im echten Fenster liegt die Startseite darüber"""
-    pix = QtWidgets.QMainWindow.grab(mw)
-    start = [w for w in mw.findChildren(QtWidgets.QWidget, "StartPage") if w.isVisible()]
-    if start:
-        painter = QtGui.QPainter(pix)
-        painter.drawPixmap(start[0].mapTo(mw, QtCore.QPoint(0, 0)), start[0].grab())
-        painter.end()
-    return pix
-
-
 def ut_rec():
     """Aufnahme mit Dialogen; der Textcursor blinkt nicht (sonst ist jedes Bild neu und die GIF riesig)"""
     def go():
@@ -50,13 +38,11 @@ def ut_rec():
         grp.SetBool("UseNavigationAnimations", False)
         g, old_view = globals(), harness.view
         harness.view = g["view"] = ut_view  # click(), _pos() und use() zielen sonst im Scribble daneben
-        mw.grab = ut_grab_start  # harness._record_frame nimmt mw.grab()
 
         def restore():
             QtWidgets.QApplication.setCursorFlashTime(flash)
             grp.SetBool("UseNavigationAnimations", anim)
             harness.view = g["view"] = old_view
-            del mw.grab
         ut_on_close(restore)
     step("dialog recorder", go)
 
@@ -219,11 +205,8 @@ def ut_parameters():
     wait()
     def distance():
         return sorted(visible(QtWidgets.QAbstractSpinBox), key=lambda w: w.mapToGlobal(QtCore.QPoint(0, 0)).y())[0].lineEdit()
-    ut_type(distance, "Height\n", ms=220)
-    wait()
-    step("ok", accept)
-    wait()
-    step("fit", lambda: (ut_fit()))
+    ut_type(distance, "Height\n", ms=120)
+    step("ok", lambda: (accept(), ut_fit()))  # kurz: das Extrudieren ist hier nur der Anlass
     wait()
     step("Design_Parameters", lambda: (ut_modal("Parameters", 200), use("Design_Parameters")))
     wait()
@@ -325,6 +308,7 @@ def ut_click_view(fx, fy):
         p = ut_at(fx, fy).toPoint()
         vp = ut_view().viewport()
         record_click(vp.mapToGlobal(p))
+        QtWidgets.QApplication.setActiveWindow(mw)  # ohne aktives Fenster wechselt der Fokus nicht: die Notiz übernähme nichts
         QtTest.QTest.mouseMove(vp, p)
         QtTest.QTest.mouseClick(vp, QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, p)
     step("click view", go)
@@ -805,6 +789,7 @@ def ut_export():
     step("bodies", lambda: (st.update(a=box(0, 0, 40, 30, 15, name="Base"), c=make_body([circle(20, 15, 8)], 15, 20, "Pin")),
                             ut_fit()))
     wait()
+    ut_clip_starts()
     step("select", lambda: (ut_ring_at(App.Vector(30, 25, 15)), select(st["a"])))
     step("add", lambda: (ut_ring_at(App.Vector(20, 15, 30)), add_select(st["c"])))
     wait()
@@ -856,6 +841,7 @@ def ut_print():
     step("bodies", lambda: (st.update(a=box(0, 0, 40, 30, 15, name="Base"), c=make_body([circle(20, 15, 8)], 15, 20, "Pin")),
                             ut_fit()))
     wait()
+    ut_clip_starts()
     step("Design_Print", lambda: (ut_modal("Print", 260), use("Design_Print")))
     wait()
 
@@ -890,9 +876,10 @@ def ut_drag(a, b, button, mods, n=24, ms=40):
 
 
 def ut_wheel(fx, fy, clicks, ms=120):
+    """Mausrad an der Stelle (fx, fy) der Ansicht; fx darf eine Funktion sein, die (fx, fy) erst im Ablauf liefert"""
     def make():
         vp = ut_view().viewport()
-        p = ut_at(fx, fy)
+        p = ut_at(*fx()) if callable(fx) else ut_at(fx, fy)
 
         def one(d):
             ev = QtGui.QWheelEvent(p, vp.mapToGlobal(p), QtCore.QPoint(0, 0), QtCore.QPoint(0, d), QtCore.Qt.NoButton,
@@ -927,7 +914,7 @@ def ut_navigation():
     ut_drag((0.62, 0.48), (0.45, 0.62), QtCore.Qt.MiddleButton, QtCore.Qt.NoModifier, n=12, ms=140)
     wait()
     step("zoom label", lambda: ut_key("Scroll wheel: zoom", 6000))
-    ut_wheel(0.55, 0.5, 3, ms=400)
+    ut_wheel(lambda: ut_screen(App.Vector(0, 0, 15)), None, 2, ms=500)  # über dem Modell: es wächst dort, wo die Maus steht
     wait()
     step("cam", lambda: L("  nav after pan/zoom: %s" % Gui.ActiveDocument.ActiveView.getCamera().splitlines()[1:4]))
     step("top label", lambda: ut_key("View cube: TOP", 2500))
@@ -958,8 +945,19 @@ def ut_shortcuts():
     das Ergebnis, und schließt Darstellung gar nicht; deshalb immer mit OK"""
     ut_rec()
     # Maus in die Mitte: sie stand noch auf Home am ViewCube (voriger Clip), das leuchtete den ganzen Clip lang
-    step("mouse", lambda: ut_mouse(QtCore.QEvent.MouseMove, ut_at(0.5, 0.5), QtCore.Qt.NoButton, QtCore.Qt.NoButton))
+    def mouse():
+        """Maus über Home am ViewCube, dann in die Mitte: Home blieb vom vorigen Clip (Klick darauf) blau, der ViewCube
+        bekam beim Designwechsel kein Verlassen; erst Hin- und Wegfahren (echte Mausbewegung) setzt es zurück"""
+        v = ut_view()
+        cube = [i for i in v.scene().items() if i.boundingRect().width() == 120 and i.boundingRect().height() == 150][0]
+        home = v.mapFromScene(cube.mapToScene(QtCore.QPointF(19, 131)))
+        mid = v.viewport().rect().center()
+        for i, q in enumerate((mid, home, mid)):  # erst weg (am selben Fleck zählte keine Bewegung), hin, wieder weg
+            QtCore.QTimer.singleShot(200 * i, lambda q=q: QtTest.QTest.mouseMove(ut_view().viewport(), q))
+    step("mouse", mouse)
     step("body", lambda: (st.__setitem__("b", box(0, 0, 60, 40, 20, name="Block")), ut_fit()))
+    wait()
+    ut_clip_starts()
     top_face = lambda: (ut_ring_at(App.Vector(30, 20, st["b"].Shape.BoundBox.ZMax)), select(st["b"], top(st["b"])))
     step("select", top_face)
     wait()

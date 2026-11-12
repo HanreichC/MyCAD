@@ -76,6 +76,7 @@ def _record_frame():
         return
     tops = [w for w in QtWidgets.QApplication.topLevelWidgets()
             if w.isVisible() and w is not mw and w.isWindow() and w.metaObject().className() != "QTipLabel"
+            and w.graphicsProxyWidget() is None  # Glas-Panels (GlassContent) liegen in der Szene, mw.grab() hat sie schon
             and w.width() > 8 and w.height() > 8]
     if QtCore.QThread.currentThread().loopLevel() > 1 and not tops:
         return  # verschachtelte Schleife ohne Dialog: das Bild griffe mitten in einen Umbau der Szene (Absturz)
