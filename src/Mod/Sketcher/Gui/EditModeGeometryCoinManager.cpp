@@ -32,8 +32,11 @@
 #include <Inventor/nodes/SoLineSet.h>
 #include <Inventor/nodes/SoMarkerSet.h>
 #include <Inventor/nodes/SoMaterial.h>
+#include <Inventor/nodes/SoMaterialBinding.h>
+#include <Inventor/nodes/SoPickStyle.h>
 #include <Inventor/nodes/SoSeparator.h>
 
+#include <App/Application.h>
 #include <Gui/Inventor/MarkerBitmaps.h>
 #include <Gui/Inventor/SmSwitchboard.h>
 #include <Mod/Sketcher/App/Constraint.h>
@@ -51,6 +54,42 @@
 
 using namespace SketcherGui;
 using namespace Sketcher;
+
+namespace
+{
+/// MyCAD: Lichthof in Hintergrundfarbe unter Skizzenlinien und Punkten, damit sie auf jedem Körper lesbar bleiben
+/// (dunkles Lila, Holzmaserung …). Wird vor shape gezeichnet und erbt dessen Koordinaten; nicht anklickbar.
+SoSeparator* halo(SoNode* style, SoNode* shape)
+{
+    auto sep = new SoSeparator;
+    auto pick = new SoPickStyle;
+    pick->style = SoPickStyle::UNPICKABLE;
+    sep->addChild(pick);
+    auto material = new SoMaterial;
+    float transparency;
+    material->diffuseColor.setValue(SbColor().setPackedValue(
+        App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View")
+            ->GetUnsigned("BackgroundColor2", 0xF2F2F7FF),
+        transparency));
+    sep->addChild(material);
+    auto binding = new SoMaterialBinding;
+    binding->value = SoMaterialBinding::OVERALL;
+    sep->addChild(binding);
+    sep->addChild(style);
+    sep->addChild(shape);
+    return sep;
+}
+
+/// Linienstil des Lichthofs: wie die Linie (auch gestrichelt), je Seite 1,5 px breiter
+SoDrawStyle* haloStyle(const SoDrawStyle* line, double pixelScalingFactor)
+{
+    auto style = new SoDrawStyle;
+    style->lineWidth = line->lineWidth.getValue() + 3 * pixelScalingFactor;
+    style->linePattern = line->linePattern.getValue();
+    style->linePatternScaleFactor = line->linePatternScaleFactor.getValue();
+    return style;
+}
+}  // namespace
 
 //**************************** EditModeGeometryCoinManager class ******************************
 
@@ -696,6 +735,18 @@ void EditModeGeometryCoinManager::createEditModePointInventorNodes()
             * drawingParameters.pixelScalingFactor;
         sep->addChild(editModeScenegraphNodes.PointsDrawStyle[i]);
 
+        // Lichthof: derselbe Punkt eine Markergröße größer (2 px je Seite), darunter
+        int haloSize = drawingParameters.markerSize;
+        for (int size : Gui::Inventor::MarkerBitmaps::getSupportedSizes("CIRCLE_FILLED")) {
+            if (size >= drawingParameters.markerSize + 4) {
+                haloSize = size;
+                break;
+            }
+        }
+        auto haloPoints = new SoMarkerSet;
+        haloPoints->markerIndex = Gui::Inventor::MarkerBitmaps::getMarkerIndex("CIRCLE_FILLED", haloSize);
+        sep->addChild(halo(new SoDrawStyle, haloPoints));  // zeigt wie die PointSet alle Koordinaten der Ebene
+
         auto pointset = new SoMarkerSet;
         editModeScenegraphNodes.PointSet.push_back(pointset);
         editModeScenegraphNodes.PointSet[i]->setName(concat("PointSet", i).c_str());
@@ -773,24 +824,24 @@ void EditModeGeometryCoinManager::createEditModeCurveInventorNodes()
             editModeScenegraphNodes.CurvesCoordinate[i].push_back(coords);
             sep->addChild(editModeScenegraphNodes.CurvesCoordinate[i][t]);
 
+            SoDrawStyle* style = editModeScenegraphNodes.CurvesDrawStyle;
             if (geometryLayerParameters.isConstructionSubLayer(t)) {
-                sep->addChild(editModeScenegraphNodes.CurvesConstructionDrawStyle);
+                style = editModeScenegraphNodes.CurvesConstructionDrawStyle;
             }
             else if (geometryLayerParameters.isInternalSubLayer(t)) {
-                sep->addChild(editModeScenegraphNodes.CurvesInternalDrawStyle);
+                style = editModeScenegraphNodes.CurvesInternalDrawStyle;
             }
             else if (geometryLayerParameters.isExternalSubLayer(t)) {
-                sep->addChild(editModeScenegraphNodes.CurvesExternalDrawStyle);
+                style = editModeScenegraphNodes.CurvesExternalDrawStyle;
             }
             else if (geometryLayerParameters.isExternalDefiningSubLayer(t)) {
-                sep->addChild(editModeScenegraphNodes.CurvesExternalDefiningDrawStyle);
-            }
-            else {
-                sep->addChild(editModeScenegraphNodes.CurvesDrawStyle);
+                style = editModeScenegraphNodes.CurvesExternalDefiningDrawStyle;
             }
 
             auto solineset = new SoLineSet;
             solineset->numVertices.setNum(0);
+            sep->addChild(halo(haloStyle(style, drawingParameters.pixelScalingFactor), solineset));
+            sep->addChild(style);
             solineset->setName(concat("CurvesLineSet", i * 10 + t).c_str());
             editModeScenegraphNodes.CurveSet[i].push_back(solineset);
             sep->addChild(editModeScenegraphNodes.CurveSet[i][t]);

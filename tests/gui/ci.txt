@@ -21,3 +21,4 @@ test_purpose_ui.py
 test_print_ui.py
 test_red_pen_ui.py
 test_versions_ui.py
+test_sketch_halo.py
