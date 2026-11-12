@@ -121,7 +121,7 @@ The other tools in short clips; the ones with more to say have their own section
 ### Extrude
 
 Direction **One Side**, **Symmetric**, **Two Sides**, **To Object** (up to a face or plane) or **All** (through
-everything). Plus a **Taper Angle** (positive narrows) and **thin wall** (just a rim of a given thickness). Operation:
+everything). Plus a **Taper angle** (positive narrows) and **thin wall** (just a rim of a given thickness). Operation:
 new body, join, cut, intersect. Clicking a flat face of a body and extruding it works like Press Pull.
 
 ![Extrude](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Extrude.gif)
