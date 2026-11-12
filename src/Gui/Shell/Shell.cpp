@@ -5853,10 +5853,12 @@ void Gui::Shell::setToolNames(bool on)
         }
         // Von innen nach außen neu rechnen (Knopfreihe, Abschnitt, Toolbar): Qt reicht neue Größen sonst nur über
         // nachgereichte LayoutRequests je Ebene weiter, und layout() mäße mit den alten (Knöpfe übereinander, zu hoch).
-        // findChildren liefert Eltern vor Kindern, rückwärts also die innersten zuerst; activate() ruft updateGeometry()
+        // findChildren liefert Eltern vor Kindern, rückwärts also die innersten zuerst. activate() rechnet nur ein als
+        // ungültig markiertes Layout neu; die neue Knopfgröße markiert es erst später (LayoutRequest), daher invalidate()
         const auto widgets = bar->findChildren<QWidget*>();
         for (auto it = widgets.rbegin(); it != widgets.rend(); ++it) {
             if ((*it)->layout()) {
+                (*it)->layout()->invalidate();
                 (*it)->layout()->activate();
             }
         }

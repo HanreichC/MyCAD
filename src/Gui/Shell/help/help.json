@@ -1447,7 +1447,16 @@
      "Rechtsklick auf eine freie Stelle der Ansicht bietet die meistgebrauchten Werkzeuge: Skizze erstellen, Extrudieren, Drücken/Ziehen, Abrunden, Bohrung, Verschieben und Alles zeigen, dazu Rückgängig und Wiederholen, wenn es etwas zurückzunehmen gibt.",
      "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "browser.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "numbers",
@@ -1598,7 +1607,16 @@
      "Die Hilfe spricht die Sprache, die unter Einstellungen → Allgemein → Sprache gewählt ist.",
      "Mit Bewegung reduzieren in den Einstellungen zeigt jeder Clip nur sein erstes Bild."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "help.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "file_basics",
@@ -1774,7 +1792,16 @@
      "Der Projektordner steht links unten; ändern kannst du ihn unter Einstellungen → Allgemein → Projektordner.",
      "Ein offenes Design wird vor dem Löschen geschlossen."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "file_start_page.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Versions",
