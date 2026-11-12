@@ -71,7 +71,14 @@ def _start_clips():
         box.lineEdit().selectAll()
 
     def keys(w, text, enter=True):
-        QtTest.QTest.keyClicks(w, text)
+        """w=None: echtes Tippen ans Fenster, die Taste geht wohin der Fokus gerade ist (wie tests/gui/test_sketch_tools.py)"""
+        if w is None:
+            QtWidgets.QApplication.setActiveWindow(mw)
+            w = mw.windowHandle()
+            for c in text:
+                QtTest.QTest.keyClick(w, c)
+        else:
+            QtTest.QTest.keyClicks(w, text)
         if enter:
             QtTest.QTest.keyClick(w, QtCore.Qt.Key_Return)
 
@@ -245,10 +252,12 @@ def _start_clips():
     def first_design():
         enter_sketch()
         step("rect", lambda: tool("Sketcher_CompCreateRectangles", "Sketcher_CreateRectangle"))
-        step("p1", lambda: (st.update(p1=at(V(-30, -20, 0)), p2=at(V(30, 20, 0))), tap(st["p1"])))
+        step("p1", lambda: (harness.activate(), st.update(p1=at(V(-30, -20, 0)), p2=at(V(30, 20, 0))), tap(st["p1"])))  # aktiv: das Maßfeld bekommt den Fokus
         step("move", lambda: drag_to(st["p1"], st["p2"]))
-        step("w", lambda: keys(QtWidgets.QApplication.focusWidget(), "60"))
-        step("h", lambda: keys(QtWidgets.QApplication.focusWidget(), "40"))
+        wait()  # erst wenn das Rechteck nach dem Ziehen bereit ist, sonst landen Ziffern im falschen Feld
+        step("w", lambda: keys(None, "60"))
+        wait()
+        step("h", lambda: keys(None, "40"))
         step("esc", esc_key)
         leave_sketch()
         step("profile", lambda: tap(V(0, 0, 0)))
@@ -337,7 +346,7 @@ def _start_clips():
                 QtTest.QTest.mouseClick(vp, LEFT, NOMOD, q)
             QtCore.QTimer.singleShot(300, put)
         step("dimension", start)
-        step("value", lambda: keys(QtWidgets.QApplication.focusWidget(), value))
+        step("value", lambda: keys(None, value))
         step("esc", esc_key)
 
     def draw_rect(a, b):

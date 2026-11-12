@@ -27,9 +27,6 @@
 
 #include <type_traits>
 
-#include <QApplication>
-#include <QKeyEvent>
-
 #include "DrawSketchDefaultHandler.h"
 #include "SnapManager.h"
 
@@ -224,17 +221,6 @@ private:
 
         if (key == SoKeyboardEvent::TAB && !pressed) {
             toolWidgetManager.tabShortcut();
-        }
-
-        // MyCAD: Ziffer, Komma, Punkt oder Minus bei fokussierter Ansicht gehören ins Maßfeld des aktuellen Schritts
-        // (Coin- und Qt-Tastencodes sind hier gleich: '0'..'9', ',', '-', '.')
-        const bool number = (key >= SoKeyboardEvent::NUMBER_0 && key <= SoKeyboardEvent::NUMBER_9)
-            || key == SoKeyboardEvent::COMMA || key == SoKeyboardEvent::MINUS || key == SoKeyboardEvent::PERIOD;
-        if (number && pressed && toolWidgetManager.focusOnViewParameterOfCurrentMode()) {
-            if (QWidget* field = QApplication::focusWidget()) {
-                QKeyEvent typed(QEvent::KeyPress, key, Qt::NoModifier, QString(QChar(key)));
-                QApplication::sendEvent(field, &typed);
-            }
         }
     }
     //@}
