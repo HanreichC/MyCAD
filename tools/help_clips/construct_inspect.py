@@ -198,28 +198,12 @@ CI_CYL = lambda: make_body([circle(0, 0, 12)], 0, 30, "Cylinder")
 CI_C45 = (12 * math.cos(-math.pi / 4), 12 * math.sin(-math.pi / 4))  # Zylinderseite zum Betrachter (iso)
 
 
-def ci_detach_cards():
-    """Maß-Karte einer angeklickten Fläche (FaceDimensions) aus der Szene nehmen, bevor das Design schließt: sonst löscht
-    die Szene sie mit, MyCAD behält einen hängenden Zeiger und stürzt beim nächsten Flächen-Klick ab (siehe Bericht)"""
-    scene = Gui.ActiveDocument.ActiveView.graphicsView().scene()
-    for item in scene.items():
-        if isinstance(item, QtWidgets.QGraphicsProxyWidget) and item.widget() \
-                and (item.widget().objectName() == "FaceDimensions" or item.widget().findChild(QtWidgets.QWidget, "FaceDimensions")):
-            while item.parentItem():
-                item = item.parentItem()
-            scene.removeItem(item)
-            harness._keep.append(item)  # removeItem gibt das Objekt an Python: ohne Verweis löschte PySide es gleich
-            L("  card detached")
-            return
-
-
 def ci_scenario(article, build, final=(1.3, 90)):
     """eigene Endpose (Seitenleiste fehlt links im Clip); scenario() hebt danach nur noch die Auswahl auf"""
     def full():
         build()
         if final:
             ci_final(*final)
-        step("detach card", ci_detach_cards)
     scenario(article, full, view="none", fixed=True)
 
 
