@@ -368,7 +368,7 @@ def ci_print_view():
         for o in d.Objects:
             if o.TypeId == "Sketcher::SketchObject":
                 o.Visibility = False
-    ci_model(build, 2.2, 40, CI_LOW)  # von unten: der Überhang ist die Unterseite der Platte
+    ci_model(build, 1.4, 40, CI_LOW)  # von unten: der Überhang ist die Unterseite der Platte
     step("Design_PrintView", lambda: use("Design_PrintView"))
     wait(3)
     step("turn up", lambda: ci_turn(CI_LOW, CI_ISO, 1))
@@ -381,7 +381,7 @@ def ci_print_view():
 
 
 def ci_measure():
-    ci_model(lambda: ci_body_xz(CI_STEP, 40, "Step"), 1.3, 10)
+    ci_model(lambda: ci_body_xz(CI_STEP, 40, "Step"), 1.3, -80)  # nach links: rechts öffnet sich das Panel
     step("Design_Measure", lambda: use("Design_Measure"))
     wait()
     ci_picks((-15, 20, 20))

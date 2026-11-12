@@ -220,7 +220,7 @@ def _expand(article, build, view, zoom, edit, fixed):
         shot(article, view, zoom, fixed)
         if GIF:
             step("stop", record_stop)
-    step("close", lambda: App.closeDocument(doc().Name))
+    step("close", lambda: [App.closeDocument(n) for n in list(App.listDocuments())])  # auch Kopien/Varianten, die der Clip öffnete
     wait()
 
 

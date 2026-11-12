@@ -266,6 +266,12 @@ def cr_fastener():
     cr_build("plates", cr_fit(-35, -20, 0, 35, 20, 15), lambda: st.update(low=box(-35, -20, 35, 20, 10, name="Base"), up=box(-25, -15, 25, 15, 5, z=10, name="Lid")))
     step("face", lambda: cr_sel(st["up"], top(st["up"]), V(0, 0, 15)))
     cr_tool("Design_Fastener", lambda: cr_pick("Size", "M4"), lambda: cr_pick("Bottom", "Heat-set insert"), variant=True)
+    # Schnitt durch die Schraubenachse: erst so sieht man Senkung, Durchgangsbohrung und das Loch für die Einschmelzmutter
+    step("section", lambda: (Gui.Selection.clearSelection(),
+                             Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XZ_Plane")][0]),
+                             Gui.runCommand("Design_Section"), Gui.Selection.clearSelection()))
+    step("closer", lambda: (Gui.ActiveDocument.ActiveView.viewIsometric(), Gui.SendMsgToActiveView("ViewFit")))
+    wait(3)
 
 
 def cr_fitting():
