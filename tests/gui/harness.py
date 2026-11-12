@@ -416,6 +416,11 @@ def shot(name):
                                                     [(s.isVisible(), s.isMaximized()) for s in subs]))
 
 
+def notices():
+    """Texte der Hinweise unter dem ViewCube (Werkzeug-Hinweise wie "Extrude: Click a flat face …")"""
+    return [w.text() for w in visible(QtWidgets.QLabel) if w.inherits("Gui::NotificationLabel")]
+
+
 def check(name, ok, detail=""):
     """Prüfung fürs Protokoll; Fehler stehen als FAIL darin"""
     L("%s %s %s" % ("ok  " if ok else "FAIL", name, detail))

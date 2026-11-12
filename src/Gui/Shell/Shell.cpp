@@ -8,6 +8,7 @@
 #include "Theme.h"
 
 #include <App/Application.h>
+#include <Base/Console.h>
 #include <Base/Interpreter.h>
 #include <Gui/Action.h>
 #include <Gui/Application.h>
@@ -150,6 +151,13 @@ void addVariantMenu(QMenu* menu, App::Document* doc, const std::function<void(co
 
 namespace
 {
+
+/// Hinweis unter dem ViewCube statt Meldungsfenster (wie toolHint() in Design/Gui/Commands.cpp)
+void shellHint(const QString& tool, const QString& text)
+{
+    Base::Console().send<Base::LogStyle::Notification, Base::IntendedRecipient::User, Base::ContentType::Translated>(
+        "MyCAD", "{}", (tool + QStringLiteral(": ") + text).toStdString());
+}
 
 /// Breite von Browser und Seitenleisten. MyStyle-Abweichung von size.sidebarWidth (232): der Modellbaum braucht wie
 /// Fusions Browser Platz für Namen, Sichtbarkeits-Auge und Status-Symbole
@@ -3620,7 +3628,7 @@ std::string runDesign(App::Document* doc, const char* transaction, const std::st
                 text = text.mid(at + 7);
             }
         }
-        QMessageBox::information(getMainWindow(), T("Timeline"), text);
+        shellHint(T("Timeline"), text);
         return {};
     }
 }
@@ -4422,7 +4430,7 @@ void addVariantMenu(QMenu* menu, App::Document* doc, const std::function<void(co
                                                       .c_str());
                 }
                 catch (const Base::Exception& e) {
-                    QMessageBox::information(getMainWindow(), T("Variants"), QString::fromUtf8(e.what()));
+                    shellHint(T("Variants"), QString::fromUtf8(e.what()));
                 }
             });
         });
@@ -4873,8 +4881,7 @@ void rebuildTimeline()
                         openTimelineGroups().insert(std::string(doc->getName()) + "/" + name.toStdString());
                     }
                     else {
-                        QMessageBox::information(getMainWindow(), T("Timeline"),
-                                                 T("Only steps that follow each other can be grouped."));
+                        shellHint(T("Timeline"), T("Only steps that follow each other can be grouped."));
                     }
                 }
                 else if (chosen == ungroup) {

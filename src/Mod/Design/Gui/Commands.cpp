@@ -418,6 +418,13 @@ void notify(const QString& text)
         "MyCAD", "{}", text.toStdString());
 }
 
+/// Hinweis eines Werkzeugs ("Skalieren: Wähle erst …") unter dem ViewCube statt als Fenster, das man wegklicken muss
+/// (MyStyle: keine Meldungsfenster nur zur Information; echte Fehler bleiben Fenster)
+void toolHint(const QString& tool, const QString& text)
+{
+    notify(tool + QStringLiteral(": ") + text);
+}
+
 void startRedPen(App::Document* doc)
 {
     auto view = qobject_cast<Gui::View3DInventor*>(Gui::getMainWindow()->activeWindow());
@@ -667,7 +674,7 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
         }
     }
     if (geos.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Convert to Sketch"),
+        toolHint(T("Convert to Sketch"),
                                  T("There are no strokes on this sheet. Only strokes on the current sheet become a "
                                    "sketch."));
         return;
@@ -836,7 +843,7 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name,
         }
     }
     if (!profiles) {
-        QMessageBox::information(Gui::getMainWindow(), T(name),
+        toolHint(T(name),
                                  T("Select one or more profiles (closed areas of a sketch) first."));
         return;
     }
@@ -903,7 +910,7 @@ bool setSweepPath(Design::Feature* feature)
         static_cast<Design::Sweep*>(feature)->Path.setValue(obj, edges);
         return true;
     }
-    QMessageBox::information(Gui::getMainWindow(), T("Sweep"),
+    toolHint(T("Sweep"),
                              T("Select a profile and the path (sketch lines or body edges)."));
     return false;
 }
@@ -932,7 +939,7 @@ void startLoft(App::Document* doc)
         }
     }
     if (objs.size() < 2) {
-        QMessageBox::information(Gui::getMainWindow(), T("Loft"),
+        toolHint(T("Loft"),
                                  T("Select two or more profiles from different sketches, in order."));
         return;
     }
@@ -994,7 +1001,7 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
         }
     }
     if (!body || (edges.empty() && !bodyAlone) || !Design::stateAtMarker(body)) {
-        QMessageBox::information(Gui::getMainWindow(), T(name),
+        toolHint(T(name),
                                  T("Select edges (or faces) of a body first."));
         return;
     }
@@ -1034,7 +1041,7 @@ void startFit(App::Document* doc)
         }
     }
     if (faces.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Fit"),
+        toolHint(T("Fit"),
                                  T("Select the faces that fit together, e.g. a hole and its pin."));
         return;
     }
@@ -1103,11 +1110,11 @@ void startFastener(App::Document* doc)
         }
         catch (const Base::ValueError& e) {
             doc->abortTransaction();
-            QMessageBox::information(Gui::getMainWindow(), T("Screw Here"), T(e.what()));
+            toolHint(T("Screw Here"), T(e.what()));
         }
         return;
     }
-    QMessageBox::information(Gui::getMainWindow(), T("Screw Here"),
+    toolHint(T("Screw Here"),
                              T("Click the flat top face where the screw goes in, or the edge of a round hole in it."));
 }
 
@@ -1129,7 +1136,7 @@ void startExtrude(App::Document* doc)
         startDressUp(doc, "Design::PressPull", "PressPull");
     }
     else if (!profile && otherPartOfBody) {
-        QMessageBox::information(Gui::getMainWindow(), T("Extrude"), T("Click a flat face of the body to extrude it."));
+        toolHint(T("Extrude"), T("Click a flat face of the body to extrude it."));
     }
     else {
         startProfileFeature(doc, "Design::Extrude", "Extrude");
@@ -1171,7 +1178,7 @@ void startCombine(App::Document* doc)
 {
     const auto bodies = selectedBodies();
     if (bodies.size() < 2) {
-        QMessageBox::information(Gui::getMainWindow(), T("Combine"),
+        toolHint(T("Combine"),
                                  T("Select the target body first, then one or more tool bodies."));
         return;
     }
@@ -1363,7 +1370,7 @@ void startAlign(App::Document* doc)
     Frame from, to;
     if (!body || refs[1].first == body || !frameOf(refs[0].first, refs[0].second, from)
         || !frameOf(refs[1].first, refs[1].second, to)) {
-        QMessageBox::information(Gui::getMainWindow(), T("Align"),
+        toolHint(T("Align"),
                                  T("Select a face, edge or point of the body to move, "
                                    "then the face, edge, point or plane to align it to."));
         return;
@@ -1407,7 +1414,7 @@ void startSplit(App::Document* doc)
         }
     }
     if (!body || !tool || tool == body) {
-        QMessageBox::information(Gui::getMainWindow(), T("Split Body"),
+        toolHint(T("Split Body"),
                                  T("Select the body to split and a plane or face to split it with."));
         return;
     }
@@ -1458,7 +1465,7 @@ void startRib(App::Document* doc, long mode = 0)
         }
     }
     if (!body || !sketch || !Design::stateAtMarker(body)) {
-        QMessageBox::information(Gui::getMainWindow(), T(mode ? "Web" : "Rib"),
+        toolHint(T(mode ? "Web" : "Rib"),
                                  mode ? T("Select the body and the sketch lines of the web (or the whole sketch).")
                                       : T("Select the body and the sketch lines of the rib (or the whole sketch)."));
         return;
@@ -1493,7 +1500,7 @@ void startFaceTool(App::Document* doc, const char* type, const char* name, const
         }
     }
     if (!body || faces.empty() || !Design::stateAtMarker(body)) {
-        QMessageBox::information(Gui::getMainWindow(), T(name), T(hint));
+        toolHint(T(name), T(hint));
         return;
     }
     App::DocumentObject* ref = refs.back().first;
@@ -1546,7 +1553,7 @@ void startEmboss(App::Document* doc)
         }
     }
     if (!profiles || !body || faces.empty() || !Design::stateAtMarker(body)) {
-        QMessageBox::information(Gui::getMainWindow(), T("Emboss"),
+        toolHint(T("Emboss"),
                                  T("Select the profiles or text of a sketch and the face to emboss on."));
         return;
     }
@@ -1588,7 +1595,7 @@ void startJoint(App::Document* doc)
         problem = T("The second selection must be on another component.");
     }
     if (!problem.isEmpty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Joint"), problem);
+        toolHint(T("Joint"), problem);
         return;
     }
     doc->openTransaction("Joint");
@@ -1618,7 +1625,7 @@ void startScale(App::Document* doc)
 {
     const auto bodies = selectedBodies();
     if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Scale"),
+        toolHint(T("Scale"),
                                  T("Select one or more bodies first."));
         return;
     }
@@ -1641,7 +1648,7 @@ void startMove(App::Document* doc)
     }
     const auto bodies = selectedBodies();
     if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Move"),
+        toolHint(T("Move"),
                                  T("Select one or more bodies or a component first."));
         return;
     }
@@ -1655,7 +1662,7 @@ void startMirror(App::Document* doc)
 {
     const auto bodies = selectedBodies();
     if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Mirror"),
+        toolHint(T("Mirror"),
                                  T("Select one or more bodies first."));
         return;
     }
@@ -2022,7 +2029,7 @@ QJsonValue versionsCall(const std::string& expr, const QString& title)
     catch (const Base::Exception& e) {
         QString text = QString::fromUtf8(e.what()).trimmed();
         const int at = text.lastIndexOf(QLatin1String("Error: "));
-        QMessageBox::information(Gui::getMainWindow(), title, at >= 0 ? T(text.mid(at + 7).toUtf8().constData()) : text);
+        toolHint(title, at >= 0 ? T(text.mid(at + 7).toUtf8().constData()) : text);
         return {};
     }
 }
@@ -2056,7 +2063,7 @@ void compareWith(App::Document* doc, const QString& path, const QString& title)
     }
     catch (const Py::Exception&) {
         Base::PyException e;
-        QMessageBox::information(Gui::getMainWindow(), T("Compare"), QString::fromUtf8(e.what()));
+        toolHint(T("Compare"), QString::fromUtf8(e.what()));
     }
 }
 }  // namespace
@@ -2235,7 +2242,7 @@ void choosePrintBottom(App::Document* doc)
         DesignGui::setPrintView(true);
         return;
     }
-    QMessageBox::information(Gui::getMainWindow(), T("Choose Bottom Face"), T("Click the flat face that should lie on the print bed."));
+    toolHint(T("Choose Bottom Face"), T("Click the flat face that should lie on the print bed."));
 }
 
 /// Idee 5: Drucken. Sichtbare (oder gewählte) Körper als 3MF mit Druckrichtung nach oben im Slicer öffnen; welcher
@@ -2252,7 +2259,7 @@ void printBodies(App::Document* doc)
         }
     }
     if (bodies.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Print"), T("There is no body to print."));
+        toolHint(T("Print"), T("There is no body to print."));
         return;
     }
     ParameterGrp::handle params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
@@ -2267,7 +2274,7 @@ void printBodies(App::Document* doc)
         Base::Console().error("Print: %s\n", e.what());
     }
     if (names.isEmpty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Print"),
+        toolHint(T("Print"),
                                  T("No slicer found (OrcaSlicer, Bambu Studio, PrusaSlicer or Cura). Save a 3MF file and open it "
                                    "in your slicer."));
         exportBodies(doc);
@@ -2337,7 +2344,7 @@ void exportBodies(App::Document* doc)
         }
     }
     if (bodies.empty() && sketches.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), T("Export"), T("There is no body to export."));
+        toolHint(T("Export"), T("There is no body to export."));
         return;
     }
 
@@ -2365,8 +2372,7 @@ void exportBodies(App::Document* doc)
     const bool dxf = suffix == QLatin1String("dxf");
     const auto& objects = dxf ? sketches : bodies;
     if (objects.empty()) {
-        QMessageBox::information(
-            Gui::getMainWindow(), T("Export"), dxf ? T("There is no sketch to export.") : T("There is no body to export.")
+        toolHint(T("Export"), dxf ? T("There is no sketch to export.") : T("There is no body to export.")
         );
         return;
     }
@@ -2448,7 +2454,7 @@ void startHole(App::Document* doc)
     }
     Design::Body* target = bodyUnderSketch(sketch);
     if (!target) {
-        QMessageBox::information(Gui::getMainWindow(), T("Hole"),
+        toolHint(T("Hole"),
                                  T("Create a sketch on a face of a body and place points where the holes go."));
         return;
     }
@@ -2492,7 +2498,7 @@ void startPattern(App::Document* doc)
             startEditing(feature, false, nullptr);
             return;
         }
-        QMessageBox::information(Gui::getMainWindow(), T("Pattern"),
+        toolHint(T("Pattern"),
                                  T("Select bodies, or an Extrude, Revolve or Hole in the timeline first."));
         return;
     }
@@ -2634,7 +2640,7 @@ void startConstruct(App::Document* doc, const char* type, const char* name, cons
     std::vector<std::string> subs;
     selectedRefs(objs, subs);
     if (objs.empty()) {
-        QMessageBox::information(Gui::getMainWindow(), T(name), T(hint));
+        toolHint(T(name), T(hint));
         return;
     }
     // Achse einer Zylinder- oder Kegelfläche über eine ihrer Kreiskanten (AxisOfCurvature, auch für Teilflächen
@@ -2664,7 +2670,7 @@ void startConstruct(App::Document* doc, const char* type, const char* name, cons
     attach->attacher().suggestMapModes(suggestion);
     if (suggestion.message != Attacher::SuggestResult::srOK) {
         doc->abortTransaction();
-        QMessageBox::information(Gui::getMainWindow(), T(name),
+        toolHint(T(name),
                                  T("This selection does not define a %1. %2")
                                      .arg(T(name), T(hint)));
         return;
@@ -2675,7 +2681,7 @@ void startConstruct(App::Document* doc, const char* type, const char* name, cons
     doc->recompute();
     if (!datum->isValid()) {  // passender Modus, aber nicht berechenbar (z. B. Trägheitsachse einer Kugel): nichts Kaputtes anlegen
         doc->abortTransaction();
-        QMessageBox::information(Gui::getMainWindow(), T(name),
+        toolHint(T(name),
                                  T("This selection does not define a %1. %2").arg(T(name), T(hint)));
         return;
     }
@@ -2707,7 +2713,7 @@ void startMidplane(App::Document* doc)
     };
     gp_Pln a, b;
     if (objs.size() != 2 || !planeOf(0, a) || !planeOf(1, b) || !a.Axis().IsParallel(b.Axis(), 1e-6)) {
-        QMessageBox::information(Gui::getMainWindow(), T("Midplane"),
+        toolHint(T("Midplane"),
                                  T("Select two parallel planes or planar faces."));
         return;
     }
@@ -3639,7 +3645,7 @@ void toggleSection(App::Document* doc)
         }
     }
     if (!found) {
-        QMessageBox::information(Gui::getMainWindow(), T("Section Analysis"),
+        toolHint(T("Section Analysis"),
                                  T("Select a plane or a planar face to cut the model at."));
         return;
     }
@@ -3748,7 +3754,7 @@ void startAnglePlane(App::Document* doc)
         }
     }
     if (!line) {
-        QMessageBox::information(Gui::getMainWindow(), T("Plane at Angle"),
+        toolHint(T("Plane at Angle"),
                                  T("Select a straight edge, sketch line or axis (and optionally the "
                                    "plane or face to measure the angle from)."));
         return;
@@ -3815,7 +3821,7 @@ void startOffsetPlane(App::Document* doc)
         }
     }
     if (!support) {
-        QMessageBox::information(Gui::getMainWindow(), T("Offset Plane"),
+        toolHint(T("Offset Plane"),
                                  T("Select a plane or a planar face first."));
         return;
     }

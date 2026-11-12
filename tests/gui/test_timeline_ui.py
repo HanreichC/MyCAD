@@ -51,8 +51,8 @@ def order():
 
 
 def close_message():
-    boxes = visible(QtWidgets.QMessageBox)
-    state["message"] = boxes[0].text() + " " + boxes[0].informativeText() if boxes else ""
+    boxes = visible(QtWidgets.QMessageBox)  # früher ein Fenster, jetzt ein Hinweis unter dem ViewCube
+    state["message"] = " ".join(notices()) if not boxes else "message box instead of a hint"
     for m in boxes:
         m.accept()
 
@@ -85,6 +85,7 @@ def chips():
 
 
 run([
+    ("activate", activate),  # Hinweise erscheinen nur bei aktivem Fenster (unter Xvfb sonst nicht)
     ("setup", setup), ("wait", lambda: None),
     ("drag loose to front", lambda: drag(entry(state["loose"]), entry(state["sketch"]))),
     ("moved", lambda: check("loose sketch moved to the front", order()[0] == state["loose"].Name, str(order()))),

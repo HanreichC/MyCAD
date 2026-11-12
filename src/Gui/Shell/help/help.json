@@ -720,6 +720,10 @@
       "Fillet / Chamfer"
      ],
      [
+      "Z, X",
+      "Scale"
+     ],
+     [
       "G, T / G, Q / G, Z",
       "Trim / Extend / Split"
      ],
@@ -852,6 +856,10 @@
      [
       "G, F, F / G, F, C",
       "Abrunden / Fase"
+     ],
+     [
+      "Z, X",
+      "Skalieren"
      ],
      [
       "G, T / G, Q / G, Z",
@@ -3490,7 +3498,7 @@
     "en": [
      [
       "Standard, Thread size",
-      "ISO metric, ISO metric fine, UNC or UNF. Auto takes the size that matches the diameter; Custom lets you type the Pitch."
+      "ISO metric, ISO metric fine, UNC or UNF. Auto takes the size that matches the diameter and shows it, e.g. Auto (M12); Custom lets you type the Pitch."
      ],
      [
       "Pitch",
@@ -3512,7 +3520,7 @@
     "de": [
      [
       "Norm, Gewindegröße",
-      "ISO metrisch, ISO metrisch fein, UNC oder UNF. Automatisch nimmt die Größe, die zum Durchmesser passt; mit Eigene Maße tippst du die Steigung ein."
+      "ISO metrisch, ISO metrisch fein, UNC oder UNF. Automatisch nimmt die Größe, die zum Durchmesser passt, und zeigt sie an, z. B. Automatisch (M12); mit Eigene Maße tippst du die Steigung ein."
      ],
      [
       "Steigung",
@@ -3870,13 +3878,13 @@
      "Click the faces to move (Ctrl+click for several).",
      "Ctrl+click the target: a plane (e.g. an Offset Plane) or a face of another body.",
      "In the toolbar at the top, in the MODIFY section, click the small arrow ▾ next to Press Pull and choose Replace Face. The button now shows Replace Face, so next time one click is enough.",
-     "The faces change immediately; if the target does not work, a message says why. Ctrl+Z takes it back."
+     "The faces change immediately; if the target does not work, a hint below the view cube says why. Ctrl+Z takes it back."
     ],
     "de": [
      "Klicke die zu verschiebenden Flächen an (Strg+Klick für mehrere).",
      "Klicke mit Strg die Zielebene (z. B. eine Versetzte Ebene) oder eine Fläche eines anderen Körpers an.",
      "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf den kleinen Pfeil ▾ neben Drücken/Ziehen und wähle Fläche ersetzen. Der Knopf zeigt danach Fläche ersetzen, beim nächsten Mal reicht also ein Klick.",
-     "Die Flächen ändern sich sofort; klappt es nicht, sagt eine Meldung warum. Strg+Z nimmt es zurück."
+     "Die Flächen ändern sich sofort; klappt es nicht, sagt ein Hinweis unter dem Würfel, warum. Strg+Z nimmt es zurück."
     ]
    },
    "see": [
@@ -3933,13 +3941,13 @@
      "Click the faces to divide.",
      "Ctrl+click the cutting tool: a plane, a face or a sketch with lines across the face.",
      "In the toolbar at the top, in the MODIFY section, click the small arrow ▾ next to Press Pull and choose Split Face. The button now shows Split Face, so next time one click is enough.",
-     "The faces change immediately; if the target does not work, a message says why. Ctrl+Z takes it back."
+     "The faces change immediately; if the target does not work, a hint below the view cube says why. Ctrl+Z takes it back."
     ],
     "de": [
      "Klicke die zu teilenden Flächen an.",
      "Klicke mit Strg das Schneidwerkzeug an: eine Ebene, eine Fläche oder eine Skizze mit Linien quer über die Fläche.",
      "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf den kleinen Pfeil ▾ neben Drücken/Ziehen und wähle Fläche teilen. Der Knopf zeigt danach Fläche teilen, beim nächsten Mal reicht also ein Klick.",
-     "Die Flächen ändern sich sofort; klappt es nicht, sagt eine Meldung warum. Strg+Z nimmt es zurück."
+     "Die Flächen ändern sich sofort; klappt es nicht, sagt ein Hinweis unter dem Würfel, warum. Strg+Z nimmt es zurück."
     ]
    },
    "see": [
@@ -4979,12 +4987,12 @@
     "en": [
      "Select the references (Ctrl+click for each further one): three corner points, a face and a point, or an edge and a point.",
      "In the toolbar at the top, in the CONSTRUCT section, click the small arrow ▾ next to Offset Plane and choose Plane. The button now shows Plane, so next time one click is enough.",
-     "The plane appears immediately. If the selection does not define a plane, a message says what is missing."
+     "The plane appears immediately. If the selection does not define a plane, a hint below the view cube says what is missing."
     ],
     "de": [
      "Wähle die Bezüge (jeden weiteren mit Strg+Klick): drei Eckpunkte, eine Fläche und einen Punkt oder eine Kante und einen Punkt.",
      "Klicke in der Werkzeugleiste oben im Bereich KONSTRUIEREN auf den kleinen Pfeil ▾ neben Versetzte Ebene und wähle Ebene. Der Knopf zeigt danach Ebene, beim nächsten Mal reicht also ein Klick.",
-     "Die Ebene erscheint sofort. Ergibt die Auswahl keine Ebene, sagt eine Meldung, was fehlt."
+     "Die Ebene erscheint sofort. Ergibt die Auswahl keine Ebene, sagt ein Hinweis unter dem Würfel, was fehlt."
     ]
    },
    "see": [
@@ -7156,13 +7164,13 @@
     "en": [
      "These tools are in the sketch toolbar, which appears while you edit a sketch (CREATE → Sketch, or double-click a sketch).",
      "In the sketch toolbar at the top, in the CREATE section, click Text.",
-     "Type the text and choose the font in the Tool Parameters below the Sketch Palette.",
+     "Type the text and choose the font in the options box below the Sketch Palette (without text, a click places nothing).",
      "Click the bottom-left point, then the bottom-right point to set length and direction."
     ],
     "de": [
      "Diese Werkzeuge liegen in der Skizzen-Werkzeugleiste, die erscheint, während du eine Skizze bearbeitest (ERSTELLEN → Skizze oder Doppelklick auf eine Skizze).",
      "Klicke in der Skizzen-Werkzeugleiste oben im Bereich ERSTELLEN auf Text.",
-     "Tippe den Text ein und wähle die Schriftart in den Werkzeugparametern unter der Skizzenpalette.",
+     "Tippe den Text ein und wähle die Schriftart im Optionsfeld unter der Skizzenpalette (ohne Text setzt ein Klick nichts).",
      "Klicke den Punkt unten links, dann unten rechts für Länge und Richtung."
     ]
    },

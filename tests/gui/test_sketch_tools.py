@@ -206,8 +206,10 @@ def alert():
 
 
 def close_alert():
+    """Werkzeug-Hinweis unter dem ViewCube statt Meldungsfenster (MyStyle: keine Fenster nur zur Information)"""
     boxes = alert()
-    check("body without a face: says what to click", len(boxes) == 1 and "flat face" in boxes[0].text() + boxes[0].informativeText(), boxes[0].informativeText() if boxes else "no message")
+    check("body without a face: a hint says what to click, no message box",
+          not boxes and any("flat face" in t for t in notices()), "%d boxes, notices %s" % (len(boxes), notices()))
     for b in boxes:
         b.accept()
 

@@ -78,10 +78,6 @@ def read_empty():
     Gui.runCommand("Design_ScribbleCorrect")
 
 
-def notices():
-    return [w.text() for w in visible(QtWidgets.QLabel) if w.inherits("Gui::NotificationLabel")]
-
-
 def glass(w):
     """Glasfläche eines Panels in der Szene (der Proxy des Inhalts ist so groß wie das Glas)"""
     while w.parentWidget():
