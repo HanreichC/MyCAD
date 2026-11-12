@@ -522,6 +522,8 @@ public:
      * Move the camera to the configured home orientation and fit the scene.
      */
     void viewHome();
+    /// MyCAD: dasselbe mit fester Ausrichtung (Home des ViewCube: Iso + Einpassen)
+    void viewHome(const SbRotation& orientation);
     /**
      * Reposition the current camera so we can see the complete scene.
      */

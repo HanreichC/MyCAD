@@ -5,6 +5,7 @@
 #include "Theme.h"
 
 #include <App/Application.h>
+#include <Base/Interpreter.h>
 #include <Gui/Application.h>
 #include <Gui/Command.h>
 #include <Gui/MainWindow.h>
@@ -1114,6 +1115,24 @@ void Gui::Shell::showSettings()
     addRow(generalCard, T("Export resolution"),
            segmented({T("Coarse"), T("Normal"), T("Fine")}, int(myParams()->GetInt("ExportQuality", 1)),
                      [](int i) { myParams()->SetInt("ExportQuality", i); }));
+    // Slicer für Drucken (Design_Print merkt sich die erste Wahl); zu wählen gibt es erst mit mehreren installierten
+    QStringList slicers;
+    try {
+        Base::PyGILStateLocker lock;
+        slicers = QString::fromStdString(Base::Interpreter().runStringWithKey(
+                                             "import DesignExport\n_r = '\\n'.join(n for n, c in DesignExport.find_slicers())", "_r"))
+                      .split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    }
+    catch (const Base::Exception&) {
+    }
+    if (slicers.size() > 1) {
+        auto slicer = new QComboBox;
+        slicer->addItems(slicers);
+        slicer->setCurrentIndex(int(slicers.indexOf(QString::fromStdString(myParams()->GetASCII("Slicer", "")))));
+        QObject::connect(slicer, &QComboBox::currentTextChanged, slicer,
+                         [](const QString& name) { myParams()->SetASCII("Slicer", name.toStdString()); });
+        addRow(generalCard, T("Slicer"), slicer);
+    }
     // Spiel je Seite für die Passungen "3D-Druck eng/normal/locker" (Design::Fitting, Idee 4); je eine Zeile wie die
     // anderen Zahlenfelder: alle drei in einer Zeile ließen dem Label keinen Platz, es wurde abgeschnitten
     static const char* plays[][2] = {

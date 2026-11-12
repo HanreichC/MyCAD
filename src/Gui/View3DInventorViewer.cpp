@@ -4508,12 +4508,16 @@ SbBox3f View3DInventorViewer::getBoundingBox() const
 
 void View3DInventorViewer::viewHome()
 {
+    viewHome(Camera::defaultOrientation("Top"));
+}
+
+void View3DInventorViewer::viewHome(const SbRotation& orientation)
+{
     SoCamera* camera = getCamera();
     if (!camera) {
         return;
     }
 
-    const SbRotation orientation = Camera::defaultOrientation("Top");
     if (Camera::rotationsMatch(camera->orientation.getValue(), orientation)) {
         viewAll();
         return;

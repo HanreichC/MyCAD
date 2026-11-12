@@ -60,6 +60,18 @@ class Problems(DesignTest):
         self.assertIn(WARN, n.Text)
         self.assertFalse(hasattr(params(self.doc), "Wand"))
 
+    def test_unknown_name_is_marked_and_does_not_stop_the_others(self):
+        n = note(self.doc, "Wand = 2 mm\nFoo = abc\nBreite = Wand * 2")
+        self.assertIn(WARN, n.Text.split("\n")[1])
+        self.assertFalse(hasattr(params(self.doc), "Foo"))
+        edit(n, "Wand = 3 mm\nFoo = abc\nBreite = Wand * 2")
+        self.assertAlmostEqual(params(self.doc).Breite.Value, 6)  # ein Fehler legte vorher alle Parameter still
+
+    def test_unit_name_is_refused(self):
+        n = note(self.doc, "mm = 4 mm")
+        self.assertIn(WARN, n.Text)
+        self.assertFalse(hasattr(params(self.doc), "mm"))
+
     def test_same_name_twice_in_one_note(self):
         n = note(self.doc, "Wand = 2 mm\nWand = 3 mm")
         self.assertIn(WARN, n.Text.split("\n")[1])

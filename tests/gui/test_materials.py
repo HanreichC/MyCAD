@@ -126,6 +126,12 @@ def tone_box():
     Gui.ActiveDocument.ActiveView.viewIsometric(); Gui.SendMsgToActiveView("ViewFit")
 
 
+def flip():
+    """dieselbe Kiste um 180° um x gedreht an derselben Stelle, wie ein Arm, den ein Gelenk umklappt: oben bleibt oben"""
+    doc().getObject("Tones").Placement = App.Placement(App.Vector(0, 30, 25), App.Rotation(App.Vector(1, 0, 0), 180))
+    doc().recompute()
+
+
 def showcase():
     """Holz lackiert, gebürstetes Aluminium, Carbon, Glas, PLA mit Schichten nebeneinander"""
     for i, (name, mat) in enumerate([
@@ -151,6 +157,10 @@ in_order([
     ("room switch", lambda: check("Lighting Room switches the environment", saved["room"] != saved["studio"],
                                   "studio %s room %s" % (saved["studio"], saved["room"]))),
     ("studio", lambda: P.SetInt("Lighting", 0)),
+    ("flip", flip), ("wait", lambda: None), ("flipped tones", lambda: tones("flipped")),
+    ("world light", lambda: check("A rotated body is lit in world space: its top stays the brightest, same shades as unrotated",
+                                  max(abs(a - b) for a, b in zip(saved["flipped"], saved["studio"])) <= 6,
+                                  "unrotated %s rotated %s" % (saved["studio"], saved["flipped"]))),
     ("hide tone box", lambda: setattr(Gui.ActiveDocument.getObject("Tones"), "Visibility", False)),
     ("sphere", sphere), ("wait", lambda: None),
     ("measure pbr", lambda: measure("pbr")),

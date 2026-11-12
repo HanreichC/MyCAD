@@ -49,23 +49,7 @@ def ci_ring_at(w, dx=0.0, dy=0.0):
     record_click(view().viewport().mapToGlobal(p + QtCore.QPoint(int(dx * w.width() / 2), int(dy * w.height() / 2))))
 
 
-# --- Varianten-Menü (Knopf mit ▾): Qt zeigt es als eigenes Fenster, das Bild des Hauptfensters enthält es nicht ---------
-def ci_grab_with_menus():
-    pix = QtWidgets.QMainWindow.grab(mw)
-    painter = QtGui.QPainter(pix)
-    for m in visible(QtWidgets.QMenu):
-        painter.drawPixmap(mw.mapFromGlobal(m.pos()), m.grab())
-    painter.end()
-    return pix
-
-
-def ci_menus_off():
-    try:
-        del mw.grab
-    except AttributeError:
-        pass
-
-
+# --- Varianten-Menü (Knopf mit ▾): harness._record_frame nimmt das Menü (eigenes Fenster) mit ins Bild ---------
 def ci_split(cmd):
     return [b for b in visible(QtWidgets.QToolButton)
             if b.objectName() == "GlassButton" and cmd in str(b.property("command")).split("|")][0]
@@ -76,7 +60,6 @@ def ci_variant(cmd):
     def open_menu():
         b = ci_split(cmd)
         ci_ring_at(b, 0, 0.8)
-        mw.grab = ci_grab_with_menus  # nur solange das Menü offen ist
         p = harness._pos(b); p = p.toPoint() if hasattr(p, "toPoint") else p
         b.menu().popup(view().viewport().mapToGlobal(p + QtCore.QPoint(-b.width() // 2, b.height() // 2 + 4)))
 
@@ -85,7 +68,7 @@ def ci_variant(cmd):
         a = m.actions()[str(b.property("command")).split("|").index(cmd)]
         record_click(m.mapToGlobal(m.actionGeometry(a).center()))
         m.setActiveAction(a)
-        QtCore.QTimer.singleShot(350, lambda: (m.hide(), ci_menus_off(), a.trigger()))
+        QtCore.QTimer.singleShot(350, lambda: (m.hide(), a.trigger()))
     step("menu", open_menu)
     step(cmd, choose)
 
@@ -233,7 +216,6 @@ def ci_detach_cards():
 def ci_scenario(article, build, final=(1.3, 90)):
     """eigene Endpose (Seitenleiste fehlt links im Clip); scenario() hebt danach nur noch die Auswahl auf"""
     def full():
-        step("ci", lambda: harness._rec.__setitem__("ci", True))
         build()
         if final:
             ci_final(*final)
@@ -332,98 +314,6 @@ def ci_joint():
     wait()
 
 
-_ci_frame_orig = harness._record_frame
-
-
-def _ci_record_frame():
-    """wie harness._record_frame, aber mit Ausschnitt _rec["ci_crop"] = (x, Breite) samt Seitenleiste; ohne den Schlüssel
-    (alle anderen Clips) unverändert"""
-    r = harness._rec
-    if "ci_crop" not in r:
-        return _ci_frame_orig()
-    if QtCore.QThread.currentThread().loopLevel() > 1:
-        return
-    now = r["clock"]()
-    img = mw.grab().toImage().convertToFormat(QtGui.QImage.Format_RGB888)
-    painter = QtGui.QPainter(img)
-    painter.setRenderHint(QtGui.QPainter.Antialiasing)
-    for x, y, t0 in r["clicks"]:
-        age = now - t0
-        if 0 <= age < 0.7:
-            c = QtGui.QColor(0, 136, 255); c.setAlphaF(0.85 * (1 - age / 0.7))
-            painter.setPen(QtGui.QPen(c, 4)); painter.setBrush(QtCore.Qt.NoBrush)
-            rad = 10 + 26 * age / 0.7
-            painter.drawEllipse(QtCore.QPointF(x, y), rad, rad)
-    painter.end()
-    x0, w = r["ci_crop"]
-    r["frames"].append((img.copy(x0, 0, w, img.height()).scaledToWidth(r["width"], QtCore.Qt.SmoothTransformation), now))
-    r["busy"] += r["clock"]() - now
-
-
-harness._record_frame = _ci_record_frame  # record_start verbindet den Takt mit harness._record_frame
-
-
-_ci_stop_orig = record_stop
-
-
-def _ci_record_stop(hold=1.5, longest=1.2):
-    """wie harness.record_stop, aber die Palette kommt aus bis zu 16 Bildern und hat eigene Plätze für kräftige Farben:
-    aus nur drei Bildern fehlten ihr das Rot der Überhänge und das Blau der Auswahl (wurden gelb bzw. grau).
-    Nur für die Clips dieser Datei (_rec["ci"]), alle anderen laufen unverändert."""
-    from PIL import Image
-    r = harness._rec
-    if "ci" not in r:
-        return _ci_stop_orig(hold, longest)
-    r["timer"].stop()
-    harness._record_frame()
-    frames, times, last = [], [], None
-    for q, t in r["frames"]:
-        raw = bytes(q.constBits())
-        if raw == last:
-            continue
-        last = raw
-        frames.append(Image.frombuffer("RGB", (q.width(), q.height()), raw, "raw", "RGB", q.bytesPerLine(), 1))
-        times.append(t)
-    times.append(r["frames"][-1][1])
-    durations = [max(r["ms"], min(int((b - a) * 1000), int(longest * 1000))) for a, b in zip(times, times[1:])]
-    durations[-1] += int(hold * 1000)
-    w, h = frames[0].size
-    # MyCAD zeichnet nach einem Kamera- oder Farbwechsel ein paar Mal nach (Schatten, Schraffur): solche kurzen
-    # Zwischenbilder fallen weg, wenn gleich danach wieder fast das ganze Bild wechselt (spart je ~100 KB)
-    from PIL import ImageChops
-    keep_f, keep_d = [frames[0]], [durations[0]]
-    for f, d in zip(frames[1:], durations[1:]):
-        b = ImageChops.difference(f, keep_f[-1]).getbbox()
-        if keep_d[-1] < 200 and len(keep_f) > 1 and b and (b[2] - b[0]) * (b[3] - b[1]) > w * h // 4 \
-                and keep_f[-1] is not frames[0]:
-            prev = ImageChops.difference(keep_f[-1], keep_f[-2]).getbbox()
-            if prev and (prev[2] - prev[0]) * (prev[3] - prev[1]) > w * h // 4:
-                keep_f[-1] = f; keep_d[-1] += d
-                continue
-        keep_f.append(f); keep_d.append(d)
-    frames, durations = keep_f, keep_d
-    pick = [frames[i * (len(frames) - 1) // 15] for i in range(16)] if len(frames) > 16 else frames
-    sample = Image.new("RGB", (w, h * len(pick)))
-    for i, f in enumerate(pick):
-        sample.paste(f, (0, h * i))
-    small = sample.resize((w // 2, h * len(pick) // 2), Image.NEAREST)  # Schraffur-Pixel bleiben erhalten
-    vivid = [px for px in getattr(small, "get_flattened_data", small.getdata)() if max(px) - min(px) > 70]
-    base = sample.quantize(207, method=Image.Quantize.MEDIANCUT).getpalette()[:207 * 3]
-    extra = []
-    if vivid:
-        v = Image.new("RGB", (len(vivid), 1)); v.putdata(vivid)
-        extra = v.quantize(48, method=Image.Quantize.MEDIANCUT).getpalette()[:48 * 3]
-    pal = Image.new("P", (1, 1)); pal.putpalette(base + extra + [0] * (768 - len(base) - len(extra)))
-    frames = [f.quantize(palette=pal, dither=Image.Dither.NONE) for f in frames]
-    frames[0].save(r["path"], save_all=True, append_images=frames[1:], duration=durations, loop=0, optimize=False)
-    L("GIF %s: %d Bilder, %.1f s, %d KB" % (os.path.basename(r["path"]), len(frames), sum(durations) / 1000,
-                                           os.path.getsize(r["path"]) // 1024))
-    r.clear()
-
-
-record_stop = _ci_record_stop  # _expand() bindet den Schritt "stop" erst nach allen Clip-Dateien
-
-
 def ci_tree_item(label):
     t = [t for t in visible(QtWidgets.QTreeWidget)][0]
     its = t.findItems(label, QtCore.Qt.MatchStartsWith | QtCore.Qt.MatchRecursive)
@@ -447,7 +337,7 @@ def ci_tree_click(label, double=False):
 
 def ci_wide():
     """ab hier mit Seitenleiste (Browser), rechts ohne den leeren Rand"""
-    harness._rec["frames"].clear(); harness._rec["ci_crop"] = (0, 1200)
+    harness._rec["frames"].clear(); harness._rec["crop"] = (0, 1200)
     harness._record_frame()
 
 

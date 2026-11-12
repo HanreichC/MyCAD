@@ -419,3 +419,71 @@ Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9
 - Etappen in der Reihenfolge aus 4.2, Pakete abhaken in dieser Datei
 - Je Paket: Tests zuerst schreiben, umsetzen, alle Tests grün, Commit auf `main`
 - Entscheidungen, die Verhalten für Nutzer grundlegend ändern (Speichern in 10.7, Solver in L6), stimmen wir vorher ab
+
+## Offen nach der GIF-/Bug-Runde vom 12.11.2026
+
+- Rote Tests: test_components ("its folders have plain names, no 001" — Origin fehlt in der Liste?), test_construct ("Unit mismatch in minus operation" in den neuen Checks; Konstruktionsachsen und -punkte werfen Kontaktschatten, vermutlich durch die neue Deckkraft der Achsen bzw. die geänderte Schattenlogik).
+- Fast alle Fixes dieser Runde sind gebaut, aber nicht in der GUI geprüft (Testsuite sonst grün). Bewusst nicht erledigt: Korrekturkarte läuft nach Apply All über, Rotstift-R2 trifft unter Last die falsche Kante (readCorrection misst die Entfernung zur ganzen Sichtlinie), Measure (Größe +0,06 mm, Werkstoffname, Umbruch zwischen Zahl und Einheit), Section-Manipulator, reine Info-Meldungen per Modal, Geisterbild der Suchliste, Kopfzeile der Einstellungen, Aufblitzen der Maßkarte, Glitch in der Timeline, Popup der Slicer-Auswahl.
+- Neue Regel: New Component aktiviert die neue Komponente nicht mehr (Geschwister statt Verschachtelung) — bitte bestätigen.
+- Alle GIFs neu aufnehmen, wenn die Fixes geprüft sind (HELP_GIF=1); file_start_page, browser und help haben noch keinen Clip.
+
+### Hilfetexte anpassen (EN+DE)
+
+## s2
+- Design_Print tip EN/DE: "Without a slicer, Print saves a 3MF file instead." Reality: message, then Export dialog opens with 3MF preselected. EN "Without a slicer, Print tells you and opens Export with 3MF preselected." DE "Ohne Slicer sagt Drucken das und öffnet Exportieren mit 3MF vorgewählt."
+- Design_Print step 3 "MyCAD remembers it." — add how to change it (depends on fix agent: slicer choice may become a setting).
+- Design_CreateSketch step 3: sketch toolbar sections listed as (CREATE, MODIFY, CONSTRAINTS) but there is also UTILITIES (Note).
+
+## s3
+- Design_Web tip EN "Each wall grows down until it meets the floor and needs walls at both ends; open ends are reported in red in the panel." / DE "…braucht an beiden Enden Wände; offene Enden meldet das Panel rot." — only true if the fix agent implements the open-end check; else "the wall ends where the line ends; draw lines from wall to wall".
+- Design_Fastener DE: "Kernloch" → panel shows "Gewindebohrung" (Tapped hole).
+- primitives EN/DE: shared OPERATION text "(MyCAD picks the body the sketch sits on)" — primitives have no sketch; target is the body of the clicked flat face.
+- primitives: "otherwise it sits on the floor, XY" — only true for Box/Cylinder unless fix agent puts Sphere/Torus/Coil on the floor.
+- Design_Mirror EN/DE intro "across one of the origin planes" ignores Plane Reference.
+
+## s4
+- Design_Fillet EN "Edges shows how many edges are selected." / DE "Kanten zeigt, wie viele Kanten gewählt sind." — correct once the edge counter fix lands.
+- Design_SplitBody EN: "Select the body in the browser on the left (Bodies folder), then Ctrl+click the plane or face to split with." outdated since 93eed1c7 → "Click the body (any face of it) or select it in the browser, then Ctrl+click the plane or face to split with." DE "Klicke den Körper an (irgendeine seiner Flächen) oder wähle ihn im Browser, dann klicke mit Strg die Ebene oder Fläche an, mit der geteilt wird." (order requirement may disappear with fix)
+- Design_Align optional: Move panel opens with "Click in the view…" armed (may change with fix: optional refs no longer auto-armed).
+
+## s5
+- Design_NewComponent EN (help_content.py ~1133): "Double-click it in the browser to make it active: new sketches and bodies now go into this component." → new component is active right away (bold); double-click activates another. DE accordingly. (Behaviour may change with fix agent: nesting rule.)
+- Design_Axis "a round face" — true after Axis fix.
+- Design_Joint EN (~1144): "Ctrl+click where it should go on another component." → "…on another component or on the design itself." DE "…an einer anderen Komponente oder am Design selbst hin soll."
+- Design_Joint DE options: "Schieberegler (schiebt sich)" → "Schiebegelenk", "Drehung" → "Drehgelenk" (if Translations.cpp changes).
+
+## s7
+- sketch_circle EN/DE: "(or type the size in the field)" → "type the diameter" / "tippe den Durchmesser".
+- sketch_arc EN/DE: "Press M to switch between the variants while drawing" → "Press M to switch between Arc From Center and Arc From 3 Points" / "zwischen vom Mittelpunkt und durch 3 Punkte".
+- sketch_line tip: "switch how the line is defined (e.g. by length and angle)" → "(e.g. by width and height instead of length and angle)" / "(z. B. über Breite und Höhe statt Länge und Winkel)".
+- sketch_rectangle step 6, sketch_polyline tip: "Tool Parameters box"/"Werkzeugparameter" → box is titled "<Tool> Parameters" (e.g. "Rectangle Parameters"/"Rechteckparameter"); "the options box below the Sketch Palette (e.g. Rectangle Parameters)". (Titles may change with sketch fix agent.)
+- sketch_slot "Keys: G, S" — fixed by shortcut fix.
+- search summary EN "in German or English" — OK once search fix lands.
+
+## s8
+- sketch_pattern / sketch_move / sketch_trim / sketch_project EN/DE: "choose Pattern/Move/Trim/Project" — menu says "Rectangular Array", "Move / Array Transform", "Trim Edge", "External Projection" (DE Rechteckige Anordnung, Verschieben / Anordnen, Kante stutzen, Projektion übernehmen). Pass the menu name as 2nd tool() arg.
+- sketch_offset DE tip: "runde (Kreisbogen) oder spitze (Schnitt) Ecken" → combo says "Bogen"/"Schnitt".
+- sketch_offset EN: "Move the mouse or type the distance, and click." → "Move the mouse and click, or type the distance and press Enter." (DE accordingly)
+- sketch_conic EN/DE: "It starts as a parabola (rho 0.5); drag the corner point…" → "It is a parabola (rho 0.5); drag the corner point afterwards to change its shape."
+- sketch_move EN "Scale: click the reference point, then set the scale factor." → three clicks: centre, a point at current size, where that point should go; or type the factor after the 2nd click. DE accordingly.
+- sketch_fillet: "Preserve corner (U)" is on by default — say so.
+- TOOLPARAMS ("Tool Parameters box") in offset, mirror, move: titles are Offset/Symmetry/Translate Parameters (may change with fix).
+- sketch_conic commands list contains "Sketcher_CompCreateConic" (Circle/Ellipse group) → remove (help_content.py ~1499).
+
+## s1
+- start_navigation EN/DE "The small house below it shows the whole model." — true after ViewCube Home fit fix.
+- start_navigation, start_shortcuts DE: "Alles zeigen (V, F)" vs tooltip "Alles einpassen" — depends on fix agent (may make MyCAD's "Alles zeigen" win).
+- file_basics DE: "Neu (Strg+N)" vs tooltip "Neues Dokument (Strg+N)" (minor).
+- sketch_basics EN/DE: "three sections: CREATE, MODIFY and CONSTRAINTS" → four, plus UTILITIES (Note).
+- start_timeline EN/DE: "Right-click a step for Edit, Roll Back to Here, Suppress/Unsuppress and Delete" — sketch steps have no Suppress → "(Suppress for features)".
+- file_basics: should cover the new browser features (rename by clicking name, Saved indicator, right-click tile Rename/Delete) — coverage agent may have done this.
+
+## s6
+- Design_PrintView EN: "To turn the part, click the face that should lie on the bed and then Choose Bottom Face in the legend." → "To print it another way up, click the face that should lie on the bed, then Choose Bottom Face in the legend. The colours then show the new orientation." DE: "Um es anders herum zu drucken, …; die Farben zeigen dann die neue Lage."
+- Design_Measure EN/DE: "Click a point, edge, face or body…" — a body can only be picked in the browser → add "(a body: click it in the browser)" / "(einen Körper im Browser anklicken)".
+- Design_Section EN/DE: "Origin → XZ plane" vs browser label "XZ-plane"; DE probably still "XZ-plane". Also manipulator handles (fix agent decides hide or document).
+- Std_ViewFitAll: add tip "Shortcut: V, then F." / "Tastenkürzel: V, dann F."
+- Design_Parameters tip "Names use letters, digits and _ only" vs Note tip "Umlauts are fine" — depends on fix (umlauts folded on Add).
+
+## s9
+- sketch_finish EN/DE: "or press Esc twice" → "or press Esc (twice if a tool is still active)" / "oder drücke Esc (zweimal, wenn noch ein Werkzeug aktiv ist)".

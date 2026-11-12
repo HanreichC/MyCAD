@@ -199,7 +199,7 @@ private:
 
     QString getToolWidgetText() const override
     {
-        return QString(tr("Symmetry Parameters"));
+        return QString(tr("Mirror Parameters"));  // MyCAD: wie das Werkzeug
     }
 
     void activated() override

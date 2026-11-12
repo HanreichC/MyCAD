@@ -5,6 +5,7 @@
 #include "Theme.h"
 
 #include <Gui/Application.h>
+#include <Gui/Camera.h>
 #include <Gui/Command.h>
 #include <Gui/View3DInventorViewer.h>
 
@@ -193,6 +194,10 @@ void ViewCube::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (hit < 0) {
         return;
     }
-    const char* command = hit == Home ? "Std_ViewIsometric" : Faces[hit].command;
+    if (hit == Home) {  // Iso-Ansicht und ganzes Modell einpassen (in den freien Bereich wie Fit All)
+        QTimer::singleShot(0, viewer, [v = viewer] { v->viewHome(Camera::rotation(Camera::Isometric)); });
+        return;
+    }
+    const char* command = Faces[hit].command;
     QTimer::singleShot(0, [command] { Application::Instance->commandManager().runCommandByName(command); });
 }

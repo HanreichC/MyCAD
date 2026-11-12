@@ -349,6 +349,8 @@ GlassPanel::GlassPanel(QWidget* content, qreal radius, bool textSurface)
 {
     content->setAttribute(Qt::WA_TranslucentBackground);
     content->setAutoFillBackground(false);
+    // Knöpfe als Kapsel wie in #GlassContent, auch wenn der Inhalt einen eigenen Namen trägt (Vergleich, Druckansicht …)
+    content->setProperty("glassPanel", true);
     proxy->setWidget(content);
     // Inhalt nur neu zeichnen, wenn er sich ändert: die Bedienelemente kosteten sonst bei jedem Bild der 3D-Ansicht
     // die meiste Zeit, auch wenn sie gleich blieben

@@ -1447,7 +1447,12 @@ void ViewProviderScribble::Private::tidyWriting()
     if (strength <= 0 || !ScribbleTidy::looksLikeWriting(flat, pixelSize())) {
         return;
     }
-    const auto neat = ScribbleTidy::tidy(flat);
+    ScribbleTidy::Options options;
+    // Rotstift: jede Korrektur bleibt an ihrer Stelle am Modell; Glätten und Geraderücken lassen die Erkennung danach
+    // öfter danebenliegen (4 als A, 1 als I, Ø fehlt; tests/scribble_read_check), also ohne
+    options.inPlace = object()->OnModel.getValue();
+    options.smooth = options.straight = !options.inPlace;
+    const auto neat = ScribbleTidy::tidy(flat, options);
     std::vector<ScribbleTidy::Stroke> done;
     for (size_t i = 0; i < neat.size(); ++i) {
         done.push_back(ScribbleTidy::blend(flat[i], neat[i], strength));

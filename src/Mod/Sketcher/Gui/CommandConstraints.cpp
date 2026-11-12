@@ -3304,23 +3304,19 @@ protected:
                 createArcLengthConstrain(geoId, onSketchPos);
             }
             if (availableConstraint == AvailableConstraint::THIRD) {
-                restartCommand(QT_TRANSLATE_NOOP("Command", "Add radius constraint"));
                 createRadiusDiameterConstrain(geoId, onSketchPos, true);
             }
             if (availableConstraint == AvailableConstraint::FOURTH) {
-                restartCommand(QT_TRANSLATE_NOOP("Command", "Add radius constraint"));
                 createRadiusDiameterConstrain(geoId, onSketchPos, false);
                 availableConstraint = AvailableConstraint::RESET;
             }
         }
         else {
             if (availableConstraint == AvailableConstraint::FIRST) {
-                restartCommand(QT_TRANSLATE_NOOP("Command", "Add radius constraint"));
                 createRadiusDiameterConstrain(geoId, onSketchPos, true);
                 selAllowed = true;
             }
             if (availableConstraint == AvailableConstraint::SECOND) {
-                restartCommand(QT_TRANSLATE_NOOP("Command", "Add radius constraint"));
                 createRadiusDiameterConstrain(geoId, onSketchPos, false);
                 if (!isArcOfCircle(*Obj->getGeometry(geoId))) {
                     //This way if key is pressed again it goes back to FIRST
@@ -3585,26 +3581,29 @@ protected:
             radius = circle->getRadius();
         }
 
-        if (isBsplinePole(geom)) {
+        const bool pole = isBsplinePole(geom);
+        ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher/dimensioning");
+        bool dimensioningDiameter = hGrp->GetBool("DimensioningDiameter", true);
+        bool dimensioningRadius = hGrp->GetBool("DimensioningRadius", true);
+        const bool radial = (firstCstr && dimensioningRadius && !dimensioningDiameter) ||
+            (!firstCstr && !dimensioningRadius && dimensioningDiameter) ||
+            (firstCstr && dimensioningRadius && dimensioningDiameter && !isCircleGeom) ||
+            (!firstCstr && dimensioningRadius && dimensioningDiameter && isCircleGeom);
+        // MyCAD: Rückgängig nennt, was entsteht (vorher immer "Add radius constraint", auch beim Durchmesser)
+        restartCommand(pole || radial ? QT_TRANSLATE_NOOP("Command", "Add radius constraint")
+                                      : QT_TRANSLATE_NOOP("Command", "Add diameter constraint"));
+
+        if (pole) {
             Gui::cmdAppObjectArgs(Obj, "addConstraint(Sketcher.Constraint('Weight',%d,%.8g)) ",
                 GeoId, radius);
         }
+        else if (radial) {
+            Gui::cmdAppObjectArgs(Obj, "addConstraint(Sketcher.Constraint('Radius',%d,%.8g)) ",
+                GeoId, radius);
+        }
         else {
-            ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher/dimensioning");
-            bool dimensioningDiameter = hGrp->GetBool("DimensioningDiameter", true);
-            bool dimensioningRadius = hGrp->GetBool("DimensioningRadius", true);
-
-            if ((firstCstr && dimensioningRadius && !dimensioningDiameter) ||
-                (!firstCstr && !dimensioningRadius && dimensioningDiameter) ||
-                (firstCstr && dimensioningRadius && dimensioningDiameter && !isCircleGeom) ||
-                (!firstCstr && dimensioningRadius && dimensioningDiameter && isCircleGeom) ) {
-                Gui::cmdAppObjectArgs(Obj, "addConstraint(Sketcher.Constraint('Radius',%d,%.8g)) ",
-                    GeoId, radius);
-            }
-            else {
-                Gui::cmdAppObjectArgs(Obj, "addConstraint(Sketcher.Constraint('Diameter',%d,%.8g)) ",
-                    GeoId, radius * 2);
-            }
+            Gui::cmdAppObjectArgs(Obj, "addConstraint(Sketcher.Constraint('Diameter',%d,%.8g)) ",
+                GeoId, radius * 2);
         }
 
         finishDimensionCreation(GeoId, GeoEnum::GeoUndef, onSketchPos);

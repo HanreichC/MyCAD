@@ -200,7 +200,8 @@ private:
 
     QString getToolWidgetText() const override
     {
-        return QString(tr("Translate Parameters"));
+        // MyCAD: wie das Werkzeug; Rechteckige Anordnung (Pattern) startet mit zwei Reihen, Verschieben mit einer
+        return secondNumberOfCopies > 1 ? tr("Pattern Parameters") : tr("Move Parameters");
     }
 
     void onButtonPressed(Base::Vector2d onSketchPos) override

@@ -89,6 +89,8 @@ inline QString T(const QString& english)
 {
     return T(english.toUtf8().constData());
 }
+/// MyCADs deutscher Text zu english, unabhängig von der eingestellten Sprache (leer, wenn keiner da ist; Befehlssuche)
+QString german(const char* english);
 /// Sprache der Oberfläche (Einstellung "Language"): "English" oder "German"; wirkt nach einem Neustart
 QString language();
 void setLanguage(const QString& name);

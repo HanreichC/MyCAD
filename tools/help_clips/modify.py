@@ -146,8 +146,15 @@ def md_type(label, text, ms=110):
         md_ring(field(label))
         # Cursor blinkt nicht: sonst ist jedes Bild anders und der Clip zieht sich
         acts = [lambda: (QtWidgets.QApplication.setCursorFlashTime(0), w.setFocus(), w.selectAll())]
-        return acts + [lambda c=c: QtTest.QTest.keyClicks(w, c) for c in text]
-    md_later(make, len(text) + 1, ms)
+        # zuletzt das Feld verlassen (wie Tab): es zeigt den Wert dann mit Einheit ("5.00 mm"), bevor OK kommt
+        return acts + [lambda c=c: QtTest.QTest.keyClicks(w, c) for c in text] + [md_leave_field]
+    md_later(make, len(text) + 2, ms)
+
+
+def md_leave_field():
+    w = QtWidgets.QApplication.focusWidget()
+    if w:
+        w.clearFocus()
 
 
 def md_choose(label, text):
@@ -161,6 +168,8 @@ def md_choose(label, text):
 
 def md_ok():
     def fn():
+        vp = md_view().viewport()  # Maus weg vom Modell, wie auf dem Weg zum OK: sonst bleibt die Vorauswahl stehen
+        md_hover(QtCore.QPoint(int(vp.width() * 0.35), int(vp.height() * 0.85)))
         b = [b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "OK"]
         if b:
             md_ring(b[0])
@@ -194,15 +203,19 @@ def md_frame(left=0.0, size=1.5, view_="iso", include=()):
     der Bildbreite nach links gerückt, damit das Panel rechts nichts verdeckt"""
     def fn():
         from pivy import coin
-        bodies = [o for o in doc().Objects if o.TypeId == "Design::Body" and o.Visibility]
-        bb = bodies[0].Shape.BoundBox
-        for o in bodies[1:]:
-            bb.add(o.Shape.BoundBox)
-        for p in include:  # Platz für das, was erst noch entsteht (Ziel einer Verschiebung)
+        bb = App.BoundBox()
+        for o in doc().Objects:
+            if o.TypeId == "Design::Body" and o.Visibility:
+                bb.add(o.Shape.BoundBox)
+        for p in include:  # Platz für das, was erst noch entsteht (Ziel einer Verschiebung, Extrusion)
             bb.add(p)
         v = Gui.ActiveDocument.ActiveView
         cam = v.getCameraNode()
-        rot = {"iso": coin.SbRotation(0.424708, 0.17592, 0.339851, 0.820473), "front": coin.SbRotation(coin.SbVec3f(1, 0, 0), math.pi / 2)}[view_]
+        if view_ == "high":  # steiler als iso: auch die Kanten hinten und links sind zu sehen
+            z = V(1, -1, 2.4).normalize(); x = V(0, 0, 1).cross(z).normalize(); y = z.cross(x)
+            rot = coin.SbRotation(*App.Rotation(App.Matrix(x.x, y.x, z.x, 0, x.y, y.y, z.y, 0, x.z, y.z, z.z, 0, 0, 0, 0, 1)).Q)
+        else:
+            rot = {"iso": coin.SbRotation(0.424708, 0.17592, 0.339851, 0.820473), "front": coin.SbRotation(coin.SbVec3f(1, 0, 0), math.pi / 2)}[view_]
         cam.orientation.setValue(rot)
         vp = md_view().viewport()
         h = size * bb.DiagonalLength
@@ -217,10 +230,10 @@ def md_frame(left=0.0, size=1.5, view_="iso", include=()):
     return fn
 
 
-def md_final(size=1.3):
+def md_final(size=1.3, view_="iso"):
     """Schlussbild: Ergebnis groß in der Mitte des Clips. ViewFit (shot in help_images) mittet im ganzen Fenster, der Clip
     lässt links die Seitenleiste weg (306 von 1500 px): dort stünde das Modell zu weit links"""
-    step("final", lambda: (Gui.Selection.clearSelection(), md_frame(-0.1 * harness._rec.get("left", 306) / 306, size)()))
+    step("final", lambda: (Gui.Selection.clearSelection(), md_frame(-0.1 * harness._rec.get("left", 306) / 306, size, view_)()))
 
 
 def md_check(name):
@@ -241,6 +254,8 @@ def md_body(key, make, left=0.0, size=1.5, include=()):
         md_frame(left, size, include=include)()
     step("setup", fn)
     wait()
+    # der Clip beginnt erst, wenn das Modell dasteht (kein leeres Gitter, kein Kamerasprung)
+    step("clip starts", lambda: harness._rec and (harness._rec["frames"].clear(), harness._record_frame()))
 
 
 def md_face(pred):
@@ -316,7 +331,7 @@ def md_split_face():
         st["l"] = sketch([Part.LineSegment(V(30, -8, 0), V(30, 48, 0))], z=20, name="SplitLine")[0]
     md_body(None, make)
     md_pick("b", top, at=lambda o: V(15, 20, 20))
-    md_pick("l", "Edge1", add=True, at=lambda o: V(30, -5, 20))
+    md_pick("l", "Edge1", add=True, at=lambda o: V(30, 46, 20))  # das Stück hinter dem Quader: vorn läge es über seiner Vorderseite
     md_use("Design_SplitFace")
     wait(2)
     md_check("Design_SplitFace")
@@ -374,8 +389,20 @@ def md_combine():
     md_check("Design_Combine")
 
 
+def md_split_lift():
+    """nach dem Teilen: Ebene aus, oberes Stück etwas anheben, damit man die zwei Teile sieht"""
+    for o in doc().Objects:
+        if "Plane" in o.TypeId and o.TypeId != "App::Plane":
+            o.Visibility = False
+    b = max([o for o in doc().Objects if o.TypeId == "Design::Body"], key=lambda o: o.Shape.BoundBox.ZMin)
+    z = b.Shape.BoundBox.ZMin
+    b.Placement.Base.z += 8
+    doc().recompute()
+    L("  lift %s: zmin %.1f -> %.1f" % (b.Label, z, b.Shape.BoundBox.ZMin))
+
+
 def md_split_body():
-    """den Körper im Browser wählen (ein Klick in der Ansicht wählt nur eine Fläche), dann die Ebene in der Ansicht"""
+    """den Körper anklicken (eine Fläche reicht), dann die Ebene in der Ansicht"""
     step("setup", lambda: st.__setitem__("b", box(-30, -20, 30, 20, 20)))
     step("plane", lambda: select(st["b"], top(st["b"])))
     step("offset", lambda: Gui.runCommand("Design_OffsetPlane"))
@@ -385,20 +412,26 @@ def md_split_body():
     step("ok", accept)
     wait()
     step("frame", lambda: (Gui.Selection.clearSelection(), md_frame(0.0, 1.3)()))
-    md_fresh(0)
+    md_fresh()
     wait()
-    md_tree("Box")
+    md_pick("b")
     md_pick(lambda: [o for o in doc().Objects if "Plane" in o.TypeId and o.TypeId != "App::Plane"][-1], add=True,
             at=lambda o: V(-28, -24, 10))
     md_use("Design_SplitBody")
     wait(2)
     md_check("Design_SplitBody")
-    md_pick(lambda: last("Design::Body"), lambda o: top(o), at=lambda o: md_where(o, top(o)))
+    step("lift", md_split_lift)
+    wait()
 
 
 # --- Verschieben, Ausrichten, Skalieren -----------------------------------------------------------------------------
 def md_move():
-    md_body("b", lambda: box(0, 0, 40, 20, 10), size=1.4, include=(V(85, 45, 10),))
+    def make():  # Geist am Ausgangsort zum Vergleich: durchscheinend, nicht anklickbar, knapp kleiner (kein Flimmern)
+        g = box(0.2, 0.2, 39.8, 19.8, 9.6, z=0.2, name="Original")
+        g.ViewObject.Transparency = 75
+        g.ViewObject.Selectable = False
+        return box(0, 0, 40, 20, 10)
+    md_body("b", make, size=1.4, include=(V(85, 45, 10),))
     md_pick("b", top)
     md_use("Design_Move")
     md_type("X distance", "40")
@@ -469,15 +502,29 @@ def md_delete():
     md_check("Design_Delete")
 
 
-def md_scenario(article, build):
-    scenario(article, lambda: (build(), md_final()), view="none", fixed=True)
+def md_extrude():
+    """Rohr: nur den Ring zwischen den beiden Kreisen anklicken, Extrudieren, Länge tippen (die Vorschau wächst mit)"""
+    md_body("sp", lambda: sketch([circle(0, 0, 20), circle(0, 0, 12)])[1], size=1.6, include=(V(-20, -20, 0), V(20, 20, 30)))
+    md_pick("sp", ring_face, at=lambda o: V(11.3, -11.3, 0))
+    md_use("Design_Extrude")
+    md_type("Distance", "30")
+    md_dump("Design_Extrude")
+    md_ok()
+    md_check("Design_Extrude")
 
 
-md_scenario("Design_PressPull", md_presspull)
+def md_scenario(article, build, view_="iso", final=True):
+    """final=False: die Kamera bleibt bis zum Schluss, wie sie ist (kein Sprung im letzten Bild)"""
+    scenario(article, lambda: (build(), final and md_final(view_=view_)), view="none", fixed=True)
+
+
+md_scenario("Design_Extrude", md_extrude)
+md_scenario("Design_PressPull", md_presspull, final=False)
 md_scenario("Design_ReplaceFace", md_replace)
 md_scenario("Design_SplitFace", md_split_face)
 md_scenario("Design_RemoveFace", md_remove_face)
-md_scenario("Design_Chamfer", lambda: md_dressup("Design_Chamfer", top, "Distance", "4"))
+md_scenario("Design_Fillet", lambda: md_dressup("Design_Fillet", top, "Radius", "5"), view_="high")
+md_scenario("Design_Chamfer", lambda: md_dressup("Design_Chamfer", top, "Distance", "4"), view_="high")
 md_scenario("Design_Shell", lambda: md_dressup("Design_Shell", top, "Thickness", "3"))
 md_scenario("Design_Draft", lambda: md_dressup("Design_Draft", FRONT, "Angle", "10", adds=(RIGHT,)))
 md_scenario("Design_Combine", md_combine)

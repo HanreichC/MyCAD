@@ -147,6 +147,18 @@ def use(cmd):
     Gui.runCommand(cmd)
 
 
+def panel_fit():
+    """ViewFit links neben dem Panel, das das Werkzeug gleich öffnet: Fit All mittet im freien Teil der Ansicht
+    ("freeArea", von der Shell bei jedem Layout gesetzt), das Panel ist aber noch zu und zählt nicht mit.
+    ponytail: Panelkante fest bei 75 % der Ansicht (Panel ~340 px in 1500 px Fensterbreite)"""
+    gv = Gui.ActiveDocument.ActiveView.graphicsView()
+    free = gv.property("freeArea") or QtCore.QRectF(0, 0, 1, 1)
+    if free.right() > 0.75:
+        free.setRight(0.75)
+        gv.setProperty("freeArea", free)
+    Gui.SendMsgToActiveView("ViewFit")
+
+
 def feature(cmd, *setup, wait_before=1):
     """Werkzeug-Befehl mit offenem Dialog: Felder setzen, OK"""
     step(cmd, lambda: use(cmd))
@@ -514,4 +526,5 @@ for name in sorted(os.listdir(CLIPS)) if os.path.isdir(CLIPS) else []:
 for article, args in SCENARIOS.items():
     if not ONLY or article in ONLY:
         _expand(article, *args)
+harness.START_PAGE = True  # kein leeres Design vorweg: es stünde in jedem Clip als "Unnamed" über dem des Clips im Browser
 run(steps, delay=900)

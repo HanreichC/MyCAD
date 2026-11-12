@@ -33,6 +33,12 @@ A design is made of **bodies** in **components**. The root component is the desi
 
   ![Project](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_project.gif)
 
+- The **Sketch Palette** on the right: **Look At** turns the view straight onto the sketch again, **Slice** cuts away
+  what lies in front of the sketch plane, **Grid** and **Snap** switch the grid and snapping, **Construction** draws
+  helper lines, and the blue **Finish Sketch** leaves the sketch.
+
+  ![Sketch Palette](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_palette.gif)
+
 The other sketch tools:
 
 **Draw**
@@ -195,6 +201,15 @@ radius. Type a number or formula, press **Enter**. If the size is a parameter, t
 note it's written in). A formula can't be overwritten here; change the parameter instead.
 
 ![Change a size on the model](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_dimensions.gif)
+
+## Typing numbers
+
+Every size field takes a number (`12,5` and `12.5` are the same, millimetres unless you say otherwise), a unit
+(`1 in`, `3 cm`), a calculation (`2 * 7,5`) or a parameter name (`Width / 2`, then **Enter**: the field stays linked).
+The model follows while you type; **Enter** after a plain number is the same as OK. Inside brackets a comma separates
+values, so write `2 * (1.5 + 1)` with a point there.
+
+![Typing numbers](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/numbers.gif)
 
 ## Command search
 

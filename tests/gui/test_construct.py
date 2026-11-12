@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Konstruktion und Prüfen am Quader 60x40x15: Ebene durch drei Ecken, Achse durch zwei Ecken, Punkt auf einer Ecke,
-Mittelebene zwischen Ober- und Unterseite, Messen (Fläche, Abstand, Winkel), Schnittansicht an/aus."""
+Mittelebene zwischen Ober- und Unterseite, Messen (Fläche, Abstand, Winkel), Schnittansicht an/aus.
+Achse aus einer Zylinderfläche abseits des Ursprungs, versetzte Ebene mittig über der Fläche und so groß wie der Körper,
+Abstand und Winkel per Doppelklick im Browser ändern (Abbrechen stellt wieder her)."""
 from harness import *
+import math
 
 
 def box():
@@ -31,6 +34,52 @@ def placement(label):
     o = datum(label); p = o.Placement
     return "%s mode=%s base=(%.1f, %.1f, %.1f) z-axis=%s" % (label, o.MapMode, p.Base.x, p.Base.y, p.Base.z,
                                                             tuple(round(c, 2) for c in p.Rotation.multVec(App.Vector(0, 0, 1))))
+
+
+def newest(type_id):
+    return [o for o in doc().Objects if o.TypeId == type_id][-1]
+
+
+def near(v, x, y, z):
+    return abs(v.x - x) < 1e-6 and abs(v.y - y) < 1e-6 and abs(v.z - z) < 1e-6
+
+
+def cyl_axis():
+    cyl = body("Cyl")
+    Gui.Selection.clearSelection()
+    for i, f in enumerate(cyl.Shape.Faces):
+        if f.Surface.__class__.__name__ == "Cylinder":
+            Gui.Selection.addSelection(doc().Name, cyl.Name, "Face%d" % (i + 1))
+    Gui.runCommand("Design_Axis")
+
+
+def axis_ok():
+    a = newest("PartDesign::Line"); p = a.Placement
+    d = p.Rotation.multVec(App.Vector(0, 0, 1))
+    check("axis of a cylindrical face runs through its centre line", a.isValid() and abs(p.Base.x - 100) < 1e-6
+          and abs(p.Base.y - 20) < 1e-6 and abs(abs(d.z) - 1) < 1e-6, "%s valid=%s base=%s dir=%s" % (a.MapMode, a.isValid(), p.Base, d))
+    check("axes are opaque, planes translucent", a.ViewObject.Transparency == 0 and datum("Plane").ViewObject.Transparency == 80)
+
+
+def offset_ok(z):
+    p = newest("PartDesign::Plane")
+    check("offset plane centred over the face, sized from its body", near(p.Placement.Base, 30, 20, z) and abs(p.Length - 72) < 1e-6,
+          "base=%s length=%s" % (p.Placement.Base, p.Length))
+
+
+def browser_dclick(obj):
+    t = visible(QtWidgets.QTreeWidget)[0]; t.expandAll()
+    it = t.findItems(obj.Label, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive)[-1]
+    t.scrollToItem(it); QtWidgets.QApplication.processEvents()
+    QtTest.QTest.mouseDClick(t.viewport(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, t.visualItemRect(it).center())
+
+
+def spin_text():
+    return [b.text() for b in visible(QtWidgets.QAbstractSpinBox)]
+
+
+def cancel():
+    [b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "Cancel"][0].click()
 
 
 def measured():
@@ -70,6 +119,23 @@ run([
                              and abs(e.Vertexes[0].Y - e.Vertexes[1].Y) < 1e-6])),
     ("angle plane", lambda: Gui.runCommand("Design_AnglePlane")), ("ok angle", ok),
     ("angle?", lambda: L(placement("Plane001") + " (Normale ~(0, ±0.71, 0.71), durch y=0 z=15)")),
+    ("angle centred", lambda: check("plane at angle centred on the edge", near(datum("Plane001").Placement.Base, 30, 0, 15),
+                                    str(datum("Plane001").Placement.Base))),
+    ("cylinder", lambda: make_body([Part.Circle(App.Vector(100, 20, 0), App.Vector(0, 0, 1), 10)], 0, 30, "Cyl")),
+    ("cyl axis", cyl_axis), ("cyl axis?", axis_ok),
+    ("top", lambda: select(faces(15))), ("offset", lambda: Gui.runCommand("Design_OffsetPlane")), ("ok offset", ok),
+    ("offset?", lambda: offset_ok(25)),
+    ("edit offset", lambda: browser_dclick(newest("PartDesign::Plane"))),
+    ("edit open", lambda: check("double-click reopens Offset Plane with its distance", "10.00 mm" in spin_text(), str(spin_text()))),
+    ("type 5", lambda: type_into(0, "5")), ("ok edit", ok), ("edited", lambda: offset_ok(20)),
+    ("edit again", lambda: browser_dclick(newest("PartDesign::Plane"))), ("type 7", lambda: type_into(0, "7")),
+    ("cancel edit", cancel), ("restored", lambda: offset_ok(20)),
+    ("edit angle", lambda: browser_dclick(datum("Plane001"))),
+    ("angle open", lambda: check("double-click reopens Plane at Angle with its angle", any(t.startswith("45") for t in spin_text()),
+                                 str(spin_text()))),
+    ("type 30", lambda: type_into(0, "30")), ("cancel angle", cancel),
+    ("angle restored", lambda: check("cancel restores the angle", abs(datum("Plane001").AttachmentOffset.Rotation.Angle - math.pi / 4) < 1e-6,
+                                     str(datum("Plane001").AttachmentOffset))),
     ("measure", lambda: click(button("Design_Measure"))),
     ("top face", lambda: select(faces(15))), ("m1", lambda: L("measure 1: %s" % measured())),
     ("two faces", lambda: select(faces(15) + faces(0))), ("m2", lambda: L("measure 2: %s" % measured())),

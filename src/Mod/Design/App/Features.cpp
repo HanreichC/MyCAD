@@ -7,6 +7,7 @@
 #include <App/DocumentObjectGroup.h>
 #include <App/Part.h>
 #include <App/ObjectIdentifier.h>
+#include <App/ExpressionParser.h>
 #include <App/Origin.h>
 #include <App/GeoFeatureGroupExtension.h>
 #include <App/ElementNamingUtils.h>
@@ -47,6 +48,9 @@
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_DataMapOfShapeInteger.hxx>
 #include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+#include <BRepAdaptor_Curve2d.hxx>
+#include <BRepGProp_Face.hxx>
 #include <set>
 #include <TopoDS_Iterator.hxx>
 #include <gp_Ax1.hxx>
@@ -906,8 +910,138 @@ std::vector<std::string> Design::detachFromBodies(Feature* feature)
     return orphans;
 }
 
+namespace
+{
+void eraseAt(App::PropertyLinkList& list, size_t i)
+{
+    auto values = list.getValues();
+    if (i < values.size()) {
+        values.erase(values.begin() + long(i));
+        list.setValues(values);
+    }
+}
+
+/// Body löschen: Schritte nur auf ihm gehen mit, Schritte auf mehreren Bodies verlieren ihn; Bodies, die es nur durch
+/// ihn gibt (Teile seiner Teilung, Spiegel- und Musterkopien), gehen auch. Skizzen, die nur die entfernten Schritte
+/// gebraucht haben oder auf ihm lagen, gehen mit.
+void removeBody(Design::Body* body)
+{
+    using namespace Design;
+    App::Document* doc = body->getDocument();
+    const std::string name = body->getNameInDocument();
+    static const Base::Type sketchType = Base::Type::fromName("Sketcher::SketchObject");
+    std::vector<std::string> sketches;
+    const auto remember = [&](App::DocumentObject* obj) {  // benutzte und darauf gezeichnete Skizzen
+        auto links = obj->getOutList();
+        const auto& in = obj->getInList();
+        links.insert(links.end(), in.begin(), in.end());
+        for (auto o : links) {
+            if (auto p = freecad_cast<Profiles*>(o)) {
+                o = p->Sketch.getValue();
+            }
+            if (o && o->isDerivedFrom(sketchType)) {
+                sketches.emplace_back(o->getNameInDocument());
+            }
+        }
+    };
+    const auto remove = [&](Feature* f) {
+        remember(f);
+        removeFromTimeline(f);
+    };
+    remember(body);
+    std::vector<std::string> steps;
+    for (auto obj : timeline(doc)) {
+        steps.emplace_back(obj->getNameInDocument());
+    }
+    // von hinten: spätere Schritte bauen auf früheren auf; der erzeugende Schritt nimmt den Body mit
+    for (auto it = steps.rbegin(); it != steps.rend() && doc->getObject(name.c_str()); ++it) {
+        auto f = freecad_cast<Feature*>(doc->getObject(it->c_str()));
+        if (!f) {
+            continue;
+        }
+        App::PropertyLinkList *sources = nullptr, *states = nullptr;
+        if (auto m = freecad_cast<Mirror*>(f)) {
+            sources = &m->SourceBodies;
+            states = &m->SourceFeatures;
+        }
+        else if (auto p = freecad_cast<Pattern*>(f)) {
+            sources = &p->SourceBodies;
+            states = &p->SourceFeatures;
+        }
+        auto combine = freecad_cast<Combine*>(f);
+        if (combine) {
+            const auto& tools = combine->ToolBodies.getValues();
+            if (const size_t t = std::ranges::find(tools, body) - tools.begin(); t < tools.size()) {
+                if (tools.size() == 1) {
+                    remove(f);
+                    continue;
+                }
+                eraseAt(combine->ToolBodies, t);
+                eraseAt(combine->ToolFeatures, t);
+            }
+        }
+        const auto bodies = f->Bodies.getValues();
+        if (sources) {  // Spiegeln, Muster: Bodies[s] ist die Kopie von SourceBodies[s]
+            const auto& src = sources->getValues();
+            const size_t s = std::ranges::find(src, body) - src.begin();
+            if (s < src.size() && s < bodies.size()) {
+                if (auto copy = freecad_cast<Body*>(bodies[s])) {
+                    removeBody(copy);
+                }
+                continue;
+            }
+        }
+        const size_t i = std::ranges::find(bodies, body) - bodies.begin();
+        if (i >= bodies.size()) {
+            continue;
+        }
+        if (i == 0 && freecad_cast<Split*>(f)) {
+            for (size_t j = 1; j < bodies.size(); ++j) {
+                if (auto piece = freecad_cast<Body*>(bodies[j])) {
+                    removeBody(piece);
+                }
+            }
+        }
+        if (f->Bodies.getSize() == 1) {
+            remove(f);
+            continue;
+        }
+        eraseAt(f->Bodies, i);
+        eraseAt(f->BaseFeatures, i);
+        if (sources) {
+            eraseAt(*sources, i);
+            eraseAt(*states, i);
+        }
+        if (auto imported = freecad_cast<Import*>(f)) {
+            auto parts = Import::pieces(imported->Imported.getShape());
+            if (i < parts.size()) {
+                parts.erase(parts.begin() + long(i));
+                imported->Imported.setValue(Part::TopoShape().makeElementCompound(parts));
+            }
+        }
+        // ponytail: ein Teil einer Teilung in 3+ Teile: die Teile dahinter rücken auf (Split ordnet nach Reihenfolge zu)
+    }
+    if (doc->getObject(name.c_str())) {
+        doc->removeObject(name.c_str());
+    }
+    const auto used = [](App::DocumentObject* o) {
+        return o && std::ranges::any_of(o->getInList(), [](auto u) { return u->template isDerivedFrom<Feature>(); });
+    };
+    for (const auto& n : sketches) {
+        auto sketch = doc->getObject(n.c_str());
+        if (sketch && !used(sketch) && !used(Profiles::forSketch(sketch))) {
+            removeFromTimeline(sketch);
+        }
+    }
+}
+}  // namespace
+
 void Design::removeFromTimeline(App::DocumentObject* obj)
 {
+    if (auto body = freecad_cast<Body*>(obj)) {
+        removeBody(body);
+        return;
+    }
     App::Document* doc = obj->getDocument();
     if (auto prop = timelineProperty(doc, false)) {
         auto items = prop->getValues();
@@ -1945,7 +2079,7 @@ std::vector<Design::DrivingDimension> Design::drivingDimensions(Body* body, cons
         }
         sketchDims(extrude->Profile);
         if (std::abs(extrude->TaperAngle.getValue()) > 1e-9) {
-            add(extrude, "TaperAngle", "Taper Angle");
+            add(extrude, "TaperAngle", "Taper angle");
         }
         if (extrude->Thin.getValue()) {
             add(extrude, "Thickness", "Thickness");
@@ -1972,7 +2106,7 @@ std::vector<Design::DrivingDimension> Design::drivingDimensions(Body* body, cons
     }
     else if (freecad_cast<Fillet*>(creator)) {
         add(creator, "Size", "Radius");
-        add(creator, "RadiusEnd", "Radius End");
+        add(creator, "RadiusEnd", "Radius end");
     }
     else if (freecad_cast<Chamfer*>(creator)) {
         add(creator, "Size", "Distance");
@@ -1991,6 +2125,34 @@ std::vector<Design::DrivingDimension> Design::drivingDimensions(Body* body, cons
     }
     return out;
 }
+
+namespace
+{
+std::set<App::DocumentObject*> failedObjects(App::Document* doc)
+{
+    std::set<App::DocumentObject*> out;
+    for (auto obj : doc->getObjects()) {
+        if (obj->isError()) {
+            out.insert(obj);
+        }
+    }
+    return out;
+}
+
+/// Neu rechnen; false mit der Meldung des ersten Objekts, das dabei fehlschlägt (vorher schon kaputte zählen nicht).
+/// Der Aufrufer bricht dann seine Transaktion ab und rechnet neu.
+bool recomputeClean(App::Document* doc, const std::set<App::DocumentObject*>& before, std::string& error)
+{
+    doc->recompute();
+    for (auto obj : failedObjects(doc)) {
+        if (!before.count(obj)) {
+            error = obj->getStatusString();
+            return false;
+        }
+    }
+    return true;
+}
+}  // namespace
 
 bool Design::setDrivingDimension(App::DocumentObject* owner, const std::string& path, double value, std::string& error)
 {
@@ -2013,12 +2175,12 @@ bool Design::setDrivingDimension(App::DocumentObject* owner, const std::string& 
             return false;
         }
         const bool angle = sk->Constraints.getValues()[i]->Type == Sketcher::Angle;
+        const auto before = failedObjects(sk->getDocument());
         if (sk->setDatum(i, angle ? value * M_PI / 180 : value) != Sketcher::SketchSolveStatus::Success) {
             error = "The sketch cannot take this value";
             return false;
         }
-        owner->getDocument()->recompute();
-        return true;
+        return recomputeClean(owner->getDocument(), before, error);
     }
     auto q = owner ? freecad_cast<App::PropertyQuantity*>(owner->getPropertyByName(path.c_str())) : nullptr;
     if (!q) {
@@ -2029,6 +2191,7 @@ bool Design::setDrivingDimension(App::DocumentObject* owner, const std::string& 
     if (auto param = boundParameter(owner, id)) {  // am Parameter ändern, die Formel bleibt
         return setDrivingDimension(static_cast<App::DocumentObject*>(param->getContainer()), param->getName(), value, error);
     }
+    const auto before = failedObjects(owner->getDocument());
     if (const auto info = owner->getExpression(id); info.expression) {
         // Parameter, dessen Wert eine Zahl ist: Zahl ersetzen; sonst gehört der Wert zu einer Formel
         if (!freecad_cast<App::VarSet*>(owner) || info.expression->getDeps().size() > 0) {
@@ -2042,8 +2205,7 @@ bool Design::setDrivingDimension(App::DocumentObject* owner, const std::string& 
     else {
         q->setValue(value);
     }
-    owner->getDocument()->recompute();
-    return true;
+    return recomputeClean(owner->getDocument(), before, error);
 }
 
 
@@ -2116,13 +2278,18 @@ std::string Design::fromParameterExpression(App::Document* doc, const std::strin
     return out;
 }
 
-namespace
+void Design::setParameterExpression(App::DocumentObject* set, App::Property* prop, const std::string& text)
 {
-bool syncingNotes = false;  ///< Notiz schreibt Parameter: die Gegenrichtung (parameterChanged) schweigt solange
+    // Dezimalkomma wie in den Rechenzeilen der Notiz: 2,5 -> 2.5
+    const std::string expression = std::regex_replace(text, std::regex(R"((\d),(\d))"), "$1.$2");
+    std::shared_ptr<App::Expression> expr(App::Expression::parse(set, toParameterExpression(set->getDocument(), expression)).release());
+    // Erst rechnen: ein unbekannter Name ("abc") ließe sonst das Set bei jedem Recompute scheitern, und kein
+    // Parameter bekäme mehr seinen Wert
+    App::anyToQuantity(expr->getValueAsAny());
+    set->setExpression(App::ObjectIdentifier(*prop), expr);
+}
 
-/// Wird der Parameter noch in einer Formel benutzt? Namen der Objekte, die ihn brauchen (Verweise lauten immer
-/// "Parameters.Name", siehe toParameterExpression)
-std::vector<std::string> parameterUsers(App::DocumentObject* set, const std::string& id)
+std::vector<std::string> Design::parameterUsers(App::DocumentObject* set, const std::string& id)
 {
     std::vector<std::string> users;
     const std::regex reference(R"(\b)" + std::string(set->getNameInDocument()) + R"(\.)" + id + R"(\b)");
@@ -2136,6 +2303,10 @@ std::vector<std::string> parameterUsers(App::DocumentObject* set, const std::str
     }
     return users;
 }
+
+namespace
+{
+bool syncingNotes = false;  ///< Notiz schreibt Parameter: die Gegenrichtung (parameterChanged) schweigt solange
 
 std::vector<std::string> splitLines(const std::string& text)
 {
@@ -2224,7 +2395,9 @@ void Design::syncNoteParameters(Note* note)
             continue;
         }
         App::Property* prop = set->getPropertyByName(line.id.c_str());
-        if (prop && (!prop->getGroup() || std::strcmp(prop->getGroup(), "Parameters") != 0)) {
+        // Einheiten und Konstanten ("mm", "h", "pi") gehen nicht: "Parameters.mm" ließe sich nicht mehr lesen
+        if ((prop && (!prop->getGroup() || std::strcmp(prop->getGroup(), "Parameters") != 0))
+            || !App::ExpressionParser::isTokenAnIndentifier(line.id)) {
             errors[i] = "Choose another name";
             continue;
         }
@@ -2232,12 +2405,8 @@ void Design::syncNoteParameters(Note* note)
         if (created) {
             prop = set->addDynamicProperty("App::PropertyQuantity", line.id.c_str(), "Parameters", line.name.c_str());
         }
-        // Dezimalkomma wie in den Rechenzeilen der Notiz: 2,5 -> 2.5
-        const std::string expression = std::regex_replace(line.expression, std::regex(R"((\d),(\d))"), "$1.$2");
         try {
-            set->setExpression(App::ObjectIdentifier(*prop),
-                               std::shared_ptr<App::Expression>(
-                                   App::Expression::parse(set, toParameterExpression(doc, expression)).release()));
+            setParameterExpression(set, prop, line.expression);
             defined.push_back(line.id);
         }
         catch (const Base::Exception& e) {
@@ -3149,7 +3318,8 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
     }
     const double size = Size.getValue();
     if (size < Precision::Confusion()) {
-        return new App::DocumentObjectExecReturn("Size must be greater than zero");
+        return new App::DocumentObjectExecReturn(fillet ? "Radius must be greater than zero"
+                                                        : "Distance must be greater than zero");
     }
     const char* failed = fillet ? "Fillet failed: radius too large?" : "Chamfer failed: distance too large?";
     Part::TopoShape res(0, getDocument()->getStringHasher());
@@ -3180,6 +3350,31 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
         res = Part::TopoShape();
     }
     if (res.isNull() || !res.isValid()) {
+        ErrorElements.setValues(Edges.getValues());
+        // Kante zwischen tangential anschließenden Flächen (Deckfläche eines schon gerundeten Quaders): dort ist nichts
+        // zu runden, kein Wert ginge
+        TopTools_IndexedDataMapOfShapeListOfShape facesOf;
+        TopExp::MapShapesAndAncestors(shape.getShape(), TopAbs_EDGE, TopAbs_FACE, facesOf);
+        for (const auto& e : edges) {
+            const TopoDS_Edge& edge = TopoDS::Edge(e.getShape());
+            const TopTools_ListOfShape* faces = facesOf.Seek(edge);
+            if (!faces || faces->Extent() != 2) {
+                continue;
+            }
+            gp_Vec normals[2];
+            int i = 0;
+            for (TopTools_ListIteratorOfListOfShape f(*faces); f.More(); f.Next()) {
+                const TopoDS_Face& face = TopoDS::Face(f.Value());
+                BRepAdaptor_Curve2d curve(edge, face);
+                const gp_Pnt2d uv = curve.Value((curve.FirstParameter() + curve.LastParameter()) / 2);
+                gp_Pnt p;
+                BRepGProp_Face(face).Normal(uv.X(), uv.Y(), p, normals[i++]);
+            }
+            if (normals[0].Magnitude() > 1e-9 && normals[1].Magnitude() > 1e-9 && normals[0].Angle(normals[1]) < 1e-3) {
+                return new App::DocumentObjectExecReturn(
+                    "Some edges are already smooth (the faces meet tangentially); select only sharp edges");
+            }
+        }
         // Vorschlag: der größte Wert, der für diese Kanten noch geht (konstanter Radius bzw. gleicher Abstand)
         const double best = largestWorking([&](double s) {
             try {
@@ -3201,7 +3396,6 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
             label << (fillet ? "Use radius " : "Use distance ") << best << " mm";
             suggest(label.str(), "Size", best);
         }
-        ErrorElements.setValues(Edges.getValues());
         return new App::DocumentObjectExecReturn(failed);
     }
     setResults({res});
@@ -3560,7 +3754,7 @@ std::vector<Base::Matrix4D> Pattern::transforms(std::string& error) const
     else if (Type.getValue() == 1) {
         const long n = Count1.getValue();
         const double total = Angle.getValue();
-        const bool full = std::abs(total - 360.0) < Precision::Angular();
+        const bool full = std::abs(std::abs(total) - 360.0) < Precision::Angular();  // negativ: andersherum
         const double step = n > 1 ? (full ? total / n : total / (n - 1)) : 0;
         Base::Vector3d axis, center;
         axis[Axis.getValue()] = 1;
@@ -3611,6 +3805,10 @@ std::vector<Base::Matrix4D> Pattern::transforms(std::string& error) const
         gp_Pnt p0;
         gp_Vec t0;
         curve.D1(curve.FirstParameter(), p0, t0);
+        if (Spacing1.getValue() < 0) {  // im Rechteckmuster dreht ein negativer Abstand die Richtung um, hier geht das nicht
+            error = "The spacing along a path must be greater than zero";
+            return {};
+        }
         for (long k = 1; k < Count1.getValue(); ++k) {
             const double s = k * Spacing1.getValue();
             if (s > length + Precision::Confusion()) {
@@ -4638,7 +4836,9 @@ bool Primitive::makeTool(Part::TopoShape& tool, std::string& error) const
     }
     gp_Trsf place, offset;
     place.SetDisplacement(gp_Ax3(gp::XOY()), ax);
-    offset.SetTranslation(gp_Vec(PositionX.getValue(), PositionY.getValue(), 0));
+    // alle stehen auf der Ebene wie Quader und Zylinder: Kugel um r, Torus und Spirale um den Rohrradius angehoben
+    const long type = Type.getValue();
+    offset.SetTranslation(gp_Vec(PositionX.getValue(), PositionY.getValue(), type == 2 ? r : type > 2 ? r2 : 0));
     tool = Part::TopoShape(BRepBuilderAPI_Transform(shape, place * offset, Standard_True).Shape());
     return true;
 }
@@ -4822,6 +5022,8 @@ Thread::Thread()
     ADD_PROPERTY_TYPE(LeftHanded, (false), "Parameters", App::Prop_None, "Left-handed thread");
     ADD_PROPERTY_TYPE(ForPrinting, (false), "Parameters", App::Prop_None,
                       "Clearance for 3D printing; warns when the pitch is too fine to print");
+    ADD_PROPERTY_TYPE(AutoSize, (""), "Thread", App::PropertyType(App::Prop_Output | App::Prop_Hidden | App::Prop_Transient),
+                      "Size that Auto picked, e.g. M12");
     Size.setStatus(App::Property::Hidden, true);
     updateSizes();
 }
@@ -4908,14 +5110,19 @@ App::DocumentObjectExecReturn* Thread::compute()
 
     // Steigung: aus der Norm (Auto: Größe nach dem Durchmesser der Fläche) oder frei
     double p = Pitch.getValue();
+    std::string autoSize;
     if (auto table = threadTable(Standard.getValue())) {
         const PartDesign::Hole::ThreadDescription* t = threadSize(Standard.getValue(), ThreadSize.getValueAsString());
         if (!t) {  // Auto: Welle nach Nenndurchmesser, Bohrung nach Kerndurchmesser
             t = &*std::ranges::min_element(*table, {}, [r, external](const auto& s) {
                 return std::abs((external ? s.diameter : s.diameter - 1.082532 * s.pitch) - 2 * r);
             });
+            autoSize = t->designation;
         }
         p = t->pitch;
+    }
+    if (autoSize != AutoSize.getValue()) {
+        AutoSize.setValue(autoSize);  // der Dialog zeigt "Auto (M12)"
     }
     // Länge der Fläche entlang der Achse
     double t0 = 1e100, t1 = -1e100;
@@ -4926,7 +5133,9 @@ App::DocumentObjectExecReturn* Thread::compute()
     }
     const double height = t1 - t0;
     if (p < Precision::Confusion() || height < 2 * p) {
-        return new App::DocumentObjectExecReturn("The face is too short for this pitch");
+        return new App::DocumentObjectExecReturn(
+            "The face is too short for this pitch: it must be at least two pitches long. Make the face longer or "
+            "choose a finer pitch (e.g. ISO metric fine)");
     }
     // 3D-Druck: Spiel der normalen Druck-Passung, höchstens ein Viertel der Steigung (sonst bleibt kein Gang übrig)
     const double clearance = ForPrinting.getValue() ? std::min(printClearance(1) * 0.75, 0.25 * p) : Clearance.getValue();
@@ -5042,6 +5251,28 @@ App::DocumentObjectExecReturn* Rib::compute()
                     || y1 > bb.MaxY + tol || z1 > bb.MaxZ + tol) {
                     break;  // läuft ins Leere: diese Seite ist offen
                 }
+                // Web: beide Enden der Linie liegen an einer Wand an, sonst stünde die Wand frei im Raum (nur am Boden)
+                if (web) {
+                    const gp_Vec dir = along.Normalized();
+                    double u0 = 1e100, u1 = -1e100;
+                    for (TopExp_Explorer v(piece.Current(), TopAbs_VERTEX); v.More(); v.Next()) {
+                        const double u = gp_Vec(a, BRep_Tool::Pnt(TopoDS::Vertex(v.Current()))).Dot(dir);
+                        u0 = std::min(u0, u);
+                        u1 = std::max(u1, u);
+                    }
+                    const auto touches = [&](double u) {  // dicht unter der Linie am Ende des Stücks
+                        const gp_Pnt end = a.Translated(dir * u + side * (s * 1e-3 * (1 + along.Magnitude())));
+                        for (TopExp_Explorer solid(original, TopAbs_SOLID); solid.More(); solid.Next()) {
+                            if (BRepClass3d_SolidClassifier(solid.Current(), end, 1e-6).State() != TopAbs_OUT) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
+                    if (!touches(u0) || !touches(u1)) {
+                        break;
+                    }
+                }
                 shape = Part::TopoShape(0, getDocument()->getStringHasher())
                             .makeElementFuse({shape, Part::TopoShape(piece.Current())})
                             .makeElementRefine(nullptr, Part::RefineFail::shapeUntouched);
@@ -5053,7 +5284,8 @@ App::DocumentObjectExecReturn* Rib::compute()
             }
         }
         if (!done) {
-            return new App::DocumentObjectExecReturn("Both ends of each rib line must touch the body");
+            return new App::DocumentObjectExecReturn(web ? "Both ends of each web line must touch a wall"
+                                                         : "Both ends of each rib line must touch the body");
         }
         ++made;
     }

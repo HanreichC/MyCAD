@@ -6,6 +6,7 @@
 
 #include <Inventor/actions/SoGetBoundingBoxAction.h>
 #include <Inventor/actions/SoGLRenderAction.h>
+#include <Inventor/elements/SoViewingMatrixElement.h>
 #include <Inventor/nodes/SoCallback.h>
 #include <Inventor/nodes/SoCoordinate3.h>
 #include <Inventor/nodes/SoDepthBuffer.h>
@@ -111,9 +112,27 @@ SoCallback* imageBinder(const QString& path, int unit, bool tiled)
     return bind;
 }
 
+/// Nach dem Programm: Uniform eyeToWorld aus der Kamera dieser Ansicht. Ohne sie läge die Umgebung im Körper und drehte
+/// sich mit ihm: ein vom Gelenk gekippter Arm hatte oben den braunen Boden und an der Stirn das weiße Licht.
+void setEyeToWorld(void*, SoAction* action)
+{
+    QOpenGLContext* ctx = QOpenGLContext::currentContext();
+    if (!ctx || !action->isOfType(SoGLRenderAction::getClassTypeId())) {
+        return;
+    }
+    QOpenGLFunctions* f = ctx->functions();
+    GLint program = 0;
+    f->glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+    const GLint at = program ? f->glGetUniformLocation(GLuint(program), "eyeToWorld") : -1;
+    if (at >= 0) {
+        const SbMatrix m = SoViewingMatrixElement::get(action->getState()).inverse();
+        f->glUniformMatrix4fv(at, 1, GL_FALSE, m[0]);
+    }
+}
+
 const char* const Vertex = R"(
 #version 120
-varying vec3 objNormal;  // Objekt-Koordinaten: darin steht die Umgebung (Z oben)
+varying vec3 objNormal;  // Objekt-Koordinaten: darin liegen Fotoscan, Schliff und Schichten; die Umgebung steht in Welt
 varying vec3 objPos;
 varying vec3 eyePos;
 varying vec4 baseColor;
@@ -139,6 +158,7 @@ uniform sampler2D envMap;         // Stufe 2: Umgebung "Studio" oder "Raum", 6 E
 uniform float exposure;
 uniform int detail;               // 1: Oberflächen-Karten, Hirnholz, Druckschichten (Einstellung "Relief und Hirnholz")
 uniform int reflections;          // 0: keine Spiegelbilder, nur weicher Glanz (Einstellung "Spiegelungen")
+uniform mat4 eyeToWorld;          // Kamera-Drehung zurück in die Welt (setEyeToWorld)
 varying vec3 objNormal;
 varying vec3 objPos;
 varying vec3 eyePos;
@@ -149,8 +169,10 @@ const float LEVELS = 6.0;
 const float TILE = 200.0;  // mm je Kachel vor der Texturmatrix, wie faceTextureCoordinates in ViewProviderExt.cpp
 const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
 
+/// d in Objekt-Koordinaten; die Umgebung steht in der Welt (Z oben), auch unter gedrehten Komponenten und Körpern
 vec3 envLevel(vec3 d, float level)
 {
+    d = normalize(mat3(eyeToWorld) * (gl_NormalMatrix * d));
     float u = atan(d.y, d.x) / (2.0 * PI) + 0.5;
     float v = clamp(acos(clamp(d.z, -1.0, 1.0)) / PI, 0.5 / 256.0, 1.0 - 0.5 / 256.0);
     vec3 c = texture2D(envMap, vec2(u, (level + v) / LEVELS)).rgb;
@@ -390,6 +412,9 @@ SoSwitch* root()
         program->shaderObject.set1Value(0, vertex);
         program->shaderObject.set1Value(1, fragment);
         group->addChild(program);
+        auto eye = new SoCallback;
+        eye->setCallback(setEyeToWorld);
+        group->addChild(eye);
         auto sw = new SoSwitch;
         sw->ref();  // lebt bis zum Programmende, jeder Körper hängt ihn ein
         sw->addChild(group);
@@ -502,6 +527,9 @@ struct ContactShadow
     QTimer* timer;
     std::function<std::vector<SoSwitch*>()> others;  ///< Anzeige-Schalter von allem, was kein Körper ist
     SbBox3f drawn;  ///< Umriss der ganzen Szene beim letzten Rendern der Maske
+    bool changed = false;  ///< Szene seit dem letzten Bild geändert (sofortiger Sensor)
+    bool stale = false;    ///< Umriss nicht mehr der der Maske: der Schatten zeigte noch die vorige Form
+    GLboolean colors[4] = {};  ///< Farbmaske, solange ein veralteter Schatten unsichtbar gezeichnet wird
 };
 
 constexpr int MaskSize = 128;
@@ -540,6 +568,7 @@ void renderMask(ContactShadow* s)
     SoGetBoundingBoxAction all(SbViewportRegion(MaskSize, MaskSize));
     all.apply(s->objects);
     s->drawn = all.getBoundingBox();
+    s->changed = s->stale = false;
     std::vector<std::pair<SoSwitch*, int>> hidden;
     for (SoSwitch* other : s->others()) {
         hidden.emplace_back(other, other->whichChild.getValue());
@@ -636,10 +665,36 @@ void main()
 }
 )";
 
-void depthClamp(void* on, SoAction* action)
+/// Um das Schatten-Viereck: Tiefe klemmen. Hat sich der Umriss der Szene seit der Maske geändert, zeigte sie noch die
+/// vorige Form (ein Rechteck unter dem neuen Zylinder, ein Fleck, wo die Kopie eben noch lag); dann bis zur neuen Maske
+/// keinen Schatten. Geprüft wird hier, beim Zeichnen: ein verzögerter Sensor kam nach manchem Bild erst dran.
+/// Auswahl und Vorauswahl ändern den Umriss nicht, der Schatten bleibt dabei stehen.
+void shadowBegin(void* data, SoAction* action)
+{
+    if (!action->isOfType(SoGLRenderAction::getClassTypeId())) {
+        return;
+    }
+    auto s = static_cast<ContactShadow*>(data);
+    glEnable(GL_DEPTH_CLAMP);
+    if (s->changed) {
+        s->changed = false;
+        SoGetBoundingBoxAction all(SbViewportRegion(MaskSize, MaskSize));
+        all.apply(s->objects);
+        s->stale = all.getBoundingBox() != s->drawn;
+        s->timer->start();  // Maske kurz danach neu, beim Tippen nicht bei jeder Taste
+    }
+    glGetBooleanv(GL_COLOR_WRITEMASK, s->colors);
+    if (s->stale) {
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    }
+}
+
+void shadowEnd(void* data, SoAction* action)
 {
     if (action->isOfType(SoGLRenderAction::getClassTypeId())) {
-        on ? glEnable(GL_DEPTH_CLAMP) : glDisable(GL_DEPTH_CLAMP);
+        auto s = static_cast<ContactShadow*>(data);
+        glDisable(GL_DEPTH_CLAMP);
+        glColorMask(s->colors[0], s->colors[1], s->colors[2], s->colors[3]);
     }
 }
 
@@ -700,9 +755,9 @@ SoNode* Gui::Shell::contactShadow(SoNode* objects, std::function<std::vector<SoS
     depth->write = FALSE;
     depth->function = SoDepthBuffer::LEQUAL;
     auto clampOn = new SoCallback;
-    clampOn->setCallback(depthClamp, clampOn);
+    clampOn->setCallback(shadowBegin, s);
     auto clampOff = new SoCallback;
-    clampOff->setCallback(depthClamp, nullptr);
+    clampOff->setCallback(shadowEnd, s);
     auto sep = new SoSeparator;
     sep->renderCulling = SoSeparator::OFF;
     for (SoNode* n : std::initializer_list<SoNode*> {pick, blend, material, depth, new SoPolygonOffset, s->mask, program,
@@ -718,23 +773,14 @@ SoNode* Gui::Shell::contactShadow(SoNode* objects, std::function<std::vector<SoS
     s->sw->whichChild = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("ContactShadow", true)
         ? 0 : SO_SWITCH_NONE;
 
-    // Szene geändert (Körper bearbeitet, ein- oder ausgeblendet): Maske kurz danach neu, beim Tippen nicht bei jeder Taste
+    // Szene geändert (Körper bearbeitet, verschoben, ein- oder ausgeblendet, Vorschau): sofort vermerken, auch wenn das
+    // nächste Bild vor der Warteschlange der Sensoren kommt; nachgesehen wird beim Zeichnen (shadowBegin)
     s->timer = new QTimer;
     s->timer->setSingleShot(true);
     s->timer->setInterval(400);
     QObject::connect(s->timer, &QTimer::timeout, [s] { renderMask(s); });
-    s->sensor = new SoNodeSensor([](void* data, SoSensor*) {
-        auto s = static_cast<ContactShadow*>(data);
-        // Form geändert (anderer Umriss): der alte Schatten zeigte bis zum neuen Rendern den Grundriss der vorigen Form,
-        // etwa ein großes Rechteck unter einem neuen Zylinder; dann lieber kurz keiner. Auswahl und Vorauswahl ändern
-        // den Umriss nicht, der Schatten bleibt dabei stehen
-        SoGetBoundingBoxAction all(SbViewportRegion(MaskSize, MaskSize));
-        all.apply(s->objects);
-        if (all.getBoundingBox() != s->drawn) {
-            s->quad->point.setNum(0);
-        }
-        s->timer->start();
-    }, s);
+    s->sensor = new SoNodeSensor([](void* data, SoSensor*) { static_cast<ContactShadow*>(data)->changed = true; }, s);
+    s->sensor->setPriority(0);
     s->sensor->attach(s->objects);
     s->timer->start();
     shadows().push_back(s);

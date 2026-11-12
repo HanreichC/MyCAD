@@ -2,6 +2,12 @@
 """Hole, Pattern, Offset Plane per echter Klicks auf die Glass-Toolbar."""
 from harness import *
 
+state = {}
+
+
+def sketches():
+    return len([o for o in doc().Objects if o.TypeId == "Sketcher::SketchObject"])
+
 
 def setup():
     make_body(rect(0, 0, 60, 40), 0, 10, "Box")
@@ -31,4 +37,17 @@ run([
     ("planes", lambda: L("planes=%s" % [(o.Name, round(o.Placement.Base.z, 3)) for o in doc().Objects if o.TypeId == "PartDesign::Plane"])),
     ("errors", lambda: L("errors=%s" % errors())),
     ("fit", lambda: (Gui.ActiveDocument.ActiveView.viewIsometric(), Gui.SendMsgToActiveView("ViewFit"))),
+    # Esc bricht die Ebenenwahl von Create Sketch ab: ein Klick auf eine Fläche (etwa für Abrunden) skizziert danach nicht
+    ("sketches", lambda: state.update(n=sketches())),
+    ("pick plane", lambda: (Gui.Selection.clearSelection(), click(button("Design_CreateSketch")))),
+    ("esc", esc),
+    ("face after esc", lambda: Gui.Selection.addSelection(body("Box"), top_face(body("Box")))),
+    ("no sketch", lambda: check("Esc cancels picking a plane: a face clicked afterwards starts no sketch",
+                                sketches() == state["n"] and not Gui.ActiveDocument.getInEdit(), "%d -> %d" % (state["n"], sketches()))),
+    # zweimal gestartet, dann eine Ebene vorgewählt und Create Sketch: genau eine Skizze
+    ("pick twice", lambda: (Gui.Selection.clearSelection(), Gui.runCommand("Design_CreateSketch"), Gui.runCommand("Design_CreateSketch"))),
+    ("preselect", lambda: (Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XY_Plane")][0]),
+                           Gui.runCommand("Design_CreateSketch"))),
+    ("one sketch", lambda: check("a preselected plane after a started picker makes one sketch", sketches() == state["n"] + 1,
+                                 "%d -> %d" % (state["n"], sketches()))),
 ])

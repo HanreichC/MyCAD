@@ -179,6 +179,32 @@ int main()
         assert(std::abs(s) < 0.05);
     }
 
+    // Rotstift: Korrekturen verteilt am Modell (eine links oben, eine weit rechts tiefer, die dritte zuletzt links
+    // daneben, wie Ø4.5 / Ø4.5 / C1). Jede ist eine eigene Zeile, auch die linke, die nach der rechten kam, und mit
+    // inPlace bleibt jede, wo sie steht; ohne rückt die rechte an den linken Rand unter die anderen
+    std::vector<Stroke> notes = line(0, 0, {{0, 1, 0}});
+    for (auto [dx, dy] : {std::pair {11.0, -6.4}, std::pair {1.5, -5.8}}) {
+        for (Stroke s : line(dy * 1.6 * Xh, 0, {{0, 1, 0}})) {
+            for (Pt& p : s) {
+                p.x += dx * 1.6 * Xh;
+            }
+            notes.push_back(s);
+        }
+    }
+    const auto groups = lines(notes);
+    assert(groups.size() == 3);
+    Options apart;
+    apart.inPlace = true;
+    const std::vector<Stroke> kept = tidy(notes, apart), moved = tidy(notes);
+    for (size_t n = 0; n < 3; ++n) {
+        std::printf("Korrektur %zu: links %.1f -> %.1f mm (ohne inPlace %.1f), unten %.1f -> %.1f mm\n", n + 1,
+                    left(notes, 3 * n, 3 * n + 3), left(kept, 3 * n, 3 * n + 3), left(moved, 3 * n, 3 * n + 3),
+                    measure(notes, n, 1).bases[0], measure(kept, n, 1).bases[0]);
+        assert(std::abs(left(kept, 3 * n, 3 * n + 3) - left(notes, 3 * n, 3 * n + 3)) < 0.2 * Xh);
+        assert(std::abs(measure(kept, n, 1).bases[0] - measure(notes, n, 1).bases[0]) < 0.2 * Xh);
+    }
+    assert(std::abs(left(moved, 3, 6) - left(notes, 3, 6)) > 5 * Xh);  // ohne: der gemeinsame Rand zieht sie weg
+
     // Stärke: halb überblendet liegt zwischen vorher und nachher
     const Stroke half = blend(page[1], neat[1], 0.5);
     assert(std::abs(half[5].x - (page[1][5].x + neat[1][5].x) / 2) < 1e-9);

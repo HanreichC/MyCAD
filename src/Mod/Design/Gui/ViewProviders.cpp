@@ -2,6 +2,7 @@
 
 #include "ViewProviders.h"
 
+#include <App/Application.h>
 #include <App/Document.h>
 #include <Base/Tools.h>
 #include <App/DocumentObjectGroup.h>
@@ -74,6 +75,8 @@
 #include <BRepGProp.hxx>
 #include <BRep_Builder.hxx>
 #include <GProp_GProps.hxx>
+#include <TopExp.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Compound.hxx>
 
@@ -1073,11 +1076,13 @@ QString featureTitle(const Design::Feature* f)
     return T("Extrude");
 }
 
-Gui::QuantitySpinBox* quantityBox(const Base::Unit& unit, double value)
+/// positive: Größen wie Durchmesser oder Tiefe; das Feld nimmt kein Minus an (sonst rechnete das Feature still mit dem
+/// Betrag). Ohne: ein Minus dreht die Richtung um (Abstand beim Extrudieren, Musterabstand)
+Gui::QuantitySpinBox* quantityBox(const Base::Unit& unit, double value, bool positive = false)
 {
     auto box = new Gui::QuantitySpinBox;
     box->setUnit(unit);
-    box->setRange(-1e7, 1e7);
+    box->setRange(positive ? 0 : -1e7, 1e7);
     box->setValue(Base::Quantity(value, unit));
     return box;
 }
@@ -1204,7 +1209,7 @@ public:
             extent->setCurrentIndex(extrude->Extent.getValue());
             distance = quantityBox(Base::Unit::Length, extrude->Distance.getValue());
             bindExpression(distance, &extrude->Distance);
-            distance2 = quantityBox(Base::Unit::Length, extrude->Distance2.getValue());
+            distance2 = quantityBox(Base::Unit::Length, extrude->Distance2.getValue(), true);
             bindExpression(distance2, &extrude->Distance2);
             form->addRow(T("Direction"), extent);
             form->addRow(T("Distance"), distance);
@@ -1232,8 +1237,20 @@ public:
             form->addRow(T("Faces"), new QLabel(T("%1 selected").arg(dressUp->Edges.getSize())));
         }
         else if (dressUp) {
-            auto edges = new QLabel(T("%1 selected").arg(dressUp->Edges.getSize()));
-            distance = quantityBox(Base::Unit::Length, dressUp->Size.getValue());
+            // Eine Fläche steht für alle ihre Kanten (wie beim Rechnen): gezählt werden die Kanten, nicht die Auswahl
+            int count = dressUp->Edges.getSize();
+            const auto& bases = dressUp->BaseFeatures.getValues();
+            auto base = shell || bases.empty() ? nullptr : freecad_cast<Design::Feature*>(bases.front());
+            if (base && dressUp->Bodies.getSize() > 0) {
+                const Part::TopoShape shape = base->shapeFor(dressUp->Bodies.getValues().front());
+                TopTools_IndexedMapOfShape selected;
+                for (const auto& name : dressUp->Edges.getValues()) {
+                    TopExp::MapShapes(shape.getSubShape(name.c_str(), true), TopAbs_EDGE, selected);
+                }
+                count = selected.Extent();
+            }
+            auto edges = new QLabel(T("%1 selected").arg(count));
+            distance = quantityBox(Base::Unit::Length, dressUp->Size.getValue(), true);
             bindExpression(distance, &dressUp->Size);
             form->addRow(shell ? T("Open faces") : T("Edges"), edges);
             form->addRow(shell                                         ? T("Thickness")
@@ -1292,17 +1309,17 @@ public:
             holeType = new QComboBox;
             holeType->addItems({T("Simple"), T("Counterbore"), T("Countersink")});
             holeType->setCurrentIndex(hole->HoleType.getValue());
-            distance = quantityBox(Base::Unit::Length, hole->Diameter.getValue());
+            distance = quantityBox(Base::Unit::Length, hole->Diameter.getValue(), true);
             bindExpression(distance, &hole->Diameter);
-            distance2 = quantityBox(Base::Unit::Length, hole->Depth.getValue());
+            distance2 = quantityBox(Base::Unit::Length, hole->Depth.getValue(), true);
             bindExpression(distance2, &hole->Depth);
             check = new QCheckBox(T("Through all"));
             check->setChecked(hole->ThroughAll.getValue());
-            headDiameter = quantityBox(Base::Unit::Length, hole->HeadDiameter.getValue());
+            headDiameter = quantityBox(Base::Unit::Length, hole->HeadDiameter.getValue(), true);
             bindExpression(headDiameter, &hole->HeadDiameter);
-            headDepth = quantityBox(Base::Unit::Length, hole->HeadDepth.getValue());
+            headDepth = quantityBox(Base::Unit::Length, hole->HeadDepth.getValue(), true);
             bindExpression(headDepth, &hole->HeadDepth);
-            sinkAngle = quantityBox(Base::Unit::Angle, hole->CountersinkAngle.getValue());
+            sinkAngle = quantityBox(Base::Unit::Angle, hole->CountersinkAngle.getValue(), true);
             bindExpression(sinkAngle, &hole->CountersinkAngle);
             flip = new QCheckBox(T("Flip direction"));
             flip->setChecked(hole->Reversed.getValue());
@@ -1689,6 +1706,7 @@ private:
             }
             try {
                 App::ExpressionPtr expr = App::Expression::parse(feature, parameterExpression(doc, text.toStdString()));
+                expr->eval();  // unbekannter Name ("abc"): hier melden, nicht als kaputte Formel ans Feature hängen
                 feature->setExpression(path, std::shared_ptr<App::Expression>(expr.release()));
                 doc->recompute();
                 box->setValue(quantity->getQuantityValue());
@@ -1702,6 +1720,26 @@ private:
         };
         edit->installEventFilter(filter);
         box->installEventFilter(filter);
+        // Solange der Text keine gültige Zahl ist, rechnet die Vorschau mit dem letzten Wert weiter: sagen, warum, statt
+        // eine alte Meldung stehen zu lassen. Kurz gewartet, damit "2," auf dem Weg zu "2,5" nicht aufblitzt
+        QObject::connect(edit, &QLineEdit::textEdited, box, [this, box, edit] {
+            QTimer::singleShot(700, box, [this, box, edit] {
+                const QString text = edit->text().trimmed();
+                if (box->hasValidInput() || text.isEmpty()) {
+                    return;
+                }
+                bool negative = false;
+                try {
+                    negative = Base::Quantity::parse(App::decimalCommaAsPoint(text.toStdString())).getValue() < 0;
+                }
+                catch (const Base::Exception&) {
+                }
+                status->setText(negative && box->minimum() >= 0
+                                    ? T("This value can't be negative; type a positive value")
+                                    : T("“%1” is not a number: type a number, or press Enter to use it as a parameter or "
+                                        "formula").arg(text));
+            });
+        });
     }
 
     /// Hat das Feature Eigenschaften in der Gruppe "Parameters"? Dann baut der Dialog seine Felder daraus.
@@ -1714,13 +1752,18 @@ private:
         });
     }
 
-    /// "Radius2" -> "Radius 2", "PositionX" -> "Position X"
+    /// "Radius2" -> "Radius 2", "RadiusEnd" -> "Radius end" (MyStyle: Satzanfang groß), "PositionX" -> "Position X"
     static QString propertyLabel(const char* name)
     {
+        const QString s = QString::fromLatin1(name);
         QString label;
-        for (const QChar c : QString::fromLatin1(name)) {
-            if (!label.isEmpty() && (c.isUpper() || (c.isDigit() && !label.back().isDigit()))) {
+        for (qsizetype i = 0; i < s.size(); ++i) {
+            QChar c = s[i];
+            if (i > 0 && (c.isUpper() || (c.isDigit() && !s[i - 1].isDigit()))) {
                 label += QLatin1Char(' ');
+                if (i + 1 < s.size() && s[i + 1].isLower()) {
+                    c = c.toLower();  // ein Wort ("End"), kein einzelner Buchstabe ("X")
+                }
             }
             label += c;
         }
@@ -1739,11 +1782,10 @@ private:
             const QString label = propertyLabel(prop->getName());
             QWidget* field = nullptr;
             if (auto q = freecad_cast<App::PropertyQuantity*>(prop)) {
-                auto box = quantityBox(q->getUnit(), q->getValue());
+                auto box = quantityBox(q->getUnit(), q->getValue(), prop->isDerivedFrom<App::PropertyLength>());
                 bindExpression(box, q);
-                const bool positive = prop->isDerivedFrom<App::PropertyLength>();
-                QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this, q, positive](double v) {
-                    q->setValue(positive ? std::abs(v) : v);
+                QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this, q](double v) {
+                    q->setValue(v);
                     apply();
                 });
                 field = box;
@@ -1866,7 +1908,7 @@ private:
             const double d = distance->value().getValue();
             extrude->Extent.setValue(extent->currentIndex());
             extrude->Distance.setValue(std::abs(d));
-            extrude->Distance2.setValue(std::abs(distance2->value().getValue()));
+            extrude->Distance2.setValue(distance2->value().getValue());
             extrude->Reversed.setValue(flip->isChecked() != (d < 0));
             const int ext = extent->currentIndex();
             const bool byDistance = ext != Design::Extrude::ExtentToObject && ext != Design::Extrude::ExtentAll;
@@ -1885,7 +1927,7 @@ private:
             pull->Distance.setValue(distance->value().getValue());
         }
         else if (dressUp && distance) {
-            dressUp->Size.setValue(std::abs(distance->value().getValue()));
+            dressUp->Size.setValue(distance->value().getValue());
         }
         if (shell) {
             shell->Outside.setValue(check->isChecked());
@@ -1913,7 +1955,7 @@ private:
         if (hole) {
             const int type = holeType->currentIndex();
             hole->HoleType.setValue(type);
-            hole->Depth.setValue(std::abs(distance2->value().getValue()));
+            hole->Depth.setValue(distance2->value().getValue());
             hole->ThroughAll.setValue(check->isChecked());
             hole->Reversed.setValue(flip->isChecked());
             distance2->setEnabled(!check->isChecked());
@@ -1929,7 +1971,7 @@ private:
                     box->blockSignals(false);
                 }
                 else {
-                    prop->setValue(std::abs(box->value().getValue()));
+                    prop->setValue(box->value().getValue());
                 }
                 box->setEnabled(!fromStandard);
             }
@@ -1942,12 +1984,13 @@ private:
             pattern->Type.setValue(holeType->currentIndex());
             pattern->Direction1.setValue(dir1->currentIndex());
             pattern->Count1.setValue(count1->value());
-            pattern->Spacing1.setValue(std::abs(distance->value().getValue()));
+            // Minus dreht die Richtung um (wie der Abstand beim Extrudieren)
+            pattern->Spacing1.setValue(distance->value().getValue());
             pattern->Direction2.setValue(dir2->currentIndex());
             pattern->Count2.setValue(count2->value());
-            pattern->Spacing2.setValue(std::abs(distance2->value().getValue()));
+            pattern->Spacing2.setValue(distance2->value().getValue());
             pattern->Axis.setValue(axis->currentIndex());
-            pattern->Angle.setValue(std::abs(sinkAngle->value().getValue()));
+            pattern->Angle.setValue(sinkAngle->value().getValue());
             pattern->Operation.setValue(simpleOp->currentIndex() + 1L);
             for (QWidget* w : std::initializer_list<QWidget*> {dir1, dir2, count2, distance2}) {
                 showRow(w, rect);
@@ -1963,30 +2006,14 @@ private:
         for (const auto& [prop, field] : paramRows) {
             showRow(field, !prop->testStatus(App::Property::Hidden));
             field->setEnabled(!prop->testStatus(App::Property::ReadOnly));
-            // Auswahllisten, die vom Rest abhängen (Größen einer Norm), nachladen
-            auto e = freecad_cast<App::PropertyEnumeration*>(prop);
-            auto box = qobject_cast<QComboBox*>(field);
-            if (e && box) {
-                QStringList items;
-                for (const auto& item : e->getEnumVector()) {
-                    items << T(item.c_str());
-                }
-                QStringList shown;
-                for (int i = 0; i < box->count(); ++i) {
-                    shown << box->itemText(i);
-                }
-                box->blockSignals(true);
-                if (items != shown) {
-                    box->clear();
-                    box->addItems(items);
-                }
-                box->setCurrentIndex(e->getValue());
-                box->blockSignals(false);
-            }
         }
-        bool started = picker != nullptr;  // höchstens einer wartet von selbst: der oberste (Muster: Richtung 1)
+        // Nur ein Bezug, ohne den das Feature nicht geht (Pfad des Musters, "To Object"), wartet von selbst auf einen
+        // Klick. Die freien "...Reference" ersetzen nur X/Y/Z: würden sie warten, setzte der nächste Klick in die Ansicht
+        // still einen Bezug
+        bool started = picker != nullptr;  // höchstens einer wartet von selbst
         for (auto& [link, button] : referenceButtons) {
             if (!link->testStatus(App::Property::Hidden) && !link->getValue()
+                && !std::string_view(link->getName()).ends_with("Reference")
                 && !button->property("autoStarted").toBool()) {
                 button->setProperty("autoStarted", true);  // nur einmal von selbst, nicht nach jedem Abbrechen
                 if (!started) {
@@ -2013,9 +2040,30 @@ private:
             feature->getDocument()->recompute();
         }
         // Werte, die das Feature selbst setzt (Spiel der Passung, Länge nach Norm, Spiel aus den Einstellungen)
+        auto thread = freecad_cast<Design::Thread*>(feature);
         for (const auto& [prop, field] : paramRows) {
             if (auto text = freecad_cast<App::PropertyString*>(prop); text && qobject_cast<QLabel*>(field)) {
                 static_cast<QLabel*>(field)->setText(QString::fromUtf8(text->getValue()));
+            }
+            // Auswahllisten, die vom Rest abhängen (Größen einer Norm), nachladen; "Auto" nennt die gewählte Größe
+            auto e = freecad_cast<App::PropertyEnumeration*>(prop);
+            if (auto combo = qobject_cast<QComboBox*>(field); e && combo) {
+                QStringList items;
+                for (const auto& item : e->getEnumVector()) {
+                    items << (item == "Auto" && thread && *thread->AutoSize.getValue()
+                                  ? T("Auto (%1)").arg(QString::fromUtf8(thread->AutoSize.getValue()))
+                                  : T(item.c_str()));
+                }
+                QStringList shown;
+                for (int i = 0; i < combo->count(); ++i) {
+                    shown << combo->itemText(i);
+                }
+                const QSignalBlocker block(combo);
+                if (items != shown) {
+                    combo->clear();
+                    combo->addItems(items);
+                }
+                combo->setCurrentIndex(e->getValue());
             }
             auto q = freecad_cast<App::PropertyQuantity*>(prop);
             auto box = qobject_cast<Gui::QuantitySpinBox*>(field);
@@ -2459,12 +2507,12 @@ void ViewProviderJoint::unsetEdit(int)
 
 namespace
 {
-/// Enter im Feld: übernehmen (Fokus weg übernimmt bewusst nicht)
+/// Enter im Feld: übernehmen (Fokus weg übernimmt bewusst nicht); Esc: escape
 class EnterFilter: public QObject
 {
 public:
     using QObject::QObject;
-    std::function<void()> enter;
+    std::function<void()> enter, escape;
 
 protected:
     bool eventFilter(QObject*, QEvent* event) override
@@ -2475,13 +2523,17 @@ protected:
                 enter();
                 return true;
             }
+            if (key == Qt::Key_Escape && escape) {
+                escape();
+                return true;
+            }
         }
         return false;
     }
 };
 
 /// Glas-Karte neben der doppelt angeklickten Fläche: je treibendem Maß ein Feld. Enter rechnet neu (eine Transaktion,
-/// Strg+Z nimmt sie zurück), Esc lässt den Wert stehen. Hängt ein Maß an einem Parameter, ändert sich der Parameter.
+/// Strg+Z nimmt sie zurück), Esc schließt die Karte und lässt den Wert stehen. Hängt ein Maß an einem Parameter, ändert sich der Parameter.
 /// Ein einfacher Klick wählt nur; jede andere Auswahl schließt die Karte.
 class FaceDimensions: public QObject, public Gui::SelectionObserver
 {
@@ -2491,6 +2543,16 @@ public:
         timer.setInterval(50);  // ponytail: folgt der Kamera im Takt statt über einen Coin-Sensor
         QObject::connect(&timer, &QTimer::timeout, [this] { place(); });
         qApp->installEventFilter(this);
+        // Strg+Z/Strg+Y: die offene Karte zeigt die zurückgeholten Werte (Fläche kann neu heißen)
+        for (auto* signal : {&App::GetApplication().signalUndo, &App::GetApplication().signalRedo}) {
+            signal->connect([this] {
+                QTimer::singleShot(0, this, [this] {
+                    if (!shown.empty()) {
+                        refresh();
+                    }
+                });
+            });
+        }
     }
 
 protected:
@@ -2611,12 +2673,14 @@ private:
                 }
                 else {
                     doc->abortTransaction();
+                    doc->recompute();  // der Abbruch holt den alten Wert zurück, der Fehler des Schritts bliebe sonst stehen
                     error->setText(T(message.c_str()));
                     error->show();
                 }
             };
             auto enter = new EnterFilter(box);  // nur Enter übernimmt; Verlassen des Felds ändert nichts
             enter->enter = commit;
+            enter->escape = [this] { hide(); };
             box->installEventFilter(enter);
             form->addRow(T(d.label.c_str()), box);
         }

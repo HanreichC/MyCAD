@@ -82,7 +82,7 @@ def _start_clips():
         """wie scenario(); vorweg hört der Textcursor auf zu blinken: sonst ändert sich das Bild ständig und der Clip
         kürzt kein Warten (jedes blinkende Feld hielte ihn auf voller Länge)"""
         def build_calm():
-            step("calm", lambda: (QtGui.QGuiApplication.styleHints().setCursorFlashTime(0), wide_palette(), skip_flicker(still)))
+            step("calm", lambda: (QtGui.QGuiApplication.styleHints().setCursorFlashTime(0), skip_flicker(still)))
             build()
         scenario(article, build_calm, zoom=zoom)
 
@@ -126,28 +126,6 @@ def _start_clips():
         timer.timeout.disconnect()
         timer.timeout.connect(tick)
         st["tick"] = tick
-
-    def wide_palette():
-        """record_stop bildet die Palette aus Anfang, Mitte und Ende des Clips: Farben, die nur dazwischen vorkommen (das
-        orange Profil, die blaue Auswahl), werden grau. Hier aus 24 gleichmäßig verteilten Bildern.
-        ponytail: greift nur in Läufen dieser Clips (Schritt zur Laufzeit); besser record_stop in harness.py so ändern"""
-        from PIL import Image
-        if getattr(Image.Image.quantize, "wide", False):
-            return
-        orig = Image.Image.quantize
-
-        def quantize(self, colors=256, *args, **kw):
-            frames = harness._rec.get("frames") if harness._rec else None
-            if colors == 255 and kw.get("palette") is None and frames:
-                pick = [frames[i * (len(frames) - 1) // 23][0] for i in range(24)]
-                w, h = pick[0].width(), pick[0].height()
-                sample = Image.new("RGB", (w, h * len(pick)))
-                for i, q in enumerate(pick):
-                    sample.paste(Image.frombuffer("RGB", (w, h), bytes(q.constBits()), "raw", "RGB", q.bytesPerLine(), 1), (0, h * i))
-                return orig(sample, colors, *args, **kw)
-            return orig(self, colors, *args, **kw)
-        quantize.wide = True
-        Image.Image.quantize = quantize
 
     def iso_fit(zoom=0):
         v = Gui.ActiveDocument.ActiveView
@@ -605,7 +583,8 @@ def _start_clips():
                                tool("Design_Fastener")))
         step("m3", lambda: combo_pick("Size", "M3"))
         step("insert", lambda: combo_pick("Holds", "Heat-set insert"))
-        step("ok", lambda: (L("  fastener: %s" % [l.text() for l in visible(QtWidgets.QLabel) if "part" in l.text()]), press_ok()))
+        step("ok", lambda: (press_ok(), QtCore.QTimer.singleShot(1500, lambda: L("  fastener: %s bodies=%d errors=%s" % (
+            [o.Label for o in doc().Objects if "Fastener" in o.TypeId], len([o for o in doc().Objects if o.TypeId == "Design::Body"]), errors())))))
         # 4. Eine geschlossene Kette
         step("bars", fourbar_build)
         for name in ("crank", "coupler", "rocker", "close"):  # je Gelenk: Kreis auf Gelenk, die Teile rücken zusammen

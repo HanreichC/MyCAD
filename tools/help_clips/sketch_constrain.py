@@ -208,7 +208,7 @@ def sc_keycap(img):
     p.setRenderHint(QtGui.QPainter.Antialiasing)
     f = p.font(); f.setPixelSize(30); f.setBold(True); p.setFont(f)
     w = max(64, p.fontMetrics().horizontalAdvance(sc_cap["text"]) + 36)
-    r = QtCore.QRectF((img.width() - w) / 2, img.height() - 170, w, 64)
+    r = QtCore.QRectF((img.width() - w) / 2, sc_cap.get("y", img.height() - 170), w, 64)
     p.setPen(QtGui.QPen(QtGui.QColor(0, 136, 255), 3))
     p.setBrush(QtGui.QColor(255, 255, 255, 235))
     p.drawRoundedRect(r, 12, 12)
@@ -217,17 +217,21 @@ def sc_keycap(img):
     p.end()
 
 
-def sc_press(label, *keys):
-    """Tasten wie von Hand (Fenster aktiv, Fokus in der Ansicht); im Clip erscheint label als Tastenkappe"""
+def sc_press(label, *keys, y=None):
+    """Tasten wie von Hand (Fenster aktiv, Fokus in der Ansicht); im Clip erscheint label als Tastenkappe (y: Höhe im
+    Clip statt unten, wenn dort etwas Wichtiges steht)"""
     if harness._rec:
+        sc_cap.clear()
         sc_cap.update(text=label, t=harness._rec["clock"]())
+        if y is not None:
+            sc_cap["y"] = y
     sc_activate()
     for k in keys:
         QtTest.QTest.keyClick(mw.windowHandle(), getattr(QtCore.Qt, "Key_" + k))
 
 
-def sc_key(label, *keys):
-    step("key " + label, lambda: sc_press(label, *keys))
+def sc_key(label, *keys, y=None):
+    step("key " + label, lambda: sc_press(label, *keys, y=y))
     wait()
 
 
@@ -316,7 +320,8 @@ def sc_coincident():
     pts = [V(-30, -20, 0), V(30, -20, 0), V(30, 12, 0), V(22, 20, 0), V(-30, 20, 0)]
     lines = [Part.LineSegment(pts[0], pts[1]), Part.LineSegment(pts[1], pts[2]), Part.LineSegment(pts[3], pts[4]),
              Part.LineSegment(pts[4], pts[0])]
-    cons = [C("Coincident", 0, 2, 1, 1), C("Coincident", 2, 2, 3, 1), C("Coincident", 3, 2, 0, 1)]
+    cons = [C("Coincident", 0, 2, 1, 1), C("Coincident", 2, 2, 3, 1), C("Coincident", 3, 2, 0, 1),
+            C("Horizontal", 0), C("Horizontal", 2), C("Vertical", 1), C("Vertical", 3)]  # sonst kippt die obere Kante
     sc_open(lines, cons, -3, 0, 85)
     sc_tap(sc_end(1, 2)); sc_tap(sc_end(2, 1))
     sc_tool("Sketcher_ConstrainCoincidentUnified")
@@ -329,7 +334,7 @@ def sc_horver():
     lines, cons = sc_closed([V(-28, -16, 0), V(30, -23, 0), V(25, 20, 0), V(-22, 16, 0)])
     sc_open(lines, cons, -3, 0, 85)
     sc_tap(sc_on(0)); sc_tool("Sketcher_ConstrainHorizontal")
-    sc_tap(sc_on(3)); sc_key("V", "V")
+    sc_tap(sc_on(3, 0.3)); sc_key("V", "V")  # Mitte läge auf der roten X-Achse
     sc_log("horver")
     wait()
 
@@ -340,7 +345,7 @@ def sc_parallel():
              Part.LineSegment(V(34, -22, 0), V(40, 22, 0))]
     sc_open(lines, (), 1, 0, 85)
     sc_tap(sc_on(0)); sc_tap(sc_on(1)); sc_tool("Sketcher_ConstrainParallel")
-    sc_tap(sc_on(1, 0.3)); sc_tap(sc_on(2)); sc_key("N", "N")
+    sc_tap(sc_on(1, 0.3)); sc_tap(sc_on(2, 0.3)); sc_key("N", "N")  # Mitte läge auf der roten X-Achse
     sc_log("parallel")
     wait()
 
@@ -350,9 +355,6 @@ def sc_tangent():
     arc = Part.ArcOfCircle(Part.Circle(V(12, 0, 0), V(0, 0, 1), 16), -math.pi / 2, math.pi / 2)
     lines = [Part.LineSegment(V(-30, -16, 0), V(12, -16, 0)), arc, Part.LineSegment(V(12, 16, 0), V(-30, 4, 0))]
     cons = [C("Tangent", 0, 2, 1, 1), C("Coincident", 1, 2, 2, 1)]  # Tangente am Endpunkt schließt Koinzident ein
-    # FreeCAD meldet sonst in einem Dialog, dass aus Koinzident + Tangential eine Endpunkt-Tangente wurde (MyCAD-Bug,
-    # siehe Bericht); der Clip zeigt den Ablauf ohne diese Rückfrage
-    step("quiet", lambda: App.ParamGet("User parameter:BaseApp/Preferences/Mod/Sketcher/General").SetBool("NotifyConstraintSubstitutions", False))
     sc_open(lines, cons, -3, 0, 85)
     sc_tap(sc_on(2)); sc_tap(sc_on(1, 0.3)); sc_tool("Sketcher_ConstrainTangent")
     sc_log("tangent")
@@ -405,7 +407,7 @@ def sc_dimension():
     sc_type("60")
     sc_tap(sc_on(4, 0.125)); sc_tap(lambda: (16, 9))
     sc_type("20")
-    sc_key("Esc", "Escape")
+    sc_key("Esc", "Escape", y=110)  # unten stünde die Kappe auf dem Maß 60 mm
     sc_log("dimension")
     wait()
 

@@ -653,7 +653,6 @@ CmdSketcherSelectRedundantConstraints::CmdSketcherSelectRedundantConstraints()
     sWhatsThis = "Sketcher_SelectRedundantConstraints";
     sStatusTip = sToolTipText;
     sPixmap = "Sketcher_SelectRedundantConstraints";
-    sAccel = "Z, P, R";
     eType = ForEdit;
 }
 
@@ -822,7 +821,6 @@ CmdSketcherSelectConflictingConstraints::CmdSketcherSelectConflictingConstraints
     sWhatsThis = "Sketcher_SelectConflictingConstraints";
     sStatusTip = sToolTipText;
     sPixmap = "Sketcher_SelectConflictingConstraints";
-    sAccel = "Z, P, C";
     eType = ForEdit;
 }
 
@@ -1830,8 +1828,7 @@ CmdSketcherRectangularArray::CmdSketcherRectangularArray()
     sAppModule = "Sketcher";
     sGroup = "Sketcher";
     sMenuText = QT_TR_NOOP("Rectangular Array");
-    sToolTipText = QT_TR_NOOP("Creates a rectangular array pattern of the geometry taking as "
-                              "reference the last selected point");
+    sToolTipText = QT_TR_NOOP("Copies the selected geometry in rows and columns");
     sWhatsThis = "Sketcher_RectangularArray";
     sStatusTip = sToolTipText;
     sPixmap = "Sketcher_RectangularArray";
@@ -2271,7 +2268,7 @@ CmdSketcherScale::CmdSketcherScale()
     sWhatsThis = "Sketcher_Scale";
     sStatusTip = sToolTipText;
     sPixmap = "Sketcher_Scale";
-    sAccel = "Z, P, S";
+    sAccel = "Z, X";  // MyCAD: "Z, P, S" fing mit "Z, P" (Drehen) an, Qt wartete dann immer auf eine dritte Taste
     eType = ForEdit;
 }
 

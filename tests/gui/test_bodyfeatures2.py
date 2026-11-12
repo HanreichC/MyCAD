@@ -56,7 +56,7 @@ def cut_off():
 
 def references():
     """Bezugs-Knöpfe im Muster-Panel von oben nach unten: (Text, wartet)"""
-    rows = [field(t) for t in ("Direction 1 Reference", "Direction 2 Reference")]
+    rows = [field(t) for t in ("Direction 1 reference", "Direction 2 reference")]
     return [(b.text(), b.isChecked()) for b in rows]
 
 
@@ -70,7 +70,8 @@ run([
                        make_body(rect(100, -10, 120, 10), 0, 10, "C"), make_body(circle(8, -60, 0), 0, 20, "D"))),
     ("pattern sel", lambda: select(body("C"))), ("pattern", lambda: Gui.runCommand("Design_Pattern")),
     ("pattern texts", lambda: check("pattern panel: every text fits (T-8)", not cut_off(), str(cut_off()))),
-    ("references", lambda: check("only the first reference waits for a click", [w for t, w in references()] == [True, False],
+    # optionale Bezüge ersetzen nur X/Y/Z: keiner wartet von selbst, sonst setzte der nächste Klick in die Ansicht still einen
+    ("references", lambda: check("optional references do not wait for a click", [w for t, w in references()] == [False, False],
                                  str(references()))),
     ("count", set_pattern), ("ok", ok),
     ("pattern?", lambda: L("pattern: %s errors=%s" % ([(b.Label, round(b.Shape.Volume)) for b in doc().Objects if b.Label.startswith("C")], errors()))),

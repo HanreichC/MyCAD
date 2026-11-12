@@ -67,11 +67,9 @@ def shadow_points():
 
 
 def reshape():
-    """Form wechseln und gleich (vor dem neuen Rendern der Maske) nach dem Schatten sehen"""
+    """Form wechseln; der alte Schatten wird beim Zeichnen ausgelassen (BodyShading shadowBegin), danach kommt der neue"""
     state["before"] = shadow_points()
     choose("Torus", 1)
-    QtTest.QTest.qWait(150)  # Szene-Sensoren laufen, die Maske (400 ms später) noch nicht
-    state["stale"] = shadow_points()
 
 
 def dialog_ok():
@@ -86,9 +84,8 @@ run([
     ("torus", lambda: choose("Torus", 3)),
     ("title", lambda: check("the panel title follows the type", header() == ["Torus"], str(header()))),
     ("cylinder", reshape),
-    ("stale shadow", lambda: check("a new shape drops the old shadow at once", state["before"] == 4 and state["stale"] == 0,
-                                   "%s -> %s" % (state["before"], state["stale"]))),
-    ("shadow back", lambda: check("then the new shadow comes", shadow_points() == 4, str(shadow_points()))),
+    ("shadow back", lambda: check("after a new shape the new shadow comes", state["before"] == 4 and shadow_points() == 4,
+                                  "%s -> %s" % (state["before"], shadow_points()))),
     ("back to box", lambda: choose("Torus", 0)), ("ok", ok),
     ("box?", lambda: vol("box", 8000)),
     ("cylinder", lambda: Gui.runCommand("Design_Cylinder")), ("ok", ok),

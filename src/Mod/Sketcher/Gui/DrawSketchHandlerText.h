@@ -242,7 +242,7 @@ private:
 
     QString getToolWidgetText() const override
     {
-        return QString(QObject::tr("Text parameters"));
+        return QString(QObject::tr("Text Parameters"));
     }
 
     bool canGoToNextMode() override
@@ -251,7 +251,8 @@ private:
             // Prevent validation of null Text.
             return false;
         }
-        return true;
+        // MyCAD: ohne Text (leer oder nur Leerzeichen) entstünde nur eine einzelne Konstruktionslinie
+        return state() != SelectMode::SeekSecond || text.find_first_not_of(" \t\r\n") != std::string::npos;
     }
 
     void angleSnappingControl() override

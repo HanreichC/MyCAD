@@ -23,8 +23,14 @@ public:
     void mouseMove(SnapManager::SnapHandle snapHandle) override
     {
         const Base::Vector2d pos = snapHandle.compute();
+        setPositionText(pos);  // Koordinaten folgen dem Cursor bei jedem Klick, nicht nur beim Startpunkt
+        if (points.size() < 2) {  // Start- und Endpunkt fangen an Punkten und Kanten (Koinzident, Punkt auf Objekt)
+            seekAndRenderAutoConstraint(sugConstr[points.size()], pos, Base::Vector2d(0.0, 0.0));
+        }
+        else {
+            applyCursor();  // der Schulterpunkt bekommt keine Randbedingung: Cursor ohne Symbol
+        }
         if (points.empty()) {
-            setPositionText(pos);
             return;
         }
         drawEdit(points.size() == 1 ? std::vector<Base::Vector2d> {points[0], pos}
@@ -77,8 +83,11 @@ private:
                 "[3,3],[0,1],False,2,[1,%f,1]),%s)",
                 a.x, a.y, apex.x, apex.y, b.x, b.y, Rho / (1 - Rho), constructionModeAsBooleanText()
             );
+            const int geoId = getHighestCurveIndex();
             // Kontrollpunkte sichtbar machen, damit die Kurve wie in Fusion angepasst werden kann
-            Gui::cmdAppObjectArgs(sketchgui->getObject(), "exposeInternalGeometry(%d)", getHighestCurveIndex());
+            Gui::cmdAppObjectArgs(sketchgui->getObject(), "exposeInternalGeometry(%d)", geoId);
+            createAutoConstraints(sugConstr[0], geoId, Sketcher::PointPos::start, false);
+            createAutoConstraints(sugConstr[1], geoId, Sketcher::PointPos::end, false);
             commitCommand();
             tryAutoRecomputeIfNotSolve(sketchgui->getObject<Sketcher::SketchObject>());
         }
@@ -91,6 +100,7 @@ private:
     }
 
     std::vector<Base::Vector2d> points;
+    std::vector<AutoConstraint> sugConstr[2];  ///< Fang am Start- und Endpunkt
 };
 
 }  // namespace SketcherGui

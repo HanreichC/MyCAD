@@ -50,6 +50,11 @@ public:
     {
         return "Gui::ViewProviderCoordinateSystem";
     }
+    /// jede Komponente hat ihren "Origin", nicht "Origin001"
+    bool allowDuplicateLabel() const override
+    {
+        return true;
+    }
 
     bool isOrigin() const override
     {

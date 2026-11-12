@@ -51,6 +51,8 @@
 #include <cstring>
 #include <App/ObjectIdentifier.h>
 #include <App/Expression.h>
+#include <App/ExpressionParser.h>
+#include <Mod/Design/App/NoteParameters.h>
 #include <QDialogButtonBox>
 #include <QDialog>
 #include <QLineEdit>
@@ -198,8 +200,8 @@ void createSketch(App::DocumentObject* support, std::string element)
 }
 
 /// Wartet nach "Create Sketch" auf einen Klick auf eine Ursprungsebene oder eine ebene Körperfläche.
-/// Solange sind die Ursprungsebenen eingeblendet, wie in Fusion.
-class PlanePicker: public Gui::SelectionObserver
+/// Solange sind die Ursprungsebenen eingeblendet, wie in Fusion. Esc bricht ab.
+class PlanePicker: public QObject, public Gui::SelectionObserver
 {
 public:
     explicit PlanePicker(App::Part* root)
@@ -210,6 +212,7 @@ public:
         }
         Gui::Selection().clearSelection();
         Gui::getMainWindow()->showMessage(T("Select a plane or a planar face for the sketch"));
+        qApp->installEventFilter(this);
     }
 
     ~PlanePicker() override
@@ -224,6 +227,7 @@ public:
 
     static void start(App::Part* root)
     {
+        active.reset();  // erst den alten abbauen, sonst blendet sein Destruktor die Ebenen des neuen wieder aus
         active = std::make_unique<PlanePicker>(root);
     }
     static void stop()
@@ -232,9 +236,21 @@ public:
     }
 
 private:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        if (event->type() == QEvent::KeyPress && static_cast<QKeyEvent*>(event)->key() == Qt::Key_Escape) {
+            QTimer::singleShot(0, &stop);  // nicht mitten im eigenen Filter löschen
+        }
+        return false;
+    }
+
     void onSelectionChanged(const Gui::SelectionChanges& msg) override
     {
         if (msg.Type != Gui::SelectionChanges::AddSelection) {
+            return;
+        }
+        if (Gui::Control().activeDialog()) {  // ein anderes Werkzeug läuft (Abrunden …): dessen Klick, nicht unserer
+            QTimer::singleShot(0, &stop);
             return;
         }
         App::DocumentObject* leaf = msg.Object.getSubObject();
@@ -245,6 +261,9 @@ private:
         App::DocumentObjectT target(leaf);
         // Nicht mitten im Selektions-Callback Objekte anlegen und den Edit-Modus starten
         QTimer::singleShot(0, [target, element] {
+            if (!active) {  // inzwischen abgebrochen oder schon aus einer Vorauswahl skizziert
+                return;
+            }
             stop();
             Gui::Selection().clearSelection();
             if (auto obj = target.getObject()) {
@@ -755,6 +774,7 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
 void createSketchCommand(App::Document* doc)
 {
     App::Part* root = activeContainer(doc);
+    PlanePicker::stop();  // ein noch wartender Aufruf skizziert sonst ein zweites Mal
     // Bereits etwas Passendes ausgewählt? Dann sofort darauf skizzieren.
     auto selection = Gui::Selection().getSelectionEx();
     for (auto& sel : selection) {
@@ -1233,15 +1253,12 @@ private:
 
 void startNewComponent(App::Document* doc)
 {
+    // in die per Doppelklick aktivierte Komponente; die neue wird nicht aktiv, sonst landete die nächste darin
     App::Part* parent = activeContainer(doc);
     doc->openTransaction("New Component");
-    App::Part* part = Design::newComponent(parent);
+    Design::newComponent(parent);
     doc->recompute();
     doc->commitTransaction();
-    // Wie in Fusion: die neue Komponente ist gleich aktiv
-    if (auto view = Gui::Application::Instance->getDocument(doc)->getActiveView()) {
-        view->setActiveObject(part, PARTKEY);
-    }
 }
 
 /// Bezugspunkt und -richtung eines Elements: Ebene/ebene Fläche (Mitte + Normale), Zylinderfläche (Achse),
@@ -1355,7 +1372,7 @@ void startAlign(App::Document* doc)
     startEditing(feature, false, nullptr);
 }
 
-/// Split Body: erst den Body, dann die Ebene oder Fläche, an der geteilt wird; jedes weitere Teil wird ein Body
+/// Split Body: den Body und die Ebene oder Fläche, an der geteilt wird (beliebige Reihenfolge); jedes weitere Teil wird ein Body
 void startSplit(App::Document* doc)
 {
     Design::Body* body = nullptr;
@@ -1365,10 +1382,10 @@ void startSplit(App::Document* doc)
     for (auto& sel : selection) {
         App::DocumentObject* obj = sel.getObject();
         const auto& names = sel.getSubNames();
-        // ein Klick auf den Body in der Ansicht wählt eine Fläche: als Erstes gewählt und mit Werkzeug danach zählt er
-        // als der Body
+        // ein Klick auf den Body in der Ansicht wählt eine Fläche: als Erstes gewählt (Werkzeug danach) oder nach dem
+        // Werkzeug zählt er als der Body
         const bool first = &sel == &selection.front() && selection.size() > 1;
-        if (!body && freecad_cast<Design::Body*>(obj) && (names.empty() || first)) {
+        if (!body && freecad_cast<Design::Body*>(obj) && (names.empty() || first || tool)) {
             body = static_cast<Design::Body*>(obj);
         }
         else if (!tool && (isPlane(obj) || (names.size() == 1 && names.front().rfind("Face", 0) == 0))) {
@@ -1429,8 +1446,9 @@ void startRib(App::Document* doc, long mode = 0)
         }
     }
     if (!body || !sketch || !Design::stateAtMarker(body)) {
-        QMessageBox::information(Gui::getMainWindow(), T("Rib"),
-                                 T("Select the body and the sketch lines of the rib (or the whole sketch)."));
+        QMessageBox::information(Gui::getMainWindow(), T(mode ? "Web" : "Rib"),
+                                 mode ? T("Select the body and the sketch lines of the web (or the whole sketch).")
+                                      : T("Select the body and the sketch lines of the rib (or the whole sketch)."));
         return;
     }
     auto feature = static_cast<Design::Rib*>(addFeature(doc, "Design::Rib", mode ? "Web" : "Rib", body));
@@ -1647,12 +1665,14 @@ void startMirror(App::Document* doc)
     startEditing(feature, false, nullptr);
 }
 
-/// Features und Skizzen aus der Timeline löschen (Kette wird neu verbunden), alles andere wie gewohnt
+/// Features und Skizzen aus der Timeline löschen (Kette wird neu verbunden), Bodies samt ihrer Schritte, alles andere
+/// wie gewohnt
 void deleteSelected(App::Document* doc)
 {
     std::vector<App::DocumentObjectT> items;
     for (auto obj : Gui::Selection().getObjectsOfType(App::DocumentObject::getClassTypeId())) {
-        if (obj->isDerivedFrom<Design::Feature>() || obj->isDerivedFrom<Sketcher::SketchObject>()) {
+        if (obj->isDerivedFrom<Design::Feature>() || obj->isDerivedFrom<Sketcher::SketchObject>()
+            || obj->isDerivedFrom<Design::Body>()) {
             items.emplace_back(obj);
         }
     }
@@ -1894,13 +1914,17 @@ Geometries dxfGeometry(const std::string& file, std::string& error)
 /// STEP: Timeline-Eintrag "Import" mit je einem Body pro Solid; DXF/SVG: Skizze auf der XY-Ebene
 void importFile(App::Document* doc)
 {
+    // startet im zuletzt benutzten Ordner, sonst im Projektordner wie Öffnen und Speichern
+    ParameterGrp::handle params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
     const QString file = QFileDialog::getOpenFileName(
-        Gui::getMainWindow(), T("Insert"), QString(),
+        Gui::getMainWindow(), T("Insert"),
+        QString::fromStdString(params->GetASCII("InsertFolder", Gui::Shell::projectsFolder().toStdString().c_str())),
         T("CAD files (*.step *.stp *.dxf *.svg);;STEP (*.step *.stp);;DXF (*.dxf);;SVG (*.svg)")
     );
     if (file.isEmpty()) {
         return;
     }
+    params->SetASCII("InsertFolder", QFileInfo(file).absolutePath().toStdString());
     const QString stem = QFileInfo(file).completeBaseName();
     const QString suffix = QFileInfo(file).suffix().toLower();
     App::Part* comp = activeContainer(doc);
@@ -2072,9 +2096,10 @@ void showVersions(App::Document* doc)
         row->addWidget(b);
     }
     lay->addLayout(row);
-    QObject::connect(list, &QListWidget::currentRowChanged, &dlg, [=](int r) {
+    // nach der Auswahl, nicht der aktuellen Zeile: der Fokus setzt Zeile 0 aktuell, ohne sie zu markieren
+    QObject::connect(list, &QListWidget::itemSelectionChanged, &dlg, [=] {
         for (auto b : {open, compare, restore}) {
-            b->setEnabled(r >= 0);
+            b->setEnabled(!list->selectedItems().isEmpty());
         }
     });
     const auto chosen = [list] { return list->currentItem() ? list->currentItem()->data(Qt::UserRole).toString() : QString(); };
@@ -2128,6 +2153,16 @@ void showVersions(App::Document* doc)
     const auto variantPath = [variants] {
         return variants->currentItem() ? variants->currentItem()->data(Qt::UserRole).toString() : QString();
     };
+    // Wechseln und Vergleichen nur mit einer anderen als der geöffneten Variante
+    for (auto b : {switchTo, compareVariant}) {
+        b->setEnabled(false);
+    }
+    QObject::connect(variants, &QListWidget::itemSelectionChanged, &dlg, [=] {
+        const bool other = !variants->selectedItems().isEmpty() && QFileInfo(variantPath()) != QFileInfo(path);
+        for (auto b : {switchTo, compareVariant}) {
+            b->setEnabled(other);
+        }
+    });
     QObject::connect(create, &QPushButton::clicked, &dlg, [&] {
         bool ok = false;
         const QString name = QInputDialog::getText(&dlg, T("New Variant"), T("What do you want to try?"), QLineEdit::Normal,
@@ -2238,7 +2273,7 @@ void printBodies(App::Document* doc)
     }
     static const char* qualities[] = {"coarse", "normal", "fine"};
     const long quality = std::clamp<long>(params->GetInt("ExportQuality", 1), 0, 2);
-    QString folder = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QStringLiteral("/print");
+    QString folder = QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation) + QStringLiteral("/MyCAD/print");
     QDir().mkpath(folder);
     folder.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('\''), QStringLiteral("\\'"));
     QString name = slicer;
@@ -2467,7 +2502,8 @@ void startPattern(App::Document* doc)
 class TaskOffsetPlane: public Gui::TaskView::TaskDialog
 {
 public:
-    explicit TaskOffsetPlane(App::DocumentObject* plane)
+    /// d: Startabstand (neu 10 mm, Nachbearbeiten: der bisherige)
+    explicit TaskOffsetPlane(App::DocumentObject* plane, double d = 10.0)
         : plane(plane)
     {
         auto w = new QWidget;
@@ -2476,13 +2512,13 @@ public:
         auto distance = new Gui::QuantitySpinBox;
         distance->setUnit(Base::Unit::Length);
         distance->setRange(-1e7, 1e7);
-        distance->setValue(Base::Quantity(10.0, Base::Unit::Length));
+        distance->setValue(Base::Quantity(d, Base::Unit::Length));
         form->addRow(T("Distance"), distance);
         addTaskBox(w, false);
         QObject::connect(distance, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this](double d) {
             setOffset(d);
         });
-        setOffset(10.0);
+        setOffset(d);
     }
     QDialogButtonBox::StandardButtons getStandardButtons() const override
     {
@@ -2504,32 +2540,60 @@ public:
 private:
     void setOffset(double d)
     {
+        // nur den Abstand: die Verschiebung in der Ebene (mittig über der Fläche, styleDatum) bleibt
         auto offset = static_cast<App::PropertyPlacement*>(plane->getPropertyByName("AttachmentOffset"));
-        offset->setValue(Base::Placement(Base::Vector3d(0, 0, d), Base::Rotation()));
+        const Base::Vector3d p = offset->getValue().getPosition();
+        offset->setValue(Base::Placement(Base::Vector3d(p.x, p.y, d), Base::Rotation()));
         plane->getDocument()->recompute();
     }
     App::DocumentObject* plane;
 };
 
-/// Konstruktionselemente dezent statt FreeCAD-Gelb; Ebenen so groß wie die vorhandenen Körper
+/// Konstruktionselemente dezent statt FreeCAD-Gelb. Ebenen so groß wie der Körper, an dem sie hängen, und mittig über
+/// den gewählten Elementen (Fläche, Punkte, …) statt am Ursprung der Fläche; halbtransparent nur Ebenen, Achsen und
+/// Punkte deckend (sonst kaum zu sehen)
 void styleDatum(App::DocumentObject* datum)
 {
     auto length = freecad_cast<App::PropertyLength*>(datum->getPropertyByName("Length"));
     auto width = freecad_cast<App::PropertyLength*>(datum->getPropertyByName("Width"));
     auto resize = freecad_cast<App::PropertyEnumeration*>(datum->getPropertyByName("ResizeMode"));
-    if (length && width && resize) {  // nur Ebenen (Achsen haben keine Breite)
-        Base::BoundBox3d bb;
-        for (auto b : datum->getDocument()->getObjectsOfType(Design::Body::getClassTypeId())) {
-            bb.Add(static_cast<Design::Body*>(b)->Shape.getShape().getBoundBox());
+    auto attach = datum->getExtensionByType<Part::AttachExtension>(true);
+    const bool plane = length && width && resize && attach;  // Achsen haben keine Breite
+    if (plane) {
+        Base::BoundBox3d body, picked;
+        const auto& objs = attach->AttachmentSupport.getValues();
+        const auto& subs = attach->AttachmentSupport.getSubValues();
+        for (size_t i = 0; i < objs.size() && i < subs.size(); ++i) {
+            if (objs[i]->isDerivedFrom<Part::Feature>()) {  // Ursprungsebenen und -achsen sind unendlich
+                const auto opts = Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform;
+                body.Add(Part::Feature::getTopoShape(objs[i], opts).getBoundBox());
+                if (!subs[i].empty()) {
+                    picked.Add(Part::Feature::getTopoShape(objs[i], opts | Part::ShapeOption::NeedSubElement,
+                                                           subs[i].c_str())
+                                   .getBoundBox());
+                }
+            }
         }
-        const double size = bb.IsValid() ? std::max(bb.LengthX(), bb.LengthY()) * 1.2 : 60.0;
+        if (!body.IsValid()) {
+            for (auto b : datum->getDocument()->getObjectsOfType(Design::Body::getClassTypeId())) {
+                body.Add(static_cast<Design::Body*>(b)->Shape.getShape().getBoundBox());
+            }
+        }
+        const double size = body.IsValid() ? std::max({body.LengthX(), body.LengthY(), body.LengthZ()}) * 1.2 : 60.0;
         resize->setValue("Manual");
         length->setValue(size);
         width->setValue(size);
+        datum->recomputeFeature();
+        if (picked.IsValid()) {  // Mitte der Auswahl in die Ebene projiziert, als Verschiebung in der Ebene
+            Base::Vector3d c;
+            static_cast<App::GeoFeature*>(datum)->Placement.getValue().inverse().multVec(picked.GetCenter(), c);
+            const Base::Placement offset = attach->AttachmentOffset.getValue();
+            attach->AttachmentOffset.setValue(offset * Base::Placement(Base::Vector3d(c.x, c.y, 0), Base::Rotation()));
+        }
     }
     if (auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(datum))) {
         vp->ShapeAppearance.setDiffuseColor(0.45F, 0.62F, 1.0F);
-        vp->Transparency.setValue(80);
+        vp->Transparency.setValue(plane ? 80 : 0);
     }
 }
 
@@ -2561,6 +2625,20 @@ void startConstruct(App::Document* doc, const char* type, const char* name, cons
         QMessageBox::information(Gui::getMainWindow(), T(name), T(hint));
         return;
     }
+    // Achse einer Zylinder- oder Kegelfläche über eine ihrer Kreiskanten (AxisOfCurvature, auch für Teilflächen
+    // wie Rundungen); FreeCAD nähme sonst die Trägheitsachse, die es bei rotationssymmetrischen Flächen nicht gibt
+    auto feature = freecad_cast<Part::Feature*>(objs.front());
+    if (objs.size() == 1 && feature && std::strcmp(type, "PartDesign::Line") == 0 && subs[0].rfind("Face", 0) == 0) {
+        const TopoDS_Shape face = feature->Shape.getShape().getSubShape(subs[0].c_str(), true);
+        const auto kind = face.IsNull() ? GeomAbs_OtherSurface : BRepAdaptor_Surface(TopoDS::Face(face)).GetType();
+        for (TopExp_Explorer e(face, TopAbs_EDGE); (kind == GeomAbs_Cylinder || kind == GeomAbs_Cone) && e.More(); e.Next()) {
+            const std::string edge = elementName(feature->Shape.getShape().getShape(), e.Current());
+            if (BRepAdaptor_Curve(TopoDS::Edge(e.Current())).GetType() == GeomAbs_Circle && !edge.empty()) {
+                subs[0] = edge;
+                break;
+            }
+        }
+    }
     doc->openTransaction(name);
     App::DocumentObject* datum = doc->addObject(type, name);
     auto attach = datum ? datum->getExtensionByType<Part::AttachExtension>() : nullptr;
@@ -2583,6 +2661,12 @@ void startConstruct(App::Document* doc, const char* type, const char* name, cons
     Design::folder(Design::componentOf(objs.front()), "Construction")->addObject(datum);
     styleDatum(datum);
     doc->recompute();
+    if (!datum->isValid()) {  // passender Modus, aber nicht berechenbar (z. B. Trägheitsachse einer Kugel): nichts Kaputtes anlegen
+        doc->abortTransaction();
+        QMessageBox::information(Gui::getMainWindow(), T(name),
+                                 T("This selection does not define a %1. %2").arg(T(name), T(hint)));
+        return;
+    }
     doc->commitTransaction();
     Gui::Selection().clearSelection();
 }
@@ -3341,8 +3425,11 @@ void showParameters(App::Document* doc)
     table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    table->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    table->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);  // Breite der Knöpfe setzt refresh
     lay->addWidget(table);
+    auto error = new QLabel;  // unter der Eingabezeile, auch für Fehler in der Tabelle
+    error->setWordWrap(true);
+    error->setStyleSheet(QStringLiteral("color: %1;").arg(Gui::Shell::theme().red.name()));
 
     auto names = [set] {
         std::vector<App::Property*> props;
@@ -3356,26 +3443,30 @@ void showParameters(App::Document* doc)
         return result;
     };
     std::function<void()> refresh;
+    // wie in der Notiz: Namen mit Umlauten, Dezimalkomma; was keinen Wert ergibt, wirft
     auto setExpression = [set, doc](const std::string& name, const QString& text) {
-        App::Property* prop = set->getPropertyByName(name.c_str());
-        // Tabelleneintrag selbst ist der Eigentümer: andere Parameter heißen dort einfach "Width"
-        set->setExpression(App::ObjectIdentifier(*prop),
-                           std::shared_ptr<App::Expression>(App::Expression::parse(set, text.toStdString()).release()));
+        Design::setParameterExpression(set, set->getPropertyByName(name.c_str()), text.toStdString());
         doc->recompute();
     };
     refresh = [&, set, table] {
         table->blockSignals(true);
         table->setRowCount(0);
+        int buttonWidth = 0;
         for (const auto& name : names()) {
             auto prop = static_cast<App::PropertyQuantity*>(set->getPropertyByName(name.c_str()));
             const int r = table->rowCount();
             table->insertRow(r);
-            auto nameItem = new QTableWidgetItem(QString::fromStdString(name));
+            const char* written = prop->getDocumentation();  // geschriebener Name, z. B. "Wandstärke"
+            const QString shown = QString::fromUtf8(written && *written ? written : name.c_str());
+            auto nameItem = new QTableWidgetItem(shown);
             nameItem->setFlags(Qt::ItemIsEnabled);
+            nameItem->setData(Qt::UserRole, QString::fromStdString(name));
             table->setItem(r, 0, nameItem);
             const auto info = set->getExpression(App::ObjectIdentifier(*prop));
-            table->setItem(r, 1, new QTableWidgetItem(info.expression ? QString::fromStdString(info.expression->toString())
-                                                                      : QString()));
+            auto expression = new QTableWidgetItem(
+                info.expression ? QString::fromStdString(Design::fromParameterExpression(doc, info.expression->toString()))
+                                : QString());
+            table->setItem(r, 1, expression);
             auto value = new QTableWidgetItem(QString::fromStdString(prop->getQuantityValue().getUserString()));
             value->setFlags(Qt::ItemIsEnabled);
             table->setItem(r, 2, value);
@@ -3388,33 +3479,52 @@ void showParameters(App::Document* doc)
                 }
             }
             if (source) {
+                // geändert wird in der Notiz, sonst liefen Notiz und Tabelle auseinander
+                expression->setFlags(Qt::ItemIsEnabled);
                 auto from = new QLabel(T("In note %1").arg(QString::fromUtf8(source->Label.getValue())));
                 from->setContentsMargins(8, 0, 8, 0);
                 table->setCellWidget(r, 3, from);
+                buttonWidth = std::max(buttonWidth, from->sizeHint().width());
                 continue;
             }
             auto remove = new QPushButton(T("Remove"));
             remove->setAutoDefault(false);
-            QObject::connect(remove, &QPushButton::clicked, table, [&, set, name] {
+            // destruktiv: Text system.red (MyStyle 9.3)
+            remove->setStyleSheet(QStringLiteral("color: %1;").arg(Gui::Shell::theme().red.name()));
+            QObject::connect(remove, &QPushButton::clicked, table, [&, set, name, shown] {
+                // ein gebrauchter Parameter bleibt: die Formeln, die ihn nennen, ergäben sonst keinen Wert mehr
+                const auto users = Design::parameterUsers(set, name);
+                if (!users.empty()) {
+                    QStringList labels;
+                    for (const auto& u : users) {
+                        labels << QString::fromUtf8(u.c_str());
+                    }
+                    error->setText(T("“%1” is still used by %2. Change that formula first.").arg(shown, labels.join(QStringLiteral(", "))));
+                    return;
+                }
+                error->clear();
                 set->removeDynamicProperty(name.c_str());
                 doc->recompute();
                 QTimer::singleShot(0, table, [&] { refresh(); });
             });
             table->setCellWidget(r, 3, remove);
+            buttonWidth = std::max(buttonWidth, remove->sizeHint().width());
         }
+        // ResizeToContents misst die Knöpfe in den Zellen nicht mit ("Remove" wurde zu "emove")
+        table->horizontalHeader()->resizeSection(3, buttonWidth + 8);
         table->blockSignals(false);
     };
     QObject::connect(table, &QTableWidget::itemChanged, table, [&, table](QTableWidgetItem* item) {
         if (item->column() != 1) {
             return;
         }
-        const std::string name = table->item(item->row(), 0)->text().toStdString();
+        const std::string name = table->item(item->row(), 0)->data(Qt::UserRole).toString().toStdString();
         try {
             setExpression(name, item->text());
-            item->setToolTip(QString());
+            error->clear();
         }
-        catch (const Base::Exception& e) {
-            item->setToolTip(QString::fromUtf8(e.what()));
+        catch (const Base::Exception&) {
+            error->setText(T("“%1” is not a value or formula. Write e.g. 40 mm or Width / 4.").arg(item->text()));
         }
         QTimer::singleShot(0, table, [&] { refresh(); });
     });
@@ -3430,26 +3540,31 @@ void showParameters(App::Document* doc)
     row->addWidget(exprEdit);
     row->addWidget(add);
     lay->addLayout(row);
-    auto error = new QLabel;
-    error->setStyleSheet(QStringLiteral("color: %1;").arg(Gui::Shell::theme().red.name()));
     lay->addWidget(error);
     QObject::connect(add, &QPushButton::clicked, &dlg, [&, set] {
+        // Namen wie in der Notiz: "Wandstärke" wird zur Property "Wandstaerke", angezeigt wird der geschriebene
         static const QRegularExpression valid(QStringLiteral("^[A-Za-z_][A-Za-z0-9_]*$"));
         const QString name = nameEdit->text().trimmed();
-        if (!valid.match(name).hasMatch() || set->getPropertyByName(name.toLatin1().constData())) {
+        const std::string id = NoteParameters::identifier(name.toStdString());
+        if (!valid.match(QString::fromStdString(id)).hasMatch() || set->getPropertyByName(id.c_str())) {
             error->setText(T("Use a new name of letters, digits and _ (no spaces)."));
             return;
         }
-        set->addDynamicProperty("App::PropertyQuantity", name.toLatin1().constData(), "Parameters");
+        if (!App::ExpressionParser::isTokenAnIndentifier(id)) {  // "mm", "h", "pi": in Formeln nicht lesbar
+            error->setText(T("“%1” is a unit or a constant. Choose another name.").arg(name));
+            return;
+        }
+        const QString text = exprEdit->text().trimmed().isEmpty() ? QStringLiteral("0 mm") : exprEdit->text();
+        set->addDynamicProperty("App::PropertyQuantity", id.c_str(), "Parameters", name.toUtf8().constData());
         try {
-            setExpression(name.toStdString(), exprEdit->text().trimmed().isEmpty() ? QStringLiteral("0 mm") : exprEdit->text());
+            setExpression(id, text);
             error->clear();
             nameEdit->clear();
             exprEdit->clear();
         }
-        catch (const Base::Exception& e) {
-            set->removeDynamicProperty(name.toLatin1().constData());
-            error->setText(QString::fromUtf8(e.what()));
+        catch (const Base::Exception&) {
+            set->removeDynamicProperty(id.c_str());
+            error->setText(T("“%1” is not a value or formula. Write e.g. 40 mm or Width / 4.").arg(text));
         }
         refresh();
     });
@@ -3520,8 +3635,8 @@ void toggleSection(App::Document* doc)
 class TaskAnglePlane: public Gui::TaskView::TaskDialog
 {
 public:
-    /// axisPoint/axisDir: Kante in den lokalen Koordinaten der Bezugsebene
-    TaskAnglePlane(App::DocumentObject* plane, Base::Vector3d axisPoint, Base::Vector3d axisDir)
+    /// axisPoint/axisDir: Kantenmitte und -richtung in den lokalen Koordinaten der Bezugsebene; a: Startwinkel in Grad
+    TaskAnglePlane(App::DocumentObject* plane, Base::Vector3d axisPoint, Base::Vector3d axisDir, double a = 45.0)
         : plane(plane)
         , point(axisPoint)
         , dir(axisDir)
@@ -3532,11 +3647,11 @@ public:
         auto angle = new Gui::QuantitySpinBox;
         angle->setUnit(Base::Unit::Angle);
         angle->setRange(-360, 360);
-        angle->setValue(Base::Quantity(45.0, Base::Unit::Angle));
+        angle->setValue(Base::Quantity(a, Base::Unit::Angle));
         form->addRow(T("Angle"), angle);
         addTaskBox(w, false);
         QObject::connect(angle, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this](double a) { setAngle(a); });
-        setAngle(45.0);
+        setAngle(a);
     }
     QDialogButtonBox::StandardButtons getStandardButtons() const override
     {
@@ -3558,9 +3673,10 @@ public:
 private:
     void setAngle(double a)
     {
-        // Drehung um die Kante: Ebene liegt auf der Bezugsebene, Kante als Achse durch ihren Punkt
+        // Ursprung in der Kantenmitte (Ebene mittig an der Kante), um die Kante gedreht. Achse und Winkel bleiben so in
+        // AttachmentOffset stehen und lassen sich beim Nachbearbeiten wieder auslesen (getRawValue, auch bei 0°)
         auto offset = static_cast<App::PropertyPlacement*>(plane->getPropertyByName("AttachmentOffset"));
-        offset->setValue(Base::Placement(Base::Vector3d(), Base::Rotation(dir, a * M_PI / 180.0), point));
+        offset->setValue(Base::Placement(point, Base::Rotation(dir, a * M_PI / 180.0)));
         plane->getDocument()->recompute();
     }
     App::DocumentObject* plane;
@@ -3605,7 +3721,7 @@ void startAnglePlane(App::Document* doc)
         if (e.More()) {
             BRepAdaptor_Curve c(TopoDS::Edge(e.Current()));
             if (c.GetType() == GeomAbs_Line) {
-                p0 = c.Value(c.FirstParameter());
+                p0 = c.Value((c.FirstParameter() + c.LastParameter()) / 2);  // Mitte (Ursprungsachsen: 0)
                 d0 = c.Line().Direction();
                 line = true;
             }
@@ -3651,13 +3767,13 @@ void startAnglePlane(App::Document* doc)
     attach->AttachmentSupport.setValue(ref, std::vector<std::string> {refName});
     attach->MapMode.setValue("FlatFace");
     Design::folder(Design::componentOf(ref), "Construction")->addObject(plane);
-    styleDatum(plane);
     plane->recomputeFeature();
     // Kante in lokale Koordinaten der befestigten (noch ungedrehten) Ebene umrechnen
     const Base::Placement inverse = static_cast<App::GeoFeature*>(plane)->Placement.getValue().inverse();
     Base::Vector3d point, dir;
     inverse.multVec(Base::Vector3d(p0.X(), p0.Y(), p0.Z()), point);
     inverse.getRotation().multVec(Base::Vector3d(d0.X(), d0.Y(), d0.Z()), dir);
+    styleDatum(plane);  // erst danach: die Verschiebung zur Flächenmitte ersetzt TaskAnglePlane durch die Kantenmitte
     Gui::Selection().clearSelection();
     Gui::Control().showDialog(new TaskAnglePlane(plane, point, dir));
 }
@@ -3698,6 +3814,30 @@ void startOffsetPlane(App::Document* doc)
     styleDatum(plane);
     Gui::Selection().clearSelection();
     Gui::Control().showDialog(new TaskOffsetPlane(plane));
+}
+
+/// Doppelklick auf eine Konstruktionsebene im Browser (PartDesigns ViewProviderDatum ruft Design_EditConstruction):
+/// Abstand bzw. Winkel ändern, beides steht in AttachmentOffset. Mittelebenen rechnen ihren Abstand selbst.
+void editConstruction(App::Document* doc)
+{
+    const auto picked = Gui::Selection().getSelection(doc->getName());
+    App::DocumentObject* plane = picked.size() == 1 ? picked.front().pObject : nullptr;
+    auto offset = plane ? freecad_cast<App::PropertyPlacement*>(plane->getPropertyByName("AttachmentOffset")) : nullptr;
+    if (!offset || !plane->getPropertyByName("Width") || std::string(plane->getNameInDocument()).rfind("Midplane", 0) == 0) {
+        return;  // Achsen, Punkte: keine Werte zum Ändern
+    }
+    const Base::Placement value = offset->getValue();
+    Base::Vector3d axis;
+    double angle = 0;
+    value.getRotation().getRawValue(axis, angle);
+    Gui::Selection().clearSelection();
+    doc->openTransaction("Edit Plane");
+    if (value.getRotation().isIdentity() && axis.z > 0.999) {
+        Gui::Control().showDialog(new TaskOffsetPlane(plane, value.getPosition().z));
+    }
+    else {
+        Gui::Control().showDialog(new TaskAnglePlane(plane, value.getPosition(), axis, angle * 180.0 / M_PI));
+    }
 }
 
 }  // namespace
@@ -3744,7 +3884,7 @@ void CreateDesignCommands()
                                      "Std_TransformManip", "M", startMove));
     mgr.addCommand(new DesignCommand("Design_Mirror", "Mirror", "Mirror: select bodies to mirror",
                                      "PartDesign_Mirrored", "", startMirror));
-    mgr.addCommand(new DesignCommand("Design_Delete", "Delete", "Delete: remove features or sketches from the timeline",
+    mgr.addCommand(new DesignCommand("Design_Delete", "Delete", "Delete: remove features, sketches or bodies with their steps",
                                      "edit-delete", "", deleteSelected));
     mgr.addCommand(new DesignCommand("Design_Export", "Export", "Export bodies as 3MF, STL or STEP, or sketches as DXF",
                                      "document-save-as", "", exportBodies));
@@ -3794,6 +3934,8 @@ void CreateDesignCommands()
                                                         "Select a vertex, a circular edge, an edge and a plane, "
                                                         "or three planes.");
                                      }));
+    // ohne Menütext: nicht in Suche und Leisten, nur für den Doppelklick auf eine Konstruktionsebene
+    mgr.addCommand(new DesignCommand("Design_EditConstruction", "", "", "", "", editConstruction));
     mgr.addCommand(new DesignCommand("Design_Measure", "Measure",
                                      "Measure: select one or two points, edges, faces or bodies", "Std_Measure",
                                      "I", startMeasure));

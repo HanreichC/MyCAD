@@ -47,6 +47,29 @@ def toggle_names():
     Gui.runCommand("MyCAD_Settings")
 
 
+bar_h = []
+
+
+def bar_ok(tag):
+    """Toolbar nach dem Umschalten: keine Knöpfe/Beschriftungen übereinander, alles in der Toolbar, aus = wieder so hoch wie
+    am Anfang (früher blieben die Abschnitte mit alten Größen stehen: "Open" über "Save", 3 Reihen auf hoher Glasfläche)"""
+    bar = button("Std_New").parentWidget().parentWidget().parentWidget()
+    items = [w for w in bar.findChildren(QtWidgets.QWidget) if w.isVisible()
+             and (w.objectName() == "GlassButton" or isinstance(w, QtWidgets.QLabel))]
+    rects = [(w, QtCore.QRect(w.mapTo(bar, QtCore.QPoint(0, 0)), w.size())) for w in items]
+    bad = ["%s/%s" % (a.text().replace(chr(10), " "), b.text().replace(chr(10), " ")) for i, (a, ra) in enumerate(rects)
+           for b, rb in rects[i + 1:] if ra.intersects(rb)]
+    out = [w.text() for w, r in rects if not bar.rect().contains(r)]
+    head = bar.parentWidget()
+    L("  %s: bar %dx%d header %dx%d names=%s" % (tag, bar.width(), bar.height(), head.width(), head.height(), grp.GetBool("ToolNames")))
+    check("%s no overlap" % tag, not bad, str(bad[:5]))
+    check("%s inside bar" % tag, not out, str(out[:5]))
+    check("%s header fits bar" % tag, head.height() - bar.height() <= 16, "%d vs %d" % (head.height(), bar.height()))
+    if not grp.GetBool("ToolNames"):
+        bar_h.append(bar.height())
+        check("%s off = start height" % tag, bar_h[-1] == bar_h[0], str(bar_h))
+
+
 run([
     ("setup", lambda: make_body(rect(0, 0, 60, 40), 0, 15, "Box")),
     ("map shift", lambda: grp.SetString("MouseKeys", '[{"key":%d,"button":"middle","mode":"hold"}]' % int(QtCore.Qt.Key_Shift))),
@@ -55,8 +78,13 @@ run([
     ("after", lambda: L("umbenennen mit Shift: %s (muss gleich bleiben)" % camera())),
     ("restore keys", lambda: grp.SetString("MouseKeys", old)),
     ("shot plain", lambda: (L("  names at start=%s" % grp.GetBool("ToolNames")), shot("plain"))),
+    ("check plain", lambda: bar_ok("start")),
     ("names on", toggle_names), ("wait", lambda: None),
-    ("shot names", lambda: shot("names")),
+    ("shot names", lambda: (shot("names"), bar_ok("on1"))),
+    ("names off", toggle_names), ("wait2", lambda: None), ("check off1", lambda: (shot("off1"), bar_ok("off1"))),
+    ("names on2", toggle_names), ("wait3", lambda: None), ("check on2", lambda: bar_ok("on2")),
+    ("names off2", toggle_names), ("wait4", lambda: None), ("check off2", lambda: (shot("off2"), bar_ok("off2"))),
+    ("names on3", toggle_names), ("wait5", lambda: None),
     ("sketch", lambda: click(button("Design_CreateSketch"))),
     ("pick XY", lambda: Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XY_Plane")][0])),
     ("shot sketch", lambda: shot("sketchnames")),

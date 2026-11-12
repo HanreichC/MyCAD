@@ -345,23 +345,9 @@ QString Action::createToolTip(
     QString tooltip = QStringLiteral("<p style='white-space:pre; margin-bottom:0.5em;'><b>%1</b>%2</p>")
                           .arg(text.toHtmlEscaped(), shortcut.toHtmlEscaped());
 
-    QString cmdName;
-    if (command && command->getName()) {
-        cmdName = QString::fromLatin1(command->getName());
-        if (auto groupcmd = dynamic_cast<const GroupCommand*>(command)) {
-            if (auto act = command->getAction()) {
-                int idx = act->property("defaultAction").toInt();
-                auto cmd = groupcmd->getCommand(idx);
-                if (cmd && cmd->getName()) {
-                    cmdName = QStringLiteral("%1 (%2:%3)")
-                                  .arg(QString::fromLatin1(cmd->getName()), cmdName)
-                                  .arg(idx);
-                }
-            }
-        }
-        cmdName = QStringLiteral("<p style='white-space:pre; margin-top:0.5em;'><i>%1</i></p>")
-                      .arg(cmdName.toHtmlEscaped());
-    }
+    // MyCAD: kein interner Befehlsname (<i>Design_Fillet</i>) am Ende des Tooltips
+    Q_UNUSED(command);
+    const QString cmdName;
 
     if (!shortcut.isEmpty() && helpText.endsWith(shortcut)) {
         helpText.resize(helpText.size() - shortcut.size());

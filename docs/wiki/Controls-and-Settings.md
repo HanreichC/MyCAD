@@ -16,6 +16,11 @@
 | **Q** | Press Pull |
 | **M** | Move |
 | **J** | Joint |
+| **A** | Appearance (material of the selected body) |
+| **I** | Measure |
+| **V, F** | Fit All: the whole model in view |
+| **F1** | help for the tool under the mouse, or for the one you are using |
+| **F2** | rename the entry selected in the browser |
 | **Esc** | put the active tool away, leave a note or a scribble |
 | **Delete** | delete the selection |
 
@@ -54,7 +59,15 @@ undo.
 
 ## Settings
 
-**Settings** at the bottom left (or **Ctrl+,**):
+**Settings** at the bottom left (or **Ctrl+,**). Every number field there, and everywhere else, takes a decimal comma
+too: `0,15` is `0.15`.
+
+**Help** right above it (or **F1** over any tool) opens the built-in help: every tool with steps, options and a clip,
+searchable in English and German.
+
+![Help and F1](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/help.gif)
+
+
 
 **General**
 - Color scheme Automatic / Light / Dark, **Liquid Glass** from Ultra Clear to Tinted, Show tool names, Show grid
@@ -89,12 +102,23 @@ scans with relief; wood shows end grain where it's cut.
 
 ## Files
 
-- **Start page** ("Home" at the bottom left): recent designs and the projects folder, with previews and search.
+- Undo, Redo and **Save Version** sit in the FILE section of the toolbar.
 
   ![Designs and files](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/file_basics.gif)
 
-- Right-click the design name at the top of the browser: Save Version, Save As, Export, **Variants**, Rename, Close,
-  Delete (to the trash).
+- **Start page** (**Home** at the top right, next to the window buttons): recent designs and the projects folder, with
+  previews and search. Right-click a design to **Rename** it (its project folder and versions follow) or **Delete** it
+  (to the trash, after asking).
+
+  ![Start page](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/file_start_page.gif)
+
+- **Browser** on the left: the eye in front of an entry shows or hides it, right-click for Show / Hide, Rename, Move,
+  Export and Delete, **F2** renames. Click the design name at the top to rename the design, file and project folder
+  included. **Saved** at the bottom right means the current state is on disk. Right-click the design name: Save Version,
+  Save As, Export, **Variants**, Rename, Close, Delete (to the trash). Right-click an empty spot in the view for the
+  tools you need most.
+
+  ![The browser](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/browser.gif)
 - **Insert:** STEP (one body per solid), DXF and SVG into a sketch.
 
   ![Insert](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Import.gif)

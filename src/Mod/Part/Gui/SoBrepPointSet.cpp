@@ -89,13 +89,17 @@ static void applyOverlayDepthState(SoState* state, OverlayDepthMode depthMode)
     }
 }
 
+// MyCAD: einzeln vorgewählte/gewählte Ecken (Körperecken sind sonst 2 px), nicht alle Ecken eines gewählten Körpers
+static constexpr float pickedPointSize = 9.0f;
+
 static void renderOverlayPoints(
     SoGLRenderAction* action,
     SoIndexedPointSet* pointSet,
     const int32_t* indices,
     int numIndices,
     const SbColor& color,
-    OverlayDepthMode depthMode
+    OverlayDepthMode depthMode,
+    float minSize = 4.0f
 )
 {
     if (!action || !pointSet || !indices || numIndices <= 0) {
@@ -128,8 +132,8 @@ static void renderOverlayPoints(
     SoLazyElement::setPacked(state, pointSet, 1, &packedColor, false);
 
     float ps = SoPointSizeElement::get(state);
-    if (ps < 4.0f) {
-        SoPointSizeElement::set(state, pointSet, 4.0f);
+    if (ps < minSize) {
+        SoPointSizeElement::set(state, pointSet, minSize);
     }
 
     // setValues() does not shrink the field, so rewrite the overlay index array
@@ -386,7 +390,8 @@ void SoBrepPointSet::renderHighlight(SoGLRenderAction* action, SelContextPtr ctx
         pointIndices,
         1,
         ctx->highlightColor,
-        OverlayDepthMode::DrawOnTop
+        OverlayDepthMode::DrawOnTop,
+        pickedPointSize
     );
 }
 
@@ -437,7 +442,8 @@ void SoBrepPointSet::renderSelection(SoGLRenderAction* action, SelContextPtr ctx
             pointIndices.data(),
             static_cast<int>(pointIndices.size()),
             ctx->selectionColor,
-            OverlayDepthMode::RespectDepth
+            OverlayDepthMode::DrawOnTop,  // MyCAD: gewählte Ecken groß und ganz sichtbar (Ebene/Achse/Punkt
+            pickedPointSize               // durch Ecken); sonst halb von den angrenzenden Flächen verdeckt
         );
 
         if (warn) {

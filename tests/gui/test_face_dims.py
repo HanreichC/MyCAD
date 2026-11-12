@@ -32,11 +32,20 @@ def selected():
     return [(s.ObjectName, n) for s in Gui.Selection.getSelectionEx() for n in s.SubElementNames]
 
 
-def enter_value(text):
+def enter_value(text, key=QtCore.Qt.Key_Return):
     box = card_fields()[0]
     box.setFocus()
     box.lineEdit().selectAll(); QtTest.QTest.keyClicks(box.lineEdit(), text)
-    QtTest.QTest.keyClick(box.lineEdit(), QtCore.Qt.Key_Return)
+    QtTest.QTest.keyClick(box.lineEdit(), key)
+
+
+def card_error():
+    return [l.text() for l in visible(QtWidgets.QLabel) if l.parentWidget() and l.parentWidget().objectName() == "FaceDimensions"
+            and l.text() and l.buddy() is None]
+
+
+def broken():
+    return [o.Name for o in doc().Objects if "Invalid" in o.State]
 
 
 run([
@@ -53,6 +62,15 @@ run([
     ("changed", lambda: check("enter changes the model", abs(body("Box").Shape.Volume - 2400) < 1e-6, str(body("Box").Shape.Volume))),
     ("undo", lambda: Gui.runCommand("Std_Undo")),
     ("undone", lambda: check("ctrl+z takes it back", abs(body("Box").Shape.Volume - 1000) < 1e-6, str(body("Box").Shape.Volume))),
+    ("card undone", lambda: check("the open card shows the undone value", [b.text() for b in card_fields()] == ["5.00 mm"],
+                                  str([b.text() for b in card_fields()]))),
+    ("zero", lambda: enter_value("0")),
+    ("rejected", lambda: check("0 is rejected: model unchanged, error in the card, no red step",
+                               abs(body("Box").Shape.Volume - 1000) < 1e-6 and card_error() == ["Distance must be greater than zero"]
+                               and not broken(), "%s %s %s" % (body("Box").Shape.Volume, card_error(), broken()))),
+    ("esc", lambda: enter_value("33", QtCore.Qt.Key_Escape)),
+    ("esc closes", lambda: check("Esc closes the card without changing the model",
+                                 not card_fields() and abs(body("Box").Shape.Volume - 1000) < 1e-6, str(body("Box").Shape.Volume))),
     ("clear", lambda: Gui.Selection.clearSelection()),
     ("gone", lambda: check("without a selected face the card disappears", not card_fields())),
     # Die Karte lebt in der Szene des Designs: schließt es, stirbt sie mit (früher Absturz beim nächsten Doppelklick)

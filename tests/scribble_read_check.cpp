@@ -210,6 +210,8 @@ void checkNotation()
     assert(has(expect("D12", "Ø12"), K::Slash));  // durchgestrichener Kreis, als D gelesen (applyInk sieht den Strich)
     assert(has(expect("DA.5", "Ø4.5"), K::Slash));  // Ø4.5: die 4 als A gelesen
     assert(has(expect("BA,5", "Ø4,5"), K::Slash));
+    assert(expect("Ø4.S", "Ø4.5").empty());  // die 5 hinter dem Punkt als S gelesen
+    assert(has(expect("DA,S", "Ø4,5"), K::Slash));
     assert(expect("Bohrung Ø12", "Bohrung Ø12").empty());
     assert(has(expect("Fase 2xA5", "Fase 2×45°"), K::Degree));
     assert(expect("Fase 2x45o", "Fase 2×45°").empty());  // ° war schon da, als o gelesen
@@ -373,6 +375,63 @@ int main(int argc, char** argv)
         separate += kinds == std::multiset<RedPen::Kind> {RedPen::Kind::Diameter, RedPen::Kind::Fillet};
     }
     assert(separate >= 2);
+
+    // Rotstift wie im Tutorial (mit der Maus, Schönschrift wie im Rotstift): Ø4.5 links, Ø4.5 weit rechts und tiefer,
+    // zuletzt C1 links daneben, etwas höher als das rechte. Erst alles auf einmal aufgeräumt (schnell geschrieben), dann
+    // jede einzeln (mit Pausen) und zusammen gelesen: jede Korrektur bleibt an ihrer Stelle und wird ihre eigene Zeile
+    const auto tutorial = [](unsigned seed) {
+        std::vector<Stroke> ink;
+        const std::tuple<const char*, double, double> notes[] = {{"Ø4.5", 0, 0}, {"Ø4.5", 70, -41}, {"C1", 15, -35}};
+        std::vector<size_t> starts;
+        for (const auto& [text, dx, dy] : notes) {
+            starts.push_back(ink.size());
+            for (Stroke s : write({QString::fromUtf8(text)}, 0.3, seed++)) {
+                for (auto& p : s) {
+                    p.x += dx, p.y += dy;
+                }
+                ink.push_back(s);
+            }
+        }
+        starts.push_back(ink.size());
+        return std::pair {ink, starts};
+    };
+    Options redPen;
+    redPen.inPlace = true;
+    redPen.smooth = redPen.straight = false;  // wie ViewProviderScribble::Private::tidyWriting auf Rotstift-Tinte
+    int tutorials = 0;
+    for (const unsigned seed : {1U, 2U, 3U}) {
+        for (const bool pauses : {false, true}) {
+            auto [ink, starts] = tutorial(seed);
+            if (pauses) {
+                for (size_t n = 0; n + 1 < starts.size(); ++n) {
+                    const std::vector<Stroke> one(ink.begin() + long(starts[n]), ink.begin() + long(starts[n + 1]));
+                    std::copy_n(tidy(one, redPen).begin(), one.size(), ink.begin() + long(starts[n]));
+                }
+            }
+            else {
+                ink = tidy(ink, redPen);
+            }
+            auto lines = ScribbleRead::read(ink);
+            std::printf("Tutorial %s:", pauses ? "mit Pausen" : "schnell");
+            std::multiset<std::pair<RedPen::Kind, double>> got;
+            for (auto& l : lines) {
+                ScribbleRead::correct(l);
+                const RedPen::Command c = RedPen::parse(l.text.toStdString());
+                got.insert({c.kind, c.value});
+                std::printf(" [%s]", l.text.toUtf8().constData());
+                if (!images.isEmpty()) {
+                    double x0, scale;
+                    ScribbleRead::render(ink, l.strokes, x0, scale)
+                        .save(QStringLiteral("%1/tutorial-seed%2-%3-%4.png").arg(images).arg(seed).arg(pauses).arg(got.size()));
+                }
+            }
+            std::printf("\n");
+            assert(lines.size() == 3);  // drei Zeilen, auch wenn das Lesen mal danebenliegt
+            tutorials += got == std::multiset<std::pair<RedPen::Kind, double>> {
+                {RedPen::Kind::Diameter, 4.5}, {RedPen::Kind::Diameter, 4.5}, {RedPen::Kind::Chamfer, 1}};
+        }
+    }
+    assert(tutorials >= 4);
     std::puts("ok");
     return 0;
 }

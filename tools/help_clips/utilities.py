@@ -5,57 +5,7 @@ Eigene Namen beginnen mit ut_, damit sie die anderen Clip-Dateien nicht übersch
 import math
 
 
-# --- Aufnahme mit Dialogen ------------------------------------------------------------------------------------------
-def ut_frame():
-    """wie harness._record_frame, aber mit offenen Dialogen und Menüs: die sind eigene Fenster (mw.grab() sieht sie
-    nicht) und laufen in einer eigenen Ereignisschleife, in der die normale Aufnahme pausiert"""
-    r = harness._rec
-    if not r:
-        return
-    tops = [w for w in QtWidgets.QApplication.topLevelWidgets()  # Dialoge, Menüs, aufgeklappte Auswahllisten
-            if w.isVisible() and w is not mw and w.isWindow() and w.metaObject().className() != "QTipLabel"
-            and w.width() > 8 and w.height() > 8]
-    if QtCore.QThread.currentThread().loopLevel() > 1 and not tops:
-        return  # verschachtelte Schleife ohne Dialog: mitten im Umbau der Szene (Absturzgefahr)
-    now = r["clock"]()
-    img = mw.grab().toImage().convertToFormat(QtGui.QImage.Format_RGB888)
-    painter = QtGui.QPainter(img)
-    painter.setRenderHint(QtGui.QPainter.Antialiasing)
-    for w in tops:
-        if isinstance(w, QtWidgets.QDialog) and not w.testAttribute(QtCore.Qt.WA_TranslucentBackground):
-            shade = QtGui.QColor(0, 0, 0, 28)  # Fensterrahmen fehlt unter Xvfb: leichter Schatten statt dessen
-            p = mw.mapFromGlobal(w.mapToGlobal(QtCore.QPoint(0, 0)))
-            painter.fillRect(QtCore.QRect(p + QtCore.QPoint(-1, -1), w.size() + QtCore.QSize(2, 2)), shade)
-        painter.drawPixmap(mw.mapFromGlobal(w.mapToGlobal(QtCore.QPoint(0, 0))), w.grab())
-    for x, y, t0 in r["clicks"]:
-        age = now - t0
-        if 0 <= age < 0.7:
-            c = QtGui.QColor(0, 136, 255)
-            c.setAlphaF(0.85 * (1 - age / 0.7))
-            painter.setPen(QtGui.QPen(c, 4))
-            painter.setBrush(QtCore.Qt.NoBrush)
-            rad = 10 + 26 * age / 0.7
-            painter.drawEllipse(QtCore.QPointF(x, y), rad, rad)
-    painter.end()
-    img = img.copy(r["left"], 0, img.width() - r["left"], img.height())
-    r["frames"].append((img.scaledToWidth(r["width"], QtCore.Qt.SmoothTransformation), now))
-    r["busy"] += r["clock"]() - now
-
-
-def ut_swap():
-    """eigene Aufnahme statt der aus harness (gleicher Takt, gleiche Liste)"""
-    r = harness._rec
-    if not r:
-        return
-    r["timer"].stop()
-    t = QtCore.QTimer()
-    t.setInterval(r["ms"])
-    t.timeout.connect(ut_frame)
-    t.start()
-    harness._keep.append(t)
-    r["timer"] = t
-
-
+# --- Aufnahme mit Dialogen (harness._record_frame nimmt Dialoge und Menüs mit ins Bild) ------------------------------
 def ut_on_close(fn):
     """fn ausführen, sobald das Design des Clips geschlossen ist (nach der Aufnahme): Einstellungen zurück"""
     name = doc().Name
@@ -77,10 +27,21 @@ def ut_view():
     return v
 
 
+def ut_grab_start():
+    """Bild des Fensters; ist die Startseite offen, kommt sie obenauf: mw.grab() malte die Werkzeugleiste der 3D-Ansicht
+    (dahinter) über sie, im echten Fenster liegt die Startseite darüber"""
+    pix = QtWidgets.QMainWindow.grab(mw)
+    start = [w for w in mw.findChildren(QtWidgets.QWidget, "StartPage") if w.isVisible()]
+    if start:
+        painter = QtGui.QPainter(pix)
+        painter.drawPixmap(start[0].mapTo(mw, QtCore.QPoint(0, 0)), start[0].grab())
+        painter.end()
+    return pix
+
+
 def ut_rec():
     """Aufnahme mit Dialogen; der Textcursor blinkt nicht (sonst ist jedes Bild neu und die GIF riesig)"""
     def go():
-        ut_swap()
         flash = QtWidgets.QApplication.cursorFlashTime()
         QtWidgets.QApplication.setCursorFlashTime(0)
         # Kamerafahrten aus: unter Last zieht eine Drehung der Ansicht sich im Clip sonst über viele Sekunden
@@ -89,11 +50,13 @@ def ut_rec():
         grp.SetBool("UseNavigationAnimations", False)
         g, old_view = globals(), harness.view
         harness.view = g["view"] = ut_view  # click(), _pos() und use() zielen sonst im Scribble daneben
+        mw.grab = ut_grab_start  # harness._record_frame nimmt mw.grab()
 
         def restore():
             QtWidgets.QApplication.setCursorFlashTime(flash)
             grp.SetBool("UseNavigationAnimations", anim)
             harness.view = g["view"] = old_view
+            del mw.grab
         ut_on_close(restore)
     step("dialog recorder", go)
 
@@ -209,7 +172,7 @@ def ut_modal(title, top=110):
         try:
             ut_place(title, top)
         except IndexError:
-            if n < 200:
+            if n < 500:  # bis 10 s: ein Befehl aus einem Menü (▾) kommt erst nach zwei Schritten dran
                 QtCore.QTimer.singleShot(20, lambda: poll(n + 1))
     QtCore.QTimer.singleShot(0, poll)
 
@@ -222,6 +185,11 @@ def ut_child(parent, cls, pred=lambda w: True):
 
 def ut_text_button(parent, text, cls=QtWidgets.QAbstractButton):
     return ut_child(parent, cls, lambda b: b.text().replace("&", "") == text)
+
+
+def ut_clip_starts():
+    """der Clip beginnt erst hier: der Aufbau davor (Körper, Profil, Einpassen) gehört nicht hinein"""
+    step("clip starts", lambda: harness._rec and (harness._rec["frames"].clear(), harness._record_frame()))
 
 
 def ut_profile(x0, y0, x1, y1):
@@ -237,6 +205,8 @@ def ut_profile(x0, y0, x1, y1):
 def ut_parameters():
     ut_rec()
     ut_profile(0, 0, 40, 30)
+    wait()
+    ut_clip_starts()
     step("Design_Parameters", lambda: (ut_modal("Parameters", 200), use("Design_Parameters")))
     wait()
     ut_type(lambda: ut_child(ut_dialog("Parameters"), QtWidgets.QLineEdit, lambda e: e.placeholderText().startswith("Name")), "Height")
@@ -416,6 +386,8 @@ def ut_note_keys(text, ms=85):
 def ut_note():
     ut_rec()
     ut_profile(0, 0, 40, 30)
+    wait()
+    ut_clip_starts()
     step("Design_Note", lambda: use("Design_Note"))
     wait()
     ut_note_keys("120 / 4 =")
@@ -429,16 +401,6 @@ def ut_note():
     wait()
     step("ok", accept)
 
-    def rebind():
-        """ponytail: MyCAD-Fehler umgangen: Enter bindet "Height" ans Feld, beim Schließen des Panels geht die Bindung
-        wieder verloren (das Feld zeigt dann die Zahl, das Verlassen übernimmt sie als feste Zahl). Fällt weg, sobald
-        das behoben ist; das Protokoll sagt, ob es noch nötig war"""
-        ext = last("Design::Extrude")
-        if not ext.ExpressionEngine:
-            L("  note: workaround, Distance lost its binding to Height")
-            ext.setExpression("Distance", "Parameters.Height")
-            doc().recompute()
-    step("rebind", rebind)
     wait()
 
     def to_wall():  # Klick ans Ende der Zeile "Wall = 2 mm"
@@ -477,7 +439,12 @@ def ut_search_field():
 
 def ut_search():
     ut_rec()
-    step("body", lambda: (st.__setitem__("b", box(0, 0, 60, 40, 20, name="Bracket")), ut_fit()))
+    def body():  # links neben dem Panel von Abrunden einpassen (es öffnet gleich und verdeckte sonst den Körper rechts)
+        st["b"] = box(0, 0, 60, 40, 20, name="Bracket")
+        Gui.ActiveDocument.ActiveView.viewIsometric()
+        panel_fit()
+        Gui.ActiveDocument.ActiveView.zoomOut()
+    step("body", body)
     step("face", lambda: select(st["b"], top(st["b"])))
     wait()
     step("ctrl+k", lambda: (ut_key("Ctrl + K"), ut_activate(), QtTest.QTest.keyClick(mw, QtCore.Qt.Key_K, QtCore.Qt.ControlModifier)))
@@ -680,6 +647,15 @@ def ut_fill_input(text):
 
 def ut_files():
     ut_rec()
+    grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
+
+    def setup():  # wie beim Benutzer: eigener Projektordner, jede Änderung wird gespeichert
+        st["projects"] = ut_projects("files")
+        grp.SetBool("AlwaysSave", True)
+        ut_on_close(lambda: grp.SetBool("AlwaysSave", False))
+    step("setup", setup)
+    ut_full()  # mit Browser: Designname und "Gesichert" stehen dort
+
     def body():  # als ein Schritt, den Rückgängig zurücknimmt (wie das Werkzeug)
         doc().openTransaction("Box")
         box(0, 0, 60, 40, 20, name="Block")
@@ -690,10 +666,50 @@ def ut_files():
     wait(2)
     step("redo", lambda: (ut_key("Ctrl + Shift + Z"), ut_ring_scene(button("Std_Redo")), Gui.runCommand("Std_Redo")))
     wait(2)
+
+    def name_point():  # Mitte des Designnamens oben im Browser, als Punkt im Fenster (der Baum liegt in der Szene)
+        t = ut_tree()
+        r = t.visualItemRect(t.topLevelItem(0))
+        return mw.mapFromGlobal(ut_tree_global(QtCore.QPoint(r.left() + 20, r.center().y())))
+    step("hover name", lambda: QtTest.QTest.mouseMove(mw.windowHandle(), name_point()))  # zeigt den Stift
+    wait()
+    step("click name", lambda: (record_click(mw.mapToGlobal(name_point())),
+                                QtTest.QTest.mouseClick(mw.windowHandle(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, name_point())))
+    wait()
+    ut_type(ut_tree_editor, "Bracket\n", ms=120)
+    wait(2)
+    step("saved", lambda: ut_ring_scene([l for l in visible(QtWidgets.QLabel) if l.text() == "Saved"][0]))
+    wait()
     step("save version", lambda: (ut_key("Ctrl + S"), ut_ring_scene(button("MyCAD_SaveVersion")), ut_modal("Save Version", 260), Gui.runCommand("MyCAD_SaveVersion")))
     ut_fill_input("First block")
     step("home", ut_click_glass(lambda: [b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Home"][0]))
-    wait(4)
+    wait(3)
+
+    def tile_menu():
+        """Rechtsklick auf die Kachel: Menü mit Umbenennen… und Löschen… zeigen, nichts wählen"""
+        ts = [t for t in ut_start().findChildren(QtWidgets.QWidget, "StartTile") if t.isVisible()]
+        t = ([x for x in ts if "Bracket" in [l.text() for l in x.findChildren(QtWidgets.QLabel, "StartName")]] or ts)[0]
+        p = t.mapTo(mw, t.rect().center())
+
+        def show():
+            m = QtWidgets.QApplication.activePopupWidget()
+            if not m:
+                L("  files: no tile menu")
+                return
+            # das Menü öffnet beim Drücken; das Loslassen geht wie bei echter Maus an das Menü
+            QtTest.QTest.mouseRelease(m.windowHandle(), QtCore.Qt.RightButton, QtCore.Qt.NoModifier, QtCore.QPoint(-5, -5))
+            acts = {a.text(): a for a in m.actions() if a.text()}
+            L("  files: tile menu %s" % list(acts))
+            for i, name in enumerate(("Rename…", "Delete…")):
+                if name in acts:
+                    QtCore.QTimer.singleShot(300 + 900 * i, lambda a=acts[name]: m.setActiveAction(a))
+            QtCore.QTimer.singleShot(2400, m.close)
+        QtCore.QTimer.singleShot(700, show)
+        record_click(mw.mapToGlobal(p))
+        QtTest.QTest.mouseMove(mw.windowHandle(), p)
+        QtTest.QTest.mousePress(mw.windowHandle(), QtCore.Qt.RightButton, QtCore.Qt.NoModifier, p)  # kehrt erst nach dem Menü zurück
+    step("right-click", tile_menu)
+    wait(3)
 
     def back():
         b = [b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Back to Design"][0]
@@ -701,7 +717,7 @@ def ut_files():
         b.click()
     step("back", back)
     wait(2)
-    step("check", lambda: L("  files: file=%s" % doc().FileName))
+    step("check", lambda: L("  files: file=%s label=%s folders=%s" % (doc().FileName, doc().Label, sorted(os.listdir(st["projects"])))))
 
 
 scenario("file_basics", ut_files, zoom=-1)
@@ -716,15 +732,26 @@ def ut_versions():
         grp.SetBool("AlwaysSave", True)  # wie beim Benutzer: jede Änderung wird gespeichert und eine Version
         ut_on_close(lambda: grp.SetBool("AlwaysSave", False))
     step("always save", always)
+    # Aufbau ohne Aufnahme (Version benennen gehört zu file_basics): Block, benannte Version, dann abgerundet
     step("body", lambda: (st.__setitem__("b", box(0, 0, 60, 40, 20, name="Block")), ut_fit()))
     wait(3)
-    step("save version", lambda: (ut_key("Ctrl + S"), ut_ring_scene(button("MyCAD_SaveVersion")), ut_modal("Save Version", 260), Gui.runCommand("MyCAD_SaveVersion")))
-    ut_fill_input("Before the fillet")
+    step("save version", lambda: (ut_modal("Save Version", 260), Gui.runCommand("MyCAD_SaveVersion")))
+    wait()
+    step("name", lambda: (ut_child(ut_dialog(), QtWidgets.QLineEdit).setText("Before the fillet"),
+                          ut_text_button(ut_dialog(), "OK", QtWidgets.QPushButton).click()))
+    wait()
     step("select", lambda: select(st["b"], top(st["b"])))
-    feature("Design_Fillet", lambda: type_into(0, "6"))
+    step("Design_Fillet", lambda: Gui.runCommand("Design_Fillet"))
+    wait()
+    step("radius", lambda: type_into(0, "6"))
+    wait()
+    step("ok", accept)
     step("deselect", Gui.Selection.clearSelection)
     wait(3)
-    step("Design_Versions", lambda: (ut_ring_scene(button("MyCAD_SaveVersion")), ut_modal("Versions", 140), Gui.runCommand("Design_Versions")))
+    ut_clip_starts()
+    wait()
+    step("place", lambda: ut_modal("Versions", 140))
+    ci_variant("Design_Versions")  # ▾ neben Version sichern → Versionen, mit Menü im Bild
     wait()
 
     def pick():
@@ -754,7 +781,8 @@ def ut_file_dialog(folder, name, button_text):
     wait()
     ut_type(lambda: [e for e in visible(QtWidgets.QFileDialog)[0].findChildren(QtWidgets.QLineEdit) if e.isVisible()][0], name)
     wait()
-    step(button_text, lambda: ut_press(ut_text_button(visible(QtWidgets.QFileDialog)[0], button_text, QtWidgets.QPushButton)))
+    # Fenster wieder aktiv: ohne Fenstermanager (Xvfb) bleibt es das nach dem Dialog nicht, Hinweise fielen aus (test_import)
+    step(button_text, lambda: (ut_press(ut_text_button(visible(QtWidgets.QFileDialog)[0], button_text, QtWidgets.QPushButton)), ut_activate()))
     wait()
 
 
@@ -800,8 +828,9 @@ def ut_export():
     step("close types", lambda: [c.hidePopup() for c in visible(QtWidgets.QFileDialog)[0].findChildren(QtWidgets.QComboBox) if c.isVisible()])
     ut_type(lambda: [e for e in visible(QtWidgets.QFileDialog)[0].findChildren(QtWidgets.QLineEdit) if e.isVisible()][0], "Bracket")
     wait()
-    step("Save", lambda: ut_press(ut_text_button(visible(QtWidgets.QFileDialog)[0], "Save", QtWidgets.QPushButton)))
-    wait(2)
+    # Fenster wieder aktiv (wie in ut_file_dialog), sonst fehlt der Hinweis "Exported 2 bodies to …"
+    step("Save", lambda: (ut_press(ut_text_button(visible(QtWidgets.QFileDialog)[0], "Save", QtWidgets.QPushButton)), ut_activate()))
+    wait(3)
     step("check", lambda: L("  export: files=%s" % os.listdir(out)))
 
 
@@ -868,7 +897,7 @@ def ut_wheel(fx, fy, clicks, ms=120):
         def one(d):
             ev = QtGui.QWheelEvent(p, vp.mapToGlobal(p), QtCore.QPoint(0, 0), QtCore.QPoint(0, d), QtCore.Qt.NoButton,
                                    QtCore.Qt.NoModifier, QtCore.Qt.NoScrollPhase, False)
-            QtWidgets.QApplication.sendEvent(vp, ev)
+            QtWidgets.QApplication.sendEvent(ut_view(), ev)  # an den Viewport kam es nicht an (nicht spontan: kein Zoom)
         return [lambda: one(120 if clicks > 0 else -120) for _ in range(abs(clicks))]
     ut_anim(make, abs(clicks), ms)
 
@@ -898,7 +927,7 @@ def ut_navigation():
     ut_drag((0.62, 0.48), (0.45, 0.62), QtCore.Qt.MiddleButton, QtCore.Qt.NoModifier, n=12, ms=140)
     wait()
     step("zoom label", lambda: ut_key("Scroll wheel: zoom", 6000))
-    ut_wheel(0.55, 0.5, 8, ms=200)
+    ut_wheel(0.55, 0.5, 3, ms=400)
     wait()
     step("cam", lambda: L("  nav after pan/zoom: %s" % Gui.ActiveDocument.ActiveView.getCamera().splitlines()[1:4]))
     step("top label", lambda: ut_key("View cube: TOP", 2500))
@@ -928,6 +957,8 @@ def ut_shortcuts():
     """Kürzel mit sichtbarer Wirkung. Esc ist hier kein Abbrechen: Esc schließt Drücken/Ziehen und Abrunden, behält aber
     das Ergebnis, und schließt Darstellung gar nicht; deshalb immer mit OK"""
     ut_rec()
+    # Maus in die Mitte: sie stand noch auf Home am ViewCube (voriger Clip), das leuchtete den ganzen Clip lang
+    step("mouse", lambda: ut_mouse(QtCore.QEvent.MouseMove, ut_at(0.5, 0.5), QtCore.Qt.NoButton, QtCore.Qt.NoButton))
     step("body", lambda: (st.__setitem__("b", box(0, 0, 60, 40, 20, name="Block")), ut_fit()))
     top_face = lambda: (ut_ring_at(App.Vector(30, 20, st["b"].Shape.BoundBox.ZMax)), select(st["b"], top(st["b"])))
     step("select", top_face)
@@ -967,3 +998,347 @@ def ut_shortcuts():
 
 
 scenario("start_shortcuts", ut_shortcuts, zoom=-1)
+
+
+# --- Ganzes Fenster: Startseite, Browser, Zahlen, Hilfe ---------------------------------------------------------------
+def ut_full():
+    """ab hier das ganze Fenster aufnehmen: Browser und die Seitenleisten von Start- und Hilfeseite gehören zur Erklärung
+    (record_start lässt links 306 px weg); die Bilder davor (schmaler) fallen weg"""
+    def go():
+        if harness._rec:
+            harness._rec["left"] = 0
+            del harness._rec["frames"][:]
+    step("whole window", go)
+
+
+def ut_projects(name):
+    """eigener, leerer Projektordner für den Clip; danach wieder der alte"""
+    import shutil
+    grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
+    old = grp.GetString("ProjectsFolder", "")
+    folder = "/tmp/clip-" + name
+    shutil.rmtree(folder, ignore_errors=True)
+    os.makedirs(folder)
+    grp.SetString("ProjectsFolder", folder)
+    ut_on_close(lambda: grp.SetString("ProjectsFolder", old) if old else grp.RemString("ProjectsFolder"))
+    return folder
+
+
+def ut_tree():
+    t = [t for t in visible(QtWidgets.QTreeWidget) if t.topLevelItemCount()][0]
+    harness._keep.append(t)
+    return t
+
+
+def ut_tree_global(p):
+    """Punkt im Browser-Baum (Viewport-Koordinaten) als Bildschirmpunkt: der Baum liegt in einem Glas-Panel der Szene"""
+    t = ut_tree()
+    top = t
+    while top.parentWidget():
+        top = top.parentWidget()
+    inner = t.viewport().mapTo(top, p)
+    v = ut_view()
+    return v.viewport().mapToGlobal(v.mapFromScene(top.graphicsProxyWidget().mapToScene(QtCore.QPointF(inner))))
+
+
+def ut_tree_item(text):
+    t = ut_tree()
+    return t.findItems(text, QtCore.Qt.MatchRecursive)[0]
+
+
+def ut_tree_click(point, button=QtCore.Qt.LeftButton):
+    """echter Klick in den Baum (point() liefert Viewport-Koordinaten), im Clip mit Kreis"""
+    def go():
+        p = point()
+        record_click(ut_tree_global(p))
+        QtTest.QTest.mouseClick(ut_tree().viewport(), button, QtCore.Qt.NoModifier, p)
+    return go
+
+
+def ut_eye(text):
+    """Auge vor dem Eintrag (FreeCADs Sichtbarkeits-Symbol, das erste Symbol der Zeile)"""
+    t = ut_tree()
+    r = t.visualItemRect(ut_tree_item(text))
+    return QtCore.QPoint(r.left() + t.style().pixelMetric(QtWidgets.QStyle.PM_FocusFrameHMargin) + 1 + t.iconSize().height() // 2, r.center().y())
+
+
+def ut_item_text(text):
+    r = ut_tree().visualItemRect(ut_tree_item(text))
+    return QtCore.QPoint(r.left() + 60, r.center().y())
+
+
+def ut_pick_menu(text, after=900):
+    """im nächsten aufgehenden Menü text wählen (das Menü blockiert: vorher einplanen); ohne text nur zeigen und schließen"""
+    def pick():
+        menu = QtWidgets.QApplication.activePopupWidget()
+        acts = [a for a in (menu.actions() if menu else []) if text and a.text() == text]
+        if menu:
+            L("  menu: %s" % [a.text() for a in menu.actions() if a.text()])
+        if acts:
+            menu.setActiveAction(acts[0])
+            QtCore.QTimer.singleShot(700, lambda: (record_click(menu.mapToGlobal(menu.actionGeometry(acts[0]).center())),
+                                                   QtTest.QTest.keyClick(menu, QtCore.Qt.Key_Return)))
+        elif menu:
+            QtCore.QTimer.singleShot(1500, menu.close)
+    QtCore.QTimer.singleShot(after, pick)
+
+
+def ut_cover(hide):
+    """Design-Ansicht unter Start- oder Hilfeseite aus- bzw. wieder einblenden: in der Aufnahme (mw.grab) zeichnen sich
+    Werkzeugleiste und Browser des Designs sonst über die Seite (auch in file_basics.gif zu sehen)"""
+    step("cover", lambda: mw.findChild(QtWidgets.QMdiArea).setVisible(not hide))
+
+
+def ut_doc_item():
+    """Eintrag des Designs im Browser; andere offene Designs (das leere vom Start des Laufs) blendet der Clip aus,
+    Ursprung klappt er zu"""
+    t = ut_tree()
+    item = None
+    for i in range(t.topLevelItemCount()):
+        it = t.topLevelItem(i)
+        it.setHidden(it.text(0) != doc().Label)
+        if it.text(0) == doc().Label:
+            item = it
+    for o in t.findItems("Origin", QtCore.Qt.MatchRecursive):
+        o.setExpanded(False)
+    return item
+
+
+def ut_tree_editor():
+    return [e for e in ut_tree().findChildren(QtWidgets.QLineEdit) if e.isVisible()][0]
+
+
+# --- Startseite -----------------------------------------------------------------------------------------------------
+def ut_start():
+    return [w for w in mw.findChildren(QtWidgets.QWidget, "StartPage")][0]
+
+
+def ut_tile(name):
+    return [t for t in ut_start().findChildren(QtWidgets.QWidget, "StartTile") if t.isVisible()
+            and [l.text() for l in t.findChildren(QtWidgets.QLabel, "StartName")][0] == name][0]
+
+
+def ut_start_page():
+    ut_rec()
+
+    def designs():
+        """drei Designs im Projektordner des Clips; das offene heißt Bracket, zwei davon unter Recent"""
+        folder = ut_projects("start")
+        b = box(0, 0, 60, 40, 8, name="Plate")
+        files = []
+        for name, change in (("Lid", lambda: setattr(b.Tip, "Distance", 3)),
+                             ("Hinge", lambda: make_body([circle(30, 20, 8)], 8, 20, "Pin")),
+                             ("Bracket", lambda: setattr(b.Tip, "Distance", 12))):
+            change()
+            doc().recompute()
+            ut_fit()
+            path = os.path.join(folder, name, name + ".mycad")
+            os.makedirs(os.path.dirname(path))
+            if name == "Bracket":
+                doc().saveAs(path)
+            else:
+                doc().saveCopy(path)
+            files.append(path)
+        mru = App.ParamGet("User parameter:BaseApp/Preferences/RecentFiles")
+        old = {k: mru.GetString(k) for k in ("MRU0", "MRU1")}
+        mru.SetString("MRU0", files[2])
+        mru.SetString("MRU1", files[1])
+        ut_on_close(lambda: [mru.SetString(k, v) if v else mru.RemString(k) for k, v in old.items()])
+        st["projects"] = folder
+    step("designs", designs)
+    ut_full()
+    wait()
+    step("home", ut_click_glass(lambda: [b for b in visible(QtWidgets.QToolButton) if b.toolTip() == "Home"][0]))
+    ut_cover(True)
+    wait(3)
+
+    def row(text):
+        return [b for b in ut_start().findChildren(QtWidgets.QToolButton, "PaletteRow") if b.text() == text][0]
+    step("recent", lambda: ut_press(row("Recent")))
+    wait(2)
+    step("projects", lambda: ut_press(row("Projects")))
+    wait(2)
+    step("all", lambda: ut_press(row("All Designs")))
+    wait()
+
+    def search():
+        return ut_start().findChild(QtWidgets.QLineEdit, "StartSearch")
+    step("search", lambda: ut_ring(search()))
+    ut_type(search, "hin", ms=200)
+    wait(2)
+    step("clear", lambda: search().clear())
+    wait()
+
+    def rename():
+        t = ut_tile("Hinge")
+        p = t.mapTo(mw, t.rect().center())
+
+        def pick():
+            m = QtWidgets.QApplication.activePopupWidget()
+            if not m:
+                L("  start page: no menu")
+                return
+            ut_modal("Rename Design", 260)
+            # das Menü öffnet beim Drücken; das Loslassen geht wie bei echter Maus an das Menü
+            QtTest.QTest.mouseRelease(m.windowHandle(), QtCore.Qt.RightButton, QtCore.Qt.NoModifier, QtCore.QPoint(-5, -5))
+            a = [a for a in m.actions() if a.text() == "Rename…"][0]
+            m.setActiveAction(a)
+            QtCore.QTimer.singleShot(700, lambda: (record_click(m.mapToGlobal(m.actionGeometry(a).center())),
+                                                   QtTest.QTest.keyClick(m, QtCore.Qt.Key_Return)))
+        QtCore.QTimer.singleShot(700, pick)
+        record_click(mw.mapToGlobal(p))
+        QtTest.QTest.mouseMove(mw.windowHandle(), p)
+        QtTest.QTest.mousePress(mw.windowHandle(), QtCore.Qt.RightButton, QtCore.Qt.NoModifier, p)  # kehrt erst nach dem Menü zurück
+    step("right-click", rename)
+    wait(2)
+    ut_type(lambda: ut_child(ut_dialog("Rename Design"), QtWidgets.QLineEdit), "Door hinge", ms=110)
+    wait()
+    step("ok", lambda: ut_press(ut_text_button(ut_dialog("Rename Design"), "OK", QtWidgets.QPushButton)))
+    wait(3)
+    step("check", lambda: L("  start page: folders=%s tiles=%s" % (sorted(os.listdir(st["projects"])), sorted(
+        [l.text() for l in ut_start().findChildren(QtWidgets.QLabel, "StartName") if l.isVisible()]))))
+    ut_cover(False)
+    step("back", lambda: ut_press([b for b in ut_start().findChildren(QtWidgets.QToolButton)
+                                   if b.isVisible() and b.toolTip() == "Back to Design"][0]))
+    wait(2)
+
+
+scenario("file_start_page", ut_start_page, zoom=-1)
+
+
+# --- Browser --------------------------------------------------------------------------------------------------------
+def ut_browser():
+    ut_rec()
+    grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
+
+    def setup():
+        ut_projects("browser")
+        grp.SetBool("AlwaysSave", True)  # wie beim Benutzer: still gespeichert, unten steht dann "Gesichert"
+        ut_on_close(lambda: grp.SetBool("AlwaysSave", False))
+        box(0, 0, 60, 40, 10, name="Base")
+        make_body([circle(30, 20, 8)], 10, 20, "Pin")
+        ut_fit()
+        ut_tree().expandAll()
+        ut_doc_item()
+    step("setup", setup)
+    ut_full()
+    wait(3)
+
+    def saved():
+        w = [w for w in visible(QtWidgets.QWidget) if w.objectName() == "SavedState"]
+        L("  browser: saved shown=%s file=%s" % (bool(w), doc().FileName))
+        if w:
+            ut_ring_scene(w[0])
+            ut_key("Saved", 1800)
+    step("saved", saved)
+    wait(2)
+    step("hide pin", ut_tree_click(lambda: ut_eye("Pin")))
+    wait(2)
+    step("show pin", ut_tree_click(lambda: ut_eye("Pin")))
+    wait()
+
+    def rename_pin():
+        Gui.Selection.clearSelection()
+        Gui.Selection.addSelection(doc().Name, [o for o in doc().Objects if o.Label == "Pin"][0].Name)
+        ut_pick_menu("Rename")
+        ut_tree_click(lambda: ut_item_text("Pin"), QtCore.Qt.RightButton)()
+    step("rename pin", rename_pin)
+    wait(2)
+    ut_type(ut_tree_editor, "Shaft\n", ms=120)
+    wait(2)
+    step("name", ut_tree_click(lambda: (lambda r: QtCore.QPoint(r.left() + 40, r.center().y()))(ut_tree().visualItemRect(ut_doc_item()))))
+    wait()
+    ut_type(ut_tree_editor, "Bracket\n", ms=120)
+    wait(3)
+    step("check", lambda: L("  browser: label=%s file=%s bodies=%s" % (
+        doc().Label, doc().FileName, [o.Label for o in doc().Objects if o.TypeId == "Design::Body"])))
+
+    def view_menu():
+        Gui.Selection.clearSelection()
+        vp = ut_view().viewport()
+        p = QtCore.QPoint(int(vp.width() * 0.75), int(vp.height() * 0.3))
+        record_click(vp.mapToGlobal(p))
+        ut_pick_menu(None)
+        QtTest.QTest.mousePress(vp, QtCore.Qt.RightButton, QtCore.Qt.NoModifier, p)
+        QtTest.QTest.mouseRelease(vp, QtCore.Qt.RightButton, QtCore.Qt.NoModifier, p)
+    step("view menu", view_menu)
+    wait(3)
+
+
+scenario("browser", ut_browser, zoom=-1)
+
+
+# --- Zahlen eingeben ------------------------------------------------------------------------------------------------
+def ut_numbers():
+    ut_rec()
+    ut_profile(0, 0, 40, 30)
+    step("select", lambda: select(st["sp"], "Face1"))
+    step("Design_Extrude", lambda: use("Design_Extrude"))
+    wait()
+
+    def distance():
+        return sorted(visible(QtWidgets.QAbstractSpinBox), key=lambda w: w.mapToGlobal(QtCore.QPoint(0, 0)).y())[0].lineEdit()
+
+    def show(label):
+        f = [o for o in doc().Objects if o.TypeId == "Design::Extrude"][-1]
+        L("  numbers: %r -> %s" % (distance().text(), f.Distance))
+        ut_key(label, 2200)
+    for text, label in (("12,5", "12,5 = 12.5 mm"), ("1 in", "1 in = 25.4 mm"), ("2 * 7,5", "2 * 7,5 = 15 mm")):
+        step("field", lambda: ut_ring_scene(distance().parentWidget()))
+        ut_type(distance, text, ms=200)
+        wait()
+        step("show", lambda label=label: show(label))
+        wait(2)
+    step("ok", accept)
+    wait()
+    step("check", lambda: L("  numbers: volumes=%s errors=%s" % (volumes(), errors())))
+
+
+scenario("numbers", ut_numbers, zoom=-1)
+
+
+# --- Hilfe ----------------------------------------------------------------------------------------------------------
+def ut_help_page():
+    return [w for w in mw.findChildren(QtWidgets.QWidget, "HelpPage")][0]
+
+
+def ut_still():
+    """Clips im Hilfeartikel anhalten: jedes Bild wäre sonst neu, der Clip liefe in Echtzeit (unter Last minutenlang)"""
+    step("still", lambda: [m.setPaused(True) for m in ut_help_page().findChildren(QtGui.QMovie)])
+
+
+def ut_help():
+    ut_rec()
+    step("body", lambda: (box(0, 0, 60, 40, 20, name="Block"), ut_fit()))
+    ut_full()
+    wait()
+
+    def hover():
+        q = harness._pos(button("Design_Fillet"))
+        p = ut_view().viewport().mapTo(mw, q.toPoint() if hasattr(q, "toPoint") else q)
+        record_click(mw.mapToGlobal(p))
+        QtTest.QTest.mouseMove(mw.windowHandle(), p)
+    step("point at fillet", hover)
+    wait(2)
+    step("F1", lambda: (ut_key("F1"), QtTest.QTest.keyClick(mw.windowHandle(), QtCore.Qt.Key_F1)))
+    ut_cover(True)
+    ut_still()
+    wait(3)
+
+    def search():
+        return ut_help_page().findChild(QtWidgets.QLineEdit, "StartSearch")
+    step("search", lambda: ut_ring(search()))
+    ut_type(search, "donut", ms=180)
+    wait(2)
+    step("enter", lambda: (ut_key("Enter"), QtTest.QTest.keyClick(search(), QtCore.Qt.Key_Return)))
+    ut_still()
+    wait(3)
+    step("check", lambda: L("  help: article=%s" % ut_help_page().findChild(QtWidgets.QTextBrowser, "HelpArticle")
+                            .document().toPlainText().replace("￼", "").strip().split("\n")[0]))
+    ut_cover(False)
+    step("back", lambda: ut_press([b for b in ut_help_page().findChildren(QtWidgets.QToolButton)
+                                   if b.isVisible() and b.toolTip() == "Back"][0]))
+    wait(2)
+
+
+scenario("help", ut_help, zoom=-1)

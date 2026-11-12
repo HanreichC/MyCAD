@@ -20,8 +20,17 @@ run([
     ("shot start", lambda: shot("a-start")),
     ("New Component", lambda: click(button("Design_NewComponent"))),
     ("shot new comp", lambda: shot("b-newcomp")),
-    ("state", lambda: L("components=%s active=%s" % ([o.Label for o in doc().Objects if o.TypeId == "App::Part"],
-                                                   Gui.ActiveDocument.ActiveView.getActiveObject("part").Label))),
+    ("not active", lambda: check("New Component does not activate the new component",
+                                 Gui.ActiveDocument.ActiveView.getActiveObject("part") is None)),
+    ("plain names", lambda: check("its folders have plain names, no 001", sorted(o.Label for o in comp().Group)
+                                  == ["Bodies", "Origin", "Sketches"], str([o.Label for o in comp().Group]))),
+    ("second", lambda: click(button("Design_NewComponent"))),
+    ("siblings", lambda: check("a second New Component is a sibling, not nested in the first",
+                               [[p.Type for p in o.InList if p.TypeId == "App::Part"] for o in doc().Objects
+                                if o.TypeId == "App::Part" and o.Type == "Component"] == [["Design"], ["Design"]],
+                               str([[p.Type for p in o.InList if p.TypeId == "App::Part"] for o in doc().Objects
+                                    if o.TypeId == "App::Part" and o.Type == "Component"]))),
+    ("undo second", lambda: Gui.runCommand("Std_Undo")),
     ("Create Sketch", lambda: click(button("Design_CreateSketch"))),
     ("pick component XY", lambda: Gui.Selection.addSelection(comp_plane())),
     ("rect", lambda: [Gui.ActiveDocument.getInEdit().Object.addGeometry(g) for g in rect(0, 0, 20, 10)]),

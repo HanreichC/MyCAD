@@ -46,9 +46,17 @@ def in_versions_dialog(action):
     Gui.runCommand("Design_Versions")
 
 
+def enabled(dlg):
+    return sorted(b.text() for b in dlg.findChildren(QtWidgets.QPushButton) if b.isEnabled())
+
+
 def compare_oldest(dlg):
     versions = [l for l in dlg.findChildren(QtWidgets.QListWidget) if l.accessibleName() == "Versions"][0]
+    versions.setFocus()  # setzt Zeile 0 aktuell, ohne sie zu markieren
+    QtWidgets.QApplication.processEvents()
+    state["idle_buttons"] = enabled(dlg)
     versions.setCurrentRow(versions.count() - 1)
+    state["chosen_buttons"] = enabled(dlg)
     [b for b in dlg.findChildren(QtWidgets.QPushButton) if b.text() == "Compare"][0].click()
 
 
@@ -131,6 +139,10 @@ in_order([
                               any(v["title"] == "Before holes" for v in DesignVersions.versions(doc().FileName)))),
     ("compare", lambda: in_versions_dialog(compare_oldest)), wait, wait,
     ("rows", lambda: check("the window lists the versions", state.get("dialog_rows", [0])[0] >= 3, str(state.get("dialog_rows")))),
+    ("idle", lambda: check("without a chosen row only New Variant and Close are enabled (only the open main design listed)",
+                           state.get("idle_buttons") == ["Close", "New Variant…"], str(state.get("idle_buttons")))),
+    ("chosen", lambda: check("a chosen version enables Open Copy, Compare, Restore",
+                             {"Open Copy", "Compare", "Restore"} <= set(state.get("chosen_buttons", [])), str(state.get("chosen_buttons")))),
     ("ghost", lambda: check("compare shows what changed", any("Changed step" in t for t in comparison_text()), str(comparison_text()))),
     ("shot", lambda: shot("compare")),
     ("close compare", lambda: [b for b in visible(QtWidgets.QPushButton) if b.text() == "Close"][0].click()), wait,

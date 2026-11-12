@@ -667,7 +667,8 @@ void EditModeCoinManager::ParameterObserver::initParameters()
          [this, drawingParameters = Client.drawingParameters](const std::string& param) {
              updateColor(drawingParameters.CurveExternalDefiningColor, param);
          }},
-        {"HighlightColor",
+        // MyCAD: own key; the 3D view's pale HighlightColor makes hovered sketch lines fade into the background
+        {"SketchHighlightColor",
          [this, drawingParameters = Client.drawingParameters](const std::string& param) {
              updateColor(drawingParameters.PreselectColor, param);
          }},

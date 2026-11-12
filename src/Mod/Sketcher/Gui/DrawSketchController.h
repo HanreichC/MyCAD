@@ -516,6 +516,17 @@ public:
     {
         passFocusToNextOnViewParameter();
     }
+
+    /// MyCAD: in der Ansicht getippte Ziffer: Fokus ins erste Maßfeld des aktuellen Schritts, false wenn es keins gibt
+    bool focusOnViewParameterOfCurrentMode()
+    {
+        for (unsigned int i = 0; i < onViewParameters.size(); i++) {
+            if (isOnViewParameterOfCurrentMode(i) && setFocusToOnViewParameter(i)) {
+                return true;
+            }
+        }
+        return false;
+    }
     //@}
 
 

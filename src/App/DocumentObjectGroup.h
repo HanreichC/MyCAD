@@ -48,6 +48,11 @@ public:
     {
         return "Gui::ViewProviderDocumentObjectGroup";
     }
+    /// Ordner wie "Bodies" und "Sketches" gibt es in jeder Komponente, ohne "001"
+    bool allowDuplicateLabel() const override
+    {
+        return true;
+    }
 
     PyObject* getPyObject() override;
 };

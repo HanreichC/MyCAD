@@ -25,6 +25,9 @@ struct Options
 {
     bool smooth = true, straight = true, size = true, slant = true, gaps = true, width = true;
     bool upright = false;  ///< Schräge: aufrecht statt der eigenen mittleren
+    /// jede Zeile bleibt, wo sie steht: kein gemeinsamer linker Rand, kein gleicher Zeilenabstand (Rotstift: jede Zeile
+    /// ist eine eigene Korrektur an ihrer Stelle im Modell)
+    bool inPlace = false;
 };
 
 namespace detail
@@ -118,22 +121,24 @@ inline std::vector<std::vector<size_t>> groupLines(const std::vector<Stroke>& S,
     {
         std::vector<size_t> idx;
         std::vector<double> centers;
-        double cy = 0, maxX = -INFINITY;
+        double cy = 0, minX = INFINITY, maxX = -INFINITY;
     };
     std::vector<Line> lines;
     for (size_t i = 0; i < S.size(); ++i) {
         const Box b = box(S[i]);
         const double cy = (b.minY + b.maxY) / 2;
-        // weit rechts neben der Zeile (mehr als drei Zeichenhöhen Lücke, kein Wortabstand) beginnt etwas Eigenes:
-        // zwei Rotstift-Korrekturen auf einer Höhe sind zwei Zeilen
+        // weit rechts oder links neben der Zeile (mehr als drei Zeichenhöhen Lücke, kein Wortabstand) beginnt etwas
+        // Eigenes: zwei Rotstift-Korrekturen auf einer Höhe sind zwei Zeilen, auch wenn die linke als zweite kommt
         if (lines.empty() || std::abs(cy - lines.back().cy) > 1.6 * h
-            || (b.minX < lines.back().maxX - 3 * h && cy > lines.back().cy + 0.7 * h) || b.minX > lines.back().maxX + 3 * h) {
+            || (b.minX < lines.back().maxX - 3 * h && cy > lines.back().cy + 0.7 * h) || b.minX > lines.back().maxX + 3 * h
+            || b.maxX < lines.back().minX - 3 * h) {
             lines.emplace_back();
         }
         Line& L = lines.back();
         L.idx.push_back(i);
         L.centers.push_back(cy);
         L.cy = median(L.centers);
+        L.minX = std::min(L.minX, b.minX);
         L.maxX = std::max(L.maxX, b.maxX);
     }
     std::sort(lines.begin(), lines.end(), [](const Line& a, const Line& b) { return a.cy < b.cy; });
@@ -447,7 +452,7 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
             for (size_t i = 1; i < lines.size(); ++i) {
                 gaps.push_back(lines[i].base - lines[i - 1].base);
             }
-            const double step = gaps.size() > 1 ? median(gaps) : 0;
+            const double step = gaps.size() > 1 && !o.inPlace ? median(gaps) : 0;
             for (size_t li = 0; li < lines.size(); ++li) {
                 const double target = step > 0 && li > 0 ? lines[0].base + double(li) * step : lines[li].base;
                 for (Word& w : lines[li].words) {
@@ -484,7 +489,7 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
             }
             const double gap = std::clamp(gaps.empty() ? pageXh : median(gaps), 0.55 * pageXh, 1.1 * pageXh);
             for (Line& L : lines) {
-                double cursor = margin;
+                double cursor = o.inPlace ? left(L.words.front()) : margin;
                 for (Word& w : L.words) {
                     const double dx = cursor - left(w);
                     each(w.idx, [dx](Pt& p) { p.x += dx; });

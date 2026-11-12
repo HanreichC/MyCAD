@@ -291,6 +291,14 @@ bool ViewProviderDatum::setEdit(int ModNum)
 
 bool ViewProviderDatum::doubleClicked()
 {
+    // MyCAD: Konstruktionselemente des Design-Arbeitsbereichs hängen an keinem PartDesign-Körper;
+    // Design öffnet dafür sein eigenes Werkzeug (Abstand bzw. Winkel)
+    if (!PartDesignGui::getBodyFor(getObject<Part::Datum>(), false)) {
+        Gui::Selection().clearSelection();
+        Gui::Selection().addSelection(pcObject->getDocument()->getName(), pcObject->getNameInDocument());
+        Gui::Application::Instance->commandManager().runCommandByName("Design_EditConstruction");
+        return true;
+    }
     auto activeDoc = Gui::Application::Instance->activeDocument();
     if (!activeDoc) {
         activeDoc = getDocument();

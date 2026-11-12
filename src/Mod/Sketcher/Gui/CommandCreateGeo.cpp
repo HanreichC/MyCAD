@@ -257,7 +257,7 @@ CmdSketcherCreateConic::CmdSketcherCreateConic()
     sAppModule = "Sketcher";
     sGroup = "Sketcher";
     sMenuText = QT_TR_NOOP("Conic Curve");
-    sToolTipText = QT_TR_NOOP("Conic Curve: click start point, end point and shoulder point");
+    sToolTipText = QT_TR_NOOP("Click the start point, the end point and the corner point where the end tangents meet");
     sWhatsThis = "Sketcher_CreateConic";
     sStatusTip = sToolTipText;
     sPixmap = "Sketcher_CreateBSpline";
@@ -1318,7 +1318,7 @@ CmdSketcherCreateArcSlot::CmdSketcherCreateArcSlot()
     sWhatsThis = "Sketcher_CreateArcSlot";
     sStatusTip = sToolTipText;
     sPixmap = "Sketcher_CreateArcSlot";
-    sAccel = "G, S, 2";
+    sAccel = "G, 2, S";  // MyCAD: "G, S, 2" fing mit "G, S" (Langloch) an, das dann nie auslöste
     eType = ForEdit;
 }
 
@@ -1419,19 +1419,13 @@ CmdSketcherCreateText::CmdSketcherCreateText()
     sAppModule = "Sketcher";
     sGroup = "Sketcher";
     sMenuText = QT_TR_NOOP("Text");
-    sToolTipText = QT_TR_NOOP(
-        "Creates text geometries controlled by a Text constraint.\n"
-        "To Edit: Double-click the Text constraint to change the text content and font.\n"
-        "To Position/Size: Apply constraints to the group's construction line.\n"
-        "Note: While the Text constraint is active, any constraints applied directly to the text "
-        "geometries will be ignored.\n"
-    );
+    // MyCAD: kurzer Tooltip wie bei den anderen Werkzeugen, ohne "Experimental"-Hinweis
+    sToolTipText = QT_TR_NOOP("Writes text as outlines into the sketch");
     sWhatsThis = "Sketcher_CreateText";
     sStatusTip = sToolTipText;
     sPixmap = "Sketcher_CreateText";
     sAccel = "";
     eType = ForEdit;
-    eMaturity = Base::Maturity::Experimental;
 }
 
 CONSTRUCTION_UPDATE_ACTION(CmdSketcherCreateText, "Sketcher_CreateText")

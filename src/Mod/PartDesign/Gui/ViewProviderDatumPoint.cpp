@@ -25,6 +25,7 @@
 
 
 #include <Inventor/nodes/SoCoordinate3.h>
+#include <Inventor/nodes/SoDepthBuffer.h>
 #include <Inventor/nodes/SoSeparator.h>
 #include <Inventor/nodes/SoMarkerSet.h>
 #include <Inventor/nodes/SoVertexProperty.h>
@@ -57,17 +58,18 @@ void ViewProviderDatumPoint::attach(App::DocumentObject* obj)
 {
     ViewProviderDatum::attach(obj);
 
-    const int markerSize = App::GetApplication()
-                               .GetParameterGroupByPath("User parameter:BaseApp/Preferences/View")
-                               ->GetInt("MarkerSize", 9);
-    // Using a marker gives a larger point.
+    // MyCAD: kräftiger runder Punkt, immer obenauf. Ein Punkt liegt meist genau auf einer Fläche oder Ecke und
+    // verschwände dort sonst halb im Tiefenpuffer.
     auto* marker = new SoMarkerSet();
     marker->numPoints = 1;
-    marker->markerIndex = Gui::Inventor::MarkerBitmaps::getMarkerIndex("DIAMOND_FILLED", markerSize);
+    marker->markerIndex = Gui::Inventor::MarkerBitmaps::getMarkerIndex("CIRCLE_FILLED", 11);
+    auto* onTop = new SoDepthBuffer();
+    onTop->test = false;
 
     auto* pcHighlight = Gui::ViewProviderBuilder::createSelection();
     pcHighlight->style = Gui::SoFCSelection::EMISSIVE_DIFFUSE;
     pcHighlight->addChild(new SoCoordinate3());
+    pcHighlight->addChild(onTop);
     pcHighlight->addChild(marker);
 
     getShapeRoot()->addChild(pcHighlight);

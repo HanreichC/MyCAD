@@ -238,12 +238,13 @@ std::vector<InkEdit> correct(Line& line)
             c[size_t(i)].c = Deg;
         }
     }
-    // ähnliche Buchstaben in Zahlen sind Ziffern: 2xA5 → 2x45, l2 → 12
+    // ähnliche Buchstaben in Zahlen sind Ziffern: 2xA5 → 2x45, l2 → 12, 4.S → 4.5
     for (qsizetype i = 0; i < qsizetype(c.size()); ++i) {
         const qsizetype k = letters.indexOf(at(i));
-        const bool numberBefore = digit(i - 1) || ((at(i - 1).toLower() == QLatin1Char('x') || at(i - 1) == Times) && digit(i - 2));
+        const bool afterDigit = digit(i - 1) || ((at(i - 1) == QLatin1Char('.') || at(i - 1) == QLatin1Char(',')) && digit(i - 2));
+        const bool numberBefore = afterDigit || ((at(i - 1).toLower() == QLatin1Char('x') || at(i - 1) == Times) && digit(i - 2));
         const bool numberAfter = digit(i + 1) || at(i + 1) == Deg || at(i + 1) == QLatin1Char(',') || at(i + 1) == QLatin1Char('.');
-        if (k >= 0 && numberBefore && (numberAfter || (at(i + 1) == QLatin1Char(' ') && digit(i - 1)))) {
+        if (k >= 0 && numberBefore && (numberAfter || (at(i + 1) == QLatin1Char(' ') && afterDigit))) {
             c[size_t(i)].c = digits[k];
         }
     }

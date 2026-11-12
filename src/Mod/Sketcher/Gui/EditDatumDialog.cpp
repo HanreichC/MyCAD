@@ -27,6 +27,7 @@
 #include <Inventor/sensors/SoSensor.h>
 #include <QApplication>
 #include <QDialog>
+#include <QToolTip>
 
 
 #include <App/Expression.h>
@@ -223,6 +224,31 @@ int EditDatumDialog::exec(bool atCursor)
             }
             catch (const Base::Exception&) {
             }
+        });
+        // MyCAD: OK und Enter schließen nur bei gültiger Eingabe. FreeCAD schloss immer: 0 oder -5 ließ das neue Maß
+        // still verschwinden (Fehler nur im Protokoll), ein unbekannter Name behielt still den alten Wert
+        QObject::disconnect(ui_ins_datum->buttonBox, nullptr, &dlg, nullptr);
+        connect(ui_ins_datum->buttonBox, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+        connect(ui_ins_datum->buttonBox, &QDialogButtonBox::accepted, &dlg, [this, &dlg] {
+            Gui::QuantitySpinBox* edit = ui_ins_datum->labelEdit;
+            const auto type = Constr->Type;
+            QString problem;
+            if (!edit->hasExpression() && !edit->hasValidInput()) {
+                problem = tr("Type a number or the name of a parameter");
+            }
+            else if (!edit->hasExpression() && !ui_ins_datum->cbDriving->isChecked()
+                     && (type == Sketcher::Distance || type == Sketcher::Radius || type == Sketcher::Diameter
+                         || type == Sketcher::Weight)
+                     && edit->value().getValue() <= 0) {
+                problem = tr("Must be greater than zero");
+            }
+            if (problem.isEmpty()) {
+                dlg.accept();
+                return;
+            }
+            edit->setFocus();
+            edit->selectNumber();
+            QToolTip::showText(edit->mapToGlobal(QPoint(0, edit->height())), problem, edit);
         });
         connect(ui_ins_datum->rbRadius, &QRadioButton::toggled, this, &EditDatumDialog::typeChanged);
         connect(&dlg, &QDialog::accepted, this, &EditDatumDialog::accepted);

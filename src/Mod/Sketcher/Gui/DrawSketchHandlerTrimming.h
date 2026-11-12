@@ -194,6 +194,9 @@ public:
         // Possibly `mouseMove` gets triggered after first trim, but before preselection,
         // resulting in another edge being deleted.
         Gui::Selection().rmvPreselect();
+        // die Endmarken gehören zum Stück, das gleich verschwindet; die nächste Mausbewegung zeichnet neue
+        EditMarkers.clear();
+        drawEditMarkers(EditMarkers, 2);
 
         try {
             openCommand(QT_TRANSLATE_NOOP("Command", "Trim edge"));
@@ -248,7 +251,7 @@ private:
 
     QString getToolWidgetText() const override
     {
-        return QString(tr("Trimming Parameters"));
+        return QString(tr("Trim Parameters"));  // MyCAD: wie das Werkzeug
     }
 
 private:

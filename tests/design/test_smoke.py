@@ -49,6 +49,38 @@ class Smoke(DesignTest):
         self.assertEqual(shell.Warning, "")
         self.assertNoErrors()
 
+    def test_delete_body_takes_its_steps(self):
+        """Body B löschen: seine Skizze, Extrude, Rundung und Spiegelkopie gehen mit, Skalieren (A und B) behält A;
+        ein Undo bringt alles zurück"""
+        _, a = box(self.doc, 20, 20, 20)
+        _, b = box(self.doc, 20, 20, 10, at=(40, 0))
+        scale = feature(self.doc, "Design::Scale", Factor=1.5)
+        Design.attachToBodies(scale, [a, b])
+        top = b.Shape.BoundBox.ZMax
+        dress(self.doc, "Design::Fillet", b, [edge_where(b, lambda p: abs(p.z - top) < 1e-6)], Size=1)
+        mirror = feature(self.doc, "Design::Mirror")
+        copy = self.doc.addObject("Design::Body", "Body")
+        copy.Tip, mirror.SourceBodies, mirror.SourceFeatures, mirror.Bodies = mirror, [b], [b.Tip], [copy]
+        self.doc.recompute()
+        self.assertNoErrors()
+        before = [o.Name for o in Design.timeline(self.doc)]
+        self.doc.UndoMode = 1
+        self.doc.openTransaction("Delete")
+        Design.removeFromTimeline(b)
+        self.doc.recompute()
+        self.doc.commitTransaction()
+        self.assertEqual([o.Label for o in self.doc.Objects if o.TypeId == "Design::Body"], [a.Label])
+        self.assertEqual([o.TypeId for o in Design.timeline(self.doc)],
+                         ["Sketcher::SketchObject", "Design::Extrude", "Design::Scale"])
+        self.assertEqual(scale.Bodies, [a])
+        self.assertVolume(a, 20 ** 3 * 1.5 ** 3)
+        self.assertNoErrors()
+        self.doc.undo()
+        self.doc.recompute()
+        self.assertEqual([o.Name for o in Design.timeline(self.doc)], before)
+        self.assertEqual(len(scale.Bodies), 2)
+        self.assertNoErrors()
+
     def test_save_and_reload(self):
         _, body = box(self.doc, 20, 10, 5)
         dress(self.doc, "Design::Chamfer", body, [top_face(body)], Size=1)

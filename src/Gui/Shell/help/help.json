@@ -622,7 +622,8 @@
    "see": [
     "start_overview",
     "start_navigation",
-    "settings"
+    "settings",
+    "help"
    ],
    "options": {
     "en": [
@@ -745,6 +746,18 @@
      [
       "Ctrl+,",
       "Settings"
+     ],
+     [
+      "V, F",
+      "Fit All: the whole model in view"
+     ],
+     [
+      "F1",
+      "Help for the tool under the mouse or the one in use"
+     ],
+     [
+      "F2",
+      "Rename the entry selected in the browser"
      ]
     ],
     "de": [
@@ -867,6 +880,18 @@
      [
       "Strg+,",
       "Einstellungen"
+     ],
+     [
+      "V, F",
+      "Alles zeigen: das ganze Modell in der Ansicht"
+     ],
+     [
+      "F1",
+      "Hilfe zum Werkzeug unter der Maus oder zum benutzten"
+     ],
+     [
+      "F2",
+      "Den im Browser gewählten Eintrag umbenennen"
      ]
     ]
    },
@@ -1336,6 +1361,244 @@
    ]
   },
   {
+   "id": "browser",
+   "group": "start",
+   "icon": "Tree_Document",
+   "commands": [
+    "Std_ToggleVisibility"
+   ],
+   "title": {
+    "en": "The browser",
+    "de": "Der Browser"
+   },
+   "keywords": {
+    "en": [
+     "browser",
+     "tree",
+     "hide",
+     "show",
+     "visibility",
+     "eye",
+     "rename",
+     "folder",
+     "bodies",
+     "sketches",
+     "saved",
+     "right-click",
+     "context menu"
+    ],
+    "de": [
+     "Browser",
+     "Baum",
+     "ausblenden",
+     "einblenden",
+     "Sichtbarkeit",
+     "Auge",
+     "umbenennen",
+     "Ordner",
+     "Körper",
+     "Skizzen",
+     "gesichert",
+     "Rechtsklick",
+     "Kontextmenü"
+    ]
+   },
+   "summary": {
+    "en": "The panel on the left lists everything in your design: bodies, sketches, components, notes and scribbles. Here you show and hide things, rename them and open them again.",
+    "de": "Das Panel links listet alles in deinem Design: Körper, Skizzen, Komponenten, Notizen und Scribbles. Hier blendest du Dinge ein und aus, benennst sie um und öffnest sie wieder."
+   },
+   "steps": {
+    "en": [
+     "At the top stands the name of the design, below it folders such as Bodies and Sketches. The small arrow in front of a folder opens or closes it.",
+     "Click an entry to select it in the view; Ctrl+click selects more than one.",
+     "The eye in front of an entry shows or hides it in the view. A hidden body stays in the design and in the timeline.",
+     "Right-click an entry for Show / Hide, Rename, Move, Export and Delete (Move and Export for bodies).",
+     "Double-click a sketch to edit it, a note or a scribble to open it again, a component to make it active.",
+     "Click the design name at the top to rename the design (a pencil shows when you point at it). Its file and project folder get the new name too.",
+     "“Saved” with a tick at the bottom right of the browser shows that the current state of the design is on disk. Point at it to see where."
+    ],
+    "de": [
+     "Oben steht der Name des Designs, darunter Ordner wie Körper und Skizzen. Der kleine Pfeil vor einem Ordner klappt ihn auf oder zu.",
+     "Ein Klick auf einen Eintrag wählt ihn in der Ansicht aus; Strg+Klick wählt mehrere.",
+     "Das Auge vor einem Eintrag blendet ihn in der Ansicht ein oder aus. Ein ausgeblendeter Körper bleibt im Design und in der Zeitleiste.",
+     "Rechtsklick auf einen Eintrag bietet Einblenden / Ausblenden, Umbenennen, Verschieben, Exportieren und Löschen (Verschieben und Exportieren bei Körpern).",
+     "Doppelklick auf eine Skizze bearbeitet sie, auf eine Notiz oder ein Scribble öffnet sie wieder, auf eine Komponente macht sie aktiv.",
+     "Ein Klick auf den Designnamen oben benennt das Design um (beim Darüberfahren zeigt sich ein Stift). Datei und Projektordner heißen danach mit.",
+     "„Gesichert“ mit Haken unten rechts im Browser zeigt, dass der aktuelle Stand des Designs gespeichert ist. Zeig darauf, um zu sehen, wo."
+    ]
+   },
+   "see": [
+    "file_basics",
+    "Design_NewComponent",
+    "start_timeline"
+   ],
+   "tips": {
+    "en": [
+     "Right-click the design name for Save Version, Save As…, Export…, Variants, Rename, Close and Delete….",
+     "F2 renames the selected entry.",
+     "Right-click an empty spot in the view for the tools you need most: Create Sketch, Extrude, Press Pull, Fillet, Hole, Move and Fit All, plus Undo and Redo when there is something to take back.",
+     "The sidebar button next to the name MyCAD hides the browser for more room."
+    ],
+    "de": [
+     "Rechtsklick auf den Designnamen bietet Version sichern, Speichern unter…, Exportieren…, Varianten, Umbenennen, Schließen und Löschen….",
+     "F2 benennt den gewählten Eintrag um.",
+     "Rechtsklick auf eine freie Stelle der Ansicht bietet die meistgebrauchten Werkzeuge: Skizze erstellen, Extrudieren, Drücken/Ziehen, Abrunden, Bohrung, Verschieben und Alles zeigen, dazu Rückgängig und Wiederholen, wenn es etwas zurückzunehmen gibt.",
+     "Der Seitenleisten-Knopf neben dem Namen MyCAD blendet den Browser für mehr Platz aus."
+    ]
+   }
+  },
+  {
+   "id": "numbers",
+   "group": "start",
+   "icon": "Design_Parameters",
+   "commands": [],
+   "title": {
+    "en": "Typing numbers",
+    "de": "Zahlen eingeben"
+   },
+   "keywords": {
+    "en": [
+     "number",
+     "value",
+     "unit",
+     "decimal comma",
+     "comma",
+     "decimal point",
+     "formula",
+     "expression",
+     "inch",
+     "calculate in a field"
+    ],
+    "de": [
+     "Zahl",
+     "Wert",
+     "Einheit",
+     "Dezimalkomma",
+     "Komma",
+     "Dezimalpunkt",
+     "Formel",
+     "Ausdruck",
+     "Zoll",
+     "im Feld rechnen"
+    ]
+   },
+   "summary": {
+    "en": "Every size field takes a number, a number with a unit, a formula or a parameter name – with a decimal point or a decimal comma.",
+    "de": "Jedes Maßfeld nimmt eine Zahl, eine Zahl mit Einheit, eine Formel oder einen Parameternamen – mit Dezimalpunkt oder Dezimalkomma."
+   },
+   "steps": {
+    "en": [
+     "Click into a size field, e.g. Distance in Extrude, and type. The model follows while you type.",
+     "A number without a unit means millimetres (degrees in an angle field). 12,5 and 12.5 are the same.",
+     "Add a unit for another one: 1 in, 3 cm, 0,5 ft. MyCAD converts it to millimetres.",
+     "Type a calculation such as 2 * 7,5 or 40 mm / 3 + 2.",
+     "Type a parameter name such as Width, or a formula with it such as Width / 2, and press Enter. The field stays linked: when the parameter changes, the size follows.",
+     "Enter after a plain number is the same as OK."
+    ],
+    "de": [
+     "Klick in ein Maßfeld, z. B. Abstand bei Extrudieren, und tippe. Das Modell folgt schon beim Tippen.",
+     "Eine Zahl ohne Einheit bedeutet Millimeter (in einem Winkelfeld Grad). 12,5 und 12.5 sind dasselbe.",
+     "Häng eine Einheit an, um eine andere zu nehmen: 1 in, 3 cm, 0,5 ft. MyCAD rechnet in Millimeter um.",
+     "Tippe eine Rechnung wie 2 * 7,5 oder 40 mm / 3 + 2.",
+     "Tippe einen Parameternamen wie Breite oder eine Formel damit wie Breite / 2 und drück Enter. Das Feld bleibt verbunden: ändert sich der Parameter, folgt das Maß.",
+     "Enter nach einer einfachen Zahl ist dasselbe wie OK."
+    ]
+   },
+   "see": [
+    "Design_Parameters",
+    "Design_Note",
+    "start_dimensions"
+   ],
+   "tips": {
+    "en": [
+     "The same works in sketch dimensions, in the size cards on the model, in notes and in Settings.",
+     "A comma between two digits is a decimal comma – except inside brackets, where it separates values. Write 2 * (1.5 + 1) with a point there.",
+     "Hold the mouse over a linked field to see its formula."
+    ],
+    "de": [
+     "Dasselbe geht bei Skizzenmaßen, in den Maßkarten am Modell, in Notizen und in den Einstellungen.",
+     "Ein Komma zwischen zwei Ziffern ist ein Dezimalkomma – außer in Klammern, dort trennt es Werte. Schreib 2 * (1.5 + 1) dort mit Punkt.",
+     "Halte die Maus über ein verbundenes Feld, um seine Formel zu sehen."
+    ]
+   },
+   "images": [
+    {
+     "file": "numbers.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "help",
+   "group": "start",
+   "icon": "Window_Help",
+   "commands": [],
+   "title": {
+    "en": "Help and F1",
+    "de": "Hilfe und F1"
+   },
+   "keywords": {
+    "en": [
+     "help",
+     "f1",
+     "manual",
+     "how to",
+     "explain",
+     "documentation",
+     "clip",
+     "search help"
+    ],
+    "de": [
+     "Hilfe",
+     "F1",
+     "Handbuch",
+     "wie geht",
+     "erklären",
+     "Dokumentation",
+     "Clip",
+     "Hilfe durchsuchen"
+    ]
+   },
+   "summary": {
+    "en": "Every tool has an article with steps, options and a short clip. F1 opens the article of the tool under the mouse or of the one you are using.",
+    "de": "Zu jedem Werkzeug gibt es einen Artikel mit Schritten, Optionen und einem kurzen Clip. F1 öffnet den Artikel zum Werkzeug unter der Maus oder zu dem, das du gerade benutzt."
+   },
+   "steps": {
+    "en": [
+     "Click Help at the bottom of the sidebar on the left, above Settings. The help opens with What MyCAD can do.",
+     "Point at a tool in the toolbar and press F1: its article opens. While a tool's panel is open, F1 explains that tool; in a sketch, F1 opens Sketching basics.",
+     "Type into Search help at the top, e.g. donut, hole or rounded. The list on the left keeps only the matching articles; Enter opens the first one.",
+     "Click a name under See also to go to a related article.",
+     "Back at the top right, or Esc, closes the help."
+    ],
+    "de": [
+     "Klick links unten in der Seitenleiste auf Hilfe, über Einstellungen. Die Hilfe öffnet sich mit Was MyCAD alles kann.",
+     "Zeig auf ein Werkzeug in der Werkzeugleiste und drück F1: sein Artikel öffnet sich. Ist das Panel eines Werkzeugs offen, erklärt F1 dieses Werkzeug; in einer Skizze öffnet F1 die Skizzen-Grundlagen.",
+     "Tippe oben in Hilfe durchsuchen, z. B. Donut, Bohrung oder abrunden. Die Liste links behält nur die passenden Artikel; Enter öffnet den ersten.",
+     "Klick einen Namen unter Siehe auch an, um zu einem verwandten Artikel zu gehen.",
+     "Zurück oben rechts oder Esc schließt die Hilfe."
+    ]
+   },
+   "see": [
+    "start_overview",
+    "start_shortcuts",
+    "search"
+   ],
+   "tips": {
+    "en": [
+     "The help speaks the language chosen in Settings → General → Language.",
+     "With Reduce motion in Settings, each clip shows only its first picture."
+    ],
+    "de": [
+     "Die Hilfe spricht die Sprache, die unter Einstellungen → Allgemein → Sprache gewählt ist.",
+     "Mit Bewegung reduzieren in den Einstellungen zeigt jeder Clip nur sein erstes Bild."
+    ]
+   }
+  },
+  {
    "id": "file_basics",
    "group": "file",
    "icon": "Std_Save",
@@ -1435,6 +1698,81 @@
      }
     }
    ]
+  },
+  {
+   "id": "file_start_page",
+   "group": "file",
+   "icon": "Window_Home",
+   "commands": [],
+   "title": {
+    "en": "Start page",
+    "de": "Startseite"
+   },
+   "keywords": {
+    "en": [
+     "start page",
+     "home",
+     "recent",
+     "projects",
+     "open design",
+     "find design",
+     "rename design",
+     "delete design",
+     "library",
+     "trash"
+    ],
+    "de": [
+     "Startseite",
+     "Start",
+     "zuletzt verwendet",
+     "Projekte",
+     "Design öffnen",
+     "Design finden",
+     "Design umbenennen",
+     "Design löschen",
+     "Bibliothek",
+     "Papierkorb"
+    ]
+   },
+   "summary": {
+    "en": "Your designs at a glance: the ones you used last and everything in your projects folder, each with a preview. Open, find, rename or delete a design here.",
+    "de": "Deine Designs auf einen Blick: die zuletzt verwendeten und alles in deinem Projektordner, jedes mit Vorschaubild. Hier öffnest, findest, benennst und löschst du ein Design."
+   },
+   "steps": {
+    "en": [
+     "MyCAD starts on the start page. From a design you get there with Home at the top right, next to the window buttons.",
+     "New Design (blue, on the left) starts an empty design; Open… loads a design file from any folder.",
+     "Recent shows the designs you opened or saved last, Projects every design in your projects folder, newest first. Under LIBRARY on the left choose All Designs, only Recent or only Projects.",
+     "Type a few letters into Search designs at the top: only designs whose name contains them stay. Click a design to open it.",
+     "Right-click a design and choose Rename… to give it a new name; its project folder and versions are renamed along.",
+     "Delete… asks first, then moves the file – or its project folder with all versions – to the trash.",
+     "The back arrow at the top right, or Esc, brings you back to the design you were working on."
+    ],
+    "de": [
+     "MyCAD startet auf der Startseite. Aus einem Design kommst du mit Start oben rechts neben den Fensterknöpfen hierher.",
+     "Neues Design (blau, links) beginnt ein leeres Design; Öffnen… lädt eine Design-Datei aus einem beliebigen Ordner.",
+     "Zuletzt verwendet zeigt die Designs, die du zuletzt geöffnet oder gespeichert hast, Projekte jedes Design in deinem Projektordner, das neueste zuerst. Unter BIBLIOTHEK links wählst du Alle Designs, nur Zuletzt verwendet oder nur Projekte.",
+     "Tippe ein paar Buchstaben in Designs durchsuchen oben: nur Designs, deren Name sie enthält, bleiben stehen. Ein Klick auf ein Design öffnet es.",
+     "Rechtsklick auf ein Design und Umbenennen… gibt ihm einen neuen Namen; sein Projektordner und seine Versionen heißen mit.",
+     "Löschen… fragt vorher nach und legt dann die Datei – bzw. ihren Projektordner mit allen Versionen – in den Papierkorb.",
+     "Der Zurück-Pfeil oben rechts oder Esc bringt dich zurück zum Design, an dem du gearbeitet hast."
+    ]
+   },
+   "see": [
+    "file_basics",
+    "browser",
+    "Design_Versions"
+   ],
+   "tips": {
+    "en": [
+     "The projects folder is shown at the bottom left; change it in Settings → General → Projects folder.",
+     "A design that is open is closed before it is deleted."
+    ],
+    "de": [
+     "Der Projektordner steht links unten; ändern kannst du ihn unter Einstellungen → Allgemein → Projektordner.",
+     "Ein offenes Design wird vor dem Löschen geschlossen."
+    ]
+   }
   },
   {
    "id": "Design_Versions",
@@ -1709,13 +2047,13 @@
      "Optional: select the bodies or sketches to export in the view or in the browser (Ctrl+click for several). Without a selection all visible bodies or sketches are exported.",
      "In the toolbar at the top, in the FILE section, click Export.",
      "In the file dialog pick the type (3MF for 3D printing, STL, STEP, or DXF sketches), enter a name and click Save.",
-     "MyCAD writes the file right away; open it in your slicer or CAD program."
+     "MyCAD writes the file right away, and a note below the view cube says where it went. Open it in your slicer or CAD program."
     ],
     "de": [
      "Optional: Wähle die zu exportierenden Körper oder Skizzen in der Ansicht oder im Browser (Strg+Klick für mehrere). Ohne Auswahl werden alle sichtbaren Körper oder Skizzen exportiert.",
      "Klicke in der Werkzeugleiste oben im Bereich DATEI auf Exportieren.",
      "Wähle im Dateidialog den Typ (3MF für den 3D-Druck, STL, STEP oder DXF-Skizzen), gib einen Namen ein und klicke Speichern.",
-     "MyCAD schreibt die Datei sofort; öffne sie in deinem Slicer oder CAD-Programm."
+     "MyCAD schreibt die Datei sofort, und ein Hinweis unter dem ViewCube sagt, wohin. Öffne sie in deinem Slicer oder CAD-Programm."
     ]
    },
    "see": [
@@ -4955,7 +5293,10 @@
    "id": "Design_PrintView",
    "group": "inspect",
    "icon": "Design_PrintView",
-   "commands": [],
+   "commands": [
+    "Design_PrintView",
+    "Design_PrintDown"
+   ],
    "title": {
     "en": "Print View",
     "de": "Druckansicht"
@@ -5429,7 +5770,10 @@
    "id": "Design_RedPen",
    "group": "utilities",
    "icon": "Design_RedPen",
-   "commands": [],
+   "commands": [
+    "Design_RedPen",
+    "Design_ScribbleCorrect"
+   ],
    "title": {
     "en": "Red Pen",
     "de": "Rotstift"
@@ -5604,6 +5948,8 @@
     "Design_ScribbleYellow",
     "Design_ScribbleLookAt",
     "Design_ScribbleTracing",
+    "Design_ScribbleFocus",
+    "Design_ScribbleDeleteSelection",
     "Design_ScribbleToSketch",
     "Design_ScribbleFinish"
    ],
@@ -7360,6 +7706,91 @@
    "images": [
     {
      "file": "sketch_construction.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
+   "id": "sketch_palette",
+   "group": "sketch_modify",
+   "icon": "Palette_LookAt",
+   "commands": [
+    "Sketcher_ViewSketch",
+    "Sketcher_ViewSection",
+    "Sketcher_Grid",
+    "Sketcher_Snap"
+   ],
+   "title": {
+    "en": "Sketch Palette",
+    "de": "Skizzenpalette"
+   },
+   "keywords": {
+    "en": [
+     "sketch palette",
+     "look at",
+     "slice",
+     "section",
+     "grid",
+     "snap",
+     "look straight",
+     "body in the way"
+    ],
+    "de": [
+     "Skizzenpalette",
+     "senkrecht ansehen",
+     "Schnittansicht",
+     "Schnitt",
+     "Raster",
+     "Fangen",
+     "gerade draufsehen",
+     "Körper im Weg"
+    ]
+   },
+   "summary": {
+    "en": "The panel on the right while you sketch: turn the view straight onto the sketch, cut away what lies in front of it, switch the grid and snapping, and finish the sketch.",
+    "de": "Das Panel rechts beim Skizzieren: Ansicht gerade auf die Skizze drehen, Davorliegendes wegschneiden, Raster und Fangen schalten und die Skizze fertig stellen."
+   },
+   "steps": {
+    "en": [
+     "The Sketch Palette appears on the right, below the view cube, while you edit a sketch.",
+     "Look At turns the view straight onto the sketch again, e.g. after you rotated it.",
+     "Slice cuts away everything in front of the sketch plane, so a body no longer hides the sketch. Click it again to see the whole body.",
+     "Grid shows or hides the grid of the sketch.",
+     "Snap switches snapping on or off: ends and corners catching on points and lines, lines on whole degrees.",
+     "Construction switches between drawing normal and construction geometry; with lines selected it converts them.",
+     "Finish Sketch, the blue button at the bottom, leaves the sketch."
+    ],
+    "de": [
+     "Die Skizzenpalette erscheint rechts unter dem ViewCube, während du eine Skizze bearbeitest.",
+     "Senkrecht ansehen dreht die Ansicht wieder gerade auf die Skizze, z. B. nachdem du sie gedreht hast.",
+     "Schnittansicht schneidet alles vor der Skizzenebene weg, damit kein Körper die Skizze verdeckt. Ein weiterer Klick zeigt den ganzen Körper wieder.",
+     "Raster blendet das Raster der Skizze ein oder aus.",
+     "Fangen schaltet das Einrasten an oder aus: Enden und Ecken rasten an Punkten und Linien ein, Linien an vollen Grad.",
+     "Konstruktion schaltet zwischen normaler Geometrie und Konstruktion um; mit gewählten Linien wandelt es diese um.",
+     "Skizze fertig stellen, der blaue Knopf unten, verlässt die Skizze."
+    ]
+   },
+   "see": [
+    "sketch_basics",
+    "sketch_construction",
+    "sketch_finish"
+   ],
+   "tips": {
+    "en": [
+     "To draw freely just once, hold Shift instead of switching Snap off.",
+     "Extra options of the active tool appear in the Tool Parameters box below the Sketch Palette on the right."
+    ],
+    "de": [
+     "Um nur einmal frei zu zeichnen, halte Umschalt, statt Fangen auszuschalten.",
+     "Zusätzliche Optionen des aktiven Werkzeugs stehen im Bereich Werkzeugparameter unter der Skizzenpalette rechts."
+    ]
+   },
+   "images": [
+    {
+     "file": "sketch_palette.gif",
      "caption": {
       "en": "",
       "de": ""

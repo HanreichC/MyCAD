@@ -3,7 +3,7 @@
 MyCAD is parametric CAD for Linux: the workflow of Fusion 360, the look of Liquid Glass, and a handful of ideas you
 won't find in any other CAD program. It runs as an AppImage, nothing to install.
 
-Inside the app, the built-in help (**?** at the bottom left) explains every tool step by step, in English or German,
+Inside the app, the built-in help (**Help** at the bottom left, or **F1** over any tool) explains every tool step by step, in English or German,
 depending on the language you picked. This wiki is the overview for everyone else.
 
 ![What MyCAD can do](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_overview.gif)

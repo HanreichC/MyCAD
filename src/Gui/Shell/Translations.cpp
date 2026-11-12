@@ -65,6 +65,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Fillet", "Abrunden"},
         {"Hole", "Bohrung"},
         {"Fit All", "Alles zeigen"},
+        {"&Fit All", "Alles &zeigen"},  // Befehlsname im Tooltip; FreeCADs eigene Übersetzung hieße "Alles einpassen"
         {"Sketch Palette", "Skizzenpalette"},
         {"Edit", "Bearbeiten"},
         {"Roll Back to Here", "Bis hierher zurücksetzen"},
@@ -160,6 +161,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Select the body to split and a plane or face to split it with.", "Wähle den zu teilenden Körper und eine Ebene oder Fläche zum Teilen."},
         {"Rib", "Rippe"},
         {"Select the body and the sketch lines of the rib (or the whole sketch).", "Wähle den Körper und die Skizzenlinien der Rippe (oder die ganze Skizze)."},
+        {"Select the body and the sketch lines of the web (or the whole sketch).", "Wähle den Körper und die Skizzenlinien des Stegs (oder die ganze Skizze)."},
         {"Emboss", "Prägen"},
         {"Select the profiles or text of a sketch and the face to emboss on.", "Wähle die Profile oder den Text einer Skizze und die Fläche zum Prägen."},
         {"Select a face, edge, hole or point on the component to move, then the place to join it to.", "Wähle eine Fläche, Kante, Bohrung oder einen Punkt an der zu bewegenden Komponente, dann die Stelle, an der sie verbunden wird."},
@@ -207,6 +209,9 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Value, e.g. 40 mm", "Wert, z. B. 40 mm"},
         {"Add", "Hinzufügen"},
         {"Use a new name of letters, digits and _ (no spaces).", "Verwende einen neuen Namen aus Buchstaben, Ziffern und _ (ohne Leerzeichen)."},
+        {"“%1” is a unit or a constant. Choose another name.", "„%1“ ist eine Einheit oder Konstante. Wähle einen anderen Namen."},
+        {"“%1” is not a value or formula. Write e.g. 40 mm or Width / 4.", "„%1“ ist kein Wert und keine Formel. Schreib z. B. 40 mm oder Breite / 4."},
+        {"“%1” is still used by %2. Change that formula first.", "„%1“ wird noch von %2 gebraucht. Ändere zuerst diese Formel."},
         {"Section Analysis", "Schnittanalyse"},
         {"Select a plane or a planar face to cut the model at.", "Wähle eine Ebene oder ebene Fläche, an der das Modell geschnitten wird."},
         {"Plane at Angle", "Ebene im Winkel"},
@@ -262,6 +267,9 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"New Component", "Neue Komponente"},
         {"Body", "Körper"},
         {"Unknown parameter or invalid expression: %1", "Unbekannter Parameter oder ungültiger Ausdruck: %1"},
+        {"“%1” is not a number: type a number, or press Enter to use it as a parameter or formula",
+         "„%1“ ist keine Zahl: gib eine Zahl ein oder drücke Enter, um es als Parameter oder Formel zu verwenden"},
+        {"This value can't be negative; type a positive value", "Dieser Wert kann nicht negativ sein; gib einen positiven Wert ein"},
         {"Flip", "Umkehren"},
         {"Offset", "Versatz"},
         {"Create Sketch: click a plane or planar face to sketch on", "Skizze erstellen: Ebene oder ebene Fläche anklicken"},
@@ -273,7 +281,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Combine: select the target body, then the tool bodies", "Kombinieren: Zielkörper, dann Werkzeugkörper auswählen"},
         {"Move: select bodies to move or rotate", "Verschieben: Körper zum Verschieben oder Drehen auswählen"},
         {"Mirror: select bodies to mirror", "Spiegeln: zu spiegelnde Körper auswählen"},
-        {"Delete: remove features or sketches from the timeline", "Löschen: Features oder Skizzen aus der Zeitleiste entfernen"},
+        {"Delete: remove features, sketches or bodies with their steps", "Löschen: Features, Skizzen oder Körper samt ihren Schritten entfernen"},
         {"Export bodies as 3MF, STL or STEP, or sketches as DXF", "Körper als 3MF, STL oder STEP oder Skizzen als DXF exportieren"},
         {"Insert a STEP file as bodies, or a DXF or SVG file as a sketch", "Eine STEP-Datei als Körper einfügen oder eine DXF- oder SVG-Datei als Skizze"},
         {"Hole: place points in a sketch on a face", "Bohrung: Punkte in einer Skizze auf einer Fläche setzen"},
@@ -401,6 +409,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Result would be empty", "Das Ergebnis wäre leer"},
         {"Distance must be greater than zero", "Der Abstand muss größer als null sein"},
         {"To Object", "Bis Objekt"},
+        {"To object", "Bis Objekt"},
         {"Radius", "Radius"},
         {"Horizontal distance", "Waagrechter Abstand"},
         {"Vertical distance", "Senkrechter Abstand"},
@@ -443,6 +452,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Acrylic", "Acryl"},
         {"Material", "Werkstoff"},
         {"Export resolution", "Export-Auflösung"},
+        {"Slicer", "Slicer"},
         {"Normal", "Normal"},
         {"Timeline", "Zeitleiste"},
         {"This step cannot go before %1, which it needs.", "Dieser Schritt kann nicht vor %1, das er braucht."},
@@ -457,19 +467,19 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Rename…", "Umbenennen…"},
         {"Only steps that follow each other can be grouped.", "Nur Schritte, die aufeinander folgen, lassen sich gruppieren."},
         {"Variable radius", "Variabler Radius"},
-        {"Radius End", "Endradius"},
+        {"Radius end", "Endradius"},
         {"Equal distance", "Gleicher Abstand"},
         {"Two distances", "Zwei Abstände"},
         {"Distance and angle", "Abstand und Winkel"},
-        {"Chamfer Angle", "Fasenwinkel"},
+        {"Chamfer angle", "Fasenwinkel"},
         {"Swap the two faces", "Flächen tauschen"},
         {"Radius must be greater than zero", "Der Radius muss größer als null sein"},
         {"The chamfer angle must be between 0° and 90°", "Der Fasenwinkel muss zwischen 0° und 90° liegen"},
         {"Along Path", "Entlang Pfad"},
-        {"Plane Reference", "Bezugsebene"},
-        {"Direction 1 Reference", "Bezug Richtung 1"},
-        {"Direction 2 Reference", "Bezug Richtung 2"},
-        {"Axis Reference", "Bezugsachse"},
+        {"Plane reference", "Bezugsebene"},
+        {"Direction 1 reference", "Bezug Richtung 1"},
+        {"Direction 2 reference", "Bezug Richtung 2"},
+        {"Axis reference", "Bezugsachse"},
         {"Path", "Pfad"},
         {"Rotate copies along the path", "Kopien mit dem Pfad drehen"},
         {"Click a face, edge or plane…", "Klicke auf eine Fläche, Kante oder Ebene …"},
@@ -483,6 +493,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"The path must be connected edges", "Der Pfad muss aus zusammenhängenden Kanten bestehen"},
         {"The copies do not fit on the path; reduce Count or Spacing",
          "Die Kopien passen nicht auf den Pfad; verringere Anzahl oder Abstand"},
+        {"The spacing along a path must be greater than zero", "Der Abstand entlang eines Pfads muss größer als null sein"},
         {"Standard", "Norm"},
         {"Kind", "Art"},
         {"Fit", "Passung"},
@@ -623,7 +634,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Tight", "Eng"},
         {"Loose", "Locker"},
         {"Screw", "Schraube"},
-        {"Thread Size", "Gewindegröße"},
+        {"Thread size", "Gewindegröße"},
         {"Clearance", "Spiel"},
         {"Custom", "Eigene Maße"},
         {"None", "Keine"},
@@ -640,9 +651,9 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
          "Das Gewinde ließ sich nicht modellieren; nimm ein kosmetisches Gewinde"},
         {"Clearance must be smaller than a third of the pitch", "Das Spiel muss kleiner als ein Drittel der Steigung sein"},
         {"All", "Alle"},
-        {"Taper Angle", "Verjüngungswinkel"},
+        {"Taper angle", "Verjüngungswinkel"},
         {"Thin wall", "Dünne Wand"},
-        {"Thin Side", "Wandseite"},
+        {"Thin side", "Wandseite"},
         {"Inside", "Innen"},
         {"Outside", "Außen"},
         {"Pick a face that exists before this feature", "Wähle eine Fläche, die es vor diesem Feature schon gibt"},
@@ -658,7 +669,10 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"The axis passes through the profile. Choose an axis beside it.", "Die Achse läuft durch das Profil. Wähle eine Achse daneben."},
         {"Select edges of one body", "Wähle Kanten eines Körpers"},
         {"Select one or more edges", "Wähle eine oder mehrere Kanten"},
-        {"Size must be greater than zero", "Die Größe muss größer als null sein"},
+        {"Fillet failed: radius too large?", "Abrunden fehlgeschlagen: Radius zu groß?"},
+        {"Chamfer failed: distance too large?", "Fase fehlgeschlagen: Abstand zu groß?"},
+        {"Some edges are already smooth (the faces meet tangentially); select only sharp edges",
+         "Einige Kanten sind schon glatt (die Flächen gehen tangential ineinander über); wähle nur scharfe Kanten"},
         {"Select faces of one body", "Wähle Flächen eines Körpers"},
         {"Thickness must be greater than zero", "Die Dicke muss größer als null sein"},
         {"Shell failed: thickness too large?", "Wandstärke fehlgeschlagen: Dicke zu groß?"},
@@ -695,11 +709,16 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Select a cylindrical face of one body", "Wähle eine zylindrische Fläche eines Körpers"},
         {"Select one cylindrical face", "Wähle eine zylindrische Fläche"},
         {"The face must be cylindrical", "Die Fläche muss zylindrisch sein"},
-        {"The face is too short for this pitch", "Die Fläche ist für diese Steigung zu kurz"},
+        {"The face is too short for this pitch: it must be at least two pitches long. Make the face longer or choose a "
+         "finer pitch (e.g. ISO metric fine)",
+         "Die Fläche ist für diese Steigung zu kurz: sie muss mindestens zwei Steigungen lang sein. Mach die Fläche länger "
+         "oder wähle eine feinere Steigung (z. B. ISO metrisch fein)"},
+        {"Auto (%1)", "Automatisch (%1)"},
         {"Thread failed", "Gewinde fehlgeschlagen"},
         {"Select a body and sketch lines", "Wähle einen Körper und Skizzenlinien"},
         {"Select sketch lines for the rib", "Wähle Skizzenlinien für die Rippe"},
         {"Both ends of each rib line must touch the body", "Beide Enden jeder Rippenlinie müssen den Körper berühren"},
+        {"Both ends of each web line must touch a wall", "Beide Enden jeder Steglinie müssen eine Wand berühren"},
         {"Select straight sketch lines for the rib", "Wähle gerade Skizzenlinien für die Rippe"},
         {"Select faces of one body and a target", "Wähle Flächen eines Körpers und ein Ziel"},
         {"Select the faces to replace and a target plane or face", "Wähle die zu ersetzenden Flächen und eine Zielebene oder -fläche"},
@@ -721,7 +740,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Closed", "Geschlossen"},
         {"Width", "Breite"},
         {"Height", "Höhe"},
-        {"Tube Radius", "Rohrradius"},
+        {"Tube radius", "Rohrradius"},
         {"Pitch", "Steigung"},
         {"Turns", "Windungen"},
         {"Reversed", "Umgekehrt"},
@@ -820,6 +839,26 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Elliptical Arc", "Ellipsenbogen"},
         {"Extend Edge", "Kante verlängern"},
         {"External Intersection", "Schnittkante übernehmen"},
+        // kurze Beschriftungen unter den Symbolen (shortName) und Titel der Werkzeug-Panels in der Skizze
+        {"Extend", "Verlängern"},
+        {"Split", "Teilen"},
+        {"Vertical", "Vertikal"},
+        {"Perpendicular", "Senkrecht"},
+        {"Conic Curve", "Kegelschnitt"},
+        {"Preserve corner (U)", "Eckpunkt behalten (U)"},
+        {"Text Parameters", "Textparameter"},
+        {"Mirror Parameters", "Spiegelparameter"},
+        {"Move Parameters", "Verschiebeparameter"},
+        {"Pattern Parameters", "Musterparameter"},
+        {"Rotate Parameters", "Drehparameter"},
+        {"Trim Parameters", "Parameter zum Stutzen"},
+        {"Fillet/Chamfer Parameters", "Parameter für Abrunden/Fase"},
+        {"Click the start point, the end point and the corner point where the end tangents meet",
+         "Klicke Start- und Endpunkt, dann den Eckpunkt, in dem sich die Endtangenten treffen"},
+        {"Writes text as outlines into the sketch", "Schreibt Text als Umrisse in die Skizze"},
+        {"Type a number or the name of a parameter", "Tippe eine Zahl oder den Namen eines Parameters"},
+        {"Must be greater than zero", "Muss größer als null sein"},
+        {"Copies the selected geometry in rows and columns", "Kopiert die gewählte Geometrie in Reihen und Spalten"},
         {"External Projection", "Projektion übernehmen"},
         {"Heptagon", "Siebeneck"},
         {"Hexagon", "Sechseck"},
@@ -830,6 +869,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Parabolic Arc", "Parabelbogen"},
         {"Parallel Constraint", "Parallel-Abhängigkeit"},
         {"Pentagon", "Fünfeck"},
+        {"Polygon", "Vieleck"},
+        {"Toggle B-Spline Control Polygon", "Kontrollpolygon ein/aus"},
         {"Periodic B-Spline", "Geschlossener B-Spline"},
         {"Periodic B-Spline From Knots", "Geschlossener B-Spline aus Knoten"},
         {"Perpendicular Constraint", "Senkrecht-Abhängigkeit"},
@@ -1090,11 +1131,7 @@ class Translator: public QTranslator
 public:
     QString translate(const char*, const char* source, const char*, int) const override
     {
-        if (!source) {
-            return {};
-        }
-        auto it = germanTexts().find(source);
-        return it == germanTexts().end() ? QString() : QString::fromUtf8(it->second);
+        return source ? Gui::Shell::german(source) : QString();
     }
     bool isEmpty() const override
     {
@@ -1108,6 +1145,12 @@ ParameterGrp::handle general()
 }
 
 }  // namespace
+
+QString Gui::Shell::german(const char* english)
+{
+    auto it = germanTexts().find(english);
+    return it == germanTexts().end() ? QString() : QString::fromUtf8(it->second);
+}
 
 QString Gui::Shell::language()
 {

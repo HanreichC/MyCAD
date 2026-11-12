@@ -1000,7 +1000,8 @@ void DSHBSplineController::configureToolWidget()
     }
 
     if (handler->constructionMethod() == ConstructionMethod::ControlPoints) {
-        toolWidget->setParameter(WParameter::First, handler->SplineDegree);
+        // MyCAD: ohne Fokuswechsel, sonst landet der Fokus nach dem Abschluss (Rechtsklick) im Feld Grad
+        toolWidget->setParameterWithoutPassingFocus(WParameter::First, handler->SplineDegree);
         toolWidget->setParameterVisible(WParameter::First, true);
     }
     else {

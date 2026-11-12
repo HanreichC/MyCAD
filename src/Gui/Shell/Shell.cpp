@@ -243,15 +243,15 @@ QComboBox::down-arrow { image: url(:/mycad/icons/Chevrons_UpDown.svg); width: 16
 QLineEdit { selection-background-color: @accent; selection-color: @labelOnAccent; }
 
 /* Standard-Buttons: Kapsel, fill.tertiary, gedrückt fill.secondary, Hover 1 px Weiß 35 %; Standard-Aktion = Akzent */
-#GlassContent QPushButton, QDialog QPushButton, QMessageBox QPushButton {
+#GlassContent QPushButton, [glassPanel="true"] QPushButton, QDialog QPushButton, QMessageBox QPushButton {
     background: @fillTertiary; border: 1px solid transparent; border-radius: 15px; min-height: 28px; padding: 0 15px; font-weight: 600;
 }
-#GlassContent QPushButton:hover, QDialog QPushButton:hover, QMessageBox QPushButton:hover { border-color: @hoverRim; }
-#GlassContent QPushButton:pressed, QDialog QPushButton:pressed, QMessageBox QPushButton:pressed { background: @fillSecondary; }
-#GlassContent QPushButton:focus, QDialog QPushButton:focus, QMessageBox QPushButton:focus { border: 2px solid @focusRing; padding: 0 14px; }
-#GlassContent QPushButton:default, QDialog QPushButton:default, QMessageBox QPushButton:default { background: @accent; color: @labelOnAccent; }
-#GlassContent QPushButton:default:pressed, QDialog QPushButton:default:pressed, QMessageBox QPushButton:default:pressed { background: @accentPressed; }
-#GlassContent QPushButton:disabled, QDialog QPushButton:disabled { color: @labelTertiary; }
+#GlassContent QPushButton:hover, [glassPanel="true"] QPushButton:hover, QDialog QPushButton:hover, QMessageBox QPushButton:hover { border-color: @hoverRim; }
+#GlassContent QPushButton:pressed, [glassPanel="true"] QPushButton:pressed, QDialog QPushButton:pressed, QMessageBox QPushButton:pressed { background: @fillSecondary; }
+#GlassContent QPushButton:focus, [glassPanel="true"] QPushButton:focus, QDialog QPushButton:focus, QMessageBox QPushButton:focus { border: 2px solid @focusRing; padding: 0 14px; }
+#GlassContent QPushButton:default, [glassPanel="true"] QPushButton:default, QDialog QPushButton:default, QMessageBox QPushButton:default { background: @accent; color: @labelOnAccent; }
+#GlassContent QPushButton:default:pressed, [glassPanel="true"] QPushButton:default:pressed, QDialog QPushButton:default:pressed, QMessageBox QPushButton:default:pressed { background: @accentPressed; }
+#GlassContent QPushButton:disabled, [glassPanel="true"] QPushButton:disabled, QDialog QPushButton:disabled { color: @labelTertiary; }
 
 /* Auswahl nur auf der Zeile selbst, nicht auch auf der Einrückung links davon */
 #GlassContent QTreeView { show-decoration-selected: 0; }
@@ -621,6 +621,9 @@ void applyTheme()
     // Auswahl in der Skizze grün (Kontrast-Variante): Blau heißt hier schon "unterbestimmt", ausgewählte Kanten sähen
     // sonst aus wie alle anderen
     view->SetUnsigned("SketchSelectionColor", packed(t.greenIC));
+    // Vorauswahl (Hover) in der Skizze: das normale Grün, kräftig auf dem hellen Hintergrund; die blasse HighlightColor
+    // der 3D-Ansicht ließe Linien und Achsen unter der Maus verschwinden
+    view->SetUnsigned("SketchHighlightColor", packed(t.green));
     for (const char* soft : {"SketchEdgeColor", "SketchVertexColor", "ConstrainedDimColor", "ConstrainedIcoColor", "CursorTextColor"}) {
         view->SetUnsigned(soft, packed(t.labelSecondary));
     }
@@ -844,6 +847,8 @@ QString shortName(QString text)
         {QStringLiteral("Projection"), QStringLiteral("Project")},
         {QStringLiteral("Rectangular Array"), QStringLiteral("Pattern")},
         {QStringLiteral("Conic Curve"), QStringLiteral("Conic")},
+        // "Intersection" allein ist auch der Ecken-Modus von Versatz (deutsch "Schnitt"): voller Name wie in der Hilfe
+        {QStringLiteral("Intersection"), QStringLiteral("External Intersection")},
     };
     if (auto it = sketch.find(text.trimmed()); it != sketch.end()) {
         return it->second;
@@ -1064,6 +1069,17 @@ std::vector<std::pair<QString, QAction*>> variants(const QString& entry)
     return result;
 }
 
+/// Knopf folgt dem Befehl, wird aber nicht grau, solange eine Maustaste gedrückt ist: Skizzenbefehle sind beim Ziehen
+/// in der Skizze kurz inaktiv, die Leiste blinkte sonst bei jedem Ziehen. Nach dem Loslassen zieht er nach.
+void followEnabled(QToolButton* btn, QAction* action)
+{
+    if (!action->isEnabled() && btn->isEnabled() && QGuiApplication::mouseButtons() != Qt::NoButton) {
+        QTimer::singleShot(200, btn, [btn, action] { followEnabled(btn, action); });
+        return;
+    }
+    btn->setEnabled(action->isEnabled());
+}
+
 /// Kapsel-Toolbar mit Befehls-Buttons in Abschnitten wie bei Fusion: "#CREATE" beginnt einen Abschnitt mit dieser
 /// Überschrift (darunter), Abschnitte sind durch eine Linie getrennt; "A|B" = Knopf mit Varianten-Menü.
 QWidget* toolbar(const std::vector<const char*>& commands)
@@ -1152,7 +1168,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
                 }
             });
             QObject::connect(action, &QAction::changed, btn, [btn, action] {
-                btn->setEnabled(action->isEnabled());
+                followEnabled(btn, action);
             });
             for (const auto& [n, a] : choices) {
                 QObject::connect(a, &QAction::changed, btn, [btn, choices, pick, current] {
@@ -1193,7 +1209,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
             QTimer::singleShot(0, action, &QAction::trigger);
         });
         QObject::connect(action, &QAction::changed, btn, [btn, action] {
-            btn->setEnabled(action->isEnabled());
+            followEnabled(btn, action);
             btn->setCheckable(action->isCheckable());
             btn->setChecked(action->isChecked());
         });
@@ -3231,11 +3247,15 @@ struct State
     std::string notesDocument;
 } state;
 
+extern GlassPanel* searchPanel;  // Befehlssuche (Strg+K), weiter unten
+extern QLineEdit* searchField;
+
 std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
+    // auch die Suche: sie lag sonst noch in der Szene eines geschlossenen Designs und starb mit ihr (Absturz danach)
     for (auto p : {state.header, state.browser, state.inspector, state.timeline, state.palette, state.scribblePalette,
-                   state.scribblePill, state.scribbleActions, state.collapsedBar, state.windowPanel}) {
+                   state.scribblePill, state.scribbleActions, state.collapsedBar, state.windowPanel, searchPanel}) {
         if (p) {
             all.push_back(p);
         }
@@ -3367,38 +3387,52 @@ void layout()
         state.viewCube->setPos(r.width() - state.viewCube->boundingRect().width() - m, top);
         belowCube = top + state.viewCube->boundingRect().height() + m;
     }
+    // Im Skizzenmodus übernimmt die Sketch Palette; nur Werkzeug-Optionen (Kopien, Ecken, Abstand …) erscheinen
+    // darunter, solange das Werkzeug welche hat (wie Fusions kleine Werkzeug-Dialoge), genau so breit wie die Palette
+    QWidget* tool = nullptr;
+    QSizeF toolSize;
+    if (state.inspector) {
+        QWidget* inspector = state.inspector->content();
+        for (auto box : inspector->findChildren<QDialogButtonBox*>()) {
+            box->setVisible(!state.sketchMode);
+        }
+        for (auto w : inspector->findChildren<QWidget*>()) {
+            if (state.sketchMode && w->inherits("SketcherGui::TaskSketcherTool") && !w->isHidden()) {
+                tool = w;
+            }
+        }
+        // Größe aus dem Inhalt: der Inhalt des Rollbereichs plus alles um den Rollbereich herum (Ränder, Panel).
+        // Der Rollbereich selbst meldet eine gemerkte alte Größe (QScrollArea::sizeHint), sein Anteil fällt heraus
+        QScrollArea* area = nullptr;
+        for (QWidget* w = tool; w && !area; w = w->parentWidget()) {
+            area = qobject_cast<QScrollArea*>(w);
+        }
+        if (area) {
+            toolSize = inspector->sizeHint() - area->sizeHint().expandedTo(area->minimumSize()) + area->widget()->sizeHint();
+        }
+    }
     for (auto [panel, show] : {std::pair {state.palette, state.sketchMode}, std::pair {state.scribblePalette, state.scribbleMode}}) {
         if (panel) {
             QSizeF ps = panel->content()->sizeHint();
-            ps.setWidth(std::max<qreal>(ps.width(), panel->content()->minimumWidth()));
+            ps.setWidth(std::max<qreal>({ps.width(), qreal(panel->content()->minimumWidth()),
+                                         panel == state.palette ? toolSize.width() : 0.}));
             panel->setVisible(show);
             panel->setGeometry(QRectF(r.width() - ps.width() - m, belowCube, ps.width(), ps.height()));
         }
     }
     if (state.inspector) {
         const qreal itop = belowCube;  // unter dem ViewCube
-        QWidget* inspector = state.inspector->content();
-        for (auto box : inspector->findChildren<QDialogButtonBox*>()) {
-            box->setVisible(!state.sketchMode);
-        }
         if (!state.sketchMode) {
             state.inspector->setVisible(Control().activeDialog() != nullptr);
             state.inspector->setGeometry(QRectF(r.width() - 340 - m, itop, 340, bottom - itop));
         }
         else {
-            // Im Skizzenmodus übernimmt die Sketch Palette; nur Werkzeug-Optionen (Kopien, Ecken, Abstand …)
-            // erscheinen darunter, solange das Werkzeug welche hat (wie Fusions kleine Werkzeug-Dialoge)
-            QWidget* tool = nullptr;
-            for (auto w : inspector->findChildren<QWidget*>()) {
-                if (w->inherits("SketcherGui::TaskSketcherTool") && !w->isHidden()) {
-                    tool = w;
-                }
-            }
             state.inspector->setVisible(tool != nullptr);
             if (tool) {
                 const qreal top = state.palette ? state.palette->sceneBoundingRect().bottom() + m : itop;
-                const qreal h = std::min<qreal>(tool->sizeHint().height() + 40, bottom - top);
-                state.inspector->setGeometry(QRectF(r.width() - 340 - m, top, 340, h));
+                const qreal w = state.palette ? state.palette->shape().boundingRect().width() : toolSize.width();
+                const qreal h = std::min<qreal>(toolSize.height(), bottom - top);
+                state.inspector->setGeometry(QRectF(r.width() - w - m, top, w, h));
             }
         }
     }
@@ -3479,8 +3513,12 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
         const auto type = event->type();
-        // In der Skizze schluckt der 3D-Viewer Tasten, bevor die Szene sie bekommt: an das Post-it mit Fokus durchreichen
+        // In der Skizze schluckt der 3D-Viewer Tasten, bevor die Szene sie bekommt: an Suche oder Post-it mit Fokus durchreichen
         if ((type == QEvent::KeyPress || type == QEvent::KeyRelease) && qobject_cast<QGraphicsView*>(obj)) {
+            if (searchField && searchField->hasFocus()) {
+                QApplication::sendEvent(searchField, event);
+                return true;
+            }
             for (const NotePanel& note : state.notes) {
                 if (note.edit->hasFocus()) {
                     QApplication::sendEvent(note.edit, event);
@@ -3503,7 +3541,9 @@ protected:
         // Esc beendet wie in Fusion das Skizzen-Werkzeug, auch wenn ein Maßfeld den Fokus hat (FreeCAD bricht dort
         // nur die Eingabe ab, und das nächste Feld holt sich den Fokus zurück)
         if (type == QEvent::KeyPress && state.sketchMode && static_cast<QKeyEvent*>(event)->key() == Qt::Key_Escape
-            && obj == QApplication::focusWidget() && (qobject_cast<QAbstractSpinBox*>(obj) || qobject_cast<QLineEdit*>(obj))) {
+            && obj == QApplication::focusWidget() && obj != searchField  // Esc in der Suche schließt nur die Suche
+            && (qobject_cast<QAbstractSpinBox*>(obj) || qobject_cast<QLineEdit*>(obj))
+            && !qobject_cast<QDialog*>(static_cast<QWidget*>(obj)->window())) {  // Maß-Dialog: Esc verwirft wie Cancel
             auto gdoc = Application::Instance->activeDocument();
             auto view = gdoc ? dynamic_cast<View3DInventor*>(gdoc->getActiveView()) : nullptr;
             if (view) {
@@ -4060,8 +4100,10 @@ void refreshSearch()
         const std::string name = cmd->getName();
         const bool sketch = name.rfind("Sketcher_", 0) == 0;
         const bool design = name.rfind("Design_", 0) == 0 && name.rfind("Design_Scribble", 0) != 0;
+        // Gruppenbefehle (Sketcher_CompCreateRegularPolygon …) nicht: sie führen nur ihre zuletzt gewählte Variante aus
+        // und doppelten die Varianten in der Liste ("Polygon" zeichnete ein Dreieck)
         if ((!design && !standard.contains(name) && !(sketch && state.sketchMode)) || name == "MyCAD_Search"
-            || !cmd->isActive()) {
+            || !cmd->isActive() || dynamic_cast<GroupCommand*>(cmd)) {
             continue;
         }
         const char* english = cmd->getMenuText();
@@ -4072,16 +4114,17 @@ void refreshSearch()
         label.remove(QLatin1Char('&'));
         auto synonyms = searchSynonyms().contains(name) ? searchSynonyms().at(name) : std::vector<std::string>();
         synonyms.push_back(name);
-        const int score = CommandSearch::score(query, {label.toStdString(), english}, synonyms);
+        // auch der deutsche Name, in jeder Sprache: die Hilfe verspricht Suche auf Deutsch oder Englisch
+        const int score = CommandSearch::score(query, {label.toStdString(), english, german(english).toStdString()}, synonyms);
         if (score > 0) {
             const char* accel = cmd->getAccel();
-            hits.push_back({name, label, accel ? QString::fromLatin1(accel) : QString(),
+            hits.push_back({name, label, QKeySequence(QString::fromLatin1(accel ? accel : "")).toString(QKeySequence::NativeText),
                             commandIcon(QString::fromLatin1(name), QIcon()), [name] {
                                 Application::Instance->commandManager().runCommandByName(name.c_str());
                             }, score});
         }
     }
-    if (App::Document* doc = App::GetApplication().getActiveDocument(); doc && !query.empty()) {
+    if (App::Document* doc = App::GetApplication().getActiveDocument()) {  // leer: zuletzt benutzte Körper und Skizzen
         static const Base::Type body = Base::Type::fromName("Design::Body");
         static const Base::Type sketch = Base::Type::fromName("Sketcher::SketchObject");
         for (App::DocumentObject* obj : doc->getObjects()) {
@@ -5808,10 +5851,13 @@ void Gui::Shell::setToolNames(bool on)
         for (auto sep : bar->findChildren<QFrame*>(QStringLiteral("ToolbarSeparator"))) {
             sep->setFixedSize(9, on ? 44 : 28);
         }
-        // Abschnitte zuerst neu rechnen, sonst misst die Toolbar mit den alten Knopfgrößen (zweite Reihe abgeschnitten)
-        for (auto group : bar->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
-            if (group->layout()) {
-                group->layout()->activate();
+        // Von innen nach außen neu rechnen (Knopfreihe, Abschnitt, Toolbar): Qt reicht neue Größen sonst nur über
+        // nachgereichte LayoutRequests je Ebene weiter, und layout() mäße mit den alten (Knöpfe übereinander, zu hoch).
+        // findChildren liefert Eltern vor Kindern, rückwärts also die innersten zuerst; activate() ruft updateGeometry()
+        const auto widgets = bar->findChildren<QWidget*>();
+        for (auto it = widgets.rbegin(); it != widgets.rend(); ++it) {
+            if ((*it)->layout()) {
+                (*it)->layout()->activate();
             }
         }
         bar->layout()->invalidate();

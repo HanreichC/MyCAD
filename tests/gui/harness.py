@@ -70,12 +70,25 @@ def record_click(global_point):
 
 
 def _record_frame():
-    if QtCore.QThread.currentThread().loopLevel() > 1:
-        return  # nie in einer verschachtelten Ereignisschleife: das Bild griffe mitten in einen Umbau der Szene (Absturz)
+    """Bild des Fensters samt offener Dialoge und Menüs (eigene Fenster: mw.grab() sieht sie nicht) und Klick-Kreisen.
+    _rec["crop"] = (x, Breite): anderer Ausschnitt als "ohne die linken left Pixel" (z. B. mit Seitenleiste)"""
+    if not _rec:
+        return
+    tops = [w for w in QtWidgets.QApplication.topLevelWidgets()
+            if w.isVisible() and w is not mw and w.isWindow() and w.metaObject().className() != "QTipLabel"
+            and w.width() > 8 and w.height() > 8]
+    if QtCore.QThread.currentThread().loopLevel() > 1 and not tops:
+        return  # verschachtelte Schleife ohne Dialog: das Bild griffe mitten in einen Umbau der Szene (Absturz)
     now = _rec["clock"]()
     img = mw.grab().toImage().convertToFormat(QtGui.QImage.Format_RGB888)
     painter = QtGui.QPainter(img)
     painter.setRenderHint(QtGui.QPainter.Antialiasing)
+    for w in tops:
+        at = mw.mapFromGlobal(w.mapToGlobal(QtCore.QPoint(0, 0)))
+        if isinstance(w, QtWidgets.QDialog) and not w.testAttribute(QtCore.Qt.WA_TranslucentBackground):
+            # Fensterrahmen fehlt unter Xvfb: leichter Schatten statt dessen
+            painter.fillRect(QtCore.QRect(at + QtCore.QPoint(-1, -1), w.size() + QtCore.QSize(2, 2)), QtGui.QColor(0, 0, 0, 28))
+        painter.drawPixmap(at, w.grab())
     for x, y, t0 in _rec["clicks"]:
         age = now - t0
         if 0 <= age < 0.7:  # Klick: Kreis wächst und blendet aus
@@ -86,15 +99,55 @@ def _record_frame():
             r = 10 + 26 * age / 0.7
             painter.drawEllipse(QtCore.QPointF(x, y), r, r)
     painter.end()
-    img = img.copy(_rec["left"], 0, img.width() - _rec["left"], img.height())
-    _rec["frames"].append((img.scaledToWidth(_rec["width"], QtCore.Qt.SmoothTransformation), now))
+    x0, w = _rec.get("crop") or (_rec["left"], img.width() - _rec["left"])
+    _rec["frames"].append((img.copy(x0, 0, w, img.height()).scaledToWidth(_rec["width"], QtCore.Qt.SmoothTransformation), now))
     _rec["busy"] += _rec["clock"]() - now
+    _rec["at"] = _rec["clock"]()
+
+
+def _swatches():
+    """Farben, die im Clip kräftig bleiben müssen, auch wenn sie nur als dünne Linie oder kurz zu sehen sind: Akzent
+    (OK, Klick-Kreis), Auswahl und Vorauswahl, Achsen, Skizzenkanten (aus den Einstellungen, die die Shell setzt),
+    oranges Profil (ViewProviders.cpp) und Systemfarben (MyStyle-Tokens); Flächenfarben auch schattiert"""
+    grp = App.ParamGet("User parameter:BaseApp/Preferences/View")
+    def unpack(name):
+        v = grp.GetUnsigned(name, 0)
+        return (v >> 24 & 255, v >> 16 & 255, v >> 8 & 255)
+    lines = [unpack(n) for n in ("AxisXColor", "AxisYColor", "AxisZColor", "EditedEdgeColor", "ConstructionColor",
+                                 "ExternalColor", "SketchSelectionColor") if grp.GetUnsigned(n, 0)]
+    lines += [(0, 136, 255), (0, 113, 227), (255, 56, 60), (255, 141, 40), (52, 199, 89)]  # accent, accentText, red, orange, green
+    faces = [unpack(n) for n in ("SelectionColor", "HighlightColor") if grp.GetUnsigned(n, 0)] + [(255, 199, 133)]
+    return lines + [tuple(int(c * k) for c in rgb) for rgb in faces for k in (1.0, 0.85, 0.7, 0.55)]
+
+
+def _quantize(frames):
+    """Eine Palette für alle Bilder (Unverändertes bleibt gleich, die GIF speichert nur Änderungen): Grundfarben aus bis
+    zu 16 Bildern über den ganzen Clip, eigene Plätze für kräftige Farben (aus nur ein paar Bildern fehlten das Rot der
+    Überhänge und das Blau der Auswahl, sie wurden gelb bzw. grau) und für die festen Farben aus _swatches()"""
+    from PIL import Image
+    w, h = frames[0].size
+    pick = [frames[i * (len(frames) - 1) // 15] for i in range(16)] if len(frames) > 16 else frames
+    sample = Image.new("RGB", (w, h * len(pick)))
+    for i, f in enumerate(pick):
+        sample.paste(f, (0, h * i))
+    # NEAREST: eine verkleinerte Probe mittelte dünne farbige Linien (Achsen, Skizzenkanten) in den Hintergrund
+    small = sample.resize((w // 2, h * len(pick) // 2), Image.NEAREST)
+    vivid = [px for px in getattr(small, "get_flattened_data", small.getdata)() if max(px) - min(px) > 70]
+    fixed = [c for rgb in _swatches() for c in rgb]
+    extra = []
+    if vivid:
+        v = Image.new("RGB", (len(vivid), 1)); v.putdata(vivid)
+        extra = v.quantize(40, method=Image.Quantize.MEDIANCUT).getpalette()[:40 * 3]
+    n = 256 - (len(fixed) + len(extra)) // 3
+    base = sample.quantize(n, method=Image.Quantize.MEDIANCUT).getpalette()[:n * 3]
+    pal = Image.new("P", (1, 1)); pal.putpalette((base + extra + fixed + [0] * 768)[:768])
+    return [f.quantize(palette=pal, dither=Image.Dither.NONE) for f in frames]
 
 
 def record_stop(hold=1.5, longest=1.2):
     """Aufnahme beenden und als GIF speichern. Gleiche Bilder hintereinander werden eins; was länger still steht (Warten
     auf den nächsten Schritt), zeigt der Clip höchstens longest Sekunden. Das letzte Bild steht hold Sekunden, dann
-    beginnt der Clip von vorn. Eine Palette für alle Bilder: Unverändertes bleibt gleich, die GIF speichert nur Änderungen."""
+    beginnt der Clip von vorn."""
     from PIL import Image
     _rec["timer"].stop()
     _record_frame()
@@ -111,14 +164,20 @@ def record_stop(hold=1.5, longest=1.2):
     durations = [max(_rec["ms"], min(int((b - a) * 1000), int(longest * 1000))) for a, b in zip(times, times[1:])]
     durations[-1] += int(hold * 1000)
     w, h = frames[0].size
-    # Palette aus bis zu 16 Bildern über den ganzen Clip: auch kurze Farben (blaue Auswahl, oranges Profil, rote
-    # Schraffur) bekommen eigene Einträge, sonst werden sie grau
-    picks = [frames[i * (len(frames) - 1) // 15] for i in range(16)] if len(frames) > 16 else frames
-    sample = Image.new("RGB", (w // 2, h // 2 * len(picks)))
-    for i, f in enumerate(picks):
-        sample.paste(f.resize((w // 2, h // 2)), (0, h // 2 * i))
-    palette = sample.quantize(255, method=Image.Quantize.MEDIANCUT)
-    frames = [f.quantize(palette=palette, dither=Image.Dither.NONE) for f in frames]
+    # MyCAD zeichnet nach einem Kamera- oder Farbwechsel ein paar Mal nach (Schatten, Schraffur): solche kurzen
+    # Zwischenbilder fallen weg, wenn gleich danach wieder fast das ganze Bild wechselt (spart je ~100 KB)
+    from PIL import ImageChops
+    keep_f, keep_d = [frames[0]], [durations[0]]
+    for f, d in zip(frames[1:], durations[1:]):
+        b = ImageChops.difference(f, keep_f[-1]).getbbox()
+        if keep_d[-1] < 200 and len(keep_f) > 1 and b and (b[2] - b[0]) * (b[3] - b[1]) > w * h // 4:
+            prev = ImageChops.difference(keep_f[-1], keep_f[-2]).getbbox()
+            if prev and (prev[2] - prev[0]) * (prev[3] - prev[1]) > w * h // 4:
+                keep_f[-1] = f; keep_d[-1] += d
+                continue
+        keep_f.append(f); keep_d.append(d)
+    frames = _quantize(keep_f)
+    durations = keep_d
     frames[0].save(_rec["path"], save_all=True, append_images=frames[1:], duration=durations, loop=0, optimize=False)
     L("GIF %s: %d Bilder, %.1f s, %d KB" % (os.path.basename(_rec["path"]), len(frames), sum(durations) / 1000,
                                            os.path.getsize(_rec["path"]) // 1024))
@@ -219,7 +278,7 @@ def volumes():
 
 
 def errors():
-    return [(o.Name, o.getStatusString()) for o in doc().Objects if hasattr(o, "isError") and o.isError()]
+    return [(o.Name, o.getStatusString()) for o in doc().Objects if "Invalid" in o.State]
 
 
 def make_body(geos, z, h, name):
@@ -257,15 +316,21 @@ def _when_idle(fn, quiet=0.25, limit=10.0):
     start = calm = last = time.monotonic()
 
     recorded = [_rec.get("busy", 0.0)]
+    before = [last]
 
     def tick():
         nonlocal calm, last
         now = time.monotonic()
         own = _rec.get("busy", 0.0) - recorded[0]  # eine laufende GIF-Aufnahme (record_start) ist keine Arbeit von MyCAD
         recorded[0] = _rec.get("busy", 0.0)
+        # Nach jedem Bild der Aufnahme zeichnet Qt die 3D-Ansicht neu (50–90 ms mit Software-OpenGL, nicht in "busy"):
+        # ohne diese Nachsicht kam MyCAD während einer Aufnahme nie zur Ruhe und jeder Schritt wartete 10 s.
+        # ponytail: feste 0,1 s statt gemessener Zeichenzeit; längere Arbeit (Neuberechnung) bleibt Unruhe
+        if _rec.get("at", -1.0) >= before[0]:
+            own += 0.1
         if now - last - own > 0.045:  # Timer kam zu spät dran: es lief noch Arbeit (Neuberechnung, Zeichnen, Animation)
             calm = now
-        last = now
+        before[0], last = last, now
         if now - calm >= quiet or now - start >= limit:
             if now - calm < quiet:  # Hinweis, kein Fehler: zeichnet MyCAD ständig neu, kostet das Akku
                 L("  busy: MyCAD kam %.0f s lang nicht zur Ruhe" % limit)

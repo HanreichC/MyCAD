@@ -1,6 +1,6 @@
 # Features
 
-Everything MyCAD can do, on one page. Every tool also has an article in the built-in help (**?** at the bottom left,
+Everything MyCAD can do, on one page. Every tool also has an article in the built-in help (**Help** at the bottom left, **F1** over a tool,
 or search for it with Ctrl+K).
 
 ![What MyCAD can do](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_overview.gif)
@@ -13,16 +13,25 @@ or search for it with Ctrl+K).
   from Ultra Clear to Tinted.
 - **Light, Dark, Automatic**; Increase Contrast, Reduce Transparency, Reduce Motion.
 - **English or German**, with the terms of the German Fusion 360.
-- **Start page** with recent designs and your projects folder, large previews and search.
+- **Start page** with recent designs and your projects folder, large previews and search; right-click a design to
+  rename or delete it.
 
-  ![Designs and files](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/file_basics.gif)
+  ![Start page](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/file_start_page.gif)
+
+- **Browser** with eye icons to show and hide, rename in place (F2), the design name renames the file too, and
+  **Saved** at the bottom when everything is on disk.
+
+  ![The browser](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/browser.gif)
 
 - **Command search** with **Ctrl+K**: finds commands, bodies and sketches; forgives typos; understands English, German
   and words from other CAD programs (*pad*, *pocket*, *push pull*). The ones you used last are at the top.
 
   ![Search](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/search.gif)
 
-- **Built-in help** with 90 articles, pictures, search, an overview and two tutorials.
+- **Built-in help** with 95 articles, a clip for each, search, an overview and two tutorials; **F1** opens the article
+  for the tool under the mouse.
+
+  ![Help and F1](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/help.gif)
 
 ## Sketching
 
@@ -33,6 +42,10 @@ or search for it with Ctrl+K).
   vertical, parallel, perpendicular, tangent, equal, symmetric, fix.
 
   ![Dimension](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_dimension.gif)
+
+- **Sketch Palette:** Look At, Slice (cut away what's in front of the sketch), Grid, Snap, Construction, Finish Sketch.
+
+  ![Sketch Palette](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_palette.gif)
 
 - Every closed region is its own profile: two circles inside each other, click the ring, extrude, and you have a tube.
 
@@ -97,6 +110,11 @@ Worth knowing:
   change are marked orange: **Show Affected Edges** or **Looks Right**.
 
 ## Sizes and parameters
+
+- **Numbers the way you write them:** `12,5` or `12.5`, units (`1 in`), calculations (`2 * 7,5`) and parameter names in
+  every size field, sketch dimensions included.
+
+  ![Typing numbers](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/numbers.gif)
 
 - **Double-click a face, change a number:** double-click a face with no tool active and the sizes that make it appear on the model:
   extrusion length, the sketch dimension behind a side face, hole diameter, fillet radius. Type, Enter, done. Ctrl+Z works.

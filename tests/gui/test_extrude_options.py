@@ -55,7 +55,7 @@ in_order([
     ("edit again", lambda: check("dialog opens again", Gui.ActiveDocument.setEdit(state["f"]))),
     ("one side", lambda: choose("One Side", 0)),
     ("distance", lambda: type_field("Distance", "10")),
-    ("type taper", lambda: type_field("Taper Angle", "10")),
+    ("type taper", lambda: type_field("Taper angle", "10")),
     ("shot taper", lambda: shot("taper")),
     ("taper set", lambda: check("taper applied", abs(state["f"].TaperAngle.Value - 10) < 1e-6, str(state["f"].TaperAngle))),
     ("thin", lambda: checkbox("Thin wall").click()),

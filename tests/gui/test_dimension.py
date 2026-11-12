@@ -79,6 +79,22 @@ def bound():
           and abs(S["sk"].Geometry[0].length() - 45) < 1e-6, "%s length=%.2f" % (expr, S["sk"].Geometry[0].length()))
 
 
+def esc_in_dialog():
+    box = QtWidgets.QApplication.focusWidget()
+    L("  esc into %s in %s" % (box and box.metaObject().className(), box and box.window().windowTitle()))
+    QtTest.QTest.keyClick(box, QtCore.Qt.Key_Escape)
+
+
+def esc_cancelled():
+    """Esc im Maß-Dialog verwirft das neue Maß wie Cancel (früher schickte die Shell es an die 3D-Ansicht, der Dialog blieb)"""
+    m = QtWidgets.QApplication.activeModalWidget()
+    right = [c.Type for c in S["sk"].Constraints if c.Type.startswith("Distance") and c.First == 1]
+    check("esc in the dimension dialog cancels the new dimension", m is None and not right,
+          "dialog=%s dims on the right edge=%s" % (m and m.windowTitle(), right))
+    if m:
+        m.reject()
+
+
 def report(tag):
     dims = [(c.First, round(c.Value, 2), c.Driving) for c in S["sk"].Constraints if c.Type == "Distance"]
     L("%s: lengths=%s dims=%s redundant=%s" % (tag, [round(g.length(), 2) for g in S["sk"].Geometry], dims, S["sk"].RedundantConstraints))
@@ -93,6 +109,7 @@ run([
     ("type Width", lambda: enter_value("Width")),
     ("report1", lambda: report("1 bottom=Width")), ("bound", bound),
     ("esc", esc),
+    ("dim right", lambda: dimension("Edge2")), ("esc dialog", esc_in_dialog), ("esc cancelled", esc_cancelled), ("esc2", esc),
     ("dim top", lambda: dimension("Edge3")), ("wait2", lambda: None),
     ("report2", lambda: report("2 top redundant")),
     ("esc3", esc), ("zoom", zoom),

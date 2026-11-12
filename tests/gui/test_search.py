@@ -43,6 +43,23 @@ def is_open():
     return any(e.accessibleName() == "Search" for e in visible(QtWidgets.QLineEdit))
 
 
+def window_keys(text):
+    """wie echtes Tippen: über das Fenster, nicht direkt ins Feld (in der Skizze schluckte die 3D-Ansicht die Tasten)"""
+    for c in text:
+        QtTest.QTest.keyClick(mw.windowHandle(), c)
+
+
+def in_sketch_typed():
+    r = results()
+    check("typing reaches the search field in a sketch", field().text() == "slot", repr(field().text()))
+    check("no duplicate hits in a sketch (group commands skipped)", r and len(r) == len(set(r)), str(r))
+
+
+def german_in_sketch():
+    typed("kreis")
+    check("German name finds Circle in the English UI", any("Circle" in t for t in results()[:3]), str(results()))
+
+
 run([
     ("setup", lambda: make_body(rect(0, 0, 20, 10), 0, 5, "Bracket")),
     ("ctrl+k", open_search),
@@ -68,6 +85,24 @@ run([
     ("recent", lambda: Gui.runCommand("MyCAD_Search")),
     ("recent list", lambda: check("empty search shows recently used first", results()[:1] == ["Measure"], str(results()))),
     ("shot", lambda: shot("search")),
+    ("recent body", lambda: check("empty search shows the body used last too", "Bracket" in results(), str(results()))),
     ("esc", lambda: key(QtCore.Qt.Key_Escape)),
     ("closed", lambda: check("esc closes the search", not is_open())),
+    ("bohrung", lambda: (Gui.runCommand("MyCAD_Search"), typed("bohrung"))),
+    ("hole first", lambda: check("German label ranks Hole first in the English UI", results()[:1] == ["Hole"], str(results()))),
+    ("esc0", lambda: key(QtCore.Qt.Key_Escape)),
+    ("sketch", lambda: click(button("Design_CreateSketch"))),
+    ("pick XY", lambda: Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XY_Plane")][0])),
+    ("ctrl+k sketch", open_search),
+    ("type sketch", lambda: window_keys("slot")),
+    ("typed sketch", in_sketch_typed),
+    ("kreis", german_in_sketch),
+    ("esc sketch", lambda: QtTest.QTest.keyClick(mw.windowHandle(), QtCore.Qt.Key_Escape)),
+    ("esc only search", lambda: check("esc in a sketch closes only the search", not is_open()
+                                      and Gui.ActiveDocument.getInEdit() is not None)),
+    ("leave sketch", lambda: Gui.runCommand("Sketcher_LeaveSketch")),
+    ("close design", lambda: App.closeDocument(doc().Name)),
+    ("new design", lambda: Gui.runCommand("Std_New")),
+    ("search again", lambda: Gui.runCommand("MyCAD_Search")),
+    ("alive", lambda: check("search works after closing the design it was shown in", is_open())),
 ])

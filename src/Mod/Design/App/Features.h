@@ -633,6 +633,7 @@ public:
     App::PropertyDistance Clearance;  ///< Spiel je Seite (3D-Druck), negativ = Übermaß
     App::PropertyBool LeftHanded;
     App::PropertyBool ForPrinting;  ///< Idee 4: Spiel für den 3D-Druck, Hinweis bei zu feiner Steigung
+    App::PropertyString AutoSize;   ///< Ausgabe: die Größe, die "Auto" gewählt hat (leer bei fester Größe)
     App::DocumentObjectExecReturn* compute() override;
 
 protected:
@@ -896,6 +897,10 @@ DesignExport App::DocumentObject* parameterSet(App::Document* doc, bool create);
 DesignExport std::string toParameterExpression(App::Document* doc, const std::string& text);
 /// Gegenrichtung zum Anzeigen: ohne "Parameters.", mit den geschriebenen Namen
 DesignExport std::string fromParameterExpression(App::Document* doc, const std::string& text);
+/// Ausdruck des Parameters setzen (Namen mit Umlauten, Dezimalkomma); wirft, wenn er keinen Wert ergibt
+DesignExport void setParameterExpression(App::DocumentObject* set, App::Property* prop, const std::string& text);
+/// Objekte, deren Formeln den Parameter noch brauchen (Beschriftungen)
+DesignExport std::vector<std::string> parameterUsers(App::DocumentObject* set, const std::string& id);
 /// Zeilen "Name = Ausdruck" in Parameter übernehmen; schreibt Werte (→) und Fehler (⚠) in die Zeilen
 DesignExport void syncNoteParameters(Note* note);
 /// Ein Parameter hat sich anderswo geändert (Maß am Modell, Parameter-Dialog): die Zeile der Notiz nachziehen
