@@ -424,7 +424,7 @@ Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9
 
 - Bugs: Rotstift-R2 trifft unter Last die falsche Kante (readCorrection misst die Entfernung zur ganzen Sichtlinie statt zur
   Fläche unter der Tinte); Geisterbild der Suchliste; Aufblitzen der Maßkarte; Glitch der Timeline beim Hinzufügen;
-  Popup der Slicer-Auswahl ungestylt; Fit-Panel "Nominal 0.00 mm"; im deutschen Browser stehen "Profiles"-Einträge englisch.
+  Popup der Slicer-Auswahl ungestylt; Fit-Panel "Nominal 0.00 mm". 
 - Clips: Point (Punkt kaum zu sehen), RemoveFace (Menü ▾ nicht gezeigt), ViewFitAll (Modell nicht halb aus dem Bild),
   NewComponent (Doppelklick-Teil passt zum neuen Verhalten?), sketch_dimension (Esc-Taste kommt grün heraus).
 

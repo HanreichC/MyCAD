@@ -84,5 +84,5 @@ run([
                                         str([o for o in doc().Objects if o.TypeId == "Design::Extrude"][-1].Distance))),
     ("ok", ok), ("wait", lambda: None),
     ("labels", lambda: L("Objektnamen=%s" % sorted(o.Label for o in doc().Objects if o.TypeId not in ("App::Line", "App::Plane", "App::Point", "Design::Profiles")))),
-    ("tree", lambda: harness.check("Browser: Ursprung deutsch (XZ-Ebene, X-Achse)", {"XZ-Ebene", "X-Achse"} <= tree_texts(), str(sorted(tree_texts())))),
+    ("tree", lambda: harness.check("Browser deutsch (XZ-Ebene, X-Achse, Profile)", {"XZ-Ebene", "X-Achse"} <= tree_texts() and not any(t.startswith("Profiles") for t in tree_texts()), str(sorted(tree_texts())))),
 ])

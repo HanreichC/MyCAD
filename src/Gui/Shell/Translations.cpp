@@ -1089,6 +1089,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"label:Note", "Notiz"},
         {"label:Notes", "Notizen"},
         {"label:Origin", "Ursprung"},
+        {"label:Profiles", "Profile"},
         {"label:X-axis", "X-Achse"},
         {"label:Y-axis", "Y-Achse"},
         {"label:Z-axis", "Z-Achse"},
