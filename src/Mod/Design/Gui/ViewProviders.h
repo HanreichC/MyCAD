@@ -86,6 +86,12 @@ class DesignGuiExport ViewProviderFeature: public PartGui::ViewProviderPartExt
 public:
     ViewProviderFeature();
     void attach(App::DocumentObject* obj) override;
+    /// Nie sichtbar: das Ergebnis zeigt der Body. Sonst blendet der Sketcher beim Bearbeiten die Fläche, auf der die
+    /// Skizze liegt, als zweiten, deckungsgleichen Körper ein (ShowSupport/ShowLinks): ohne Material, Auge am Body wirkungslos
+    void show() override
+    {
+        Visibility.setValue(false);
+    }
     QIcon getIcon() const override;
     bool doubleClicked() override;
     bool setEdit(int ModNum) override;

@@ -18,6 +18,10 @@ run([
     ("setup", setup), ("volumes", lambda: L(str(volumes()))), ("shot1", lambda: shot("1-setup")),
     ("Create Sketch", lambda: click(button("Design_CreateSketch"))),
     ("pick top face", lambda: Gui.Selection.addSelection(body("Box"), top_face(body("Box")))),
+    # Skizze auf einer Körperfläche: der Sketcher blendet die Fläche (ein Feature) ein; das zeigt aber der Body, ein
+    # zweiter deckungsgleicher Körper ohne Material lag sonst darüber und das Auge am Body wirkte nicht
+    ("support hidden", lambda: check("support feature hidden in sketch",
+        not any(o.ViewObject.Visibility for o in doc().Objects if o.TypeId == "Design::Extrude"))),
     # Punkte an feste Stellen (Skizzen-Ursprung liegt in der Ecke der Oberseite)
     ("points", lambda: [Gui.ActiveDocument.getInEdit().Object.addGeometry(Part.Point(App.Vector(x, 20, 0))) for x in (15, 45)]),
     ("finish sketch", lambda: click(button("Sketcher_LeaveSketch"))),
