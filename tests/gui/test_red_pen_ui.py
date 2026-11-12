@@ -139,6 +139,11 @@ in_order([
     ("choose", lambda: [c for c in visible(QtWidgets.QComboBox) if c.accessibleName() == "Which one?"][0].setCurrentIndex(1)),
     ("apply second", lambda: apply_button("R1").click()),
     ("two", lambda: check("the chosen edge gets its own fillet", len(fillets()) == 2)),
+    wait_step,
+    ("done rows", lambda: check("done rows drop their buttons and the card grows with its status lines",
+                                not any(b.accessibleName() in ("Apply R2", "Apply R1") for b in visible(QtWidgets.QPushButton))
+                                and all(w.height() >= w.sizeHint().height() for w in visible(QtWidgets.QWidget) if w.objectName() == "Corrections"),
+                                str([(w.height(), w.sizeHint().height()) for w in visible(QtWidgets.QWidget) if w.objectName() == "Corrections"]))),
     ("undo", lambda: Gui.runCommand("Std_Undo")),
     ("undone", lambda: check("ctrl+z takes the last correction back", len(fillets()) == 1, str(len(fillets())))),
     ("preview cards", lambda: DesignGui.showCorrections(doc(), [("C1", App.Vector(-2, 10, 30), DOWN)])),

@@ -427,7 +427,7 @@ public:
             viewer->scene()->addItem(panel);
         }
         // rechts unter dem ViewCube; neue Zeilen haben ihre Größe erst, wenn sie gezeigt sind: danach nochmal messen
-        const auto place = [this, viewer] {
+        place = [this, viewer] {
             const QRectF area = viewer->scene()->sceneRect();
             const QSizeF size = content->sizeHint().expandedTo(QSize(320, 0));
             panel->setGeometry(freeSpot(panel, QRectF(area.right() - size.width() - 24, area.top() + 300, size.width(), size.height()), true));
@@ -442,6 +442,7 @@ private:
     {
         QLabel* status = nullptr;
         QPushButton* apply = nullptr;
+        QPushButton* discard = nullptr;
         QPushButton* show = nullptr;
         QComboBox* choice = nullptr;
         bool done = false;
@@ -464,6 +465,7 @@ private:
         QObject::connect(r.apply, &QPushButton::clicked, r.apply, [this, i] { apply(i); });
         auto discard = new QPushButton(T("Discard"));
         discard->setAutoDefault(false);
+        r.discard = discard;
         r.show = new QPushButton(T("Show"));
         r.show->setAutoDefault(false);
         r.show->setAccessibleName(T("Show") + QLatin1Char(' ') + QString::fromStdString(c.text));
@@ -481,11 +483,7 @@ private:
             if (previewing == int(i)) {
                 hidePreview();
             }
-            rows[i].done = true;
-            rows[i].show->setEnabled(false);
-            rows[i].apply->setEnabled(false);
-            rows[i].status->setText(T("Discarded"));
-            rows[i].status->show();
+            finish(i, T("Discarded"));
         });
         line->addWidget(r.apply);
         line->addWidget(discard);
@@ -543,8 +541,7 @@ private:
         doc->openTransaction("Red Pen");
         if (!Design::applyCorrection(c, error)) {
             doc->abortTransaction();
-            rows[i].status->setText(T(error.c_str()));
-            rows[i].status->show();
+            status(i, T(error.c_str()));
             return;
         }
         previewing = int(i);
@@ -576,12 +573,8 @@ private:
         if (previewing == int(i)) {  // gezeigt: genau das behalten
             previewing = -1;
             doc->commitTransaction();
-            r.done = true;
-            r.apply->setEnabled(false);
-            r.show->setEnabled(false);
             r.show->setText(T("Show"));
-            r.status->setText(T("Done"));
-            r.status->show();
+            finish(i, T("Done"));
             return;
         }
         hidePreview();
@@ -592,17 +585,36 @@ private:
         doc->openTransaction("Red Pen");
         if (Design::applyCorrection(c, error)) {
             doc->commitTransaction();
-            r.done = true;
-            r.apply->setEnabled(false);
-            r.show->setEnabled(false);
-            r.status->setText(T("Done"));
-            r.status->show();
+            finish(i, T("Done"));
         }
         else {
             doc->abortTransaction();
-            r.status->setText(T(error.c_str()));
-            r.status->show();
+            status(i, T(error.c_str()));
         }
+    }
+
+    /// Statuszeile zeigen; die Karte wächst mit (sonst lief sie nach Apply All über den Glasrand hinaus)
+    void status(size_t i, const QString& text)
+    {
+        rows[i].status->setText(text);
+        rows[i].status->show();
+        if (panel) {
+            QTimer::singleShot(0, panel, place);
+        }
+    }
+
+    /// Zeile erledigt (übernommen oder verworfen): ihre Knöpfe verschwinden, der Status steht an ihrer Stelle
+    void finish(size_t i, const QString& text)
+    {
+        Row& r = rows[i];
+        r.done = true;
+        r.apply->hide();
+        r.show->hide();
+        r.discard->hide();
+        if (r.choice) {
+            r.choice->setEnabled(false);
+        }
+        status(i, text);
     }
 
     std::vector<Design::Correction> corrections;
@@ -611,6 +623,7 @@ private:
     std::string docName;
     QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
     QWidget* content = nullptr;
+    std::function<void()> place;  ///< Karte rechts unter dem ViewCube an ihre Größe anpassen
 };
 }  // namespace
 
