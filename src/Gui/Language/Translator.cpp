@@ -373,7 +373,9 @@ void Translator::applyLocaleFormattingPreference() const
     auto hGrp = App::GetApplication().GetParameterGroupByPath(
         "User parameter:BaseApp/Preferences/General"
     );
-    const auto format = toLocaleFormattingPreference(hGrp->GetInt("UseLocaleFormatting", 0));
+    // MyCAD: Zahlen folgen der gewählten Sprache (deutsche Oberfläche: "2,50 mm", auch auf einem englischen System)
+    const auto format = toLocaleFormattingPreference(
+        hGrp->GetInt("UseLocaleFormatting", int(LocaleFormattingPreference::SelectedLanguage)));
     switch (format) {
         case LocaleFormattingPreference::OperatingSystem:
             setLocale();  // Defaults to system locale.
