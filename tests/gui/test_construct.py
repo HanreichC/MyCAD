@@ -63,7 +63,7 @@ def axis_ok():
 
 def offset_ok(z):
     p = newest("PartDesign::Plane")
-    check("offset plane centred over the face, sized from its body", near(p.Placement.Base, 30, 20, z) and abs(p.Length - 72) < 1e-6,
+    check("offset plane centred over the face, sized from its body", near(p.Placement.Base, 30, 20, z) and abs(p.Length.Value - 72) < 1e-6,
           "base=%s length=%s" % (p.Placement.Base, p.Length))
 
 
@@ -148,6 +148,6 @@ run([
     ("body measure", lambda: (Gui.Selection.clearSelection(), Gui.Selection.addSelection(box()), click(button("Design_Measure")))),
     ("m3", lambda: L("measure body: %s" % measured())),
     ("errors", lambda: L("errors=%s" % errors())),
-    ("only datums", lambda: (Gui.Control.closeDialog(), setattr(box(), "Visibility", False))), ("wait", lambda: None),
+    ("only datums", lambda: (Gui.Control.closeDialog(), [setattr(o, "Visibility", False) for o in doc().Objects if o.TypeId == "Design::Body"])), ("wait", lambda: None),
     ("no datum shadow", lambda: check("planes, axes and points cast no contact shadow", shadow_points() == 0, str(shadow_points()))),
 ])

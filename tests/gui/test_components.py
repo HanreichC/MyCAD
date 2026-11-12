@@ -20,10 +20,11 @@ run([
     ("shot start", lambda: shot("a-start")),
     ("New Component", lambda: click(button("Design_NewComponent"))),
     ("shot new comp", lambda: shot("b-newcomp")),
-    ("not active", lambda: check("New Component does not activate the new component",
-                                 Gui.ActiveDocument.ActiveView.getActiveObject("part") is None)),
+    ("active", lambda: check("New Component activates the new component",
+                             Gui.ActiveDocument.ActiveView.getActiveObject("part") == comp())),
     ("plain names", lambda: check("its folders have plain names, no 001", sorted(o.Label for o in comp().Group)
-                                  == ["Bodies", "Origin", "Sketches"], str([o.Label for o in comp().Group]))),
+                                  + [comp().Origin.Label] == ["Bodies", "Sketches", "Origin"],
+                                  str([o.Label for o in comp().Group] + [comp().Origin.Label]))),
     ("second", lambda: click(button("Design_NewComponent"))),
     ("siblings", lambda: check("a second New Component is a sibling, not nested in the first",
                                [[p.Type for p in o.InList if p.TypeId == "App::Part"] for o in doc().Objects

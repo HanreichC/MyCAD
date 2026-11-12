@@ -1253,12 +1253,24 @@ private:
 
 void startNewComponent(App::Document* doc)
 {
-    // in die per Doppelklick aktivierte Komponente; die neue wird nicht aktiv, sonst landete die nächste darin
+    // Die neue Komponente ist gleich aktiv (die nächste Skizze landet darin). Eine weitere neue kommt daneben statt
+    // hinein; verschachtelt wird nur in eine per Doppelklick aktivierte Komponente.
+    static std::string autoActive, autoParent;  // getFullName() der zuletzt selbst aktivierten und ihres Elternteils
     App::Part* parent = activeContainer(doc);
+    if (parent->getFullName() == autoActive) {
+        if (auto p = freecad_cast<App::Part*>(doc->getObject(autoParent.substr(autoParent.find('#') + 1).c_str()))) {
+            parent = p;
+        }
+    }
     doc->openTransaction("New Component");
-    Design::newComponent(parent);
+    App::Part* part = Design::newComponent(parent);
     doc->recompute();
     doc->commitTransaction();
+    if (auto view = Gui::Application::Instance->getDocument(doc)->getActiveView()) {
+        view->setActiveObject(part, PARTKEY);
+        autoActive = part->getFullName();
+        autoParent = parent->getFullName();
+    }
 }
 
 /// Bezugspunkt und -richtung eines Elements: Ebene/ebene Fläche (Mitte + Normale), Zylinderfläche (Achse),
