@@ -2744,6 +2744,12 @@ protected:
                 for (QWidget* w : all) {
                     w->style()->unpolish(w);
                     w->style()->polish(w);
+                    // die Liste eines Auswahlfelds entsteht schon beim Befüllen (noch als Menü: 2 px schwarzer Rand
+                    // oben und unten, z. B. Drucken: welcher Slicer?) und übernimmt Art und Ränder erst mit StyleChange
+                    if (qobject_cast<QComboBox*>(w)) {
+                        QEvent change(QEvent::StyleChange);
+                        QCoreApplication::sendEvent(w, &change);
+                    }
                 }
             }
             if (auto dialog = qobject_cast<QDialog*>(obj); dialog && dialog->parentWidget()) {
