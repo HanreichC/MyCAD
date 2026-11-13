@@ -240,7 +240,13 @@ int EditDatumDialog::exec(bool atCursor)
                      && (type == Sketcher::Distance || type == Sketcher::Radius || type == Sketcher::Diameter
                          || type == Sketcher::Weight)
                      && edit->value().getValue() <= 0) {
-                problem = tr("Must be greater than zero");
+                // 0 zwischen Punkt und Punkt/Kurve: setDatum macht daraus "liegt darauf"
+                const bool contact = edit->value().getValue() == 0 && Sketcher::SketchObject::distanceZeroIsContact(*Constr);
+                if (!contact) {
+                    problem = type == Sketcher::Distance && edit->value().getValue() == 0
+                        ? tr("0 works between a point and another element. Here, delete the dimension and use Coincident")
+                        : tr("Must be greater than zero");
+                }
             }
             if (problem.isEmpty()) {
                 dlg.accept();

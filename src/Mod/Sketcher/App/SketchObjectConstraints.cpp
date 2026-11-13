@@ -201,8 +201,28 @@ SketchSolveStatus SketchObject::setDatum(int ConstrId, double Datum)
     if ((type == Radius || type == Diameter || type == Weight) && Datum <= 0)
         return (Datum == 0) ? SketchSolveStatus::MalformedConstraints : SketchSolveStatus::Overconstrained;
 
-    if (type == Distance && Datum == 0)
+    // MyCAD: Abstand 0 heißt "liegt darauf" (wie Fusion). Als Abstand kann der Löser 0 nicht rechnen (die Wurzel hat
+    // dort keine Richtung), also wird das Maß an seiner Stelle zur Bedingung: Punkt–Punkt koinzident, Punkt–Kurve
+    // Punkt auf Objekt. Linienlänge oder Abstand zweier Linien bleiben abgelehnt.
+    if (type == Distance && Datum == 0) {
+        const Constraint* dim = vals[ConstrId];
+        if (!distanceZeroIsContact(*dim))
             return SketchSolveStatus::MalformedConstraints;
+        std::unique_ptr<Constraint> original(dim->clone());
+        std::vector<Constraint*> contact(vals);
+        contact[ConstrId] = dim->clone();
+        contact[ConstrId]->Type = dim->SecondPos == PointPos::none ? PointOnObject : Coincident;
+        contact[ConstrId]->setValue(0);
+        this->Constraints.setValues(std::move(contact));
+        const auto status = solve();
+        if (status != SketchSolveStatus::Success) {
+            std::vector<Constraint*> back(this->Constraints.getValues());
+            back[ConstrId] = original.release();
+            this->Constraints.setValues(std::move(back));
+            solve();
+        }
+        return status;
+    }
 
     // copy the list
     std::vector<Constraint*> newVals(vals);
@@ -219,6 +239,11 @@ SketchSolveStatus SketchObject::setDatum(int ConstrId, double Datum)
 
     return status;
 }
+bool SketchObject::distanceZeroIsContact(const Constraint& dim)
+{
+    return dim.Type == Distance && dim.FirstPos != PointPos::none && dim.Second != GeoEnum::GeoUndef;
+}
+
 double SketchObject::getDatum(int ConstrId) const
 {
     if (!this->Constraints[ConstrId]->isDimensional()) {

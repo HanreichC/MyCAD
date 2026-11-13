@@ -857,3 +857,40 @@ TEST_F(SketchObjectTest, testGetElementName)
     EXPECT_STREQ(reverse_export_name.newName.c_str(), (";" + tagName + "v1;SKT.Vertex1").c_str());
     EXPECT_STREQ(reverse_export_name.oldName.c_str(), "Vertex1");
 }
+
+// MyCAD: Abstand 0 heißt "liegt darauf": das Maß wird an seiner Stelle zur Bedingung
+TEST_F(SketchObjectTest, testDistanceZeroBecomesContact)
+{
+    Part::GeomLineSegment a, b;
+    a.setPoints(Base::Vector3d(0, 3, 0), Base::Vector3d(5, 3, 0));
+    b.setPoints(Base::Vector3d(8, 3, 0), Base::Vector3d(12, 7, 0));
+    auto* obj = getObject();
+    obj->addGeometry(&a);
+    obj->addGeometry(&b);
+    auto dim = [obj](int first, Sketcher::PointPos firstPos, int second, Sketcher::PointPos secondPos, double value) {
+        Sketcher::Constraint c;
+        c.Type = Sketcher::Distance;
+        c.First = first;
+        c.FirstPos = firstPos;
+        c.Second = second;
+        c.SecondPos = secondPos;
+        c.setValue(value);
+        return obj->addConstraint(&c);
+    };
+    const int toAxis = dim(0, Sketcher::PointPos::start, Sketcher::GeoEnum::HAxis, Sketcher::PointPos::none, 3);
+    const int toPoint = dim(0, Sketcher::PointPos::end, 1, Sketcher::PointPos::start, 3);
+    const int length = dim(1, Sketcher::PointPos::none, Sketcher::GeoEnum::GeoUndef, Sketcher::PointPos::none, 5.6568542);
+    ASSERT_EQ(obj->solve(), Sketcher::SketchSolveStatus::Success);
+
+    EXPECT_EQ(obj->setDatum(toAxis, 0), Sketcher::SketchSolveStatus::Success);
+    EXPECT_EQ(obj->Constraints[toAxis]->Type, Sketcher::PointOnObject);
+    EXPECT_NEAR(obj->getPoint(0, Sketcher::PointPos::start).y, 0, 1e-7);
+
+    EXPECT_EQ(obj->setDatum(toPoint, 0), Sketcher::SketchSolveStatus::Success);
+    EXPECT_EQ(obj->Constraints[toPoint]->Type, Sketcher::Coincident);
+    EXPECT_NEAR((obj->getPoint(0, Sketcher::PointPos::end) - obj->getPoint(1, Sketcher::PointPos::start)).Length(), 0, 1e-7);
+
+    EXPECT_EQ(obj->setDatum(length, 0), Sketcher::SketchSolveStatus::MalformedConstraints);  // Linie mit Länge 0
+    EXPECT_EQ(obj->Constraints[length]->Type, Sketcher::Distance);
+    EXPECT_EQ(obj->Constraints.getSize(), 3);
+}

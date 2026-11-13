@@ -349,6 +349,9 @@ public:
     SketchSolveStatus solve(bool updateGeoAfterSolving = true);
     /// set the datum of a Distance or Angle constraint and solve
     SketchSolveStatus setDatum(int ConstrId, double Datum);
+    /// MyCAD: Abstand 0 dieses Maßes heißt "liegt darauf" (Punkt zu Punkt oder Kurve); setDatum(…, 0) macht daraus die
+    /// Bedingung. Linienlänge und Abstand zweier Kurven haben bei 0 keine solche Bedeutung.
+    static bool distanceZeroIsContact(const Constraint& dim);
     /// get the datum of a Distance or Angle constraint
     double getDatum(int ConstrId) const;
     /// set the text and font of a text constraint

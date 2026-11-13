@@ -877,6 +877,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Writes text as outlines into the sketch", "Schreibt Text als Umrisse in die Skizze"},
         {"Type a number or the name of a parameter", "Tippe eine Zahl oder den Namen eines Parameters"},
         {"Must be greater than zero", "Muss größer als null sein"},
+        {"0 works between a point and another element. Here, delete the dimension and use Coincident",
+         "0 geht zwischen einem Punkt und einem anderen Element. Hier die Bemaßung löschen und Koinzident verwenden"},
         {"Copies the selected geometry in rows and columns", "Kopiert die gewählte Geometrie in Reihen und Spalten"},
         {"External Projection", "Projektion übernehmen"},
         {"Heptagon", "Siebeneck"},
