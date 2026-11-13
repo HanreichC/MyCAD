@@ -2655,6 +2655,14 @@ private:
         build();
         place();
         panel->show();
+        // In der Szene bekommt die Karte Schrift und Stil der Szene (nachgereichte Ereignisse): erst danach stimmt ihre
+        // Größe; ohne das erschien sie ein Bild lang zu klein (194 × 50 statt 211 × 53) und wuchs dann
+        QCoreApplication::sendPostedEvents(content);
+        for (QWidget* w : content->findChildren<QWidget*>()) {
+            QCoreApplication::sendPostedEvents(w);
+        }
+        content->adjustSize();
+        place();
         timer.start();
         shown = selectedFace();
     }

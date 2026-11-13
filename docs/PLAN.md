@@ -422,7 +422,7 @@ Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9
 
 ## Offen nach der GIF-/Bug-Runde vom 12.11.2026
 
-- Bugs: Geisterbild der Suchliste; Aufblitzen der Maßkarte; Glitch der Timeline beim Hinzufügen;
+- Bugs: Geisterbild der Suchliste; Glitch der Timeline beim Hinzufügen;
   Slicer-Auswahl: unter Xvfb noch eine dunkle 2-px-Linie zwischen Feld und Liste (am echten Bildschirm prüfen). 
 
 

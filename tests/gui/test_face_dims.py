@@ -28,6 +28,11 @@ def click_top(double):
         QtTest.QTest.mouseRelease(vp, QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, p)
 
 
+def card_size():
+    f = card_fields()
+    return (f[0].parentWidget().width(), f[0].parentWidget().height()) if f else None
+
+
 def selected():
     return [(s.ObjectName, n) for s in Gui.Selection.getSelectionEx() for n in s.SubElementNames]
 
@@ -54,7 +59,9 @@ run([
     ("click", lambda: click_top(False)),
     ("only selects", lambda: check("a single click selects the face but shows no card",
                                    selected() == [(state["box"].Name, top_face(state["box"]))] and not card_fields(), str(selected()))),
-    ("dclick", lambda: click_top(True)),
+    ("dclick", lambda: (click_top(True), QtCore.QTimer.singleShot(0, lambda: state.update(first=card_size())))),
+    ("full size at once", lambda: check("the card has its full size from the first frame (it used to grow one frame later)",
+                                        state.get("first") == card_size(), "%s then %s" % (state.get("first"), card_size()))),
     ("card", lambda: check("double-clicking the top face shows its distance", [b.accessibleName() for b in card_fields()] == ["Distance"],
                            str([b.accessibleName() for b in card_fields()]))),
     ("shot", lambda: shot("card")),
