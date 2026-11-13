@@ -450,10 +450,12 @@ Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9
 - Je Paket: Tests zuerst schreiben, umsetzen, alle Tests grün, Commit auf `main`
 - Entscheidungen, die Verhalten für Nutzer grundlegend ändern (Speichern in 10.7, Solver in L6), stimmen wir vorher ab
 
-## Offen nach der GIF-/Bug-Runde vom 12.11.2026
+## Nach der GIF-/Bug-Runde vom 12.11.2026 · geprüft am echten Bildschirm (2026-11-13), nichts offen
 
-- Nur in Aufnahmen gesehen, am echten Bildschirm prüfen: Geisterbild der Suchliste beim Tippen; Ein-Bild-Glitch der
-  Timeline-Kapsel beim Hinzufügen (Probe: Inhalt hat sofort die richtige Größe);
-  Slicer-Auswahl: unter Xvfb noch eine dunkle 2-px-Linie zwischen Feld und Liste (am echten Bildschirm prüfen). 
+- Geisterbild der Suchliste beim Tippen und Ein-Bild-Glitch der Timeline-Kapsel beim Hinzufügen: am Desktop (KDE,
+  Wayland) mit dem Benutzer angeschaut, 5× „bohrung“ tippen und löschen, 8 Körper nacheinander; nichts zu sehen.
+  Beides waren Artefakte der Aufnahme.
+- Slicer-Auswahl: aufgeklappte Liste mit `spectacle` direkt vom Compositor fotografiert, auch unter X11 (Xvfb): keine
+  dunkle Linie zwischen Feld und Liste, seit die Auswahl eine einfache Liste ist (`combobox-popup: 0`).
 
 
