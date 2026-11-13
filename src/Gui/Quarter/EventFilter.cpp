@@ -35,6 +35,9 @@
 */
 
 #include <QEvent>
+#include <QGraphicsProxyWidget>
+#include <QGraphicsScene>
+#include <QKeyEvent>
 #include <QMouseEvent>
 
 #include "QuarterWidget.h"
@@ -164,6 +167,24 @@ EventFilter::eventFilter(QObject * obj, QEvent * qevent)
     break;
   default:
     break;
+  }
+
+  // MyCAD: Eingabefelder der Glass-Panels liegen in der Szene dieser Ansicht. Hat eins den Fokus, gehören die
+  // Cursortasten ihm; die Kamera verschob sich sonst mit den Pfeiltasten, statt dass sich der Cursor im Text bewegt
+  if (qevent->type() == QEvent::KeyPress || qevent->type() == QEvent::KeyRelease) {
+    switch (static_cast<QKeyEvent *>(qevent)->key()) {
+    case Qt::Key_Left: case Qt::Key_Right: case Qt::Key_Up: case Qt::Key_Down: case Qt::Key_Home: case Qt::Key_End: {
+      QGraphicsScene * scene = PRIVATE(this)->quarterwidget->scene();
+      auto proxy = scene ? dynamic_cast<QGraphicsProxyWidget *>(scene->focusItem()) : nullptr;
+      QWidget * field = proxy && proxy->widget() ? proxy->widget()->focusWidget() : nullptr;
+      if (field && field->isVisible() && field->testAttribute(Qt::WA_InputMethodEnabled)) {
+        return false;
+      }
+      break;
+    }
+    default:
+      break;
+    }
   }
 
   // translate QEvent into SoEvent and see if it is handled by scene
