@@ -174,6 +174,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Mirror", "Spiegeln"},
         {"Insert", "Einfügen"},
         {"Insert DXF", "DXF einfügen"},
+        {"Sketch: finding its closed areas …", "Skizze: geschlossene Flächen werden gesucht …"},
         {"“%1”: %2 elements, %3", "„%1“: %2 Elemente, %3"},
         {"%1 × %2 mm", "%1 × %2 mm"},
         {"Drawn in", "Gezeichnet in"},

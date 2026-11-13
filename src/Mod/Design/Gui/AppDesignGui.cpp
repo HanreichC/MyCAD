@@ -54,6 +54,8 @@ private:
     }
 };
 
+void applyBackgroundProfiles(const App::DocumentObjectT& target, int ticks);
+
 void setProfilesVisible(const Gui::ViewProviderDocumentObject& vp, bool visible)
 {
     if (auto profiles = Design::Profiles::forSketch(vp.getObject())) {
@@ -61,16 +63,48 @@ void setProfilesVisible(const Gui::ViewProviderDocumentObject& vp, bool visible)
             profiles->Visibility.setValue(visible);
         }
         // ausgeblendet heißt: Skizze in Bearbeitung, Profile erst danach neu berechnen
-        profiles->paused = !visible;
-        if (visible && std::exchange(profiles->skipped, false)) {
-            profiles->touch();
-            const App::DocumentObjectT target(profiles);
-            QTimer::singleShot(0, [target] {  // "Fertig" rechnet selbst neu, Abbrechen nicht
-                if (auto obj = target.getObject(); obj && obj->isTouched()) {
-                    obj->getDocument()->recompute();
-                }
-            });
+        if (!visible || !profiles->skipped) {
+            profiles->paused = !visible;
+            return;
         }
+        // Skizze nach Änderungen verlassen: noch pausiert, damit das Neuberechnen von "Fertig" (gleich nach diesem
+        // Signal) nicht auf die Profile wartet; danach rechnen sie im Hintergrund (große DXF-Skizzen: Sekunden)
+        const App::DocumentObjectT target(profiles);
+        QTimer::singleShot(0, [target] {
+            auto p = freecad_cast<Design::Profiles*>(target.getObject());
+            if (!p) {
+                return;
+            }
+            if (App::DocumentObject* sketch = p->Sketch.getValue(); sketch && sketch->isTouched()) {
+                p->getDocument()->recompute();  // Abbrechen rechnet nicht selbst neu
+            }
+            p->skipped = false;
+            p->paused = false;
+            p->computeInBackground();
+            p->touch();
+            applyBackgroundProfiles(target, 0);
+        });
+    }
+}
+
+/// Fertig im Hintergrund gerechnete Profile übernehmen (das Neuberechnen nimmt das Ergebnis sofort). Nicht in einer
+/// offenen Transaktion: ein abgebrochenes Werkzeug nähme sonst die neuen Profile mit zurück
+void applyBackgroundProfiles(const App::DocumentObjectT& target, int ticks)
+{
+    auto p = freecad_cast<Design::Profiles*>(target.getObject());
+    if (!p) {
+        return;  // Design geschlossen
+    }
+    if (p->computingInBackground() || p->getDocument()->hasPendingTransaction()) {
+        if (ticks == 10 && p->computingInBackground()) {  // nach 1 s: sagen, worauf man wartet
+            Base::Console().send<Base::LogStyle::Notification, Base::IntendedRecipient::User, Base::ContentType::Translated>(
+                "MyCAD", "{}", Gui::Shell::T("Sketch: finding its closed areas …").toStdString());
+        }
+        QTimer::singleShot(100, [target, ticks] { applyBackgroundProfiles(target, ticks + 1); });
+        return;
+    }
+    if (p->isTouched()) {
+        p->getDocument()->recompute();
     }
 }
 }  // namespace DesignGui

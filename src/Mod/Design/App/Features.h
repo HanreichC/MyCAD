@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <future>
+
 #include <App/PropertyLinks.h>
 #include <App/PropertyStandard.h>
 #include <App/PropertyUnits.h>
@@ -170,6 +172,24 @@ public:
     }
 
     static Profiles* forSketch(App::DocumentObject* sketch);
+
+    /// Profile der jetzigen Skizzenform in einem eigenen Thread vorrechnen (Verlassen einer großen Skizze ohne Warten);
+    /// das nächste Neuberechnen nimmt das Ergebnis, wartet nötigenfalls darauf
+    void computeInBackground();
+    bool computingInBackground() const;
+
+    /// Ergebnis der Profil-Berechnung, ohne Dokument (auch in einem anderen Thread)
+    struct Regions
+    {
+        Part::TopoShape shape;
+        std::vector<std::string> signatures;
+        std::string error;
+    };
+    static Regions computeRegions(const TopoDS_Shape& localSketchShape);
+
+private:
+    std::shared_future<Regions> background;
+    TopoDS_Shape backgroundInput;  ///< Skizzenform, für die background rechnet
 };
 
 /// Basis aller Timeline-Features. Shape ist ein Compound mit einem Ergebnis pro Eintrag in Bodies.

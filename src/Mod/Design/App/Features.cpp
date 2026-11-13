@@ -52,6 +52,8 @@
 #include <BRepAdaptor_Curve2d.hxx>
 #include <BRepGProp_Face.hxx>
 #include <set>
+#include <thread>
+#include <future>
 #include <TopoDS_Iterator.hxx>
 #include <gp_Ax1.hxx>
 #include <gp_Ax2.hxx>
@@ -2612,13 +2614,53 @@ App::DocumentObjectExecReturn* Profiles::execute()
     }
     // In Skizzen-Koordinaten (XY-Ebene) rechnen, Ergebnis wieder auf die Skizzen-Lage setzen
     const TopoDS_Shape local = sketch->Shape.getShape().getShape().Located(TopLoc_Location());
+    // Im Hintergrund vorgerechnet (beim Verlassen der Skizze) und für genau diese Skizzenform: nehmen, notfalls darauf
+    // warten. Sonst (Skizze inzwischen geändert, nichts vorgerechnet) hier rechnen.
+    Regions regions;
+    if (background.valid() && backgroundInput.IsSame(local)) {
+        regions = background.get();
+    }
+    else {
+        regions = computeRegions(local);
+    }
+    background = {};
+    backgroundInput.Nullify();
+    if (!regions.error.empty()) {
+        return new App::DocumentObjectExecReturn(regions.error);
+    }
+    Signatures.setValues(regions.signatures);
+    // Lage über die Placement-Eigenschaft: Part::Feature überschreibt beim Recompute die Shape-Lage damit
+    Placement.setValue(sketch->Placement.getValue());
+    Shape.setValue(regions.shape);
+    return StdReturn;
+}
+
+void Profiles::computeInBackground()
+{
+    auto sketch = freecad_cast<Part::Feature*>(Sketch.getValue());
+    if (!sketch) {
+        return;
+    }
+    backgroundInput = sketch->Shape.getShape().getShape().Located(TopLoc_Location());
+    std::packaged_task<Regions()> task([input = backgroundInput] { return computeRegions(input); });
+    background = task.get_future().share();
+    std::thread(std::move(task)).detach();  // hält nur eine Kopie der Form, darf das Objekt überleben
+}
+
+bool Profiles::computingInBackground() const
+{
+    return background.valid() && background.wait_for(std::chrono::seconds(0)) != std::future_status::ready;
+}
+
+Profiles::Regions Profiles::computeRegions(const TopoDS_Shape& local)
+{
     TopTools_ListOfShape edges;
     for (TopExp_Explorer ex(local, TopAbs_EDGE); ex.More(); ex.Next()) {
         edges.Append(ex.Current());
     }
+    Regions out;
     if (edges.IsEmpty()) {
-        Shape.setValue(Part::TopoShape());
-        return StdReturn;
+        return out;
     }
 
     // Eine große Fläche um die Skizze mit allen Kanten zerschneiden: jede entstehende Fläche,
@@ -2636,10 +2678,12 @@ App::DocumentObjectExecReturn* Profiles::execute()
     BRepAlgoAPI_Splitter splitter;
     splitter.SetArguments(args);
     splitter.SetTools(edges);
-    splitter.SetRunParallel(true);  // DXF-Importe bringen tausende Kanten mit
+    splitter.SetRunParallel(true);   // DXF-Importe bringen tausende Kanten mit
+    splitter.SetNonDestructive(true);  // die Skizzenform nicht anfassen: der Hauptthread liest sie währenddessen
     splitter.Build();
     if (!splitter.IsDone()) {
-        return new App::DocumentObjectExecReturn("Could not compute sketch profiles");
+        out.error = "Could not compute sketch profiles";
+        return out;
     }
 
     // Welche Skizzenkante steckt hinter jedem Kantenstück? (für die Profil-Signaturen)
@@ -2693,20 +2737,14 @@ App::DocumentObjectExecReturn* Profiles::execute()
     });
 
     std::vector<Part::TopoShape> faces;
-    std::vector<std::string> signatures;
     for (auto& r : regions) {
         faces.emplace_back(r.face);
-        signatures.push_back(r.signature);
+        out.signatures.push_back(r.signature);
     }
-    Signatures.setValues(signatures);
-    Part::TopoShape result;
     if (!faces.empty()) {
-        result.makeElementCompound(faces);
+        out.shape.makeElementCompound(faces);
     }
-    // Lage über die Placement-Eigenschaft: Part::Feature überschreibt beim Recompute die Shape-Lage damit
-    Placement.setValue(sketch->Placement.getValue());
-    Shape.setValue(result);
-    return StdReturn;
+    return out;
 }
 
 // ---------------------------------------------------------------------------------------------
