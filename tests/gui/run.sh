@@ -12,6 +12,15 @@ APPHOME="${MYCAD_HOME:-$ROOT/build/testhome}"
 mkdir -p "$APPHOME"
 SCRIPT="$(realpath "$1")"; OUT="$(realpath -m "$2")"
 mkdir -p "$(dirname "$OUT")"
+# Nicht still alten Code testen: ist eine Quelle neuer als der Build, abbrechen (ALLOW_STALE=1 übergeht das)
+if [ -z "${ALLOW_STALE:-}" ]; then
+    if [ -e /run/.containerenv ] || [ -e /.dockerenv ]; then stale="$("$ROOT/tests/build_stale.sh")"
+    else stale="$(podman run --rm -v "$ROOT:/workspace" -w /workspace mycad-dev tests/build_stale.sh)"; fi
+    if [ -n "$stale" ]; then
+        { echo "FAIL build is not up to date, build first (or ALLOW_STALE=1). Newer than the build:"; echo "$stale" | head -10; } > "$OUT.txt"
+        cat "$OUT.txt"; exit 1
+    fi
+fi
 ENV=(HOME="$APPHOME" OUT="$OUT" LANGWANT="${LANGWANT:-}" HELP_ONLY="${HELP_ONLY:-}" HELP_DUMP="${HELP_DUMP:-}"
      PYTHONPATH="$(dirname "$SCRIPT")")
 if [ -e /run/.containerenv ] || [ -e /.dockerenv ]; then
