@@ -402,7 +402,7 @@ def ci_fit_all():
     ci_model(CI_BOX, 1.7, 90)
 
     def away():  # wie hineingezoomt und verschoben: das Modell ist halb aus dem Bild
-        ci_later([lambda: (ci_zoom(0.72), ci_pan(-90, 40)) for _ in range(4)], 700)
+        ci_later([lambda: (ci_zoom(0.88), ci_pan(-150, 50)) for _ in range(4)], 700)
     step("away", away)
     wait(4)
 
