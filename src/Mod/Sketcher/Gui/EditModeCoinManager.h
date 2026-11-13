@@ -274,14 +274,19 @@ public:
     void setPositionText(const Base::Vector2d& Pos);
     void resetPositionText();
     void setAxisPickStyle(bool on);
+    /// Curves take no part in the preselection ray pick: detectPreselection finds them on screen,
+    /// the ray test against every curve segment took most of each mouse move in large sketches
+    void setCurvesRayPickable(bool on);
     //@}
 
     /** @name handle preselection and selection of points */
     //@{
+    /// curvePickRadius: catch curves this many pixels away (the ray pick radius)
     PreselectionResult detectPreselection(
         const SoPickedPointList& points,
         const SbVec2s& cursorPos,
-        int hoveredPointIndex = PreselectionResult::InvalidPoint
+        int hoveredPointIndex = PreselectionResult::InvalidPoint,
+        float curvePickRadius = 0.F
     );
     /// The client is responsible for unref-ing the SoGroup to release the memory.
     SoGroup* getSelectedConstraints();
@@ -338,18 +343,18 @@ private:
         const SoPickedPointList& points,
         const SbVec2s& cursorPos,
         int hoveredPointIndex,
+        float curvePickRadius,
         PreselectionResult& result
     );
     bool detectPointPreselection(const SoPickedPointList& points, PreselectionResult& result);
-    bool detectCurvePreselection(const SoPickedPointList& points, PreselectionResult& result);
     bool detectAxisPreselection(const SoPickedPointList& points, PreselectionResult& result);
     bool detectPointPreselection(const SoPickedPoint* point, int layerIndex, PreselectionResult& result);
-    bool detectCurvePreselection(const SoPickedPoint* point, int layerIndex, PreselectionResult& result);
     bool detectAxisPreselection(const SoPickedPoint* point, PreselectionResult& result);
     PreselectionCandidates collectPreselectionCandidates(
         const SoPickedPointList& points,
         const SbVec2s& cursorPos,
-        int hoveredPointIndex
+        int hoveredPointIndex,
+        float curvePickRadius
     );
     PreselectionResult resolvePreselectionCandidates(const PreselectionCandidates& candidates) const;
 

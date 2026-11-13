@@ -156,7 +156,8 @@ struct GeometryScreenPreselector
         const SketcherGui::DrawingParameters& drawingParams,
         const SketcherGui::GeoList& geoListArg,
         std::function<SbVec2f(const SbVec3f&)> screenProjectorArg,
-        Base::Placement sketchPlacementArg
+        Base::Placement sketchPlacementArg,
+        float curvePickRadiusArg
     )
         : geometryLayerParameters(geometryLayerParams)
         , editModeScenegraphNodes(scenegraphNodes)
@@ -165,6 +166,7 @@ struct GeometryScreenPreselector
         , geolist(geoListArg)
         , projectToScreen(std::move(screenProjectorArg))
         , sketchPlacement(std::move(sketchPlacementArg))
+        , curvePickRadius(curvePickRadiusArg)
 
     {}
 
@@ -277,7 +279,7 @@ struct GeometryScreenPreselector
                     continue;
                 }
 
-                float curveHitRadius = getCurveHitRadius(subLayerIndex);
+                float curveHitRadius = std::max(getCurveHitRadius(subLayerIndex), curvePickRadius);
                 float curveHitRadiusSquared = curveHitRadius * curveHitRadius;
                 int vertexOffset = 0;
 
@@ -452,6 +454,7 @@ private:
     const SketcherGui::GeoList& geolist;
     const std::function<SbVec2f(const SbVec3f&)> projectToScreen;
     const Base::Placement sketchPlacement;
+    const float curvePickRadius;  ///< curves are caught this far away (radius the ray pick had)
 };
 }  // namespace
 
@@ -1226,6 +1229,15 @@ void EditModeCoinManager::resetPositionText()
     editModeScenegraphNodes.textX->string = "";
 }
 
+void EditModeCoinManager::setCurvesRayPickable(bool on)
+{
+    // no notification: the pick style changes nothing on screen, so no redraw
+    SoPickStyle* pickStyle = editModeScenegraphNodes.CurvesPickStyle;
+    const bool notify = pickStyle->enableNotify(false);
+    pickStyle->style = on ? SoPickStyle::SHAPE : SoPickStyle::UNPICKABLE;
+    pickStyle->enableNotify(notify);
+}
+
 void EditModeCoinManager::setAxisPickStyle(bool on)
 {
     if (on) {
@@ -1339,38 +1351,6 @@ bool EditModeCoinManager::detectPointPreselection(
     return true;
 }
 
-bool EditModeCoinManager::detectCurvePreselection(
-    const SoPickedPoint* point,
-    int layerIndex,
-    PreselectionResult& result
-)
-{
-    SoPath* path = point->getPath();
-    SoNode* tail = path->getTail();
-
-    for (int subLayerIndex = 0; subLayerIndex < geometryLayerParameters.getSubLayerCount();
-         ++subLayerIndex) {
-        if (tail != editModeScenegraphNodes.CurveSet[layerIndex][subLayerIndex]) {
-            continue;
-        }
-
-        const SoDetail* curveDetail = point->getDetail(
-            editModeScenegraphNodes.CurveSet[layerIndex][subLayerIndex]
-        );
-        if (!curveDetail || curveDetail->getTypeId() != SoLineDetail::getClassTypeId()) {
-            return false;
-        }
-
-        int curveIndex = static_cast<const SoLineDetail*>(curveDetail)->getLineIndex();
-        result.GeoIndex = coinMapping.getCurveGeoId(curveIndex, layerIndex, subLayerIndex);
-        result.Kind = PreselectionResult::HitKind::Edge;
-        result.setPickedPoint(point);
-        return true;
-    }
-
-    return false;
-}
-
 bool EditModeCoinManager::detectPointPreselection(
     const SoPickedPointList& points,
     PreselectionResult& result
@@ -1399,32 +1379,11 @@ bool EditModeCoinManager::detectPointPreselection(
     return false;
 }
 
-bool EditModeCoinManager::detectCurvePreselection(
-    const SoPickedPointList& points,
-    PreselectionResult& result
-)
-{
-    for (int i = 0; i < points.getLength(); ++i) {
-        SoPickedPoint* point = points[i];
-        if (!point) {
-            continue;
-        }
-
-        for (int layerIndex = 0; layerIndex < geometryLayerParameters.getCoinLayerCount();
-             ++layerIndex) {
-            if (detectCurvePreselection(point, layerIndex, result)) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 bool EditModeCoinManager::detectGeometryPreselection(
     const SoPickedPointList& points,
     const SbVec2s& cursorPos,
     int hoveredPointIndex,
+    float curvePickRadius,
     PreselectionResult& result
 )
 {
@@ -1440,7 +1399,8 @@ bool EditModeCoinManager::detectGeometryPreselection(
         drawingParameters,
         geolist,
         projectToScreen,
-        sketchPlacement
+        sketchPlacement,
+        curvePickRadius
     };
 
     if (detectPointPreselection(points, result)) {
@@ -1455,15 +1415,8 @@ bool EditModeCoinManager::detectGeometryPreselection(
         return true;
     }
 
-    if (screenPreselector.detectNearbyCurvePreselection(cursorPos, result)) {
-        return true;
-    }
-
-    if (detectCurvePreselection(points, result)) {
-        return true;
-    }
-
-    return false;
+    // curves are not in the ray pick (setCurvesRayPickable): nearest within the pick radius
+    return screenPreselector.detectNearbyCurvePreselection(cursorPos, result);
 }
 
 bool EditModeCoinManager::detectAxisPreselection(const SoPickedPoint* point, PreselectionResult& result)
@@ -1533,7 +1486,8 @@ bool EditModeCoinManager::detectAxisPreselection(
 EditModeCoinManager::PreselectionCandidates EditModeCoinManager::collectPreselectionCandidates(
     const SoPickedPointList& points,
     const SbVec2s& cursorPos,
-    int hoveredPointIndex
+    int hoveredPointIndex,
+    float curvePickRadius
 )
 {
     PreselectionCandidates candidates;
@@ -1546,7 +1500,7 @@ EditModeCoinManager::PreselectionCandidates EditModeCoinManager::collectPreselec
     addCandidate(detectConstraintPreselection(points, cursorPos));
 
     PreselectionResult geometry;
-    detectGeometryPreselection(points, cursorPos, hoveredPointIndex, geometry);
+    detectGeometryPreselection(points, cursorPos, hoveredPointIndex, curvePickRadius, geometry);
     addCandidate(geometry);
 
     PreselectionResult axis;
@@ -1575,11 +1529,12 @@ EditModeCoinManager::PreselectionResult EditModeCoinManager::resolvePreselection
 EditModeCoinManager::PreselectionResult EditModeCoinManager::detectPreselection(
     const SoPickedPointList& points,
     const SbVec2s& cursorPos,
-    int hoveredPointIndex
+    int hoveredPointIndex,
+    float curvePickRadius
 )
 {
     return resolvePreselectionCandidates(
-        collectPreselectionCandidates(points, cursorPos, hoveredPointIndex)
+        collectPreselectionCandidates(points, cursorPos, hoveredPointIndex, curvePickRadius)
     );
 }
 

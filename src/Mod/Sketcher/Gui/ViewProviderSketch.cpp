@@ -913,7 +913,9 @@ SoPickedPointList ViewProviderSketch::getPickedPointsOnRay(
     rp.setPoint(pos);
     // Beim Zeichnen weiter fangen: das Ende einer Linie soll schon aus etwas Abstand exakt auf dem Kreis landen
     rp.setRadius(viewer->getPickRadius() * (sketchHandler ? DrawingPickFactor : 1.F));
+    editCoinManager->setCurvesRayPickable(false);  // curves: found on screen, same radius
     rp.apply(root);
+    editCoinManager->setCurvesRayPickable(true);
 
     const SoPickedPointList& pickedPoints = rp.getPickedPointList();
     for (int i = 0; i < pickedPoints.getLength(); ++i) {
@@ -941,7 +943,9 @@ EditModeCoinManager::PreselectionResult ViewProviderSketch::getPreselectionResul
         hoveredPointIndex = viewProviderParameters.lastPreselectionResult.PointIndex;
     }
 
-    return editCoinManager->detectPreselection(points, pos, hoveredPointIndex);
+    const float curvePickRadius
+        = viewer ? viewer->getPickRadius() * (sketchHandler ? DrawingPickFactor : 1.F) : 0.F;
+    return editCoinManager->detectPreselection(points, pos, hoveredPointIndex, curvePickRadius);
 }
 
 void ViewProviderSketch::cachePreselectionResult(

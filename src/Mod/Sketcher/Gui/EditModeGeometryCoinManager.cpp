@@ -763,6 +763,9 @@ void EditModeGeometryCoinManager::createEditModePointInventorNodes()
 
 void EditModeGeometryCoinManager::createEditModeCurveInventorNodes()
 {
+    editModeScenegraphNodes.CurvesPickStyle = new SoPickStyle;
+    editModeScenegraphNodes.CurvesPickStyle->setName("CurvesPickStyle");
+
     editModeScenegraphNodes.CurvesDrawStyle = new SoDrawStyle;
     editModeScenegraphNodes.CurvesDrawStyle->setName("CurvesDrawStyle");
     editModeScenegraphNodes.CurvesDrawStyle->lineWidth = drawingParameters.CurveWidth
@@ -841,6 +844,7 @@ void EditModeGeometryCoinManager::createEditModeCurveInventorNodes()
             auto solineset = new SoLineSet;
             solineset->numVertices.setNum(0);
             sep->addChild(halo(haloStyle(style, drawingParameters.pixelScalingFactor), solineset));
+            sep->addChild(editModeScenegraphNodes.CurvesPickStyle);
             sep->addChild(style);
             solineset->setName(concat("CurvesLineSet", i * 10 + t).c_str());
             editModeScenegraphNodes.CurveSet[i].push_back(solineset);

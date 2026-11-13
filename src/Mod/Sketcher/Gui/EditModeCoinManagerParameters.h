@@ -437,6 +437,7 @@ struct EditModeScenegraphNodes
     std::vector<std::vector<SoMaterial*>> CurvesMaterials;
     std::vector<std::vector<SoCoordinate3*>> CurvesCoordinate;
     std::vector<std::vector<SoLineSet*>> CurveSet;
+    SoPickStyle* CurvesPickStyle;  ///< unpickable during the preselection ray pick (found on screen)
     SoDrawStyle* CurvesDrawStyle;
     SoDrawStyle* CurvesConstructionDrawStyle;
     SoDrawStyle* CurvesInternalDrawStyle;
