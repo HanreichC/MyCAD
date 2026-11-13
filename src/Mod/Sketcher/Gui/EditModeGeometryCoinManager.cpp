@@ -735,6 +735,17 @@ void EditModeGeometryCoinManager::emptyGeometryRootNodes()
 {
     Gui::coinRemoveAllChildren(editModeScenegraphNodes.PointsGroup);
     Gui::coinRemoveAllChildren(editModeScenegraphNodes.CurvesGroup);
+
+    // The nodes went with their groups: without emptying the lists they point to deleted nodes, and
+    // create*InventorNodes() appends the new ones but reads [i], the old ones (crash on a layer change)
+    editModeScenegraphNodes.PointsMaterials.clear();
+    editModeScenegraphNodes.PointsCoordinate.clear();
+    editModeScenegraphNodes.PointsDrawStyle.clear();
+    editModeScenegraphNodes.PointsMarkerStyle.clear();
+    editModeScenegraphNodes.PointSet.clear();
+    editModeScenegraphNodes.CurvesMaterials.clear();
+    editModeScenegraphNodes.CurvesCoordinate.clear();
+    editModeScenegraphNodes.CurveSet.clear();
 }
 
 void EditModeGeometryCoinManager::createEditModePointInventorNodes()

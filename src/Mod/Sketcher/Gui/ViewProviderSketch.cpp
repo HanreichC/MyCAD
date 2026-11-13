@@ -3984,6 +3984,7 @@ void ViewProviderSketch::onChanged(const App::Property* prop)
         if (isInEditMode()) {
             // Configure and rebuild Coin SceneGraph
             editCoinManager->updateGeometryLayersConfiguration();
+            draw(false, true);  // the rebuilt nodes are empty until the geometry is drawn into them
         }
         return;
     }
