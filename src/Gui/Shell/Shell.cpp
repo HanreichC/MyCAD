@@ -2938,11 +2938,15 @@ protected:
                             App::Document* doc = gdoc->getDocument();
                             const QString file = QString::fromUtf8(doc->FileName.getValue());
                             const QString label = QString::fromUtf8(doc->Label.getValue());
+                            // im eigenen Projektordner den ganzen Ordner (mit Versionen), wie auf der Startseite;
+                            // sonst blieb ein Ordner mit allen Versionen eines gelöschten Designs liegen
+                            const QString target = !file.isEmpty() && Gui::Shell::inOwnFolder(file)
+                                ? QFileInfo(file).absolutePath() : file;
                             QMessageBox box(QMessageBox::Warning, T("Delete Design"),
                                             file.isEmpty() ? T("Delete “%1”? It has never been saved, so its contents will be gone.")
                                                                  .arg(label)
                                                            : T("Delete “%1”? The file is moved to the trash:\n%2")
-                                                                 .arg(label, file),
+                                                                 .arg(label, target),
                                             QMessageBox::Cancel, getMainWindow());
                             QPushButton* remove = box.addButton(T("Delete"), QMessageBox::DestructiveRole);
                             box.setDefaultButton(QMessageBox::Cancel);
@@ -2951,8 +2955,9 @@ protected:
                                 return;
                             }
                             App::GetApplication().closeDocument(doc->getName());
-                            if (!file.isEmpty()) {
-                                QFile::moveToTrash(file);
+                            if (!target.isEmpty() && !QFile::moveToTrash(target)) {
+                                QMessageBox::warning(getMainWindow(), T("Delete Design"),
+                                                     T("“%1” could not be moved to the trash. Check that you can write to it.").arg(target));
                             }
                         });
                     });

@@ -1,10 +1,27 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Dokument im Browser per Rechtsklick löschen (ungespeichert und gespeichert); Toolbar bei schmalem Fenster
-bricht um und überdeckt die Fensterknöpfe nicht."""
+"""Dokument im Browser per Rechtsklick löschen (ungespeichert, gespeichert, im eigenen Projektordner: dann der ganze
+Ordner mit den Versionen); Toolbar bei schmalem Fenster bricht um und überdeckt die Fensterknöpfe nicht."""
 import os
+import shutil
 from harness import *
 
 FILE = os.environ["OUT"] + ".FCStd"
+grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
+old_folder = grp.GetString("ProjectsFolder", "")
+FOLDER = os.environ["OUT"] + ".projects"
+OWN = os.path.join(FOLDER, "Holder")
+shutil.rmtree(FOLDER, ignore_errors=True)
+os.makedirs(os.path.join(OWN, "versions", "Holder"))
+grp.SetString("ProjectsFolder", FOLDER)
+
+
+def save_own():
+    App.ActiveDocument.saveAs(os.path.join(OWN, "Holder.mycad"))
+    open(os.path.join(OWN, "versions", "Holder", "20261113-120000.mycad"), "w").close()
+
+
+def restore_folder():
+    grp.SetString("ProjectsFolder", old_folder) if old_folder else grp.RemString("ProjectsFolder")
 
 
 def tree():
@@ -66,6 +83,12 @@ run([
     ("delete saved", lambda: context(App.ActiveDocument.Label, "Delete…")), ("wait", lambda: None), ("wait", lambda: None),
     ("wait", lambda: None), ("wait", lambda: None),
     ("after 2", lambda: L("nach Löschen (gespeichert): documents=%s file still there=%s" % (sorted(App.listDocuments()), os.path.exists(FILE)))),
+    ("new3", lambda: Gui.runCommand("Std_New")),
+    ("save own", save_own), ("wait", lambda: None),
+    ("delete own", lambda: context(App.ActiveDocument.Label, "Delete…")), ("wait", lambda: None), ("wait", lambda: None),
+    ("wait", lambda: None), ("wait", lambda: None),
+    ("after 3", lambda: (check("delete in the browser moves the whole project folder with its versions to the trash",
+                               not os.path.exists(OWN), str(os.listdir(FOLDER))), restore_folder())),
     ("narrow", lambda: (mw.showNormal())), ("wait", lambda: None),
     ("size", lambda: mw.resize(1100, 800)), ("wait", lambda: None), ("wait", lambda: None),
     ("check", lambda: (L("schmal %s: %s" % (mw.size().toTuple(), panels())), shot("narrow"))),

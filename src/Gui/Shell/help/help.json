@@ -1687,7 +1687,7 @@
      "Click the design name at the top of the browser to rename the design (a pencil shows when you point at it); its file and project folder get the new name too.",
      "Bottom right in the browser, “Saved” shows when the current state of your design is on disk.",
      "Right-click the design name at the top of the browser (left) for Save Version, Save As…, Export…, Variants, Rename, Close and Delete….",
-     "Delete… asks first. A saved file goes to the trash, so you can still get it back there."
+     "Delete… asks first. A saved file – or its project folder with all versions – goes to the trash, so you can still get it back there."
     ],
     "de": [
      "Neu (Strg+N) legt ein leeres Design an. Öffnen (Strg+O) lädt eine Design-Datei. Speichern musst du nie: MyCAD speichert nach jedem Schritt, ein neues Design bekommt einen eigenen Ordner in deinem Projektordner.",
@@ -1699,7 +1699,7 @@
      "Ein Klick auf den Designnamen oben im Browser benennt das Design um (beim Darüberfahren zeigt sich ein Stift); Datei und Projektordner heißen danach mit.",
      "Unten rechts im Browser steht „Gesichert“, wenn der aktuelle Stand deines Designs gespeichert ist.",
      "Rechtsklick auf den Designnamen ganz oben im Browser (links) bietet Version sichern, Speichern unter…, Exportieren…, Varianten, Umbenennen, Schließen und Löschen….",
-     "Löschen… fragt vorher nach. Eine gespeicherte Datei kommt in den Papierkorb, du holst sie dort also noch zurück."
+     "Löschen… fragt vorher nach. Eine gespeicherte Datei – bzw. ihr Projektordner mit allen Versionen – kommt in den Papierkorb, du holst sie dort also noch zurück."
     ]
    },
    "see": [
