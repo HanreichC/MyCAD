@@ -434,6 +434,15 @@ quadratische Stellen im übernommenen FreeCAD-Code, nicht der Rechner. Gemessen 
   - GUI-Tests am echten Bildschirm: `run.sh` lässt auf dem Desktop `spectacle` auf Anfrage fotografieren, Harness
     `screen_shot`, `screen_position`, `screen_region`, `looks_like`; erster Test `test_screen_popup`.
   - Design löschen im Browser legt den eigenen Projektordner samt Versionen in den Papierkorb (wie die Startseite).
+  - Absturz-Erfassung: neben jedem Bericht des Crash-Reporters ein lesbarer Stack (`<Bericht>.txt`,
+    `backtrace_symbols_fd`), beim nächsten Start ein Glas-Hinweis mit „Bericht zeigen“ (`test_crash_report`, zweimal).
+    Ausgewertet: ein echter Absturz vom 12.11. 21:11 (SIGABRT beim Anlegen eines Strings in
+    `Selection::getObjectList`, ausgelöst über `FaceDimensions::selectedFace`), mit einem Nachbau des damaligen Stands
+    aufgelöst. Muster eines Heap-Schadens, der früher entstand; die Ursache lässt sich aus dem Bericht nicht belegen
+    (Kandidat: die am 13.11. behobenen hängenden Knotenlisten der Skizzenanzeige). Gezielt geprüft und sauber:
+    verzögerte Lambdas und Signal-Verbindungen im MyCAD-Code halten keine hängenden Zeiger.
+  - Weitere Tests am echten Bildschirm: `test_screen_windows` (Menü, Glas-Rückfrage, Einstellungen ohne schwarze Ecken;
+    Harness `screen_baseline`/`new_black` mit Selbstprüfung).
 - Bleibt: ~0,4 s je neuer Linie in einer Skizze mit 10.000 Elementen (Lösen und Neuaufbau der Anzeige für alle
   Elemente); die Profile selbst brauchen dort weiterhin ~7 s, nur eben im Hintergrund.
 
