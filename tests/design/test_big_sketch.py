@@ -29,6 +29,18 @@ class BigSketch(DesignTest):
         self.assertEqual(sk.DoF, dofs)
         self.assertLess(took, 2.0, "800 free arcs took %.1f s to solve (was 11 s)" % took)
 
+    def test_redrawn_line_gets_its_id_back(self):
+        """Geometrie-Historie (beim Lösen und Hinzufügen neu aufgebaut): an derselben Stelle neu gezeichnet bekommt
+        die gelöschte Linie ihre ID zurück, auch wenn ein Endpunkt minimal daneben liegt"""
+        sk = self.doc.addObject("Sketcher::SketchObject", "History")
+        p = [V(0, 0, 0), V(10, 0, 0), V(10, 5, 0)]
+        for i in range(3):
+            sk.addGeometry(Part.LineSegment(p[i], p[(i + 1) % 3]))
+        ids = [sk.getGeometryId(i) for i in range(3)]
+        sk.delGeometry(1)
+        n = sk.addGeometry(Part.LineSegment(p[1] + V(1e-8, 0, 0), p[2]))
+        self.assertEqual(sk.getGeometryId(n), ids[1])
+
     def test_conflict_and_redundancy_next_to_free_geometry(self):
         sk = self.doc.addObject("Sketcher::SketchObject", "Mixed")
         dofs = free_geometry(sk, 50)

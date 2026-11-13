@@ -55,7 +55,10 @@
 #include <Mod/Part/App/TopoShapeOpCode.h>
 #include <Mod/Part/App/WireJoiner.h>
 
+#include <array>
+#include <cmath>
 #include <memory>
+#include <unordered_map>
 
 #include "GeoEnum.h"
 #include "SketchObject.h"
@@ -127,16 +130,50 @@ public:
         adjlist.clear();
     }
 
-    void update(const Base::Vector3d &pt, long id) {
-        FC_TRACE("update " << id << ", " << FC_xyz(pt));
-        auto it = find(pt);
-        if(it==adjlist.end()) {
-            adjlist.emplace_back();
-            it = adjlist.end();
-            --it;
-            rtree.insert(std::make_pair(pt,it));
+    /// All start/end points at once: a point within find()'s strict tolerance of an earlier one
+    /// joins its set. Neighbours come from a hash grid and the R-tree is bulk loaded at the end;
+    /// one nearest query and insert per point took most of each solve with thousands of elements.
+    void rebuild(const std::vector<std::pair<Base::Vector3d, long>> &points) {
+        clear();
+        const double tolSq = Precision::SquareConfusion()*10;  // as find(strict)
+        const double cell = std::sqrt(tolSq);
+        using Key = std::array<long long, 3>;
+        auto hash = [](const Key &k) {
+            return std::hash<long long>()(k[0] * 73856093LL ^ k[1] * 19349663LL ^ k[2] * 83492791LL);
+        };
+        std::unordered_map<Key, std::vector<Value>, decltype(hash)> grid(points.size(), hash);
+        std::vector<Value> values;
+        for (const auto &[pt, id] : points) {
+            const Key k {std::llround(std::floor(pt.x / cell)), std::llround(std::floor(pt.y / cell)),
+                         std::llround(std::floor(pt.z / cell))};
+            auto best = adjlist.end();
+            double bestDist = tolSq;
+            for (long long dx = -1; dx <= 1; ++dx) {
+                for (long long dy = -1; dy <= 1; ++dy) {
+                    for (long long dz = -1; dz <= 1; ++dz) {
+                        auto found = grid.find(Key {k[0] + dx, k[1] + dy, k[2] + dz});
+                        if (found == grid.end()) {
+                            continue;
+                        }
+                        for (const auto &v : found->second) {
+                            double d = Base::DistanceP2(v.first, pt);
+                            if (d < bestDist) {
+                                bestDist = d;
+                                best = v.second;
+                            }
+                        }
+                    }
+                }
+            }
+            if (best == adjlist.end()) {
+                adjlist.emplace_back();
+                best = std::prev(adjlist.end());
+                values.emplace_back(pt, best);
+                grid[k].push_back(values.back());
+            }
+            best->insert(id);
         }
-        it->insert(id);
+        rtree = bgi::rtree<Value, Parameters>(values.begin(), values.end());
     }
 
     void finishUpdate(const std::map<long,int> &geomap) {
@@ -604,15 +641,17 @@ void SketchObject::updateGeoHistory() {
 
     Base::TimeTracker tracker("updateGeoHistory");
     const auto &geos = getInternalGeometry();
-    geoHistory->clear();
+    std::vector<std::pair<Base::Vector3d, long>> points;
+    points.reserve(2 * geos.size());
     for (auto geo : geos) {
         auto pstart = getPoint(geo, PointPos::start);
         auto pend = getPoint(geo, PointPos::end);
         int id = GeometryFacade::getId(geo);
-        geoHistory->update(pstart,id);
+        points.emplace_back(pstart,id);
         if(pstart!=pend)
-            geoHistory->update(pend,-id);
+            points.emplace_back(pend,-id);
     }
+    geoHistory->rebuild(points);
     geoHistory->finishUpdate(geoMap);
 }
 
