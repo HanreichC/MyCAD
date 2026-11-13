@@ -243,6 +243,7 @@ danach kommen sieben neue Ideen. Notizen und Scribble waren der Anfang.
 | 10.6 | Idee 5: Der Druck gehört in den Viewport | 10.1 (3MF mit Farben) |
 | 10.7 | Idee 7: Keine Angst (Speichern, Versionen, Varianten) | 10.0 |
 | 10.8 | Idee 1: Handschrift ist der Befehl | 10.1, 10.3, 10.5 |
+| 10.9 | Große Skizzen (DXF-Import) bearbeitbar | – |
 
 **Testarten** (jede Funktion bekommt alle, die passen):
 
@@ -391,6 +392,35 @@ Tests: H `test_smoke.py` (Design anlegen, Extrude, Speichern, Laden, gleiche Vol
 - Jede erkannte Korrektur erscheint als Karte („R2 → Rundung an 1 Kante“) mit Vorschau, Ausführen und Verwerfen, dazu „Alle ausführen“. Es entstehen normale Timeline-Features; die Tinte bleibt als Ebene „Korrekturen“.
 - Mehrdeutig (zwei Kanten gleich nah): Auswahl mit Vorschau statt Raten.
 - Tests C: Grammatik mit HTR-Verwechslungen (`MS`→`M5`, `R 2`, `2x45`, `o8`, `3x`/`3×`), ungültige Eingaben. C mit echtem Modell: synthetische Handschrift „M5“, „R2“, „Ø8“, „3×“ (wie `scribble_read_check`). H: Ziel-Element aus Tintenlage am Quader (Kante, Fläche, Punkt), Mehrdeutigkeit erkannt; Ausführen erzeugt die richtigen Features. G: mit simuliertem Stift „R2“ an eine Kante schreiben, Karte bestätigen, Rundung da; Undo.
+
+#### 10.9 Große Skizzen (DXF-Import) · erledigt (2026-11-12/13)
+
+Anlass: ein DXF-Import mit 10.102 Elementen (Platinen-Layout, keine Constraints) war nicht bearbeitbar. Ursache waren
+quadratische Stellen im übernommenen FreeCAD-Code, nicht der Rechner. Gemessen an diesem Design:
+
+| Aktion | vorher | nachher |
+|---|---|---|
+| Design öffnen | 26 s | ~2 s |
+| Skizze lösen | 13 s | 0,16 s |
+| Neuberechnen des Designs | 100 s | ~9 s |
+| Mausbewegung in der Skizze | ~450 ms | 13–20 ms |
+| Linie zeichnen (Klick) | 13,5 s (mit Neuberechnen) | 0,4 s |
+
+- **Solver** (`planegcs`): Diagnose pro unabhängigem Block statt einer QR-Zerlegung über alles (Eigen SparseQR wuchs
+  stark überlinear: 800 freie Bögen 11 s → 0,07 s); Parameter ohne Constraint gehen gar nicht erst hinein.
+  Abhängigkeitsgruppen in einem Durchgang; Geometrie-Historie (ID-Wiederverwendung) über Hash-Raster und R-Baum per
+  Bulk-Load statt einer Abfrage je Punkt; `getVertexIndexGeoPos` binär statt linear.
+- **Formen:** `makeElementWires` mit Bounding-Box-Vorfilter vor `MakeWire::Add` (gleiches Ergebnis).
+- **Profile:** während die Skizze bearbeitet wird (Profile ausgeblendet) erst beim Verlassen neu berechnet; Splitter parallel.
+- **Anzeige (mit dem Benutzer abgestimmt):** Kurven fängt die Bildschirmsuche mit demselben Radius wie vorher der
+  Strahltest (5 px, beim Zeichnen 12,5 px), bei mehreren gewinnt die nächstliegende; Punkte und Lichthof als geglättete
+  GL-Punkte statt Bitmap-Marker (gleiche Größe, Ränder jetzt glatt).
+- **Dabei gefunden:** Absturz, wenn die Anzeige-Ebenen der Skizze während der Bearbeitung neu gebaut werden (Knotenlisten
+  zeigten auf gelöschte Knoten), und leere Skizze danach; beides behoben.
+- Tests H: `test_big_sketch.py` (800 freie Bögen lösen in < 2 s, Freiheitsgrade, Konflikte und Redundanzen neben freier
+  Geometrie, ID-Wiederverwendung). G: `test_sketch_layers.py`; `test_sketch_tools` prüft weiter das Fangen aus Abstand.
+- Bleibt langsam: Verlassen der Skizze einmalig ~7 s (OpenCascade schneidet die Profile aus 24.000 Kanten), 0,4 s je
+  neuer Linie (Lösen und Neuaufbau der Anzeige für alle Elemente).
 
 ---
 
