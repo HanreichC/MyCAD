@@ -273,6 +273,7 @@ private:
     SoLightModel* m_LightModel {nullptr};
     SoBaseColor* m_GeometryColor {nullptr};
     SoDrawStyle* m_DrawStyle {nullptr};
+    SoDrawStyle* m_HaloStyle {nullptr};  ///< Lichthof unter Linien und Pfeilen
     SoVertexProperty* m_LineVertexProperty {nullptr};
     SoLineSet* m_LineSet {nullptr};
     SoVertexProperty* m_TriangleVertexProperty {nullptr};

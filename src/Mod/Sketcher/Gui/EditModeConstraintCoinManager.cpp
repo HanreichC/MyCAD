@@ -2982,7 +2982,9 @@ QImage EditModeConstraintCoinManager::renderConstrIcon(
         }
     }
 
-    return image;
+    // MyCAD: Lichthof wie bei Linien und Maßen, sonst gehen die Symbole auf dunklen Körpern unter. Ohne Rand
+    // drumherum: die Klickflächen (boundingBoxes) zählen ab der Bildecke
+    return Gui::BitmapFactory().withHalo(image, 2);
 }
 
 void EditModeConstraintCoinManager::drawTypicalConstraintIcon(const constrIconQueueItem& i)

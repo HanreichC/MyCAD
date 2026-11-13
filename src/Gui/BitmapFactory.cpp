@@ -765,6 +765,38 @@ QPixmap BitmapFactoryInst::disabled(const QPixmap& p) const
     return QApplication::style()->generatedIconPixmap(QIcon::Disabled, p, &opt);
 }
 
+QImage BitmapFactoryInst::withHalo(const QImage& image, int radius, int pad) const
+{
+    // gleiche Farbe wie der Lichthof der Skizzenlinien (EditModeGeometryCoinManager): Hintergrund oben
+    const unsigned long packed = App::GetApplication()
+                                     .GetParameterGroupByPath("User parameter:BaseApp/Preferences/View")
+                                     ->GetUnsigned("BackgroundColor2", 0xF2F2F7FF);
+    const QColor color((packed >> 24) & 0xFF, (packed >> 16) & 0xFF, (packed >> 8) & 0xFF);
+    QImage source = image.copy(-pad, -pad, image.width() + 2 * pad, image.height() + 2 * pad)
+                        .convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    source.setDevicePixelRatio(1.0);  // Versatz in Bildpixeln
+    QImage shape = source;
+    {
+        QPainter p(&shape);
+        p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        p.fillRect(shape.rect(), color);
+    }
+    QImage out(source.size(), QImage::Format_ARGB32_Premultiplied);
+    out.fill(Qt::transparent);
+    QPainter p(&out);
+    for (int dy = -radius; dy <= radius; ++dy) {
+        for (int dx = -radius; dx <= radius; ++dx) {
+            if (dx * dx + dy * dy <= radius * radius + radius) {  // runder Hof
+                p.drawImage(dx, dy, shape);
+            }
+        }
+    }
+    p.drawImage(0, 0, source);
+    p.end();
+    out.setDevicePixelRatio(image.devicePixelRatio());
+    return out;
+}
+
 QPixmap BitmapFactoryInst::empty(QSize size) const
 {
     qreal dpr = getMaximumDPR();

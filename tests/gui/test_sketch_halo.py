@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Skizzenlinien auf dunklem Körper: heller Lichthof (Hintergrundfarbe) direkt neben der Linie, sonst gingen schwarze
-und blaue Linien auf dunklem Lila unter. Prüft Pixel: knapp neben der Linie heller als der Körper weiter weg."""
+"""Skizzenlinien, Maße und Symbole auf dunklem Körper: heller Lichthof (Hintergrundfarbe) darum, sonst gingen sie auf
+dunklem Lila unter. Prüft Pixel: knapp neben der Linie heller als der Körper weiter weg; ein Maß bringt helle Pixel mit."""
 from harness import *
+import Sketcher
+
+state = {}
 
 PURPLE = (0.20, 0.06, 0.30)
 
@@ -31,6 +34,24 @@ def measure():
         return max(QtGui.QColor(img.pixel(px, py + dy + k)).lightness() for k in (-1, 0, 1))
     beside, away = max(light(-3 * s), light(3 * s)), light(-25 * s)
     check("halo beside the line is lighter than the dark body", beside > away + 60, "beside=%d away=%d" % (beside, away))
+    state["bright"] = bright()
+
+
+def bright():
+    """helle Pixel im Bild: Maßtext und Maßlinien selbst sind grau, nur ihr Lichthof ist so hell"""
+    img = view().viewport().grab().toImage().convertToFormat(QtGui.QImage.Format_Grayscale8)
+    return sum(v > 215 for v in bytes(img.constBits()))
+
+
+def dimension():
+    sk = Gui.ActiveDocument.getInEdit().Object
+    sk.addConstraint(Sketcher.Constraint("DistanceX", 0, 1, 0, 2, 40))
+    doc().recompute()
+
+
+def measure_dimension():
+    added = bright() - state["bright"]
+    check("a dimension brings its halo along", added > 100, "bright pixels added=%d" % added)
 
 
 run([
@@ -39,4 +60,5 @@ run([
     ("pick top face", lambda: Gui.Selection.addSelection(body("Box"), top_face(body("Box")))),
     ("line", line), ("fit", lambda: Gui.SendMsgToActiveView("ViewFit")),
     ("measure", measure), ("shot", lambda: shot("halo")),
+    ("dimension", dimension), ("measure dimension", measure_dimension), ("shot dim", lambda: shot("dimension")),
 ], delay=2000)
