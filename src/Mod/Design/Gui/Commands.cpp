@@ -39,6 +39,8 @@
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopoDS_Vertex.hxx>
 #include <gp_Pln.hxx>
+#include <QCheckBox>
+#include <QScrollArea>
 #include <QComboBox>
 #include <QInputDialog>
 #include <QListWidget>
@@ -52,6 +54,7 @@
 #include <App/ObjectIdentifier.h>
 #include <App/Expression.h>
 #include <App/ExpressionParser.h>
+#include <Mod/Design/App/DxfCleanup.h>
 #include <Mod/Design/App/NoteParameters.h>
 #include <QDialogButtonBox>
 #include <QDialog>
@@ -72,6 +75,7 @@
 #include <App/Application.h>
 #include <App/GeoFeature.h>
 #include <Mod/Part/App/PartFeature.h>
+#include <array>
 #include <map>
 #include <QPushButton>
 #include <QGridLayout>
@@ -1892,15 +1896,17 @@ std::unique_ptr<Part::Geometry> sketchGeometry(const TopoDS_Edge& edge)
     );
 }
 
-Geometries dxfGeometry(const std::string& file, std::string& error)
+/// layers: je Geometrie die Ebene (Layer) aus der DXF-Datei, leer ohne Ebene
+Geometries dxfGeometry(const std::string& file, std::string& error, std::vector<std::string>& layers)
 {
     // FreeCADs DXF-Leser legt Part-Objekte an: in ein unsichtbares Hilfsdokument lesen und die Kanten übernehmen
     App::Document* tmp = App::GetApplication().newDocument("MyCADImport", "MyCADImport", {false, true});
     const std::string name = tmp->getName();
-    // eigene Optionen: Layer und Farben bräuchten das Draft-Modul (fehlt; die erste Linie ginge verloren)
+    // eigene Optionen: Ebenen ohne das (fehlende) Draft-Modul, nur als OriginalLayer je Objekt für die Ebenen-Wahl;
+    // Farben bräuchten Draft
     const char* options = "User parameter:BaseApp/Preferences/Mod/Design/DXF";
     auto grp = App::GetApplication().GetParameterGroupByPath(options);
-    grp->SetBool("dxfUseDraftVisGroups", false);
+    grp->SetBool("dxfUseDraftVisGroups", true);
     grp->SetBool("dxfGetOriginalColors", false);
     grp->SetBool("dxfImportPoints", false);
     try {
@@ -1917,9 +1923,11 @@ Geometries dxfGeometry(const std::string& file, std::string& error)
         if (!obj->getInList().empty()) {
             continue;  // Teil eines Compounds: kommt über das Compound
         }
+        auto layer = freecad_cast<App::PropertyString*>(obj->getPropertyByName("OriginalLayer"));
         for (const auto& edge : static_cast<Part::Feature*>(obj)->Shape.getShape().getSubTopoShapes(TopAbs_EDGE)) {
             if (auto geo = sketchGeometry(TopoDS::Edge(edge.getShape()))) {
                 result.push_back(std::move(geo));
+                layers.emplace_back(layer ? layer->getValue() : "");
             }
         }
     }
@@ -1928,6 +1936,174 @@ Geometries dxfGeometry(const std::string& file, std::string& error)
         error = "The DXF file contains no supported geometry.";
     }
     return result;
+}
+
+/// Ein Element für die Bereinigung (Art, Lage, Größe)
+DxfCleanup::Piece cleanupPiece(const Part::Geometry* geo)
+{
+    DxfCleanup::Piece p;
+    if (auto line = freecad_cast<const Part::GeomLineSegment*>(geo)) {
+        const Base::Vector3d s = line->getStartPoint(), e = line->getEndPoint();
+        p.kind = DxfCleanup::Piece::Kind::Line;
+        p.a = {s.x, s.y};
+        p.b = {e.x, e.y};
+    }
+    else if (auto arc = freecad_cast<const Part::GeomArcOfCircle*>(geo)) {
+        p.kind = DxfCleanup::Piece::Kind::Arc;
+        p.a = {arc->getCenter().x, arc->getCenter().y};
+        p.r = arc->getRadius();
+        arc->getRange(p.start, p.end, true);
+    }
+    else if (auto circle = freecad_cast<const Part::GeomCircle*>(geo)) {
+        p.kind = DxfCleanup::Piece::Kind::Circle;
+        p.a = {circle->getCenter().x, circle->getCenter().y};
+        p.r = circle->getRadius();
+    }
+    else {
+        p.size = Part::TopoShape(geo->toShape()).getBoundBox().CalcDiagonalLength();
+    }
+    return p;
+}
+
+/// DXF einfügen wie in Fusion mit Rückfrage: Größe (falsche Einheit fällt hier auf), Ebenen, Winzlinge und Doppelte.
+/// Behält in geos nur, was übernommen wird, skaliert es; false = abgebrochen
+bool reviewDxf(Geometries& geos, const std::vector<std::string>& layers, const QString& name)
+{
+    std::vector<DxfCleanup::Piece> pieces;
+    std::vector<Base::BoundBox3d> boxes;
+    for (const auto& g : geos) {
+        pieces.push_back(cleanupPiece(g.get()));
+        boxes.push_back(Part::TopoShape(g->toShape()).getBoundBox());
+    }
+    std::map<std::string, int> perLayer;
+    for (const auto& l : layers) {
+        ++perLayer[l];
+    }
+    constexpr double tolerance = 0.001;  // 1 µm: kleiner zeichnet und druckt nichts
+
+    QDialog dlg(Gui::getMainWindow());
+    dlg.setWindowTitle(T("Insert DXF"));
+    dlg.setMinimumWidth(440);  // Zusammenfassung mit Größe in einer Zeile
+    auto lay = new QVBoxLayout(&dlg);
+    auto summary = new QLabel;
+    summary->setWordWrap(true);
+    lay->addWidget(summary);
+    auto scaleRow = new QHBoxLayout;
+    scaleRow->addWidget(new QLabel(T("Drawn in")));
+    auto scale = new QComboBox;
+    scale->setAccessibleName(T("Drawn in"));
+    const std::array<std::pair<QString, double>, 4> scales {std::pair {T("Units of the file"), 1.0},
+                                                            std::pair {T("Inches"), 25.4},
+                                                            std::pair {T("Centimeters"), 10.0},
+                                                            std::pair {T("Meters"), 1000.0}};
+    for (const auto& [text, factor] : scales) {
+        scale->addItem(text, factor);
+    }
+    scaleRow->addWidget(scale, 1);
+    lay->addLayout(scaleRow);
+    std::vector<std::pair<QCheckBox*, std::string>> layerBoxes;  // je Ebene ein Haken wie die Optionen unten
+    if (perLayer.size() > 1) {
+        lay->addWidget(new QLabel(T("Layers")));
+        auto inner = new QWidget;
+        inner->setAccessibleName(T("Layers"));
+        auto column = new QVBoxLayout(inner);
+        column->setContentsMargins(0, 0, 0, 0);
+        for (const auto& [layer, count] : perLayer) {
+            auto box = new QCheckBox(T("%1 (%2)").arg(layer.empty() ? T("No layer") : QString::fromStdString(layer)).arg(count));
+            box->setChecked(true);
+            column->addWidget(box);
+            layerBoxes.emplace_back(box, layer);
+        }
+        if (perLayer.size() > 6) {  // viele Ebenen: scrollen statt eines hohen Dialogs
+            auto scroll = new QScrollArea;
+            scroll->setWidget(inner);
+            scroll->setWidgetResizable(true);
+            scroll->setFrameShape(QFrame::NoFrame);
+            scroll->setMaximumHeight(6 * inner->sizeHint().height() / int(perLayer.size()));
+            lay->addWidget(scroll);
+        }
+        else {
+            lay->addWidget(inner);
+        }
+    }
+    lay->addSpacing(6);
+    auto cleanupTitle = new QLabel(T("Clean up"));
+    lay->addWidget(cleanupTitle);
+    auto tiny = new QCheckBox;
+    auto duplicates = new QCheckBox;
+    for (auto option : {tiny, duplicates}) {
+        option->setChecked(true);
+        lay->addWidget(option);
+    }
+    auto buttons = new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok);
+    buttons->button(QDialogButtonBox::Ok)->setText(T("Insert"));
+    lay->addWidget(buttons);
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+    // gewählte Ebenen → Elemente; Zähler und Größe folgen der Wahl
+    std::vector<bool> keep;
+    const auto update = [&] {
+        std::set<std::string> chosen;
+        for (const auto& [box, layer] : layerBoxes) {
+            if (box->isChecked()) {
+                chosen.insert(layer);
+            }
+        }
+        std::vector<DxfCleanup::Piece> inLayers;
+        std::vector<size_t> index;
+        for (size_t i = 0; i < pieces.size(); ++i) {
+            if (layerBoxes.empty() || chosen.contains(layers[i])) {
+                inLayers.push_back(pieces[i]);
+                index.push_back(i);
+            }
+        }
+        const auto all = DxfCleanup::cleanup(inLayers, tolerance, true, true);
+        const auto chosenResult = DxfCleanup::cleanup(inLayers, tolerance, tiny->isChecked(), duplicates->isChecked());
+        keep.assign(pieces.size(), false);
+        int count = 0;
+        Base::BoundBox3d box;  // Größe dessen, was eingefügt wird
+        for (size_t k = 0; k < index.size(); ++k) {
+            keep[index[k]] = chosenResult.keep[k];
+            if (chosenResult.keep[k]) {
+                ++count;
+                box.Add(boxes[index[k]]);
+            }
+        }
+        tiny->setText(T("Remove %1 tiny pieces (under 0.001 mm)").arg(all.tiny));
+        tiny->setVisible(all.tiny > 0);
+        duplicates->setText(T("Merge %1 duplicates (drawn twice)").arg(all.duplicates));
+        duplicates->setVisible(all.duplicates > 0);
+        cleanupTitle->setVisible(all.tiny > 0 || all.duplicates > 0);
+        const double f = scale->currentData().toDouble();
+        const QString size = box.IsValid()
+            ? T("%1 × %2 mm").arg(QLocale().toString(box.LengthX() * f, 'f', 1), QLocale().toString(box.LengthY() * f, 'f', 1))
+            : QString();
+        summary->setText(T("“%1”: %2 elements, %3").arg(name).arg(count).arg(size));
+        buttons->button(QDialogButtonBox::Ok)->setEnabled(count > 0);
+    };
+    update();
+    QObject::connect(scale, &QComboBox::currentIndexChanged, &dlg, [&] { update(); });
+    QObject::connect(tiny, &QCheckBox::toggled, &dlg, [&] { update(); });
+    QObject::connect(duplicates, &QCheckBox::toggled, &dlg, [&] { update(); });
+    for (const auto& [box, layer] : layerBoxes) {
+        QObject::connect(box, &QCheckBox::toggled, &dlg, [&] { update(); });
+    }
+    if (dlg.exec() != QDialog::Accepted) {
+        return false;
+    }
+    const double f = scale->currentData().toDouble();
+    Geometries kept;
+    for (size_t i = 0; i < geos.size(); ++i) {
+        if (keep[i]) {
+            if (f != 1.0) {
+                geos[i]->scale(Base::Vector3d(), f);
+            }
+            kept.push_back(std::move(geos[i]));
+        }
+    }
+    geos = std::move(kept);
+    return true;
 }
 
 /// STEP: Timeline-Eintrag "Import" mit je einem Body pro Solid; DXF/SVG: Skizze auf der XY-Ebene
@@ -1976,10 +2152,14 @@ void importFile(App::Document* doc)
             feature->Bodies.setValues(bodies);
         }
         else {
+            std::vector<std::string> layers;
             Geometries geos = suffix == QLatin1String("svg") ? svgGeometry(file, error)
-                                                             : dxfGeometry(file.toStdString(), error);
+                                                             : dxfGeometry(file.toStdString(), error, layers);
             if (geos.empty()) {
                 throw Base::RuntimeError(error);
+            }
+            if (suffix == QLatin1String("dxf") && !reviewDxf(geos, layers, QFileInfo(file).fileName())) {
+                return;
             }
             doc->openTransaction("Insert");
             Sketcher::SketchObject* sketch = addSketch(comp->getOrigin()->getXY(), std::string());

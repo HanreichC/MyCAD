@@ -190,8 +190,13 @@ protected:
         if (DraftModule == nullptr) {
             static int times = 0;
             DraftModule = PyImport_ImportModule("Draft");
-            if (DraftModule == nullptr && times++ == 0) {
-                ImportError("Unable to locate \"Draft\" module");
+            if (DraftModule == nullptr) {
+                // MyCAD: der fehlgeschlagene Import ließ die Python-Ausnahme stehen, der nächste Python-Aufruf
+                // scheiterte daran (die erste Linie einer DXF mit Ebenen ging verloren)
+                PyErr_Clear();
+                if (times++ == 0) {
+                    ImportError("Unable to locate \"Draft\" module");
+                }
             }
         }
         return DraftModule;

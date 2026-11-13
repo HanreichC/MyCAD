@@ -827,6 +827,8 @@ protected:
             m_Color = ColorBylayer;
             m_LineType = LineTypeByLayer;
             m_paperSpace = false;
+            // MyCAD: ohne Ebenen-Angabe (Code 8) gehört ein Element nicht zur Ebene des vorigen
+            m_Layer = nullptr;
         }
         void ResolveBylayerAttributes(const CDxfRead& reader)
         {

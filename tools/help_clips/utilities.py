@@ -774,6 +774,11 @@ def ut_import():
     ut_rec()
     step("Design_Import", lambda: (ut_modal("Insert", 150), use("Design_Import")))
     ut_file_dialog(UT_DATA, "plate.dxf", "Open")
+    # DXF: kurze Prüfung (Größe, Ebenen, Bereinigung), dann Einfügen
+    step("review", lambda: ut_place("Insert DXF", 150))
+    wait()
+    step("Insert", lambda: ut_press(ut_text_button([d for d in visible(QtWidgets.QDialog) if d.windowTitle() == "Insert DXF"][0],
+                                                   "Insert", QtWidgets.QPushButton)))
     wait()
     step("profile", lambda: select(*(lambda p: (p, ring_face(p)))([o for o in doc().Objects if o.TypeId == "Design::Profiles"][-1])))
     step("iso", ut_fit)

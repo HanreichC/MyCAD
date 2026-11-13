@@ -568,12 +568,14 @@ A("Design_Versions", "file", "Design_Versions", ("Versions and variants", "Versi
   see=["file_basics"])
 
 A("Design_Import", "file", "Design_Import", ("Insert", "Einfügen"),
-  (["import", "insert", "step", "stp", "dxf", "svg", "open cad file", "drawing"], ["importieren", "einfügen", "STEP", "STP", "DXF", "SVG", "CAD-Datei öffnen", "Zeichnung"]),
+  (["import", "insert", "step", "stp", "dxf", "svg", "open cad file", "drawing", "layers", "units", "inches", "pcb", "duplicates"], ["importieren", "einfügen", "STEP", "STP", "DXF", "SVG", "CAD-Datei öffnen", "Zeichnung", "Ebenen", "Einheit", "Zoll", "Platine", "doppelt"]),
   ("Brings a STEP model into the current design as bodies, or a DXF or SVG drawing as a sketch.",
    "Holt ein STEP-Modell als Körper in das aktuelle Design oder eine DXF- oder SVG-Zeichnung als Skizze."),
   [tool("FILE", ("Insert", "Einfügen")),
    ("Choose a file of type STEP (.step, .stp), DXF or SVG and click Open.", "Wähle eine Datei vom Typ STEP (.step, .stp), DXF oder SVG und klicke Öffnen."),
    ("STEP: every solid becomes a body in the Bodies folder of the browser.", "STEP: Jeder Volumenkörper wird ein Körper im Ordner Körper im Browser."),
+   ("DXF: a short check comes first. It shows the size – if it is far off, pick the unit the drawing was made in (inches, centimeters, meters). Untick layers you do not need. Tiny pieces (under 0.001 mm) and lines drawn twice, common in exports from PCB and laser programs, are removed unless you untick them. Click Insert.",
+    "DXF: Zuerst kommt eine kurze Prüfung. Sie zeigt die Größe – liegt sie weit daneben, wähle die Einheit, in der gezeichnet wurde (Zoll, Zentimeter, Meter). Nimm den Haken bei Ebenen weg, die du nicht brauchst. Winzlinge (unter 0,001 mm) und doppelt gezeichnete Linien, häufig in Exporten aus Platinen- und Laserprogrammen, werden entfernt, außer du nimmst den Haken weg. Klicke Einfügen."),
    ("DXF and SVG: the drawing becomes a sketch on the floor plane (XY) in the Sketches folder; its closed areas are profiles right away.",
     "DXF und SVG: Die Zeichnung wird eine Skizze auf der Bodenebene (XY) im Ordner Skizzen; ihre geschlossenen Flächen sind sofort Profile.")],
   tips=[("Click a closed area of an inserted drawing and use Extrude to make a part from it.",

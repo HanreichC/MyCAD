@@ -1908,7 +1908,12 @@
      "dxf",
      "svg",
      "open cad file",
-     "drawing"
+     "drawing",
+     "layers",
+     "units",
+     "inches",
+     "pcb",
+     "duplicates"
     ],
     "de": [
      "importieren",
@@ -1918,7 +1923,12 @@
      "DXF",
      "SVG",
      "CAD-Datei öffnen",
-     "Zeichnung"
+     "Zeichnung",
+     "Ebenen",
+     "Einheit",
+     "Zoll",
+     "Platine",
+     "doppelt"
     ]
    },
    "summary": {
@@ -1930,12 +1940,14 @@
      "In the toolbar at the top, in the FILE section, click Insert.",
      "Choose a file of type STEP (.step, .stp), DXF or SVG and click Open.",
      "STEP: every solid becomes a body in the Bodies folder of the browser.",
+     "DXF: a short check comes first. It shows the size – if it is far off, pick the unit the drawing was made in (inches, centimeters, meters). Untick layers you do not need. Tiny pieces (under 0.001 mm) and lines drawn twice, common in exports from PCB and laser programs, are removed unless you untick them. Click Insert.",
      "DXF and SVG: the drawing becomes a sketch on the floor plane (XY) in the Sketches folder; its closed areas are profiles right away."
     ],
     "de": [
      "Klicke in der Werkzeugleiste oben im Bereich DATEI auf Einfügen.",
      "Wähle eine Datei vom Typ STEP (.step, .stp), DXF oder SVG und klicke Öffnen.",
      "STEP: Jeder Volumenkörper wird ein Körper im Ordner Körper im Browser.",
+     "DXF: Zuerst kommt eine kurze Prüfung. Sie zeigt die Größe – liegt sie weit daneben, wähle die Einheit, in der gezeichnet wurde (Zoll, Zentimeter, Meter). Nimm den Haken bei Ebenen weg, die du nicht brauchst. Winzlinge (unter 0,001 mm) und doppelt gezeichnete Linien, häufig in Exporten aus Platinen- und Laserprogrammen, werden entfernt, außer du nimmst den Haken weg. Klicke Einfügen.",
      "DXF und SVG: Die Zeichnung wird eine Skizze auf der Bodenebene (XY) im Ordner Skizzen; ihre geschlossenen Flächen sind sofort Profile."
     ]
    },

@@ -24,8 +24,15 @@ def insert(path, command="Design_Import"):
     def boxes():
         for m in visible(QtWidgets.QMessageBox):
             L("  message: %s" % m.text()); m.close()
+    def review():  # DXF: Prüfdialog (Größe, Ebenen, Bereinigung) mit Einfügen bestätigen
+        for d in visible(QtWidgets.QDialog):
+            if d.windowTitle() == "Insert DXF":
+                L("  review: %s" % [w.text() for w in d.findChildren(QtWidgets.QLabel) if w.isVisible()][:1])
+                [b for b in d.findChildren(QtWidgets.QPushButton) if b.text() == "Insert"][0].click()
+                activate()  # wie nach dem Dateidialog: sonst bleibt das Hauptfenster inaktiv, Hinweise fielen aus
     QtCore.QTimer.singleShot(800, pick)
     QtCore.QTimer.singleShot(1200, boxes)
+    QtCore.QTimer.singleShot(2200, review)
     click(button(command))
 
 

@@ -1628,7 +1628,8 @@ CDxfRead::Layer* ImpExpDxfRead::MakeLayer(const std::string& name, ColorIndex_t 
 }
 void ImpExpDxfRead::MoveToLayer(App::DocumentObject* object) const
 {
-    if (m_preserveLayers) {
+    // MyCAD: ein Element ohne Ebenen-Angabe (Gruppencode 8 fehlt, gültig: Ebene "0") hat keine Ebene
+    if (m_preserveLayers && m_entityAttributes.m_Layer != nullptr) {
         static_cast<Layer*>(m_entityAttributes.m_Layer)->Contents.push_back(object);
     }
     // TODO: else Hide the object if it is in a Hidden layer? That won't work because we've
