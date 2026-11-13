@@ -22,5 +22,6 @@ test_print_ui.py
 test_red_pen_ui.py
 test_versions_ui.py
 test_sketch_halo.py
+test_sketch_on_face_pick.py
 test_big_sketch_ui.py
 test_dxf_import.py

@@ -58,6 +58,7 @@ struct Candidate
     int priority {0};
     bool closeToFirst {false};
     bool isAnnotation {false};
+    bool isSketch {false};  // Skizze oder Profil: gewinnt vor einer Körperfläche an derselben Stelle (wie Fusion)
     bool hasGate {false};
     bool passesGate {false};
 };

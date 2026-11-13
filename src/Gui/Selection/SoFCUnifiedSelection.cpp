@@ -142,11 +142,20 @@ std::size_t choosePreferredPick(const std::vector<Candidate>& picked)
     }
 
     std::size_t preferred = 0;
-    int pickedPriority = picked.front().priority;
-    const void* firstOwner = picked.front().owner;
-    bool preferredIsAnnotation = picked.front().isAnnotation;
+    // Skizze auf einer Körperfläche liegt genau in deren Ebene: welcher Treffer zuerst kommt, ist Zufall
+    if (!picked.front().isSketch) {
+        for (std::size_t i = 1; i < picked.size(); ++i) {
+            if (picked[i].isSketch && picked[i].closeToFirst) {
+                preferred = i;
+                break;
+            }
+        }
+    }
+    int pickedPriority = picked[preferred].priority;
+    const void* firstOwner = picked[preferred].owner;
+    bool preferredIsAnnotation = picked[preferred].isAnnotation;
 
-    for (std::size_t i = 1; i < picked.size(); ++i) {
+    for (std::size_t i = preferred + 1; i < picked.size(); ++i) {
         const auto& info = picked[i];
         if (info.owner != firstOwner) {
             break;
@@ -365,6 +374,11 @@ SelectionPickPolicy::Candidate SoFCUnifiedSelection::getPickCandidate(
     candidate.owner = info.vpd;
     candidate.priority = getPriority(info.pp);
     candidate.isAnnotation = doc && info.pp && isAnnotationPick(info.pp, doc);
+    App::DocumentObject* obj = info.vpd ? info.vpd->getObject() : nullptr;
+    obj = obj ? obj->getSubObject(info.element.c_str()) : nullptr;  // unter der Komponente: "Profiles001.Face1"
+    candidate.isSketch = obj
+        && (obj->isDerivedFrom(Base::Type::fromName("Part::Part2DObject"))
+            || std::string_view(obj->getTypeId().getName()) == "Design::Profiles");
     candidate.hasGate = hasSelectionGate(info);
     candidate.passesGate = passesSelectionGate(info);
 

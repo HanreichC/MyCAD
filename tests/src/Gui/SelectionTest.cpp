@@ -155,6 +155,24 @@ TEST(SelectionPickPolicyTest, preservesPriorityChoiceWithinFirstOwner)
     EXPECT_EQ(Gui::SelectionPickPolicy::choosePreferredPick(candidates), 1U);
 }
 
+TEST(SelectionPickPolicyTest, prefersSketchLyingOnFirstPickedFace)
+{
+    int component {};  // Körper und Skizze hängen unter derselben Komponente: "Body.Face6", "Profiles001.Face1"
+    auto profileFace = pickCandidate(&component, 1, true, false, true);
+    profileFace.isSketch = true;
+    auto farProfile = profileFace;
+    farProfile.closeToFirst = false;
+
+    std::vector<Gui::SelectionPickPolicy::Candidate> candidates {
+        pickCandidate(&component, 1, true, false, true),
+        profileFace,
+    };
+    EXPECT_EQ(Gui::SelectionPickPolicy::choosePreferredPick(candidates), 1U);
+
+    candidates[1] = farProfile;  // Skizze hinter dem Körper bleibt verdeckt
+    EXPECT_EQ(Gui::SelectionPickPolicy::choosePreferredPick(candidates), 0U);
+}
+
 TEST(SelectionPickPolicyTest, keepsPreferredPickWhenNoCandidatePassesGate)
 {
     int firstOwner {};
