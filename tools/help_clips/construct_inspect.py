@@ -255,6 +255,10 @@ def ci_point():
     wait(2)
     ci_final(1.1, 90, -40)
     step("show point", lambda: (ci_hit((0, 0, 30)), ci_keep_selection()))  # der Punkt ist klein: anklicken hebt ihn hervor
+    # und Kreise ziehen den Blick hin (im verkleinerten Clip ist der Punkt nur ein paar Pixel groß)
+    step("pulse", lambda: [QtCore.QTimer.singleShot(k * 800, lambda: record_click(ci_vp().mapToGlobal(ci_at((0, 0, 30)))))
+                           for k in range(1, 4)])
+    wait(3)
 
 
 # --- Zusammenfügen --------------------------------------------------------------------------------------------------
