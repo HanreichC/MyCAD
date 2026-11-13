@@ -148,6 +148,15 @@ PyMOD_INIT_FUNC(DesignGui)
     Gui::Application::Instance->signalResetEdit.connect([](const Gui::ViewProviderDocumentObject& vp) {
         DesignGui::setProfilesVisible(vp, true);
     });
+    // Während der Bearbeitung übersprungene Profile als offen speichern: das übersprungene Neuberechnen gilt als
+    // erledigt, ohne das stünden nach einem Absturz in der Skizze Profile in der Datei, die nicht zu ihr passen
+    App::GetApplication().signalStartSaveDocument.connect([](const App::Document& doc, const std::string&) {
+        for (auto obj : doc.getObjectsOfType(Design::Profiles::getClassTypeId())) {
+            if (auto profiles = static_cast<Design::Profiles*>(obj); profiles->paused && profiles->skipped) {
+                profiles->touch();
+            }
+        }
+    });
     // Profile sind sichtbar, solange ihre Skizze sichtbar ist (Auge im Browser, nach Extrude ausgeblendet, …)
     App::GetApplication().signalChangedObject.connect([](const App::DocumentObject& obj, const App::Property& prop) {
         if (&prop != &obj.Visibility || !obj.isDerivedFrom<Sketcher::SketchObject>()) {
