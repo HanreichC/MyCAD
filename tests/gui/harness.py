@@ -523,3 +523,43 @@ def looks_like(real, widget, tolerance=12):
             same += max(abs(a.red() - b.red()), abs(a.green() - b.green()), abs(a.blue() - b.blue())) <= tolerance
             total += 1
     return same / total if total else 0.0
+
+
+def _array(img):
+    import numpy as np
+    img = img.convertToFormat(QtGui.QImage.Format_RGB888)
+    rows = np.frombuffer(bytes(img.constBits())[:img.bytesPerLine() * img.height()], np.uint8)
+    return rows.reshape(img.height(), img.bytesPerLine())[:, :img.width() * 3].reshape(img.height(), img.width(), 3)
+
+
+def screen_baseline(name):
+    """Zwei Bildschirmfotos kurz nacheinander, bevor ein Fenster aufgeht: was sich zwischen ihnen ändert (Uhr, andere
+    Programme), zählt später nicht. None ohne echten Bildschirm (Xvfb)."""
+    import time
+    first = screen_shot(name + "-a")
+    if first is None:
+        return None
+    time.sleep(0.3)
+    second = screen_shot(name + "-b")
+    return (_array(first), _array(second)) if second is not None else None
+
+
+def new_black(baseline, name):
+    """Neu entstandene reinschwarze Pixel über vorher hellem Inhalt, wo sich der Bildschirm seit screen_baseline geändert hat: schwarze
+    Ecken, Schatten oder Ränder rahmenloser Fenster (sieht nur der Compositor). (Anzahl, (x0, y0, x1, y1))"""
+    import numpy as np
+    a1, a2 = baseline
+    shot = screen_shot(name + "-after")
+    if shot is None:
+        return 0, None
+    b = _array(shot)
+    if b.shape != a2.shape:
+        return 0, None
+    moving = np.any(a1 != a2, axis=2)
+    changed = np.any(b != a2, axis=2) & ~moving
+    # über hellem Inhalt: abgedunkelte Schrift (Scrim hinter einer Rückfrage) wird auch schwarz, ist aber gewollt
+    black = (b.max(axis=2) <= 3) & (a2.max(axis=2) > 60)
+    ys, xs = np.nonzero(changed & black)
+    if len(xs) < 4:  # einzelne Pixel sind Rauschen
+        return 0, None
+    return len(xs), (int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max()))
