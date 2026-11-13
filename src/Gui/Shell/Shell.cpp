@@ -287,6 +287,9 @@ QDialog[glass="true"] QAbstractItemView::item { min-height: 28px; border-radius:
 QDialog[glass="true"] QAbstractItemView::item:hover { background: @fillTertiary; }
 QDialog[glass="true"] QAbstractItemView::item:selected { background: @accent; color: @labelOnAccent; }
 QDialog[glass="true"] QComboBox QAbstractItemView { background: @glassOpaqueTop; border: 1px solid @glassPopupBorder; border-radius: 0; }
+/* einfache Liste statt Menü-Popup: dessen Scroll-Leisten oben und unten zeichnete Qt schwarz (Drucken: welcher Slicer?) */
+QDialog[glass="true"] QComboBox { combobox-popup: 0; }
+QDialog[glass="true"] QComboBoxPrivateContainer { background: @glassOpaqueTop; border: none; }
 QDialog[glass="true"] QHeaderView, QDialog[glass="true"] QTableCornerButton::section { background: transparent; border: none; }
 QDialog[glass="true"] QHeaderView::section { background: transparent; border: none; color: @labelSecondary; font-weight: 600; padding: 4px 8px; }
 
