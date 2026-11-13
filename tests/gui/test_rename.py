@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Umbenennen im Browser (Rechtsklick → Rename) mit Shift als mittlerer Maustaste: Großbuchstaben tippen darf das
-Feld nicht schließen (Feld liegt im Glass-Panel, Qt meldet die 3D-Ansicht als Fokus). Erwartet: bodies=['kneu']
-(QTest liefert auch mit Shift den Text 'k')"""
+"""Umbenennen im Browser mit Shift als mittlerer Maustaste: Großbuchstaben tippen darf das
+Feld nicht schließen (Feld liegt im Glass-Panel, Qt meldet die 3D-Ansicht als Fokus). Erwartet: der Körper heißt
+"kneu" (QTest liefert auch mit Shift den Text 'k')"""
 from harness import *
-from PySide6 import QtGui
 
 grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
 
@@ -12,17 +11,11 @@ def tree():
     return visible(QtWidgets.QTreeWidget)[0]
 
 
-def open_menu():
+def open_editor():
+    """wie Rechtsklick → Rename (Shell: tree->editItem). Über das Menü war der Test wackelig: ein simuliertes Menü
+    öffnete das Feld mal, mal nicht; geprüft wird hier das Tippen, nicht das Menü"""
     t = tree(); t.expandAll()
-    item = t.findItems("Box", QtCore.Qt.MatchRecursive)[0]
-    t.setCurrentItem(item)
-    pos = t.visualItemRect(item).center()
-
-    def pick():
-        m = [w for w in visible(QtWidgets.QMenu)][0]
-        [a for a in m.actions() if a.text() == "Rename"][0].trigger(); m.close()
-    QtCore.QTimer.singleShot(800, pick)
-    QtWidgets.QApplication.postEvent(t.viewport(), QtGui.QContextMenuEvent(QtGui.QContextMenuEvent.Keyboard, pos, t.viewport().mapToGlobal(pos)))
+    t.editItem(t.findItems("Box", QtCore.Qt.MatchRecursive)[0])
 
 
 def type_name():
@@ -39,9 +32,11 @@ def type_name():
 run([
     ("setup", lambda: make_body(rect(0, 0, 60, 40), 0, 15, "Box")),
     ("shift = middle", lambda: grp.SetString("MouseKeys", '[{"key":%d,"button":"middle","mode":"hold"}]' % int(QtCore.Qt.Key_Shift))),
-    ("rename", open_menu), ("wait", lambda: None),
+    ("activate", activate), ("rename", open_editor), ("wait", lambda: None),
     ("type", type_name),
     ("enter", lambda: QtTest.QTest.keyClick(mw.windowHandle(), QtCore.Qt.Key_Return)),
-    ("result", lambda: L("bodies=%s" % [b.Label for b in doc().Objects if b.TypeId == "Design::Body"])),
+    ("result", lambda: check("capitals typed with shift (= middle mouse button) rename the body",
+                             [b.Label for b in doc().Objects if b.TypeId == "Design::Body"] == ["kneu"],
+                             str([b.Label for b in doc().Objects if b.TypeId == "Design::Body"]))),
     ("keys off", lambda: grp.SetString("MouseKeys", "[]")),
 ])
