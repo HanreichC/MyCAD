@@ -2172,10 +2172,7 @@ void EditModeCoinManager::updateInventorNodeSizes()
     for (int l = 0; l < geometryLayerParameters.getCoinLayerCount(); l++) {
         editModeScenegraphNodes.PointsDrawStyle[l]->pointSize = 8
             * drawingParameters.pixelScalingFactor;
-        editModeScenegraphNodes.PointSet[l]->markerIndex = Gui::Inventor::MarkerBitmaps::getMarkerIndex(
-            "CIRCLE_FILLED",
-            drawingParameters.markerSize
-        );
+        editModeScenegraphNodes.PointsMarkerStyle[l]->pointSize = drawingParameters.markerSize;
     }
 
     editModeScenegraphNodes.OriginPointDrawStyle->pointSize = 8

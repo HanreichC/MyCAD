@@ -414,7 +414,8 @@ struct EditModeScenegraphNodes
     std::vector<SoMaterial*> PointsMaterials;
     std::vector<SoCoordinate3*> PointsCoordinate;
     std::vector<SoDrawStyle*> PointsDrawStyle;
-    std::vector<SoMarkerSet*> PointSet;
+    std::vector<SoPointSet*> PointSet;
+    std::vector<SoDrawStyle*> PointsMarkerStyle;  ///< visible point size (markerSize)
     //@}
 
     /** @name Origin Point nodes*/

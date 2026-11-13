@@ -27,13 +27,16 @@
 #include <memory>
 
 #include <Inventor/SbVec3f.h>
+#include <Inventor/actions/SoGLRenderAction.h>
+#include <Inventor/nodes/SoCallback.h>
+#include <Inventor/system/gl.h>
 #include <Inventor/nodes/SoCoordinate3.h>
 #include <Inventor/nodes/SoDrawStyle.h>
 #include <Inventor/nodes/SoLineSet.h>
-#include <Inventor/nodes/SoMarkerSet.h>
 #include <Inventor/nodes/SoMaterial.h>
 #include <Inventor/nodes/SoMaterialBinding.h>
 #include <Inventor/nodes/SoPickStyle.h>
+#include <Inventor/nodes/SoPointSet.h>
 #include <Inventor/nodes/SoSeparator.h>
 
 #include <App/Application.h>
@@ -78,6 +81,37 @@ SoSeparator* halo(SoNode* style, SoNode* shape)
     sep->addChild(style);
     sep->addChild(shape);
     return sep;
+}
+
+/// Punkte als runde, geglättete GL-Punkte statt Coins Bitmap-Markern: die zeichnet Coin einzeln, bei
+/// tausenden Punkten (DXF-Import) war das der teuerste Teil jedes Bildes. Callback davor (begin) und danach.
+void roundPoints(void* begin, SoAction* action)
+{
+    if (!action->isOfType(SoGLRenderAction::getClassTypeId())) {
+        return;
+    }
+    static GLboolean smooth = GL_FALSE;
+    static GLboolean blend = GL_FALSE;
+    static GLint src = GL_ONE;
+    static GLint dst = GL_ZERO;
+    if (begin) {
+        smooth = glIsEnabled(GL_POINT_SMOOTH);
+        blend = glIsEnabled(GL_BLEND);
+        glGetIntegerv(GL_BLEND_SRC, &src);
+        glGetIntegerv(GL_BLEND_DST, &dst);
+        glEnable(GL_POINT_SMOOTH);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+    else {
+        if (!smooth) {
+            glDisable(GL_POINT_SMOOTH);
+        }
+        if (!blend) {
+            glDisable(GL_BLEND);
+        }
+        glBlendFunc(src, dst);
+    }
 }
 
 /// Linienstil des Lichthofs: wie die Linie (auch gestrichelt), je Seite 1,5 px breiter
@@ -735,26 +769,30 @@ void EditModeGeometryCoinManager::createEditModePointInventorNodes()
             * drawingParameters.pixelScalingFactor;
         sep->addChild(editModeScenegraphNodes.PointsDrawStyle[i]);
 
-        // Lichthof: derselbe Punkt eine Markergröße größer (2 px je Seite), darunter
-        int haloSize = drawingParameters.markerSize;
-        for (int size : Gui::Inventor::MarkerBitmaps::getSupportedSizes("CIRCLE_FILLED")) {
-            if (size >= drawingParameters.markerSize + 4) {
-                haloSize = size;
-                break;
-            }
-        }
-        auto haloPoints = new SoMarkerSet;
-        haloPoints->markerIndex = Gui::Inventor::MarkerBitmaps::getMarkerIndex("CIRCLE_FILLED", haloSize);
-        sep->addChild(halo(new SoDrawStyle, haloPoints));  // zeigt wie die PointSet alle Koordinaten der Ebene
+        auto roundBegin = new SoCallback;
+        roundBegin->setCallback(roundPoints, roundBegin);
+        sep->addChild(roundBegin);
 
-        auto pointset = new SoMarkerSet;
+        // Lichthof: derselbe Punkt 2 px je Seite größer, darunter
+        auto haloStyle = new SoDrawStyle;
+        haloStyle->pointSize = drawingParameters.markerSize + 4;
+        auto haloPoints = new SoPointSet;
+        sep->addChild(halo(haloStyle, haloPoints));  // zeigt wie die PointSet alle Koordinaten der Ebene
+
+        // eigener Stil: PointsDrawStyle bestimmt den Fangradius (getPointHitRadius), sichtbar ist markerSize
+        auto markerStyle = new SoDrawStyle;
+        markerStyle->pointSize = drawingParameters.markerSize;
+        editModeScenegraphNodes.PointsMarkerStyle.push_back(markerStyle);
+        sep->addChild(markerStyle);
+
+        auto pointset = new SoPointSet;
         editModeScenegraphNodes.PointSet.push_back(pointset);
         editModeScenegraphNodes.PointSet[i]->setName(concat("PointSet", i).c_str());
-        editModeScenegraphNodes.PointSet[i]->markerIndex = Gui::Inventor::MarkerBitmaps::getMarkerIndex(
-            "CIRCLE_FILLED",
-            drawingParameters.markerSize
-        );
         sep->addChild(editModeScenegraphNodes.PointSet[i]);
+
+        auto roundEnd = new SoCallback;
+        roundEnd->setCallback(roundPoints, nullptr);
+        sep->addChild(roundEnd);
 
         editModeScenegraphNodes.PointsGroup->addChild(sep);
         sep->unref();
