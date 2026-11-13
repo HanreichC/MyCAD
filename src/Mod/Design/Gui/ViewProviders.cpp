@@ -1802,7 +1802,7 @@ private:
             const QString label = propertyLabel(prop->getName());
             QWidget* field = nullptr;
             if (auto q = freecad_cast<App::PropertyQuantity*>(prop)) {
-                auto box = quantityBox(q->getUnit(), q->getValue(), prop->isDerivedFrom<App::PropertyLength>());
+                auto box = quantityBox(q->getUnit(), shownValue(q), prop->isDerivedFrom<App::PropertyLength>());
                 bindExpression(box, q);
                 QObject::connect(box, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this, q](double v) {
                     q->setValue(v);
@@ -2088,9 +2088,9 @@ private:
             }
             auto q = freecad_cast<App::PropertyQuantity*>(prop);
             auto box = qobject_cast<Gui::QuantitySpinBox*>(field);
-            if (q && box && !box->hasFocus() && std::abs(box->rawValue() - q->getValue()) > 1e-9) {
+            if (q && box && !box->hasFocus() && std::abs(box->rawValue() - shownValue(q)) > 1e-9) {
                 const QSignalBlocker block(box);
-                box->setValue(q->getValue());
+                box->setValue(shownValue(q));
             }
         }
         status->setText(feature->isError() ? T(feature->getStatusString()) : QString());
@@ -2146,6 +2146,14 @@ private:
     Design::Feature* feature;
     bool generic;
     std::vector<std::pair<App::Property*, QWidget*>> paramRows;
+
+    /// Wert im Feld: beim Nennmaß einer Passung steht 0 für "Durchmesser der Bohrung"; gezeigt wird das benutzte
+    /// Nennmaß statt "0.00 mm". Gespeichert wird erst, was der Benutzer selbst eintippt.
+    double shownValue(const App::PropertyQuantity* q) const
+    {
+        auto fit = freecad_cast<Design::Fitting*>(feature);
+        return fit && q == &fit->Nominal && q->getValue() == 0 ? fit->UsedNominal.getValue() : q->getValue();
+    }
     std::vector<std::pair<App::PropertyLinkSub*, QPushButton*>> referenceButtons;
     std::unique_ptr<ReferencePicker> picker;
     Design::Extrude* extrude;

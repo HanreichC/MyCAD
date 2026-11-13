@@ -700,6 +700,7 @@ public:
     App::PropertyLength Clearance;  ///< Spiel je Seite beim 3D-Druck (Vorgabe aus den Einstellungen)
     App::PropertyLength Nominal;    ///< Nennmaß der Paarung; 0 = Durchmesser der Bohrung (sonst der Welle)
     App::PropertyString Play;       ///< Ausgabe: Spiel am Durchmesser, z. B. "+7 … +41 µm"; negativ = Übermaß
+    App::PropertyLength UsedNominal;  ///< Ausgabe: benutztes Nennmaß (bei Nominal 0 der Durchmesser der Bohrung)
     App::DocumentObjectExecReturn* compute() override;
 
 protected:

@@ -4274,6 +4274,8 @@ Fitting::Fitting()
                       "Nominal diameter of the pair; 0 takes the diameter of the hole");
     ADD_PROPERTY_TYPE(Play, (""), "Parameters", App::PropertyType(App::Prop_Output | App::Prop_ReadOnly),
                       "Play on the diameter; negative is interference");
+    ADD_PROPERTY_TYPE(UsedNominal, (0.0), "Fit", App::PropertyType(App::Prop_Output | App::Prop_Hidden | App::Prop_Transient),
+                      "Nominal diameter used (with Nominal 0: the diameter of the hole)");
     Size.setStatus(App::Property::Hidden, true);
     Nominal.setStatus(App::Property::Hidden, true);  // Druck-Passung: kein Nennmaß nötig
 }
@@ -4328,6 +4330,9 @@ App::DocumentObjectExecReturn* Fitting::compute()
         return new App::DocumentObjectExecReturn("Select round or flat faces");
     }
     const double nominal = Nominal.getValue() > 0 ? Nominal.getValue() : anyHole ? holeD : shaftD;
+    if (std::abs(UsedNominal.getValue() - nominal) > 1e-9) {
+        UsedNominal.setValue(nominal);  // der Dialog zeigt es statt "0.00 mm"
+    }
     Fits::Deviation hole, shaft;
     double minPlay = 0, maxPlay = 0;
     if (!print && !Fits::fit(Fit.getValueAsString(), nominal, hole, shaft, minPlay, maxPlay)) {

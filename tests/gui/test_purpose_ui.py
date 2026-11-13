@@ -81,6 +81,10 @@ in_order([
     ("iso", lambda: choose("H7/g6", 3)),
     ("play", lambda: check("the play of H7/g6 shows in the dialog", "+7 … +41 µm" in play_label(), str(play_label()))),
     ("clearance hidden", lambda: check("ISO hides the print clearance", not shown("Clearance"))),
+    ("nominal", lambda: check("Nominal shows the hole diameter it uses (not 0.00 mm) and stays automatic",
+                              abs(field("Nominal").property("rawValue") - 20) < 1e-6
+                              and [o for o in doc().Objects if o.TypeId == "Design::Fitting"][-1].Nominal.Value == 0,
+                              str(field("Nominal").property("rawValue")))),
     ("shot fit", lambda: shot("fit")),
     ("ok", ok),
     ("fitted", lambda: check("both diameters in their field", 20 <= 2 * radius(state["block"]) <= 20.021
