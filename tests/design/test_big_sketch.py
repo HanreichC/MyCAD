@@ -19,7 +19,46 @@ def free_geometry(sk, n):
     return 12 * n
 
 
+def pcb_like(sk, n=1000):
+    """Wie ein Platinen-DXF (10.000 Elemente bei n=1000): je Zelle ein Rechteck aus 4 Linien, 2 lose Linien, 3 Kreise,
+    ein Bogen, ohne Constraints"""
+    geos = []
+    for i in range(n):
+        x, y = (i % 40) * 12.0, (i // 40) * 12.0
+        geos += rect(x, y, x + 8, y + 6)
+        geos.append(Part.LineSegment(V(x, y + 8, 0), V(x + 9, y + 8, 0)))
+        geos.append(Part.LineSegment(V(x + 10, y, 0), V(x + 10, y + 9, 0)))
+        geos += [Part.Circle(V(x + 2 + k * 2, y + 3, 0), V(0, 0, 1), 0.6) for k in range(3)]
+        geos.append(Part.ArcOfCircle(Part.Circle(V(x + 4, y + 10, 0), V(0, 0, 1), 1.5), 0, 2.5))
+    sk.addGeometry(geos)
+    return len(geos)
+
+
 class BigSketch(DesignTest):
+    def test_budget_10000_elements(self):
+        """Leistungsgrenzen mit Reserve (gemessen: Lösen 0,16 s, Hinzufügen 0,03 s, Neuberechnen 1,6 s): quadratische
+        Stellen, wie sie ein DXF-Import mit 10.000 Elementen aufdeckte, brechen sie um ein Vielfaches"""
+        sk = self.doc.addObject("Sketcher::SketchObject", "Pcb")
+        sk.MakeInternals = False  # wie jede MyCAD-Skizze: Flächen liefern die Profile (FreeCADs WireJoiner wäre 40 s)
+        count = pcb_like(sk)
+        self.assertEqual(count, 10000)
+
+        def took(fn):
+            t = time.monotonic()
+            fn()
+            return time.monotonic() - t
+        self.assertEqual(sk.solve(), 0)
+        solve = took(sk.solve)
+        add = took(lambda: sk.addGeometry(Part.LineSegment(V(-5, 0, 0), V(-5, 5, 0))))
+        sk.touch()
+        recompute = took(self.doc.recompute)
+        report = "solve %.2f s, add %.2f s, recompute %.2f s" % (solve, add, recompute)
+        self.assertLess(solve, 1.0, report)
+        self.assertLess(add, 0.3, report)
+        self.assertLess(recompute, 6.0, report)
+        self.assertFalse(sk.Shape.isNull())
+
+
     def test_many_free_arcs_solve_fast(self):
         sk = self.doc.addObject("Sketcher::SketchObject", "Big")
         dofs = free_geometry(sk, 800)
