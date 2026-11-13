@@ -119,12 +119,16 @@ def md_use(cmd):
             if b.objectName() == "GlassButton" and cmd in names[1:] and b.menu():
                 acts = b.menu().actions()
                 if len(acts) == len(names):
+                    # wie von Hand: Kreis auf dem Pfeil, das Menü geht auf, der Eintrag leuchtet, dann gewählt
                     md_ring(b, b.width() - 6)
-                    acts[names.index(cmd)].trigger()
+                    menu, act = b.menu(), acts[names.index(cmd)]
+                    menu.popup(b.mapToGlobal(QtCore.QPoint(0, b.height())))
+                    QtCore.QTimer.singleShot(500, lambda: menu.setActiveAction(act))
+                    QtCore.QTimer.singleShot(1300, lambda: (menu.hide(), act.trigger()))
                     return
         use(cmd)
     step(cmd, fn)
-    wait()  # das Panel gleitet herein: erst dann sind seine Felder sichtbar
+    wait(2)  # Menü, dann gleitet das Panel herein: erst dann sind seine Felder sichtbar
 
 
 def md_later(make, n, ms=90):
