@@ -220,7 +220,7 @@ Phase 10 geschlossen (Verweise in Klammern).
 | Fundament | Build im Container, AppImage per CI, `.mycad`, Einstellungen, Deutsch, Hilfe; Tests (C, H, G) in der CI, rot = kein Release; Container auf festem Datum gepinnt (10.0) | – |
 | Oberfläche | Liquid Glass, Hell/Dunkel, Toolbar, Browser, Inspector, Timeline, ViewCube, Startseite, Notizen, Scribble, Materialien; Befehlssuche (L10); Timeline umsortieren und gruppieren (L7); Fehler mit Erklärung und Reparaturvorschlag (10.2); Maße an der Fläche ändern (10.3); Notiz als Parameterliste (10.4); Rotstift (10.8) | – |
 | Datenmodell | Komponenten, Bodies, globale Timeline, Rollback, Suppress, Parameter, topologische Benennung; verlorene Bezüge werden gemeldet statt still auf alte Kantennummern zu fallen (10.2); immer gespeichert, Versionen, Varianten (10.7) | – |
-| Skizze | 12 Zeichen-, 7 Ändern-Werkzeuge, 9 Constraints, Bemaßung am Cursor, Conic; große DXF-Importe (10.000 Elemente) bearbeitbar (10.9) | bei sehr großen Skizzen: Verlassen der Skizze einmalig ~7 s, ~0,4 s je neuer Linie (10.9) |
+| Skizze | 12 Zeichen-, 7 Ändern-Werkzeuge, 9 Constraints, Bemaßung am Cursor, Conic; große DXF-Importe (10.000 Elemente) bearbeitbar (10.9) | bei sehr großen Skizzen: ~0,4 s je neuer Linie; Profile folgen nach dem Verlassen im Hintergrund (10.9) |
 | Körper | 16 Create-, 12 Modify-, 6 Construct-Werkzeuge, Measure, Section; Extrude mit allen Ausdehnungen, Verjüngung, dünnwandig (L1); Bohrung nach Norm (L2); Gewinde nach Norm, auch zum Drucken (L3); Spiegeln/Muster/Drehen an freien Bezügen und entlang Pfad (L4); Rundung variabel, Fasen-Varianten, Tangentenkette (L5); Passung, „Schraube hier“, Einschmelzmuttern (10.5) | – |
 | Baugruppe | Joints Rigid/Revolute/Slider/Cylindrical, Planar, Kugel, Pin-Slot; Ketten, Grenzen, Bewegen und Animieren mit Kollisionsanzeige; geschlossene Ketten über OndselSolver (L6) | – |
 | Austausch | STL, 3MF, STEP, DXF raus; STEP, DXF, SVG rein; 3MF mit Farben, Namen und Auflösung, STEP mit Farben und Komponenten (L8); Drucken öffnet den Slicer (10.6) | – |
@@ -420,8 +420,22 @@ quadratische Stellen im übernommenen FreeCAD-Code, nicht der Rechner. Gemessen 
   zeigten auf gelöschte Knoten), und leere Skizze danach; beides behoben.
 - Tests H: `test_big_sketch.py` (800 freie Bögen lösen in < 2 s, Freiheitsgrade, Konflikte und Redundanzen neben freier
   Geometrie, ID-Wiederverwendung). G: `test_sketch_layers.py`; `test_sketch_tools` prüft weiter das Fangen aus Abstand.
-- Bleibt langsam: Verlassen der Skizze einmalig ~7 s (OpenCascade schneidet die Profile aus 24.000 Kanten), 0,4 s je
-  neuer Linie (Lösen und Neuaufbau der Anzeige für alle Elemente).
+- Nachgezogen (2026-11-13, nach Review und mit dem Benutzer abgestimmt):
+  - Profile beim Verlassen einer geänderten Skizze im Hintergrund (eigener Thread, Splitter nicht-destruktiv): „Fertig“
+    kehrt nach dem Neuberechnen der Skizze zurück (1,6 s statt 7–10 s), die Profile folgen; ein Werkzeug, das sie
+    vorher braucht, wartet auf das Ergebnis. Profile, deren Neuberechnen beim Bearbeiten übersprungen wurde, werden als
+    offen gespeichert (nach einem Absturz in der Skizze keine veralteten Profile als aktuell).
+  - DXF einfügen mit Prüfung: Größe, „Gezeichnet in“ (Zoll, cm, m), Ebenen wählen, Winzlinge (< 0,001 mm) und Doppelte
+    entfernen (`DxfCleanup.h`, `tests/dxf_cleanup_check.cpp`, `test_dxf_import`). Dabei drei Fehler in FreeCADs
+    DXF-Leser behoben (hängende Python-Ausnahme ohne Draft, vererbte Ebene, Absturz bei Element ohne Ebene).
+  - Leistungsgrenzen in den Tests: `test_big_sketch` (10.000 Elemente: Lösen < 1 s, Hinzufügen < 0,3 s, Neuberechnen
+    < 6 s), `test_big_sketch_ui` (Mausbewegung < 30 ms, Linie per Klick < 1,5 s; auch in der CI-Auswahl).
+  - Tests brechen ab, wenn der Build älter ist als der Code (`tests/build_stale.sh`; `ALLOW_STALE=1` übergeht das).
+  - GUI-Tests am echten Bildschirm: `run.sh` lässt auf dem Desktop `spectacle` auf Anfrage fotografieren, Harness
+    `screen_shot`, `screen_position`, `screen_region`, `looks_like`; erster Test `test_screen_popup`.
+  - Design löschen im Browser legt den eigenen Projektordner samt Versionen in den Papierkorb (wie die Startseite).
+- Bleibt: ~0,4 s je neuer Linie in einer Skizze mit 10.000 Elementen (Lösen und Neuaufbau der Anzeige für alle
+  Elemente); die Profile selbst brauchen dort weiterhin ~7 s, nur eben im Hintergrund.
 
 ---
 
@@ -456,7 +470,9 @@ Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9
 - Geisterbild der Suchliste beim Tippen und Ein-Bild-Glitch der Timeline-Kapsel beim Hinzufügen: am Desktop (KDE,
   Wayland) mit dem Benutzer angeschaut, 5× „bohrung“ tippen und löschen, 8 Körper nacheinander; nichts zu sehen.
   Beides waren Artefakte der Aufnahme.
-- Slicer-Auswahl: aufgeklappte Liste mit `spectacle` direkt vom Compositor fotografiert, auch unter X11 (Xvfb): keine
-  dunkle Linie zwischen Feld und Liste, seit die Auswahl eine einfache Liste ist (`combobox-popup: 0`).
+- Slicer-Auswahl: der Rand war echt. Die Liste eines Auswahlfelds entsteht vor dem Glas-Stil (als Menü, 2 px schwarzer
+  Rand) und übernahm ihn nur zufällig; seit 2026-11-13 bekommt sie nach dem Neu-Polieren ein StyleChange. Geprüft am
+  echten Bildschirm mit `test_screen_popup` (Gegenprobe ohne Fix findet die Ränder). Eine erste Prüfung desselben Tages
+  hatte den Fehler übersehen: das Prüfskript hatte die Liste dabei selbst neu gestylt.
 
 
