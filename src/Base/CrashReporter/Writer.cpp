@@ -91,6 +91,9 @@ static bool canCaptureSignalSafely = false;  // Determined during the prewarm ph
 # include <unistd.h>
 constexpr size_t MaxPathLength = PATH_MAX;
 static char crashReportFilePOSIX[MaxPathLength];
+// MyCAD: lesbarer Stack daneben (<Bericht>.txt, Funktionsnamen aus den Symboltabellen): der Bericht selbst hält nur
+// Modul und Versatz, und die passen nach dem nächsten Build nicht mehr
+static char crashTextFilePOSIX[MaxPathLength];
 static char alternateStack[64 * 1024];  // Used in the event of a SIGSEGV stack overrun
 #else
 # ifndef WIN32_LEAN_AND_MEAN
@@ -289,6 +292,19 @@ static void crashHandler(int sig, siginfo_t* info, [[maybe_unused]] void* uconte
     if (fileSize > 0) {
         writeRawBufferPOSIX(fileSize);
     }
+# ifdef HAVE_BACKTRACE_SYMBOLS
+    // nach dem Bericht: was hier schiefgeht, kostet ihn nicht. backtrace_symbols_fd reserviert nichts (für Signal-
+    // Handler gedacht), backtrace ist durch prewarm() schon geladen
+    if (crashTextFilePOSIX[0] != '\0') {
+        void* stack[MaxFrames];
+        const int frames = backtrace(stack, MaxFrames);
+        const int fd = open(crashTextFilePOSIX, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+        if (fd != -1) {
+            backtrace_symbols_fd(stack, frames, fd);
+            close(fd);
+        }
+    }
+# endif
 
     std::signal(sig, SIG_DFL);  // Make sure to reset, or we infinite loop
     std::raise(sig);
@@ -370,6 +386,10 @@ void Writer::setMinidumpPath(const std::string& path)
 
 void Writer::prewarm()
 {
+#if defined(FC_CRASHREPORTER_POSIX) && defined(HAVE_BACKTRACE_SYMBOLS)
+    void* warm[2];  // backtrace lädt beim ersten Aufruf nach: nicht erst im Signal-Handler
+    backtrace(warm, 2);
+#endif
 #ifdef FC_HAVE_CPPTRACE
 
     // Pre-emptively call the two functions we will need in the event of a crash to ensure that
@@ -454,6 +474,10 @@ void Writer::install(const std::string& crashReportDirectory)
 #else
     std::memcpy(crashReportFilePOSIX, fcrash.data(), fcrash.length());
     crashReportFilePOSIX[fcrash.length()] = '\0';
+    if (const std::string text = fcrash + ".txt"; text.length() < MaxPathLength) {
+        std::memcpy(crashTextFilePOSIX, text.data(), text.length());
+        crashTextFilePOSIX[text.length()] = '\0';
+    }
 #endif
 
     // On POSIX systems, if a SEGFAULT was triggered because we ran out of space on the stack,

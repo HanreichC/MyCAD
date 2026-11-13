@@ -115,7 +115,11 @@ void Manager::clear()
 
 void Manager::archive(ParsedCrashReport& report)
 {
+    const std::string text = report.pathToRawReportFile + ".txt";  // MyCAD: lesbarer Stack daneben (Writer)
     auto newPaths = archiveFile(report.pathToRawReportFile, report.minidumpPath);
+    if (Base::FileInfo textFile(text); textFile.exists()) {
+        textFile.renameFile((newPaths.first + ".txt").c_str());
+    }
     report.pathToRawReportFile = newPaths.first;
     report.minidumpPath = newPaths.second;
 }

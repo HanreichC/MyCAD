@@ -8,6 +8,7 @@
 #include "Theme.h"
 
 #include <App/Application.h>
+#include <Base/CrashReporter/Manager.h>
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
 #include <Gui/Action.h>
@@ -57,6 +58,8 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 
+#include <QDesktopServices>
+#include <QUrl>
 #include <QAbstractScrollArea>
 #include <QActionGroup>
 #include <QApplication>
@@ -4547,6 +4550,29 @@ void startAlwaysSave()
     timer->start();
 }
 
+/// Beim Start: ist MyCAD beim letzten Mal abgestürzt, sagen, dass die Designs gespeichert sind, und wo der Bericht liegt
+/// (vorher legte der Crash-Reporter ihn still ins Archiv). Neben dem Bericht der lesbare Stack (.txt, Writer).
+void reportLastCrash()
+{
+    const auto& reports = Base::CrashReporter::Manager::reports();
+    if (reports.empty()) {
+        return;
+    }
+    const QString report = QString::fromStdString(reports.back().pathToRawReportFile);
+    QTimer::singleShot(1500, getMainWindow(), [report] {
+        QMessageBox box(QMessageBox::Warning, T("MyCAD was closed unexpectedly"),
+                        T("Your designs are saved; at most the last two seconds are missing. A report that helps find the "
+                          "cause is here:\n%1")
+                            .arg(QFileInfo(report).absolutePath()),
+                        QMessageBox::Ok, getMainWindow());
+        QPushButton* show = box.addButton(T("Show Report"), QMessageBox::ActionRole);
+        box.exec();
+        if (box.clickedButton() == show) {
+            QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(report).absolutePath()));
+        }
+    });
+}
+
 /// "Version sichern…" (Strg+S): speichern ist ohnehin immer; hier bekommt der Stand einen Namen
 class CmdSaveVersion: public Gui::Command
 {
@@ -5301,6 +5327,7 @@ void Gui::Shell::install()
     }
     Application::Instance->commandManager().addCommand(new CmdSaveVersion);
     startAlwaysSave();
+    reportLastCrash();
 
     state.modelBar =
         toolbar({"#FILE", "Std_New", "Std_Open", "MyCAD_SaveVersion|Design_Versions", "Design_Import", "Design_Export", "Design_Print",
