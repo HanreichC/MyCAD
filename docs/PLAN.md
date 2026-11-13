@@ -209,21 +209,22 @@ MyCAD/
 
 ## 4. Stand und Plan
 
-### 4.1 Was steht (Stand 2026-11-10)
+### 4.1 Was steht (Stand 2026-11-13)
 
-Die Phasen 0 bis 8 des ursprünglichen Plans sind zum großen Teil erledigt, nur anders als geplant: Die Oberfläche ist
-kein QML-Neubau, sondern Glass-Panels über dem vorhandenen 3D-Viewer (Entscheidung vom 2026-10-10).
+Die Phasen 0 bis 8 des ursprünglichen Plans sind erledigt, nur anders als geplant: Die Oberfläche ist kein QML-Neubau,
+sondern Glass-Panels über dem vorhandenen 3D-Viewer (Entscheidung vom 2026-10-10). Die Lücken vom 2026-11-10 hat
+Phase 10 geschlossen (Verweise in Klammern).
 
-| Bereich | Erledigt | Offen (wandert in Phase 10) |
+| Bereich | Stand | Noch offen |
 |---|---|---|
-| Fundament | Build im Container, AppImage per CI, `.mycad`, Einstellungen, Deutsch, Hilfe | Tests laufen nicht in CI; Dev-Container auf ungepinntem Arch |
-| Oberfläche | Liquid Glass, Hell/Dunkel, Toolbar, Browser, Inspector, Timeline, ViewCube, Startseite, Notizen, Scribble, Materialien | Befehlssuche, Timeline umsortieren und gruppieren |
-| Datenmodell | Komponenten, Bodies, globale Timeline, Rollback, Suppress, Parameter, topologische Benennung | stille Rückfalle auf alte Kantennummern (siehe 10.2) |
-| Skizze | 12 Zeichen-, 7 Ändern-Werkzeuge, 9 Constraints, Bemaßung am Cursor, Conic | – |
-| Körper | 16 Create-, 12 Modify-, 6 Construct-Werkzeuge, Measure, Section | Extrude nur „Abstand“; Bohrung ohne Normen; Gewinde vereinfacht; Spiegeln/Muster/Drehen nur an Ursprungs-Achsen und -Ebenen; Fillet nur konstant, Fase nur gleichschenklig, keine Tangentenkette |
-| Baugruppe | Joints Rigid/Revolute/Slider/Cylindrical | kein Solver, keine Bewegung, keine Grenzen |
-| Austausch | STL, 3MF, STEP, DXF raus; STEP, DXF, SVG rein | 3MF ohne Farben und ohne Auflösung; STEP-Farben und Komponenten ungeprüft |
-| Prüfen | Messen mit Volumen | kein physisches Material, kein Gewicht |
+| Fundament | Build im Container, AppImage per CI, `.mycad`, Einstellungen, Deutsch, Hilfe; Tests (C, H, G) in der CI, rot = kein Release; Container auf festem Datum gepinnt (10.0) | – |
+| Oberfläche | Liquid Glass, Hell/Dunkel, Toolbar, Browser, Inspector, Timeline, ViewCube, Startseite, Notizen, Scribble, Materialien; Befehlssuche (L10); Timeline umsortieren und gruppieren (L7); Fehler mit Erklärung und Reparaturvorschlag (10.2); Maße an der Fläche ändern (10.3); Notiz als Parameterliste (10.4); Rotstift (10.8) | – |
+| Datenmodell | Komponenten, Bodies, globale Timeline, Rollback, Suppress, Parameter, topologische Benennung; verlorene Bezüge werden gemeldet statt still auf alte Kantennummern zu fallen (10.2); immer gespeichert, Versionen, Varianten (10.7) | – |
+| Skizze | 12 Zeichen-, 7 Ändern-Werkzeuge, 9 Constraints, Bemaßung am Cursor, Conic; große DXF-Importe (10.000 Elemente) bearbeitbar (10.9) | bei sehr großen Skizzen: Verlassen der Skizze einmalig ~7 s, ~0,4 s je neuer Linie (10.9) |
+| Körper | 16 Create-, 12 Modify-, 6 Construct-Werkzeuge, Measure, Section; Extrude mit allen Ausdehnungen, Verjüngung, dünnwandig (L1); Bohrung nach Norm (L2); Gewinde nach Norm, auch zum Drucken (L3); Spiegeln/Muster/Drehen an freien Bezügen und entlang Pfad (L4); Rundung variabel, Fasen-Varianten, Tangentenkette (L5); Passung, „Schraube hier“, Einschmelzmuttern (10.5) | – |
+| Baugruppe | Joints Rigid/Revolute/Slider/Cylindrical, Planar, Kugel, Pin-Slot; Ketten, Grenzen, Bewegen und Animieren mit Kollisionsanzeige; geschlossene Ketten über OndselSolver (L6) | – |
+| Austausch | STL, 3MF, STEP, DXF raus; STEP, DXF, SVG rein; 3MF mit Farben, Namen und Auflösung, STEP mit Farben und Komponenten (L8); Drucken öffnet den Slicer (10.6) | – |
+| Prüfen | Messen mit Volumen; physisches Material, Masse und Schwerpunkt (L9); Druckansicht mit Überhang, Bett und Wanddicke (10.6) | – |
 
 ### 4.2 Phase 10: Neu gedacht
 
