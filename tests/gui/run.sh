@@ -33,11 +33,27 @@ if [ -e /run/.containerenv ] || [ -e /.dockerenv ]; then
     fi
 else
     PASS=(); for e in "${ENV[@]}"; do PASS+=(-e "$e"); done
+    # Bildschirmfotos vom echten Bildschirm (Compositor) auf Anfrage des Tests (harness.screen_shot): legt er
+    # <OUT>.screen-<Name>.request an, entsteht <OUT>.screen-<Name>.png. Unter Xvfb gibt es das nicht.
+    WATCH=""
+    if command -v spectacle > /dev/null && [ -z "${NO_SCREEN:-}" ]; then
+        PASS+=(-e MYCAD_SCREEN=1)
+        ( while :; do
+              for r in "$OUT".screen-*.request; do
+                  [ -e "$r" ] || continue
+                  b="${r%.request}"; rm -f "$r"
+                  spectacle -b -n -f -o "$b.part.png" > /dev/null 2>&1; mv -f "$b.part.png" "$b.png" 2> /dev/null
+              done
+              sleep 0.05
+          done ) &
+        WATCH=$!
+    fi
     timeout "${MYCAD_TIMEOUT:-180}" podman run --rm --userns=keep-id --group-add keep-groups --device /dev/dri \
         -v "$ROOT:/workspace" -v "$APPHOME:$APPHOME" -v "$(dirname "$OUT"):$(dirname "$OUT")" -v "$(dirname "$SCRIPT"):$(dirname "$SCRIPT")" \
         -v "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:/tmp/runtime/$WAYLAND_DISPLAY" \
         -e XDG_RUNTIME_DIR=/tmp/runtime -e WAYLAND_DISPLAY="$WAYLAND_DISPLAY" -e QT_QPA_PLATFORM=wayland \
         "${PASS[@]}" \
         mycad-dev /workspace/build/bin/FreeCAD "$SCRIPT" > "$OUT.log" 2>&1 || true
+    [ -n "$WATCH" ] && kill "$WATCH" 2> /dev/null
 fi
 cat "$OUT.txt"

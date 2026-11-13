@@ -437,3 +437,89 @@ def in_order(steps, delay=1200):
     """Wie run(), aber der nächste Schritt wird erst nach dem Ende des vorigen gestellt (Tippen, lange Schritte)"""
     start = [] if START_PAGE else [("design", lambda: App.ActiveDocument or Gui.runCommand("Std_New"))]
     _sequence(start + list(steps) + [("shot", lambda: mw.grab().save(os.environ["OUT"] + ".png"))], delay, False)
+
+
+# --- Echter Bildschirm (Compositor), nicht Qts eigenes Rendern ------------------------------------------------------
+def screen_shot(name, timeout=10.0):
+    """Bildschirmfoto vom echten Bildschirm als QImage: nur auf dem Desktop (run.sh lässt dort spectacle auf Anfrage
+    fotografieren), unter Xvfb None. Fehler wie die schwarzen Ränder der Slicer-Liste sah nur der Compositor."""
+    import time
+    if not os.environ.get("MYCAD_SCREEN"):
+        return None
+    base = os.environ["OUT"] + ".screen-" + name
+    open(base + ".request", "w").close()
+    start = time.monotonic()
+    while not os.path.exists(base + ".png") and time.monotonic() - start < timeout:
+        QtWidgets.QApplication.processEvents()
+        time.sleep(0.02)
+    img = QtGui.QImage(base + ".png")
+    return None if img.isNull() else img
+
+
+def _rows(img):
+    img = img.convertToFormat(QtGui.QImage.Format_RGB888)
+    return img, bytes(img.constBits())[:img.bytesPerLine() * img.height()], img.bytesPerLine()
+
+
+def _locate(screen, sbuf, sbpl, part, pbuf, pbpl):
+    """Lage von part (deckend, exakt gleiche Pixel) im Bildschirmfoto: Suche über die mittlere Zeile, Prüfung der
+    mittleren Hälfte (Ecken und Ränder dürfen durchscheinen)"""
+    w, h = part.width(), part.height()
+    x0, x1 = w // 4, 3 * w // 4
+    probe = pbuf[(h // 2) * pbpl + 3 * x0:(h // 2) * pbpl + 3 * x1]
+    at = sbuf.find(probe)
+    while at >= 0:
+        y, x = at // sbpl - h // 2, (at % sbpl) // 3 - x0
+        if (at % sbpl) % 3 == 0 and x >= 0 and y >= 0 and x + w <= screen.width() and y + h <= screen.height() and all(
+                sbuf[(y + r) * sbpl + 3 * (x + x0):(y + r) * sbpl + 3 * (x + x1)] == pbuf[r * pbpl + 3 * x0:r * pbpl + 3 * x1]
+                for r in range(h // 4, 3 * h // 4)):
+            return x, y
+        at = sbuf.find(probe, at + 1)
+    return None
+
+
+def screen_position(widget, name="widget"):
+    """Lage eines deckenden widget auf dem echten Bildschirm in Bildschirmpixeln: (x, y); None ohne echten Bildschirm
+    (Xvfb), False, wenn es dort nicht so erscheint, wie Qt es zeichnet"""
+    shot = screen_shot(name)
+    if shot is None:
+        return None
+    part, pbuf, pbpl = _rows(widget.grab().toImage())
+    screen, sbuf, sbpl = _rows(shot)
+    return _locate(screen, sbuf, sbpl, part, pbuf, pbpl) or False
+
+
+def screen_region(widget, anchor, anchor_at, name="region"):
+    """Ausschnitt eines neuen Bildschirmfotos, wo widget liegt: über seinen Abstand zu anchor, dessen Lage anchor_at
+    (screen_position) vorher bestimmt wurde. Für durchscheinendes Glas und Popups, die den Anker verdecken. Unter
+    Wayland sind globale Lagen nur relativ zueinander verlässlich."""
+    shot = screen_shot(name)
+    if shot is None or not anchor_at:
+        return None
+    dpr = widget.devicePixelRatioF()
+    d = widget.mapToGlobal(QtCore.QPoint(0, 0)) - anchor.mapToGlobal(QtCore.QPoint(0, 0))
+    return shot.copy(anchor_at[0] + round(d.x() * dpr), anchor_at[1] + round(d.y() * dpr),
+                     round(widget.width() * dpr), round(widget.height() * dpr))
+
+
+def on_screen(widget, name="widget"):
+    """So, wie ein deckendes widget wirklich auf dem Bildschirm erscheint (Ausschnitt des Bildschirmfotos); None ohne
+    echten Bildschirm, False, wenn es dort nicht so erscheint, wie Qt es zeichnet"""
+    at = screen_position(widget, name)
+    if not at:
+        return at
+    return screen_region(widget, widget, at, name + "-again")
+
+
+def looks_like(real, widget, tolerance=12):
+    """Anteil der Pixel (mittlere Hälfte), in denen das Bildschirmbild Qts eigenem Bild von widget gleicht, bis auf
+    tolerance je Farbkanal (Glas lässt ein wenig Hintergrund durch)"""
+    own = widget.grab().toImage()
+    w, h = min(own.width(), real.width()), min(own.height(), real.height())
+    same = total = 0
+    for y in range(h // 4, 3 * h // 4, 2):
+        for x in range(w // 4, 3 * w // 4, 2):
+            a, b = own.pixelColor(x, y), real.pixelColor(x, y)
+            same += max(abs(a.red() - b.red()), abs(a.green() - b.green()), abs(a.blue() - b.blue())) <= tolerance
+            total += 1
+    return same / total if total else 0.0
