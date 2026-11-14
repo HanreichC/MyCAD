@@ -197,6 +197,12 @@ void createSketch(App::DocumentObject* support, std::string element)
     doc->openTransaction("Create Sketch");
     Sketcher::SketchObject* sketch = addSketch(support, element);
     doc->recompute();
+    // Körperfläche: ihren Rand wie in Fusion projizieren, zum Fangen und mit eigenen Linien als Profilkanten.
+    // Erst nach dem Recompute: die Projektion braucht die Lage der Skizze.
+    if (!element.empty()) {
+        sketch->addExternal(support, element.c_str(), /*defining*/ true);
+        doc->recompute();
+    }
     doc->commitTransaction();
 
     Gui::Document* gdoc = Gui::Application::Instance->getDocument(doc);

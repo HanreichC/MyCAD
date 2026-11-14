@@ -27,3 +27,4 @@ test_distance_zero.py
 test_field_arrows.py
 test_big_sketch_ui.py
 test_dxf_import.py
+test_sketch_face_snap.py
