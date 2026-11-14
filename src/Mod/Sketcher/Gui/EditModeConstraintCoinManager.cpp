@@ -2569,8 +2569,9 @@ void EditModeConstraintCoinManager::drawConstraintIcons(const GeoListFacade& geo
         }
 
         if (multipleIcons) {
+            // MyCAD: keine Nummern wie "13, 14" an Gleich/Parallel/…, wie in Fusion; eigene Namen bleiben
             if (constraint->Name.empty()) {
-                thisIcon.label = QString::number(constrId + 1);
+                thisIcon.label = QString();
             }
             else {
                 thisIcon.label = QString::fromUtf8(constraint->Name.c_str());
@@ -2876,13 +2877,23 @@ void EditModeConstraintCoinManager::drawMergedConstraintIcons(IconQueue iconQueu
 QImage EditModeConstraintCoinManager::renderConstrIcon(
     const QString& type,
     const QColor& iconColor,
-    const QStringList& labels,
-    const QList<QColor>& labelColors,
+    const QStringList& labelsIn,
+    const QList<QColor>& labelColorsIn,
     double iconRotation,
     std::vector<QRect>* boundingBoxes,
     int* vPad
 )
 {
+    // MyCAD: leere Beschriftungen (unbenannte Bedingungen) weglassen, sonst bliebe Platz für ", , ," frei
+    QStringList labels;
+    QList<QColor> labelColors;
+    for (int k = 0; k < labelsIn.size() && k < labelColorsIn.size(); ++k) {
+        if (!labelsIn[k].isEmpty()) {
+            labels.append(labelsIn[k]);
+            labelColors.append(labelColorsIn[k]);
+        }
+    }
+
     // Constants to help create constraint icons
     QString joinStr = QStringLiteral(", ");
 

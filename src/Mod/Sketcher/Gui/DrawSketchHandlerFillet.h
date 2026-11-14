@@ -32,6 +32,7 @@
 #include <Mod/Sketcher/App/SketchObject.h>
 
 #include "DrawSketchHandler.h"
+#include "EditDatumDialog.h"
 #include "Utils.h"
 #include "ViewProviderSketch.h"
 
@@ -211,6 +212,7 @@ private:
                 }
 
                 int filletGeoId = getHighestCurveIndex() + (isChamfer ? 2 : 1);
+                const int before = getHighestCurveIndex();
                 // create fillet at point
                 try {
                     openCommand(QT_TRANSLATE_NOOP("Command", "Create fillet"));
@@ -229,7 +231,9 @@ private:
                         Gui::cmdAppObjectArgs(obj, "toggleConstruction(%d) ", filletGeoId);
                     }
 
-                    commitCommand();
+                    if (isChamfer || !askFilletRadius(before)) {
+                        commitCommand();
+                    }
                 }
                 catch (const Base::Exception& e) {
                     Gui::NotifyUserError(
@@ -268,6 +272,7 @@ private:
             }
 
             int filletGeoId = getHighestCurveIndex() + (isChamfer ? 2 : 1);
+            const int before = getHighestCurveIndex();
 
             // create fillet between lines
             try {
@@ -286,7 +291,9 @@ private:
                     preserveCorner ? "True" : "False",
                     isChamfer ? "True" : "False"
                 );
-                commitCommand();
+                if (isChamfer || !askFilletRadius(before)) {
+                    commitCommand();
+                }
             }
             catch (const Base::CADKernelError& e) {
                 if (e.getTranslatable()) {
@@ -314,6 +321,21 @@ private:
 
             Gui::Selection().clearSelection();
         }
+    }
+
+    /// MyCAD: Radius wie in Fusion gleich eintippen. Maß auf den neuen Bogen, dann dasselbe Feld wie bei der Bemaßung;
+    /// Enter übernimmt (und schließt die Transaktion), Esc nimmt das ganze Abrunden zurück. false: kein Bogen gefunden.
+    bool askFilletRadius(int highestBefore)
+    {
+        SketchObject* obj = sketchgui->getSketchObject();
+        for (int geoId = highestBefore + 1; geoId <= getHighestCurveIndex(); ++geoId) {
+            if (auto arc = dynamic_cast<const Part::GeomArcOfCircle*>(obj->getGeometry(geoId))) {
+                Gui::cmdAppObjectArgs(obj, "addConstraint(Sketcher.Constraint('Radius',%d,%f))", geoId, arc->getRadius());
+                EditDatumDialog(currentTransactionID, sketchgui, obj->Constraints.getSize() - 1).exec();
+                return true;
+            }
+        }
+        return false;
     }
 
     std::string getToolName() const override
