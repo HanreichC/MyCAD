@@ -78,9 +78,7 @@ private:
             case SelectMode::SeekFirst: {
                 seekAndRenderAutoConstraint(sugConstraints[0], onSketchPos, Base::Vector2d(0.f, 0.f));
 
-                Base::Vector2d snapPoint;
-                editPoint = getLineExtensionAutoConstraintSnapPoint(snapPoint) ? snapPoint
-                                                                               : onSketchPos;
+                editPoint = onSketchPos;
 
                 toolWidgetManager.drawPositionAtCursor(editPoint);
             } break;

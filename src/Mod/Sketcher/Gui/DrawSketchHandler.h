@@ -369,6 +369,7 @@ protected:
     struct LineExtensionAutoConstraintHint
     {
         bool isValid = false;
+        int geoId = Sketcher::GeoEnum::GeoUndef;
         Base::Vector2d start;
         Base::Vector2d end;
     };
@@ -409,7 +410,7 @@ protected:
         const Base::Vector2d& start,
         const Base::Vector2d& end
     ) const;
-    bool getLineExtensionAutoConstraintSnapPoint(Base::Vector2d& point) const;
+    bool snapToLineExtensionHint(Base::Vector2d& point) const;
 
     void resetTangentAutoConstraintHint();
     bool updateTangentAutoConstraintHint();

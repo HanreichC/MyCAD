@@ -101,18 +101,14 @@ private:
             case SelectMode::SeekFirst: {
                 seekAndRenderAutoConstraint(sugConstraints[0], onSketchPos, Base::Vector2d(0.f, 0.f));
 
-                Base::Vector2d snapPoint;
-                startPoint = getLineExtensionAutoConstraintSnapPoint(snapPoint) ? snapPoint
-                                                                                : onSketchPos;
+                startPoint = onSketchPos;
 
                 toolWidgetManager.drawPositionAtCursor(startPoint);
             } break;
             case SelectMode::SeekSecond: {
                 seekAndRenderAutoConstraint(sugConstraints[1], onSketchPos, onSketchPos - startPoint);
 
-                Base::Vector2d snapPoint;
-                endPoint = getLineExtensionAutoConstraintSnapPoint(snapPoint) ? snapPoint
-                                                                              : onSketchPos;
+                endPoint = onSketchPos;
 
                 toolWidgetManager.drawDirectionAtCursor(endPoint, startPoint);
 

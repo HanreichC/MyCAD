@@ -22,7 +22,10 @@ class DrawSketchHandlerConic: public DrawSketchHandler
 public:
     void mouseMove(SnapManager::SnapHandle snapHandle) override
     {
-        const Base::Vector2d pos = snapHandle.compute();
+        Base::Vector2d pos = snapHandle.compute();
+        if (points.size() < 2) {
+            snapToLineExtensionHint(pos);
+        }
         setPositionText(pos);  // Koordinaten folgen dem Cursor bei jedem Klick, nicht nur beim Startpunkt
         if (points.size() < 2) {  // Start- und Endpunkt fangen an Punkten und Kanten (Koinzident, Punkt auf Objekt)
             seekAndRenderAutoConstraint(sugConstr[points.size()], pos, Base::Vector2d(0.0, 0.0));
@@ -39,6 +42,9 @@ public:
 
     bool pressButton(Base::Vector2d pos) override
     {
+        if (points.size() < 2) {
+            snapToLineExtensionHint(pos);
+        }
         points.push_back(pos);
         if (points.size() == 3) {
             create();  // beendet das Werkzeug; danach keinen Code mehr

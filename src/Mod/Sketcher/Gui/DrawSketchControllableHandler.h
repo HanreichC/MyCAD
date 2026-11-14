@@ -83,8 +83,8 @@ public:
     void mouseMove(SnapManager::SnapHandle snapHandle) override
     {
         Base::Vector2d onSketchPos = snapHandle.compute();
-        if (!this->snapToTangentHint(onSketchPos)) {
-            this->snapToParallelPerpendicularHint(onSketchPos);
+        if (!this->snapToTangentHint(onSketchPos) && !this->snapToParallelPerpendicularHint(onSketchPos)) {
+            this->snapToLineExtensionHint(onSketchPos);
         }
         toolWidgetManager.mouseMoved(onSketchPos);
 
@@ -97,8 +97,8 @@ public:
 
     bool pressButton(Base::Vector2d onSketchPos) override
     {
-        if (!this->snapToTangentHint(onSketchPos)) {
-            this->snapToParallelPerpendicularHint(onSketchPos);
+        if (!this->snapToTangentHint(onSketchPos) && !this->snapToParallelPerpendicularHint(onSketchPos)) {
+            this->snapToLineExtensionHint(onSketchPos);
         }
         // ensure controller state is initialized even if no mouseMove occurred
         // ie. when a modal dialog blocks input before the first click

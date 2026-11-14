@@ -734,13 +734,10 @@ bool DrawSketchHandler::seekLineExtensionAutoConstraint(
         return false;
     }
 
-    AutoConstraint constr;
-    constr.Type = Sketcher::PointOnObject;
-    constr.GeoId = bestGeoId;
-    constr.PosId = PointPos::none;
-    suggestedConstraints.push_back(constr);
-
+    // Die Verlängerung fängt nur (wie Fusion), ohne "liegt darauf": sonst hängt z. B. ein Kreis
+    // unsichtbar an der Kante eines anderen Elements und zieht es beim Verschieben mit
     lineExtensionAutoConstraintHint.isValid = true;
+    lineExtensionAutoConstraintHint.geoId = bestGeoId;
     lineExtensionAutoConstraintHint.start = bestAnchor;
     lineExtensionAutoConstraintHint.end = bestProjection;
 
@@ -772,13 +769,29 @@ bool DrawSketchHandler::isLineExtensionAutoConstraintHintVisible(
     return isLineExtensionAutoConstraintHintVisible(std::vector<Base::Vector2d> {start, end});
 }
 
-bool DrawSketchHandler::getLineExtensionAutoConstraintSnapPoint(Base::Vector2d& point) const
+// Fängt den Punkt auf die Verlängerung, die die letzte Mausbewegung gefunden hat (wie snapToTangentHint)
+bool DrawSketchHandler::snapToLineExtensionHint(Base::Vector2d& point) const
 {
     if (!lineExtensionAutoConstraintHint.isValid) {
         return false;
     }
 
-    point = lineExtensionAutoConstraintHint.end;
+    const auto* line = freecad_cast<const Part::GeomLineSegment*>(
+        sketchgui->getSketchObject()->getGeometry(lineExtensionAutoConstraintHint.geoId)
+    );
+    if (!line) {
+        return false;
+    }
+
+    const Base::Vector2d start = toVector2d(line->getStartPoint());
+    Base::Vector2d projection;
+    projection.ProjectToLine(point - start, toVector2d(line->getEndPoint()) - start);
+    projection += start;
+    if ((point - projection).Length() > getAutoConstraintSearchDistance()) {
+        return false;
+    }
+
+    point = projection;
     return true;
 }
 
