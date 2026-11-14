@@ -74,6 +74,8 @@
 #include <BRepAdaptor_Surface.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 #include <BRepGProp.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
 #include <BRep_Builder.hxx>
 #include <GProp_GProps.hxx>
 #include <TopExp.hxx>
@@ -1196,6 +1198,89 @@ private:
     std::function<void()> done;
 };
 
+/// Rundung/Fase bei offenem Dialog: ein Klick auf eine Kante oder Fläche des Körpers nimmt sie dazu, ein zweiter
+/// Klick wieder heraus (wie Fusion). Der Körper zeigt dabei schon die Vorschau; die Namen gelten aber für den Zustand
+/// davor, also wird wie beim ReferencePicker dort nach dem gleichen Element gesucht.
+class EdgePicker: public Gui::SelectionObserver
+{
+public:
+    EdgePicker(Design::DressUp* feature, QObject* context, std::function<void()> changed)
+        : feature(feature)
+        , context(context)
+        , changed(std::move(changed))
+    {}
+
+private:
+    void onSelectionChanged(const Gui::SelectionChanges& msg) override
+    {
+        if (msg.Type != Gui::SelectionChanges::AddSelection) {
+            return;
+        }
+        App::DocumentObject* obj = msg.Object.getSubObject();
+        const std::string element = msg.Object.getOldElementName();
+        const auto& bodies = feature->Bodies.getValues();
+        const auto& bases = feature->BaseFeatures.getValues();
+        if (!obj || bodies.empty() || bases.empty() || obj != bodies.front()
+            || (element.rfind("Edge", 0) != 0 && element.rfind("Face", 0) != 0)) {
+            return;
+        }
+        auto base = freecad_cast<Design::Feature*>(bases.front());
+        const TopoDS_Shape sub = static_cast<Design::Body*>(obj)->Shape.getShape().getSubShape(element.c_str(), true);
+        std::string name = base ? Design::elementName(base->shapeFor(obj).getShape(), sub) : std::string();
+        if (name.empty() && base && !sub.IsNull()) {
+            // Rundungsfläche der Vorschau oder deren Randkante gibt es vorher nicht: sie steht für die gewählte Kante,
+            // aus der sie entstand. Die nächste gewählte Kante (innerhalb zweier Radien) wird wieder herausgenommen.
+            GProp_GProps props;
+            if (sub.ShapeType() == TopAbs_FACE) {
+                BRepGProp::SurfaceProperties(sub, props);
+            }
+            else {
+                BRepGProp::LinearProperties(sub, props);
+            }
+            const TopoDS_Vertex centre = BRepBuilderAPI_MakeVertex(props.CentreOfMass());
+            const Part::TopoShape before = base->shapeFor(obj);
+            double best = 2 * feature->Size.getValue();
+            for (const auto& edge : feature->Edges.getValues()) {
+                BRepExtrema_DistShapeShape dist(centre, before.getSubShape(edge.c_str(), true));
+                if (dist.IsDone() && dist.Value() < best) {
+                    best = dist.Value();
+                    name = edge;
+                }
+            }
+        }
+        if (name.empty()) {
+            Gui::getMainWindow()->showMessage(T("Pick an edge that exists before this feature"));
+            return;
+        }
+        const App::DocumentObjectT target(feature);
+        auto done = changed;
+        // Nicht im Selektions-Callback rechnen
+        QTimer::singleShot(0, context, [target, name, done] {
+            Gui::Selection().clearSelection();
+            auto dress = freecad_cast<Design::DressUp*>(target.getObject());
+            if (!dress) {
+                return;
+            }
+            std::vector<std::string> edges = dress->Edges.getValues();
+            if (auto it = std::ranges::find(edges, name); it != edges.end()) {
+                if (edges.size() > 1) {  // die letzte bleibt, sonst gäbe es nichts zu runden
+                    edges.erase(it);
+                }
+            }
+            else {
+                edges.push_back(name);
+            }
+            dress->Edges.setValues(edges);
+            dress->getDocument()->recompute();
+            done();
+        });
+    }
+
+    Design::DressUp* feature;
+    QObject* context;
+    std::function<void()> changed;
+};
+
 /// Dialog für alle Features im Inspector. Läuft in einer eigenen Transaktion: Abbrechen macht alles rückgängig.
 /// Extrude/Revolve haben zusätzlich Operation (New Body/Join/Cut/Intersect) und Ziel-Body.
 class TaskFeature: public Gui::TaskView::TaskDialog
@@ -1257,19 +1342,12 @@ public:
             form->addRow(T("Faces"), new QLabel(T("%1 selected").arg(dressUp->Edges.getSize())));
         }
         else if (dressUp) {
-            // Eine Fläche steht für alle ihre Kanten (wie beim Rechnen): gezählt werden die Kanten, nicht die Auswahl
-            int count = dressUp->Edges.getSize();
-            const auto& bases = dressUp->BaseFeatures.getValues();
-            auto base = shell || bases.empty() ? nullptr : freecad_cast<Design::Feature*>(bases.front());
-            if (base && dressUp->Bodies.getSize() > 0) {
-                const Part::TopoShape shape = base->shapeFor(dressUp->Bodies.getValues().front());
-                TopTools_IndexedMapOfShape selected;
-                for (const auto& name : dressUp->Edges.getValues()) {
-                    TopExp::MapShapes(shape.getSubShape(name.c_str(), true), TopAbs_EDGE, selected);
-                }
-                count = selected.Extent();
+            auto edges = new QLabel(T("%1 selected").arg(edgeCount()));
+            if (!shell) {  // Rundung, Fase: weitere Kanten per Klick dazu oder heraus
+                edgePicker = std::make_unique<EdgePicker>(dressUp, edges, [this, edges] {
+                    edges->setText(T("%1 selected").arg(edgeCount()));
+                });
             }
-            auto edges = new QLabel(T("%1 selected").arg(count));
             distance = quantityBox(Base::Unit::Length, dressUp->Size.getValue(), true);
             bindExpression(distance, &dressUp->Size);
             form->addRow(shell ? T("Open faces") : T("Edges"), edges);
@@ -1677,6 +1755,23 @@ private:
             setOperation(want, target);
             feature->recomputeFeature();
         }
+    }
+
+    /// Eine Fläche steht für alle ihre Kanten (wie beim Rechnen): gezählt werden die Kanten, nicht die Auswahl
+    int edgeCount() const
+    {
+        int count = dressUp->Edges.getSize();
+        const auto& bases = dressUp->BaseFeatures.getValues();
+        auto base = shell || bases.empty() ? nullptr : freecad_cast<Design::Feature*>(bases.front());
+        if (base && dressUp->Bodies.getSize() > 0) {
+            const Part::TopoShape shape = base->shapeFor(dressUp->Bodies.getValues().front());
+            TopTools_IndexedMapOfShape selected;
+            for (const auto& name : dressUp->Edges.getValues()) {
+                TopExp::MapShapes(shape.getSubShape(name.c_str(), true), TopAbs_EDGE, selected);
+            }
+            count = selected.Extent();
+        }
+        return count;
     }
 
     Design::Body* selectedBody() const
@@ -2209,6 +2304,7 @@ private:
     }
     std::vector<std::pair<App::PropertyLinkSub*, QPushButton*>> referenceButtons;
     std::unique_ptr<ReferencePicker> picker;
+    std::unique_ptr<EdgePicker> edgePicker;
     Design::Extrude* extrude;
     Design::Revolve* revolve;
     Design::DressUp* dressUp;

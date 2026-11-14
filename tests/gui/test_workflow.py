@@ -6,6 +6,7 @@
    Noch einmal Extrude ohne Auswahl extrudiert die ausgeblendete Skizze nicht ein zweites Mal.
 2. Rundung und Fase an Körperkanten (Wert tippen, Enter), Rundung nachträglich ändern, Rückgängig/Wiederholen, Fase aus der
    Mitte der Timeline löschen und das zurücknehmen.
+   Bei offenem Rundungs-Dialog nimmt ein Klick auf eine Kante sie dazu, ein zweiter Klick wieder heraus (wie Fusion).
 3. In der Skizze: Strg+Z nimmt die letzte Linie zurück, Strg+Y (wie Fusion) und Strg+Umschalt+Z holen sie wieder.
    Esc mit einer gewählten Kante hebt nur die Auswahl auf (vorher verließ es sofort die Skizze)."""
 import math, os
@@ -140,6 +141,31 @@ def delete_chamfer():
     Gui.runCommand("Design_Delete")
 
 
+def click_3d(p):
+    vp = view().viewport(); dpr = vp.devicePixelRatioF()
+    x, y = Gui.ActiveDocument.ActiveView.getPointOnViewport(p)
+    q = QtCore.QPoint(int(x / dpr), int(vp.height() - y / dpr))
+    QtTest.QTest.mouseMove(vp, q); QtTest.QTest.mouseClick(vp, QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, q)
+
+
+def iso_box():
+    S["b"] = make_body(rect(0, 0, 40, 20), 0, 10, "Box")
+    v = Gui.ActiveDocument.ActiveView; v.viewIsometric(); Gui.SendMsgToActiveView("ViewFit")
+    v.zoomOut(); v.zoomOut()  # Körper weg von den Glas-Panels am Rand (Xvfb-Fenster ist kleiner)
+
+
+def remove_click():
+    """Klick mitten auf die Rundungsfläche der Vorschau an der Kante (0, 0)"""
+    r = [o for o in doc().Objects if o.TypeId == "Design::Fillet"][0].Size.Value
+    k = r * (1 - 1 / math.sqrt(2))
+    click_3d(V(k, k, 5))
+
+
+def edge_count(want):
+    labels = [l.text() for l in visible(QtWidgets.QLabel) if "selected" in l.text()]
+    check("the fillet dialog counts %d edges" % want, labels == ["%d selected" % want], str(labels))
+
+
 f3, f5, c2 = (9 - math.pi * 9 / 4) * 10, (25 - math.pi * 25 / 4) * 10, 20
 two = [("box 2", lambda: S.update(b=make_body(rect(0, 0, 40, 20), 0, 10, "Box"))), W,
        ("fillet", lambda: dress("Design_Fillet", 0, 0)), W, ("r3", lambda: enter("Radius", "3")), W,
@@ -152,7 +178,12 @@ two = [("box 2", lambda: S.update(b=make_body(rect(0, 0, 40, 20), 0, 10, "Box"))
        ("redo 2", lambda: Gui.runCommand("Std_Redo")), W, ("redone", lambda: volume("redo change", 8000 - f5 - c2)),
        ("delete", delete_chamfer), W, W, ("deleted", lambda: volume("chamfer deleted from the middle", 8000 - f5)),
        ("undo 3", lambda: Gui.runCommand("Std_Undo")), W, ("back", lambda: volume("undo delete", 8000 - f5 - c2)),
-       ("close 2", lambda: App.closeDocument(doc().Name)), W, ("new 2", lambda: Gui.runCommand("Std_New")), W]
+       ("close 2", lambda: App.closeDocument(doc().Name)), W, ("new 2", lambda: Gui.runCommand("Std_New")), W,
+       ("box 3", iso_box), W, ("fillet 3", lambda: dress("Design_Fillet", 40, 0)), W,
+       ("add", lambda: click_3d(V(40, 20, 5))), W, ("add 2", lambda: click_3d(V(0, 0, 5))), W, ("three", lambda: edge_count(3)),
+       ("remove", remove_click), W, ("two", lambda: edge_count(2)), ("r2", lambda: enter("Radius", "2")), W,
+       ("two rounded", lambda: volume("two edges rounded r2 by clicking", 8000 - 2 * (4 - math.pi) * 10)),
+       ("close 3", lambda: App.closeDocument(doc().Name)), W, ("new 3", lambda: Gui.runCommand("Std_New")), W]
 
 
 # --- 3 ---------------------------------------------------------------------------------------------------------------

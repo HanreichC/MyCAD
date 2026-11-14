@@ -677,6 +677,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Inside", "Innen"},
         {"Outside", "Außen"},
         {"Pick a face that exists before this feature", "Wähle eine Fläche, die es vor diesem Feature schon gibt"},
+        {"Pick an edge that exists before this feature", "Wähle eine Kante, die es vor diesem Feature schon gibt"},
         {"Click the face or plane to extrude to", "Klicke auf die Fläche oder Ebene, bis zu der extrudiert wird"},
         {"Extrude to a face or a plane, not a whole body", "Extrudiere bis zu einer Fläche oder Ebene, nicht bis zu einem ganzen Körper"},
         {"The profile does not reach this face. Choose a face in front of the profile",
