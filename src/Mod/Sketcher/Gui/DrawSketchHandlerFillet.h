@@ -331,11 +331,59 @@ private:
         for (int geoId = highestBefore + 1; geoId <= getHighestCurveIndex(); ++geoId) {
             if (auto arc = dynamic_cast<const Part::GeomArcOfCircle*>(obj->getGeometry(geoId))) {
                 Gui::cmdAppObjectArgs(obj, "addConstraint(Sketcher.Constraint('Radius',%d,%f))", geoId, arc->getRadius());
-                EditDatumDialog(currentTransactionID, sketchgui, obj->Constraints.getSize() - 1).exec();
+                EditDatumDialog dialog(currentTransactionID, sketchgui, obj->Constraints.getSize() - 1);
+                dialog.exec();
+                if (dialog.isSuccess()) {
+                    removeConsumedEdges(geoId);
+                }
                 return true;
             }
         }
         return false;
+    }
+
+    /// Füllt der Radius eine gerade Kante ganz aus (R5 an beiden Ecken einer 10 mm Seite), bleibt dazwischen eine
+    /// Linie der Länge 0. Ohne Richtung macht sie die Tangenten an ihren Enden unbestimmt, die ganze Skizze wird
+    /// redundant und ihre Profile rechnen nicht mehr. Die Linie fällt weg, die beiden Bögen treffen sich direkt.
+    void removeConsumedEdges(int arcGeoId)
+    {
+        SketchObject* obj = sketchgui->getSketchObject();
+        const double tol = Precision::Confusion();
+        for (PointPos arcPos : {PointPos::start, PointPos::end}) {
+            const Base::Vector3d p = obj->getPoint(arcGeoId, arcPos);
+            for (int line = 0; line <= getHighestCurveIndex(); ++line) {
+                auto seg = dynamic_cast<const Part::GeomLineSegment*>(obj->getGeometry(line));
+                if (!seg || (seg->getEndPoint() - seg->getStartPoint()).Length() > tol
+                    || (seg->getStartPoint() - p).Length() > tol) {
+                    continue;
+                }
+                // die andere Kurve, die an der Null-Linie hing (der Bogen der Nachbarecke)
+                int other = GeoEnum::GeoUndef;
+                PointPos otherPos = PointPos::none;
+                for (int g = 0; g <= getHighestCurveIndex() && other == GeoEnum::GeoUndef; ++g) {
+                    if (g == line || g == arcGeoId || GeometryFacade::getConstruction(obj->getGeometry(g))) {
+                        continue;
+                    }
+                    for (PointPos pos : {PointPos::start, PointPos::end}) {
+                        if ((obj->getPoint(g, pos) - p).Length() <= tol) {
+                            other = g;
+                            otherPos = pos;
+                        }
+                    }
+                }
+                const auto shifted = [line](int g) { return g > line ? g - 1 : g; };
+                openCommand(QT_TRANSLATE_NOOP("Command", "Create fillet"));
+                Gui::cmdAppObjectArgs(obj, "delGeometry(%d)", line);
+                if (other != GeoEnum::GeoUndef) {
+                    Gui::cmdAppObjectArgs(obj, "addConstraint(Sketcher.Constraint('Coincident',%d,%d,%d,%d))",
+                                          shifted(arcGeoId), static_cast<int>(arcPos), shifted(other),
+                                          static_cast<int>(otherPos));
+                }
+                commitCommand();
+                tryAutoRecomputeIfNotSolve(obj);
+                return;  // eine Ecke rundet höchstens eine Kante ganz auf
+            }
+        }
     }
 
     std::string getToolName() const override

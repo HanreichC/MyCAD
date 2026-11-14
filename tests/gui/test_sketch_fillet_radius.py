@@ -2,6 +2,7 @@
 """Abrunden in der Skizze fragt wie Fusion gleich den Radius ab: Klick auf eine Ecke, Wert tippen, Enter → Bogen mit
 genau diesem Radius und einem Radius-Maß. Esc im Feld nimmt das Abrunden ganz zurück."""
 import os
+import shiboken6
 from PySide6 import QtGui
 from harness import *
 
@@ -40,13 +41,27 @@ def setup():
 
 def dialog_open():
     m = QtWidgets.QApplication.activeModalWidget()
-    S["dialog"] = m
+    if m and "shot" not in S:  # Bild des Felds einmal, für den Abgleich mit MyStyle
+        S["shot"] = m.grab().save(os.environ["OUT"] + ".fillet_field.png")
     check("clicking a corner asks for the radius", m is not None, str(m and m.windowTitle()))
 
 
+def keys(*ks):
+    """Tasten an das Wertfeld des offenen Dialogs (der Wert ist vorgewählt). PySide kann für das Feld eine alte,
+    gelöschte Hülle an derselben Adresse liefern (Dialog auf dem Stack, Feld-Prüfungen im Harness): verwerfen und
+    neu holen."""
+    m = QtWidgets.QApplication.activeModalWidget()
+    box = m.findChild(QtWidgets.QAbstractSpinBox)
+    while not shiboken6.isValid(box):
+        shiboken6.invalidate(box)
+        box = m.findChild(QtWidgets.QAbstractSpinBox)
+    box.setFocus()
+    for k in ks:
+        QtTest.QTest.keyClick(box, k)
+
+
 def type_value(text):
-    box = QtWidgets.QApplication.focusWidget()
-    box.lineEdit().selectAll(); QtTest.QTest.keyClicks(box, text); QtTest.QTest.keyClick(box, QtCore.Qt.Key_Return)
+    keys(*text, QtCore.Qt.Key_Return)
 
 
 def rounded():
@@ -60,7 +75,7 @@ def rounded():
 
 
 def esc():
-    QtTest.QTest.keyClick(QtWidgets.QApplication.focusWidget(), QtCore.Qt.Key_Escape)
+    keys(QtCore.Qt.Key_Escape)
 
 
 def undone():
@@ -71,6 +86,35 @@ def undone():
           "geometry %d -> %d" % (S["count"], s.GeometryCount))
 
 
+def setup_slot():
+    """Rechteck 40 × 10: zwei R5 an der rechten Seite fressen sie ganz auf (Halbkreis wie bei Monitor Light)"""
+    s = sketch()
+    while s.ConstraintCount:
+        s.delConstraint(0)
+    while s.GeometryCount:
+        s.delGeometry(0)
+    for g in rect(0, 0, 40, 10):
+        s.addGeometry(g)
+    import Sketcher
+    for i in range(4):
+        s.addConstraint(Sketcher.Constraint("Coincident", i, 2, (i + 1) % 4, 1))
+    # fest wie bei Monitor Light (dort hängen die Ecken am projizierten Rand), sonst verzieht R5 das Rechteck
+    for c in (("Horizontal", 0), ("Horizontal", 2), ("Vertical", 1), ("Vertical", 3), ("Coincident", 0, 1, -1, 1),
+              ("Distance", 0, 40.0), ("Distance", 1, 10.0)):
+        s.addConstraint(Sketcher.Constraint(*c))
+    doc().recompute()
+
+
+def half_circle():
+    s = sketch()
+    s.solve()
+    lines = [g for g in s.Geometry if isinstance(g, Part.LineSegment) and g.length() < 1e-6]
+    arcs = [round(g.Radius, 6) for g in s.Geometry if isinstance(g, Part.ArcOfCircle)]
+    check("two R5 on a 10 mm side leave no zero-length line and no redundant constraints",
+          not lines and arcs == [5, 5] and not s.RedundantConstraints and not s.ConflictingConstraints,
+          "zero lines=%d arcs=%s redundant=%s" % (len(lines), arcs, s.RedundantConstraints))
+
+
 in_order([
     ("activate", activate),
     ("sketch", lambda: click(button("Design_CreateSketch"))),
@@ -79,11 +123,17 @@ in_order([
     ("fillet tool", lambda: Gui.runCommand("Sketcher_CreateFillet")), wait,
     ("corner", lambda: click_corner(40, 20)), wait, wait,
     ("dialog", dialog_open),
-    ("shot", lambda: (shot("fillet_dialog"), S["dialog"] and S["dialog"].grab().save(os.environ["OUT"] + ".fillet_field.png"))),
+    ("shot", lambda: shot("fillet_dialog")),
     ("type", lambda: type_value("3")), wait,
     ("rounded", rounded),
     ("corner 2", lambda: click_corner(0, 0)), wait, wait,
     ("dialog 2", dialog_open),
     ("esc", esc), wait,
     ("undone", undone),
+    ("slot", setup_slot), wait,
+    ("top right", lambda: click_corner(40, 10)), wait, wait,
+    ("r5", lambda: type_value("5")), wait,
+    ("bottom right", lambda: click_corner(40, 0)), wait, wait,
+    ("r5 again", lambda: type_value("5")), wait,
+    ("half circle", half_circle),
 ])
