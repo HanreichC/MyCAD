@@ -2634,6 +2634,16 @@ void startHole(App::Document* doc)
     for (auto obj : Gui::Selection().getObjectsOfType(Sketcher::SketchObject::getClassTypeId())) {
         sketch = obj;
     }
+    // Eine gewählte Körperfläche ohne Skizze: nicht die zuletzt erstellte Skizze irgendwo anders nehmen (die Bohrung
+    // landete sonst z. B. oben, obwohl die Seitenfläche gewählt war), sondern sagen, wie es geht
+    const auto selection = Gui::Selection().getSelectionEx();
+    const bool faceChosen = std::ranges::any_of(selection, [](const Gui::SelectionObject& sel) {
+        return sel.getObject()->isDerivedFrom<Design::Body>() && !sel.getSubNames().empty();
+    });
+    if (!sketch && faceChosen) {
+        toolHint(T("Hole"), T("Create a sketch on this face and place points where the holes go."));
+        return;
+    }
     if (!sketch) {  // sonst die zuletzt erstellte Skizze
         auto sketches = doc->getObjectsOfType(Sketcher::SketchObject::getClassTypeId());
         sketch = sketches.empty() ? nullptr : sketches.back();

@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Arbeitsabläufe wie im echten Gebrauch (Befehle, Felder, Enter, Tastenkürzel), jeweils mit Volumen nachgerechnet:
 1. Quader per Extrude, Skizze auf der Oberseite, Kreis, Extrude -5 mm wird von selbst Cut (wie Fusion; vorher vereinte ein
-   Join nach innen still nichts), Grundmaß 40 -> 60, Rückgängig, Speichern und wieder Öffnen.
+   Join nach innen still nichts), Grundmaß 40 -> 60, Rückgängig, Speichern und wieder Öffnen. Bohrung mit gewählter
+   Seitenfläche nimmt nicht die Skizze oben (vorher bohrte sie dort), sondern wartet auf eine Skizze auf dieser Fläche.
 2. Rundung und Fase an Körperkanten (Wert tippen, Enter), Rundung nachträglich ändern, Rückgängig/Wiederholen, Fase aus der
    Mitte der Timeline löschen und das zurücknehmen.
 3. In der Skizze: Strg+Z nimmt die letzte Linie zurück, Strg+Y (wie Fusion) und Strg+Umschalt+Z holen sie wieder.
@@ -75,6 +76,18 @@ def auto_cut():
     check("extruding -5 mm into the body becomes Cut by itself", e.Operation == "Cut", str(e.Operation))
 
 
+def side_hole():
+    b = body()
+    f = "Face%d" % (1 + [k for k, x in enumerate(b.Shape.Faces) if (x.normalAt(0, 0) - V(1, 0, 0)).Length < 1e-6][0])
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(b, f); click(button("Design_Hole"))
+
+
+def no_hole():
+    holes = [o for o in doc().Objects if o.TypeId == "Design::Hole"]
+    check("Hole with a side face chosen does not drill at the sketch on top", not holes and not Gui.Control.activeDialog(),
+          "holes=%s dialog=%s" % ([h.Sketch.Label for h in holes], Gui.Control.activeDialog()))
+
+
 def widen():
     doc().openTransaction("Widen"); S["base"].setDatum(S["w"], App.Units.Quantity("60 mm")); doc().recompute(); doc().commitTransaction()
 
@@ -90,6 +103,7 @@ one = [("base", base), W, ("extrude", lambda: extrude(S["base"])), W, ("10 mm", 
        ("box", lambda: volume("box 40x20x10", 8000)),
        ("top", top_sketch), W, W, ("circle", circle), W, ("extrude 2", lambda: extrude(S["top"])), W,
        ("-5 mm", lambda: enter("Distance", "-5")), W, ("cut", auto_cut), ("hole", lambda: volume("hole r4 5 deep", 8000 - hole)),
+       ("side hole", side_hole), W, ("no hole", no_hole),
        ("widen", widen), W, ("wide", lambda: volume("base 60 wide, hole follows", 12000 - hole)),
        ("undo", lambda: Gui.runCommand("Std_Undo")), W, ("narrow", lambda: volume("undo", 8000 - hole)),
        ("reopen", reopen), W, ("reopened", lambda: volume("saved and opened again", 8000 - hole)),

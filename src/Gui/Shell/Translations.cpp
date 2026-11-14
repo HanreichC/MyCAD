@@ -200,6 +200,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Exported 1 body to %1", "1 Körper nach %1 exportiert"},
         {"Exported 1 sketch to %1", "1 Skizze nach %1 exportiert"},
         {"Create a sketch on a face of a body and place points where the holes go.", "Erstelle eine Skizze auf einer Körperfläche und setze Punkte, wo die Bohrungen hin sollen."},
+        {"Create a sketch on this face and place points where the holes go.", "Erstelle eine Skizze auf dieser Fläche und setze Punkte, wo die Bohrungen hin sollen."},
         {"Pattern", "Muster"},
         {"Select bodies, or an Extrude, Revolve or Hole in the timeline first.", "Wähle zuerst Körper oder eine Extrusion, Drehung oder Bohrung in der Zeitleiste."},
         {"Offset Plane", "Versetzte Ebene"},
