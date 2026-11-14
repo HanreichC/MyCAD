@@ -1457,12 +1457,27 @@ public:
             QMessageBox::warning(nullptr, featureTitle(feature), T(feature->getStatusString()));
             return false;
         }
-        // Wie in Fusion: die verwendete Skizze danach ausblenden
-        if (hole && hole->Sketch.getValue()) {
-            hole->Sketch.getValue()->Visibility.setValue(false);
-            if (auto profiles = Design::Profiles::forSketch(hole->Sketch.getValue())) {
+        // Wie in Fusion: die verwendete Skizze danach ausblenden, aber nur beim ersten neuen Feature aus ihr. Hat man sie
+        // für ein weiteres Feature selbst wieder eingeblendet, oder bearbeitet man ein Feature, bleibt sie, wie sie ist.
+        auto hideSketch = [this](App::DocumentObject* sketch) {
+            Design::Profiles* profiles = Design::Profiles::forSketch(sketch);
+            std::vector<App::DocumentObject*> users = sketch->getInList();
+            if (profiles) {
+                const auto more = profiles->getInList();
+                users.insert(users.end(), more.begin(), more.end());
+            }
+            if (!create || std::ranges::any_of(users, [this](App::DocumentObject* user) {
+                    return user != feature && user->isDerivedFrom<Design::Feature>();
+                })) {
+                return;
+            }
+            sketch->Visibility.setValue(false);
+            if (profiles) {
                 profiles->Visibility.setValue(false);
             }
+        };
+        if (hole && hole->Sketch.getValue()) {
+            hideSketch(hole->Sketch.getValue());
         }
         // verwendete Profile, Pfade und Querschnitte (Extrude, Revolve, Sweep, Loft)
         std::vector<App::DocumentObject*> used;
@@ -1478,14 +1493,10 @@ public:
         }
         for (auto obj : used) {
             if (auto profiles = freecad_cast<Design::Profiles*>(obj)) {
-                profiles->Visibility.setValue(false);
                 obj = profiles->Sketch.getValue();
             }
             if (obj && obj->isDerivedFrom<Sketcher::SketchObject>()) {
-                obj->Visibility.setValue(false);
-                if (auto profiles = Design::Profiles::forSketch(obj)) {
-                    profiles->Visibility.setValue(false);
-                }
+                hideSketch(obj);
             }
         }
         App::Document* doc = feature->getDocument();

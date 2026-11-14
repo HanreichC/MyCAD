@@ -69,6 +69,7 @@
 #include <QFontDatabase>
 #include <QFrame>
 #include <QGraphicsRectItem>
+#include <QGraphicsProxyWidget>
 #include <QGraphicsScene>
 #include <QPropertyAnimation>
 #include <QGraphicsOpacityEffect>
@@ -3560,6 +3561,21 @@ protected:
             if (gdoc && !gdoc->getInEdit() && panel && !static_cast<View3DInventorViewer*>(obj)->isSelecting()) {
                 QKeyEvent esc(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
                 QApplication::sendEvent(panel, &esc);
+                return true;
+            }
+        }
+        // Enter im 3D-Fenster bestätigt das Panel wie OK. Hat ein anderes Glas-Panel den Szenen-Fokus (die Werkzeugleiste
+        // nach dem Klick auf "Extrudieren"), käme Enter dort an und verpuffte. Liegt der Fokus im Panel selbst (Maßfeld),
+        // läuft es wie bisher über das Feld (Wert übernehmen) zum OK. Skizze und Scribble brauchen Enter selbst.
+        if (type == QEvent::KeyPress && !state.sketchMode && !state.scribbleMode
+            && (static_cast<QKeyEvent*>(event)->key() == Qt::Key_Return || static_cast<QKeyEvent*>(event)->key() == Qt::Key_Enter)
+            && qobject_cast<View3DInventorViewer*>(obj) && Control().activeDialog()) {
+            QWidget* panel = Control().taskPanel();
+            QGraphicsScene* scene = static_cast<View3DInventorViewer*>(obj)->scene();
+            auto proxy = scene ? dynamic_cast<QGraphicsProxyWidget*>(scene->focusItem()) : nullptr;
+            const bool inPanel = proxy && proxy->widget() && (proxy->widget() == panel || proxy->widget()->isAncestorOf(panel));
+            if (panel && !inPanel) {
+                QApplication::sendEvent(panel, event);
                 return true;
             }
         }
