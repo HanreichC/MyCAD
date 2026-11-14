@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Enter bestätigt den Extrude-Dialog, auch wenn die Werkzeugleiste noch den Fokus hat (nach dem Klick auf "Extrudieren"
 kam Enter dort an und verpuffte). Die Skizze verschwindet nach dem ersten Extrude wie in Fusion; blendet man sie wieder
-ein und extrudiert noch einmal, bleibt sie sichtbar."""
+ein und extrudiert noch einmal, bleibt sie sichtbar. Tippt man bei offenem Dialog in einem anderen Panel (Umbenennen im
+Browser), gehört Enter dieser Eingabe: der Name wird übernommen, der Dialog bleibt offen."""
 from harness import *
 import Design
 
@@ -45,7 +46,27 @@ def second():
     check("a sketch shown again on purpose stays visible after the next extrude", S["sk"].Visibility)
 
 
+def rename():
+    t = visible(QtWidgets.QTreeWidget)[0]; t.expandAll()
+    item = [i for i in t.findItems("Body", QtCore.Qt.MatchStartsWith | QtCore.Qt.MatchRecursive)][0]
+    S["old"] = item.text(0); t.editItem(item, 0)
+
+
+def type_name():
+    ed = [w for w in QtWidgets.QApplication.allWidgets() if isinstance(w, QtWidgets.QLineEdit) and w.isVisible() and w.text() == S["old"]][0]
+    ed.setFocus(); ed.selectAll(); QtTest.QTest.keyClicks(ed, "Base")
+
+
+def renamed():
+    labels = [b.Label for b in doc().Objects if b.TypeId == "Design::Body"]
+    check("Enter while renaming in the browser renames and keeps the open dialog", "Base" in labels and Gui.Control.activeDialog(),
+          "labels=%s dialog=%s" % (labels, Gui.Control.activeDialog()))
+
+
 run([("activate", activate), ("setup", setup), W,
      ("start", start), W, ("enter", enter), W, ("first", first),
      ("show", lambda: setattr(S["sk"], "Visibility", True)), W,
-     ("start 2", start), W, ("enter 2", enter), W, ("second", second)])
+     ("start 2", start), W, ("enter 2", enter), W, ("second", second),
+     ("show again", lambda: setattr(S["sk"], "Visibility", True)), W, ("start 3", start), W,
+     ("rename", rename), W, ("name", type_name), W, ("enter 3", lambda: QtTest.QTest.keyClick(view(), QtCore.Qt.Key_Return)), W,
+     ("renamed", renamed)])

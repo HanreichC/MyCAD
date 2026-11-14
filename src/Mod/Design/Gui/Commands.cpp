@@ -842,12 +842,14 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name,
             profiles = Design::Profiles::forSketch(obj);  // Skizze mit gewählten Kanten ist ein Pfad (Sweep)
         }
     }
-    // Nichts gewählt: hat die zuletzt erstellte Skizze genau ein Profil, nimm es (wie Fusion)
-    if (!profiles) {
+    // Nichts gewählt: hat die zuletzt erstellte, sichtbare Skizze genau ein Profil, nimm es (wie Fusion). Nicht bei einer
+    // anderen Auswahl und nicht, wenn die Skizze nach dem Extrude ausgeblendet ist: sonst extrudierte ein zweiter Klick
+    // auf Extrude dasselbe Profil noch einmal
+    if (!profiles && selection.empty()) {
         auto all = doc->getObjectsOfType(Design::Profiles::getClassTypeId());
         if (!all.empty()) {
             auto last = static_cast<Design::Profiles*>(all.back());
-            if (last->Shape.getShape().countSubShapes(TopAbs_FACE) == 1) {
+            if (last->Visibility.getValue() && last->Shape.getShape().countSubShapes(TopAbs_FACE) == 1) {
                 profiles = last;
             }
         }

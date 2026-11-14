@@ -88,6 +88,7 @@
 #include <QAbstractSpinBox>
 #include <QKeyEvent>
 #include <QPlainTextEdit>
+#include <QTextEdit>
 #include <QTextBlock>
 #include <QTextCursor>
 #include <QMovie>
@@ -3574,7 +3575,11 @@ protected:
             QGraphicsScene* scene = static_cast<View3DInventorViewer*>(obj)->scene();
             auto proxy = scene ? dynamic_cast<QGraphicsProxyWidget*>(scene->focusItem()) : nullptr;
             const bool inPanel = proxy && proxy->widget() && (proxy->widget() == panel || proxy->widget()->isAncestorOf(panel));
-            if (panel && !inPanel) {
+            // Tippen in einem anderen Panel (Umbenennen im Browser, Parameter …): Enter gehört der Eingabe dort
+            QWidget* input = proxy && proxy->widget() ? proxy->widget()->focusWidget() : nullptr;
+            const bool typing = qobject_cast<QLineEdit*>(input) || qobject_cast<QAbstractSpinBox*>(input)
+                || qobject_cast<QPlainTextEdit*>(input) || qobject_cast<QTextEdit*>(input);
+            if (panel && !inPanel && !typing) {
                 QApplication::sendEvent(panel, event);
                 return true;
             }

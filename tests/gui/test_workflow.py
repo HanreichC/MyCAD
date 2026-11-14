@@ -3,6 +3,7 @@
 1. Quader per Extrude, Skizze auf der Oberseite, Kreis, Extrude -5 mm wird von selbst Cut (wie Fusion; vorher vereinte ein
    Join nach innen still nichts), Grundmaß 40 -> 60, Rückgängig, Speichern und wieder Öffnen. Bohrung mit gewählter
    Seitenfläche nimmt nicht die Skizze oben (vorher bohrte sie dort), sondern wartet auf eine Skizze auf dieser Fläche.
+   Noch einmal Extrude ohne Auswahl extrudiert die ausgeblendete Skizze nicht ein zweites Mal.
 2. Rundung und Fase an Körperkanten (Wert tippen, Enter), Rundung nachträglich ändern, Rückgängig/Wiederholen, Fase aus der
    Mitte der Timeline löschen und das zurücknehmen.
 3. In der Skizze: Strg+Z nimmt die letzte Linie zurück, Strg+Y (wie Fusion) und Strg+Umschalt+Z holen sie wieder.
@@ -58,6 +59,16 @@ def body():
     return [o for o in doc().Objects if o.TypeId == "Design::Body"][0]
 
 
+def extrude_again():
+    Gui.Selection.clearSelection(); click(button("Design_Extrude"))
+
+
+def no_second():
+    n = len([o for o in doc().Objects if o.TypeId == "Design::Extrude"])
+    check("Extrude again with nothing selected does not extrude the hidden sketch a second time",
+          n == 1 and not Gui.Control.activeDialog(), "extrudes=%d dialog=%s" % (n, Gui.Control.activeDialog()))
+
+
 def top_sketch():
     Gui.Selection.clearSelection(); Gui.Selection.addSelection(body(), top_face(body()))
     click(button("Design_CreateSketch"))
@@ -100,7 +111,7 @@ def reopen():
 
 hole = math.pi * 16 * 5
 one = [("base", base), W, ("extrude", lambda: extrude(S["base"])), W, ("10 mm", lambda: enter("Distance", "10")), W,
-       ("box", lambda: volume("box 40x20x10", 8000)),
+       ("box", lambda: volume("box 40x20x10", 8000)), ("again", extrude_again), W, ("no second", no_second),
        ("top", top_sketch), W, W, ("circle", circle), W, ("extrude 2", lambda: extrude(S["top"])), W,
        ("-5 mm", lambda: enter("Distance", "-5")), W, ("cut", auto_cut), ("hole", lambda: volume("hole r4 5 deep", 8000 - hole)),
        ("side hole", side_hole), W, ("no hole", no_hole),
