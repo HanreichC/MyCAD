@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Skizze direkt auf einer Körperfläche: der Rand der Fläche ist projiziert (wie Fusion). Eine Linie von Kante zu Kante
-fängt an beiden Rändern mit "liegt darauf" und teilt die Fläche in zwei Profile."""
+"""Skizze direkt auf einer Körperfläche: der Rand der Fläche ist projiziert (wie Fusion), nur als Hilfslinien. Eine Linie
+von Kante zu Kante fängt an beiden Rändern mit "liegt darauf"; Profile bilden nur eigene Linien."""
 from PySide6 import QtGui
 from harness import *
 
@@ -27,8 +27,8 @@ def setup():
 def projected():
     s = sketch()
     check("the face outline is projected into the new sketch", len(s.ExternalGeometry) == 1, str(s.ExternalGeometry))
-    check("the projected outline counts for profiles", len(s.Shape.Edges) == 4, str(len(s.Shape.Edges)))
-    check("the whole face is one profile", len(profiles().Shape.Faces) == 1, str(len(profiles().Shape.Faces)))
+    check("the projected outline is only a helper: no edges, no profile", len(s.Shape.Edges) == 0 and len(profiles().Shape.Faces) == 0,
+          "%d edges, %d profiles" % (len(s.Shape.Edges), len(profiles().Shape.Faces)))
 
 
 def press(x, y, dx, dy):
@@ -54,7 +54,7 @@ def snapped():
 
 def split():
     faces = state["profiles"].Shape.Faces  # Profile rechnen erst nach dem Verlassen der Skizze
-    check("the line splits the face into two profiles", len(faces) == 2, str(len(faces)))
+    check("a single line over the face makes no profile", len(faces) == 0, str(len(faces)))
 
 
 run([
