@@ -7,6 +7,7 @@
 2. Rundung und Fase an Körperkanten (Wert tippen, Enter), Rundung nachträglich ändern, Rückgängig/Wiederholen, Fase aus der
    Mitte der Timeline löschen und das zurücknehmen.
    Bei offenem Rundungs-Dialog nimmt ein Klick auf eine Kante sie dazu, ein zweiter Klick wieder heraus (wie Fusion).
+   Ebenso nimmt bei offenem Extrude ein Klick auf ein weiteres Profil der Skizze es dazu.
 3. In der Skizze: Strg+Z nimmt die letzte Linie zurück, Strg+Y (wie Fusion) und Strg+Umschalt+Z holen sie wieder.
    Esc mit einer gewählten Kante hebt nur die Auswahl auf (vorher verließ es sofort die Skizze)."""
 import math, os
@@ -161,6 +162,23 @@ def remove_click():
     click_3d(V(k, k, 5))
 
 
+def two_rects():
+    d = doc(); root = [o for o in d.Objects if o.TypeId == "App::Part"][0]
+    sk = Design.newSketch(root)
+    for g in rect(0, 0, 20, 20) + rect(40, 0, 60, 20):
+        sk.addGeometry(g)
+    d.recompute()
+    v = Gui.ActiveDocument.ActiveView; v.viewIsometric(); Gui.SendMsgToActiveView("ViewFit"); v.zoomOut(); v.zoomOut()
+    prof = [o for o in sk.InList if o.TypeId == "Design::Profiles"][0]
+    left = "Face%d" % (1 + [i for i, f in enumerate(prof.Shape.Faces) if f.CenterOfMass.x < 30][0])
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(prof, left); click(button("Design_Extrude"))
+
+
+def both_profiles():
+    e = [o for o in doc().Objects if o.TypeId == "Design::Extrude"][0]
+    check("clicking a second profile while extruding adds it", len(e.Profile[1]) == 2, str(e.Profile[1]))
+
+
 def edge_count(want):
     labels = [l.text() for l in visible(QtWidgets.QLabel) if "selected" in l.text()]
     check("the fillet dialog counts %d edges" % want, labels == ["%d selected" % want], str(labels))
@@ -183,7 +201,10 @@ two = [("box 2", lambda: S.update(b=make_body(rect(0, 0, 40, 20), 0, 10, "Box"))
        ("add", lambda: click_3d(V(40, 20, 5))), W, ("add 2", lambda: click_3d(V(0, 0, 5))), W, ("three", lambda: edge_count(3)),
        ("remove", remove_click), W, ("two", lambda: edge_count(2)), ("r2", lambda: enter("Radius", "2")), W,
        ("two rounded", lambda: volume("two edges rounded r2 by clicking", 8000 - 2 * (4 - math.pi) * 10)),
-       ("close 3", lambda: App.closeDocument(doc().Name)), W, ("new 3", lambda: Gui.runCommand("Std_New")), W]
+       ("close 3", lambda: App.closeDocument(doc().Name)), W, ("new 3", lambda: Gui.runCommand("Std_New")), W,
+       ("two rects", two_rects), W, ("add profile", lambda: click_3d(V(50, 10, 0))), W, ("both", both_profiles),
+       ("ok both", lambda: enter("Distance", "10")), W, ("two boxes", lambda: volume("both profiles extruded", 8000)),
+       ("close 4", lambda: App.closeDocument(doc().Name)), W, ("new 4", lambda: Gui.runCommand("Std_New")), W]
 
 
 # --- 3 ---------------------------------------------------------------------------------------------------------------

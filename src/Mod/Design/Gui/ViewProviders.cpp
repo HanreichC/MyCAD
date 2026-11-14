@@ -1281,6 +1281,51 @@ private:
     std::function<void()> changed;
 };
 
+/// Extrude/Rotieren bei offenem Dialog: ein Klick auf ein weiteres Profil derselben Skizze nimmt es dazu, ein Klick
+/// auf ein gewähltes wieder heraus (wie Fusion); eines bleibt immer.
+class ProfilePicker: public Gui::SelectionObserver
+{
+public:
+    ProfilePicker(App::PropertyLinkSub* profile, QObject* context, std::function<void()> changed)
+        : profile(profile)
+        , context(context)
+        , changed(std::move(changed))
+    {}
+
+private:
+    void onSelectionChanged(const Gui::SelectionChanges& msg) override
+    {
+        if (msg.Type != Gui::SelectionChanges::AddSelection) {
+            return;
+        }
+        App::DocumentObject* obj = msg.Object.getSubObject();
+        const std::string face = msg.Object.getOldElementName();
+        if (!obj || obj != profile->getValue() || face.rfind("Face", 0) != 0) {
+            return;
+        }
+        auto prop = profile;
+        auto done = changed;
+        QTimer::singleShot(0, context, [prop, face, done] {
+            Gui::Selection().clearSelection();
+            std::vector<std::string> faces = prop->getSubValues();
+            if (auto it = std::ranges::find(faces, face); it != faces.end()) {
+                if (faces.size() > 1) {
+                    faces.erase(it);
+                }
+            }
+            else {
+                faces.push_back(face);
+            }
+            prop->setValue(prop->getValue(), faces);
+            done();
+        });
+    }
+
+    App::PropertyLinkSub* profile;
+    QObject* context;
+    std::function<void()> changed;
+};
+
 /// Dialog für alle Features im Inspector. Läuft in einer eigenen Transaktion: Abbrechen macht alles rückgängig.
 /// Extrude/Revolve haben zusätzlich Operation (New Body/Join/Cut/Intersect) und Ziel-Body.
 class TaskFeature: public Gui::TaskView::TaskDialog
@@ -1490,6 +1535,11 @@ public:
             QObject::connect(check, &QCheckBox::toggled, [this] { apply(); });
         }
         if (extrude || revolve) {
+            auto profile = extrude ? &extrude->Profile : &revolve->Profile;
+            profilePicker = std::make_unique<ProfilePicker>(profile, w, [this] {
+                this->feature->getDocument()->recompute();
+                apply();
+            });
             flip = new QCheckBox(T("Flip direction"));
             flip->setChecked(extrude ? extrude->Reversed.getValue() : revolve->Reversed.getValue());
             form->addRow(QString(), flip);
@@ -2305,6 +2355,7 @@ private:
     std::vector<std::pair<App::PropertyLinkSub*, QPushButton*>> referenceButtons;
     std::unique_ptr<ReferencePicker> picker;
     std::unique_ptr<EdgePicker> edgePicker;
+    std::unique_ptr<ProfilePicker> profilePicker;
     Design::Extrude* extrude;
     Design::Revolve* revolve;
     Design::DressUp* dressUp;
