@@ -24,6 +24,8 @@
 
 
 #include <Inventor/nodes/SoMarkerSet.h>
+#include <cmath>
+#include <string>
 #include <vector>
 
 
@@ -1357,6 +1359,17 @@ void MarkerBitmaps::initClass()
     markerIndex[std::make_pair("HOURGLASS_FILLED", 9)] = SoMarkerSet::HOURGLASS_FILLED_9_9;
     markerIndex[std::make_pair("HOURGLASS_FILLED", 7)] = SoMarkerSet::HOURGLASS_FILLED_7_7;
     markerIndex[std::make_pair("HOURGLASS_FILLED", 5)] = SoMarkerSet::HOURGLASS_FILLED_5_5;
+
+    // MyCAD: Dreieck mit Spitze nach oben (Mitte einer Linie, wie Fusion), für jede Größe gerechnet statt gezeichnet
+    for (int px = 5; px <= 40; ++px) {
+        std::string rows;
+        for (int h = 0; h < px; ++h) {  // Zeile h ist h+1 Pixel breit, die unterste die ganze Breite
+            for (int w = 0; w < px; ++w) {
+                rows += std::abs(w - (px - 1) / 2.0) <= h / 2.0 + 0.5 ? 'x' : ' ';
+            }
+        }
+        createBitmap("TRIANGLE_FILLED", px, px, px, rows.c_str());
+    }
 }
 
 void MarkerBitmaps::createBitmap(const std::string& name, int px, int width, int height, const char* marker)

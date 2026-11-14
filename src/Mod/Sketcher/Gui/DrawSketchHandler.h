@@ -124,6 +124,7 @@ private:
         const ViewProviderSketch& vp,
         const std::vector<Base::Vector2d>& HintCurve
     );
+    static inline void drawMidpointHint(ViewProviderSketch& vp, const std::vector<Base::Vector2d>& points);
     static inline void drawEditMarkers(
         ViewProviderSketch& vp,
         const std::vector<Base::Vector2d>& EditMarkers,
@@ -239,6 +240,8 @@ public:
     void setPositionText(const Base::Vector2d& Pos);
     void resetPositionText();
     void renderSuggestConstraintsCursor(std::vector<AutoConstraint>& suggestedConstraints);
+    /// Dreieck an der Mitte jeder Linie, an deren Mitte gerade gefangen wird (leer: ausblenden)
+    void drawMidpointHint(const std::vector<AutoConstraint>& suggestedConstraints) const;
 
     /** @name Interfacing with tool dialogs */
     //@{

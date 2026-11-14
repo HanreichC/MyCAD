@@ -28,3 +28,4 @@ test_field_arrows.py
 test_big_sketch_ui.py
 test_dxf_import.py
 test_sketch_face_snap.py
+test_sketch_midpoint.py

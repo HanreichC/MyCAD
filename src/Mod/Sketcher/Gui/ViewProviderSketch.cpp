@@ -3853,6 +3853,11 @@ void ViewProviderSketch::drawLineExtensionAutoConstraintHint(
     editCoinManager->drawLineExtensionAutoConstraintHint(HintCurve);
 }
 
+void ViewProviderSketch::drawMidpointHint(const std::vector<Base::Vector2d>& points)
+{
+    editCoinManager->drawMidpointHint(points);
+}
+
 void ViewProviderSketch::drawParallelPerpendicularHint(
     const std::vector<Base::Vector2d>& HintLines,
     int activeLineIndex

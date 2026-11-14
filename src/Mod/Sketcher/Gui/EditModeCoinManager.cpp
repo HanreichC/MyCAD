@@ -1152,6 +1152,21 @@ void EditModeCoinManager::drawLineExtensionAutoConstraintHint(
     }
 }
 
+void EditModeCoinManager::drawMidpointHint(const std::vector<Base::Vector2d>& points)
+{
+    // doppelt so groß wie die Skizzenpunkte und über allem, sonst verdecken Punkt und Linie das Dreieck
+    editModeScenegraphNodes.MidpointHintSet->markerIndex =
+        Gui::Inventor::MarkerBitmaps::getMarkerIndex("TRIANGLE_FILLED", 2 * drawingParameters.markerSize + 1);
+    editModeScenegraphNodes.MidpointHintMaterials->diffuseColor = drawingParameters.PreselectColor;
+    const float z = static_cast<float>(ViewProviderSketchCoinAttorney::getViewOrientationFactor(viewProvider)
+                                       * (drawingParameters.zHighlight + 0.001f));
+    auto& coords = editModeScenegraphNodes.MidpointHintCoordinate->point;
+    coords.setNum(static_cast<int>(points.size()));
+    for (int i = 0; i < static_cast<int>(points.size()); ++i) {
+        coords.set1Value(i, SbVec3f(static_cast<float>(points[i].x), static_cast<float>(points[i].y), z));
+    }
+}
+
 void EditModeCoinManager::drawParallelPerpendicularHint(
     const std::vector<Base::Vector2d>& HintLines,
     int activeLineIndex
@@ -2012,6 +2027,21 @@ void EditModeCoinManager::createEditModeInventorNodes()
     lineExtensionAutoConstraintHintRoot->addChild(
         editModeScenegraphNodes.LineExtensionAutoConstraintHintSet
     );
+
+    // Mitte einer Linie (MyCAD)
+    SoSeparator* midpointHintRoot = new SoSeparator;
+    infoLayerRoot->addChild(midpointHintRoot);
+    SoPickStyle* midpointHintPickStyle = new SoPickStyle;
+    midpointHintPickStyle->style = SoPickStyle::UNPICKABLE;
+    midpointHintRoot->addChild(midpointHintPickStyle);
+    editModeScenegraphNodes.MidpointHintMaterials = new SoMaterial;
+    midpointHintRoot->addChild(editModeScenegraphNodes.MidpointHintMaterials);
+    editModeScenegraphNodes.MidpointHintCoordinate = new SoCoordinate3;
+    editModeScenegraphNodes.MidpointHintCoordinate->point.setNum(0);
+    midpointHintRoot->addChild(editModeScenegraphNodes.MidpointHintCoordinate);
+    editModeScenegraphNodes.MidpointHintSet = new SoMarkerSet;
+    editModeScenegraphNodes.MidpointHintSet->setName("MidpointHintSet");
+    midpointHintRoot->addChild(editModeScenegraphNodes.MidpointHintSet);
 
     // Parallel / Perpendicular reference lines ++++++++++++++++++++++++
     SoSeparator* parallelPerpendicularHintRoot = new SoSeparator;

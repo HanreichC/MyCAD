@@ -146,6 +146,14 @@ inline void ViewProviderSketchDrawSketchHandlerAttorney::drawLineExtensionAutoCo
     vp.drawLineExtensionAutoConstraintHint(HintCurve);
 }
 
+inline void ViewProviderSketchDrawSketchHandlerAttorney::drawMidpointHint(
+    ViewProviderSketch& vp,
+    const std::vector<Base::Vector2d>& points
+)
+{
+    vp.drawMidpointHint(points);
+}
+
 inline void ViewProviderSketchDrawSketchHandlerAttorney::drawParallelPerpendicularHint(
     ViewProviderSketch& vp,
     const std::vector<Base::Vector2d>& HintLines,
@@ -423,6 +431,7 @@ void DrawSketchHandler::deactivate()
     clearEdit();
     clearEditMarkers();
     clearLineExtensionAutoConstraintHintDrawing();
+    drawMidpointHint({});
     resetParallelPerpendicularHint();
     resetPositionText();
     setAngleSnapping(false);
@@ -1819,14 +1828,30 @@ int DrawSketchHandler::seekAndRenderAutoConstraint(
         renderSuggestConstraintsCursor(suggestedConstraints);
     }
     else {
+        drawMidpointHint({});
         applyCursor();
     }
 
     return suggestedConstraints.size();
 }
 
+void DrawSketchHandler::drawMidpointHint(const std::vector<AutoConstraint>& suggestedConstraints) const
+{
+    std::vector<Base::Vector2d> points;
+    for (const auto& c : suggestedConstraints) {
+        auto line = c.Type == Symmetric ? dynamic_cast<const Part::GeomLineSegment*>(
+                                              sketchgui->getSketchObject()->getGeometry(c.GeoId))
+                                        : nullptr;
+        if (line) {
+            points.push_back(toVector2d((line->getStartPoint() + line->getEndPoint()) / 2));
+        }
+    }
+    ViewProviderSketchDrawSketchHandlerAttorney::drawMidpointHint(*sketchgui, points);
+}
+
 void DrawSketchHandler::renderSuggestConstraintsCursor(std::vector<AutoConstraint>& suggestedConstraints)
 {
+    drawMidpointHint(suggestedConstraints);
     std::vector<QPixmap> pixmaps = suggestedConstraintsPixmaps(suggestedConstraints);
     if (pixmaps.empty()) {
         applyCursor();

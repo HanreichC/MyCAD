@@ -484,6 +484,11 @@ struct EditModeScenegraphNodes
     SoLineSet* LineExtensionAutoConstraintHintSet;
     //@}
 
+    /// MyCAD: Dreieck an der Linienmitte, solange der Cursor dort fängt (wie Fusion)
+    SoMaterial* MidpointHintMaterials;
+    SoCoordinate3* MidpointHintCoordinate;
+    SoMarkerSet* MidpointHintSet;
+
     /** @name Parallel/Perpendicular reference line hint nodes */
     //@{
     SoMaterial* ParallelPerpendicularHintMaterials;

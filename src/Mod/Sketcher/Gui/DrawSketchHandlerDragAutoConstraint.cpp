@@ -427,6 +427,7 @@ void DrawSketchHandlerDragAutoConstraint::updateSuggestions()
     removeInvalidConstraints(dragged);
 
     if (suggestedConstraints.empty()) {
+        drawMidpointHint({});
         unsetCursor();
     }
     else {
