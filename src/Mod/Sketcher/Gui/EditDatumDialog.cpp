@@ -248,6 +248,33 @@ int EditDatumDialog::exec(bool atCursor)
                         : tr("Must be greater than zero");
                 }
             }
+            // MyCAD: ein Wert, den die Skizze nicht lösen kann (Rundung größer als die Ecke …), schloss das Fenster und
+            // verwarf das Maß still, beim Abrunden das ganze Abrunden. Vorher probieren, ohne die Geometrie zu bewegen
+            // (solve(false)), und das Maß danach zurücklegen. Nur mit weiteren Maßen in der Skizze (beim ersten skaliert
+            // accepted() noch), ohne Wechsel Radius/Durchmesser und nicht bei 0 (setDatum macht daraus "liegt darauf").
+            const bool swaps = ui_ins_datum->rbRadius->isVisible()
+                && (type == Sketcher::Radius) != ui_ins_datum->rbRadius->isChecked();
+            const auto& all = sketch->Constraints.getValues();
+            const bool others = std::count_if(all.begin(), all.end(), [](auto c) { return c->isDimensional(); }) > 1;
+            const double value = edit->value().getValue();
+            if (problem.isEmpty() && !edit->hasExpression() && !ui_ins_datum->cbDriving->isChecked() && !swaps && others
+                && value != 0) {
+                std::vector<Sketcher::Constraint*> trial(all);  // Muster wie in SketchObject::setDatum (Abstand 0)
+                std::unique_ptr<Sketcher::Constraint> original(trial[ConstrNbr]->clone());
+                trial[ConstrNbr] = trial[ConstrNbr]->clone();
+                trial[ConstrNbr]->setValue(type == Sketcher::Angle ? Base::toRadians(value) : value);
+                sketch->Constraints.setValues(std::move(trial));
+                const auto status = sketch->solve(false);
+                std::vector<Sketcher::Constraint*> back(sketch->Constraints.getValues());
+                back[ConstrNbr] = original.release();
+                sketch->Constraints.setValues(std::move(back));
+                sketch->solve(false);
+                // Redundant bleibt erlaubt: R5 + R5 an einer 10-mm-Seite (Abrunden räumt die Null-Linie danach weg)
+                if (status != Sketcher::SketchSolveStatus::Success
+                    && status != Sketcher::SketchSolveStatus::RedundantConstraints) {
+                    problem = tr("Not possible with the other constraints of the sketch");
+                }
+            }
             if (problem.isEmpty()) {
                 dlg.accept();
                 return;

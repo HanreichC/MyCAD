@@ -115,6 +115,17 @@ def half_circle():
           "zero lines=%d arcs=%s redundant=%s" % (len(lines), arcs, s.RedundantConstraints))
 
 
+def too_big():
+    m = QtWidgets.QApplication.activeModalWidget()
+    tips = [w.text() for w in QtWidgets.QApplication.allWidgets() if w.isVisible() and w.metaObject().className() == "QTipLabel"]
+    check("a radius the sketch can't take keeps the field open and says why", m is not None and tips, "modal=%s tips=%s" % (m, tips))
+
+
+def small_after_big():
+    arcs = sorted(round(g.Radius, 6) for g in sketch().Geometry if isinstance(g, Part.ArcOfCircle))
+    check("then a fitting radius rounds the corner", QtWidgets.QApplication.activeModalWidget() is None and arcs == [2, 5, 5], str(arcs))
+
+
 in_order([
     ("activate", activate),
     ("sketch", lambda: click(button("Design_CreateSketch"))),
@@ -136,4 +147,7 @@ in_order([
     ("bottom right", lambda: click_corner(40, 0)), wait, wait,
     ("r5 again", lambda: type_value("5")), wait,
     ("half circle", half_circle),
+    ("top left", lambda: click_corner(0, 10)), wait, wait,
+    ("r30", lambda: type_value("30")), wait, ("too big", too_big),
+    ("r2", lambda: type_value("2")), wait, ("small", small_after_big),
 ])
