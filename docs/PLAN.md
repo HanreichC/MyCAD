@@ -485,3 +485,26 @@ Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9
   hatte den Fehler übersehen: das Prüfskript hatte die Liste dabei selbst neu gestylt.
 
 
+## Bug-Runde aus dem echten Arbeiten (2026-11-14)
+
+Beim Bauen von „Monitor Light“ fielen Fehler im Zusammenspiel auf, die einzelne Tests nicht fanden. Behoben (je mit Test):
+Skizze auf Körperfläche fängt am projizierten Rand (Hilfslinien, keine Profile); Linienmitte fängt mit Dreieck; Abrunden
+fragt den Radius ab, eine ganz aufgebrauchte Kante (R5 + R5 an 10 mm) fällt weg statt die Skizze redundant zu machen;
+Bedingungssymbole ohne Nummern; Browser ohne „neu berechnen“-Haken, oranger Punkt statt gelbem X; Zoom-Grenzen
+0,1 mm bis 1 km (langes Scrollen ließ die Kamera bis 1e19 mm laufen); Enter bestätigt Dialoge auch mit Fokus in der
+Werkzeugleiste; Skizze nur beim ersten Feature ausblenden; Extrude ins Material wird von selbst Cut; Strg+Y wiederholt;
+Versatz einer projizierten Kante versetzt den ganzen Umriss; unlösbarer Maßwert lässt das Feld offen; Esc mit Auswahl
+hebt nur die Auswahl auf.
+
+Arbeitsablauf-Tests statt Einzeltests: `test_workflow` (Teil weiterbauen, Maß ändern, Undo, Speichern, Rundung/Fase,
+Tastenkürzel) und `test_workflow_sketch` (Skizzieren auf Körperflächen). Durchgespielt ohne Befund: Bemaßung zur
+projizierten Kante, Seitenfläche mit Join/Cut, Verschieben, Rotieren, Komponente mit projiziertem Rand, Profil zerfällt
+nach dem Extrude (Ring wie Fusion), Grundkörper nachträglich höher, Projizieren von Hand, Look-At, Esc in Dialogen.
+
+Offen, braucht eine Entscheidung (nicht still geändert):
+- Esc ohne Auswahl und ohne Werkzeug verlässt die Skizze (FreeCAD-Vorgabe „LeaveSketchWithEscape“); Fusion verlässt
+  sie nur über „Skizze fertig stellen“.
+- Strg+C/Strg+V in der Skizze tun nichts (die Sketcher-Befehle stecken in keiner Leiste und teilen sich die Tasten mit
+  Std_Copy/Std_Paste). FreeCAD würde deckungsgleich einfügen; Fusion fügt ein und lässt gleich verschieben.
+- Werkzeug-Hinweise unter dem ViewCube erscheinen nur bei aktivem Fenster (`preventNonIntrusiveNotificationsWhenWindowNotActive`);
+  Tests am Desktop ohne Fokus sehen sie nicht (unter Xvfb grün).

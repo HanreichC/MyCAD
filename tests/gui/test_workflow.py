@@ -4,7 +4,8 @@
    Join nach innen still nichts), Grundmaß 40 -> 60, Rückgängig, Speichern und wieder Öffnen.
 2. Rundung und Fase an Körperkanten (Wert tippen, Enter), Rundung nachträglich ändern, Rückgängig/Wiederholen, Fase aus der
    Mitte der Timeline löschen und das zurücknehmen.
-3. In der Skizze: Strg+Z nimmt die letzte Linie zurück, Strg+Y (wie Fusion) und Strg+Umschalt+Z holen sie wieder."""
+3. In der Skizze: Strg+Z nimmt die letzte Linie zurück, Strg+Y (wie Fusion) und Strg+Umschalt+Z holen sie wieder.
+   Esc mit einer gewählten Kante hebt nur die Auswahl auf (vorher verließ es sofort die Skizze)."""
 import math, os
 from PySide6 import QtGui
 from harness import *
@@ -169,6 +170,11 @@ three = [("sketch", lambda: click(button("Design_CreateSketch"))),
          ("ctrl y", lambda: key(QtCore.Qt.Key_Y, QtCore.Qt.ControlModifier)), W, ("again", lambda: lines(2, "Ctrl+Y")),
          ("ctrl z 2", lambda: key(QtCore.Qt.Key_Z, QtCore.Qt.ControlModifier)), W,
          ("ctrl shift z", lambda: key(QtCore.Qt.Key_Z, QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier)), W,
-         ("again 2", lambda: lines(2, "Ctrl+Shift+Z"))]
+         ("again 2", lambda: lines(2, "Ctrl+Shift+Z")),
+         ("select", lambda: (Gui.Selection.clearSelection(), Gui.Selection.addSelection(doc().Name, sk().Name, "Edge1"))), W,
+         ("esc sel", lambda: key(QtCore.Qt.Key_Escape)), W,
+         ("still", lambda: check("Esc with a selected edge only clears the selection and stays in the sketch",
+                                 Gui.ActiveDocument.getInEdit() is not None and not Gui.Selection.getSelectionEx(),
+                                 "in sketch=%s selection=%s" % (Gui.ActiveDocument.getInEdit() is not None, Gui.Selection.getSelectionEx())))]
 
 run([("activate", activate), *one, *two, *three])

@@ -1069,6 +1069,14 @@ bool ViewProviderSketch::keyPressed(bool pressed, int key)
                 }
                 return true;
             }
+            // MyCAD: wie in Fusion hebt Esc zuerst die Auswahl auf; sonst verließ schon das erste Esc mit einer
+            // gewählten Kante die Skizze. Das Loslassen danach fängt die Abfrage unten ab (kein Drücken gemerkt).
+            if (isInEditMode() && Gui::Selection().hasSelection()) {
+                if (pressed) {
+                    Gui::Selection().clearSelection();
+                }
+                return true;
+            }
             if (isInEditMode()) {
                 // #0001479: 'Escape' key dismissing dialog cancels Sketch editing
                 // If we receive a button release event but not a press event before
