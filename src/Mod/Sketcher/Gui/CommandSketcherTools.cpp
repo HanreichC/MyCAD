@@ -2177,10 +2177,13 @@ void CmdSketcherOffset::activated(int iMsg)
     }
 
     // MyCAD: wie in Fusion die ganze zusammenhängende Kontur versetzen, auch wenn nur eine Kante gewählt ist
+    // Auch projizierte Kanten (negative Nummern, ohne Konstruktions-Merkmal): eine angeklickte projizierte Kante versetzt
+    // den ganzen projizierten Umriss, z. B. 2 mm nach innen für eine Wand. Gesucht wird innerhalb derselben Art (eigene
+    // bzw. projizierte), damit eine eigene Linie an einer projizierten Ecke nicht den ganzen Umriss mitnimmt.
     auto chainable = [Obj](int geoId) {
         const Part::Geometry* geo = Obj->getGeometry(geoId);
-        return geo && (isLineSegment(*geo) || isArcOfCircle(*geo)) && !GeometryFacade::getConstruction(geo)
-            && !GeometryFacade::isInternalAligned(geo);
+        return geo && (isLineSegment(*geo) || isArcOfCircle(*geo))
+            && (geoId < 0 || (!GeometryFacade::getConstruction(geo) && !GeometryFacade::isInternalAligned(geo)));
     };
     auto touches = [Obj](int a, int b) {
         for (auto pa : {Sketcher::PointPos::start, Sketcher::PointPos::end}) {
@@ -2196,7 +2199,10 @@ void CmdSketcherOffset::activated(int iMsg)
         if (!chainable(listOfGeoIds[k])) {
             continue;
         }
-        for (int other = 0; other <= Obj->getHighestCurveIndex(); ++other) {
+        const bool external = listOfGeoIds[k] < 0;
+        const int first = external ? -Obj->getExternalGeometryCount() : 0;
+        const int last = external ? Sketcher::GeoEnum::RefExt : Obj->getHighestCurveIndex();
+        for (int other = first; other <= last; ++other) {
             if (chainable(other) && std::ranges::find(listOfGeoIds, other) == listOfGeoIds.end()
                 && touches(listOfGeoIds[k], other)) {
                 listOfGeoIds.push_back(other);
