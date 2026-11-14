@@ -1000,6 +1000,12 @@ void NavigationStyle::zoom(SoCamera* cam, float diffvalue)
     // This will be in the range of <0, ->>.
     auto multiplicator = float(exp(diffvalue));
 
+    // MyCAD: Zoom-Grenzen (Bildhöhe bzw. Abstand zum Brennpunkt, mm). Ohne sie lief die Kamera bei langem Scrollen
+    // bis 1e-9 bzw. 1e19 mm: das Objekt änderte sich nicht mehr, nur das Raster rechnete (falsch) weiter, bis eine
+    // Drehung die Ansicht neu setzte. 0,1 mm bis 1 km reicht für Bauteile und bleibt in float genau.
+    constexpr float MinView = 0.1F;
+    constexpr float MaxView = 1e6F;
+
     if (t.isDerivedFrom(SoOrthographicCamera::getClassTypeId())) {
 
         // Since there's no perspective, "zooming" in the original sense
@@ -1008,7 +1014,7 @@ void NavigationStyle::zoom(SoCamera* cam, float diffvalue)
         // "shrink" the projection size of the model / scene.
 
         auto oc = static_cast<SoOrthographicCamera*>(cam);
-        oc->height = oc->height.getValue() * multiplicator;
+        oc->height = std::clamp(oc->height.getValue() * multiplicator, MinView, MaxView);
     }
     else {
         // FrustumCamera can be found in the SmallChange CVS module (it's
@@ -1030,7 +1036,7 @@ void NavigationStyle::zoom(SoCamera* cam, float diffvalue)
         }
 
         const float oldfocaldist = cam->focalDistance.getValue();
-        const float newfocaldist = oldfocaldist * multiplicator;
+        const float newfocaldist = std::clamp(oldfocaldist * multiplicator, MinView, MaxView);
 
         SbVec3f direction;
         cam->orientation.getValue().multVec(SbVec3f(0, 0, -1), direction);
