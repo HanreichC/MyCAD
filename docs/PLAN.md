@@ -494,7 +494,10 @@ Bedingungssymbole ohne Nummern; Browser ohne „neu berechnen“-Haken, oranger 
 0,1 mm bis 1 km (langes Scrollen ließ die Kamera bis 1e19 mm laufen); Enter bestätigt Dialoge auch mit Fokus in der
 Werkzeugleiste; Skizze nur beim ersten Feature ausblenden; Extrude ins Material wird von selbst Cut; Strg+Y wiederholt;
 Versatz einer projizierten Kante versetzt den ganzen Umriss; unlösbarer Maßwert lässt das Feld offen; Esc mit Auswahl
-hebt nur die Auswahl auf.
+hebt nur die Auswahl auf; Bohrung mit gewählter Fläche nimmt nicht die letzte Skizze irgendwo anders; Extrude ohne
+Auswahl extrudiert keine ausgeblendete Skizze ein zweites Mal; Enter gehört einer Eingabe in einem anderen Panel
+(Umbenennen bei offenem Dialog); bei offener Rundung/Fase nimmt ein Klick Kanten dazu oder heraus, bei offenem
+Extrude/Rotieren ein Klick weitere Profile dazu (wie Fusion).
 
 Arbeitsablauf-Tests statt Einzeltests: `test_workflow` (Teil weiterbauen, Maß ändern, Undo, Speichern, Rundung/Fase,
 Tastenkürzel) und `test_workflow_sketch` (Skizzieren auf Körperflächen). Durchgespielt ohne Befund: Bemaßung zur
@@ -506,5 +509,9 @@ Offen, braucht eine Entscheidung (nicht still geändert):
   sie nur über „Skizze fertig stellen“.
 - Strg+C/Strg+V in der Skizze tun nichts (die Sketcher-Befehle stecken in keiner Leiste und teilen sich die Tasten mit
   Std_Copy/Std_Paste). FreeCAD würde deckungsgleich einfügen; Fusion fügt ein und lässt gleich verschieben.
+- Bohrung per Klick auf eine Fläche (wie Fusion) statt erst Skizze mit Punkten; heute kommt dann ein Hinweis.
+- Ein Profil per Klick wieder aus einem offenen Extrude nehmen geht nur, wo man es sieht (die Vorschau deckt es zu).
+- Löscht man das Feature, auf dessen Fläche eine Skizze liegt, löst sich die Skizze still von der Fläche (bleibt an
+  ihrem Platz, gültig); ein Hinweis wäre besser.
 - Werkzeug-Hinweise unter dem ViewCube erscheinen nur bei aktivem Fenster (`preventNonIntrusiveNotificationsWhenWindowNotActive`);
   Tests am Desktop ohne Fokus sehen sie nicht (unter Xvfb grün).
