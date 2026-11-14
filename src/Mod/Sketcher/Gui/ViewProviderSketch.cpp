@@ -5100,7 +5100,11 @@ QIcon ViewProviderSketch::mergeColorfulOverlayIcons(const QIcon& orig) const
     }
 
     if (!getSketchObject()->FullyConstrained.getValue()) {
-        static QPixmap px(Gui::BitmapFactory().pixmapFromSvg("Sketcher_NotFullyConstrained", QSize(10, 10)));
+        // MyCAD: pixmap() statt pixmapFromSvg(), sonst kommt FreeCADs gelbes X statt des orangen Punkts der Shell
+        // (overrideFreeCadIcons legt ihn in den Cache, bei jedem Theme-Wechsel neu gefärbt: darum nicht static)
+        const QPixmap px = Gui::BitmapFactory()
+                               .pixmap("Sketcher_NotFullyConstrained")
+                               .scaled(10, 10, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         mergedicon = Gui::BitmapFactoryInst::mergePixmap(
             mergedicon, px, Gui::BitmapFactoryInst::BottomRight);
     }

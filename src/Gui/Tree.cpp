@@ -6415,14 +6415,8 @@ void DocumentObjectItem::generateIcon(int currentStatus, QIcon::Mode mode, QIcon
         }
         px = pxError;
     }
-    else if (currentStatus & Status::Recompute) {
-        static QPixmap pxRecompute;
-        if (pxRecompute.isNull()) {
-            // object must be recomputed
-            pxRecompute = Gui::BitmapFactory().pixmapFromSvg("overlay_recompute", QSize(10, 10));
-        }
-        px = pxRecompute;
-    }
+    // MyCAD: kein Haken "muss neu berechnet werden": MyCAD rechnet selbst neu, der Haken erschien nur beim
+    // Bearbeiten einer Skizze und sah aus wie eine Warnung
 
     // get the original icon set
     QIcon icon_org = object()->getIcon();
