@@ -32,3 +32,4 @@ test_sketch_midpoint.py
 test_sketch_fillet_radius.py
 test_zoom_limits.py
 test_extrude_enter.py
+test_workflow.py

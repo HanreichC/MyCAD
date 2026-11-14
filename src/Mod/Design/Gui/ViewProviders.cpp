@@ -72,6 +72,7 @@
 #include <QVBoxLayout>
 
 #include <BRepAdaptor_Surface.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
 #include <BRepGProp.hxx>
 #include <BRep_Builder.hxx>
 #include <GProp_GProps.hxx>
@@ -1612,6 +1613,7 @@ private:
         }
 
         QObject::connect(operation, &QComboBox::currentIndexChanged, [this](int idx) {
+            operationChosen = true;  // ab jetzt entscheidet der Benutzer, nicht mehr die Richtung (autoJoinCut)
             if (this->create) {
                 const bool component = idx == NewComponentIndex;
                 setOperation(component ? Design::Feature::Op::NewBody : static_cast<Design::Feature::Op>(idx),
@@ -1636,6 +1638,45 @@ private:
                 apply();
             }
         });
+    }
+
+    /// Wie Fusion: Extrude von einer Körperfläche aus wird Cut, sobald er ins Material zeigt (negativer Abstand, Pfeil nach
+    /// innen), und wieder Join, wenn er herauszeigt. Sonst vereinte ein Join nach innen still nichts. Nur beim Anlegen
+    /// und solange die Operation nicht von Hand gewählt ist. Geprüft wird ein Punkt knapp hinter der Profilmitte gegen den
+    /// Körper vor diesem Feature (die Vorschau des Cut höhlt ihn sonst gerade dort aus).
+    void autoJoinCut()
+    {
+        const auto op = feature->op();
+        if (!create || operationChosen || (op != Design::Feature::Op::Join && op != Design::Feature::Op::Cut)
+            || feature->BaseFeatures.getSize() != 1) {
+            return;
+        }
+        auto base = freecad_cast<Design::Feature*>(feature->BaseFeatures.getValues().front());
+        auto profiles = freecad_cast<Design::Profiles*>(extrude->Profile.getValue());
+        auto sketch = profiles ? freecad_cast<Part::Feature*>(profiles->Sketch.getValue()) : nullptr;
+        Design::Body* target = selectedBody();
+        if (!base || !sketch || !target || extrude->Profile.getSubValues().empty()) {
+            return;
+        }
+        const TopoDS_Shape solid = base->shapeFor(target).getShape();
+        const TopoDS_Shape face = profiles->Shape.getShape().getSubShape(extrude->Profile.getSubValues().front().c_str(), true);
+        if (solid.IsNull() || face.IsNull()) {
+            return;
+        }
+        GProp_GProps props;
+        BRepGProp::SurfaceProperties(face, props);
+        Base::Vector3d dir = sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1));
+        if (extrude->Reversed.getValue()) {
+            dir = -dir;
+        }
+        const gp_Pnt c = props.CentreOfMass();
+        const gp_Pnt probe(c.X() + dir.x * 0.01, c.Y() + dir.y * 0.01, c.Z() + dir.z * 0.01);
+        BRepClass3d_SolidClassifier inside(solid, probe, 1e-6);
+        const auto want = inside.State() == TopAbs_IN ? Design::Feature::Op::Cut : Design::Feature::Op::Join;
+        if (want != op) {
+            setOperation(want, target);
+            feature->recomputeFeature();
+        }
     }
 
     Design::Body* selectedBody() const
@@ -1941,6 +1982,7 @@ private:
             extrude->Distance.setValue(std::abs(d));
             extrude->Distance2.setValue(distance2->value().getValue());
             extrude->Reversed.setValue(flip->isChecked() != (d < 0));
+            autoJoinCut();
             const int ext = extent->currentIndex();
             const bool byDistance = ext != Design::Extrude::ExtentToObject && ext != Design::Extrude::ExtentAll;
             showRow(distance, byDistance);
@@ -2178,6 +2220,7 @@ private:
     Design::Hole* hole;
     bool create;
     bool autoFlipped = false;
+    bool operationChosen = false;  ///< Operation von Hand gewählt: autoJoinCut schaltet nicht mehr um
     Design::Body* newBody = nullptr;
     App::Part* newComponent = nullptr;
     QFormLayout* form = nullptr;

@@ -1,0 +1,174 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+"""Arbeitsabläufe wie im echten Gebrauch (Befehle, Felder, Enter, Tastenkürzel), jeweils mit Volumen nachgerechnet:
+1. Quader per Extrude, Skizze auf der Oberseite, Kreis, Extrude -5 mm wird von selbst Cut (wie Fusion; vorher vereinte ein
+   Join nach innen still nichts), Grundmaß 40 -> 60, Rückgängig, Speichern und wieder Öffnen.
+2. Rundung und Fase an Körperkanten (Wert tippen, Enter), Rundung nachträglich ändern, Rückgängig/Wiederholen, Fase aus der
+   Mitte der Timeline löschen und das zurücknehmen.
+3. In der Skizze: Strg+Z nimmt die letzte Linie zurück, Strg+Y (wie Fusion) und Strg+Umschalt+Z holen sie wieder."""
+import math, os
+from PySide6 import QtGui
+from harness import *
+import Design, Sketcher
+
+S = {}
+W = ("wait", lambda: None)
+V = App.Vector
+
+
+def vol():
+    return sum(b.Shape.Volume for b in doc().Objects if b.TypeId == "Design::Body")
+
+
+def volume(tag, want):
+    check("%s: volume %.2f" % (tag, want), abs(vol() - want) < 0.05 and not errors() and not Gui.Control.activeDialog(),
+          "vol=%.2f errors=%s dialog=%s" % (vol(), errors(), Gui.Control.activeDialog()))
+
+
+def enter(label, value):
+    """Wert tippen, Enter wie die Tastatur: an den 3D-Viewer, die Werkzeugleiste hat noch den Fokus"""
+    type_field(label, value)
+    button("Design_Extrude").setFocus()
+    QtTest.QTest.keyClick(view(), QtCore.Qt.Key_Return)
+
+
+# --- 1 ---------------------------------------------------------------------------------------------------------------
+def base():
+    d = doc(); root = [o for o in d.Objects if o.TypeId == "App::Part"][0]
+    sk = Design.newSketch(root); S["base"] = sk
+    for g in rect(0, 0, 40, 20):
+        sk.addGeometry(g)
+    for i in range(4):
+        sk.addConstraint(Sketcher.Constraint("Coincident", i, 2, (i + 1) % 4, 1))
+    for c in (("Horizontal", 0), ("Horizontal", 2), ("Vertical", 1), ("Vertical", 3), ("Coincident", 0, 1, -1, 1)):
+        sk.addConstraint(Sketcher.Constraint(*c))
+    S["w"] = sk.addConstraint(Sketcher.Constraint("DistanceX", 0, 1, 0, 2, 40.0))
+    sk.addConstraint(Sketcher.Constraint("DistanceY", 1, 1, 1, 2, 20.0))
+    d.recompute()
+
+
+def extrude(sketch):
+    prof = [o for o in sketch.InList if o.TypeId == "Design::Profiles"][0]
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(prof, "Face1")
+    click(button("Design_Extrude"))
+
+
+def body():
+    return [o for o in doc().Objects if o.TypeId == "Design::Body"][0]
+
+
+def top_sketch():
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(body(), top_face(body()))
+    click(button("Design_CreateSketch"))
+
+
+def circle():
+    s = Gui.ActiveDocument.getInEdit().Object; S["top"] = s
+    c = s.Placement.inverse().multVec(V(20, 10, 10))
+    s.addGeometry(Part.Circle(V(c.x, c.y, 0), V(0, 0, 1), 4))
+    doc().recompute()
+    Gui.ActiveDocument.resetEdit()
+
+
+def auto_cut():
+    e = [o for o in doc().Objects if o.TypeId == "Design::Extrude"][-1]
+    check("extruding -5 mm into the body becomes Cut by itself", e.Operation == "Cut", str(e.Operation))
+
+
+def widen():
+    doc().openTransaction("Widen"); S["base"].setDatum(S["w"], App.Units.Quantity("60 mm")); doc().recompute(); doc().commitTransaction()
+
+
+def reopen():
+    p = os.path.join(os.path.dirname(os.environ["OUT"]), "workflow.mycad")
+    doc().saveAs(p); App.closeDocument(doc().Name)
+    App.openDocument(p); doc().recompute()
+
+
+hole = math.pi * 16 * 5
+one = [("base", base), W, ("extrude", lambda: extrude(S["base"])), W, ("10 mm", lambda: enter("Distance", "10")), W,
+       ("box", lambda: volume("box 40x20x10", 8000)),
+       ("top", top_sketch), W, W, ("circle", circle), W, ("extrude 2", lambda: extrude(S["top"])), W,
+       ("-5 mm", lambda: enter("Distance", "-5")), W, ("cut", auto_cut), ("hole", lambda: volume("hole r4 5 deep", 8000 - hole)),
+       ("widen", widen), W, ("wide", lambda: volume("base 60 wide, hole follows", 12000 - hole)),
+       ("undo", lambda: Gui.runCommand("Std_Undo")), W, ("narrow", lambda: volume("undo", 8000 - hole)),
+       ("reopen", reopen), W, ("reopened", lambda: volume("saved and opened again", 8000 - hole)),
+       ("close", lambda: App.closeDocument(doc().Name)), W, ("new", lambda: Gui.runCommand("Std_New")), W]
+
+
+# --- 2 ---------------------------------------------------------------------------------------------------------------
+def edge_at(x, y):
+    b = S["b"]
+    i = [k for k, e in enumerate(b.Shape.Edges) if abs(e.Vertexes[0].Point.z - e.Vertexes[-1].Point.z) > 9
+         and abs(e.Vertexes[0].Point.x - x) < 1e-6 and abs(e.Vertexes[0].Point.y - y) < 1e-6][0]
+    return "Edge%d" % (i + 1)
+
+
+def dress(cmd, x, y):
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(S["b"], edge_at(x, y))
+    click(button(cmd))
+
+
+def delete_chamfer():
+    c = [o for o in doc().Objects if o.TypeId == "Design::Chamfer"][0]
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(c)
+    Gui.runCommand("Design_Delete")
+
+
+f3, f5, c2 = (9 - math.pi * 9 / 4) * 10, (25 - math.pi * 25 / 4) * 10, 20
+two = [("box 2", lambda: S.update(b=make_body(rect(0, 0, 40, 20), 0, 10, "Box"))), W,
+       ("fillet", lambda: dress("Design_Fillet", 0, 0)), W, ("r3", lambda: enter("Radius", "3")), W,
+       ("filleted", lambda: volume("fillet r3", 8000 - f3)),
+       ("chamfer", lambda: dress("Design_Chamfer", 40, 0)), W, ("d2", lambda: enter("Distance", "2")), W,
+       ("chamfered", lambda: volume("chamfer 2", 8000 - f3 - c2)),
+       ("edit", lambda: Gui.ActiveDocument.setEdit([o for o in doc().Objects if o.TypeId == "Design::Fillet"][0])), W,
+       ("r5", lambda: enter("Radius", "5")), W, ("edited", lambda: volume("fillet changed to r5", 8000 - f5 - c2)),
+       ("undo 2", lambda: Gui.runCommand("Std_Undo")), W, ("undone", lambda: volume("undo change", 8000 - f3 - c2)),
+       ("redo 2", lambda: Gui.runCommand("Std_Redo")), W, ("redone", lambda: volume("redo change", 8000 - f5 - c2)),
+       ("delete", delete_chamfer), W, W, ("deleted", lambda: volume("chamfer deleted from the middle", 8000 - f5)),
+       ("undo 3", lambda: Gui.runCommand("Std_Undo")), W, ("back", lambda: volume("undo delete", 8000 - f5 - c2)),
+       ("close 2", lambda: App.closeDocument(doc().Name)), W, ("new 2", lambda: Gui.runCommand("Std_New")), W]
+
+
+# --- 3 ---------------------------------------------------------------------------------------------------------------
+def sk():
+    return Gui.ActiveDocument.getInEdit().Object
+
+
+def press(p):
+    vp = view().viewport(); dpr = vp.devicePixelRatioF()
+    x, y = Gui.ActiveDocument.ActiveView.getPointOnViewport(p)
+    q = QtCore.QPoint(int(x / dpr), int(vp.height() - y / dpr))
+    for r in (q - QtCore.QPoint(1, 1), q):
+        QtWidgets.QApplication.sendEvent(vp, QtGui.QMouseEvent(QtCore.QEvent.MouseMove, QtCore.QPointF(r), QtCore.QPointF(vp.mapToGlobal(r)),
+                                                               QtCore.Qt.NoButton, QtCore.Qt.NoButton, QtCore.Qt.NoModifier))
+    QtTest.QTest.mouseClick(vp, QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, q)
+
+
+def key(k, mod=QtCore.Qt.NoModifier):
+    QtTest.QTest.keyClick(QtWidgets.QApplication.focusWidget() or view(), k, mod)
+
+
+def lines(want, tag):
+    check("%s: %d lines" % (tag, want), sk().GeometryCount == want, str(sk().GeometryCount))
+
+
+def draw(a, b):
+    return [("line tool", lambda: click(button("Sketcher_CreateLine"))), W, ("from", lambda: press(a)), W, ("to", lambda: press(b)), W,
+            ("esc", lambda: key(QtCore.Qt.Key_Escape)), W]
+
+
+def zoom():
+    sk().addGeometry(Part.Circle(V(0, 0, 0), V(0, 0, 1), 60)); doc().recompute(); Gui.SendMsgToActiveView("ViewFit")
+    sk().delGeometry(0); doc().recompute()
+
+
+three = [("sketch", lambda: click(button("Design_CreateSketch"))),
+         ("pick XY", lambda: Gui.Selection.addSelection([o for o in doc().Objects if o.Name.startswith("XY_Plane")][0])), W, W,
+         ("zoom", zoom), W, *draw(V(-30, 0, 0), V(30, 0, 0)), *draw(V(-30, 20, 0), V(30, 25, 0)), ("two", lambda: lines(2, "drawn")),
+         ("ctrl z", lambda: key(QtCore.Qt.Key_Z, QtCore.Qt.ControlModifier)), W, ("one", lambda: lines(1, "Ctrl+Z")),
+         ("ctrl y", lambda: key(QtCore.Qt.Key_Y, QtCore.Qt.ControlModifier)), W, ("again", lambda: lines(2, "Ctrl+Y")),
+         ("ctrl z 2", lambda: key(QtCore.Qt.Key_Z, QtCore.Qt.ControlModifier)), W,
+         ("ctrl shift z", lambda: key(QtCore.Qt.Key_Z, QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier)), W,
+         ("again 2", lambda: lines(2, "Ctrl+Shift+Z"))]
+
+run([("activate", activate), *one, *two, *three])

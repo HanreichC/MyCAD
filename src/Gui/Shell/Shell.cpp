@@ -5530,6 +5530,14 @@ void Gui::Shell::install()
         }
         del->setShortcut(QKeySequence::Delete);
     }
+    // Wiederholen auch mit Strg+Y wie in Fusion (unter Linux/KDE ist dafür nur Strg+Umschalt+Z belegt)
+    if (QAction* redo = commandAction("Std_Redo")) {
+        QList<QKeySequence> keys = QKeySequence::keyBindings(QKeySequence::Redo);
+        if (!keys.contains(QKeySequence(Qt::CTRL | Qt::Key_Y))) {
+            keys.append(QKeySequence(Qt::CTRL | Qt::Key_Y));
+        }
+        redo->setShortcuts(keys);
+    }
     if (QAction* prefs = commandAction("Std_DlgPreferences")) {
         prefs->setShortcut(QKeySequence());  // Ctrl+, öffnet MyCAD_Settings
     }
