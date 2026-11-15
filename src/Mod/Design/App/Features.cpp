@@ -131,6 +131,9 @@ const char* EmbossEnums[] = {"Emboss", "Deboss", nullptr};
 const char* JointEnums[] = {"Rigid", "Revolute", "Slider", "Cylindrical", "Pin-Slot", "Planar", "Ball", nullptr};
 const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
+constexpr const char* LostProfile =
+    "Profile gone: the sketch changed and the profile of this step no longer exists; edit the step and pick a profile";
+
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Profile werden über ihre Signatur
 /// (begrenzende Skizzenkanten) wiedergefunden; keys hält die Signaturen der gewählten Profile aktuell.
@@ -155,6 +158,36 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
         if (!known[i].empty() && match != signatures.end() && std::ranges::count(signatures, known[i]) == 1) {
             name = "Face" + std::to_string(match - signatures.begin() + 1);
         }
+        else if (known[i].starts_with("g") && match == signatures.end()) {
+            // Signatur aus festen Geometrie-IDs, aber kein exakter Treffer: das Profil mit den meisten gemeinsamen
+            // Kanten ist dasselbe, nur verändert (Kreis hinein = Ring). Teilt keines eine Kante, ist es weg; dann nicht
+            // auf die alte Nummer zurückfallen, die jetzt ein fremdes Profil trägt.
+            const auto tokens = [](const std::string& sig) {
+                std::set<std::string> out;
+                std::stringstream in(sig);
+                for (std::string t; std::getline(in, t, ',');) {
+                    out.insert(t);
+                }
+                return out;
+            };
+            const auto mine = tokens(known[i]);
+            size_t best = 0, bestIdx = 0, ties = 0;
+            for (size_t k = 0; k < signatures.size(); ++k) {
+                const auto theirs = tokens(signatures[k]);
+                const size_t shared = std::ranges::count_if(mine, [&](const std::string& t) { return theirs.contains(t); });
+                if (shared > best) {
+                    best = shared, bestIdx = k, ties = 1;
+                }
+                else if (shared == best && shared > 0) {
+                    ++ties;
+                }
+            }
+            if (best == 0 || ties > 1) {
+                faces.emplace_back();
+                continue;
+            }
+            name = "Face" + std::to_string(bestIdx + 1);
+        }
         const int idx = std::atoi(name.c_str() + 4);
         known[i] = idx >= 1 && idx <= static_cast<int>(signatures.size()) ? signatures[idx - 1] : std::string();
         faces.push_back(all.getSubTopoShape(name.c_str(), true));
@@ -165,7 +198,10 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
     }
     std::erase_if(faces, [](const Part::TopoShape& f) { return f.isNull(); });
     if (faces.empty()) {
-        error = "Sketch has no closed profile";
+        // Gewählte Profile gibt es nach einer Änderung der Skizze nicht mehr: eigener Text, Feature::execute macht
+        // daraus eine Warnung und reicht den Körper durch (sonst blockierte der Fehler alle Schritte danach)
+        error = subs.empty() || all.isNull() || all.countSubShapes(TopAbs_FACE) == 0 ? "Sketch has no closed profile"
+                                                                                       : LostProfile;
     }
     return faces;
 }
@@ -2628,6 +2664,21 @@ App::DocumentObjectExecReturn* Profiles::execute()
     if (!regions.error.empty()) {
         return new App::DocumentObjectExecReturn(regions.error);
     }
+    // Signaturen aus den festen Geometrie-IDs der Skizze ("g12") statt laufender Kantennummern: löscht man andere
+    // Geometrie, rutschen die Nummern, und ein Schritt fand still ein fremdes Profil (gleiche Nummern, andere Kanten)
+    const Part::TopoShape sketchShape = sketch->Shape.getShape();
+    for (std::string& signature : regions.signatures) {
+        std::string ids;
+        std::stringstream in(signature);
+        for (std::string t; std::getline(in, t, ',');) {
+            const Data::MappedName mapped = sketchShape.getMappedName(
+                Data::IndexedName::fromConst("Edge", std::atoi(t.c_str()) + 1));
+            std::string id = mapped ? mapped.toString() : std::string();
+            id = id.substr(0, id.find(';'));
+            ids += (ids.empty() ? "" : ",") + (id.starts_with("g") ? id : "e" + t);
+        }
+        signature = ids;
+    }
     Signatures.setValues(regions.signatures);
     // Lage über die Placement-Eigenschaft: Part::Feature überschreibt beim Recompute die Shape-Lage damit
     Placement.setValue(sketch->Placement.getValue());
@@ -2788,7 +2839,24 @@ App::DocumentObjectExecReturn* Feature::execute()
         setResults(results);
         return StdReturn;
     }
-    return compute();
+    App::DocumentObjectExecReturn* result = compute();
+    // Wie Fusion: ein Schritt, dessen Profil weggefallen ist, wird übersprungen (Warnung in der Timeline, Körper
+    // unverändert) statt rot zu werden. Ein Fehler hielte das Neuberechnen aller späteren Schritte an, auch neue
+    // Extrudes kämen nie an ("Sketch has no closed profile").
+    if (result && result != StdReturn && result->Why == LostProfile) {
+        delete result;
+        std::vector<Part::TopoShape> results;
+        for (int i = 0; i < Bodies.getSize(); ++i) {
+            results.push_back(baseShape(i));
+        }
+        setResults(results);
+        Warning.setValue(LostProfile);
+        return StdReturn;
+    }
+    if (result == StdReturn && std::string(Warning.getValue()) == LostProfile) {
+        Warning.setValue("");  // wieder ein Profil gewählt
+    }
+    return result;
 }
 
 Part::TopoShape Feature::shapeFor(const App::DocumentObject* body) const

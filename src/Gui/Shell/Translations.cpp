@@ -678,6 +678,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Outside", "Außen"},
         {"Pick a face that exists before this feature", "Wähle eine Fläche, die es vor diesem Feature schon gibt"},
         {"Pick an edge that exists before this feature", "Wähle eine Kante, die es vor diesem Feature schon gibt"},
+        {"Profile gone: ", "Profil weg: "},
+        {"the sketch changed and the profile of this step no longer exists; edit the step and pick a profile", "die Skizze hat sich geändert und das Profil dieses Schritts gibt es nicht mehr; Schritt bearbeiten und ein Profil wählen"},
         {"Click the face or plane to extrude to", "Klicke auf die Fläche oder Ebene, bis zu der extrudiert wird"},
         {"Extrude to a face or a plane, not a whole body", "Extrudiere bis zu einer Fläche oder Ebene, nicht bis zu einem ganzen Körper"},
         {"The profile does not reach this face. Choose a face in front of the profile",

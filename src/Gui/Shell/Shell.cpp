@@ -4835,7 +4835,7 @@ void rebuildTimeline()
                         + (obj->isError() ? QStringLiteral("\n") + T(obj->getStatusString()) : QString())
                         + (warning.isEmpty() ? QString()
                                              : QStringLiteral("\n") + T((warning.section(QLatin1String(": "), 0, 0).toStdString() + ": ").c_str())
-                                                   + warning.section(QLatin1String(": "), 1)));
+                                                   + T(warning.section(QLatin1String(": "), 1).toStdString().c_str())));
         btn->setAccessibleName(QString::fromUtf8(obj->Label.getValue()));
         btn->setProperty("error", obj->isError());
         if (obj->isError()) {  // Farbe nie allein (C-5): Fehler-Symbol in die Ecke

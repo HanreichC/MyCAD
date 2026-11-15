@@ -4,7 +4,8 @@
    Skizze wieder öffnen, Radius 4 -> der Körper folgt.
 2. Kreis, Bemaßung Mittelpunkt -> projizierte Kante (5 mm tippen): kein Konflikt, Mittelpunkt sitzt 5 mm vom Rand.
 3. Versatz einer projizierten Kante versetzt den ganzen projizierten Umriss (vorher nur die eine Kante).
-4. Grundskizze wird vom Rechteck zum L (Flächennummern verschieben sich): die Skizze auf der Oberseite bleibt oben."""
+4. Grundskizze wird vom Rechteck zum L (zwei Linien schneiden eine Ecke ab, Flächennummern verschieben sich): die
+   Skizze auf der Oberseite bleibt oben."""
 import math
 import shiboken6
 from PySide6 import QtGui
@@ -180,12 +181,11 @@ def circle_leave():
 
 
 def make_l():
+    """Rechteck 40x20 -> L: zwei Linien schneiden die rechte obere Ecke 15x10 ab (das größere Teilprofil teilt die meisten
+    Kanten mit dem alten und bleibt das Profil des Extrudes)"""
     sk_ = S["base"]; doc().openTransaction("L")
-    while sk_.GeometryCount:
-        sk_.delGeometry(0)
-    pts = [V(0, 0, 0), V(40, 0, 0), V(40, 10, 0), V(25, 10, 0), V(25, 20, 0), V(0, 20, 0)]
-    for i in range(6):
-        sk_.addGeometry(Part.LineSegment(pts[i], pts[(i + 1) % 6]))
+    sk_.addGeometry(Part.LineSegment(V(25, 20, 0), V(25, 10, 0)))
+    sk_.addGeometry(Part.LineSegment(V(25, 10, 0), V(40, 10, 0)))
     doc().recompute(); doc().commitTransaction()
 
 
