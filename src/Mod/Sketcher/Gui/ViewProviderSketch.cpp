@@ -75,6 +75,7 @@
 #include <Gui/View3DInventor.h>
 #include <Gui/View3DInventorViewer.h>
 #include <Mod/Part/App/Geometry.h>
+#include <Mod/Part/App/PartFeature.h>
 #include <Mod/Sketcher/App/ExternalGeometryFacade.h>
 #include <Mod/Sketcher/App/GeoList.h>
 #include <Mod/Sketcher/App/GeometryFacade.h>
@@ -4728,7 +4729,32 @@ void ViewProviderSketch::setEditViewer(Gui::View3DInventorViewer* viewer, int Mo
     SbVec3f plnpos = Base::convertTo<SbVec3f>(plm.getPosition());
     camera->position.setValue(plnpos - camera->focalDistance.getValue() * curdir);
     viewer->setCameraOrientation(rot);
-    if (getSketchObject()->Geometry.getSize() > 0 || getSketchObject()->ExternalGeometry.getSize() > 0) {
+    // MyCAD: Skizze auf einer Körperfläche: auf die Fläche samt Skizze einpassen (wie Fusion), nicht nur auf die
+    // Skizzengeometrie (ein kleines Sechseck füllte sonst das ganze Bild)
+    Base::BoundBox3d box;  // in den Koordinaten des Containers der Skizze
+    const auto& support = getSketchObject()->AttachmentSupport;
+    if (support.getValue() && support.getSubValues().size() == 1 && support.getSubValues().front().rfind("Face", 0) == 0) {
+        const Part::TopoShape face = Part::Feature::getTopoShape(support.getValue(), Part::ShapeOption::ResolveLink
+                                                                     | Part::ShapeOption::Transform)
+                                         .getSubTopoShape(support.getSubValues().front().c_str(), true);
+        if (!face.isNull()) {
+            box = face.getBoundBox();
+            if (getSketchObject()->Geometry.getSize() > 0) {
+                box.Add(getSketchObject()->Shape.getBoundingBox());
+            }
+        }
+    }
+    if (box.IsValid()) {
+        const Base::Placement toWorld = getEditingPlacement() * getSketchObject()->Placement.getValue().inverse();
+        SbBox3f world;
+        for (unsigned short i = 0; i < 8; ++i) {
+            Base::Vector3d corner = box.CalcPoint(i);
+            toWorld.multVec(corner, corner);
+            world.extendBy(SbVec3f(float(corner.x), float(corner.y), float(corner.z)));
+        }
+        viewer->viewBoundBox(world);  // wie viewObjects: berücksichtigt die laufende Drehung zur Skizze
+    }
+    else if (getSketchObject()->Geometry.getSize() > 0 || getSketchObject()->ExternalGeometry.getSize() > 0) {
         std::vector<App::SubObjectT> objs;
         objs.emplace_back(getObject(), "");
         viewer->viewObjects(objs);

@@ -38,3 +38,4 @@ test_lost_profile.py
 test_extrude_auto_cut.py
 test_dim_size.py
 test_sketch_grid_zoom.py
+test_enter_and_type.py

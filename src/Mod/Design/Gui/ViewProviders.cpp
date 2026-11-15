@@ -1569,6 +1569,28 @@ public:
         taskBox = static_cast<Gui::TaskView::TaskBox*>(addTaskBox(w, false));
         apply();
         createArrow();
+        // Wie Fusion: das Hauptmaß hat gleich den Fokus, Wert markiert: Zahl tippen, Enter. Das Panel wird erst kurz
+        // danach sichtbar, darum ein paar Versuche.
+        if (distance && (extrude || revolve || dressUp || feature->isDerivedFrom<Design::PressPull>())) {
+            focusMainField(QPointer<Gui::QuantitySpinBox>(distance), 10);
+        }
+    }
+
+    static void focusMainField(QPointer<Gui::QuantitySpinBox> box, int tries)
+    {
+        QTimer::singleShot(50, [box, tries] {
+            if (!box) {
+                return;
+            }
+            if (!box->isVisible()) {
+                if (tries > 0) {
+                    focusMainField(box, tries - 1);
+                }
+                return;
+            }
+            box->setFocus(Qt::OtherFocusReason);
+            box->selectAll();
+        });
     }
 
     ~TaskFeature() override
