@@ -46,6 +46,7 @@
 #include <QMessageBox>
 #include <QScreen>
 #include <QTextStream>
+#include <QTimer>
 #include <QToolTip>
 #include <QWindow>
 
@@ -4721,38 +4722,56 @@ void ViewProviderSketch::setEditViewer(Gui::View3DInventorViewer* viewer, int Mo
 
     SbRotation rot((float)tmp[0], (float)tmp[1], (float)tmp[2], (float)tmp[3]);
 
-    // Will the sketch be visible from the new position (#0000957)?
-    //
-    SoCamera* camera = viewer->getSoRenderManager()->getCamera();
-    SbVec3f curdir;// current view direction
-    camera->orientation.getValue().multVec(SbVec3f(0, 0, -1), curdir);
-    SbVec3f plnpos = Base::convertTo<SbVec3f>(plm.getPosition());
-    camera->position.setValue(plnpos - camera->focalDistance.getValue() * curdir);
-    viewer->setCameraOrientation(rot);
-    // MyCAD: Skizze auf einer Körperfläche: auf die Fläche samt Skizze einpassen (wie Fusion), nicht nur auf die
-    // Skizzengeometrie (ein kleines Sechseck füllte sonst das ganze Bild)
-    Base::BoundBox3d box;  // in den Koordinaten des Containers der Skizze
+    // MyCAD: die Skizze füllt den freien Teil der Ansicht (wie Fusion). Eine leere Skizze auf einer Körperfläche zeigt
+    // die Fläche. Box in Skizzenkoordinaten: am Ende blickt die Kamera senkrecht darauf, x nach rechts, y nach oben.
+    const Base::Placement sketchPlm = getSketchObject()->Placement.getValue();
+    Base::BoundBox3d box;
+    Part::TopoShape shape = getSketchObject()->Shape.getShape();
+    if (!shape.isNull()) {
+        shape.setPlacement(Base::Placement());
+        box = shape.getBoundBox();
+    }
     const auto& support = getSketchObject()->AttachmentSupport;
-    if (support.getValue() && support.getSubValues().size() == 1 && support.getSubValues().front().rfind("Face", 0) == 0) {
+    if (!box.IsValid() && support.getValue() && support.getSubValues().size() == 1
+        && support.getSubValues().front().rfind("Face", 0) == 0) {
         const Part::TopoShape face = Part::Feature::getTopoShape(support.getValue(), Part::ShapeOption::ResolveLink
                                                                      | Part::ShapeOption::Transform)
                                          .getSubTopoShape(support.getSubValues().front().c_str(), true);
         if (!face.isNull()) {
-            box = face.getBoundBox();
-            if (getSketchObject()->Geometry.getSize() > 0) {
-                box.Add(getSketchObject()->Shape.getBoundingBox());
-            }
+            box = face.getBoundBox().Transformed(sketchPlm.inverse().toMatrix());
         }
     }
+    Base::Vector3d center = box.IsValid() ? box.GetCenter() : Base::Vector3d();
+    plm.multVec(center, center);
+    const SbVec3f pivot(float(center.x), float(center.y), float(center.z));
+
+    // Will the sketch be visible from the new position (#0000957)?
+    // MyCAD: die animierte Drehung läuft um den Brennpunkt; er kommt auf die Mitte der Skizze statt auf ihren Ursprung,
+    // sonst schwenkte die Drehung die gleich eingepasste Ansicht wieder von der Skizze weg
+    SoCamera* camera = viewer->getSoRenderManager()->getCamera();
+    SbVec3f curdir;// current view direction
+    camera->orientation.getValue().multVec(SbVec3f(0, 0, -1), curdir);
+    camera->position.setValue(pivot - camera->focalDistance.getValue() * curdir);
+    viewer->setCameraOrientation(rot);
     if (box.IsValid()) {
-        const Base::Placement toWorld = getEditingPlacement() * getSketchObject()->Placement.getValue().inverse();
-        SbBox3f world;
-        for (unsigned short i = 0; i < 8; ++i) {
-            Base::Vector3d corner = box.CalcPoint(i);
-            toWorld.multVec(corner, corner);
-            world.extendBy(SbVec3f(float(corner.x), float(corner.y), float(corner.z)));
-        }
-        viewer->viewBoundBox(world);  // wie viewObjects: berücksichtigt die laufende Drehung zur Skizze
+        // Erst wenn die Sketch Palette rechts steht: sie verkleinert den freien Teil der Ansicht
+        QTimer::singleShot(0, viewer, [viewer, box, pivot] {
+            // viewBoundBox füllt mit der Umkugel der Box die kürzere Seite des freien Teils. Ein Würfel um die Mitte
+            // mit der Kugel, bei der die Skizze in Breite und Höhe gerade hineinpasst (5 % Rand)
+            SoCamera* camera = viewer->getSoRenderManager()->getCamera();
+            if (!camera) {
+                return;
+            }
+            const SbVec2s px = viewer->getSoRenderManager()->getViewportRegion().getViewportSizePixels();
+            QRectF free = viewer->property("freeArea").toRectF();
+            if (!free.isValid()) {
+                free = QRectF(0, 0, 1, 1);
+            }
+            const double fw = std::max(1.0, free.width() * px[0]), fh = std::max(1.0, free.height() * px[1]);
+            const double r = 1.05 * std::min(fw, fh) * std::max(box.LengthX() / fw, box.LengthY() / fh) / 2;
+            const float half = float((r > 1e-6 ? r : 10.0) / std::sqrt(3.0));  // nur ein Punkt: 20 mm Bildhöhe
+            viewer->viewBoundBox(SbBox3f(pivot - SbVec3f(half, half, half), pivot + SbVec3f(half, half, half)));
+        });
     }
     else if (getSketchObject()->Geometry.getSize() > 0 || getSketchObject()->ExternalGeometry.getSize() > 0) {
         std::vector<App::SubObjectT> objs;

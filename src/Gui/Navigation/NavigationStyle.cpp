@@ -1002,9 +1002,14 @@ void NavigationStyle::zoom(SoCamera* cam, float diffvalue)
 
     // MyCAD: Zoom-Grenzen (Bildhöhe bzw. Abstand zum Brennpunkt, mm). Ohne sie lief die Kamera bei langem Scrollen
     // bis 1e-9 bzw. 1e19 mm: das Objekt änderte sich nicht mehr, nur das Raster rechnete (falsch) weiter, bis eine
-    // Drehung die Ansicht neu setzte. 0,1 mm bis 1 km reicht für Bauteile und bleibt in float genau.
+    // Drehung die Ansicht neu setzte. 0,1 mm bis 1 km reicht für Bauteile und bleibt in float genau. Ein Wert schon
+    // jenseits der Grenze (Brennpunkt auf einer Fläche dicht vor der Kamera) bleibt stehen, statt zurückzuspringen:
+    // sonst fuhr Reinzoomen die Kamera rückwärts.
     constexpr float MinView = 0.1F;
     constexpr float MaxView = 1e6F;
+    const auto limited = [&](float value) {
+        return std::clamp(value * multiplicator, std::min(value, MinView), std::max(value, MaxView));
+    };
 
     if (t.isDerivedFrom(SoOrthographicCamera::getClassTypeId())) {
 
@@ -1014,7 +1019,7 @@ void NavigationStyle::zoom(SoCamera* cam, float diffvalue)
         // "shrink" the projection size of the model / scene.
 
         auto oc = static_cast<SoOrthographicCamera*>(cam);
-        oc->height = std::clamp(oc->height.getValue() * multiplicator, MinView, MaxView);
+        oc->height = limited(oc->height.getValue());
     }
     else {
         // FrustumCamera can be found in the SmallChange CVS module (it's
@@ -1036,7 +1041,7 @@ void NavigationStyle::zoom(SoCamera* cam, float diffvalue)
         }
 
         const float oldfocaldist = cam->focalDistance.getValue();
-        const float newfocaldist = std::clamp(oldfocaldist * multiplicator, MinView, MaxView);
+        const float newfocaldist = limited(oldfocaldist);
 
         SbVec3f direction;
         cam->orientation.getValue().multVec(SbVec3f(0, 0, -1), direction);
@@ -1129,6 +1134,23 @@ void NavigationStyle::doZoom(SoCamera* camera, float logfactor, const SbVec2f& p
         return;
     }
     SbBool zoomAtCur = this->zoomAtCursor;
+    // MyCAD: perspektivisch auf die Fläche unter dem Cursor zu (wie Fusion). Die Kamera nähert sich nur ihrem
+    // Brennpunkt; lag er vor dem Körper (nach Drehen, Schieben oder Zoomen woanders), blieb der Zoom in der Luft
+    // stehen. ponytail: ein Strahl-Pick pro Zoomschritt; wird das bei riesigen Szenen zäh, nur alle paar ms picken.
+    if (zoomAtCur && camera && camera->isOfType(SoPerspectiveCamera::getClassTypeId())) {
+        SoRayPickAction rpaction(viewer->getSoRenderManager()->getViewportRegion());
+        rpaction.setNormalizedPoint(pos);
+        rpaction.setRadius(viewer->getPickRadius());
+        rpaction.apply(viewer->getSoRenderManager()->getSceneGraph());
+        if (const SoPickedPoint* picked = rpaction.getPickedPoint()) {
+            SbVec3f direction;
+            camera->orientation.getValue().multVec(SbVec3f(0, 0, -1), direction);
+            const float depth = (picked->getPoint() - camera->position.getValue()).dot(direction);
+            if (depth > 0.0F) {
+                camera->focalDistance = depth;
+            }
+        }
+    }
     if (zoomAtCur) {
         const SbViewportRegion& vp = viewer->getSoRenderManager()->getViewportRegion();
         float ratio = vp.getViewportAspectRatio();

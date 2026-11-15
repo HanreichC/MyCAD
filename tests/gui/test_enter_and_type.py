@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Wie Fusion: eine Skizze auf einer Körperfläche zeigt beim Öffnen die ganze Fläche (nicht nur ihre Geometrie, ein kleiner
-Kreis füllte sonst das Bild), und im Extrude-Dialog hat der Abstand gleich den Fokus: Zahl tippen, Enter."""
+"""Wie Fusion: eine Skizze auf einer Körperfläche zoomt beim Öffnen auf ihre Geometrie (ein kleiner Kreis weit weg vom
+Ursprung füllt das Bild), und im Extrude-Dialog hat der Abstand gleich den Fokus: Zahl tippen, Enter."""
 from harness import *
 import Design
 
@@ -21,18 +21,18 @@ def small_circle():
     Gui.ActiveDocument.resetEdit()
 
 
-def face_share():
-    """Anteil der Fläche an der Bildbreite bzw. -höhe (größerer Wert); 1 = füllt das Bild"""
+def circle_share():
+    """Anteil des Kreises an der Bildbreite bzw. -höhe (größerer Wert); 1 = füllt das Bild"""
     v = Gui.ActiveDocument.ActiveView; vp = view().viewport(); dpr = vp.devicePixelRatioF()
-    pts = [v.getPointOnViewport(V(x, y, 10)) for x, y in ((300, 0), (340, 0), (340, 20), (300, 20))]
+    pts = [v.getPointOnViewport(V(x, y, 10)) for x, y in ((319, 9), (321, 9), (321, 11), (319, 11))]
     xs, ys = [p[0] / dpr for p in pts], [p[1] / dpr for p in pts]
     inside = all(0 <= x <= vp.width() and 0 <= y <= vp.height() for x, y in zip(xs, ys))
     return inside, max((max(xs) - min(xs)) / vp.width(), (max(ys) - min(ys)) / vp.height())
 
 
 def fitted():
-    inside, share = face_share()
-    check("re-entering a sketch on a body face shows the whole face", inside and share > 0.35, "inside=%s share=%.2f" % (inside, share))
+    inside, share = circle_share()
+    check("re-entering a sketch on a body face zooms onto its small circle", inside and share > 0.35, "inside=%s share=%.2f" % (inside, share))
     Gui.ActiveDocument.resetEdit()
 
 
