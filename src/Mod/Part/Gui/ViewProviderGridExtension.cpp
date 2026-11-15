@@ -23,6 +23,8 @@
  ***************************************************************************/
 
 #include <cmath>
+
+#include <Inventor/nodes/SoPerspectiveCamera.h>
 #include <limits>
 
 #include <Inventor/nodes/SoCamera.h>
@@ -123,6 +125,8 @@ private:
 
     SbVec3f camCenterPointOnFocalPlane;
     float camMaxDimension;
+    bool seenOnPlane = false;          ///< MyCAD: Ausdehnung/Mitte aus dem sichtbaren Bereich der Skizzenebene
+    Base::Vector2d seenCenter;
 
     Base::Vector3d gridOrigin;
     Base::Rotation gridRotation;
@@ -260,11 +264,35 @@ void GridExtensionP::createGrid(bool cameraUpdate)
 
     Gui::View3DInventorViewer* viewer = view->getViewer();
 
-    bool cameraDimensionsChanged = checkCameraZoomChange(viewer);
-
-    bool cameraCenterMoved = checkCameraTranslationChange(viewer);
-
-    bool gridNeedUpdating = cameraDimensionsChanged || cameraCenterMoved;
+    // MyCAD: Größe und Mitte aus dem Bildausschnitt auf der Skizzenebene. Aus der Fokusebene der Kamera (FreeCAD)
+    // wurde das Raster in der Perspektive nach schnellem Zoomen auf den Cursor ein kleines Feld an falscher Stelle:
+    // der Fokuspunkt lag dann vor oder hinter der Skizze. Bei sehr flachem Blick (Horizont im Bild) der alte Weg.
+    bool gridNeedUpdating = false;
+    const Base::BoundBox2d seen = viewer->getViewportOnXYPlaneOfPlacement(Base::Placement(gridOrigin, gridRotation));
+    const double seenDim = std::max(seen.Width(), seen.Height());
+    // Grenze für den Horizont-Fall: orthografisch die Bildgröße, perspektivisch der Abstand der Kamera zur Ebene (die
+    // Fokusebene taugt dort nicht als Maß, sie ist ja gerade das Problem)
+    double limit = 20.0 * viewer->getMaxDimension();
+    SoCamera* cam = viewer->getSoRenderManager()->getCamera();
+    if (cam && cam->getTypeId().isDerivedFrom(SoPerspectiveCamera::getClassTypeId())) {
+        const SbVec3f p = cam->position.getValue();
+        Base::Vector3d normal;
+        gridRotation.multVec(Base::Vector3d(0, 0, 1), normal);
+        limit = 50.0 * std::fabs((Base::Vector3d(p[0], p[1], p[2]) - gridOrigin) * normal) + 1.0;
+    }
+    seenOnPlane = std::isfinite(seenDim) && seenDim > 0 && seenDim < limit;
+    if (seenOnPlane) {
+        const Base::Vector2d centre = seen.GetCenter();
+        gridNeedUpdating = std::fabs(seenDim - camMaxDimension) > 1e-3 * seenDim
+            || (centre - seenCenter).Length() > 0.1 * seenDim;
+        camMaxDimension = static_cast<float>(seenDim);
+        seenCenter = centre;
+    }
+    else {
+        bool cameraDimensionsChanged = checkCameraZoomChange(viewer);
+        bool cameraCenterMoved = checkCameraTranslationChange(viewer);
+        gridNeedUpdating = cameraDimensionsChanged || cameraCenterMoved;
+    }
 
     if (!gridNeedUpdating && cameraUpdate) {
         return;
@@ -379,7 +407,8 @@ void GridExtensionP::createGridPart(
     SbVec3f* vertex_coords = vts->vertex.startEditing();
 
     float minX, minY, maxX, maxY;
-    Base::Vector3d camCenterOnSketch = getCamCenterInSketchCoordinates();
+    Base::Vector3d camCenterOnSketch = seenOnPlane ? Base::Vector3d(seenCenter.x, seenCenter.y, 0)
+                                                   : getCamCenterInSketchCoordinates();
     minX = static_cast<float>(camCenterOnSketch.x);
     minY = static_cast<float>(camCenterOnSketch.y);
 
