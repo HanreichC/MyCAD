@@ -34,3 +34,6 @@ test_zoom_limits.py
 test_extrude_enter.py
 test_workflow.py
 test_workflow_sketch.py
+test_lost_profile.py
+test_extrude_auto_cut.py
+test_dim_size.py

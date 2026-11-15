@@ -72,6 +72,7 @@
 #include <QVBoxLayout>
 
 #include <BRepAdaptor_Surface.hxx>
+#include <BRepAlgoAPI_Common.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 #include <BRepGProp.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
@@ -1729,6 +1730,7 @@ private:
             }
         }
         if (create) {
+            faceBody = target;  // Skizze auf dieser Körperfläche: ohne Durchdringung Join daran (autoJoinCut)
             setOperation(target ? Design::Feature::Op::Join : Design::Feature::Op::NewBody, target);
         }
         else {
@@ -1768,43 +1770,72 @@ private:
         });
     }
 
-    /// Wie Fusion: Extrude von einer Körperfläche aus wird Cut, sobald er ins Material zeigt (negativer Abstand, Pfeil nach
-    /// innen), und wieder Join, wenn er herauszeigt. Sonst vereinte ein Join nach innen still nichts. Nur beim Anlegen
-    /// und solange die Operation nicht von Hand gewählt ist. Geprüft wird ein Punkt knapp hinter der Profilmitte gegen den
-    /// Körper vor diesem Feature (die Vorschau des Cut höhlt ihn sonst gerade dort aus).
+    /// Wie Fusion: geht der Extrude durch Körper, wird er Cut an allen, auch mit Luft zwischen Skizze und Körper oder
+    /// mit Startversatz (vorher wurde nur ein Punkt direkt an der Skizze geprüft, und Cut traf nur den Körper unter der
+    /// Skizze). Sonst Join an dem Körper, auf dessen Fläche die Skizze liegt, oder New Body. Die Operation nur beim
+    /// Anlegen und solange sie nicht von Hand gewählt ist; ein von Hand gewähltes Cut trifft ebenfalls alle Körper.
+    /// Geprüft wird gegen den Zustand vor diesem Feature (die Vorschau des Cut höhlt die Körper aus). Ein Körper, den der
+    /// Extrude ganz enthält, zählt nicht (ein zweiter Extrude desselben Profils würde ihn sonst wegschneiden).
     void autoJoinCut()
     {
         const auto op = feature->op();
-        if (!create || operationChosen || (op != Design::Feature::Op::Join && op != Design::Feature::Op::Cut)
-            || feature->BaseFeatures.getSize() != 1) {
+        const bool automatic = !operationChosen
+            && (op == Design::Feature::Op::Join || op == Design::Feature::Op::Cut || op == Design::Feature::Op::NewBody);
+        if (!create || newComponent || !(automatic || op == Design::Feature::Op::Cut)) {
             return;
         }
-        auto base = freecad_cast<Design::Feature*>(feature->BaseFeatures.getValues().front());
-        auto profiles = freecad_cast<Design::Profiles*>(extrude->Profile.getValue());
-        auto sketch = profiles ? freecad_cast<Part::Feature*>(profiles->Sketch.getValue()) : nullptr;
-        Design::Body* target = selectedBody();
-        if (!base || !sketch || !target || extrude->Profile.getSubValues().empty()) {
+        Part::TopoShape tool;
+        std::string error;
+        if (!extrude->makeTool(tool, error) || tool.isNull()) {
             return;
         }
-        const TopoDS_Shape solid = base->shapeFor(target).getShape();
-        const TopoDS_Shape face = profiles->Shape.getShape().getSubShape(extrude->Profile.getSubValues().front().c_str(), true);
-        if (solid.IsNull() || face.IsNull()) {
+        const auto& attached = feature->Bodies.getValues();
+        const auto& bases = feature->BaseFeatures.getValues();
+        std::vector<Design::Body*> hits;
+        for (auto obj : feature->getDocument()->getObjectsOfType(Design::Body::getClassTypeId())) {
+            auto candidate = static_cast<Design::Body*>(obj);
+            if (candidate == newBody || !candidate->Visibility.getValue()) {
+                continue;
+            }
+            TopoDS_Shape solid = candidate->Shape.getShape().getShape();
+            if (const auto i = std::ranges::find(attached, obj) - attached.begin(); i < static_cast<long>(attached.size())) {
+                auto base = i < static_cast<long>(bases.size()) ? freecad_cast<Design::Feature*>(bases[i]) : nullptr;
+                solid = base ? base->shapeFor(obj).getShape() : TopoDS_Shape();
+            }
+            if (solid.IsNull()) {
+                continue;
+            }
+            GProp_GProps whole, shared;
+            BRepGProp::VolumeProperties(solid, whole);
+            BRepAlgoAPI_Common common(solid, tool.getShape());
+            if (common.IsDone()) {
+                BRepGProp::VolumeProperties(common.Shape(), shared);
+            }
+            if (shared.Mass() > 1e-6 && shared.Mass() < whole.Mass() * (1 - 1e-6)) {
+                hits.push_back(candidate);
+            }
+        }
+        auto want = op;
+        std::vector<Design::Body*> targets = hits;
+        if (automatic) {
+            want = !hits.empty() ? Design::Feature::Op::Cut : faceBody ? Design::Feature::Op::Join : Design::Feature::Op::NewBody;
+            if (hits.empty() && faceBody) {
+                targets = {faceBody};
+            }
+        }
+        else if (hits.empty()) {
+            return;  // Cut von Hand ohne Durchdringung: Ziel-Body aus der Liste bleibt
+        }
+        std::vector<App::DocumentObject*> now(targets.begin(), targets.end());
+        if (want == op && (want == Design::Feature::Op::NewBody || now == feature->Bodies.getValues())) {
             return;
         }
-        GProp_GProps props;
-        BRepGProp::SurfaceProperties(face, props);
-        Base::Vector3d dir = sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1));
-        if (extrude->Reversed.getValue()) {
-            dir = -dir;
+        setOperation(want, targets.empty() ? nullptr : targets.front());
+        if (targets.size() > 1) {
+            Design::detachFromBodies(feature);
+            Design::attachToBodies(feature, targets);
         }
-        const gp_Pnt c = props.CentreOfMass();
-        const gp_Pnt probe(c.X() + dir.x * 0.01, c.Y() + dir.y * 0.01, c.Z() + dir.z * 0.01);
-        BRepClass3d_SolidClassifier inside(solid, probe, 1e-6);
-        const auto want = inside.State() == TopAbs_IN ? Design::Feature::Op::Cut : Design::Feature::Op::Join;
-        if (want != op) {
-            setOperation(want, target);
-            feature->recomputeFeature();
-        }
+        feature->recomputeFeature();
     }
 
     /// Eine Fläche steht für alle ihre Kanten (wie beim Rechnen): gezählt werden die Kanten, nicht die Auswahl
@@ -2367,7 +2398,8 @@ private:
     Design::Hole* hole;
     bool create;
     bool autoFlipped = false;
-    bool operationChosen = false;  ///< Operation von Hand gewählt: autoJoinCut schaltet nicht mehr um
+    bool operationChosen = false;
+    Design::Body* faceBody = nullptr;  ///< Körper, auf dessen Fläche die Skizze liegt (beim Anlegen)  ///< Operation von Hand gewählt: autoJoinCut schaltet nicht mehr um
     Design::Body* newBody = nullptr;
     App::Part* newComponent = nullptr;
     QFormLayout* form = nullptr;
