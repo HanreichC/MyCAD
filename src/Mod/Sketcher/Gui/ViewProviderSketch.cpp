@@ -3621,8 +3621,17 @@ float ViewProviderSketch::getScaleFactor() const
     if (mdi && mdi->isDerivedFrom<Gui::View3DInventor>()) {
         Gui::View3DInventorViewer* viewer = static_cast<Gui::View3DInventor*>(mdi)->getViewer();
         SoCamera* camera = viewer->getSoRenderManager()->getCamera();
+        // MyCAD: Maßstab an der Skizze messen, nicht am Weltursprung. In der Perspektive hängt er vom Abstand zur
+        // Kamera ab; eine Skizze weit weg vom Ursprung (Ende einer 56-cm-Leiste) bekam beim Neuzeichnen nach dem Drehen
+        // riesige Maße und Symbole.
+        Base::Vector3d at;  // Skizzenursprung, besser die Mitte ihrer Geometrie (Shape liegt in Skizzen-Placement)
+        const Base::BoundBox3d box = getSketchObject()->Shape.getBoundingBox();
+        if (box.IsValid()) {
+            getSketchObject()->Placement.getValue().inverse().multVec(box.GetCenter(), at);
+        }
+        getEditingPlacement().multVec(at, at);
         float scale = camera->getViewVolume(camera->aspectRatio.getValue())
-                          .getWorldToScreenScale(SbVec3f(0.f, 0.f, 0.f), 0.1f)
+                          .getWorldToScreenScale(SbVec3f(float(at.x), float(at.y), float(at.z)), 0.1f)
             / 3;
         return scale;
     }

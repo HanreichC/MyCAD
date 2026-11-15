@@ -1330,6 +1330,12 @@ float SoDatumLabel::getScaleFactor(SoState* state) const
     // scale factor. See #7082 and #7860.
     float focal = SoFocalDistanceElement::get(state);
     SbVec3f center = vv.getSightPoint(focal);
+    // MyCAD: in der Perspektive am Ort des Maßes messen, nicht auf der Fokusebene. Drehen um den Punkt unter der Maus
+    // verschiebt die Fokusdistanz; lag er weit hinter der Skizze, wurden alle Maße riesig, bis man die Skizze neu
+    // öffnete. Am eigenen Ort bleibt die Schrift gleich viele Pixel groß, auch beim Verschieben.
+    if (vv.getProjectionType() == SbViewVolume::PERSPECTIVE && pnts.getNum() > 0) {
+        SoModelMatrixElement::get(state).multVecMatrix(pnts[0], center);
+    }
     float scale = vv.getWorldToScreenScale(center, 1.F);
     const SbViewportRegion& vp = SoViewportRegionElement::get(state);
     SbVec2s vp_size = vp.getViewportSizePixels();
