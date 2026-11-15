@@ -19,8 +19,10 @@
 #include <QPainterPath>
 #include <QStyleHints>
 #include <QTimer>
+#include <QtMath>
 
 #include <algorithm>
+#include <cmath>
 #include <numeric>
 
 using namespace Gui::Shell;
@@ -28,8 +30,11 @@ using namespace Gui::Shell;
 namespace
 {
 constexpr qreal Width = 120, Height = 150, CenterX = 60, CenterY = 64, Scale = 29;
-constexpr int Home = 6;
+constexpr int Home = 6, TurnLeft = 7, TurnRight = 8;
 const QRectF HomeRect(6, Height - 32, 26, 26);
+// Drehpfeile oben rechts (wie Fusion): nur in einer Seitenansicht, drehen die Kamera um 90° um die Blickrichtung
+const QRectF TurnLeftRect(Width - 50, 2, 22, 22);
+const QRectF TurnRightRect(Width - 24, 2, 22, 22);
 
 struct Face
 {
@@ -131,6 +136,37 @@ void ViewCube::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
         }
     }
 
+    // In einer Seitenansicht: Drehpfeile oben rechts
+    aligned = std::ranges::any_of(depth, [](float d) { return d > 0.999F; });
+    if (aligned) {
+        for (const auto& [id, rect] : {std::pair {TurnLeft, TurnLeftRect}, std::pair {TurnRight, TurnRightRect}}) {
+            p->setBrush(hover == id ? th.accent : th.glassOpaqueTop);
+            p->setPen(QPen(th.glassPopupBorder, 1));
+            p->drawEllipse(rect);
+            // 270°-Bogen mit Pfeilspitze in Laufrichtung: links gegen, rechts im Uhrzeigersinn
+            const QPointF m = rect.center();
+            constexpr qreal r = 5.5;
+            const bool right = id == TurnRight;
+            const qreal start = right ? 120 : 60, sweep = right ? -270 : 270;
+            QPainterPath glyph;
+            glyph.arcMoveTo(QRectF(m.x() - r, m.y() - r, 2 * r, 2 * r), start);
+            glyph.arcTo(QRectF(m.x() - r, m.y() - r, 2 * r, 2 * r), start, sweep);
+            const qreal end = qDegreesToRadians(start + sweep);
+            const QPointF tip(m.x() + r * std::cos(end), m.y() - r * std::sin(end));
+            QPointF dir = right ? QPointF(std::sin(end), std::cos(end)) : QPointF(-std::sin(end), -std::cos(end));
+            auto turned = [&](qreal deg) {
+                const qreal a = qDegreesToRadians(deg);
+                return QPointF(dir.x() * std::cos(a) - dir.y() * std::sin(a), dir.x() * std::sin(a) + dir.y() * std::cos(a));
+            };
+            glyph.moveTo(tip - turned(35) * 3.6);
+            glyph.lineTo(tip);
+            glyph.lineTo(tip - turned(-35) * 3.6);
+            p->setBrush(Qt::NoBrush);
+            p->setPen(QPen(hover == id ? th.labelOnAccent : th.labelPrimary, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            p->drawPath(glyph);
+        }
+    }
+
     // Home-Knopf (Iso-Ansicht)
     p->setBrush(hover == Home ? th.accent : th.glassOpaqueTop);
     p->setPen(QPen(th.glassPopupBorder, 1));
@@ -153,6 +189,12 @@ int ViewCube::hitTest(const QPointF& pos) const
 {
     if (QLineF(pos, HomeRect.center()).length() <= HomeRect.width() / 2) {
         return Home;
+    }
+    if (aligned && QLineF(pos, TurnLeftRect.center()).length() <= TurnLeftRect.width() / 2) {
+        return TurnLeft;
+    }
+    if (aligned && QLineF(pos, TurnRightRect.center()).length() <= TurnRightRect.width() / 2) {
+        return TurnRight;
     }
     for (int i = 0; i < 6; ++i) {
         if (!faces[i].isEmpty() && faces[i].containsPoint(pos, Qt::OddEvenFill)) {
@@ -196,6 +238,14 @@ void ViewCube::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     }
     if (hit == Home) {  // Iso-Ansicht und ganzes Modell einpassen (in den freien Bereich wie Fit All)
         QTimer::singleShot(0, viewer, [v = viewer] { v->viewHome(Camera::rotation(Camera::Isometric)); });
+        return;
+    }
+    if (hit == TurnLeft || hit == TurnRight) {
+        // um die eigene Blickachse drehen: rechts = Bild dreht im Uhrzeigersinn
+        const float angle = float(M_PI / 2) * (hit == TurnRight ? 1.F : -1.F);
+        QTimer::singleShot(0, viewer, [v = viewer, angle] {
+            v->setCameraOrientation(SbRotation(SbVec3f(0, 0, 1), angle) * v->getCameraOrientation());
+        });
         return;
     }
     const char* command = Faces[hit].command;

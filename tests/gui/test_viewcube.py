@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Eigener ViewCube: Home-Knopf und Klick auf die obere Seite drehen die Kamera."""
+"""Eigener ViewCube: Home-Knopf und Klick auf die obere Seite drehen die Kamera. In einer Seitenansicht drehen zwei
+Pfeile oben rechts die Kamera um 90° um die Blickrichtung (rechts: Bild im Uhrzeigersinn), sonst sind sie nicht da."""
 from harness import *
 
 
@@ -17,6 +18,13 @@ def cube_click(x, y):  # Koordinaten relativ zum ViewCube
 def direction():
     d = Gui.ActiveDocument.ActiveView.getViewDirection()
     return "(%.2f, %.2f, %.2f)" % (d.x, d.y, d.z)
+
+
+def up():
+    """Welt-Richtung, die im Bild nach oben zeigt"""
+    from pivy import coin
+    u = Gui.ActiveDocument.ActiveView.getCameraNode().orientation.getValue().multVec(coin.SbVec3f(0, 1, 0)).getValue()
+    return "(%.2f, %.2f, %.2f)" % tuple(0.0 if abs(c) < 0.005 else c for c in u)
 
 
 def fitted(what="Fit All"):
@@ -42,9 +50,16 @@ run([
     ("dir", lambda: check("home turns to the iso view", direction() == "(-0.58, 0.58, -0.58)", direction())),
     ("top face", lambda: cube_click(60, 40)), ("wait", lambda: None),
     ("dir", lambda: check("top face looks down", direction() in ("(0.00, 0.00, -1.00)", "(-0.00, -0.00, -1.00)", "(0.00, -0.00, -1.00)", "(-0.00, 0.00, -1.00)"), direction())),
+    ("up", lambda: check("top view has +Y up", up() == "(0.00, 1.00, 0.00)", up())), ("shot top", lambda: shot("arrows")),
+    ("turn right", lambda: cube_click(120 - 13, 13)), ("wait", lambda: None),
+    ("right", lambda: check("the right arrow turns the picture clockwise (world X now points down)", up() == "(-1.00, 0.00, 0.00)", up())),
+    ("turn left", lambda: cube_click(120 - 39, 13)), ("wait", lambda: None),
+    ("left", lambda: check("the left arrow turns it back", up() == "(0.00, 1.00, 0.00)", up())),
     ("zoom in", lambda: [Gui.SendMsgToActiveView("ZoomIn") for _ in range(6)]), ("wait", lambda: None),
     ("home again", lambda: cube_click(19, 131)), ("wait", lambda: None), ("shot", lambda: shot("cube")),
-    ("home fits", lambda: fitted("Home")),  # Home = Iso + ganzes Modell, wie die Hilfe sagt
+    ("home fits", lambda: fitted("Home")),
+    ("no arrows", lambda: (cube_click(120 - 13, 13), None)), ("wait", lambda: None),
+    ("iso stays", lambda: check("in the iso view there are no arrows (a click there does not turn)", direction() == "(-0.58, 0.58, -0.58)", direction())),  # Home = Iso + ganzes Modell, wie die Hilfe sagt
     ("zoom in 2", lambda: [Gui.SendMsgToActiveView("ZoomIn") for _ in range(6)]), ("wait", lambda: None),
     ("fit all", lambda: Gui.runCommand("Std_ViewFitAll")), ("wait", lambda: None),
     ("fitted", fitted),

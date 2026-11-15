@@ -17,7 +17,8 @@ namespace Gui::Shell
 {
 
 /// Eigener ViewCube in der Szene des 3D-Viewers: folgt der Kamera, Klick auf eine Seite dreht in diese Ansicht,
-/// der runde Knopf darunter führt zur Iso-Ansicht.
+/// der runde Knopf darunter führt zur Iso-Ansicht. In einer Seitenansicht drehen zwei Pfeile oben rechts die Kamera um
+/// 90° um die Blickrichtung (wie Fusion).
 class ViewCube: public QGraphicsItem
 {
 public:
@@ -34,11 +35,12 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
-    int hitTest(const QPointF& pos) const;  ///< Seite 0..5, 6 = Home, -1 = nichts
+    int hitTest(const QPointF& pos) const;  ///< Seite 0..5, 6 = Home, 7/8 = drehen links/rechts, -1 = nichts
 
     QPointer<View3DInventorViewer> viewer;  // Ansicht kann mit dem Dokument verschwinden
     std::array<QPolygonF, 6> faces;  ///< zuletzt gezeichnete Seiten (leer = nicht sichtbar)
     int hover = -1;
+    bool aligned = false;  ///< Blick genau auf eine Seite: Drehpfeile sichtbar
 };
 
 }  // namespace Gui::Shell
