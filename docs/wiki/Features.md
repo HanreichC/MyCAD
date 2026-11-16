@@ -71,6 +71,8 @@ Worth knowing:
 
   ![Extrude](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Extrude.gif)
 
+- **Hole by click:** snaps to the middle of the face or the centre of a round face, otherwise to 0.5 mm, and is
+  dimensioned to the two nearest edges.
 - **Holes by standard:** ISO metric, ISO metric fine, UNC, UNF; clearance hole (fine/medium/coarse) or tapped hole;
   counterbore or countersink matching the screw (ISO 4762 socket head, ISO 10642 countersunk, ISO 7380 button head);
   threads can be modeled for real.

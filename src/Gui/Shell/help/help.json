@@ -3106,7 +3106,7 @@
    "steps": {
     "en": [
      "In the toolbar at the top, in the CREATE section, click Hole. (If the button shows another tool, click the small arrow ▾ next to it and choose Hole.)",
-     "Click the flat face of the body where the hole goes. It is drilled right at that spot.",
+     "Click the flat face of the body where the hole goes. Near the middle of the face or the centre of a round face it snaps there, elsewhere to the nearest 0.5 mm. It gets dimensions to the two nearest edges by itself.",
      "A panel opens on the right; the model shows a live preview of the result.",
      "Pick a Standard and Size (e.g. ISO metric, M5x0.8) and whether it is a Clearance hole or a Tapped hole – MyCAD fills in the diameters. Without a standard (Custom) you type Diameter yourself.",
      "Choose the Type and the Depth (or tick Through all).",
@@ -3114,7 +3114,7 @@
     ],
     "de": [
      "Klicke in der Werkzeugleiste oben im Bereich ERSTELLEN auf Bohrung. (Zeigt der Knopf ein anderes Werkzeug, klicke auf den kleinen Pfeil ▾ daneben und wähle Bohrung.)",
-     "Klicke die ebene Körperfläche an, wo die Bohrung hin soll. Sie wird genau an dieser Stelle gebohrt.",
+     "Klicke die ebene Körperfläche an, wo die Bohrung hin soll. Nahe der Mitte der Fläche oder der Mitte einer runden Fläche rastet sie dort ein, sonst auf 0,5 mm genau. Maße zu den zwei nächsten Kanten bekommt sie von selbst.",
      "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
      "Wähle Norm und Größe (z. B. ISO metrisch, M5x0.8) und ob es eine Durchgangsbohrung oder eine Gewindebohrung ist – MyCAD trägt die Durchmesser ein. Ohne Norm (Eigene Maße) tippst du den Durchmesser selbst ein.",
      "Wähle den Typ und die Tiefe (oder hake Durchgehend an).",
@@ -3216,12 +3216,12 @@
     "en": [
      "Use Pattern on the Hole step in the timeline to repeat it in rows or around a circle.",
      "Several holes at exact positions: draw a sketch on the face with a Point for every hole centre and dimensions, select the sketch, then Hole.",
-     "To move a hole you placed by clicking, edit its sketch (just before the Hole in the timeline) and drag or dimension the point."
+     "To move a hole you placed by clicking, edit its sketch (just before the Hole in the timeline) and change the two dimensions to the edges."
     ],
     "de": [
      "Mit Muster auf den Bohrungs-Schritt in der Zeitleiste wiederholst du sie in Reihen oder im Kreis.",
      "Mehrere Bohrungen an genauen Stellen: zeichne auf der Fläche eine Skizze mit einem Punkt je Bohrungsmitte und Maßen, wähle die Skizze aus, dann Bohrung.",
-     "Eine angeklickte Bohrung verschiebst du, indem du ihre Skizze bearbeitest (direkt vor der Bohrung in der Zeitleiste) und den Punkt ziehst oder bemaßt."
+     "Eine angeklickte Bohrung verschiebst du, indem du ihre Skizze bearbeitest (direkt vor der Bohrung in der Zeitleiste) und die zwei Maße zu den Kanten änderst."
     ]
    },
    "images": [

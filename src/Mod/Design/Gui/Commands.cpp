@@ -2700,11 +2700,127 @@ Design::Body* bodyUnderSketch(App::DocumentObject* obj)
     return nullptr;
 }
 
+/// Phase 11.5: Lage einer Bohrung auf der Fläche fangen und bemaßen wie Fusion. p (Skizze, 2D) liegt danach
+/// - auf der Mitte eines Kreises/Bogens der Fläche, wenn der Klick weniger als SnapPx davon weg war (deckungsgleich), sonst
+/// - mit Abständen zu den zwei nächsten nicht parallelen Kanten: je Kante auf der Mitte der Fläche quer zu ihr, wenn der
+///   Klick nah dran war, sonst auf 0,5 mm gerundet. Beide Abstände werden Maße, der Punkt ist voll bestimmt.
+/// pxPerMm: Maßstab der Ansicht an der Klickstelle (0 ohne Ansicht: nur runden).
+void dimensionHolePoint(Sketcher::SketchObject* sketch, Base::Vector3d& p, double pxPerMm)
+{
+    constexpr double SnapPx = 12;
+    const auto snaps = [&](double mm) { return pxPerMm > 0 && std::abs(mm) * pxPerMm < SnapPx; };
+    struct Line
+    {
+        int geo;
+        Base::Vector3d a, n;  ///< Punkt auf der Kante, Normale in der Skizze
+    };
+    std::vector<Line> lines;
+    std::vector<Base::Vector3d> corners;
+    const auto& ext = sketch->getExternalGeometry();  // 0 und 1 sind die Achsen der Skizze
+    for (size_t i = 2; i < ext.size(); ++i) {
+        const int geo = -static_cast<int>(i) - 1;
+        Base::Vector3d centre;
+        bool round = false;
+        if (auto circle = dynamic_cast<const Part::GeomCircle*>(ext[i])) {
+            centre = circle->getCenter();
+            round = true;
+        }
+        else if (auto arc = dynamic_cast<const Part::GeomArcOfCircle*>(ext[i])) {
+            centre = arc->getCenter();
+            round = true;
+        }
+        if (round) {
+            centre.z = 0;
+            if (snaps((centre - p).Length())) {
+                p = centre;
+                auto c = std::make_unique<Sketcher::Constraint>();
+                c->Type = Sketcher::Coincident;
+                c->First = 0;
+                c->FirstPos = Sketcher::PointPos::start;
+                c->Second = geo;
+                c->SecondPos = Sketcher::PointPos::mid;
+                sketch->setGeometry(0, std::make_unique<Part::GeomPoint>(p).get());
+                sketch->addConstraint(std::move(c));
+                return;
+            }
+            continue;
+        }
+        auto seg = dynamic_cast<const Part::GeomLineSegment*>(ext[i]);
+        if (!seg) {
+            continue;
+        }
+        Base::Vector3d a = seg->getStartPoint(), b = seg->getEndPoint();
+        a.z = b.z = 0;
+        if ((b - a).Length() < 1e-9) {
+            continue;
+        }
+        Base::Vector3d d = (b - a).Normalize();
+        lines.push_back({geo, a, Base::Vector3d(-d.y, d.x, 0)});
+        corners.push_back(a);
+        corners.push_back(b);
+    }
+    const auto distance = [&p](const Line& l) { return (p - l.a) * l.n; };
+    const Line* first = nullptr;
+    const Line* second = nullptr;
+    for (const auto& l : lines) {
+        if (!first || std::abs(distance(l)) < std::abs(distance(*first))) {
+            first = &l;
+        }
+    }
+    for (const auto& l : lines) {
+        if (first && std::abs((l.n % first->n).z) > 0.1 && (!second || std::abs(distance(l)) < std::abs(distance(*second)))) {
+            second = &l;
+        }
+    }
+    std::vector<std::pair<const Line*, double>> dims;
+    for (const Line* l : {first, second}) {
+        if (!l) {
+            continue;
+        }
+        const double s = distance(*l);
+        double across = 0;  // Breite der Fläche quer zur Kante, auf der Seite des Klicks
+        for (const auto& c : corners) {
+            const double t = (c - l->a) * l->n;
+            if (t * s > 0 && std::abs(t) > std::abs(across)) {
+                across = t;
+            }
+        }
+        double want = std::round(s * 2) / 2;  // ponytail: festes 0,5-mm-Raster, unabhängig vom Zoom
+        if (across != 0 && snaps(s - across / 2)) {
+            want = across / 2;
+        }
+        if (std::abs(want) < 1e-9) {
+            want = s;  // auf der Kante geklickt: so lassen, ein Maß 0 hält den Punkt nicht auf der Seite
+        }
+        dims.emplace_back(l, want);
+    }
+    // Punkt auf die gewünschten Abstände schieben: (p - a)·n = want je Kante, zwei Kanten = 2×2-Gleichungssystem
+    if (dims.size() == 2) {
+        const auto& [l1, w1] = dims[0];
+        const auto& [l2, w2] = dims[1];
+        const double r1 = w1 + l1->a * l1->n, r2 = w2 + l2->a * l2->n;
+        const double det = l1->n.x * l2->n.y - l1->n.y * l2->n.x;
+        p = Base::Vector3d((r1 * l2->n.y - r2 * l1->n.y) / det, (l1->n.x * r2 - l2->n.x * r1) / det, 0);
+    }
+    else if (dims.size() == 1) {
+        p += dims[0].first->n * (dims[0].second - distance(*dims[0].first));
+    }
+    sketch->setGeometry(0, std::make_unique<Part::GeomPoint>(p).get());
+    for (const auto& [l, value] : dims) {
+        auto c = std::make_unique<Sketcher::Constraint>();
+        c->Type = Sketcher::Distance;
+        c->First = 0;
+        c->FirstPos = Sketcher::PointPos::start;
+        c->Second = l->geo;
+        c->setValue(std::abs(value));
+        sketch->addConstraint(std::move(c));
+    }
+}
+
 /// Bohrung auf einer ebenen Körperfläche wie in Fusion: eine verborgene Skizze auf der Fläche mit einem Punkt an der
-/// Klickstelle (der Rand der Fläche ist projiziert, zum Bemaßen beim Bearbeiten der Skizze), daraus die Bohrung. Liegt
-/// point nicht auf der Fläche (Auswahl per Skript ohne Klickpunkt), in ihrer Mitte. Alles in der Transaktion der
-/// Bohrung: Abbrechen nimmt auch die Skizze zurück.
-/// ponytail: ohne Maße zu den Kanten (Fusion legt sie an); Lage ändern = Skizze bearbeiten
+/// Klickstelle (der Rand der Fläche ist projiziert), daraus die Bohrung. Der Punkt fängt und bekommt Maße zu den Kanten
+/// (dimensionHolePoint). Liegt point nicht auf der Fläche (Auswahl per Skript ohne Klickpunkt), in ihrer Mitte. Alles
+/// in der Transaktion der Bohrung: Abbrechen nimmt auch die Skizze zurück. Lage ändern = Maße in der Skizze ändern.
 void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& point)
 {
     const TopoDS_Shape shape = body->Shape.getShape().getSubShape(face.c_str(), true);
@@ -2730,6 +2846,24 @@ void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& poin
     sketch->Placement.getValue().inverse().multVec(at, onSketch);
     const Part::GeomPoint centre(Base::Vector3d(onSketch.x, onSketch.y, 0));
     sketch->addGeometry(&centre);
+    if (sketch->getExternalGeometry().size() <= 2) {
+        doc->recompute();  // Projektion des Rands
+    }
+    // Maßstab der Ansicht an der Klickstelle: 1 mm in x der Skizze, in Pixeln
+    double pxPerMm = 0;
+    auto gdoc = Gui::Application::Instance->getDocument(doc);
+    if (auto view = gdoc ? dynamic_cast<Gui::View3DInventor*>(gdoc->getActiveView()) : nullptr) {
+        const Base::Placement toGlobal = Design::componentOf(body)->globalPlacement() * sketch->Placement.getValue();
+        const auto screen = [&](double x) {
+            Base::Vector3d g;
+            toGlobal.multVec(Base::Vector3d(x, onSketch.y, 0), g);
+            return view->getViewer()->getPointOnViewport(SbVec3f(float(g.x), float(g.y), float(g.z)));
+        };
+        const SbVec2s a = screen(onSketch.x), b = screen(onSketch.x + 1);
+        pxPerMm = std::hypot(double(a[0] - b[0]), double(a[1] - b[1]));  // ponytail: schräg gesehen in y anders
+    }
+    Base::Vector3d p(onSketch.x, onSketch.y, 0);
+    dimensionHolePoint(sketch, p, pxPerMm);
     sketch->Visibility.setValue(false);
     const auto items = Design::timeline(doc);  // Skizze vor die Bohrung, die sie braucht
     std::string error;
@@ -2775,9 +2909,13 @@ void startHole(App::Document* doc)
         holeOnFace(body, sel.getSubNames().front(), points.empty() ? Base::Vector3d() : points.front());
         return;
     }
-    if (!sketch) {  // sonst die zuletzt erstellte Skizze, wenn sie Punkte hat
+    if (!sketch) {  // sonst die zuletzt erstellte Skizze, wenn sie Punkte hat und noch keine Bohrung sie nutzt (sonst
+                    // landete die nächste Bohrung per Klick auf der verborgenen Skizze der letzten)
         auto sketches = doc->getObjectsOfType(Sketcher::SketchObject::getClassTypeId());
-        sketch = sketches.empty() || !hasPoints(sketches.back()) ? nullptr : sketches.back();
+        const auto used = [](App::DocumentObject* s) {
+            return std::ranges::any_of(s->getInList(), [](auto o) { return o->template isDerivedFrom<Design::Hole>(); });
+        };
+        sketch = sketches.empty() || !hasPoints(sketches.back()) || used(sketches.back()) ? nullptr : sketches.back();
     }
     if (!sketch) {  // wie Fusion: auf einen Klick auf eine Fläche warten, dort entsteht die Bohrung
         PlanePicker::start(activeContainer(doc), [](App::DocumentObject* obj, const std::string& face, const Base::Vector3d& point) {
