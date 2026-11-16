@@ -11,6 +11,7 @@
 #include <Base/Interpreter.h>
 #include <Base/PyObjectBase.h>
 #include <Base/VectorPy.h>
+#include <Mod/Part/App/TopoShapePy.h>
 #include <CXX/Extensions.hxx>
 
 #include "Features.h"
@@ -63,6 +64,8 @@ public:
                            "printCheck(body[, up, angle, wall]): dict of overhang, bed and thin areas (mm²) and triangles");
         add_varargs_method("printFixes", &Module::printFixes,
                            "printFixes(doc): [(feature name, label, property, value)] that make the design print better");
+        add_varargs_method("quickMeasure", &Module::quickMeasure,
+                           "quickMeasure(shape[, shape]): dict of distance, angle, diameter (missing ones absent) and anchor");
         add_varargs_method("printUp", &Module::printUp, "printUp(doc): print direction of the design (up)");
         add_varargs_method("setPrintUp", &Module::setPrintUp, "setPrintUp(doc, vector): print direction (up)");
         add_varargs_method("fastenerAt", &Module::fastenerAt,
@@ -307,6 +310,25 @@ private:
                                   Py::Float(f.value)));
         }
         return out;
+    }
+    Py::Object quickMeasure(const Py::Tuple& args)
+    {
+        std::vector<TopoDS_Shape> shapes;
+        for (const auto& a : args) {
+            if (!PyObject_TypeCheck(a.ptr(), &Part::TopoShapePy::Type)) {
+                throw Py::TypeError("quickMeasure expects Part shapes");
+            }
+            shapes.push_back(static_cast<Part::TopoShapePy*>(a.ptr())->getTopoShapePtr()->getShape());
+        }
+        const Design::QuickMeasure m = Design::quickMeasure(shapes);
+        Py::Dict d;
+        for (const auto& [key, value] : {std::pair {"distance", m.distance}, {"angle", m.angle}, {"diameter", m.diameter}}) {
+            if (value >= 0) {
+                d[key] = Py::Float(value);
+            }
+        }
+        d["anchor"] = Py::asObject(new Base::VectorPy(m.anchor));
+        return d;
     }
     Py::Object printUp(const Py::Tuple& args)
     {

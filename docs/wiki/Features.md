@@ -204,6 +204,8 @@ Worth knowing:
 ## Inspect
 
 - **Measure:** distances, angles, areas, volumes; for a whole body also **mass, material and center of mass**.
+- **Measure without the tool:** select two faces, edges or points and a small card shows their distance, or their angle
+  if they touch; a cylinder or circle alone shows its diameter. Click the value to turn it into a parameter.
 
   ![Measure](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Measure.gif)
 

@@ -2027,6 +2027,72 @@ Design::PrintCheckResult Design::printCheck(Part::TopoShape shape, const Base::V
     return result;
 }
 
+Design::QuickMeasure Design::quickMeasure(const std::vector<TopoDS_Shape>& shapes)
+{
+    QuickMeasure m;
+    const auto point = [](const gp_Pnt& p) { return Base::Vector3d(p.X(), p.Y(), p.Z()); };
+    if (shapes.size() == 1 && !shapes[0].IsNull()) {
+        const TopoDS_Shape& s = shapes[0];
+        if (s.ShapeType() == TopAbs_EDGE) {
+            BRepAdaptor_Curve c(TopoDS::Edge(s));
+            if (c.GetType() == GeomAbs_Circle) {
+                m.diameter = 2 * c.Circle().Radius();
+                m.anchor = point(c.Value((c.FirstParameter() + c.LastParameter()) / 2));
+            }
+        }
+        else if (s.ShapeType() == TopAbs_FACE) {
+            BRepAdaptor_Surface f(TopoDS::Face(s));
+            if (f.GetType() == GeomAbs_Cylinder) {
+                m.diameter = 2 * f.Cylinder().Radius();
+                m.anchor = point(f.Value((f.FirstUParameter() + f.LastUParameter()) / 2,
+                                         (f.FirstVParameter() + f.LastVParameter()) / 2));
+            }
+        }
+        return m;
+    }
+    if (shapes.size() != 2 || shapes[0].IsNull() || shapes[1].IsNull()) {
+        return m;
+    }
+    BRepExtrema_DistShapeShape dist(shapes[0], shapes[1]);
+    if (dist.IsDone() && dist.NbSolution() > 0) {
+        m.distance = dist.Value();
+        // parallele Flächen haben mehrere gleich kurze Verbindungen (Ecken): deren Mitte, nicht eine Ecke
+        for (int i = 1; i <= dist.NbSolution(); ++i) {
+            m.anchor += (point(dist.PointOnShape1(i)) + point(dist.PointOnShape2(i))) / (2.0 * dist.NbSolution());
+        }
+    }
+    // Richtung einer geraden Kante oder Normale einer ebenen Fläche
+    const auto direction = [](const TopoDS_Shape& s, gp_Dir& d) {
+        if (s.ShapeType() == TopAbs_EDGE) {
+            BRepAdaptor_Curve c(TopoDS::Edge(s));
+            if (c.GetType() == GeomAbs_Line) {
+                d = c.Line().Direction();
+                return true;
+            }
+        }
+        else if (s.ShapeType() == TopAbs_FACE) {
+            BRepAdaptor_Surface f(TopoDS::Face(s));
+            if (f.GetType() == GeomAbs_Plane) {
+                d = f.Plane().Axis().Direction();
+                return true;
+            }
+        }
+        return false;
+    };
+    gp_Dir a, b;
+    if (direction(shapes[0], a) && direction(shapes[1], b)) {
+        if (shapes[0].ShapeType() != shapes[1].ShapeType()) {
+            // Kante zu Fläche: Winkel zur Fläche, nicht zu ihrer Normalen
+            m.angle = std::abs(90 - a.Angle(b) * 180 / M_PI);
+        }
+        else {
+            const double angle = a.Angle(b) * 180 / M_PI;
+            m.angle = std::min(angle, 180 - angle);
+        }
+    }
+    return m;
+}
+
 Design::PrintCheckResult Design::printCheck(Body* body)
 {
     ParameterGrp::handle params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");

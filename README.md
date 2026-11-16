@@ -87,7 +87,7 @@ Press **Ctrl+K** and type. The search finds commands, bodies and sketches, forgi
 
 Create **components** and connect them with **joints**. Each component has its own bodies, sketches and origin, and all of it lives in a single design file.
 
-Joints come as **Rigid**, **Revolute**, **Slider**, **Cylindrical**, **Pin-Slot**, **Planar** and **Ball**, with limits for angle and travel. **Animate** swings a joint between its limits and shows when parts collide. Chains follow along, and **closed loops** like a four-bar linkage are solved together: the first joint drives, the others follow. **Measure** gives you the mass, material and center of mass of a body, with the material taken from its appearance.
+Joints come as **Rigid**, **Revolute**, **Slider**, **Cylindrical**, **Pin-Slot**, **Planar** and **Ball**, with limits for angle and travel. **Animate** swings a joint between its limits and shows when parts collide. Chains follow along, and **closed loops** like a four-bar linkage are solved together: the first joint drives, the others follow. **Measure** gives you the mass, material and center of mass of a body, with the material taken from its appearance. For a quick check you don't even need the tool: select two faces, edges or points and their distance (or angle) shows right next to them; click it and it becomes a parameter.
 
 ![Joint](src/Gui/Shell/help/images/Design_Joint.gif)
 

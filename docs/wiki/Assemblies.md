@@ -52,4 +52,8 @@ closed. Then a solver (OndselSolver, as in FreeCAD's Assembly workbench) works o
 **Appearance** (wood → wood, brushed aluminum → aluminum); choose it yourself under Appearance → Physical material and
 it stays.
 
+You often don't need the tool at all: select two faces, edges or points (Ctrl+click) and their **distance** shows in a
+small card right below them, or their **angle** if they touch; a cylinder or circle alone shows its **diameter**. Click
+the value and the Parameters window opens with it filled in: type a name, Enter.
+
 ![Measure](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Measure.gif)

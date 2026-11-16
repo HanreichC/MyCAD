@@ -1210,6 +1210,8 @@ A("Design_Measure", "inspect", "Design_Measure", ("Measure", "Messen"),
     "Klicke einen Punkt, eine Kante oder Fläche an oder einen Körper im Browser: das Panel zeigt Koordinaten (X, Y, Z), Länge, Radius, Durchmesser, Fläche, Volumen oder Größe. Bei einem Körper auch Masse, Werkstoff und Schwerpunkt."),
    ("Ctrl+click a second item to see the Distance and Angle between them.", "Klicke mit Strg ein zweites an, um Abstand und Winkel dazwischen zu sehen."),
    ("Close the panel with Close at the top of the panel or Esc.", "Schließe das Panel oben mit Schließen oder mit Esc.")],
+  tips=[("Without the tool: select two faces, edges or points (Ctrl+click) and a small card below them shows their distance, or their angle if they touch. A cylinder or circle alone shows its diameter. Click the value to make it a parameter: type a name, Enter.",
+         "Ohne Werkzeug: Wähle zwei Flächen, Kanten oder Punkte (Strg+Klick), dann zeigt eine kleine Karte darunter ihren Abstand, oder ihren Winkel, wenn sie sich berühren. Ein Zylinder oder Kreis allein zeigt seinen Durchmesser. Klicke auf den Wert, um daraus einen Parameter zu machen: Namen tippen, Enter.")],
   see=["Design_Section"])
 
 A("Design_Section", "inspect", "Design_Section", ("Section Analysis", "Schnittanalyse"),

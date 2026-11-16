@@ -5493,6 +5493,14 @@
    "see": [
     "Design_Section"
    ],
+   "tips": {
+    "en": [
+     "Without the tool: select two faces, edges or points (Ctrl+click) and a small card below them shows their distance, or their angle if they touch. A cylinder or circle alone shows its diameter. Click the value to make it a parameter: type a name, Enter."
+    ],
+    "de": [
+     "Ohne Werkzeug: Wähle zwei Flächen, Kanten oder Punkte (Strg+Klick), dann zeigt eine kleine Karte darunter ihren Abstand, oder ihren Winkel, wenn sie sich berühren. Ein Zylinder oder Kreis allein zeigt seinen Durchmesser. Klicke auf den Wert, um daraus einen Parameter zu machen: Namen tippen, Enter."
+    ]
+   },
    "images": [
     {
      "file": "Design_Measure.gif",

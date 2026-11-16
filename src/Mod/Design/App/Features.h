@@ -146,6 +146,17 @@ struct PrintFix
     double value;
 };
 DesignExport std::vector<PrintFix> printFixes(App::Document* doc);
+/// Messen ohne Werkzeug (Phase 11.4): was zwei gewählte Elemente zueinander (oder ein Kreis allein) messen. Werte < 0
+/// fehlen. distance: kürzester Abstand; angle: zwischen zwei geraden Kanten/ebenen Flächen, 0…90°; diameter: Kreiskante
+/// oder Zylinderfläche. anchor: Mitte der kürzesten Verbindung bzw. Punkt auf dem Kreis (dort steht die Anzeige).
+struct QuickMeasure
+{
+    double distance = -1;
+    double angle = -1;
+    double diameter = -1;
+    Base::Vector3d anchor;
+};
+DesignExport QuickMeasure quickMeasure(const std::vector<TopoDS_Shape>& shapes);
 /// Druckrichtung des Designs (global, "nach oben"); Vorgabe +Z. Gespeichert am Wurzel-Bauteil.
 DesignExport Base::Vector3d printUp(App::Document* doc);
 DesignExport void setPrintUp(App::Document* doc, const Base::Vector3d& up);

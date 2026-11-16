@@ -124,6 +124,7 @@
 
 #include <functional>
 #include <memory>
+#include <Gui/Shell/GlassPanel.h>
 #include <Gui/Shell/Shell.h>
 #include <Gui/Shell/Theme.h>
 
@@ -3208,33 +3209,12 @@ private:
             }
         }
         else if (shapes.size() == 2) {
-            BRepExtrema_DistShapeShape dist(shapes[0], shapes[1]);
-            if (dist.IsDone()) {
-                row(T("Distance"), length(dist.Value()));
+            const Design::QuickMeasure m = Design::quickMeasure(shapes);
+            if (m.distance >= 0) {
+                row(T("Distance"), length(m.distance));
             }
-            // Winkel zwischen zwei geraden Kanten oder zwei ebenen Flächen
-            auto direction = [](const TopoDS_Shape& s, gp_Dir& d) {
-                if (s.ShapeType() == TopAbs_EDGE) {
-                    BRepAdaptor_Curve c(TopoDS::Edge(s));
-                    if (c.GetType() == GeomAbs_Line) {
-                        d = c.Line().Direction();
-                        return true;
-                    }
-                }
-                else if (s.ShapeType() == TopAbs_FACE) {
-                    BRepAdaptor_Surface f(TopoDS::Face(s));
-                    if (f.GetType() == GeomAbs_Plane) {
-                        d = f.Plane().Axis().Direction();
-                        return true;
-                    }
-                }
-                return false;
-            };
-            gp_Dir a, b;
-            if (direction(shapes[0], a) && direction(shapes[1], b)) {
-                double angle = a.Angle(b) * 180 / M_PI;
-                angle = std::min(angle, 180 - angle);
-                row(T("Angle"), QStringLiteral("%1°").arg(angle, 0, 'f', 2));
+            if (m.angle >= 0) {
+                row(T("Angle"), QStringLiteral("%1°").arg(m.angle, 0, 'f', 2));
             }
         }
         result->setText(!rows.isEmpty() ? QStringLiteral("<table>%1</table>").arg(rows.join(QString()))
@@ -3770,7 +3750,8 @@ void startAppearance(App::Document* doc)
 
 /// Parameter wie in Fusion ("Change Parameters"): Name und Ausdruck ("40 mm", "Width / 10"); Maßfelder der
 /// Features nehmen diese Namen an. Änderungen wirken sofort, Abbrechen nimmt alle zurück.
-void showParameters(App::Document* doc)
+/// value: Messwert aus "Messen ohne Werkzeug", steht schon im Wertfeld; der Name fehlt noch
+void showParametersWith(App::Document* doc, const QString& value)
 {
     doc->openTransaction("Parameters");
     App::DocumentObject* set = DesignGui::parameters(doc, true);
@@ -3938,6 +3919,11 @@ void showParameters(App::Document* doc)
     QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
     QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
     lay->addWidget(buttons);
+    if (!value.isEmpty()) {
+        exprEdit->setText(value);
+        nameEdit->setFocus();
+        add->setDefault(true);  // Name tippen, Enter legt an
+    }
     if (dlg.exec() == QDialog::Accepted) {
         doc->commitTransaction();
     }
@@ -3947,10 +3933,171 @@ void showParameters(App::Document* doc)
     }
 }
 
+void showParameters(App::Document* doc)
+{
+    showParametersWith(doc, QString());
+}
+
 void startMeasure(App::Document*)
 {
     Gui::Control().showDialog(new TaskMeasure);
 }
+
+/// Messen ohne Werkzeug (Phase 11.4): zwei gewählte Elemente (oder ein Kreis/Zylinder) zeigen sofort Abstand, Winkel
+/// oder Durchmesser als kleine Glas-Karte daneben. Ein Klick auf einen Wert legt damit einen Parameter an. Nur ohne
+/// offenes Werkzeug und außerhalb der Skizze; jede andere Auswahl schließt die Karte.
+class QuickMeasureChip: public Gui::SelectionObserver
+{
+public:
+    QuickMeasureChip()
+    {
+        timer.setInterval(50);  // ponytail: folgt der Kamera im Takt statt über einen Coin-Sensor (wie die Flächen-Maße)
+        QObject::connect(&timer, &QTimer::timeout, [this] {
+            if (Gui::Control().activeDialog()) {
+                hide();
+            }
+            else {
+                place();
+            }
+        });
+    }
+
+private:
+    void onSelectionChanged(const Gui::SelectionChanges& msg) override
+    {
+        if (msg.Type == Gui::SelectionChanges::AddSelection || msg.Type == Gui::SelectionChanges::RmvSelection
+            || msg.Type == Gui::SelectionChanges::ClrSelection || msg.Type == Gui::SelectionChanges::SetSelection) {
+            QTimer::singleShot(0, &timer, [this] { refresh(); });
+        }
+    }
+
+    void hide()
+    {
+        timer.stop();
+        if (panel) {
+            panel->hide();
+        }
+    }
+
+    void refresh()
+    {
+        hide();
+        std::vector<TopoDS_Shape> shapes;
+        App::Document* doc = nullptr;
+        for (const auto& sel : Gui::Selection().getSelectionEx()) {
+            doc = sel.getObject() ? sel.getObject()->getDocument() : nullptr;
+            for (const auto& name : sel.getSubNames()) {
+                const Part::TopoShape s = Part::Feature::getTopoShape(
+                    sel.getObject(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform
+                                         | Part::ShapeOption::NeedSubElement, name.c_str());
+                if (s.isNull() || shapes.size() == 2) {
+                    return;  // mehr als zwei Elemente: nichts zu zeigen
+                }
+                shapes.push_back(s.getShape());
+            }
+        }
+        auto gdoc = doc ? Gui::Application::Instance->getDocument(doc) : nullptr;
+        if (shapes.empty() || !gdoc || gdoc->getInEdit() || Gui::Control().activeDialog()) {
+            return;
+        }
+        measured = Design::quickMeasure(shapes);
+        auto view = dynamic_cast<Gui::View3DInventor*>(gdoc->getActiveView());
+        viewer = view ? view->getViewer() : nullptr;
+        // Abstand null zwischen zwei Elementen, die sich berühren, sagt nichts; dann zählt nur der Winkel
+        if (measured.distance < 1e-7 && measured.angle >= 0) {
+            measured.distance = -1;
+        }
+        // parallel (0°) sagt neben dem Abstand nichts
+        if (measured.angle >= 0 && measured.angle < 1e-6 && measured.distance >= 0) {
+            measured.angle = -1;
+        }
+        if (!viewer || (measured.distance < 0 && measured.angle < 0 && measured.diameter < 0)) {
+            return;
+        }
+        build(doc);
+        place();
+        panel->show();
+        QCoreApplication::sendPostedEvents(content);  // Schrift und Stil der Szene, erst dann stimmt die Größe
+        for (QWidget* w : content->findChildren<QWidget*>()) {
+            QCoreApplication::sendPostedEvents(w);
+        }
+        content->adjustSize();
+        place();
+        timer.start();
+    }
+
+    void build(App::Document* doc)
+    {
+        if (!panel) {
+            content = new QWidget;
+            content->setObjectName(QStringLiteral("QuickMeasure"));
+            auto lay = new QHBoxLayout(content);
+            lay->setContentsMargins(6, 4, 6, 4);
+            lay->setSpacing(2);
+            panel = new Gui::Shell::GlassPanel(content, Gui::Shell::Token::RadiusTile, true);
+            panel->setZValue(9);
+        }
+        if (panel->scene() != viewer->scene()) {
+            viewer->scene()->addItem(panel);
+        }
+        for (QWidget* w : content->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
+            delete w;
+        }
+        const auto length = [](double v) {
+            return QString::fromStdString(Base::Quantity(v, Base::Unit::Length).getUserString());
+        };
+        // Anzeige in der Einheit des Benutzers, als Parameter eine Zahl, die jede Formel liest (Punkt, keine Rundung)
+        const std::tuple<double, QString, QString, const char*> values[] = {
+            {measured.distance, length(measured.distance), QStringLiteral("%1 mm"), "Distance"},
+            {measured.angle, QStringLiteral("∠ %1°").arg(measured.angle, 0, 'f', 2), QStringLiteral("%1 °"), "Angle"},
+            {measured.diameter, QStringLiteral("⌀ ") + length(measured.diameter), QStringLiteral("%1 mm"), "Diameter"}};
+        const App::DocumentT target(doc);
+        for (const auto& [value, text, expression, label] : values) {
+            if (value < 0) {
+                continue;
+            }
+            auto button = new QPushButton(text);
+            button->setObjectName(QStringLiteral("QuickMeasureValue"));
+            button->setFlat(true);
+            button->setAutoDefault(false);
+            button->setCursor(Qt::PointingHandCursor);
+            button->setAccessibleName(T(label));
+            button->setToolTip(T("%1: click to use it as a parameter").arg(T(label)));
+            const QString parameter = expression.arg(QString::number(value, 'g', 10));
+            QObject::connect(button, &QPushButton::clicked, button, [this, target, parameter] {
+                hide();
+                QTimer::singleShot(0, [target, parameter] {  // modal: erst nach dem Klick öffnen
+                    if (App::Document* d = target.getDocument()) {
+                        showParametersWith(d, parameter);
+                    }
+                });
+            });
+            content->layout()->addWidget(button);
+        }
+        content->adjustSize();
+    }
+
+    /// unter dem Messpunkt, im Fenster gehalten (rechts daneben steht nach Doppelklick die Karte der Flächen-Maße)
+    void place()
+    {
+        if (!panel || !viewer || !panel->isVisible()) {
+            return;
+        }
+        const Base::Vector3d& a = measured.anchor;
+        const QPoint p = viewer->toQPoint(viewer->getPointOnViewport(SbVec3f(float(a.x), float(a.y), float(a.z))));
+        const QSizeF s = content->sizeHint();
+        const QRectF view = viewer->scene()->sceneRect();
+        const qreal x = std::clamp<qreal>(p.x() - s.width() / 2, view.left() + 12, view.right() - s.width() - 12);
+        const qreal y = std::clamp<qreal>(p.y() + 20, view.top() + 80, view.bottom() - s.height() - 80);
+        panel->setGeometry(QRectF(x, y, s.width(), s.height()));
+    }
+
+    Design::QuickMeasure measured;
+    QPointer<Gui::View3DInventorViewer> viewer;
+    QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
+    QWidget* content = nullptr;
+    QTimer timer;
+};
 
 /// Schnittansicht: das Modell an einer Ebene oder ebenen Fläche aufschneiden (nochmal: Schnitt aufheben)
 void toggleSection(App::Document* doc)
@@ -4208,6 +4355,7 @@ void editConstruction(App::Document* doc)
 
 void CreateDesignCommands()
 {
+    static QuickMeasureChip quickMeasure;
     auto& mgr = Gui::Application::Instance->commandManager();
     mgr.addCommand(new DesignCommand("Design_CreateSketch", "Create Sketch",
                                      "Create Sketch: click a plane or planar face to sketch on",
