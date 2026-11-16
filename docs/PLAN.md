@@ -504,14 +504,20 @@ Tastenkürzel) und `test_workflow_sketch` (Skizzieren auf Körperflächen). Durc
 projizierten Kante, Seitenfläche mit Join/Cut, Verschieben, Rotieren, Komponente mit projiziertem Rand, Profil zerfällt
 nach dem Extrude (Ring wie Fusion), Grundkörper nachträglich höher, Projizieren von Hand, Look-At, Esc in Dialogen.
 
-Offen, braucht eine Entscheidung (nicht still geändert):
-- Esc ohne Auswahl und ohne Werkzeug verlässt die Skizze (FreeCAD-Vorgabe „LeaveSketchWithEscape“); Fusion verlässt
-  sie nur über „Skizze fertig stellen“.
-- Strg+C/Strg+V in der Skizze tun nichts (die Sketcher-Befehle stecken in keiner Leiste und teilen sich die Tasten mit
-  Std_Copy/Std_Paste). FreeCAD würde deckungsgleich einfügen; Fusion fügt ein und lässt gleich verschieben.
-- Bohrung per Klick auf eine Fläche (wie Fusion) statt erst Skizze mit Punkten; heute kommt dann ein Hinweis.
-- Ein Profil per Klick wieder aus einem offenen Extrude nehmen geht nur, wo man es sieht (die Vorschau deckt es zu).
-- Löscht man das Feature, auf dessen Fläche eine Skizze liegt, löst sich die Skizze still von der Fläche (bleibt an
-  ihrem Platz, gültig); ein Hinweis wäre besser.
-- Werkzeug-Hinweise unter dem ViewCube erscheinen nur bei aktivem Fenster (`preventNonIntrusiveNotificationsWhenWindowNotActive`);
-  Tests am Desktop ohne Fokus sehen sie nicht (unter Xvfb grün).
+Offene Entscheidungen, mit dem Benutzer entschieden und umgesetzt (2026-11-16, je mit Test):
+- Esc verlässt die Skizze nicht mehr, auch ohne Auswahl und Werkzeug (`LeaveSketchWithEscape` jetzt standardmäßig
+  aus): wie Fusion nur über „Skizze fertig stellen“. Hilfe angepasst.
+- Strg+C, Strg+X, Strg+V in der Skizze gehen an die Sketcher-Befehle (Filter in der Shell; in Eingabefeldern bleiben
+  die Tasten beim Text). Die Kopie verliert ihre Bezüge auf Achsen, Ursprung und projizierte Kanten (sonst klebte sie
+  am Original) und hängt wie in Fusion gleich zum Verschieben am Cursor; ein Klick setzt sie ab, Esc lässt sie liegen.
+- Bohrung per Klick auf eine Fläche wie Fusion: mit gewählter ebener Körperfläche an der Klickstelle (ohne Klickpunkt
+  in der Mitte), ohne Auswahl wartet sie auf einen Klick. Dafür entsteht eine verborgene Skizze mit einem Punkt, in der
+  Timeline vor der Bohrung; Abbrechen nimmt beides zurück. Bohren an einer Skizze mit Punkten geht weiter.
+  ponytail: keine Maße zu den Kanten wie in Fusion; verschieben über die Skizze.
+- Ein Profil, das die Vorschau eines offenen Extrude/Rotieren zudeckt: ein Klick auf die Vorschau darüber nimmt es
+  heraus (Punkt im Werkzeugkörper → nächstes gewähltes Profil, beim Rotieren über seinen Kreis um die Achse).
+- Feature unter einer Skizze löschen: die Skizze hängt an dieselbe Fläche im Zustand davor (eine Rundung oder Fase am
+  Rand ändert die Größe der Fläche, dann genügt dieselbe Ebene). Gibt es die Fläche davor nicht, bleibt die Skizze an
+  ihrem Platz, bekommt eine Warnung in der Timeline („Fläche weg“, „Stimmt so“ bestätigt) und ein Hinweis sagt es.
+- Werkzeug-Hinweise unter dem ViewCube erscheinen weiter nur bei aktivem Fenster. Die Tests (eigenes Home) schalten
+  das in `harness.py` ab und sehen sie so auch am Desktop ohne Fokus.
