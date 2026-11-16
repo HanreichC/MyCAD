@@ -6,6 +6,9 @@ from PySide6 import QtCore, QtGui, QtWidgets, QtTest
 
 # Immer gespeichert (Idee 7) stört den festen Takt der Tests: aus, test_versions_ui schaltet es gezielt ein
 App.ParamGet("User parameter:BaseApp/Preferences/MyCAD").SetBool("AlwaysSave", False)
+# Hinweise unter dem ViewCube erscheinen nur bei aktivem Fenster (für Nutzer bleibt das so). Am Desktop läuft ein Test
+# oft ohne Fokus und sähe sie nie, unter Xvfb ist das Fenster dagegen aktiv: für Tests immer zeigen
+App.ParamGet("User parameter:BaseApp/Preferences/NotificationArea").SetBool("PreventNonIntrusiveNotificationsWhenWindowNotActive", False)
 mw = Gui.getMainWindow()
 mw.resize(1500, 950)
 _log = open(os.environ["OUT"] + ".txt", "w")
