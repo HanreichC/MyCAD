@@ -74,7 +74,7 @@ run([
     ("datum light", lambda: QtCore.QTimer.singleShot(0, lambda: datum("datum-light"))), ("wait", lambda: None),
     ("dark", lambda: theme("Dark")), ("wait", lambda: None),
     ("datum dark", lambda: QtCore.QTimer.singleShot(0, lambda: datum("datum-dark"))), ("wait", lambda: None),
-    ("leave sketch", esc), ("wait", lambda: None),
+    ("leave sketch", lambda: click(button("Sketcher_LeaveSketch"))), ("wait", lambda: None),
     ("version dark", lambda: version("version-dark")), ("wait", lambda: None),
     ("versions dark", lambda: (modal("versions-dark"), Gui.runCommand("Design_Versions"))), ("wait", lambda: None),
     ("parameters dark", lambda: (modal("parameters-dark"), Gui.runCommand("Design_Parameters"))), ("wait", lambda: None),

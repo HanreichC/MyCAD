@@ -9,7 +9,8 @@
    Bei offenem Rundungs-Dialog nimmt ein Klick auf eine Kante sie dazu, ein zweiter Klick wieder heraus (wie Fusion).
    Ebenso nimmt bei offenem Extrude ein Klick auf ein weiteres Profil der Skizze es dazu.
 3. In der Skizze: Strg+Z nimmt die letzte Linie zurück, Strg+Y (wie Fusion) und Strg+Umschalt+Z holen sie wieder.
-   Esc mit einer gewählten Kante hebt nur die Auswahl auf (vorher verließ es sofort die Skizze)."""
+   Esc mit einer gewählten Kante hebt nur die Auswahl auf (vorher verließ es sofort die Skizze), und auch ohne Auswahl
+   bleibt man wie in Fusion in der Skizze (verlassen nur über "Skizze fertig stellen")."""
 import math, os
 from PySide6 import QtGui
 from harness import *
@@ -252,6 +253,9 @@ three = [("sketch", lambda: click(button("Design_CreateSketch"))),
          ("esc sel", lambda: key(QtCore.Qt.Key_Escape)), W,
          ("still", lambda: check("Esc with a selected edge only clears the selection and stays in the sketch",
                                  Gui.ActiveDocument.getInEdit() is not None and not Gui.Selection.getSelectionEx(),
-                                 "in sketch=%s selection=%s" % (Gui.ActiveDocument.getInEdit() is not None, Gui.Selection.getSelectionEx())))]
+                                 "in sketch=%s selection=%s" % (Gui.ActiveDocument.getInEdit() is not None, Gui.Selection.getSelectionEx()))),
+         ("esc empty", lambda: key(QtCore.Qt.Key_Escape)), W,
+         ("stays", lambda: check("Esc with nothing selected and no tool stays in the sketch (like Fusion)",
+                                 Gui.ActiveDocument.getInEdit() is not None))]
 
 run([("activate", activate), *one, *two, *three])

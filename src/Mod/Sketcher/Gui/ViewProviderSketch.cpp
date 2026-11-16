@@ -233,7 +233,7 @@ void ViewProviderSketch::ParameterObserver::updateEscapeKeyBehaviour(const std::
     ParameterGrp::handle hSketch = App::GetApplication().GetParameterGroupByPath(
         "User parameter:BaseApp/Preferences/Mod/Sketcher");
     Client.viewProviderParameters.handleEscapeButton =
-        !hSketch->GetBool("LeaveSketchWithEscape", true);
+        !hSketch->GetBool("LeaveSketchWithEscape", false);  // MyCAD: wie Fusion verlässt nur "Skizze fertig stellen" die Skizze
 }
 
 void ViewProviderSketch::ParameterObserver::updateAutoRecompute(const std::string& string,
