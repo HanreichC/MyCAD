@@ -1710,6 +1710,18 @@ void EditModeCoinManager::createEditModeInventorNodes()
     ViewProviderSketchCoinAttorney::addNodeToRoot(viewProvider, editModeScenegraphNodes.EditRoot);
     editModeScenegraphNodes.EditRoot->renderCaching = SoSeparator::OFF;
 
+    // MyCAD: alles der Skizze minimal vor der Körperfläche, auf der sie liegt. Die festen Höhen unten (zLowLines …,
+    // tausendstel Millimeter) und der Polygon-Offset der Flächen (eine Tiefeneinheit) reichen auf echten Grafikkarten
+    // nicht: beim Drehen gewann mal die Fläche, mal die Skizze (Z-Kampf). Ein um 4e-6 verkürzter Tiefenbereich gibt
+    // ~60 Tiefeneinheiten Vorsprung, in Millimetern wenig genug, dass Körper davor die Skizze weiter verdecken.
+    // Test, Schreiben und Funktion erbt der Knoten (ignoriert), Tiefen-Knoten darunter erben den Bereich.
+    auto* nearer = new SoDepthBuffer;
+    nearer->test.setIgnored(true);
+    nearer->write.setIgnored(true);
+    nearer->function.setIgnored(true);
+    nearer->range.setValue(0.0F, 1.0F - 4e-6F);
+    editModeScenegraphNodes.EditRoot->addChild(nearer);
+
     // Create Geometry Coin nodes ++++++++++++++++++++++++++++++++++++++
     pEditModeGeometryCoinManager->createEditModeInventorNodes();
 
@@ -1818,6 +1830,7 @@ void EditModeCoinManager::createEditModeInventorNodes()
     auto* overlayDepth = new SoDepthBuffer;
     overlayDepth->function = SoDepthBuffer::GREATER;
     overlayDepth->write.setValue(false);
+    overlayDepth->range.setIgnored(true);  // Vorsprung der Skizze erben (oben im EditRoot)
     occludedOverlayRoot->addChild(overlayDepth);
 
     editModeScenegraphNodes.RootCrossDrawStyleOccluded = new SoDrawStyle;

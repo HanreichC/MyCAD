@@ -418,6 +418,10 @@ quadratische Stellen im übernommenen FreeCAD-Code, nicht der Rechner. Gemessen 
   GL-Punkte statt Bitmap-Marker (gleiche Größe, Ränder jetzt glatt). Der Lichthof um Linien, Punkte und Maße ist seit
   2026-11-16 ersetzt (wirkte dick, keine Profi-CAD macht das): bei offener Skizze treten Körper zur Hintergrundfarbe
   zurück, Maße und Symbole stehen auf einem Schild wie Creos Maß-Hintergrund (`test_sketch_contrast`).
+  Flackern beim Drehen einer Skizze auf einer Körperfläche (2026-11-16): der projizierte Rand lag Linie auf Linie auf den
+  Körperkanten, nur tausendstel Millimeter angehoben; aus der Ferne weniger als eine Tiefeneinheit. Alles der Skizze
+  (und ihr Raster) hat jetzt einen festen Vorsprung im Tiefenpuffer (Tiefenbereich um 4e-6 verkürzt, ~60 Einheiten);
+  Flächen schob ihr Polygon-Offset schon vorher zurück (`test_sketch_depth`).
 - **Dabei gefunden:** Absturz, wenn die Anzeige-Ebenen der Skizze während der Bearbeitung neu gebaut werden (Knotenlisten
   zeigten auf gelöschte Knoten), und leere Skizze danach; beides behoben.
 - Tests H: `test_big_sketch.py` (800 freie Bögen lösen in < 2 s, Freiheitsgrade, Konflikte und Redundanzen neben freier

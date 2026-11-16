@@ -352,6 +352,15 @@ void GridExtensionP::createGridPart(
     GridRoot->addChild(parent);
     SoVertexProperty* vts;
 
+    // MyCAD: Raster einer Skizze auf einer Körperfläche minimal davor, sonst Z-Kampf beim Drehen (wie der EditRoot
+    // der Skizze, EditModeCoinManager)
+    auto* nearer = new SoDepthBuffer;
+    nearer->test.setIgnored(true);
+    nearer->write.setIgnored(true);
+    nearer->function.setIgnored(true);
+    nearer->range.setValue(0.0F, 1.0F - 4e-6F);
+    parent->addChild(nearer);
+
     SoTransparencyType* transparencyType = new SoTransparencyType;
     transparencyType->value = SoTransparencyType::DELAYED_BLEND;
     parent->addChild(transparencyType);
