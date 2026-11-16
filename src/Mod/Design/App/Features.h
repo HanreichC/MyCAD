@@ -308,6 +308,8 @@ public:
 
     bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;
+    /// Drehachse Nummer axisIndex (Axis) in Komponenten-Koordinaten, für eine Skizze mit Placement sketch
+    void axisLine(long axisIndex, const Base::Placement& sketch, Base::Vector3d& origin, Base::Vector3d& dir) const;
 
 private:
     bool revolveAround(long axis, Part::TopoShape& tool, std::string& error) const;

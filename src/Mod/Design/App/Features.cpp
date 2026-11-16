@@ -3310,6 +3310,27 @@ bool Revolve::makeTool(Part::TopoShape& tool, std::string& error) const
     return revolveAround(Axis.getValue(), tool, error);
 }
 
+void Revolve::axisLine(long axisIndex, const Base::Placement& sketch, Base::Vector3d& origin, Base::Vector3d& dir) const
+{
+    origin = dir = Base::Vector3d();
+    switch (axisIndex) {
+        case 0:
+            origin = sketch.getPosition();
+            dir = sketch.getRotation().multVec(Base::Vector3d(1, 0, 0));
+            break;
+        case 1:
+            origin = sketch.getPosition();
+            dir = sketch.getRotation().multVec(Base::Vector3d(0, 1, 0));
+            break;
+        default:
+            dir[axisIndex - 2] = 1;
+            break;
+    }
+    if (Reversed.getValue()) {
+        dir = -dir;
+    }
+}
+
 bool Revolve::revolveAround(long axisIndex, Part::TopoShape& tool, std::string& error) const
 {
     Part::Feature* sketch = nullptr;
@@ -3325,24 +3346,8 @@ bool Revolve::revolveAround(long axisIndex, Part::TopoShape& tool, std::string& 
         return false;
     }
 
-    const Base::Placement pla = sketch->Placement.getValue();
     Base::Vector3d origin, dir;
-    switch (axisIndex) {
-        case 0:
-            origin = pla.getPosition();
-            dir = pla.getRotation().multVec(Base::Vector3d(1, 0, 0));
-            break;
-        case 1:
-            origin = pla.getPosition();
-            dir = pla.getRotation().multVec(Base::Vector3d(0, 1, 0));
-            break;
-        default:
-            dir[axisIndex - 2] = 1;
-            break;
-    }
-    if (Reversed.getValue()) {
-        dir = -dir;
-    }
+    axisLine(axisIndex, sketch->Placement.getValue(), origin, dir);
     const gp_Ax1 axis(gp_Pnt(origin.x, origin.y, origin.z), gp_Dir(dir.x, dir.y, dir.z));
 
     std::vector<Part::TopoShape> solids;

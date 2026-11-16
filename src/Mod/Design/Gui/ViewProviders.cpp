@@ -77,6 +77,10 @@
 #include <BRepGProp.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <gp_Ax2.hxx>
+#include <gp_Circ.hxx>
+#include <Precision.hxx>
 #include <BRep_Builder.hxx>
 #include <GProp_GProps.hxx>
 #include <TopExp.hxx>
@@ -1283,12 +1287,14 @@ private:
 };
 
 /// Extrude/Rotieren bei offenem Dialog: ein Klick auf ein weiteres Profil derselben Skizze nimmt es dazu, ein Klick
-/// auf ein gewähltes wieder heraus (wie Fusion); eines bleibt immer.
+/// auf ein gewähltes wieder heraus (wie Fusion); eines bleibt immer. Die Vorschau deckt gewählte Profile zu: ein Klick
+/// auf den Teil des Körpers, den dieser Schritt erzeugt, nimmt das Profil darunter heraus.
 class ProfilePicker: public Gui::SelectionObserver
 {
 public:
-    ProfilePicker(App::PropertyLinkSub* profile, QObject* context, std::function<void()> changed)
-        : profile(profile)
+    ProfilePicker(Design::Feature* feature, App::PropertyLinkSub* profile, QObject* context, std::function<void()> changed)
+        : feature(feature)
+        , profile(profile)
         , context(context)
         , changed(std::move(changed))
     {}
@@ -1300,7 +1306,12 @@ private:
             return;
         }
         App::DocumentObject* obj = msg.Object.getSubObject();
-        const std::string face = msg.Object.getOldElementName();
+        std::string face = msg.Object.getOldElementName();
+        const auto bodies = feature->Bodies.getValues();
+        if (obj && std::ranges::find(bodies, obj) != bodies.end() && profile->getSubValues().size() > 1) {
+            face = profileUnder(Base::Vector3d(msg.x, msg.y, msg.z));
+            obj = face.empty() ? nullptr : profile->getValue();
+        }
         if (!obj || obj != profile->getValue() || face.rfind("Face", 0) != 0) {
             return;
         }
@@ -1322,6 +1333,49 @@ private:
         });
     }
 
+    /// Gewähltes Profil, aus dem der Punkt (global) des Werkzeugkörpers entstand: beim Extrude liegt es senkrecht
+    /// darunter in der Skizzenebene (also am nächsten), beim Rotieren trifft der Kreis des Punkts um die Achse es.
+    /// Leer, wenn der Punkt nicht auf dem Werkzeugkörper liegt (Teil des Körpers von vorher).
+    std::string profileUnder(const Base::Vector3d& global) const
+    {
+        Part::TopoShape tool;
+        std::string error;
+        auto profiles = freecad_cast<Design::Profiles*>(profile->getValue());
+        auto sketch = profiles ? freecad_cast<App::GeoFeature*>(profiles->Sketch.getValue()) : nullptr;
+        if (!sketch || !feature->makeTool(tool, error) || tool.isNull()) {
+            return {};
+        }
+        Base::Vector3d local;
+        Design::componentOf(feature)->globalPlacement().inverse().multVec(global, local);
+        const gp_Pnt p(local.x, local.y, local.z);
+        BRepClass3d_SolidClassifier inside(tool.getShape(), p, 1e-2);  // Klickpunkt aus Coin: float-genau
+        if (inside.State() == TopAbs_OUT) {
+            return {};
+        }
+        TopoDS_Shape probe = BRepBuilderAPI_MakeVertex(p);
+        if (auto revolve = freecad_cast<Design::Revolve*>(feature)) {
+            Base::Vector3d o, d;
+            revolve->axisLine(revolve->Axis.getValue(), sketch->Placement.getValue(), o, d);
+            const gp_Ax1 axis(gp_Pnt(o.x, o.y, o.z), gp_Dir(d.x, d.y, d.z));
+            const gp_Vec along(axis.Direction());
+            const gp_Pnt centre = axis.Location().Translated(along * gp_Vec(axis.Location(), p).Dot(along));
+            if (centre.Distance(p) > Precision::Confusion()) {
+                probe = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(centre, axis.Direction(), gp_Vec(centre, p)), centre.Distance(p)));
+            }
+        }
+        std::string best;
+        double nearest = Precision::Infinite();
+        for (const auto& name : profile->getSubValues()) {
+            BRepExtrema_DistShapeShape dist(probe, profiles->Shape.getShape().getSubShape(name.c_str(), true));
+            if (dist.IsDone() && dist.Value() < nearest) {
+                nearest = dist.Value();
+                best = name;
+            }
+        }
+        return best;
+    }
+
+    Design::Feature* feature;
     App::PropertyLinkSub* profile;
     QObject* context;
     std::function<void()> changed;
@@ -1537,7 +1591,7 @@ public:
         }
         if (extrude || revolve) {
             auto profile = extrude ? &extrude->Profile : &revolve->Profile;
-            profilePicker = std::make_unique<ProfilePicker>(profile, w, [this] {
+            profilePicker = std::make_unique<ProfilePicker>(feature, profile, w, [this] {
                 this->feature->getDocument()->recompute();
                 apply();
             });
