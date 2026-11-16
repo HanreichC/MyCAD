@@ -38,7 +38,8 @@ or search for it with Ctrl+K).
 - Draw: line, polyline, rectangle, circle, arc, slot, polygon, B-spline, conic, point, text; project model edges into the
   sketch.
 - Modify: fillet, trim, extend, split, offset, mirror, pattern, move, scale.
-- One **Dimension** tool that works out from the selection what to measure; constraints coincident, horizontal,
+- One **Dimension** tool that works out from the selection what to measure, typed right on the dimension (Tab jumps to
+  the next one, no window); constraints coincident, horizontal,
   vertical, parallel, perpendicular, tangent, equal, symmetric, fix.
 
   ![Dimension](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_dimension.gif)

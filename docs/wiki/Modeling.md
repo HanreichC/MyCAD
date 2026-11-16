@@ -20,8 +20,9 @@ A design is made of **bodies** in **components**. The root component is the desi
 
   ![Sketching basics](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_basics.gif)
 
-- **Dimension** works out from the selection what to measure (length, distance, radius, angle). Every size field takes
-  formulas and parameter names.
+- **Dimension** works out from the selection what to measure (length, distance, radius, angle). Place it, and a field
+  opens right on the dimension: type the value, **Enter** applies, **Esc** keeps the old one, **Tab** applies and jumps
+  to the next dimension of the sketch. Every size field takes formulas and parameter names.
 
   ![Dimension](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_dimension.gif)
 
