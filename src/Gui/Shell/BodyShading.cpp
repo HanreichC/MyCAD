@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "BodyShading.h"
+#include <Inventor/SbColor.h>
 
 #include <App/Application.h>
 
@@ -159,6 +160,8 @@ uniform float exposure;
 uniform int detail;               // 1: Oberflächen-Karten, Hirnholz, Druckschichten (Einstellung "Relief und Hirnholz")
 uniform int reflections;          // 0: keine Spiegelbilder, nur weicher Glanz (Einstellung "Spiegelungen")
 uniform mat4 eyeToWorld;          // Kamera-Drehung zurück in die Welt (setEyeToWorld)
+uniform float fade;               // Skizze offen: Körper treten zur Hintergrundfarbe hin zurück (fadeBodies)
+uniform vec3 background;
 varying vec3 objNormal;
 varying vec3 objPos;
 varying vec3 eyePos;
@@ -349,9 +352,21 @@ void main()
         color = min(color / a, vec3(1.0));
         alpha = a;
     }
-    gl_FragColor = vec4(pow(max(color, vec3(0.0)), vec3(1.0 / 2.2)), alpha);
+    gl_FragColor = vec4(mix(pow(max(color, vec3(0.0)), vec3(1.0 / 2.2)), background, fade), alpha);
 }
 )";
+
+SoShaderParameter1f* fade()
+{
+    static auto node = new SoShaderParameter1f;
+    return node;
+}
+
+SoShaderParameter3f* background()
+{
+    static auto node = new SoShaderParameter3f;
+    return node;
+}
 
 SoShaderParameter1i* detail()
 {
@@ -408,6 +423,11 @@ SoSwitch* root()
         fragment->parameter.set1Value(4, detail());
         reflections()->name = "reflections";
         fragment->parameter.set1Value(5, reflections());
+        fade()->name = "fade";
+        fade()->value = 0.0F;
+        fragment->parameter.set1Value(6, fade());
+        background()->name = "background";
+        fragment->parameter.set1Value(7, background());
         auto program = new SoShaderProgram;
         program->shaderObject.set1Value(0, vertex);
         program->shaderObject.set1Value(1, fragment);
@@ -466,6 +486,17 @@ void Gui::Shell::applyRenderQuality()
     for (ContactShadow* shadow : shadows()) {
         setShadow(shadow, p->GetBool("ContactShadow", true));
     }
+}
+
+void Gui::Shell::fadeBodies(bool on)
+{
+    // Mitte des Hintergrundverlaufs: dahinter verschwindet ein zurückgetretener Körper nicht, wirkt aber blass
+    auto view = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+    float transparency;
+    const SbColor top = SbColor().setPackedValue(view->GetUnsigned("BackgroundColor2", 0xF2F2F7FF), transparency);
+    const SbColor bottom = SbColor().setPackedValue(view->GetUnsigned("BackgroundColor3", 0xE5E5EAFF), transparency);
+    background()->value = (top + bottom) / 2.0F;
+    fade()->value = on ? 0.5F : 0.0F;
 }
 
 SoNode* Gui::Shell::bodyTexture(const std::string& path)

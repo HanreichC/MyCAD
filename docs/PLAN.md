@@ -414,8 +414,10 @@ quadratische Stellen im übernommenen FreeCAD-Code, nicht der Rechner. Gemessen 
 - **Formen:** `makeElementWires` mit Bounding-Box-Vorfilter vor `MakeWire::Add` (gleiches Ergebnis).
 - **Profile:** während die Skizze bearbeitet wird (Profile ausgeblendet) erst beim Verlassen neu berechnet; Splitter parallel.
 - **Anzeige (mit dem Benutzer abgestimmt):** Kurven fängt die Bildschirmsuche mit demselben Radius wie vorher der
-  Strahltest (5 px, beim Zeichnen 12,5 px), bei mehreren gewinnt die nächstliegende; Punkte und Lichthof als geglättete
-  GL-Punkte statt Bitmap-Marker (gleiche Größe, Ränder jetzt glatt).
+  Strahltest (5 px, beim Zeichnen 12,5 px), bei mehreren gewinnt die nächstliegende; Punkte als geglättete
+  GL-Punkte statt Bitmap-Marker (gleiche Größe, Ränder jetzt glatt). Der Lichthof um Linien, Punkte und Maße ist seit
+  2026-11-16 ersetzt (wirkte dick, keine Profi-CAD macht das): bei offener Skizze treten Körper zur Hintergrundfarbe
+  zurück, Maße und Symbole stehen auf einem Schild wie Creos Maß-Hintergrund (`test_sketch_contrast`).
 - **Dabei gefunden:** Absturz, wenn die Anzeige-Ebenen der Skizze während der Bearbeitung neu gebaut werden (Knotenlisten
   zeigten auf gelöschte Knoten), und leere Skizze danach; beides behoben.
 - Tests H: `test_big_sketch.py` (800 freie Bögen lösen in < 2 s, Freiheitsgrade, Konflikte und Redundanzen neben freier

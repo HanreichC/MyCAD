@@ -60,29 +60,6 @@ using namespace Sketcher;
 
 namespace
 {
-/// MyCAD: Lichthof in Hintergrundfarbe unter Skizzenlinien und Punkten, damit sie auf jedem Körper lesbar bleiben
-/// (dunkles Lila, Holzmaserung …). Wird vor shape gezeichnet und erbt dessen Koordinaten; nicht anklickbar.
-SoSeparator* halo(SoNode* style, SoNode* shape)
-{
-    auto sep = new SoSeparator;
-    auto pick = new SoPickStyle;
-    pick->style = SoPickStyle::UNPICKABLE;
-    sep->addChild(pick);
-    auto material = new SoMaterial;
-    float transparency;
-    material->diffuseColor.setValue(SbColor().setPackedValue(
-        App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View")
-            ->GetUnsigned("BackgroundColor2", 0xF2F2F7FF),
-        transparency));
-    sep->addChild(material);
-    auto binding = new SoMaterialBinding;
-    binding->value = SoMaterialBinding::OVERALL;
-    sep->addChild(binding);
-    sep->addChild(style);
-    sep->addChild(shape);
-    return sep;
-}
-
 /// Punkte als runde, geglättete GL-Punkte statt Coins Bitmap-Markern: die zeichnet Coin einzeln, bei
 /// tausenden Punkten (DXF-Import) war das der teuerste Teil jedes Bildes. Callback davor (begin) und danach.
 void roundPoints(void* begin, SoAction* action)
@@ -112,16 +89,6 @@ void roundPoints(void* begin, SoAction* action)
         }
         glBlendFunc(src, dst);
     }
-}
-
-/// Linienstil des Lichthofs: wie die Linie (auch gestrichelt), je Seite 1,5 px breiter
-SoDrawStyle* haloStyle(const SoDrawStyle* line, double pixelScalingFactor)
-{
-    auto style = new SoDrawStyle;
-    style->lineWidth = line->lineWidth.getValue() + 3 * pixelScalingFactor;
-    style->linePattern = line->linePattern.getValue();
-    style->linePatternScaleFactor = line->linePatternScaleFactor.getValue();
-    return style;
 }
 }  // namespace
 
@@ -784,12 +751,6 @@ void EditModeGeometryCoinManager::createEditModePointInventorNodes()
         roundBegin->setCallback(roundPoints, roundBegin);
         sep->addChild(roundBegin);
 
-        // Lichthof: derselbe Punkt 2 px je Seite größer, darunter
-        auto haloStyle = new SoDrawStyle;
-        haloStyle->pointSize = drawingParameters.markerSize + 4;
-        auto haloPoints = new SoPointSet;
-        sep->addChild(halo(haloStyle, haloPoints));  // zeigt wie die PointSet alle Koordinaten der Ebene
-
         // eigener Stil: PointsDrawStyle bestimmt den Fangradius (getPointHitRadius), sichtbar ist markerSize
         auto markerStyle = new SoDrawStyle;
         markerStyle->pointSize = drawingParameters.markerSize;
@@ -892,7 +853,6 @@ void EditModeGeometryCoinManager::createEditModeCurveInventorNodes()
 
             auto solineset = new SoLineSet;
             solineset->numVertices.setNum(0);
-            sep->addChild(halo(haloStyle(style, drawingParameters.pixelScalingFactor), solineset));
             sep->addChild(editModeScenegraphNodes.CurvesPickStyle);
             sep->addChild(style);
             solineset->setName(concat("CurvesLineSet", i * 10 + t).c_str());

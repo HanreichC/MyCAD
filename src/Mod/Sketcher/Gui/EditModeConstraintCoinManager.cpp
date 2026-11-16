@@ -2993,9 +2993,9 @@ QImage EditModeConstraintCoinManager::renderConstrIcon(
         }
     }
 
-    // MyCAD: Lichthof wie bei Linien und Maßen, sonst gehen die Symbole auf dunklen Körpern unter. Ohne Rand
-    // drumherum: die Klickflächen (boundingBoxes) zählen ab der Bildecke
-    return Gui::BitmapFactory().withHalo(image, 2);
+    // MyCAD: Schild wie bei Maßen (Fusion zeigt Symbole ebenso auf hellem Grund), sonst gehen sie auf dunklen
+    // Körpern unter. Ohne Rand drumherum: die Klickflächen (boundingBoxes) zählen ab der Bildecke
+    return Gui::BitmapFactory().withPlate(image, 0, 0, 3);
 }
 
 void EditModeConstraintCoinManager::drawTypicalConstraintIcon(const constrIconQueueItem& i)

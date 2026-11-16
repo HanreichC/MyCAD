@@ -54,7 +54,6 @@
 #include <Inventor/nodes/SoTransform.h>
 #include <Inventor/nodes/SoVertexProperty.h>
 
-#include <App/Application.h>
 #include <Base/Tools.h>
 
 #include <Gui/BitmapFactory.h>
@@ -287,24 +286,6 @@ SoDatumLabel::SoDatumLabel()
     m_TriangleFaceSet = new SoFaceSet;
     m_TriangleFaceSet->vertexProperty.setValue(m_TriangleVertexProperty);
 
-    // MyCAD: Lichthof unter Maßlinien und Pfeilen in der Hintergrundfarbe, lesbar auf jedem Körper (wie die
-    // Skizzenlinien). Pfeile als breite Umrisse; die Tiefe schreibt hier niemand, also liegt die Linie darüber.
-    auto* halo = new SoSeparator;
-    auto* haloColor = new SoBaseColor;
-    float transparency;
-    haloColor->rgb.setValue(SbColor().setPackedValue(
-        App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View")
-            ->GetUnsigned("BackgroundColor2", 0xF2F2F7FF),
-        transparency));
-    halo->addChild(haloColor);
-    m_HaloStyle = new SoDrawStyle;
-    m_HaloStyle->style = SoDrawStyle::LINES;
-    m_HaloStyle->linePattern.connectFrom(&this->linePattern);
-    halo->addChild(m_HaloStyle);
-    halo->addChild(m_LineSet);
-    halo->addChild(m_TriangleFaceSet);
-    m_Root->addChild(halo);
-
     m_Root->addChild(m_LineSet);
     m_Root->addChild(m_TriangleFaceSet);
 
@@ -356,7 +337,6 @@ SoDatumLabel::~SoDatumLabel()
     m_LightModel = nullptr;
     m_GeometryColor = nullptr;
     m_DrawStyle = nullptr;
-    m_HaloStyle = nullptr;
     m_LineVertexProperty = nullptr;
     m_LineSet = nullptr;
     m_TriangleVertexProperty = nullptr;
@@ -416,8 +396,9 @@ void SoDatumLabel::drawImage()
     }
     painter.end();
 
-    const int halo = 2 * sampling.getValue();
-    Gui::BitmapFactory().convert(Gui::BitmapFactory().withHalo(image, halo, halo), this->image);
+    // MyCAD: Schild hinter dem Maß, lesbar auf jedem Körper (wie Creos Maß-Hintergrund) statt Lichthof
+    const int px = sampling.getValue();  // Bildpixel je Bildschirmpixel
+    Gui::BitmapFactory().convert(Gui::BitmapFactory().withPlate(image, 4 * px, px, 4 * px), this->image);
 }
 
 namespace Gui
@@ -1761,9 +1742,6 @@ void SoDatumLabel::GLRender(SoGLRenderAction* action)
     }
 
     if (m_Root) {
-        if (m_HaloStyle->lineWidth.getValue() != lineWidth.getValue() + 3.F) {
-            m_HaloStyle->lineWidth = lineWidth.getValue() + 3.F;  // je Seite 1,5 px
-        }
         m_Root->GLRender(action);
     }
 

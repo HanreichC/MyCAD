@@ -141,9 +141,9 @@ public:
      * of all opaque pixels to a higher value.
      */
     QPixmap disabled(const QPixmap& p) const;
-    /// MyCAD: Bild mit Lichthof in der 3D-Hintergrundfarbe (radius Pixel um alles Sichtbare), damit Maße und
-    /// Skizzensymbole auf jedem Körper lesbar bleiben; pad Pixel Rand rundum, damit der Hof nicht abgeschnitten wird
-    QImage withHalo(const QImage& image, int radius, int pad = 0) const;
+    /// MyCAD: Bild auf einem Schild in der 3D-Hintergrundfarbe (abgerundet, leicht durchscheinend, padX/padY Rand in
+    /// Bildpixeln), damit Maße und Skizzensymbole auf jedem Körper lesbar bleiben (wie Creos Maß-Hintergrund)
+    QImage withPlate(const QImage& image, int padX, int padY, int radius) const;
 
     /** Creates an empty pixmap, takes care of DPI and clearing out the image.
      */

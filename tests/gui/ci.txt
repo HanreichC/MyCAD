@@ -21,7 +21,7 @@ test_purpose_ui.py
 test_print_ui.py
 test_red_pen_ui.py
 test_versions_ui.py
-test_sketch_halo.py
+test_sketch_contrast.py
 test_sketch_on_face_pick.py
 test_distance_zero.py
 test_field_arrows.py

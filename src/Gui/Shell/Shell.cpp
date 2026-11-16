@@ -5610,12 +5610,14 @@ void Gui::Shell::install()
         static const Base::Type scribble = Base::Type::fromName("Design::Scribble");
         state.sketchMode = !sketch.isBad() && vp.getObject()->getTypeId().isDerivedFrom(sketch);
         state.scribbleMode = !scribble.isBad() && vp.getObject()->getTypeId().isDerivedFrom(scribble);
+        Gui::Shell::fadeBodies(state.sketchMode);
         updateGroundGrid();
         hideChromeLater();
         QTimer::singleShot(0, layout);
     });
     Application::Instance->signalResetEdit.connect([](const ViewProviderDocumentObject&) {
         state.sketchMode = false;
+        Gui::Shell::fadeBodies(false);
         state.scribbleMode = false;
         state.scribbleFocus = false;  // "Nur das Blatt" endet mit dem Scribble
         if (QAction* a = commandAction("Design_ScribbleFocus")) {

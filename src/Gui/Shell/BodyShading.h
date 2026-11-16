@@ -38,4 +38,9 @@ GuiExport SoNode* contactShadow(SoNode* objects, std::function<std::vector<SoSwi
 /// Reflections: aus = nur weicher Glanz, SurfaceDetail: Relief und Hirnholz, ContactShadow; alle an als Vorgabe)
 GuiExport void applyRenderQuality();
 
+/// Solange eine Skizze offen ist, treten Körper zur Hintergrundfarbe hin zurück (halb), damit dünne Skizzenlinien und
+/// Maße auch auf dunklen Körpern lesbar sind (wie Onshape andere Teile beim Bearbeiten zurücknimmt). Ändert nichts im Dokument.
+/// ponytail: nur mit "Realistische Materialien" (der Shader); im Phong-Modus bleiben Körper wie sie sind
+GuiExport void fadeBodies(bool on);
+
 }  // namespace Gui::Shell
