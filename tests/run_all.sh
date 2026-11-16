@@ -42,7 +42,7 @@ grep -E '^(Ran|OK|FAILED)|(ERROR|FAIL):' "$OUTDIR/design.txt"
 
 if [ "${GUI:-ci}" != none ]; then
     step "GUI-Tests (${GUI:-ci})"
-    if [ "${GUI:-ci}" = all ]; then list=(tests/gui/test_*.py); else mapfile -t list < <(grep -v '^#' tests/gui/ci.txt | sed '/^$/d; s|^|tests/gui/|'); fi
+    if [ "${GUI:-ci}" = all ]; then list=(tests/gui/test_*.py); else mapfile -t list < <(grep -v '^#' tests/gui/ci.txt | sed 's/\r$//; /^$/d; s|^|tests/gui/|'); fi
     export OUTDIR
     export MYCAD_TIMEOUT="${MYCAD_TIMEOUT:-600}"  # lange Tests (test_scribble, test_sketch_tools) brauchen unter Last mehr als 180 s
     gui_test() {  # $1 = Testdatei, $2 = Name der Ausgabe (eigenes Home je Lauf)
