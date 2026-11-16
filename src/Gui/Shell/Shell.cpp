@@ -3513,6 +3513,35 @@ void toggleBrowser()
     layout();
 }
 
+/// Strg+C, Strg+X, Strg+V in der Skizze: die Sketcher-Befehle statt Std_Copy/Std_Paste (die Sketcher-Befehle stecken in
+/// keiner Leiste, ihre Tastenkürzel griffen nie). Eingefügtes hängt gleich zum Verschieben am Cursor (Sketcher_Paste).
+/// In Eingabefeldern bleiben die Tasten beim Text.
+class SketchClipboardKeys: public QObject
+{
+protected:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        if (!state.sketchMode || (event->type() != QEvent::ShortcutOverride && event->type() != QEvent::KeyPress)) {
+            return false;
+        }
+        auto key = static_cast<QKeyEvent*>(event);
+        const char* cmd = key->matches(QKeySequence::Copy) ? "Sketcher_CopyClipboard"
+            : key->matches(QKeySequence::Cut)              ? "Sketcher_Cut"
+            : key->matches(QKeySequence::Paste)            ? "Sketcher_Paste"
+                                                           : nullptr;
+        QWidget* focus = QApplication::focusWidget();
+        if (!cmd || qobject_cast<QLineEdit*>(focus) || qobject_cast<QAbstractSpinBox*>(focus)
+            || qobject_cast<QTextEdit*>(focus) || qobject_cast<QPlainTextEdit*>(focus)) {
+            return false;
+        }
+        if (event->type() == QEvent::KeyPress) {
+            Application::Instance->commandManager().runCommandByName(cmd);
+        }
+        event->accept();
+        return true;
+    }
+};
+
 /// Klick in ein Zahlen- oder Textfeld wählt den ganzen Inhalt, Tippen überschreibt ihn. Erst danach auswählen: der
 /// Mausklick selbst, der nach dem Fokus kommt, hebt die Auswahl sonst wieder auf.
 class SelectFieldOnClick: public QObject
@@ -5436,6 +5465,7 @@ void Gui::Shell::install()
     qApp->installEventFilter(new HelpKey);
     qApp->installEventFilter(new SketchTaskFilter);
     qApp->installEventFilter(new SelectFieldOnClick);
+    qApp->installEventFilter(new SketchClipboardKeys);
     if (frameless()) {
         state.corners = new WindowCorners;
         state.titleGrip = new TitleGrip;

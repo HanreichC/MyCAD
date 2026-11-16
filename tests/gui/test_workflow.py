@@ -11,7 +11,9 @@
    darüber (die das Profil zudeckt) nimmt es wieder heraus.
 3. In der Skizze: Strg+Z nimmt die letzte Linie zurück, Strg+Y (wie Fusion) und Strg+Umschalt+Z holen sie wieder.
    Esc mit einer gewählten Kante hebt nur die Auswahl auf (vorher verließ es sofort die Skizze), und auch ohne Auswahl
-   bleibt man wie in Fusion in der Skizze (verlassen nur über "Skizze fertig stellen")."""
+   bleibt man wie in Fusion in der Skizze (verlassen nur über "Skizze fertig stellen").
+   Strg+C, Strg+V kopiert die Linie auf der X-Achse; die Kopie hängt gleich am Cursor (ohne den Bezug zur Achse) und ein
+   Klick setzt sie ab (vorher taten die Tasten in der Skizze nichts)."""
 import math, os
 from PySide6 import QtGui
 from harness import *
@@ -252,6 +254,16 @@ def draw(a, b):
             ("esc", lambda: key(QtCore.Qt.Key_Escape)), W]
 
 
+def pasted():
+    ys = sorted(round(g.StartPoint.y, 3) for g in sk().Geometry if hasattr(g, "StartPoint") and abs(g.StartPoint.y - g.EndPoint.y) < 1e-6)
+    # abgesetzt per Mausklick: auf einen Bruchteil eines Millimeters genau, waagerecht und so lang wie das Original
+    copy = [g for g in sk().Geometry if hasattr(g, "StartPoint") and abs(g.StartPoint.y + 20) < 0.5 and abs(g.EndPoint.y - g.StartPoint.y) < 1e-6]
+    check("Ctrl+C, Ctrl+V in a sketch pastes a copy that follows the cursor; a click places it",
+          sk().GeometryCount == 3 and len(copy) == 1 and abs(copy[0].StartPoint.x + copy[0].EndPoint.x) < 1
+          and abs(copy[0].length() - sk().Geometry[0].length()) < 1e-6,
+          "count=%d horizontal at y=%s copy=%s" % (sk().GeometryCount, ys, [(g.StartPoint, g.EndPoint) for g in copy]))
+
+
 def zoom():
     sk().addGeometry(Part.Circle(V(0, 0, 0), V(0, 0, 1), 60)); doc().recompute(); Gui.SendMsgToActiveView("ViewFit")
     sk().delGeometry(0); doc().recompute()
@@ -272,6 +284,10 @@ three = [("sketch", lambda: click(button("Design_CreateSketch"))),
                                  "in sketch=%s selection=%s" % (Gui.ActiveDocument.getInEdit() is not None, Gui.Selection.getSelectionEx()))),
          ("esc empty", lambda: key(QtCore.Qt.Key_Escape)), W,
          ("stays", lambda: check("Esc with nothing selected and no tool stays in the sketch (like Fusion)",
-                                 Gui.ActiveDocument.getInEdit() is not None))]
+                                 Gui.ActiveDocument.getInEdit() is not None)),
+         ("select 2", lambda: (Gui.Selection.clearSelection(), Gui.Selection.addSelection(doc().Name, sk().Name, "Edge1"))), W,
+         ("ctrl c", lambda: key(QtCore.Qt.Key_C, QtCore.Qt.ControlModifier)), W,
+         ("ctrl v", lambda: key(QtCore.Qt.Key_V, QtCore.Qt.ControlModifier)), W,
+         ("place", lambda: press(V(0, -20, 0))), W, ("pasted", pasted)]
 
 run([("activate", activate), *one, *two, *three])

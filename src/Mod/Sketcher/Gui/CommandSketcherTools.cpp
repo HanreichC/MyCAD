@@ -61,6 +61,7 @@
 
 
 #include "DrawSketchHandlerTranslate.h"
+#include <Base/BoundBox.h>
 #include "DrawSketchHandlerOffset.h"
 #include "DrawSketchHandlerRotate.h"
 #include "DrawSketchHandlerScale.h"
@@ -414,14 +415,51 @@ void CmdSketcherPaste::activated(int iMsg)
     }
     data = "objectStr = " + Gui::Command::getObjectCmd(obj) +"\n" + data;
 
-   openCommand(QT_TRANSLATE_NOOP("Command", "Paste in Sketcher"));
+    const int firstPasted = obj->getHighestCurveIndex() + 1;
+    const int firstConstraint = obj->Constraints.getSize();
+    openCommand(QT_TRANSLATE_NOOP("Command", "Paste in Sketcher"));
 
     Gui::Command::doCommand(Gui::Command::Doc, data.c_str());
+
+    // MyCAD: wie Fusion behält die Kopie nur Bedingungen untereinander; Bezüge auf Achsen, Ursprung und projizierte
+    // Kanten hielten sie sonst deckungsgleich am Original fest, und sie ließe sich nicht verschieben
+    std::vector<int> external;
+    const auto& constraints = obj->Constraints.getValues();
+    for (int i = firstConstraint; i < static_cast<int>(constraints.size()); ++i) {
+        for (size_t k = 0; constraints[i]->hasElement(k); ++k) {
+            if (constraints[i]->getGeoId(k) < 0 && constraints[i]->getGeoId(k) != GeoEnum::GeoUndef) {
+                external.push_back(i);
+                break;
+            }
+        }
+    }
+    if (!external.empty()) {
+        obj->delConstraints(external);
+    }
 
     obj->solve(true);
     vp->draw(false, false);
 
     commitCommand();
+
+    // MyCAD: wie Fusion gleich verschieben: Verschieben mit der Mitte der Kopie als Bezugspunkt, die Kopie folgt dem
+    // Cursor, ein Klick setzt sie ab (Esc lässt sie deckungsgleich liegen)
+    std::vector<int> pasted;
+    Base::BoundBox3d box;
+    for (int geoId = firstPasted; geoId <= obj->getHighestCurveIndex(); ++geoId) {
+        pasted.push_back(geoId);
+        for (auto pos : {PointPos::start, PointPos::end, PointPos::mid}) {
+            box.Add(obj->getPoint(geoId, pos));
+        }
+    }
+    if (!pasted.empty() && box.IsValid()) {
+        auto handler = std::make_unique<DrawSketchHandlerTranslate>(pasted);
+        DrawSketchHandler* translate = handler.get();
+        ActivateHandler(doc, std::move(handler));
+        if (vp->isInEditMode() && vp->getSketchMode() == ViewProviderSketch::STATUS_SKETCH_UseHandler) {
+            translate->pressButton(Base::Vector2d(box.GetCenter().x, box.GetCenter().y));
+        }
+    }
 }
 
 bool CmdSketcherPaste::isActive()
