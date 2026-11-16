@@ -2736,11 +2736,22 @@ protected:
                 makeAlert(dialog);
                 dialog->setProperty("glassTitle", !dialog->windowTitle().isEmpty());
                 const int title = dialog->windowTitle().isEmpty() ? 0 : AlertPainter::TitleHeight;
-                // Innenabstand 20 oben, 22 seitlich, 18 unten (MyStyle § 7.1) statt dem des Layouts
-                dialog->setContentsMargins(AlertPainter::Shadow + 22, AlertPainter::Shadow + 20 + title, AlertPainter::Shadow + 22,
-                                           AlertPainter::Shadow + 18);
+                // Innenabstand 20 oben, 22 seitlich, 18 unten (MyStyle § 7.1) statt dem des Layouts; das Maß am Maß
+                // (Sketcher, "InlineDatum") ist nur ein Feld auf einem Schild: knapp gerahmt
+                const int pad = dialog->objectName() == QLatin1String("InlineDatum") ? 8 : 0;
+                if (pad) {
+                    dialog->setContentsMargins(AlertPainter::Shadow + pad, AlertPainter::Shadow + pad, AlertPainter::Shadow + pad,
+                                               AlertPainter::Shadow + pad);
+                }
+                else {
+                    dialog->setContentsMargins(AlertPainter::Shadow + 22, AlertPainter::Shadow + 20 + title,
+                                               AlertPainter::Shadow + 22, AlertPainter::Shadow + 18);
+                }
                 if (QLayout* lay = dialog->layout()) {
                     lay->setContentsMargins(0, 0, 0, 0);
+                    if (pad) {
+                        lay->setSpacing(6);
+                    }
                 }
                 // Stylesheet-Regeln für [glass="true"] greifen erst nach neuem Polieren, auch bei schon polierten
                 // Kindern (eine Tabelle poliert ihren Kopf beim Bemessen, lange vor dem Einblenden)
@@ -2757,7 +2768,9 @@ protected:
                     }
                 }
             }
-            if (auto dialog = qobject_cast<QDialog*>(obj); dialog && dialog->parentWidget()) {
+            // Abdunklung nicht beim Maß am Maß: man soll sehen, was man bemaßt
+            if (auto dialog = qobject_cast<QDialog*>(obj);
+                dialog && dialog->parentWidget() && dialog->objectName() != QLatin1String("InlineDatum")) {
                 dialog->installEventFilter(Scrim::instance());
             }
             // FreeCADs Toolbars (MyCAD zeigt sie nie, siehe hideChrome) ohne Platz im Fensterlayout: Qt legt das Layout

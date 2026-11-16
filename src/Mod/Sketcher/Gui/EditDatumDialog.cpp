@@ -27,7 +27,13 @@
 #include <Inventor/sensors/SoSensor.h>
 #include <QApplication>
 #include <QDialog>
+#include <QDialogButtonBox>
+#include <QKeyEvent>
+#include <QPushButton>
+#include <QTimer>
 #include <QToolTip>
+#include <App/DocumentObserver.h>
+#include <Mod/Part/App/Geometry.h>
 
 
 #include <App/Expression.h>
@@ -59,6 +65,60 @@
 using namespace SketcherGui;
 
 std::function<std::string(App::Document*, const std::string&)> SketcherGui::datumExpression;
+
+namespace
+{
+/// Inline-Maßfeld (ohne sichtbaren OK-Knopf). Enter prüft zuerst das Feld wie gewohnt (ein Parametername ist dort
+/// keine Zahl, inputRejected bindet ihn); kommt es danach beim Dialog an, übernimmt apply. Tab im Feld ist Enter mit
+/// Sprung zum nächsten Maß (statt den Fokus weiterzugeben).
+class InlineKeys: public QObject
+{
+public:
+    InlineKeys(QDialog* dialog, QWidget* field, bool* tabNext, std::function<void()> apply)
+        : QObject(dialog)
+        , dialog(dialog)
+        , field(field)
+        , tabNext(tabNext)
+        , apply(std::move(apply))
+    {
+        dialog->installEventFilter(this);
+        field->installEventFilter(this);
+    }
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (event->type() != QEvent::KeyPress && event->type() != QEvent::ShortcutOverride) {
+            return false;
+        }
+        const int key = static_cast<QKeyEvent*>(event)->key();
+        const bool enter = key == Qt::Key_Return || key == Qt::Key_Enter;
+        if (obj == field && key == Qt::Key_Tab) {
+            if (event->type() == QEvent::KeyPress) {
+                *tabNext = true;
+                QKeyEvent press(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+                QApplication::sendEvent(field, &press);  // wie Enter: Feld prüft, Dialog übernimmt
+            }
+            event->accept();
+            return true;
+        }
+        if (obj == dialog && enter && event->type() == QEvent::KeyPress) {
+            apply();
+            if (dialog->isVisible()) {  // Eingabe abgelehnt (Hinweis am Feld): Tab gilt nicht mehr
+                *tabNext = false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+private:
+    QDialog* dialog;
+    QWidget* field;
+    bool* tabNext;
+    std::function<void()> apply;
+};
+}  // namespace
 
 /* TRANSLATOR SketcherGui::EditDatumDialog */
 
@@ -186,6 +246,26 @@ int EditDatumDialog::exec(bool atCursor)
             );
         }
 
+        // MyCAD: aus der Skizze heraus tippt man das Maß am Maß ein: nur das Feld (dazu R/⌀ und Referenz), kein
+        // Titel, keine Knöpfe, keine Abdunklung (Shell: "InlineDatum"). Enter übernimmt, Esc verwirft, Tab übernimmt
+        // und springt zum nächsten Maß. Den Namen gibt es in der Karte aus der Liste (exec(false)).
+        if (atCursor) {
+            dlg.setObjectName(QStringLiteral("InlineDatum"));
+            dlg.setWindowTitle(QString());
+            ui_ins_datum->label->hide();
+            ui_ins_datum->label_2->hide();
+            ui_ins_datum->name->hide();
+            ui_ins_datum->buttonBox->hide();
+            // eine Zeile: Wert, (R | ⌀), Referenz
+            ui_ins_datum->gridLayout->addWidget(ui_ins_datum->rbRadius, 0, 2);
+            ui_ins_datum->gridLayout->addWidget(ui_ins_datum->rbDiameter, 0, 3);
+            ui_ins_datum->gridLayout->addWidget(ui_ins_datum->cbDriving, 0, 4);
+            ui_ins_datum->labelEdit->setToolTip(tr("Enter applies, Esc cancels, Tab goes to the next dimension"));
+            new InlineKeys(&dlg, ui_ins_datum->labelEdit, &tabNext, [this] {
+                ui_ins_datum->buttonBox->button(QDialogButtonBox::Ok)->click();  // prüft wie OK
+            });
+        }
+
         init_val.setValue(datum);
 
         ui_ins_datum->labelEdit->setValue(init_val);
@@ -289,22 +369,80 @@ int EditDatumDialog::exec(bool atCursor)
 
         if (atCursor) {
             dlg.show();  // Need to show the dialog so geometry is computed
+            // MyCAD: Feld mittig auf das Maß (Cursor bzw. at), im Fenster gehalten
+            const QPoint centre = at.x() >= 0 ? at : QCursor::pos();
             QRect pg = dlg.parentWidget()->geometry();
             int Xmin = pg.x() + 10;
             int Ymin = pg.y() + 10;
             int Xmax = pg.x() + pg.width() - dlg.geometry().width() - 10;
             int Ymax = pg.y() + pg.height() - dlg.geometry().height() - 10;
             int x = Xmax < Xmin ? (Xmin + Xmax) / 2
-                                : std::min(std::max(QCursor::pos().x(), Xmin), Xmax);
+                                : std::min(std::max(centre.x() - dlg.width() / 2, Xmin), Xmax);
             int y = Ymax < Ymin ? (Ymin + Ymax) / 2
-                                : std::min(std::max(QCursor::pos().y(), Ymin), Ymax);
+                                : std::min(std::max(centre.y() - dlg.height() / 2, Ymin), Ymax);
             dlg.setGeometry(x, y, dlg.geometry().width(), dlg.geometry().height());
         }
 
-        return dlg.exec();
+        const int result = dlg.exec();
+        if (result == QDialog::Accepted && tabNext) {
+            editNext();
+        }
+        return result;
     }
 
     return QDialog::Rejected;
+}
+
+/// Tab im Feld: das nächste treibende Maß der Skizze (der Reihe nach, am Ende wieder vorn) gleich am Maß eintippen.
+/// Lage: Mitte dessen, was es bemaßt (zwei Punkte, eine Linie, ein Kreis); das Schild steht daneben.
+void EditDatumDialog::editNext()
+{
+    const auto& constraints = sketch->Constraints.getValues();
+    const int count = static_cast<int>(constraints.size());
+    int next = -1;
+    for (int k = 1; k < count && next < 0; ++k) {
+        const int j = (ConstrNbr + k) % count;
+        if (constraints[j]->isDimensional() && constraints[j]->isDriving) {
+            next = j;
+        }
+    }
+    auto vp = dynamic_cast<ViewProviderSketch*>(Gui::Application::Instance->getViewProvider(sketch));
+    auto view = vp ? qobject_cast<Gui::View3DInventor*>(Gui::getMainWindow()->activeWindow()) : nullptr;
+    if (next < 0 || !view) {
+        return;
+    }
+    const Sketcher::Constraint* c = constraints[next];
+    const auto point = [this](int geoId, Sketcher::PointPos pos) {
+        if (pos != Sketcher::PointPos::none) {
+            return sketch->getPoint(geoId, pos);
+        }
+        const Part::Geometry* geo = sketch->getGeometry(geoId);
+        if (geo && geo->is<Part::GeomLineSegment>()) {
+            return (sketch->getPoint(geoId, Sketcher::PointPos::start) + sketch->getPoint(geoId, Sketcher::PointPos::end)) / 2;
+        }
+        return sketch->getPoint(geoId, Sketcher::PointPos::mid);
+    };
+    Base::Vector3d p = point(c->First, c->FirstPos);
+    if (c->Second != Sketcher::GeoEnum::GeoUndef) {
+        p = (p + point(c->Second, c->SecondPos)) / 2;
+    }
+    Base::Vector3d g;
+    sketch->globalPlacement().multVec(p, g);
+    Gui::View3DInventorViewer* viewer = view->getViewer();
+    const QPoint local = viewer->toQPoint(viewer->getPointOnViewport(SbVec3f(float(g.x), float(g.y), float(g.z))));
+    const QPoint global = viewer->getGLWidget()->mapToGlobal(local);
+    const App::DocumentObjectT target(sketch);
+    QTimer::singleShot(0, [target, next, global] {  // erst wenn dieses Feld ganz weg ist
+        auto sk = dynamic_cast<Sketcher::SketchObject*>(target.getObject());
+        auto v = sk ? dynamic_cast<ViewProviderSketch*>(Gui::Application::Instance->getViewProvider(sk)) : nullptr;
+        if (!v || !v->isInEditMode() || next >= sk->Constraints.getSize()) {
+            return;
+        }
+        const int tid = v->getDocument()->openCommand(QT_TRANSLATE_NOOP("Command", "Modify sketch constraints"));
+        EditDatumDialog dialog(tid, v, next);
+        dialog.setPosition(global);
+        dialog.exec();
+    });
 }
 
 void EditDatumDialog::typeChanged(bool checked)

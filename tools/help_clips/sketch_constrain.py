@@ -64,6 +64,7 @@ def sc_glide(target, then=None, ms=400, n=8, buttons=QtCore.Qt.NoButton):
 
 def sc_click_at(p):
     sc_hover(p)
+    QtGui.QCursor.setPos(sc_view().viewport().mapToGlobal(p))  # wie echt: das Maßfeld öffnet sich am Zeiger
     record_click(sc_view().viewport().mapToGlobal(p))
     QtTest.QTest.mouseClick(sc_view().viewport(), QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, p)
 

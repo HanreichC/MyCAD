@@ -679,6 +679,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Pick a face that exists before this feature", "Wähle eine Fläche, die es vor diesem Feature schon gibt"},
         {"Pick an edge that exists before this feature", "Wähle eine Kante, die es vor diesem Feature schon gibt"},
         {"Profile gone: ", "Profil weg: "},
+        {"Enter applies, Esc cancels, Tab goes to the next dimension", "Enter übernimmt, Esc verwirft, Tab springt zum nächsten Maß"},
         {"Face gone: ", "Fläche weg: "},
         {"the step this sketch was drawn on was deleted; it stays where it was", "der Schritt, auf dessen Fläche diese Skizze lag, wurde gelöscht; sie bleibt an ihrem Platz"},
         {"%1 no longer lies on a face. It stays where it was.", "%1 liegt auf keiner Fläche mehr. Sie bleibt an ihrem Platz."},

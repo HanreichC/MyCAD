@@ -25,6 +25,7 @@
 #pragma once
 
 #include <QObject>
+#include <QPoint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -62,10 +63,20 @@ public:
     EditDatumDialog(int tid, Sketcher::SketchObject* pcSketch, int ConstrNbr);
     ~EditDatumDialog() override;
 
+    /// atCursor (aus der Skizze heraus): MyCAD tippt das Maß am Maß selbst ein, als schlankes Feld ohne Fenster,
+    /// mittig auf dem Cursor bzw. auf at (Tab zum nächsten Maß). Aus Listen (false) die Karte mit Name.
     int exec(bool atCursor = true);
     bool isSuccess();
+    /// Feld mittig auf diesen Bildschirmpunkt statt auf den Cursor
+    void setPosition(const QPoint& global)
+    {
+        at = global;
+    }
 
 private:
+    QPoint at {-1, -1};
+    bool tabNext = false;  ///< mit Tab bestätigt: danach das nächste Maß der Skizze
+    void editNext();
     Sketcher::SketchObject* sketch;
     Sketcher::Constraint* Constr;
     int ConstrNbr;

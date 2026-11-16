@@ -462,7 +462,7 @@ ein Feature nach dem anderen (je Tests, Hilfe EN/DE, README, Wiki, ein Commit). 
 
 | Nr. | Feature | Kern | Status |
 |---|---|---|---|
-| 11.1 | Maß am Maß eintippen | Das Schild des Maßes wird selbst zum Eingabefeld (kein Fenster „Insert Length“); Enter übernimmt, Esc verwirft, Tab springt zum nächsten Maß der Skizze. Parameter und Formeln wie bisher. | offen |
+| 11.1 | Maß am Maß eintippen | Das Schild des Maßes wird selbst zum Eingabefeld (kein Fenster „Insert Length“); Enter übernimmt, Esc verwirft, Tab springt zum nächsten Maß der Skizze. Parameter und Formeln wie bisher. | erledigt 2026-11-16: Feld mit R/⌀ und Referenz in einer Zeile, ohne Abdunklung; aus der Constraint-Liste weiter die Karte mit Name (`test_dimension_inline`) |
 | 11.2 | Abhängigkeiten sichtbar, bevor es knallt | Maus über einem Timeline-Schritt hebt im Modell und in der Timeline hervor, was daran hängt. Vor dem Löschen zeigt eine Vorschau, was mitgeht oder eine Warnung bekommt (proaktiv statt „Fläche weg“ hinterher). | offen |
 | 11.3 | Druckbar machen mit einem Klick | Die Druckansicht repariert, was sie findet: Überhang → 45°-Fase, Bohrung von der Seite → Tropfenform, zu dünne Wand → Mindestwand. Als Vorschläge im Fehlermodell (Idee 6), einzeln bestätigen. | offen |
 | 11.4 | Messen ohne Werkzeug | Zwei gewählte Elemente zeigen sofort Abstand/Winkel/Durchmesser klein daneben; Klick darauf macht ein Maß oder einen Parameter. | offen |

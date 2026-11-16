@@ -33,7 +33,7 @@ Messages show up as floating glass alerts with no window frame and capsule-shape
 
 Pick a plane and start drawing: line, polyline, rectangle, circle, arc, slot, polygon, B-spline, conic, point and text. You can project edges from your model straight into the sketch.
 
-Fillet, trim, extend, split, offset, mirror, pattern, move and scale are all one click away. A single dimension tool works out from your selection what you want to measure. The available constraints are coincident, horizontal, vertical, parallel, perpendicular, tangent, equal, symmetric and fix.
+Fillet, trim, extend, split, offset, mirror, pattern, move and scale are all one click away. A single dimension tool works out from your selection what you want to measure. Place the dimension and type the value right on it, no window in the way; **Tab** applies it and jumps to the next dimension, so you size a whole sketch without touching the mouse. The available constraints are coincident, horizontal, vertical, parallel, perpendicular, tangent, equal, symmetric and fix.
 
 **Esc** puts the active tool away, and **Finish Sketch** takes you back to your model.
 
