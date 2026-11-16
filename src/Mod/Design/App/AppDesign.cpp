@@ -61,6 +61,8 @@ public:
                            "applyCorrection(doc, text, at, view[, element]): new feature (ValueError if not possible)");
         add_varargs_method("printCheck", &Module::printCheck,
                            "printCheck(body[, up, angle, wall]): dict of overhang, bed and thin areas (mm²) and triangles");
+        add_varargs_method("printFixes", &Module::printFixes,
+                           "printFixes(doc): [(feature name, label, property, value)] that make the design print better");
         add_varargs_method("printUp", &Module::printUp, "printUp(doc): print direction of the design (up)");
         add_varargs_method("setPrintUp", &Module::setPrintUp, "setPrintUp(doc, vector): print direction (up)");
         add_varargs_method("fastenerAt", &Module::fastenerAt,
@@ -296,6 +298,15 @@ private:
         d["bed"] = Py::Float(r.bedArea);
         d["thin"] = Py::Float(r.thinArea);
         return d;
+    }
+    Py::Object printFixes(const Py::Tuple& args)
+    {
+        Py::List out;
+        for (const auto& f : Design::printFixes(doc(args))) {
+            out.append(Py::TupleN(Py::String(f.feature->getNameInDocument()), Py::String(f.label), Py::String(f.property),
+                                  Py::Float(f.value)));
+        }
+        return out;
     }
     Py::Object printUp(const Py::Tuple& args)
     {

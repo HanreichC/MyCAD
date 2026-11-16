@@ -213,7 +213,7 @@ The woods, stone, leather, cork, fabric, carbon and brushed metals are real phot
 
 ## Made for makers.
 
-**Print View** shows on the model what your printer will struggle with: overhangs hatched red, faces on the bed dotted green, walls that are too thin cross-hatched yellow. Pick the face that should lie on the bed, then hit **Print**: MyCAD finds **OrcaSlicer**, **Bambu Studio**, **PrusaSlicer** or **UltiMaker Cura**, installed as a program, a **Flatpak** or an AppImage, and opens your design there as a colored 3MF, right side down.
+**Print View** shows on the model what your printer will struggle with: overhangs hatched red, faces on the bed dotted green, walls that are too thin cross-hatched yellow. Under **Make printable** it offers the fix, one click each: a sideways hole becomes a teardrop that needs no supports, a fillet chamfers its bottom edges at 45°, a thin wall grows to the minimum. Pick the face that should lie on the bed, then hit **Print**: MyCAD finds **OrcaSlicer**, **Bambu Studio**, **PrusaSlicer** or **UltiMaker Cura**, installed as a program, a **Flatpak** or an AppImage, and opens your design there as a colored 3MF, right side down.
 
 ![Print View](src/Gui/Shell/help/images/Design_PrintView.gif)
 

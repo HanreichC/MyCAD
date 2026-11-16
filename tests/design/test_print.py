@@ -62,6 +62,19 @@ class Walls(DesignTest):
         _, b = box(self.doc, 20, 20, 2)
         self.assertAlmostEqual(Design.printCheck(b)["thin"], 0)
 
+    def test_hole_wall_is_not_thin(self):
+        """Bohrung Ø5 in 20 x 20 x 10: rundum mindestens 2,5 mm Wand. Die Dreiecke der Bohrung sind Sehnen, ihr
+        Mittelpunkt liegt in der Luft; früher zählte der Eintritt durch die eigene Fläche als dünne Wand."""
+        _, b = box(self.doc, 20, 20, 10)
+        for placement in (App.Placement(V(0, 0, 10), App.Rotation()),
+                          App.Placement(V(20, 10, 5), App.Rotation(V(0, 1, 0), 90))):
+            at = V(10, 10, 0) if placement.Base.z == 10 else V(0, 0, 0)
+            sk = sketch(self.doc, [Part.Point(at)], placement)
+            f = feature(self.doc, "Design::Hole", Design.componentOf(b), Sketch=sk, Diameter=5, Depth=10)
+            Design.attachToBodies(f, [b])
+            self.doc.recompute()
+            self.assertAlmostEqual(Design.printCheck(b)["thin"], 0)
+
     def test_own_limit(self):
         _, b = box(self.doc, 20, 20, 2)
         self.assertAlmostEqual(Design.printCheck(b, V(0, 0, 1), 45, 3)["thin"], 2 * 400, delta=1)

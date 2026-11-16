@@ -2006,11 +2006,20 @@ Design::PrintCheckResult Design::printCheck(Part::TopoShape shape, const Base::V
             add(result.bed, result.bedArea);
         }
         if (minWall > 0 && i % step == 0) {
-            // vom Mittelpunkt gegen die Normale ins Material: trifft der Strahl vor minWall wieder auf die Oberfläche,
-            // ist die Wand hier dünner
+            // vom Mittelpunkt gegen die Normale ins Material: verlässt der Strahl das Material vor minWall wieder,
+            // ist die Wand hier dünner. Nur Austritte zählen: in einer Bohrung liegt der Mittelpunkt eines Dreiecks
+            // (Sehne) bis zur Netzgenauigkeit in der Luft, der Strahl tritt dort erst durch die eigene Fläche ein.
             const Base::Vector3d m = (a + b + c) / 3 - n * 1e-4;
-            inside.Perform(gp_Lin(gp_Pnt(m.x, m.y, m.z), gp_Dir(-n.x, -n.y, -n.z)), 1e-6, minWall);
-            if (inside.IsDone() && inside.NbPnt() > 0) {
+            const gp_Dir dir(-n.x, -n.y, -n.z);
+            inside.Perform(gp_Lin(gp_Pnt(m.x, m.y, m.z), dir), 1e-6, minWall);
+            bool leaves = false;
+            for (int k = 1; inside.IsDone() && k <= inside.NbPnt() && !leaves; ++k) {
+                gp_Pnt p;
+                gp_Vec out;
+                BRepGProp_Face(inside.Face(k)).Normal(inside.UParameter(k), inside.VParameter(k), p, out);
+                leaves = out.Dot(gp_Vec(dir)) > 0;
+            }
+            if (leaves) {
                 add(result.thin, result.thinArea);
             }
         }
@@ -2044,6 +2053,14 @@ void Design::setPrintUp(App::Document* doc, const Base::Vector3d& up)
     Base::Vector3d v = up;
     v.Normalize();
     prop->setValue(v);
+    // Tropfenform und gefaste Unterkanten hängen an der Druckrichtung
+    for (auto obj : doc->getObjects()) {
+        auto hole = freecad_cast<Hole*>(obj);
+        auto fillet = freecad_cast<Fillet*>(obj);
+        if ((hole && hole->Teardrop.getValue()) || (fillet && fillet->PrintChamfer.getValue())) {
+            obj->touch();
+        }
+    }
 }
 
 std::vector<std::pair<App::DocumentObject*, App::DocumentObject*>> Design::collisions(App::Part* moving)
@@ -3622,6 +3639,43 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
     return result;
 }
 
+namespace
+{
+/// Druckrichtung des Designs in Koordinaten der Komponente von obj
+gp_Dir printUpIn(const App::DocumentObject* obj)
+{
+    Base::Vector3d up = Design::printUp(obj->getDocument());
+    Design::componentOf(obj)->globalPlacement().getRotation().inverse().multVec(up, up);
+    return gp_Dir(up.x, up.y, up.z);
+}
+
+/// Hinge die Rundung dieser Kante beim Drucken über? Die Winkelhalbierende der beiden Flächennormalen (aus dem Körper
+/// heraus) zeigt dann deutlich nach unten: eine Unterkante. Senkrechte Kanten und Oberkanten drucken.
+bool overhangingEdge(const TopoDS_Shape& shape, const TopoDS_Edge& edge, const gp_Dir& up)
+{
+    TopTools_IndexedDataMapOfShapeListOfShape facesOf;
+    TopExp::MapShapesAndAncestors(shape, TopAbs_EDGE, TopAbs_FACE, facesOf);
+    const TopTools_ListOfShape* faces = facesOf.Seek(edge);
+    if (!faces || faces->Extent() != 2) {
+        return false;
+    }
+    gp_Vec sum;
+    for (TopTools_ListIteratorOfListOfShape f(*faces); f.More(); f.Next()) {
+        const TopoDS_Face& face = TopoDS::Face(f.Value());
+        BRepAdaptor_Curve2d curve(edge, face);
+        const gp_Pnt2d uv = curve.Value((curve.FirstParameter() + curve.LastParameter()) / 2);
+        gp_Pnt p;
+        gp_Vec n;
+        BRepGProp_Face(face).Normal(uv.X(), uv.Y(), p, n);
+        if (n.Magnitude() < 1e-9) {
+            return false;
+        }
+        sum += n.Normalized();
+    }
+    return sum.Magnitude() > 1e-9 && sum.Normalized().Dot(gp_Vec(up)) < -0.3;
+}
+}  // namespace
+
 App::DocumentObjectExecReturn* DressUp::run(bool fillet)
 {
     if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
@@ -3647,7 +3701,42 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
             if (end < Precision::Confusion()) {
                 return new App::DocumentObjectExecReturn("Radius must be greater than zero");
             }
-            res.makeElementFillet(shape, edges, size, end);
+            // Druckbar (11.3): Unterkanten erst fasen (45°, gleicher Abstand), dann den Rest runden. Die übrigen
+            // Kanten liegen nach dem Fasen auf denselben Kurven, nur gekürzt: dort wiederfinden.
+            std::vector<Part::TopoShape> down, rest;
+            const gp_Dir up = printUpIn(this);
+            for (const auto& e : edges) {
+                (f->PrintChamfer.getValue() && e.getShape().ShapeType() == TopAbs_EDGE
+                         && overhangingEdge(shape.getShape(), TopoDS::Edge(e.getShape()), up)
+                     ? down
+                     : rest)
+                    .push_back(e);
+            }
+            if (down.empty()) {
+                res.makeElementFillet(shape, edges, size, end);
+            }
+            else {
+                Part::TopoShape chamfered(0, getDocument()->getStringHasher());
+                chamfered.makeElementChamfer(shape, down, Part::ChamferType::equalDistance, size, size);
+                std::vector<Part::TopoShape> again;
+                for (const auto& r : rest) {
+                    for (const auto& candidate : chamfered.getSubTopoShapes(TopAbs_EDGE)) {
+                        BRepAdaptor_Curve c(TopoDS::Edge(candidate.getShape()));
+                        const TopoDS_Vertex mid = BRepBuilderAPI_MakeVertex(c.Value((c.FirstParameter() + c.LastParameter()) / 2));
+                        BRepExtrema_DistShapeShape dist(mid, r.getShape());
+                        if (dist.IsDone() && dist.Value() < 1e-6) {
+                            again.push_back(candidate);
+                            break;
+                        }
+                    }
+                }
+                if (again.empty()) {
+                    res = chamfered;
+                }
+                else {
+                    res.makeElementFillet(chamfered, again, size, end);
+                }
+            }
         }
         else {
             auto c = static_cast<Chamfer*>(this);
@@ -3719,6 +3808,54 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
     return StdReturn;
 }
 
+std::vector<Design::PrintFix> Design::printFixes(App::Document* doc)
+{
+    std::vector<PrintFix> fixes;
+    const double minWall = App::GetApplication()
+                               .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")
+                               ->GetFloat("MinWall", 0.8);
+    for (App::DocumentObject* obj : timeline(doc)) {
+        auto feature = freecad_cast<Feature*>(obj);
+        if (!feature || feature->Suppressed.getValue() || isRolledBack(feature)) {
+            continue;
+        }
+        if (auto hole = freecad_cast<Hole*>(feature); hole && !hole->Teardrop.getValue()) {
+            auto sketch = freecad_cast<App::GeoFeature*>(hole->Sketch.getValue());
+            Base::Vector3d n;
+            if (sketch) {
+                sketch->Placement.getValue().getRotation().multVec(Base::Vector3d(0, 0, 1), n);
+            }
+            const gp_Dir up = printUpIn(hole);
+            if (sketch && std::abs(n.x * up.X() + n.y * up.Y() + n.z * up.Z()) < 0.1) {
+                fixes.push_back({hole, "Teardrop hole: prints without support", "Teardrop", 1});
+            }
+        }
+        else if (auto fillet = freecad_cast<Fillet*>(feature); fillet && !fillet->PrintChamfer.getValue()) {
+            auto base = fillet->BaseFeatures.getSize() ? freecad_cast<Feature*>(fillet->BaseFeatures.getValues().front()) : nullptr;
+            if (!base || fillet->Bodies.getSize() == 0) {
+                continue;
+            }
+            const Part::TopoShape before = base->shapeFor(fillet->Bodies.getValues().front());
+            const gp_Dir up = printUpIn(fillet);
+            for (const auto& name : fillet->Edges.getValues()) {
+                const TopoDS_Shape edge = name.rfind("Edge", 0) == 0 ? before.getSubShape(name.c_str(), true) : TopoDS_Shape();
+                if (!edge.IsNull() && overhangingEdge(before.getShape(), TopoDS::Edge(edge), up)) {
+                    fixes.push_back({fillet, "Chamfer the bottom edges: no overhang", "PrintChamfer", 1});
+                    break;
+                }
+            }
+        }
+        else if (auto shell = freecad_cast<Shell*>(feature); shell && shell->Size.getValue() < minWall - 1e-9) {
+            fixes.push_back({shell, "Wall to %1 mm", "Size", minWall});
+        }
+        else if (auto extrude = freecad_cast<Extrude*>(feature);
+                 extrude && extrude->Thin.getValue() && extrude->Thickness.getValue() < minWall - 1e-9) {
+            fixes.push_back({extrude, "Wall to %1 mm", "Thickness", minWall});
+        }
+    }
+    return fixes;
+}
+
 PROPERTY_SOURCE(Design::Fillet, Design::DressUp)
 PROPERTY_SOURCE(Design::Chamfer, Design::DressUp)
 
@@ -3727,6 +3864,8 @@ Fillet::Fillet()
     ADD_PROPERTY_TYPE(Variable, (false), "Parameters", App::Prop_None, "Variable radius");
     ADD_PROPERTY_TYPE(RadiusEnd, (2.0), "Parameters", App::Prop_None, "Radius at the end of the edge");
     RadiusEnd.setStatus(App::Property::Hidden, true);
+    ADD_PROPERTY_TYPE(PrintChamfer, (false), "Fillet", App::Prop_None,
+                      "Bottom edges in the print direction get a 45° chamfer instead (no overhang)");
 }
 
 void Fillet::onChanged(const App::Property* prop)
@@ -4235,6 +4374,8 @@ Hole::Hole()
     Fit.setEnums(FitEnums);
     ADD_PROPERTY_TYPE(Screw, (0L), "Parameters", App::Prop_None, "Screw for the counterbore or countersink");
     ADD_PROPERTY_TYPE(Modeled, (false), "Parameters", App::Prop_None, "Modeled thread");
+    ADD_PROPERTY_TYPE(Teardrop, (false), "Hole", App::Prop_None,
+                      "Across the print direction: a 45° tip on top (teardrop) that prints without support");
     ADD_PROPERTY_TYPE(ThreadDesignation, (""), "Hole", App::PropertyType(App::Prop_Output | App::Prop_ReadOnly),
                       "Thread of the hole, empty without thread");
     Operation.setValue(2L);  // Cut
@@ -4389,6 +4530,22 @@ bool Hole::makeTool(Part::TopoShape& tool, std::string& error) const
             const gp_Ax2 ax(c.Translated(gp_Vec(dir) * -lead), dir);
             std::vector<Part::TopoShape> parts = holeShape(ax, r, depth, HoleType.getValue(), head,
                                                            HeadDepth.getValue(), CountersinkAngle.getValue(), lead);
+            // Druckbar (11.3): quer zur Druckrichtung oben eine 45°-Spitze (Tropfenform) statt der flachen Decke des
+            // Kreises, die ohne Stütze durchhängt. ponytail: nur der Schaft, Senkungen bleiben rund
+            if (Teardrop.getValue()) {
+                const gp_Vec along(dir);
+                gp_Vec u(printUpIn(this));
+                u -= along * u.Dot(along);
+                if (u.Magnitude() > 0.99) {  // Achse waagrecht (höchstens ~8° geneigt)
+                    u.Normalize();
+                    const gp_Vec side = along.Crossed(u);
+                    const gp_Pnt s = c.Translated(along * -lead);
+                    const double k = r / std::sqrt(2.0);
+                    BRepBuilderAPI_MakePolygon tip(s.Translated(u * (r * std::sqrt(2.0))), s.Translated(u * k + side * k), s,
+                                                   s.Translated(u * k - side * k), true);
+                    parts.emplace_back(BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(tip.Wire()).Face(), along * depth).Shape());
+                }
+            }
             if (thread) {
                 const double minor = (thread->diameter - 1.082532 * thread->pitch) / 2;
                 // ab der Oberfläche bis eine Steigung vor den Grund (wie ein Gewindebohrer im Sackloch); die

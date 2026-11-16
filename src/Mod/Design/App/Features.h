@@ -136,6 +136,16 @@ struct PrintCheckResult
 DesignExport PrintCheckResult printCheck(Part::TopoShape shape, const Base::Vector3d& up, double maxAngle, double minWall);
 /// Körper mit der Druckrichtung des Designs und den Grenzen aus den Einstellungen (Koordinaten seiner Komponente)
 DesignExport PrintCheckResult printCheck(Body* body);
+/// Druckbar machen (Phase 11.3): ein Vorschlag je Schritt, der mit einer Einstellung besser druckt. label ist ein
+/// englischer Text (übersetzt in der Oberfläche, %1 = value), property bekommt value.
+struct PrintFix
+{
+    App::DocumentObject* feature;
+    std::string label;
+    std::string property;
+    double value;
+};
+DesignExport std::vector<PrintFix> printFixes(App::Document* doc);
 /// Druckrichtung des Designs (global, "nach oben"); Vorgabe +Z. Gespeichert am Wurzel-Bauteil.
 DesignExport Base::Vector3d printUp(App::Document* doc);
 DesignExport void setPrintUp(App::Document* doc, const Base::Vector3d& up);
@@ -358,6 +368,8 @@ public:
     Fillet();
     App::PropertyBool Variable;      ///< Radius ändert sich linear vom Anfang (Size) zum Ende (RadiusEnd)
     App::PropertyLength RadiusEnd;
+    /// Druckbar (Phase 11.3): Kanten, deren Rundung in Druckrichtung überhinge (Unterkanten), bekommen 45°-Fasen
+    App::PropertyBool PrintChamfer;
     App::DocumentObjectExecReturn* compute() override
     {
         return run(true);
@@ -502,6 +514,8 @@ public:
     App::PropertyEnumeration Screw;     ///< Senkung nach Schraubennorm (Liste je Bohrungstyp)
     App::PropertyBool Modeled;          ///< Gewinde modelliert (sonst nur Kernloch, kosmetisch)
     App::PropertyString ThreadDesignation;  ///< Ausgabe: Gewinde der Bohrung, leer ohne Gewinde
+    /// Druckbar (Phase 11.3): quer zur Druckrichtung mit 45°-Spitze oben (Tropfenform), druckt ohne Stütze
+    App::PropertyBool Teardrop;
 
     bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;

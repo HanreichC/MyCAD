@@ -241,12 +241,94 @@ public:
         const auto params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
         texts[0]->setText(T("Overhang over %1°").arg(params->GetFloat("OverhangAngle", 45)));
         texts[2]->setText(T("Wall thinner than %1 mm").arg(params->GetFloat("MinWall", 0.8)));
+        refreshFixes();
         place();
         panel->show();
         timer.start();
     }
 
+    /// Phase 11.3 Druckbar machen: je Schritt, der mit einer Einstellung besser druckt, eine Zeile mit Übernehmen
+    void refreshFixes()
+    {
+        if (!fixBox) {
+            return;
+        }
+        for (QWidget* w : fixBox->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
+            delete w;
+        }
+        App::Document* doc = App::GetApplication().getActiveDocument();
+        const auto fixes = doc ? Design::printFixes(doc) : std::vector<Design::PrintFix>();
+        fixBox->setVisible(!fixes.empty());
+        auto lay = static_cast<QVBoxLayout*>(fixBox->layout());
+        if (!fixes.empty()) {
+            lay->addWidget(Gui::Shell::sectionLabel(T("Make printable")));
+        }
+        std::vector<std::tuple<App::DocumentObjectT, std::string, double>> all;
+        for (const auto& fix : fixes) {
+            auto row = new QWidget;
+            row->setObjectName(QStringLiteral("PrintFix"));
+            auto line = new QHBoxLayout(row);
+            line->setContentsMargins(0, 0, 0, 0);
+            auto text = new QLabel(QStringLiteral("%1: %2").arg(QString::fromUtf8(fix.feature->Label.getValue()),
+                                                                 T(fix.label.c_str()).arg(fix.value)));
+            text->setWordWrap(true);
+            line->addWidget(text, 1);
+            auto apply = new QPushButton(T("Apply"));
+            apply->setAutoDefault(false);
+            const App::DocumentObjectT target(fix.feature);
+            const std::string property = fix.property;
+            const double value = fix.value;
+            QObject::connect(apply, &QPushButton::clicked, apply, [this, target, property, value] {
+                QTimer::singleShot(0, [this, target, property, value] { applyFixes({{target, property, value}}); });
+            });
+            line->addWidget(apply);
+            lay->addWidget(row);
+            all.emplace_back(target, property, value);
+        }
+        if (all.size() > 1) {
+            auto every = new QPushButton(T("Apply All"));
+            every->setAutoDefault(false);
+            QObject::connect(every, &QPushButton::clicked, every, [this, all] {
+                QTimer::singleShot(0, [this, all] { applyFixes(all); });
+            });
+            lay->addWidget(every);
+        }
+        if (panel) {
+            panel->content()->adjustSize();
+            place();
+        }
+    }
+
 private:
+    /// Vorschläge übernehmen: eine Transaktion (Strg+Z nimmt alle zurück), danach neu prüfen
+    void applyFixes(const std::vector<std::tuple<App::DocumentObjectT, std::string, double>>& fixes)
+    {
+        App::Document* doc = nullptr;
+        for (const auto& [target, property, value] : fixes) {
+            App::DocumentObject* obj = target.getObject();
+            if (!obj) {
+                continue;
+            }
+            if (!doc) {
+                doc = obj->getDocument();
+                doc->openTransaction("Make Printable");
+            }
+            App::Property* prop = obj->getPropertyByName(property.c_str());
+            if (auto flag = freecad_cast<App::PropertyBool*>(prop)) {
+                flag->setValue(value != 0);
+            }
+            else if (auto number = freecad_cast<App::PropertyFloat*>(prop)) {
+                number->setValue(value);
+            }
+        }
+        if (doc) {
+            doc->recompute();
+            doc->commitTransaction();
+        }
+        DesignGui::refreshPrintView();
+        refreshFixes();
+    }
+
     void build()
     {
         const auto& theme = Gui::Shell::theme();
@@ -269,6 +351,11 @@ private:
             line->addWidget(texts[i], 1);
             lay->addLayout(line);
         }
+        fixBox = new QWidget;
+        auto fixLayout = new QVBoxLayout(fixBox);
+        fixLayout->setContentsMargins(0, 6, 0, 2);
+        fixLayout->setSpacing(6);
+        lay->addWidget(fixBox);
         auto buttons = new QHBoxLayout;
         for (const auto& [text, command] : {std::pair {T("Choose Bottom Face"), "Design_PrintDown"},
                                             std::pair {T("Print"), "Design_Print"}}) {
@@ -300,6 +387,7 @@ private:
 
     QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
     QLabel* texts[3] = {};
+    QPointer<QWidget> fixBox;
     QPointer<Gui::View3DInventorViewer> viewer;
     QTimer timer;
 };
@@ -783,6 +871,9 @@ bool DesignGui::printView()
 void DesignGui::refreshPrintView()
 {
     forEachBody([](ViewProviderBody* vp) { vp->refreshPrintOverlay(); });
+    if (printViewOn) {
+        legend().refreshFixes();
+    }
 }
 
 void ViewProviderBody::attach(App::DocumentObject* obj)
@@ -812,6 +903,15 @@ void ViewProviderBody::updateData(const App::Property* prop)
     PartGui::ViewProviderPartExt::updateData(prop);
     if (printViewOn && prop == &static_cast<Design::Body*>(getObject())->Shape) {
         refreshPrintOverlay();
+        static bool pending = false;  // ein Neuberechnen ändert oft mehrere Körper: die Vorschläge einmal danach
+        if (!std::exchange(pending, true)) {
+            QTimer::singleShot(0, [] {
+                pending = false;
+                if (printViewOn) {
+                    legend().refreshFixes();
+                }
+            });
+        }
     }
 }
 
@@ -1455,6 +1555,16 @@ public:
                              : feature->isDerivedFrom<Design::Fillet>() ? T("Radius")
                                                                         : T("Distance"),
                          distance);
+            // Druckbar (11.3): Unterkanten in Druckrichtung als 45°-Fase statt Rundung (kein Überhang)
+            if (auto fillet = freecad_cast<Design::Fillet*>(feature)) {
+                auto bottom = new QCheckBox(T("Chamfer bottom edges for printing"));
+                bottom->setChecked(fillet->PrintChamfer.getValue());
+                form->addRow(QString(), bottom);
+                QObject::connect(bottom, &QCheckBox::toggled, [this, fillet](bool on) {
+                    fillet->PrintChamfer.setValue(on);
+                    apply();
+                });
+            }
         }
         if (shell) {
             check = new QCheckBox(T("Wall outside"));
@@ -1525,6 +1635,14 @@ public:
             form->addRow(T("Diameter"), distance);
             form->addRow(T("Depth"), distance2);
             form->addRow(QString(), check);
+            // Druckbar (11.3): quer zur Druckrichtung mit 45°-Spitze, druckt ohne Stütze
+            auto teardrop = new QCheckBox(T("Teardrop for printing"));
+            teardrop->setChecked(hole->Teardrop.getValue());
+            form->addRow(QString(), teardrop);
+            QObject::connect(teardrop, &QCheckBox::toggled, [this](bool on) {
+                this->hole->Teardrop.setValue(on);
+                apply();
+            });
             form->addRow(T("Head diameter"), headDiameter);
             form->addRow(T("Head depth"), headDepth);
             form->addRow(T("Countersink angle"), sinkAngle);

@@ -5402,12 +5402,14 @@
      "In the toolbar at the top, in the INSPECT section, click Print View.",
      "Red stripes: overhang flatter than 45° – it needs supports. Green dots: lies on the bed. Yellow cross-hatch: wall thinner than 0.8 mm.",
      "To print it another way up, click the face that should lie on the bed, then Choose Bottom Face in the legend. The colours then show the new orientation.",
+     "Under Make printable the legend lists what one setting would fix: a hole across the print direction becomes a teardrop with a 45° tip, a fillet chamfers its bottom edges at 45°, a wall that is too thin grows to the minimum. Apply takes one, Apply All all of them (Ctrl+Z takes them back).",
      "Click Print View again to hide it."
     ],
     "de": [
      "Klicke in der Werkzeugleiste oben im Bereich PRÜFEN auf Druckansicht.",
      "Rote Streifen: Überhang flacher als 45° – er braucht Stützen. Grüne Punkte: liegt auf dem Bett. Gelbe Kreuzschraffur: Wand dünner als 0,8 mm.",
      "Um es anders herum zu drucken, klicke auf die Fläche, die auf dem Bett liegen soll, und dann in der Legende auf Unterseite wählen. Die Farben zeigen dann die neue Lage.",
+     "Unter Druckbar machen nennt die Legende, was eine Einstellung beheben würde: eine Bohrung quer zur Druckrichtung bekommt eine Tropfenform mit 45°-Spitze, eine Rundung fast ihre Unterkanten mit 45°, eine zu dünne Wand wächst auf das Minimum. Ausführen übernimmt einen Vorschlag, Alle ausführen alle (Strg+Z nimmt sie zurück).",
      "Klicke nochmal auf Druckansicht, um sie auszublenden."
     ]
    },

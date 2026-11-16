@@ -15,6 +15,11 @@ it reads without color vision too:
 
 - **Choose Bottom Face:** click the face that should lie on the bed, then **Choose Bottom Face** in the legend. The print
   direction is saved with the design and used by **Print**.
+- **Make printable:** the legend lists what one setting would fix, with **Apply** (or **Apply All**; Ctrl+Z undoes):
+  - a hole across the print direction becomes a **teardrop** with a 45° tip (no supports inside the hole),
+  - a fillet **chamfers its bottom edges** at 45° and stays round on top,
+  - a shell or thin-wall extrude that is too thin grows to the **minimum wall**.
+  The same options are in the Hole and Fillet panels (Teardrop for printing, Chamfer bottom edges for printing).
 - Overhang angle and minimum wall are in **Settings**.
 - Click **Print View** again to hide it.
 
