@@ -69,6 +69,12 @@
 #include "ViewProviderSketchCoinAttorney.h"
 
 using namespace SketcherGui;
+
+namespace
+{
+/// MyCAD: Tiefenbereich der Skizze endet um 4e-6 früher: ~60 Tiefeneinheiten Vorsprung vor der Körperfläche
+constexpr float SketchDepthNear = 1.0F - 4e-6F;
+}  // namespace
 using namespace Sketcher;
 
 namespace
@@ -1714,12 +1720,10 @@ void EditModeCoinManager::createEditModeInventorNodes()
     // tausendstel Millimeter) und der Polygon-Offset der Flächen (eine Tiefeneinheit) reichen auf echten Grafikkarten
     // nicht: beim Drehen gewann mal die Fläche, mal die Skizze (Z-Kampf). Ein um 4e-6 verkürzter Tiefenbereich gibt
     // ~60 Tiefeneinheiten Vorsprung, in Millimetern wenig genug, dass Körper davor die Skizze weiter verdecken.
-    // Test, Schreiben und Funktion erbt der Knoten (ignoriert), Tiefen-Knoten darunter erben den Bereich.
+    // Feste Werte (Test, Schreiben, LESS wie üblich) statt geerbter: ignorierte Felder ließen Coin ständig neu zeichnen.
+    // Tiefen-Knoten darunter setzen den Bereich selbst (OccludedOverlay).
     auto* nearer = new SoDepthBuffer;
-    nearer->test.setIgnored(true);
-    nearer->write.setIgnored(true);
-    nearer->function.setIgnored(true);
-    nearer->range.setValue(0.0F, 1.0F - 4e-6F);
+    nearer->range.setValue(0.0F, SketchDepthNear);
     editModeScenegraphNodes.EditRoot->addChild(nearer);
 
     // Create Geometry Coin nodes ++++++++++++++++++++++++++++++++++++++
@@ -1830,7 +1834,7 @@ void EditModeCoinManager::createEditModeInventorNodes()
     auto* overlayDepth = new SoDepthBuffer;
     overlayDepth->function = SoDepthBuffer::GREATER;
     overlayDepth->write.setValue(false);
-    overlayDepth->range.setIgnored(true);  // Vorsprung der Skizze erben (oben im EditRoot)
+    overlayDepth->range.setValue(0.0F, SketchDepthNear);  // Vorsprung der Skizze (oben im EditRoot)
     occludedOverlayRoot->addChild(overlayDepth);
 
     editModeScenegraphNodes.RootCrossDrawStyleOccluded = new SoDrawStyle;

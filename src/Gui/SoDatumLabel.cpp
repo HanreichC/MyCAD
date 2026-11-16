@@ -256,7 +256,6 @@ SoDatumLabel::SoDatumLabel()
     m_GeometryDepth = new SoDepthBuffer;
     m_GeometryDepth->test.setValue(true);
     m_GeometryDepth->write.setValue(false);
-    m_GeometryDepth->range.setIgnored(true);  // MyCAD: in der Skizze deren Vorsprung vor der Fläche erben
     m_Root->addChild(m_GeometryDepth);
 
     m_LightModel = new SoLightModel;
