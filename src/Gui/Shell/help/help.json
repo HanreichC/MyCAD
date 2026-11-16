@@ -3098,25 +3098,21 @@
     ]
    },
    "summary": {
-    "en": "Drills holes at sketch points – simple, with a cylindrical counterbore or with a conical countersink.",
-    "de": "Bohrt Löcher an Skizzenpunkten – einfach, mit zylindrischer oder mit kegeliger Senkung."
+    "en": "Drills a hole where you click a face, or at sketch points – simple, with a cylindrical counterbore or with a conical countersink.",
+    "de": "Bohrt ein Loch dort, wo du eine Fläche anklickst, oder an Skizzenpunkten – einfach, mit zylindrischer oder mit kegeliger Senkung."
    },
    "steps": {
     "en": [
-     "Click the face of the body where the holes start, then CREATE → Sketch.",
-     "In the sketch toolbar, CREATE section, click Point and click once for every hole centre. Add dimensions if the positions matter. Click Finish Sketch.",
-     "Select that sketch (click it in the timeline or in the Sketches folder of the browser).",
      "In the toolbar at the top, in the CREATE section, click Hole. (If the button shows another tool, click the small arrow ▾ next to it and choose Hole.)",
+     "Click the flat face of the body where the hole goes. It is drilled right at that spot.",
      "A panel opens on the right; the model shows a live preview of the result.",
      "Pick a Standard and Size (e.g. ISO metric, M5x0.8) and whether it is a Clearance hole or a Tapped hole – MyCAD fills in the diameters. Without a standard (Custom) you type Diameter yourself.",
      "Choose the Type and the Depth (or tick Through all).",
      "Click OK at the top of the panel. Cancel (next to it) or Esc discards the tool without changing anything."
     ],
     "de": [
-     "Klicke die Körperfläche an, an der die Bohrungen beginnen, dann ERSTELLEN → Skizze.",
-     "Klicke in der Skizzen-Werkzeugleiste im Bereich ERSTELLEN auf Punkt und klicke einmal pro Bohrungsmitte. Lege bei Bedarf Maße fest. Klicke Skizze fertig stellen.",
-     "Wähle diese Skizze aus (in der Zeitleiste oder im Ordner Skizzen im Browser anklicken).",
      "Klicke in der Werkzeugleiste oben im Bereich ERSTELLEN auf Bohrung. (Zeigt der Knopf ein anderes Werkzeug, klicke auf den kleinen Pfeil ▾ daneben und wähle Bohrung.)",
+     "Klicke die ebene Körperfläche an, wo die Bohrung hin soll. Sie wird genau an dieser Stelle gebohrt.",
      "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
      "Wähle Norm und Größe (z. B. ISO metrisch, M5x0.8) und ob es eine Durchgangsbohrung oder eine Gewindebohrung ist – MyCAD trägt die Durchmesser ein. Ohne Norm (Eigene Maße) tippst du den Durchmesser selbst ein.",
      "Wähle den Typ und die Tiefe (oder hake Durchgehend an).",
@@ -3216,10 +3212,14 @@
    },
    "tips": {
     "en": [
-     "Use Pattern on the Hole step in the timeline to repeat it in rows or around a circle."
+     "Use Pattern on the Hole step in the timeline to repeat it in rows or around a circle.",
+     "Several holes at exact positions: draw a sketch on the face with a Point for every hole centre and dimensions, select the sketch, then Hole.",
+     "To move a hole you placed by clicking, edit its sketch (just before the Hole in the timeline) and drag or dimension the point."
     ],
     "de": [
-     "Mit Muster auf den Bohrungs-Schritt in der Zeitleiste wiederholst du sie in Reihen oder im Kreis."
+     "Mit Muster auf den Bohrungs-Schritt in der Zeitleiste wiederholst du sie in Reihen oder im Kreis.",
+     "Mehrere Bohrungen an genauen Stellen: zeichne auf der Fläche eine Skizze mit einem Punkt je Bohrungsmitte und Maßen, wähle die Skizze aus, dann Bohrung.",
+     "Eine angeklickte Bohrung verschiebst du, indem du ihre Skizze bearbeitest (direkt vor der Bohrung in der Zeitleiste) und den Punkt ziehst oder bemaßt."
     ]
    },
    "images": [

@@ -32,6 +32,8 @@
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
+#include <TopoDS_Iterator.hxx>
 #include <Bnd_Box.hxx>
 #include <TopExp_Explorer.hxx>
 #include <Mod/Part/App/Part2DObject.h>
@@ -211,23 +213,31 @@ void createSketch(App::DocumentObject* support, std::string element)
 
 /// Wartet nach "Create Sketch" auf einen Klick auf eine Ursprungsebene oder eine ebene Körperfläche.
 /// Solange sind die Ursprungsebenen eingeblendet, wie in Fusion. Esc bricht ab.
+/// Mit eigenem picked (Bohrung) nur ebene Körperflächen, ohne eingeblendete Ebenen.
 class PlanePicker: public QObject, public Gui::SelectionObserver
 {
 public:
-    explicit PlanePicker(App::Part* root)
+    /// Gewählte Ebene oder Fläche: Objekt, Element ("FaceN", bei Ebenen leer) und Klickpunkt (global)
+    using Picked = std::function<void(App::DocumentObject*, const std::string&, const Base::Vector3d&)>;
+
+    PlanePicker(App::Part* root, Picked picked, bool planes)
         : root(root)
+        , picked(std::move(picked))
+        , planes(planes)
     {
-        if (auto view = originView(root)) {
+        if (auto view = planes ? originView(root) : nullptr) {
             view->setTemporaryVisibility(Gui::DatumElement::Planes);
         }
         Gui::Selection().clearSelection();
-        Gui::getMainWindow()->showMessage(T("Select a plane or a planar face for the sketch"));
+        if (planes) {
+            Gui::getMainWindow()->showMessage(T("Select a plane or a planar face for the sketch"));
+        }
         qApp->installEventFilter(this);
     }
 
     ~PlanePicker() override
     {
-        if (root.expired()) {
+        if (root.expired() || !planes) {
             return;
         }
         if (auto view = originView(root.get<App::Part>())) {
@@ -237,8 +247,14 @@ public:
 
     static void start(App::Part* root)
     {
+        start(root, [](App::DocumentObject* obj, const std::string& element, const Base::Vector3d&) {
+            createSketch(obj, isPlane(obj) ? std::string() : element);
+        }, true);
+    }
+    static void start(App::Part* root, Picked picked, bool planes)
+    {
         active.reset();  // erst den alten abbauen, sonst blendet sein Destruktor die Ebenen des neuen wieder aus
-        active = std::make_unique<PlanePicker>(root);
+        active = std::make_unique<PlanePicker>(root, std::move(picked), planes);
     }
     static void stop()
     {
@@ -265,24 +281,28 @@ private:
         }
         App::DocumentObject* leaf = msg.Object.getSubObject();
         const std::string element = msg.Object.getOldElementName();
-        if (!leaf || !(isPlane(leaf) || isPlanarFace(leaf, element))) {
+        if (!leaf || !((planes && isPlane(leaf)) || isPlanarFace(leaf, element))) {
             return;
         }
         App::DocumentObjectT target(leaf);
+        const Base::Vector3d point(msg.x, msg.y, msg.z);
         // Nicht mitten im Selektions-Callback Objekte anlegen und den Edit-Modus starten
-        QTimer::singleShot(0, [target, element] {
+        QTimer::singleShot(0, [target, element, point] {
             if (!active) {  // inzwischen abgebrochen oder schon aus einer Vorauswahl skizziert
                 return;
             }
+            const Picked pick = active->picked;
             stop();
             Gui::Selection().clearSelection();
             if (auto obj = target.getObject()) {
-                createSketch(obj, isPlane(obj) ? std::string() : element);
+                pick(obj, element, point);
             }
         });
     }
 
     App::DocumentObjectWeakPtrT root;
+    Picked picked;
+    bool planes;
     static inline std::unique_ptr<PlanePicker> active;
 };
 
@@ -2647,25 +2667,96 @@ Design::Body* bodyUnderSketch(App::DocumentObject* obj)
     return nullptr;
 }
 
+/// Bohrung auf einer ebenen Körperfläche wie in Fusion: eine verborgene Skizze auf der Fläche mit einem Punkt an der
+/// Klickstelle (der Rand der Fläche ist projiziert, zum Bemaßen beim Bearbeiten der Skizze), daraus die Bohrung. Liegt
+/// point nicht auf der Fläche (Auswahl per Skript ohne Klickpunkt), in ihrer Mitte. Alles in der Transaktion der
+/// Bohrung: Abbrechen nimmt auch die Skizze zurück.
+/// ponytail: ohne Maße zu den Kanten (Fusion legt sie an); Lage ändern = Skizze bearbeiten
+void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& point)
+{
+    const TopoDS_Shape shape = body->Shape.getShape().getSubShape(face.c_str(), true);
+    if (shape.IsNull()) {
+        return;
+    }
+    Base::Vector3d at;  // in Koordinaten der Komponente, wie die Formen
+    Design::componentOf(body)->globalPlacement().inverse().multVec(point, at);
+    BRepExtrema_DistShapeShape onFace(BRepBuilderAPI_MakeVertex(gp_Pnt(at.x, at.y, at.z)), shape);
+    if (!onFace.IsDone() || onFace.Value() > 1e-2) {  // Klickpunkt aus Coin: float-genau
+        GProp_GProps props;
+        BRepGProp::SurfaceProperties(shape, props);
+        at = Base::Vector3d(props.CentreOfMass().X(), props.CentreOfMass().Y(), props.CentreOfMass().Z());
+    }
+    App::Document* doc = body->getDocument();
+    App::DocumentObject* support = body;
+    stableRef(support, face);
+    auto feature = static_cast<Design::Hole*>(addFeature(doc, "Design::Hole", "Hole", body));
+    Sketcher::SketchObject* sketch = addSketch(support, face);
+    doc->recompute();  // Lage der Skizze auf der Fläche
+    sketch->addExternal(support, face.c_str(), /*defining*/ false);
+    Base::Vector3d onSketch;
+    sketch->Placement.getValue().inverse().multVec(at, onSketch);
+    const Part::GeomPoint centre(Base::Vector3d(onSketch.x, onSketch.y, 0));
+    sketch->addGeometry(&centre);
+    sketch->Visibility.setValue(false);
+    const auto items = Design::timeline(doc);  // Skizze vor die Bohrung, die sie braucht
+    std::string error;
+    Design::moveInTimeline(sketch, static_cast<int>(std::ranges::find(items, feature) - items.begin()), error);
+    feature->Sketch.setValue(sketch);
+    modifyBodies(feature, {body});
+    doc->recompute();
+    startEditing(feature, false, nullptr);
+}
+
+/// Hat die Skizze einzelne Punkte (die Mitten der Bohrungen)?
+bool hasPoints(App::DocumentObject* sketch)
+{
+    auto feature = freecad_cast<Part::Feature*>(sketch);
+    for (TopoDS_Iterator it(feature ? feature->Shape.getShape().getShape() : TopoDS_Shape()); it.More(); it.Next()) {
+        if (it.Value().ShapeType() == TopAbs_VERTEX) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void startHole(App::Document* doc)
 {
+    PlanePicker::stop();
     App::DocumentObject* sketch = nullptr;
     for (auto obj : Gui::Selection().getObjectsOfType(Sketcher::SketchObject::getClassTypeId())) {
         sketch = obj;
     }
-    // Eine gewählte Körperfläche ohne Skizze: nicht die zuletzt erstellte Skizze irgendwo anders nehmen (die Bohrung
-    // landete sonst z. B. oben, obwohl die Seitenfläche gewählt war), sondern sagen, wie es geht
-    const auto selection = Gui::Selection().getSelectionEx();
-    const bool faceChosen = std::ranges::any_of(selection, [](const Gui::SelectionObject& sel) {
-        return sel.getObject()->isDerivedFrom<Design::Body>() && !sel.getSubNames().empty();
-    });
-    if (!sketch && faceChosen) {
-        toolHint(T("Hole"), T("Create a sketch on this face and place points where the holes go."));
+    // Eine gewählte Körperfläche ohne Skizze: Bohrung dort, wo die Fläche angeklickt wurde (wie Fusion), nicht die
+    // zuletzt erstellte Skizze irgendwo anders (die Bohrung landete sonst z. B. oben, obwohl die Seite gewählt war)
+    auto selection = Gui::Selection().getSelectionEx();
+    for (auto& sel : selection) {
+        auto body = freecad_cast<Design::Body*>(sel.getObject());
+        if (sketch || !body || sel.getSubNames().empty()) {
+            continue;
+        }
+        if (!isPlanarFace(body, sel.getSubNames().front())) {
+            toolHint(T("Hole"), T("Click a flat face of a body where the hole goes."));
+            return;
+        }
+        const auto& points = sel.getPickedPoints();
+        holeOnFace(body, sel.getSubNames().front(), points.empty() ? Base::Vector3d() : points.front());
         return;
     }
-    if (!sketch) {  // sonst die zuletzt erstellte Skizze
+    if (!sketch) {  // sonst die zuletzt erstellte Skizze, wenn sie Punkte hat
         auto sketches = doc->getObjectsOfType(Sketcher::SketchObject::getClassTypeId());
-        sketch = sketches.empty() ? nullptr : sketches.back();
+        sketch = sketches.empty() || !hasPoints(sketches.back()) ? nullptr : sketches.back();
+    }
+    if (!sketch) {  // wie Fusion: auf einen Klick auf eine Fläche warten, dort entsteht die Bohrung
+        PlanePicker::start(activeContainer(doc), [](App::DocumentObject* obj, const std::string& face, const Base::Vector3d& point) {
+            if (auto body = freecad_cast<Design::Body*>(obj)) {
+                holeOnFace(body, face, point);
+            }
+            else {
+                toolHint(T("Hole"), T("Click a flat face of a body where the hole goes."));
+            }
+        }, false);
+        toolHint(T("Hole"), T("Click a flat face of a body where the hole goes."));
+        return;
     }
     Design::Body* target = bodyUnderSketch(sketch);
     if (!target) {

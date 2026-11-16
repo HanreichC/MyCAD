@@ -2,13 +2,16 @@
 """Arbeitsabläufe wie im echten Gebrauch (Befehle, Felder, Enter, Tastenkürzel), jeweils mit Volumen nachgerechnet:
 1. Quader per Extrude, Skizze auf der Oberseite, Kreis, Extrude -5 mm wird von selbst Cut (wie Fusion; vorher vereinte ein
    Join nach innen still nichts), Grundmaß 40 -> 60, Rückgängig, Speichern und wieder Öffnen. Bohrung mit gewählter
-   Seitenfläche nimmt nicht die Skizze oben (vorher bohrte sie dort), sondern wartet auf eine Skizze auf dieser Fläche.
+   Seitenfläche bohrt wie Fusion in deren Mitte (eigene Skizze mit einem Punkt, vor der Bohrung in der Timeline), nicht
+   an der Skizze oben (vorher bohrte sie dort); Abbrechen nimmt Bohrung und Skizze zurück.
    Noch einmal Extrude ohne Auswahl extrudiert die ausgeblendete Skizze nicht ein zweites Mal.
 2. Rundung und Fase an Körperkanten (Wert tippen, Enter), Rundung nachträglich ändern, Rückgängig/Wiederholen, Fase aus der
    Mitte der Timeline löschen und das zurücknehmen.
    Bei offenem Rundungs-Dialog nimmt ein Klick auf eine Kante sie dazu, ein zweiter Klick wieder heraus (wie Fusion).
    Ebenso nimmt bei offenem Extrude ein Klick auf ein weiteres Profil der Skizze es dazu; ein Klick auf die Vorschau
    darüber (die das Profil zudeckt) nimmt es wieder heraus.
+2b. Bohrung ohne Auswahl wartet wie Fusion auf einen Klick auf eine Fläche und bohrt genau dort (vorher brauchte sie
+   erst eine Skizze mit Punkten).
 3. In der Skizze: Strg+Z nimmt die letzte Linie zurück, Strg+Y (wie Fusion) und Strg+Umschalt+Z holen sie wieder.
    Esc mit einer gewählten Kante hebt nur die Auswahl auf (vorher verließ es sofort die Skizze), und auch ohne Auswahl
    bleibt man wie in Fusion in der Skizze (verlassen nur über "Skizze fertig stellen").
@@ -99,10 +102,30 @@ def side_hole():
     Gui.Selection.clearSelection(); Gui.Selection.addSelection(b, f); click(button("Design_Hole"))
 
 
+def hole_at(want, tag):
+    """Die eine Bohrung sitzt mit ihrem Skizzenpunkt bei want (global), ihre Skizze steht in der Timeline davor"""
+    holes = [o for o in doc().Objects if o.TypeId == "Design::Hole"]
+    sk_ = holes[0].Sketch if len(holes) == 1 else None
+    pts = [sk_.Placement.multVec(V(g.X, g.Y, g.Z)) for g in sk_.Geometry if g.TypeId == "Part::GeomPoint"] if sk_ else []
+    order = [o.Name for o in Design.timeline(doc())]
+    check(tag, len(pts) == 1 and (pts[0] - want).Length < 0.5 and order.index(sk_.Name) < order.index(holes[0].Name),
+          "holes=%d points=%s order=%s" % (len(holes), pts, order[-3:]))
+
+
+def side_hole_placed():
+    hole_at(V(40, 10, 5), "Hole with a side face chosen drills in the middle of that face, not at the sketch on top")
+    S["sketches"] = len([o for o in doc().Objects if o.TypeId == "Sketcher::SketchObject"])
+
+
+def cancel():
+    click([b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "Cancel"][0])
+
+
 def no_hole():
     holes = [o for o in doc().Objects if o.TypeId == "Design::Hole"]
-    check("Hole with a side face chosen does not drill at the sketch on top", not holes and not Gui.Control.activeDialog(),
-          "holes=%s dialog=%s" % ([h.Sketch.Label for h in holes], Gui.Control.activeDialog()))
+    n = len([o for o in doc().Objects if o.TypeId == "Sketcher::SketchObject"])
+    check("Cancel removes the hole and the sketch it made", not holes and n == S["sketches"] - 1 and not Gui.Control.activeDialog(),
+          "holes=%d sketches %d -> %d dialog=%s" % (len(holes), S["sketches"], n, Gui.Control.activeDialog()))
 
 
 def widen():
@@ -120,7 +143,7 @@ one = [("base", base), W, ("extrude", lambda: extrude(S["base"])), W, ("10 mm", 
        ("box", lambda: volume("box 40x20x10", 8000)), ("again", extrude_again), W, ("no second", no_second),
        ("top", top_sketch), W, W, ("circle", circle), W, ("extrude 2", lambda: extrude(S["top"])), W,
        ("-5 mm", lambda: enter("Distance", "-5")), W, ("cut", auto_cut), ("hole", lambda: volume("hole r4 5 deep", 8000 - hole)),
-       ("side hole", side_hole), W, ("no hole", no_hole),
+       ("side hole", side_hole), W, ("placed", side_hole_placed), ("cancel", cancel), W, ("no hole", no_hole),
        ("widen", widen), W, ("wide", lambda: volume("base 60 wide, hole follows", 12000 - hole)),
        ("undo", lambda: Gui.runCommand("Std_Undo")), W, ("narrow", lambda: volume("undo", 8000 - hole)),
        ("reopen", reopen), W, ("reopened", lambda: volume("saved and opened again", 8000 - hole)),
@@ -226,6 +249,25 @@ two = [("box 2", lambda: S.update(b=make_body(rect(0, 0, 40, 20), 0, 10, "Box"))
        ("close 4", lambda: App.closeDocument(doc().Name)), W, ("new 4", lambda: Gui.runCommand("Std_New")), W]
 
 
+# --- 2b --------------------------------------------------------------------------------------------------------------
+def tall_box():
+    S["b"] = make_body(rect(0, 0, 40, 20), 0, 20, "Box")
+    v = Gui.ActiveDocument.ActiveView; v.viewIsometric(); Gui.SendMsgToActiveView("ViewFit"); v.zoomOut(); v.zoomOut()
+
+
+def hole_hint():
+    check("Hole with nothing selected asks for a face", any("where the hole goes" in n for n in notices())
+          and not Gui.Control.activeDialog(), str(notices()))
+
+
+two_b = [("tall box", tall_box), W, ("hole", lambda: (Gui.Selection.clearSelection(), click(button("Design_Hole")))), W,
+         ("hint", hole_hint), ("click top", lambda: click_3d(V(10, 5, 20))), W, W,
+         ("at click", lambda: hole_at(V(10, 5, 20), "Hole, then a click on the top face drills right there")),
+         ("depth 8", lambda: enter("Depth", "8")), W,
+         ("drilled", lambda: volume("hole 5 mm, 8 deep", 16000 - math.pi * 2.5 ** 2 * 8)),
+         ("close 5", lambda: App.closeDocument(doc().Name)), W, ("new 5", lambda: Gui.runCommand("Std_New")), W]
+
+
 # --- 3 ---------------------------------------------------------------------------------------------------------------
 def sk():
     return Gui.ActiveDocument.getInEdit().Object
@@ -290,4 +332,4 @@ three = [("sketch", lambda: click(button("Design_CreateSketch"))),
          ("ctrl v", lambda: key(QtCore.Qt.Key_V, QtCore.Qt.ControlModifier)), W,
          ("place", lambda: press(V(0, -20, 0))), W, ("pasted", pasted)]
 
-run([("activate", activate), *one, *two, *three])
+run([("activate", activate), *one, *two, *two_b, *three])
