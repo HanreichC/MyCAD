@@ -3549,16 +3549,39 @@ class SelectFieldOnClick: public QObject
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
-        if (event->type() != QEvent::FocusIn || static_cast<QFocusEvent*>(event)->reason() != Qt::MouseFocusReason) {
+        const auto type = event->type();
+        if (type == QEvent::MouseButtonRelease) {
+            // Feld, das den Fokus von selbst bekam (Hauptmaß beim Öffnen eines Dialogs): der erste Klick hinein wählt
+            // trotzdem alles, statt nur den Cursor zu setzen (Tippen hängte sonst an den alten Wert an: "5.00 mm25")
+            QObject* field = qobject_cast<QAbstractSpinBox*>(obj->parent()) ? obj->parent() : obj;
+            if (field->property("selectOnClick").toBool()) {
+                field->setProperty("selectOnClick", false);
+                selectAll(field);
+            }
             return false;
         }
+        auto line = qobject_cast<QLineEdit*>(obj);
+        if ((type != QEvent::FocusIn && type != QEvent::FocusOut)
+            || !(qobject_cast<QAbstractSpinBox*>(obj) || (line && !line->isReadOnly()))) {
+            return false;
+        }
+        const bool mouse = static_cast<QFocusEvent*>(event)->reason() == Qt::MouseFocusReason;
+        obj->setProperty("selectOnClick", type == QEvent::FocusIn && !mouse);
+        if (type == QEvent::FocusIn && mouse) {
+            selectAll(obj);
+        }
+        return false;
+    }
+
+private:
+    static void selectAll(QObject* obj)
+    {
         if (auto box = qobject_cast<QAbstractSpinBox*>(obj)) {
             QTimer::singleShot(0, box, &QAbstractSpinBox::selectAll);
         }
-        else if (auto line = qobject_cast<QLineEdit*>(obj); line && !line->isReadOnly()) {
+        else if (auto line = qobject_cast<QLineEdit*>(obj)) {
             QTimer::singleShot(0, line, &QLineEdit::selectAll);
         }
-        return false;
     }
 };
 
