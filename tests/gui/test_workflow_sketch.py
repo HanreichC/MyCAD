@@ -5,7 +5,10 @@
 2. Kreis, Bemaßung Mittelpunkt -> projizierte Kante (5 mm tippen): kein Konflikt, Mittelpunkt sitzt 5 mm vom Rand.
 3. Versatz einer projizierten Kante versetzt den ganzen projizierten Umriss (vorher nur die eine Kante).
 4. Grundskizze wird vom Rechteck zum L (zwei Linien schneiden eine Ecke ab, Flächennummern verschieben sich): die
-   Skizze auf der Oberseite bleibt oben."""
+   Skizze auf der Oberseite bleibt oben.
+5. Skizze auf der Oberseite einer Rundung: Rundung löschen hängt die Skizze an dieselbe Fläche davor (vorher löste sie
+   sich still). Den Schritt löschen, der die Fläche erzeugt hat: die Skizze bleibt an ihrem Platz, bekommt eine Warnung
+   in der Timeline und es kommt ein Hinweis."""
 import math
 import shiboken6
 from PySide6 import QtGui
@@ -199,4 +202,43 @@ def still_on_top():
 four = [("fresh 4", fresh), W, ("base", base_and_extrude), W, ("ok", ok_enter), W, ("top 4", top_sketch), W, W, ("circle 4", circle_leave), W,
         ("L", make_l), W, ("on top", still_on_top)]
 
-run([("activate", activate), *one, *two, *three, *four])
+# --- 5 ---------------------------------------------------------------------------------------------------------------
+def fillet_corner():
+    b = body()
+    i = [k for k, e in enumerate(b.Shape.Edges) if abs(e.Vertexes[0].Point.z - e.Vertexes[-1].Point.z) > 9
+         and abs(e.Vertexes[0].Point.x - 40) < 1e-6 and abs(e.Vertexes[0].Point.y - 20) < 1e-6][0]
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(b, "Edge%d" % (i + 1)); click(button("Design_Fillet"))
+
+
+def delete(type_id):
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection([o for o in doc().Objects if o.TypeId == type_id][0])
+    Gui.runCommand("Design_Delete")
+
+
+def on_base():
+    s = S["top"]; sup = s.AttachmentSupport
+    check("deleting the fillet under a sketch attaches it to the same face before the fillet",
+          sup and sup[0][0].TypeId == "Design::Extrude" and abs(s.Placement.Base.z - 10) < 1e-6 and not getattr(s, "Warning", ""),
+          "support=%s z=%.2f warning=%s" % (sup, s.Placement.Base.z, getattr(s, "Warning", "")))
+
+
+def warned():
+    s = S["top"]
+    check("deleting the step that made the face keeps the sketch in place, with a warning in the timeline",
+          not s.AttachmentSupport and abs(s.Placement.Base.z - 10) < 1e-6 and s.getStatusString() == "Valid"
+          and getattr(s, "Warning", "").startswith("Face gone"),
+          "support=%s z=%.2f %s warning=%s" % (s.AttachmentSupport, s.Placement.Base.z, s.getStatusString(), getattr(s, "Warning", "")))
+    tips = [b.toolTip() for b in timeline() if b.toolTip().startswith(s.Label)]
+    check("the timeline entry of the sketch explains the warning", any("Face gone" in t for t in tips), str(tips))
+    check("a hint says that the sketch no longer lies on a face", any("no longer lies on a face" in n for n in notices()), str(notices()))
+
+
+five = [("fresh 5", fresh), W, ("box 5", lambda: make_body(rect(0, 0, 40, 20), 0, 10, "Box")), W,
+        ("fillet", fillet_corner), W, ("r3", lambda: type_field("Radius", "3")), ("ok 5", ok_enter), W,
+        ("top 5", top_sketch), W, W, ("circle 5", circle_leave), W,
+        ("on fillet", lambda: check("the sketch lies on the fillet's top face", S["top"].AttachmentSupport[0][0].TypeId == "Design::Fillet",
+                                    str(S["top"].AttachmentSupport))),
+        ("del fillet", lambda: delete("Design::Fillet")), W, W, ("on base", on_base),
+        ("del extrude", lambda: delete("Design::Extrude")), W, W, ("warned", warned)]
+
+run([("activate", activate), *one, *two, *three, *four, *five])

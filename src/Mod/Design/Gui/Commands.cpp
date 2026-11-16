@@ -1711,6 +1711,18 @@ void deleteSelected(App::Document* doc)
         Gui::Application::Instance->commandManager().runCommandByName("Std_Delete");
         return;
     }
+    // Skizzen, die dabei ihre Fläche verlieren (Warnung "Face gone"), bleiben an ihrem Platz: das sagen statt still
+    const auto faceGone = [doc] {
+        std::set<std::string> labels;
+        for (auto obj : doc->getObjectsOfType(Sketcher::SketchObject::getClassTypeId())) {
+            auto warning = freecad_cast<App::PropertyString*>(obj->getPropertyByName("Warning"));
+            if (warning && std::string_view(warning->getValue()).starts_with("Face gone")) {
+                labels.insert(obj->Label.getValue());
+            }
+        }
+        return labels;
+    };
+    const auto before = faceGone();
     Gui::Selection().clearSelection();
     doc->openTransaction("Delete");
     for (const auto& item : items) {
@@ -1720,6 +1732,11 @@ void deleteSelected(App::Document* doc)
     }
     doc->recompute();
     doc->commitTransaction();
+    for (const auto& label : faceGone()) {
+        if (!before.contains(label)) {
+            toolHint(T("Delete"), T("%1 no longer lies on a face. It stays where it was.").arg(QString::fromStdString(label)));
+        }
+    }
 }
 
 /// SVG-Pfade beim Rendern mitschneiden: Qt kennt alle SVG-Formen, Transformationen und Bögen

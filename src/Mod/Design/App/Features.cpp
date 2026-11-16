@@ -1072,6 +1072,98 @@ void removeBody(Design::Body* body)
         }
     }
 }
+
+constexpr const char* FaceGone = "Face gone: the step this sketch was drawn on was deleted; it stays where it was";
+
+/// Fläche face eines gelöschten Schritts im Zustand davor (before): dieselbe (Schwerpunkt + Größe) oder, weil einer
+/// Skizze die Ebene genügt, die nächste ebene Fläche in derselben Ebene und Richtung (eine Rundung oder Fase am Rand
+/// ändert die Größe der Fläche).
+/// ponytail: nächste Fläche über den Schwerpunkt; zwei getrennte Flächen in einer Ebene können verwechselt werden
+std::string faceBefore(const TopoDS_Shape& before, const TopoDS_Shape& face)
+{
+    std::string name = Design::elementName(before, face);
+    if (!name.empty() || face.IsNull() || face.ShapeType() != TopAbs_FACE) {
+        return name;
+    }
+    const auto normal = [](const TopoDS_Face& f, gp_Pln& pln) {
+        BRepAdaptor_Surface surface(f);
+        if (surface.GetType() != GeomAbs_Plane) {
+            return false;
+        }
+        pln = surface.Plane();
+        if (f.Orientation() == TopAbs_REVERSED) {
+            pln.SetAxis(pln.Axis().Reversed());
+        }
+        return true;
+    };
+    gp_Pln plane, other;
+    if (!normal(TopoDS::Face(face), plane)) {
+        return name;
+    }
+    GProp_GProps props;
+    BRepGProp::SurfaceProperties(face, props);
+    const TopoDS_Vertex centre = BRepBuilderAPI_MakeVertex(props.CentreOfMass());
+    TopTools_IndexedMapOfShape faces;
+    TopExp::MapShapes(before, TopAbs_FACE, faces);
+    double best = Precision::Infinite();
+    for (int i = 1; i <= faces.Extent(); ++i) {
+        if (!normal(TopoDS::Face(faces(i)), other) || !other.Axis().Direction().IsEqual(plane.Axis().Direction(), Precision::Angular())
+            || plane.Distance(other.Location()) > Precision::Confusion()) {
+            continue;
+        }
+        BRepExtrema_DistShapeShape dist(centre, faces(i));
+        if (dist.IsDone() && dist.Value() < best) {
+            best = dist.Value();
+            name = "Face" + std::to_string(i);
+        }
+    }
+    return name;
+}
+
+/// Skizzen auf einer Fläche von gone (Feature oder Body, wird gleich gelöscht) an dieselbe Fläche in einem der Zustände
+/// before hängen. Gibt es sie dort nicht (gone hat sie erzeugt), bleibt die Skizze an ihrem Platz und bekommt eine
+/// Warnung für die Timeline; vorher löste sie sich still von der Fläche.
+void reattachSketches(Part::Feature* gone, const std::vector<App::DocumentObject*>& before)
+{
+    const auto users = gone->getInList();  // Kopie: das Umhängen ändert die Liste
+    for (auto user : users) {
+        auto sketch = freecad_cast<Sketcher::SketchObject*>(user);
+        if (!sketch) {
+            continue;
+        }
+        auto objs = sketch->AttachmentSupport.getValues();
+        auto subs = sketch->AttachmentSupport.getSubValues();
+        bool moved = false, lost = false;
+        for (size_t i = 0; i < objs.size() && i < subs.size(); ++i) {
+            if (objs[i] != gone) {
+                continue;
+            }
+            const TopoDS_Shape face = gone->Shape.getShape().getSubShape(subs[i].c_str(), true);
+            std::string name;
+            for (auto base : before) {
+                auto before = freecad_cast<Part::Feature*>(base);
+                if (before && name.empty() && !face.IsNull()) {
+                    name = faceBefore(before->Shape.getShape().getShape(), face);
+                    objs[i] = base;
+                }
+            }
+            lost = lost || name.empty();
+            moved = moved || !name.empty();
+            subs[i] = name;
+        }
+        if (moved && !lost) {
+            sketch->AttachmentSupport.setValues(objs, subs);
+        }
+        if (lost) {
+            auto warning = freecad_cast<App::PropertyString*>(sketch->getPropertyByName("Warning"));
+            if (!warning) {
+                warning = static_cast<App::PropertyString*>(sketch->addDynamicProperty(
+                    "App::PropertyString", "Warning", "Design", "Hint without an error (stays until confirmed)", App::Prop_Hidden));
+            }
+            warning->setValue(FaceGone);
+        }
+    }
+}
 }  // namespace
 
 void Design::removeFromTimeline(App::DocumentObject* obj)
@@ -1099,9 +1191,13 @@ void Design::removeFromTimeline(App::DocumentObject* obj)
         doc->removeObject(obj->getNameInDocument());
         return;
     }
+    reattachSketches(feature, feature->BaseFeatures.getValues());
     const auto orphans = detachFromBodies(feature);
     doc->removeObject(feature->getNameInDocument());
     for (const auto& name : orphans) {
+        if (auto body = freecad_cast<Body*>(doc->getObject(name.c_str()))) {
+            reattachSketches(body, {});  // Skizze direkt auf dem Body, den es ohne diesen Schritt nicht gibt
+        }
         doc->removeObject(name.c_str());
     }
 }
