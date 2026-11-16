@@ -521,3 +521,10 @@ Offene Entscheidungen, mit dem Benutzer entschieden und umgesetzt (2026-11-16, j
   ihrem Platz, bekommt eine Warnung in der Timeline („Fläche weg“, „Stimmt so“ bestätigt) und ein Hinweis sagt es.
 - Werkzeug-Hinweise unter dem ViewCube erscheinen weiter nur bei aktivem Fenster. Die Tests (eigenes Home) schalten
   das in `harness.py` ab und sehen sie so auch am Desktop ohne Fokus.
+
+Beim vollen Testlauf danach aufgefallen, schon vor dieser Runde rot (je mit bestehendem Test):
+- Der automatische Cut (ed28bd4b) prüfte Körper aller Komponenten: ein Klotz in einer neuen Komponente auf der
+  Grundplatte wurde zum Cut statt zum eigenen Körper (`test_joint`). Jetzt nur Körper der eigenen Komponente.
+- Seit das Hauptmaß beim Öffnen gleich den Fokus hat (ea2e3c74), setzte ein Klick hinein nur den Cursor, und Tippen
+  hängte an den alten Wert an („5.00 mm25“, `test_sketch_tools`). Der erste Klick in ein so fokussiertes Feld wählt
+  jetzt alles.

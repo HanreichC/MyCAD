@@ -1870,7 +1870,10 @@ private:
         std::vector<Design::Body*> hits;
         for (auto obj : feature->getDocument()->getObjectsOfType(Design::Body::getClassTypeId())) {
             auto candidate = static_cast<Design::Body*>(obj);
-            if (candidate == newBody || !candidate->Visibility.getValue()) {
+            // Nur Körper der eigenen Komponente: Verweise über Komponentengrenzen gehen nicht, und ein Teil in einer
+            // neuen Komponente, das einen anderen berührt, soll ein eigener Körper werden (wie Fusion), kein Cut
+            if (candidate == newBody || !candidate->Visibility.getValue()
+                || Design::componentOf(candidate) != Design::componentOf(feature)) {
                 continue;
             }
             TopoDS_Shape solid = candidate->Shape.getShape().getShape();
