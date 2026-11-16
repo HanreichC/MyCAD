@@ -454,6 +454,32 @@ quadratische Stellen im übernommenen FreeCAD-Code, nicht der Rechner. Gemessen 
 
 ---
 
+### 4.4 Phase 11: CAD neu denken (beschlossen 2026-11-16)
+
+Ziel: die beste CAD-Software überhaupt. Nicht vor allem mehr Funktionen, sondern das Bestehende schneller, klarer und
+vorausschauender als Fusion. Mit dem Benutzer abgestimmt: zuerst 11.1, 11.2, 11.3, danach der Rest in dieser Reihenfolge,
+ein Feature nach dem anderen (je Tests, Hilfe EN/DE, README, Wiki, ein Commit). Status je Punkt hier nachtragen.
+
+| Nr. | Feature | Kern | Status |
+|---|---|---|---|
+| 11.1 | Maß am Maß eintippen | Das Schild des Maßes wird selbst zum Eingabefeld (kein Fenster „Insert Length“); Enter übernimmt, Esc verwirft, Tab springt zum nächsten Maß der Skizze. Parameter und Formeln wie bisher. | offen |
+| 11.2 | Abhängigkeiten sichtbar, bevor es knallt | Maus über einem Timeline-Schritt hebt im Modell und in der Timeline hervor, was daran hängt. Vor dem Löschen zeigt eine Vorschau, was mitgeht oder eine Warnung bekommt (proaktiv statt „Fläche weg“ hinterher). | offen |
+| 11.3 | Druckbar machen mit einem Klick | Die Druckansicht repariert, was sie findet: Überhang → 45°-Fase, Bohrung von der Seite → Tropfenform, zu dünne Wand → Mindestwand. Als Vorschläge im Fehlermodell (Idee 6), einzeln bestätigen. | offen |
+| 11.4 | Messen ohne Werkzeug | Zwei gewählte Elemente zeigen sofort Abstand/Winkel/Durchmesser klein daneben; Klick darauf macht ein Maß oder einen Parameter. | offen |
+| 11.5 | Bohrung per Klick zu Ende denken | Fangen auf Flächenmitte und Kantenmitten, Maße zu den zwei nächsten Kanten automatisch (heute `ponytail`), mehrere Klicks mit gleichem Randabstand werden ein Muster. | offen |
+| 11.6 | „Was fehlt noch?“ in der Skizze | Je Element sichtbar, welche Freiheit fehlt; ein Klick schlägt Maße nach Absicht vor (Symmetrie, Bezug zum Ursprung). | offen |
+| 11.7 | Konfigurationen aus der Parameter-Notiz | Spalten (S/M/L …) in der Notiz schalten das Teil live um (baut auf Idee 3 und 7). | offen |
+| 11.8 | Werkzeuge über Komponentengrenzen | Cut/Bohrung durch Körper anderer Komponenten (globale Links + Transformationen, `ponytail` in `addFeature`). | offen |
+| 11.9 | Foto wird Skizze | Foto auf Rasterpapier/Kalibrierkarte, Kontur maßstabsgetreu als Skizze (Ersatzteile nachbauen). | offen |
+| 11.10 | Absicht statt Befehl | Strg+K versteht Sätze wie „4 Löcher M3 in die Ecken, 5 mm vom Rand“, zeigt eine Vorschau, Enter übernimmt (Grundlage: Handschrift-Lesen). | offen |
+| 11.11 | Bezüge, die sich selbst prüfen | Jede unsichere geometrische Zuordnung wird angezeigt und per Klick repariert (systematisch statt je Fall). | offen |
+
+Kleinigkeiten aus dem Check vom 16.11.: Zeittests an der Maschinengeschwindigkeit kalibrieren (auf ausgelasteten
+Rechnern rot, `test_big_sketch_ui`); Körper treten im Phong-Modus nicht zurück (`fadeBodies`); `install.sh` auch mit
+Docker statt Podman (Build auf Windows lief von Hand über ein Docker-Volume).
+
+---
+
 ### 4.3 Frühere Phasen (Archiv)
 
 Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9) stehen in L6, Versionen und Data Panel in 10.7.
