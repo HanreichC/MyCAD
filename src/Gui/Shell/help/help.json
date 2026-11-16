@@ -1328,12 +1328,14 @@
     "en": [
      "Find the timeline at the bottom centre: one small icon per step, in the order you made them.",
      "Double-click a step to open its panel again; change values and click OK.",
+     "Hold the mouse over a step: the steps that depend on it light up, and its tooltip names them (Needed by …). That is what changes with it.",
      "Right-click a step for Edit, Roll Back to Here, Suppress/Unsuppress (features only) and Delete.",
      "Roll Back to Here shows the design as it was at that step; new steps are inserted there. Use the arrows at the left of the timeline to move the marker again."
     ],
     "de": [
      "Die Zeitleiste findest du unten in der Mitte: ein kleines Symbol pro Schritt, in der Reihenfolge, in der du sie gemacht hast.",
      "Doppelklick auf einen Schritt öffnet sein Panel wieder; Werte ändern und OK klicken.",
+     "Halte die Maus über einen Schritt: Die Schritte, die von ihm abhängen, leuchten auf, und sein Tooltip nennt sie (Wird gebraucht von …). Das ändert sich mit.",
      "Rechtsklick auf einen Schritt bietet Bearbeiten, Bis hierher zurücksetzen, Unterdrücken/Unterdrückung aufheben und Löschen.",
      "Bis hierher zurücksetzen zeigt das Design so, wie es bei diesem Schritt war; neue Schritte werden dort eingefügt. Mit den Pfeilen links in der Zeitleiste verschiebst du die Markierung wieder."
     ]
@@ -4760,11 +4762,13 @@
    ],
    "tips": {
     "en": [
+     "If something else depends on it, MyCAD asks first and lists it: bodies that go along, sketches that lose the face they lie on (they stay where they are), and steps that lose their input. Nothing else affected: it is deleted right away.",
      "Undo (Ctrl+Z) brings it back.",
      "Deleting a step in the middle keeps the steps after it: they are recalculated without it.",
      "Deleting a body also removes the steps that only built it; steps that used several bodies keep the others."
     ],
     "de": [
+     "Hängt noch etwas daran, fragt MyCAD vorher und zählt es auf: Körper, die mitgehen, Skizzen, die ihre Fläche verlieren (sie bleiben an ihrem Platz), und Schritte, denen danach die Eingabe fehlt. Hängt nichts daran, wird gleich gelöscht.",
      "Rückgängig (Strg+Z) holt es zurück.",
      "Löschst du einen Schritt in der Mitte, bleiben die Schritte danach erhalten und rechnen ohne ihn weiter.",
      "Löschst du einen Körper, gehen die Schritte mit, die nur ihn gebaut haben; Schritte mit mehreren Körpern behalten die anderen."

@@ -1731,18 +1731,55 @@ void deleteSelected(App::Document* doc)
         Gui::Application::Instance->commandManager().runCommandByName("Std_Delete");
         return;
     }
-    // Skizzen, die dabei ihre Fläche verlieren (Warnung "Face gone"), bleiben an ihrem Platz: das sagen statt still
-    const auto faceGone = [doc] {
-        std::set<std::string> labels;
-        for (auto obj : doc->getObjectsOfType(Sketcher::SketchObject::getClassTypeId())) {
-            auto warning = freecad_cast<App::PropertyString*>(obj->getPropertyByName("Warning"));
-            if (warning && std::string_view(warning->getValue()).starts_with("Face gone")) {
-                labels.insert(obj->Label.getValue());
+    // Phase 11.2: hängt außer dem Gewählten etwas daran, vorher sagen was, wie SolidWorks (Rückgängig ginge, aber
+    // man soll es nicht erst hinterher merken). Ohne Folgen wird still gelöscht wie bisher.
+    Design::DeletionImpact impact;
+    std::vector<App::DocumentObject*> chosen;
+    for (const auto& item : items) {
+        if (auto obj = item.getObject()) {
+            chosen.push_back(obj);
+        }
+    }
+    for (auto obj : chosen) {
+        const auto one = Design::deletionImpact(obj);
+        for (auto [from, to] : {std::pair {&one.bodies, &impact.bodies}, std::pair {&one.sketches, &impact.sketches},
+                                std::pair {&one.broken, &impact.broken}}) {
+            for (auto o : *from) {
+                if (std::ranges::find(chosen, o) == chosen.end() && std::ranges::find(*to, o) == to->end()) {
+                    to->push_back(o);
+                }
             }
         }
-        return labels;
-    };
-    const auto before = faceGone();
+    }
+    if (!impact.empty()) {
+        const auto names = [](const std::vector<App::DocumentObject*>& list) {
+            QStringList out;
+            for (auto o : list) {
+                out << QString::fromUtf8(o->Label.getValue());
+            }
+            return out.join(QStringLiteral(", "));
+        };
+        QStringList lines;
+        if (!impact.bodies.empty()) {
+            lines << T("Goes along: %1").arg(names(impact.bodies));
+        }
+        if (!impact.sketches.empty()) {
+            lines << T("Loses the face it lies on and stays where it is: %1").arg(names(impact.sketches));
+        }
+        if (!impact.broken.empty()) {
+            lines << T("Loses its input and shows an error: %1").arg(names(impact.broken));
+        }
+        QMessageBox box(Gui::getMainWindow());
+        box.setObjectName(QStringLiteral("DeleteImpact"));
+        box.setWindowTitle(T("Delete %1?").arg(names(chosen)));
+        box.setText(lines.join(QLatin1Char('\n')));
+        QPushButton* remove = box.addButton(T("Delete"), QMessageBox::DestructiveRole);
+        box.setDefaultButton(box.addButton(QMessageBox::Cancel));
+        box.exec();
+        if (box.clickedButton() != remove) {
+            return;
+        }
+    }
     Gui::Selection().clearSelection();
     doc->openTransaction("Delete");
     for (const auto& item : items) {
@@ -1752,11 +1789,6 @@ void deleteSelected(App::Document* doc)
     }
     doc->recompute();
     doc->commitTransaction();
-    for (const auto& label : faceGone()) {
-        if (!before.contains(label)) {
-            toolHint(T("Delete"), T("%1 no longer lies on a face. It stays where it was.").arg(QString::fromStdString(label)));
-        }
-    }
 }
 
 /// SVG-Pfade beim Rendern mitschneiden: Qt kennt alle SVG-Formen, Transformationen und Bögen

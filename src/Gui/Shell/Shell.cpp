@@ -200,6 +200,7 @@ QToolButton#GlassButton::menu-button { border: none; width: 14px; }
 /* Pfeil für das Menü am Knopf: kräftig genug, um ihn zu sehen und zu treffen (vorher 9 px, Linie 1 px) */
 QToolButton#GlassButton::menu-arrow { image: url(:/mycad/icons/Menu_Chevron.svg); width: 14px; height: 14px; }
 QToolButton#GlassButton[error="true"] { background: @errorFill; }
+QToolButton#GlassButton[related="true"] { background: @fillSecondary; border-color: @accent; }
 QToolButton#WindowClose:hover { background: @red; }
 QToolButton#WindowClose:pressed { background: @redPressed; }
 /* Schließen-Knopf der Post-its wie beim Hinweis-Popup (MyStyle § 9.4): 28 rund, fill.tertiary */
@@ -1272,8 +1273,24 @@ public:
     std::function<void()> onDoubleClick;
     /// Gezogen und losgelassen: Stelle in Koordinaten des Elternwidgets (der Timeline-Leiste)
     std::function<void(QPoint)> onDrop;
+    /// Maus darüber bzw. weg: hängt die Schritte, die an diesem hängen, hervor (Phase 11.2)
+    std::function<void(bool)> onHover;
 
 protected:
+    void enterEvent(QEnterEvent* event) override
+    {
+        QToolButton::enterEvent(event);
+        if (onHover) {
+            onHover(true);
+        }
+    }
+    void leaveEvent(QEvent* event) override
+    {
+        QToolButton::leaveEvent(event);
+        if (onHover) {
+            onHover(false);
+        }
+    }
     void mouseDoubleClickEvent(QMouseEvent* event) override
     {
         event->accept();
@@ -4896,11 +4913,32 @@ void rebuildTimeline()
         btn->setFixedSize(Token::WindowButton, Token::WindowButton);
         auto warningProp = freecad_cast<App::PropertyString*>(obj->getPropertyByName("Warning"));
         const QString warning = warningProp ? QString::fromUtf8(warningProp->getValue()) : QString();
+        // Phase 11.2: was an diesem Schritt hängt (spätere Schritte, die ihn direkt oder über andere brauchen): beim
+        // Überfahren hervorgehoben und im Tooltip genannt, bevor man ihn ändert oder löscht
+        QStringList dependents, dependentLabels;
+        for (App::DocumentObject* user : obj->getInListRecursive()) {
+            if (user != obj && std::ranges::find(items, user) != items.end()) {
+                dependents << QString::fromLatin1(user->getNameInDocument());
+                dependentLabels << QString::fromUtf8(user->Label.getValue());
+            }
+        }
+        btn->setProperty("timelineObject", QString::fromLatin1(obj->getNameInDocument()));
         btn->setToolTip(QString::fromUtf8(obj->Label.getValue())
                         + (obj->isError() ? QStringLiteral("\n") + T(obj->getStatusString()) : QString())
                         + (warning.isEmpty() ? QString()
                                              : QStringLiteral("\n") + T((warning.section(QLatin1String(": "), 0, 0).toStdString() + ": ").c_str())
-                                                   + T(warning.section(QLatin1String(": "), 1).toStdString().c_str())));
+                                                   + T(warning.section(QLatin1String(": "), 1).toStdString().c_str()))
+                        + (dependentLabels.isEmpty() ? QString()
+                                                     : QStringLiteral("\n") + T("Needed by: %1").arg(dependentLabels.join(QStringLiteral(", ")))));
+        btn->onHover = [box, dependents](bool on) {
+            for (auto other : box->findChildren<QToolButton*>()) {
+                if (dependents.contains(other->property("timelineObject").toString()) && other->property("related").toBool() != on) {
+                    other->setProperty("related", on);
+                    other->style()->unpolish(other);
+                    other->style()->polish(other);
+                }
+            }
+        };
         btn->setAccessibleName(QString::fromUtf8(obj->Label.getValue()));
         btn->setProperty("error", obj->isError());
         if (obj->isError()) {  // Farbe nie allein (C-5): Fehler-Symbol in die Ecke

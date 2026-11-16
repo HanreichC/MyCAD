@@ -7,8 +7,9 @@
 4. Grundskizze wird vom Rechteck zum L (zwei Linien schneiden eine Ecke ab, Flächennummern verschieben sich): die
    Skizze auf der Oberseite bleibt oben.
 5. Skizze auf der Oberseite einer Rundung: Rundung löschen hängt die Skizze an dieselbe Fläche davor (vorher löste sie
-   sich still). Den Schritt löschen, der die Fläche erzeugt hat: die Skizze bleibt an ihrem Platz, bekommt eine Warnung
-   in der Timeline und es kommt ein Hinweis."""
+   sich still), ohne Rückfrage. Über dem Extrude in der Timeline sind Rundung und Skizze hervorgehoben, der Tooltip nennt
+   sie. Den Schritt löschen, der die Fläche erzeugt hat: vorher sagt eine Vorschau, dass der Körper mitgeht und die
+   Skizze ihre Fläche verliert (Phase 11.2); danach bleibt die Skizze an ihrem Platz mit Warnung in der Timeline."""
 import math
 import shiboken6
 from PySide6 import QtGui
@@ -210,9 +211,30 @@ def fillet_corner():
     Gui.Selection.clearSelection(); Gui.Selection.addSelection(b, "Edge%d" % (i + 1)); click(button("Design_Fillet"))
 
 
+def answer():
+    """Rückfrage vor dem Löschen (Vorschau) merken und mit Löschen beantworten"""
+    m = QtWidgets.QApplication.activeModalWidget()
+    if m is None:
+        return
+    S["preview"] = (m.objectName(), m.text() + "\n" + m.informativeText())
+    [b for b in m.findChildren(QtWidgets.QPushButton) if b.text().replace("&", "") == "Delete"][0].click()
+
+
 def delete(type_id):
+    S.pop("preview", None)
+    QtCore.QTimer.singleShot(800, answer)  # die Rückfrage blockiert runCommand
     Gui.Selection.clearSelection(); Gui.Selection.addSelection([o for o in doc().Objects if o.TypeId == type_id][0])
     Gui.runCommand("Design_Delete")
+
+
+def hover_extrude():
+    btn = [b for b in timeline() if b.toolTip().startswith("Extrude")][0]
+    QtWidgets.QApplication.sendEvent(btn, QtGui.QEnterEvent(QtCore.QPointF(5, 5), QtCore.QPointF(5, 5), QtCore.QPointF(btn.mapToGlobal(QtCore.QPoint(5, 5)))))
+    related = sorted(b.toolTip().split("\n")[0] for b in timeline() if b.property("related"))
+    check("hovering a timeline step highlights what depends on it", related == sorted(["Fillet", S["top"].Label]), str(related))
+    check("its tooltip names them", "Needed by:" in btn.toolTip() and S["top"].Label in btn.toolTip(), btn.toolTip())
+    QtWidgets.QApplication.sendEvent(btn, QtCore.QEvent(QtCore.QEvent.Leave))
+    check("leaving it clears the highlight", not [b for b in timeline() if b.property("related")])
 
 
 def on_base():
@@ -230,7 +252,9 @@ def warned():
           "support=%s z=%.2f %s warning=%s" % (s.AttachmentSupport, s.Placement.Base.z, s.getStatusString(), getattr(s, "Warning", "")))
     tips = [b.toolTip() for b in timeline() if b.toolTip().startswith(s.Label)]
     check("the timeline entry of the sketch explains the warning", any("Face gone" in t for t in tips), str(tips))
-    check("a hint says that the sketch no longer lies on a face", any("no longer lies on a face" in n for n in notices()), str(notices()))
+    p = S.get("preview", ("", ""))
+    check("before deleting, a preview says the body goes along and the sketch loses its face",
+          p[0] == "DeleteImpact" and "Box" in p[1] and s.Label in p[1], str(p))
 
 
 five = [("fresh 5", fresh), W, ("box 5", lambda: make_body(rect(0, 0, 40, 20), 0, 10, "Box")), W,
@@ -238,7 +262,9 @@ five = [("fresh 5", fresh), W, ("box 5", lambda: make_body(rect(0, 0, 40, 20), 0
         ("top 5", top_sketch), W, W, ("circle 5", circle_leave), W,
         ("on fillet", lambda: check("the sketch lies on the fillet's top face", S["top"].AttachmentSupport[0][0].TypeId == "Design::Fillet",
                                     str(S["top"].AttachmentSupport))),
+        ("hover", hover_extrude),
         ("del fillet", lambda: delete("Design::Fillet")), W, W, ("on base", on_base),
+        ("no preview", lambda: check("deleting the fillet asks nothing: nothing else is affected", "preview" not in S, str(S.get("preview")))),
         ("del extrude", lambda: delete("Design::Extrude")), W, W, ("warned", warned)]
 
 run([("activate", activate), *one, *two, *three, *four, *five])

@@ -55,7 +55,7 @@ Every closed region in a sketch is its own profile. Draw two circles inside each
 
 Extrude one side, symmetric, two sides, up to an object or through all, with a taper and as a thin wall. Holes follow ISO metric, metric fine, UNC and UNF, as clearance or tapped holes with the counterbore or countersink of the right screw. Threads are real and printable. Fillets can vary along an edge, patterns can follow a path, and mirror, pattern and move work with any plane, face, edge or axis.
 
-Every step goes into the **Timeline**. Go back, change a dimension, and the rest of the design follows. Drag steps into a new order, and group them into chips you can fold away. With **Change Parameters** you can drive the whole model from named values and formulas.
+Every step goes into the **Timeline**. Go back, change a dimension, and the rest of the design follows. Drag steps into a new order, and group them into chips you can fold away. Hover a step and everything that depends on it lights up; delete something others rely on and MyCAD tells you first what goes along, instead of you finding out later. With **Change Parameters** you can drive the whole model from named values and formulas.
 
 ![Extrude](src/Gui/Shell/help/images/Design_Extrude.gif)
 

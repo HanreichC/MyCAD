@@ -1166,6 +1166,82 @@ void reattachSketches(Part::Feature* gone, const std::vector<App::DocumentObject
 }
 }  // namespace
 
+Design::DeletionImpact Design::deletionImpact(App::DocumentObject* obj)
+{
+    DeletionImpact impact;
+    if (!obj || obj->isDerivedFrom<Body>()) {
+        return impact;  // ponytail: Körper löschen (Schritte gehen mit) ohne Vorschau
+    }
+    const auto add = [](std::vector<App::DocumentObject*>& list, App::DocumentObject* o) {
+        if (std::ranges::find(list, o) == list.end()) {
+            list.push_back(o);
+        }
+    };
+    // Schritte, die obj (bzw. das Profil einer Skizze) anders als über die Kette eines Körpers nutzen
+    std::vector<App::DocumentObject*> sources {obj};
+    if (auto profiles = Profiles::forSketch(obj)) {
+        sources.push_back(profiles);
+    }
+    static const std::set<std::string> chain {"BaseFeatures", "ToolFeatures", "SourceFeatures", "Bodies"};
+    for (App::DocumentObject* source : sources) {
+        for (App::DocumentObject* user : source->getInList()) {
+            if (user == obj || !user->isDerivedFrom<Feature>()) {
+                continue;
+            }
+            std::vector<App::Property*> props;
+            user->getPropertyList(props);
+            for (App::Property* prop : props) {
+                const auto links = user->getOutListOfProperty(prop);
+                if (!chain.contains(prop->getName()) && std::ranges::find(links, source) != links.end()) {
+                    add(impact.broken, user);
+                    break;
+                }
+            }
+        }
+    }
+    auto feature = freecad_cast<Feature*>(obj);
+    if (!feature) {
+        return impact;
+    }
+    // Körper, die es nur durch diesen Schritt gibt, und Skizzen auf einer Fläche, die es davor nicht gibt
+    const auto bodies = feature->Bodies.getValues();
+    const auto bases = feature->BaseFeatures.getValues();
+    for (size_t i = 0; i < bodies.size(); ++i) {
+        auto body = freecad_cast<Body*>(bodies[i]);
+        if (body && body->Tip.getValue() == feature && (i >= bases.size() || !bases[i])) {
+            add(impact.bodies, body);
+            for (App::DocumentObject* user : body->getInList()) {
+                if (user->isDerivedFrom<Sketcher::SketchObject>()) {
+                    add(impact.sketches, user);
+                }
+            }
+        }
+    }
+    for (App::DocumentObject* user : feature->getInList()) {
+        auto sketch = freecad_cast<Sketcher::SketchObject*>(user);
+        if (!sketch) {
+            continue;
+        }
+        const auto& objs = sketch->AttachmentSupport.getValues();
+        const auto& subs = sketch->AttachmentSupport.getSubValues();
+        for (size_t i = 0; i < objs.size() && i < subs.size(); ++i) {
+            if (objs[i] != feature) {
+                continue;
+            }
+            const TopoDS_Shape face = feature->Shape.getShape().getSubShape(subs[i].c_str(), true);
+            bool kept = false;
+            for (auto base : bases) {
+                auto before = freecad_cast<Part::Feature*>(base);
+                kept = kept || (before && !face.IsNull() && !faceBefore(before->Shape.getShape().getShape(), face).empty());
+            }
+            if (!kept) {
+                add(impact.sketches, sketch);
+            }
+        }
+    }
+    return impact;
+}
+
 void Design::removeFromTimeline(App::DocumentObject* obj)
 {
     if (auto body = freecad_cast<Body*>(obj)) {

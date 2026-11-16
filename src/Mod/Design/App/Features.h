@@ -55,6 +55,18 @@ DesignExport void attachToBodies(Feature* feature, const std::vector<Body*>& bod
 DesignExport std::vector<std::string> detachFromBodies(Feature* feature);
 /// Skizze oder Feature aus der Timeline löschen und die Kette dahinter neu verbinden
 DesignExport void removeFromTimeline(App::DocumentObject* obj);
+/// Was removeFromTimeline(obj) außer obj trifft, ohne etwas zu ändern (Vorschau vor dem Löschen, Phase 11.2):
+/// Körper, die mitgehen; Skizzen, die ihre Fläche verlieren (bleiben an ihrem Platz); Schritte, denen danach eine
+/// Eingabe fehlt (Profil, Skizze, Bezug). Die Kette eines Körpers (BaseFeatures …) wird neu verbunden und zählt nicht.
+struct DeletionImpact
+{
+    std::vector<App::DocumentObject*> bodies, sketches, broken;
+    bool empty() const
+    {
+        return bodies.empty() && sketches.empty() && broken.empty();
+    }
+};
+DesignExport DeletionImpact deletionImpact(App::DocumentObject* obj);
 /// Eintrag an Position to schieben. Geht nicht, wenn er dann vor etwas stünde, das er braucht (Skizze, Bezug), oder
 /// hinter etwas, das ihn braucht; error nennt es. Features auf demselben Body werden dabei neu verkettet.
 DesignExport bool moveInTimeline(App::DocumentObject* obj, int to, std::string& error);

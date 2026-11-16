@@ -175,6 +175,9 @@ again, which is handy for imported STEP parts that have no history.
 ## Timeline
 
 - At the bottom center, one entry per step; double-click to open it again.
+- **What depends on it:** hold the mouse over a step and the steps that depend on it light up; the tooltip names them.
+- **Delete with a preview:** if something else depends on what you delete, MyCAD asks first and lists it: bodies that
+  go along, sketches that lose their face (they stay in place, with a warning), steps that lose their input.
 - **Roll back:** the arrows, or a click, move the marker back; later steps rest until you move forward again.
 - **Reorder:** drag an entry. If it needs another step, MyCAD says which.
 - **Groups:** Ctrl+click several entries, right-click → **Group Selected Steps**. Groups fold into a chip, and can be
