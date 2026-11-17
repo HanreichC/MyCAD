@@ -482,6 +482,41 @@ seinen Gruppen; 2026-11-17 echt geprüft in Ubuntu 26.04 unter WSL2 mit docker.i
 
 ---
 
+### 4.5 Aufräumliste (beschlossen 2026-11-17)
+
+Alles, was nach Phase 11 noch im Plan oder als `ponytail` im Code stand, mit dem Benutzer durchgegangen. Reihenfolge:
+A, dann B (5, 6, 4, 9, die übrigen), dann F26, dann C und E; D (Fotos) erst mit echten Fotos des Benutzers. Je Punkt:
+Tests, Hilfe/README/Wiki wo sichtbar, Status hier, ein Commit.
+
+| Nr. | Punkt | Status |
+|---|---|---|
+| A1–A3 | Veraltete Notizen: PLAN zur Bohrung per Klick, Kommentar zu `addFeature` (Komponenten), `fadeBodies` (Phong) | erledigt 2026-11-17 |
+| B5 | Löschen eines ganzen Körpers ohne Vorschau | erledigt 2026-11-17 (`test_delete_body_impact`) |
+| B6 | Ausrichtung beim Platzieren (Commands.cpp, `ponytail` „folgt späteren Änderungen nicht“) und Abstand bei Ebenen („bleibt stehen, wenn sich die Flächen verschieben“): einmal berechnet | offen, als Nächstes |
+| B4 | Geometrischer statt topologischer Abgleich: Skizze, die ihre Fläche verliert (nächste Fläche über den Schwerpunkt), Teilung in 3+ Teile (Teile rücken auf), Wiederfinden nach Lage bei zwei deckungsgleichen Elementen | offen |
+| B9 | Aussehen je Fläche: nur die Farbe wechselt, Glanz/Metall/Lack kommen von der ersten Fläche | offen |
+| B7 | Gewinde ohne Auslauf und Fase an den Flächenenden | offen |
+| B8 | Rippe/Steg nur aus geraden Linien | offen |
+| B10 | Aussehen „Standard“ an Farbe/Textur erkannt: Gleichaussehendes wird mit umgefärbt | offen |
+| B11 | Scribble: Achter-Umrisse füllen nur Teilbereiche; keine Ellipsen, Dreiecke, Bögen; Aufräumen trifft auch kleine Zeichnungen; Zeichnungen werden als Text gelesen | offen |
+| F26 | Wackeliger Test `test_sketch_fillet_radius` (unter Last rot, allein grün): Ursache klären | offen |
+| F27 | Testumgebung wartet pauschal 0,1 s statt die Zeichenzeit zu messen | offen |
+| C12 | Große Skizzen: Löser baut je Änderung die ganze Skizze neu auf (inkrementeller Löser = großer Umbau) | offen (erst wenn es im Alltag stört) |
+| C13 | Baugruppen: jeder Joint löst die ganze Gruppe neu; Kollision prüft jedes Paar | offen (erst bei großen Baugruppen) |
+| C14 | Druckansicht: Wanddicke ab 50.000 Dreiecken nur stichprobenhaft | offen |
+| C15 | Versionen als ganze Dateikopien (Platz bei großen Designs) | offen |
+| E20 | Bohrung per Klick: festes 0,5-mm-Raster unabhängig vom Zoom; Maßstab fürs Fangen nur in einer Richtung | offen |
+| E21 | Messkarte und Flächen-Maße folgen der Kamera per Timer statt per Ereignis | offen |
+| E22 | Befehle ohne eigenes MyCAD-Symbol zeigen ein ausgegrautes FreeCAD-Symbol | offen |
+| E23 | Scribble-Wert 0,25 ist kein MyStyle-Token | offen |
+| E24 | Touchpad-Gesten: feste Schwellen; unter manchen Compositors (Sway) dreht 3-Finger-Wischen doppelt | offen |
+| E25 | Kleinkram: Materialien ohne Zuordnung (Messing, Kupfer, Gummi, Stein, Lacke); Normgrößen außerhalb der Tabellen geschätzt; feste Werte für Einschmelzmuttern; Holztextur feiner als echt | offen |
+| D16–D19 | Foto zu Skizze: Blattecken nur bis ~35° Drehung, nur A4; Raster/glattes Papier nur gerade von oben; Bild auf 1000 px verkleinert; nie mit echten Handyfotos getestet | zurückgestellt, bis echte Fotos da sind |
+| F28 | Echter Rechner (CachyOS, Podman, echte GPU) nur durch Nutzung abgedeckt; Tests laufen mit Software-Rendering | Hinweis |
+| F29 | Ubuntu in WSL (für den `install.sh`-Test) ist noch installiert; entfernen mit `wsl --unregister Ubuntu` | Hinweis |
+
+---
+
 ### 4.3 Frühere Phasen (Archiv)
 
 Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9) stehen in L6, Versionen und Data Panel in 10.7.
