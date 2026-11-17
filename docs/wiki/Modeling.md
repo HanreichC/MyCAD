@@ -125,7 +125,7 @@ The other tools in short clips; the ones with more to say have their own section
 
 Lay a flat part on plain light paper, photograph it from straight above, then FILE → **Import** and choose the photo
 (PNG or JPG; also Ctrl+K → **Photo to Sketch**) and type how wide the part really is: MyCAD traces the outline and every hole
-as a sketch to scale, ready to extrude. Round holes come as polygons; replace an important one with a circle.
+as a sketch to scale, ready to extrude. Round holes become real circles, everything else straight lines.
 
 ### Extrude
 

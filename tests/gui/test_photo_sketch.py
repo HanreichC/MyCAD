@@ -45,9 +45,9 @@ def traced():
           and abs(bb.YLength - 40) < 0.2 and len(areas) == 2 and abs(areas[1] - ring) < 0.02 * ring
           and abs(areas[0] - disc) < 0.08 * disc,
           "wires=%d bb=%s areas=%s want %.1f, %.1f" % (len(wires), bb, [round(a, 1) for a in areas], ring, disc))
-    holes = [w for w in wires if w.BoundBox.XLength < 30]
-    check("the hole is about 16 mm across", len(holes) == 1 and abs(holes[0].BoundBox.XLength - 16) < 0.6,
-          str([round(w.BoundBox.XLength, 2) for w in wires]))
+    circles = [e for e in sk.Shape.Edges if e.Curve.TypeId == "Part::GeomCircle"] if sk else []
+    check("the round hole becomes a real circle, about 16 mm across", len(circles) == 1 and abs(circles[0].Curve.Radius - 8) < 0.3,
+          str([(e.Curve.TypeId, round(e.Length, 2)) for e in (sk.Shape.Edges if sk else [])][:6]))
     shot("traced")
 
 

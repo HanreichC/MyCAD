@@ -209,4 +209,91 @@ inline std::vector<Loop> contours(const std::vector<std::uint8_t>& gray, int w, 
     return out;
 }
 
+struct Circle
+{
+    Point centre {0, 0};
+    double radius = 0;
+};
+
+/// Kreis durch die Punkte nach kleinsten Quadraten (Kasa); liefert die größte Abweichung eines Punkts vom Kreis
+inline double fitCircle(const Loop& loop, Circle& c)
+{
+    if (loop.size() < 3) {
+        return 1e100;
+    }
+    double mx = 0, my = 0;
+    for (const auto& p : loop) {
+        mx += p.x;
+        my += p.y;
+    }
+    mx /= loop.size();
+    my /= loop.size();
+    // x² + y² + D x + E y + F = 0 in Koordinaten um den Schwerpunkt: Normalgleichungen 3 x 3
+    double a[3][4] = {};
+    for (const auto& p : loop) {
+        const double x = p.x - mx, y = p.y - my, z = -(x * x + y * y);
+        const double row[3] = {x, y, 1};
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                a[i][j] += row[i] * row[j];
+            }
+            a[i][3] += row[i] * z;
+        }
+    }
+    for (int i = 0; i < 3; ++i) {  // Gauß mit Spaltenpivot
+        int pivot = i;
+        for (int k = i + 1; k < 3; ++k) {
+            pivot = std::abs(a[k][i]) > std::abs(a[pivot][i]) ? k : pivot;
+        }
+        std::swap(a[i], a[pivot]);
+        if (std::abs(a[i][i]) < 1e-12) {
+            return 1e100;
+        }
+        for (int k = 0; k < 3; ++k) {
+            if (k != i) {
+                const double f = a[k][i] / a[i][i];
+                for (int j = i; j < 4; ++j) {
+                    a[k][j] -= f * a[i][j];
+                }
+            }
+        }
+    }
+    const double d = a[0][3] / a[0][0], e = a[1][3] / a[1][1], f = a[2][3] / a[2][2];
+    const double r2 = d * d / 4 + e * e / 4 - f;
+    if (r2 <= 0) {
+        return 1e100;
+    }
+    c.centre = {mx - d / 2, my - e / 2};
+    c.radius = std::sqrt(r2);
+    double worst = 0;
+    for (const auto& p : loop) {
+        worst = std::max(worst, std::abs(std::hypot(p.x - c.centre.x, p.y - c.centre.y) - c.radius));
+    }
+    return worst;
+}
+
+/// Ein Umriss: Kreis (ein rundes Loch, ein runder Umriss) oder vereinfachter Linienzug
+struct Outline
+{
+    bool circle = false;
+    Circle c;
+    Loop points;
+};
+
+/// Umrisse des Teils; ein Umriss, der höchstens tol Pixel (und nicht mehr als die Pixeltreppe) von einem Kreis abweicht
+/// und mindestens 3 Pixel Radius hat, wird ein Kreis, sonst ein vereinfachter Linienzug
+inline std::vector<Outline> outlines(const std::vector<std::uint8_t>& gray, int w, int h, double tol = 1.5)
+{
+    std::vector<Outline> out;
+    for (const auto& loop : trace(partMask(gray, w, h), w, h)) {
+        Outline o;
+        o.circle = loop.size() >= 12 && fitCircle(loop, o.c) <= tol && o.c.radius >= 3;
+        if (!o.circle) {
+            o.points = simplify(loop, tol);
+        }
+        out.push_back(o);
+    }
+    return out;
+}
+
 }  // namespace PhotoContour

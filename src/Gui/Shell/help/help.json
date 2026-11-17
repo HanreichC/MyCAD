@@ -2266,11 +2266,11 @@
    "tips": {
     "en": [
      "The sharper and straighter the photo, the more exact the sketch: a few tenths of a millimetre for a part the size of a hand.",
-     "Round holes come out as polygons with many short lines. Replace an important one with a circle and a dimension."
+     "Round holes and round parts become real circles; everything else becomes straight lines. Round a measured diameter off in the sketch if you like (e.g. 7.96 to 8 mm)."
     ],
     "de": [
      "Je schärfer und gerader das Foto, desto genauer die Skizze: ein paar Zehntel Millimeter bei einem Teil von Handgröße.",
-     "Runde Löcher kommen als Vielecke mit vielen kurzen Linien. Ersetze ein wichtiges durch einen Kreis mit Maß."
+     "Runde Löcher und runde Teile werden echte Kreise, alles andere gerade Linien. Runde einen gemessenen Durchmesser in der Skizze ab, wenn du magst (z. B. 7,96 auf 8 mm)."
     ]
    },
    "images": [

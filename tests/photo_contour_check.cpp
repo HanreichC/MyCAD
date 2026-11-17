@@ -63,6 +63,31 @@ int main()
     }
     assert(minX == 30 && maxX == 90);  // Kanten genau auf den Pixelgrenzen
 
+    // Kreise als Kreise: das Loch wird einer (Mitte und Radius genau), der rechteckige Umriss nicht
+    const auto shapes = outlines(img, w, h, 1.5);
+    assert(shapes.size() == 2);
+    int circles = 0;
+    for (const auto& o : shapes) {
+        if (o.circle) {
+            ++circles;
+            assert(std::abs(o.c.centre.x - 60) < 0.2 && std::abs(o.c.centre.y - 45) < 0.2);
+            assert(std::abs(o.c.radius - 8) < 0.3);
+        }
+        else {
+            assert(o.points.size() == 4);
+        }
+    }
+    assert(circles == 1);
+    Circle c;
+    Loop square;  // Quadrat 20 x 20, an den Kanten abgetastet wie ein Umriss: kein Kreis
+    for (int i = 0; i < 20; ++i) {
+        square.push_back({double(i), 0});
+        square.push_back({20, double(i)});
+        square.push_back({20.0 - i, 20});
+        square.push_back({0, 20.0 - i});
+    }
+    assert(fitCircle(square, c) > 1.5);
+
     // nichts im Bild: leer
     std::vector<std::uint8_t> blank(w * h, 200);
     assert(contours(blank, w, h).empty());

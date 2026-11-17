@@ -657,8 +657,8 @@ A("Design_PhotoToSketch", "create", "Design_PhotoToSketch", ("Photo to Sketch", 
     "MyCAD zeichnet den Umriss und jedes Loch als Skizze nach. Prüf ein Maß mit Messen, dann extrudiere sie auf die Dicke des Teils.")],
   tips=[("The sharper and straighter the photo, the more exact the sketch: a few tenths of a millimetre for a part the size of a hand.",
          "Je schärfer und gerader das Foto, desto genauer die Skizze: ein paar Zehntel Millimeter bei einem Teil von Handgröße."),
-        ("Round holes come out as polygons with many short lines. Replace an important one with a circle and a dimension.",
-         "Runde Löcher kommen als Vielecke mit vielen kurzen Linien. Ersetze ein wichtiges durch einen Kreis mit Maß.")],
+        ("Round holes and round parts become real circles; everything else becomes straight lines. Round a measured diameter off in the sketch if you like (e.g. 7.96 to 8 mm).",
+         "Runde Löcher und runde Teile werden echte Kreise, alles andere gerade Linien. Runde einen gemessenen Durchmesser in der Skizze ab, wenn du magst (z. B. 7,96 auf 8 mm).")],
   see=["Design_CreateSketch", "Design_Extrude", "Design_Measure"])
 
 A("Design_Extrude", "create", "Design_Extrude", ("Extrude", "Extrudieren"),

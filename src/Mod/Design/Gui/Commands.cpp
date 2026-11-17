@@ -4875,14 +4875,19 @@ App::DocumentObject* DesignGui::photoToSketch(const std::string& file, double wi
     for (int y = 0; y < h; ++y) {
         std::copy_n(image.constScanLine(y), w, gray.begin() + size_t(y) * w);
     }
-    const auto loops = PhotoContour::contours(gray, w, h, 1.5);
+    const auto loops = PhotoContour::outlines(gray, w, h, 1.5);  // runde Löcher als Kreise
     if (loops.empty()) {
         toolHint(T("Photo to Sketch"), T("No part found. Lay it on plain paper that fills the photo and take the photo from straight above."));
         return nullptr;
     }
     double minX = 1e100, maxX = -1e100, maxY = -1e100;
     for (const auto& loop : loops) {
-        for (const auto& p : loop) {
+        if (loop.circle) {
+            minX = std::min(minX, loop.c.centre.x - loop.c.radius);
+            maxX = std::max(maxX, loop.c.centre.x + loop.c.radius);
+            maxY = std::max(maxY, loop.c.centre.y + loop.c.radius);
+        }
+        for (const auto& p : loop.points) {
             minX = std::min(minX, p.x);
             maxX = std::max(maxX, p.x);
             maxY = std::max(maxY, p.y);
@@ -4892,11 +4897,21 @@ App::DocumentObject* DesignGui::photoToSketch(const std::string& file, double wi
     doc->openTransaction("Photo to Sketch");
     Sketcher::SketchObject* sketch = newSketch(activeContainer(doc));
     sketch->Label.setValue("Photo");
-    for (const auto& loop : loops) {
+    int circles = 0;
+    for (const auto& outline : loops) {
         const int first = sketch->getHighestCurveIndex() + 1;
         const auto mm = [&](const PhotoContour::Point& p) {
             return Base::Vector3d((p.x - minX) * scale, (maxY - p.y) * scale, 0);  // Bild-y nach unten, Skizze nach oben
         };
+        if (outline.circle) {
+            Part::GeomCircle circle;
+            circle.setCenter(mm(outline.c.centre));
+            circle.setRadius(outline.c.radius * scale);
+            sketch->addGeometry(&circle);
+            ++circles;
+            continue;
+        }
+        const auto& loop = outline.points;
         for (size_t i = 0; i < loop.size(); ++i) {
             auto segment = std::make_unique<Part::GeomLineSegment>();
             segment->setPoints(mm(loop[i]), mm(loop[(i + 1) % loop.size()]));
@@ -4915,8 +4930,9 @@ App::DocumentObject* DesignGui::photoToSketch(const std::string& file, double wi
     }
     doc->recompute();
     doc->commitTransaction();
-    toolHint(T("Photo to Sketch"), T("Traced %1 outlines, %2 mm wide. Check the size with Measure, then extrude it.")
+    toolHint(T("Photo to Sketch"), T("Traced %1 outlines (%2 of them circles), %3 mm wide. Check the size with Measure, then extrude it.")
                                       .arg(loops.size())
+                                      .arg(circles)
                                       .arg(widthMm));
     return sketch;
 }
