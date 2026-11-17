@@ -7,6 +7,8 @@
 /// Teilwort vor Tippfehler. Groß/klein und Umlaute zählen nicht ("bohrung" findet "Bohrung", "groesse" "Größe").
 
 #include <algorithm>
+#include <cctype>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -131,6 +133,98 @@ inline int score(const std::string& query, const std::vector<std::string>& names
         }
     }
     return best;
+}
+
+/// Phase 11.10 "Absicht statt Befehl": ein Satz statt eines Befehls, z. B. "4 Löcher M3 in die Ecken, 5 mm vom Rand"
+/// oder "four holes Ø3.4 in the corners 6 mm from the edge". Bisher verstanden: Bohrungen in die vier Ecken.
+struct Intent
+{
+    enum class Kind
+    {
+        None,
+        CornerHoles
+    };
+    Kind kind = Kind::None;
+    std::string size;     ///< ISO-Gewinde, z. B. "M3"; leer bei Durchmesser
+    double diameter = 0;  ///< mm, wenn kein M-Maß
+    double offset = 0;    ///< Abstand der Mitten zum Rand, mm (ohne Angabe: zweimal der Nenndurchmesser)
+};
+
+inline Intent intent(const std::string& query)
+{
+    std::string f = fold(query);
+    for (size_t i = 1; i + 1 < f.size(); ++i) {  // Dezimalkomma ("2,5 mm"), sonst trennt words() die Zahl
+        if (f[i] == ',' && std::isdigit(static_cast<unsigned char>(f[i - 1])) && std::isdigit(static_cast<unsigned char>(f[i + 1]))) {
+            f[i] = '.';
+        }
+    }
+    for (const char* mark : {"\xC3\xB8", "\xE2\x8C\x80", "\xC3\x98"}) {  // ø, ⌀, Ø: eigenes Wort
+        for (size_t at = f.find(mark); at != std::string::npos; at = f.find(mark)) {
+            f.replace(at, std::string(mark).size(), " dia ");
+        }
+    }
+    const auto ws = words(f);
+    const auto starts = [](const std::string& w, std::initializer_list<const char*> stems) {
+        return std::ranges::any_of(stems, [&w](const char* s) { return w.rfind(s, 0) == 0; });
+    };
+    static const std::vector<std::pair<const char*, int>> numerals = {
+        {"vier", 4}, {"four", 4}, {"zwei", 2}, {"two", 2}, {"drei", 3}, {"three", 3}};
+    bool holes = false;
+    bool corners = false;
+    int count = -1;
+    double offset = -1;
+    Intent out;
+    for (size_t i = 0; i < ws.size(); ++i) {
+        const std::string& w = ws[i];
+        if (starts(w, {"loch", "loech", "bohrung", "hole"})) {
+            holes = true;
+            continue;
+        }
+        if (starts(w, {"ecke", "corner"})) {
+            corners = true;
+            continue;
+        }
+        for (const auto& [word, n] : numerals) {
+            count = w == word ? n : count;
+        }
+        if (w.size() > 1 && w[0] == 'm' && std::isdigit(static_cast<unsigned char>(w[1]))) {
+            out.size = "M" + w.substr(1, w.find('x') == std::string::npos ? std::string::npos : w.find('x') - 1);
+            continue;
+        }
+        char* end = nullptr;
+        const double v = std::strtod(w.c_str(), &end);
+        if (end == w.c_str()) {
+            continue;
+        }
+        std::string unit = end;
+        if (unit.empty() && i + 1 < ws.size() && ws[i + 1] == "mm") {
+            unit = "mm";
+        }
+        const bool afterDia = i > 0 && (ws[i - 1] == "dia" || starts(ws[i - 1], {"durchmesser", "diameter", "d="}));
+        bool edge = false;  // folgt ein Randwort ("5 mm vom Rand", "6 mm from the edge")?
+        for (size_t k = i + 1; k < std::min(ws.size(), i + 5); ++k) {
+            edge = edge || starts(ws[k], {"rand", "kante", "edge", "aussen", "border"});
+        }
+        if (afterDia) {
+            out.diameter = v;
+        }
+        else if (unit == "mm" && (edge || out.diameter > 0 || !out.size.empty())) {
+            offset = v;
+        }
+        else if (unit == "mm") {
+            out.diameter = v;
+        }
+        else if (unit.empty() && v == static_cast<int>(v) && count < 0) {
+            count = static_cast<int>(v);
+        }
+    }
+    if (!holes || !corners || (out.size.empty() && out.diameter <= 0) || (count >= 0 && count != 4)) {
+        return {};
+    }
+    out.kind = Intent::Kind::CornerHoles;
+    const double nominal = out.size.empty() ? out.diameter : std::strtod(out.size.c_str() + 1, nullptr);
+    out.offset = offset >= 0 ? offset : 2 * nominal;
+    return out;
 }
 
 }  // namespace CommandSearch

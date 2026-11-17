@@ -6337,11 +6337,13 @@
    "tips": {
     "en": [
      "With an empty field the search shows what you used last.",
-     "The key shortcut of a tool stands next to its name."
+     "The key shortcut of a tool stands next to its name.",
+     "Write what you want as a sentence, e.g. 4 holes M3 in the corners, 5 mm from the edge (or Ø3.4 instead of M3). The first hit says what MyCAD understood; Enter opens the hole with its preview on the selected face or the top of the body, OK keeps it."
     ],
     "de": [
      "Mit leerem Feld zeigt die Suche, was du zuletzt benutzt hast.",
-     "Das Tastenkürzel eines Werkzeugs steht neben seinem Namen."
+     "Das Tastenkürzel eines Werkzeugs steht neben seinem Namen.",
+     "Schreib als Satz, was du willst, z. B. 4 Löcher M3 in die Ecken, 5 mm vom Rand (oder Ø3,4 statt M3). Der erste Treffer sagt, was MyCAD verstanden hat; Enter öffnet die Bohrung mit Vorschau auf der gewählten Fläche oder oben auf dem Körper, OK übernimmt."
     ]
    },
    "images": [

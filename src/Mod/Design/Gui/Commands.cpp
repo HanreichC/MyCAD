@@ -2767,7 +2767,7 @@ Design::Body* bodyUnderSketch(App::DocumentObject* obj)
 /// - mit Abständen zu den zwei nächsten nicht parallelen Kanten: je Kante auf der Mitte der Fläche quer zu ihr, wenn der
 ///   Klick nah dran war, sonst auf 0,5 mm gerundet. Beide Abstände werden Maße, der Punkt ist voll bestimmt.
 /// pxPerMm: Maßstab der Ansicht an der Klickstelle (0 ohne Ansicht: nur runden).
-void dimensionHolePoint(Sketcher::SketchObject* sketch, int point, Base::Vector3d& p, double pxPerMm)
+void dimensionHolePoint(Sketcher::SketchObject* sketch, int point, Base::Vector3d& p, double pxPerMm, double grid = 0.5)
 {
     constexpr double SnapPx = 12;
     const auto snaps = [&](double mm) { return pxPerMm > 0 && std::abs(mm) * pxPerMm < SnapPx; };
@@ -2847,7 +2847,7 @@ void dimensionHolePoint(Sketcher::SketchObject* sketch, int point, Base::Vector3
                 across = t;
             }
         }
-        double want = std::round(s * 2) / 2;  // ponytail: festes 0,5-mm-Raster, unabhängig vom Zoom
+        double want = grid > 0 ? std::round(s / grid) * grid : s;  // ponytail: festes 0,5-mm-Raster, unabhängig vom Zoom
         if (across != 0 && snaps(s - across / 2)) {
             want = across / 2;
         }
@@ -2988,7 +2988,10 @@ private:
 /// Klickstelle (der Rand der Fläche ist projiziert), daraus die Bohrung. Der Punkt fängt und bekommt Maße zu den Kanten
 /// (dimensionHolePoint). Liegt point nicht auf der Fläche (Auswahl per Skript ohne Klickpunkt), in ihrer Mitte. Alles
 /// in der Transaktion der Bohrung: Abbrechen nimmt auch die Skizze zurück. Lage ändern = Maße in der Skizze ändern.
-void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& point)
+/// cornerOffset >= 0 (11.10, "in die Ecken"): statt des Klickpunkts vier Bohrungen in die Ecken der Fläche, so weit vom
+/// Rand, genau (ohne Raster), ihre Randabstände als Reihe gebunden. setup stellt die Bohrung vor dem Dialog ein.
+void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& point, double cornerOffset = -1,
+                const std::function<void(Design::Hole*)>& setup = {})
 {
     const TopoDS_Shape shape = body->Shape.getShape().getSubShape(face.c_str(), true);
     if (shape.IsNull()) {
@@ -3017,13 +3020,43 @@ void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& poin
         doc->recompute();  // Projektion des Rands
     }
     Base::Vector3d p(onSketch.x, onSketch.y, 0);
-    dimensionHolePoint(sketch, 0, p, pxPerMmAt(body, sketch, p));
+    if (cornerOffset < 0) {
+        dimensionHolePoint(sketch, 0, p, pxPerMmAt(body, sketch, p));
+    }
+    else {  // Ecken des Rands (Rechteck um die projizierten Kanten), nach innen versetzt
+        Base::BoundBox3d box;
+        const auto& ext = sketch->getExternalGeometry();
+        for (size_t i = 2; i < ext.size(); ++i) {
+            if (auto seg = dynamic_cast<const Part::GeomLineSegment*>(ext[i])) {
+                box.Add(seg->getStartPoint());
+                box.Add(seg->getEndPoint());
+            }
+        }
+        if (!box.IsValid()) {
+            box.Add(p);
+        }
+        const double o = cornerOffset;
+        const Base::Vector3d corners[] = {Base::Vector3d(box.MinX + o, box.MinY + o, 0), Base::Vector3d(box.MaxX - o, box.MinY + o, 0),
+                                          Base::Vector3d(box.MaxX - o, box.MaxY - o, 0), Base::Vector3d(box.MinX + o, box.MaxY - o, 0)};
+        for (int k = 0; k < 4; ++k) {
+            Base::Vector3d c = corners[k];
+            const Part::GeomPoint at(c);
+            const int index = k == 0 ? 0 : sketch->addGeometry(&at);
+            if (k == 0) {
+                sketch->setGeometry(0, &at);
+            }
+            dimensionHolePoint(sketch, index, c, 0, 0);
+        }
+    }
     sketch->Visibility.setValue(false);
     const auto items = Design::timeline(doc);  // Skizze vor die Bohrung, die sie braucht
     std::string error;
     Design::moveInTimeline(sketch, static_cast<int>(std::ranges::find(items, feature) - items.begin()), error);
     feature->Sketch.setValue(sketch);
     modifyBodies(feature, {body});
+    if (setup) {
+        setup(feature);
+    }
     doc->recompute();
     startEditing(feature, false, nullptr);
     MoreHoles::instance().start(body, sketch);  // weitere Klicks: weitere Bohrungen
@@ -4644,7 +4677,84 @@ void editConstruction(App::Document* doc)
     }
 }
 
+/// Oberste ebene Fläche eines Körpers (Normale nach oben, am höchsten), "" ohne
+std::string topFace(Design::Body* body)
+{
+    std::string best;
+    double height = -1e100;
+    const Part::TopoShape shape = body->Shape.getShape();
+    const auto faces = shape.getSubTopoShapes(TopAbs_FACE);
+    for (size_t i = 0; i < faces.size(); ++i) {
+        const TopoDS_Face& f = TopoDS::Face(faces[i].getShape());
+        BRepAdaptor_Surface surface(f);
+        if (surface.GetType() != GeomAbs_Plane) {
+            continue;
+        }
+        gp_Dir n = surface.Plane().Axis().Direction();
+        if (f.Orientation() == TopAbs_REVERSED) {
+            n.Reverse();
+        }
+        GProp_GProps props;
+        BRepGProp::SurfaceProperties(f, props);
+        if (n.Z() > 0.99 && props.CentreOfMass().Z() > height) {
+            height = props.CentreOfMass().Z();
+            best = "Face" + std::to_string(i + 1);
+        }
+    }
+    return best;
+}
 }  // namespace
+
+void DesignGui::cornerHoles(const std::string& size, double diameter, double offset)
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    if (!doc || Gui::Control().activeDialog()) {
+        return;
+    }
+    // Ziel: gewählte ebene Körperfläche, sonst Oberseite des gewählten oder einzigen sichtbaren Körpers
+    Design::Body* body = nullptr;
+    std::string face;
+    for (const auto& sel : Gui::Selection().getSelectionEx()) {
+        if (auto b = freecad_cast<Design::Body*>(const_cast<App::DocumentObject*>(sel.getObject()))) {
+            body = b;
+            for (const auto& name : sel.getSubNames()) {
+                face = isPlanarFace(b, name) ? name : face;
+            }
+        }
+    }
+    if (!body) {
+        std::vector<Design::Body*> shown;
+        for (auto obj : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
+            if (obj->Visibility.getValue()) {
+                shown.push_back(static_cast<Design::Body*>(obj));
+            }
+        }
+        body = shown.size() == 1 ? shown.front() : nullptr;
+    }
+    if (body && face.empty()) {
+        face = topFace(body);
+    }
+    if (!body || face.empty()) {
+        toolHint(T("Hole"), T("Select the face (or the body) the holes go into."));
+        return;
+    }
+    holeOnFace(body, face, Base::Vector3d(), offset, [&size, diameter](Design::Hole* hole) {
+        hole->ThroughAll.setValue(true);
+        if (!size.empty()) {
+            hole->Standard.setValue("ISO metric");
+            for (const auto& name : hole->Size.getEnumVector()) {
+                if (name.rfind(size + "x", 0) == 0) {
+                    hole->Size.setValue(name.c_str());
+                    hole->Kind.setValue("Clearance hole");
+                    return;
+                }
+            }
+        }
+        if (diameter > 0) {
+            hole->Diameter.setValue(diameter);
+        }
+    });
+}
 
 void CreateDesignCommands()
 {

@@ -31,12 +31,19 @@ public:
     Module()
         : Py::ExtensionModule<Module>("DesignGui")
     {
+        add_varargs_method("cornerHoles", &Module::cornerHoles,
+                           "cornerHoles(size, diameter, offset): holes in the four corners of the selected face");
         add_varargs_method("showCorrections", &Module::showCorrections,
                            "showCorrections(doc, [(text, at, view), ...]): red pen cards as if read from ink");
         initialize("MyCAD Design GUI");
     }
 
 private:
+    Py::Object cornerHoles(const Py::Tuple& args)
+    {
+        DesignGui::cornerHoles(Py::String(args[0]).as_std_string(), Py::Float(args[1]), Py::Float(args[2]));
+        return Py::None();
+    }
     Py::Object showCorrections(const Py::Tuple& args)
     {
         if (!PyObject_TypeCheck(args[0].ptr(), &App::DocumentPy::Type)) {

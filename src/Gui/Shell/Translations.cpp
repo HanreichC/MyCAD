@@ -681,6 +681,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Profile gone: ", "Profil weg: "},
         {"Enter applies, Esc cancels, Tab goes to the next dimension", "Enter übernimmt, Esc verwirft, Tab springt zum nächsten Maß"},
         {"Needed by: %1", "Wird gebraucht von: %1"},
+        {"Drill 4 × %1 holes in the corners, %2 mm from the edge", "4 × %1 bohren, in die Ecken, %2 mm vom Rand"},
+        {"Select the face (or the body) the holes go into.", "Wähle die Fläche (oder den Körper), in die die Bohrungen kommen."},
         {"Complete Dimensions", "Maße ergänzen"},
         {"Complete Dimensions: add the dimensions the sketch still needs", "Maße ergänzen: fügt die Maße hinzu, die der Skizze noch fehlen"},
         {"Show What Can Move", "Zeigen, was sich bewegen kann"},

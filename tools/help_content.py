@@ -1394,7 +1394,9 @@ A("search", "utilities", "MyCAD_Search", ("Search", "Suchen"),
    ("Press Enter (or click a result): a tool starts, a body is selected and shown, a sketch opens. Esc closes the search.",
     "Drücke Enter (oder klicke einen Treffer an): ein Werkzeug startet, ein Körper wird gewählt und gezeigt, eine Skizze öffnet sich. Esc schließt die Suche.")],
   tips=[("With an empty field the search shows what you used last.", "Mit leerem Feld zeigt die Suche, was du zuletzt benutzt hast."),
-        ("The key shortcut of a tool stands next to its name.", "Das Tastenkürzel eines Werkzeugs steht neben seinem Namen.")],
+        ("The key shortcut of a tool stands next to its name.", "Das Tastenkürzel eines Werkzeugs steht neben seinem Namen."),
+        ("Write what you want as a sentence, e.g. 4 holes M3 in the corners, 5 mm from the edge (or Ø3.4 instead of M3). The first hit says what MyCAD understood; Enter opens the hole with its preview on the selected face or the top of the body, OK keeps it.",
+         "Schreib als Satz, was du willst, z. B. 4 Löcher M3 in die Ecken, 5 mm vom Rand (oder Ø3,4 statt M3). Der erste Treffer sagt, was MyCAD verstanden hat; Enter öffnet die Bohrung mit Vorschau auf der gewählten Fläche oder oben auf dem Körper, OK übernimmt.")],
   commands=["MyCAD_Search"], see=["settings"])
 
 A("settings", "utilities", "MyCAD_Settings", ("Settings", "Einstellungen"),

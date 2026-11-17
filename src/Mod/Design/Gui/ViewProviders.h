@@ -31,6 +31,9 @@ std::vector<ScribbleRead::Line> readScribble(const Design::Scribble* scribble);
 
 /// Parameter-Tabelle des Designs (App::VarSet "Parameters" in der Root-Komponente), wie Fusions "Change Parameters"
 DesignGuiExport App::DocumentObject* parameters(App::Document* doc, bool create);
+/// Phase 11.10: Bohrungen in die vier Ecken der gewählten Fläche (oder der Oberseite des Körpers), offset vom Rand;
+/// size "M3" (ISO-Durchgangsloch) oder diameter in mm. Öffnet den Bohrungs-Dialog: dort Vorschau, OK übernimmt.
+DesignGuiExport void cornerHoles(const std::string& size, double diameter, double offset);
 /// Idee 2: Karte mit den Maßen einer doppelt angeklickten Körperfläche (einmal beim Laden des Moduls)
 DesignGuiExport void startFaceDimensions();
 /// Parameternamen in einem Ausdruck auf die Tabelle beziehen: "Width * 2" -> "Parameters.Width * 2"

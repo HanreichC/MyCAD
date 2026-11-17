@@ -4370,6 +4370,20 @@ void refreshSearch()
             }
         }
     }
+    // Phase 11.10: ein verstandener Satz ("4 Löcher M3 in die Ecken, 5 mm vom Rand") steht ganz oben; Enter öffnet den
+    // Schritt mit seinem Dialog (dort die Vorschau, OK übernimmt, Esc verwirft)
+    if (const auto intent = CommandSearch::intent(query); intent.kind == CommandSearch::Intent::Kind::CornerHoles) {
+        const QString size = intent.size.empty() ? QStringLiteral("⌀ %1 mm").arg(intent.diameter) : QString::fromStdString(intent.size);
+        hits.push_back({"intent", T("Drill 4 × %1 holes in the corners, %2 mm from the edge").arg(size).arg(intent.offset),
+                        T("Enter"), commandIcon(QStringLiteral("Design_Hole"), QIcon()),
+                        [intent] {
+                            Base::PyGILStateLocker lock;
+                            Base::Interpreter().runString(("import DesignGui; DesignGui.cornerHoles('" + intent.size + "', "
+                                                           + std::to_string(intent.diameter) + ", " + std::to_string(intent.offset) + ")")
+                                                              .c_str());
+                        },
+                        1000});
+    }
     // Beste Treffer zuerst; bei gleicher Güte die zuletzt benutzten
     const auto rank = [&recent](const SearchHit& h) {
         const auto it = std::ranges::find(recent, h.key);

@@ -41,6 +41,20 @@ int main()
     // Wörter mit Satzzeichen
     assert(score("oiled", {"Walnut, Oiled"}) == 70);
 
+    // Phase 11.10: Sätze
+    Intent i = intent("4 Löcher M3 in die Ecken, 5 mm vom Rand");
+    assert(i.kind == Intent::Kind::CornerHoles && i.size == "M3" && i.offset == 5 && i.diameter == 0);
+    i = intent("four holes \xC3\x98" "3.4 in the corners, 6 mm from the edge");
+    assert(i.kind == Intent::Kind::CornerHoles && i.size.empty() && i.diameter == 3.4 && i.offset == 6);
+    i = intent("Bohrungen M5x0.8 in die Ecken");  // ohne Abstand: zweimal der Nenndurchmesser
+    assert(i.kind == Intent::Kind::CornerHoles && i.size == "M5" && i.offset == 10);
+    i = intent("4 Löcher 3,5 mm in die Ecken 4,5 mm vom Rand");  // Dezimalkomma, Durchmesser ohne Ø
+    assert(i.kind == Intent::Kind::CornerHoles && i.diameter == 3.5 && i.offset == 4.5);
+    assert(intent("Bohrung").kind == Intent::Kind::None);                  // das ist ein Befehl, kein Satz
+    assert(intent("4 Löcher M3").kind == Intent::Kind::None);              // wohin?
+    assert(intent("6 Löcher M3 in die Ecken").kind == Intent::Kind::None); // vier Ecken
+    assert(intent("Ecken abrunden").kind == Intent::Kind::None);
+
     std::puts("command search ok");
     return 0;
 }
