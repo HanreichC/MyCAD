@@ -121,6 +121,12 @@ The other tools in short clips; the ones with more to say have their own section
 |---|---|
 | **Section Analysis**<br>![Section Analysis](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Section.gif) | **Fit All**<br>![Fit All](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Std_ViewFitAll.gif) |
 
+### Photo to Sketch
+
+Lay a flat part on plain light paper, photograph it from straight above, then FILE → **Import** and choose the photo
+(PNG or JPG; also Ctrl+K → **Photo to Sketch**) and type how wide the part really is: MyCAD traces the outline and every hole
+as a sketch to scale, ready to extrude. Round holes come as polygons; replace an important one with a circle.
+
 ### Extrude
 
 Direction **One Side**, **Symmetric**, **Two Sides**, **To Object** (up to a face or plane) or **All** (through
@@ -186,7 +192,7 @@ again, which is handy for imported STEP parts that have no history.
 - **What depends on it:** hold the mouse over a step and the steps that depend on it light up; the tooltip names them.
 - **Delete with a preview:** if something else depends on what you delete, MyCAD asks first and lists it: bodies that
   go along, sketches that lose their face (they stay in place, with a warning), steps that lose their input.
-- **Check References** (INSPECT) lists in one place every step that no longer finds its edges or faces for certain:
+- **Check References** (Ctrl+K, or right-click a step with a warning) lists in one place every step that no longer finds its edges or faces for certain:
   lost profiles and faces, edges found again by their position, references to elements that are gone. Each row has
   **Show**, **Edit** (choose again) and, for a guess, **Looks Right**.
 - **Roll back:** the arrows, or a click, move the marker back; later steps rest until you move forward again.

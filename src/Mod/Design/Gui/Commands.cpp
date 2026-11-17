@@ -59,6 +59,8 @@
 #include <App/ExpressionParser.h>
 #include <Mod/Design/App/DxfCleanup.h>
 #include <Mod/Design/App/NoteParameters.h>
+#include <QImage>
+#include <Mod/Design/App/PhotoContour.h>
 #include <QDialogButtonBox>
 #include <QDialog>
 #include <QLineEdit>
@@ -2254,7 +2256,8 @@ void importFile(App::Document* doc)
     const QString file = QFileDialog::getOpenFileName(
         Gui::getMainWindow(), T("Insert"),
         QString::fromStdString(params->GetASCII("InsertFolder", Gui::Shell::projectsFolder().toStdString().c_str())),
-        T("CAD files (*.step *.stp *.dxf *.svg);;STEP (*.step *.stp);;DXF (*.dxf);;SVG (*.svg)")
+        T("CAD files and photos (*.step *.stp *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;STEP (*.step *.stp);;DXF (*.dxf);;"
+          "SVG (*.svg);;Photo to Sketch (*.png *.jpg *.jpeg *.bmp *.webp)")
     );
     if (file.isEmpty()) {
         return;
@@ -2262,6 +2265,19 @@ void importFile(App::Document* doc)
     params->SetASCII("InsertFolder", QFileInfo(file).absolutePath().toStdString());
     const QString stem = QFileInfo(file).completeBaseName();
     const QString suffix = QFileInfo(file).suffix().toLower();
+    // Phase 11.9: ein Foto wird zur Skizze nachgezeichnet (Breite fragen, Maßstab daraus)
+    if (QStringList {QStringLiteral("png"), QStringLiteral("jpg"), QStringLiteral("jpeg"), QStringLiteral("bmp"),
+                     QStringLiteral("webp")}
+            .contains(suffix)) {
+        bool ok = false;
+        const double width = QInputDialog::getDouble(Gui::getMainWindow(), T("Photo to Sketch"),
+                                                     T("How wide is the part, left to right in the photo (mm)?"), 100, 1,
+                                                     10000, 1, &ok);
+        if (ok) {
+            DesignGui::photoToSketch(file.toStdString(), width);
+        }
+        return;
+    }
     App::Part* comp = activeContainer(doc);
     std::string error;
     try {
@@ -3670,6 +3686,23 @@ void startCheckReferences(App::Document* doc)
     Gui::Control().showDialog(new TaskReferences(doc));
 }
 
+/// Phase 11.9: Foto wählen, Breite des Teils angeben, Skizze daraus (DesignGui::photoToSketch)
+void startPhotoToSketch(App::Document*)
+{
+    const QString file = QFileDialog::getOpenFileName(Gui::getMainWindow(), T("Photo to Sketch"), QString(),
+                                                      T("Images (*.png *.jpg *.jpeg *.bmp *.webp)"));
+    if (file.isEmpty()) {
+        return;
+    }
+    bool ok = false;
+    const double width = QInputDialog::getDouble(Gui::getMainWindow(), T("Photo to Sketch"),
+                                                 T("How wide is the part, left to right in the photo (mm)?"), 100, 1, 10000,
+                                                 1, &ok);
+    if (ok) {
+        DesignGui::photoToSketch(file.toStdString(), width);
+    }
+}
+
 /// Material per Ziehen: Kugel oder Chip ziehen, auf einem Körper in der Ansicht loslassen
 constexpr const char* MaterialMime = "application/x-mycad-material";
 
@@ -4824,6 +4857,70 @@ std::string topFace(Design::Body* body)
 }
 }  // namespace
 
+App::DocumentObject* DesignGui::photoToSketch(const std::string& file, double widthMm)
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    QImage image(QString::fromStdString(file));
+    if (!doc || image.isNull()) {
+        toolHint(T("Photo to Sketch"), T("The photo could not be opened."));
+        return nullptr;
+    }
+    // ponytail: auf höchstens 1000 Pixel verkleinert (schnell, glättet Papierstruktur); feine Teile brauchen ein näheres Foto
+    if (std::max(image.width(), image.height()) > 1000) {
+        image = image.scaled(1000, 1000, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    image = image.convertToFormat(QImage::Format_Grayscale8);
+    const int w = image.width(), h = image.height();
+    std::vector<std::uint8_t> gray(size_t(w) * h);
+    for (int y = 0; y < h; ++y) {
+        std::copy_n(image.constScanLine(y), w, gray.begin() + size_t(y) * w);
+    }
+    const auto loops = PhotoContour::contours(gray, w, h, 1.5);
+    if (loops.empty()) {
+        toolHint(T("Photo to Sketch"), T("No part found. Lay it on plain paper that fills the photo and take the photo from straight above."));
+        return nullptr;
+    }
+    double minX = 1e100, maxX = -1e100, maxY = -1e100;
+    for (const auto& loop : loops) {
+        for (const auto& p : loop) {
+            minX = std::min(minX, p.x);
+            maxX = std::max(maxX, p.x);
+            maxY = std::max(maxY, p.y);
+        }
+    }
+    const double scale = widthMm / std::max(1e-9, maxX - minX);  // mm je Pixel
+    doc->openTransaction("Photo to Sketch");
+    Sketcher::SketchObject* sketch = newSketch(activeContainer(doc));
+    sketch->Label.setValue("Photo");
+    for (const auto& loop : loops) {
+        const int first = sketch->getHighestCurveIndex() + 1;
+        const auto mm = [&](const PhotoContour::Point& p) {
+            return Base::Vector3d((p.x - minX) * scale, (maxY - p.y) * scale, 0);  // Bild-y nach unten, Skizze nach oben
+        };
+        for (size_t i = 0; i < loop.size(); ++i) {
+            auto segment = std::make_unique<Part::GeomLineSegment>();
+            segment->setPoints(mm(loop[i]), mm(loop[(i + 1) % loop.size()]));
+            sketch->addGeometry(segment.get());
+        }
+        const int n = static_cast<int>(loop.size());
+        for (int i = 0; i < n; ++i) {
+            auto c = std::make_unique<Sketcher::Constraint>();
+            c->Type = Sketcher::Coincident;
+            c->First = first + i;
+            c->FirstPos = Sketcher::PointPos::end;
+            c->Second = first + (i + 1) % n;
+            c->SecondPos = Sketcher::PointPos::start;
+            sketch->addConstraint(std::move(c));
+        }
+    }
+    doc->recompute();
+    doc->commitTransaction();
+    toolHint(T("Photo to Sketch"), T("Traced %1 outlines, %2 mm wide. Check the size with Measure, then extrude it.")
+                                      .arg(loops.size())
+                                      .arg(widthMm));
+    return sketch;
+}
+
 void DesignGui::cornerHoles(const std::string& size, double diameter, double offset)
 {
     App::Document* doc = App::GetApplication().getActiveDocument();
@@ -4971,6 +5068,9 @@ void CreateDesignCommands()
                                      }));
     // ohne Menütext: nicht in Suche und Leisten, nur für den Doppelklick auf eine Konstruktionsebene
     mgr.addCommand(new DesignCommand("Design_EditConstruction", "", "", "", "", editConstruction));
+    mgr.addCommand(new DesignCommand("Design_PhotoToSketch", "Photo to Sketch",
+                                     "Photo to Sketch: trace a part photographed on plain paper into a sketch to scale",
+                                     "Design_PhotoToSketch", "", startPhotoToSketch));
     mgr.addCommand(new DesignCommand("Design_CheckReferences", "Check References",
                                      "Check References: list every step that no longer finds its edges or faces for certain",
                                      "Design_CheckReferences", "", startCheckReferences));

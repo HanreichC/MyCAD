@@ -2211,6 +2211,79 @@
    ]
   },
   {
+   "id": "Design_PhotoToSketch",
+   "group": "create",
+   "icon": "Design_PhotoToSketch",
+   "commands": [],
+   "title": {
+    "en": "Photo to Sketch",
+    "de": "Foto zu Skizze"
+   },
+   "keywords": {
+    "en": [
+     "photo",
+     "picture",
+     "image",
+     "trace",
+     "contour",
+     "spare part",
+     "copy a part",
+     "reverse engineering"
+    ],
+    "de": [
+     "Foto",
+     "Bild",
+     "nachzeichnen",
+     "Kontur",
+     "Ersatzteil",
+     "Teil nachbauen",
+     "abzeichnen"
+    ]
+   },
+   "summary": {
+    "en": "Turns a photo of a flat part into a sketch to scale: outline and holes, ready to extrude. Handy for spare parts.",
+    "de": "Macht aus dem Foto eines flachen Teils eine maßstäbliche Skizze: Umriss und Löcher, bereit zum Extrudieren. Praktisch für Ersatzteile."
+   },
+   "steps": {
+    "en": [
+     "Lay the part on plain light paper that fills the picture and take the photo from straight above, without a flash.",
+     "Click Import in the FILE section of the toolbar (or Ctrl+K, Photo to Sketch) and choose the photo (PNG or JPG).",
+     "Type how wide the part really is, left to right in the photo, in mm (measure it with a ruler or calliper). That sets the scale.",
+     "MyCAD traces the outline and every hole as a sketch. Check a size with Measure, then Extrude it to the thickness of the part."
+    ],
+    "de": [
+     "Leg das Teil auf helles, einfarbiges Papier, das das Bild füllt, und fotografiere gerade von oben, ohne Blitz.",
+     "Klicke im Bereich DATEI der Werkzeugleiste auf Einfügen (oder Strg+K, Foto zu Skizze) und wähle das Foto (PNG oder JPG).",
+     "Gib ein, wie breit das Teil wirklich ist, von links nach rechts im Foto, in mm (mit Lineal oder Messschieber gemessen). Das setzt den Maßstab.",
+     "MyCAD zeichnet den Umriss und jedes Loch als Skizze nach. Prüf ein Maß mit Messen, dann extrudiere sie auf die Dicke des Teils."
+    ]
+   },
+   "see": [
+    "Design_CreateSketch",
+    "Design_Extrude",
+    "Design_Measure"
+   ],
+   "tips": {
+    "en": [
+     "The sharper and straighter the photo, the more exact the sketch: a few tenths of a millimetre for a part the size of a hand.",
+     "Round holes come out as polygons with many short lines. Replace an important one with a circle and a dimension."
+    ],
+    "de": [
+     "Je schärfer und gerader das Foto, desto genauer die Skizze: ein paar Zehntel Millimeter bei einem Teil von Handgröße.",
+     "Runde Löcher kommen als Vielecke mit vielen kurzen Linien. Ersetze ein wichtiges durch einen Kreis mit Maß."
+    ]
+   },
+   "images": [
+    {
+     "file": "Design_PhotoToSketch.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
+  },
+  {
    "id": "Design_Extrude",
    "group": "create",
    "icon": "Design_Extrude",
@@ -5476,13 +5549,13 @@
    },
    "steps": {
     "en": [
-     "In the toolbar at the top, in the INSPECT section, click Check References. The panel opens on the right.",
+     "Press Ctrl+K and type check references, or right-click a step with an orange badge in the timeline and choose Check References. The panel opens on the right.",
      "Each row names a step and what is uncertain: a profile or face that went away, edges found again by their position after a change, or a reference to an element that no longer exists, in any step.",
      "Show selects the step and the edges or faces concerned. Edit opens the step to choose them again. Looks Right confirms a guess that is fine.",
      "With nothing uncertain the panel says that all references are certain. Close it with Close or Esc."
     ],
     "de": [
-     "Klicke in der Werkzeugleiste oben im Bereich PRÜFEN auf Bezüge prüfen. Rechts öffnet sich das Panel.",
+     "Drücke Strg+K und tippe Bezüge prüfen, oder klicke in der Zeitleiste mit rechts auf einen Schritt mit orangem Abzeichen und wähle Bezüge prüfen. Rechts öffnet sich das Panel.",
      "Jede Zeile nennt einen Schritt und was unsicher ist: ein Profil oder eine Fläche, die weg ist, Kanten, die nach einer Änderung über ihre Lage wiedergefunden wurden, oder ein Bezug auf ein Element, das es nicht mehr gibt, in jedem Schritt.",
      "Zeigen wählt den Schritt und die betroffenen Kanten oder Flächen. Bearbeiten öffnet den Schritt, um sie neu zu wählen. Stimmt so bestätigt eine Vermutung, die passt.",
      "Ist nichts unsicher, sagt das Panel, dass alle Bezüge sicher sind. Schließe es mit Schließen oder Esc."

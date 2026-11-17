@@ -31,6 +31,7 @@ public:
     Module()
         : Py::ExtensionModule<Module>("DesignGui")
     {
+        add_varargs_method("photoToSketch", &Module::photoToSketch, "photoToSketch(file, width_mm): sketch traced from a photo");
         add_varargs_method("cornerHoles", &Module::cornerHoles,
                            "cornerHoles(size, diameter, offset): holes in the four corners of the selected face");
         add_varargs_method("showCorrections", &Module::showCorrections,
@@ -39,6 +40,11 @@ public:
     }
 
 private:
+    Py::Object photoToSketch(const Py::Tuple& args)
+    {
+        App::DocumentObject* sketch = DesignGui::photoToSketch(Py::String(args[0]).as_std_string(), Py::Float(args[1]));
+        return sketch ? Py::asObject(sketch->getPyObject()) : Py::None();
+    }
     Py::Object cornerHoles(const Py::Tuple& args)
     {
         DesignGui::cornerHoles(Py::String(args[0]).as_std_string(), Py::Float(args[1]), Py::Float(args[2]));

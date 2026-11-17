@@ -27,6 +27,7 @@ test_sketch_complete_ui.py
 test_cross_component_ui.py
 test_intent.py
 test_references_ui.py
+test_photo_sketch.py
 test_red_pen_ui.py
 test_versions_ui.py
 test_sketch_contrast.py

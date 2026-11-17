@@ -388,6 +388,30 @@ def ci_check_references():
     wait(3)
 
 
+def ci_photo_to_sketch():
+    path = "/tmp/mycad_clip_part.png"
+
+    def paint():
+        from PySide6 import QtGui
+        img = QtGui.QImage(1200, 900, QtGui.QImage.Format_RGB32)
+        img.fill(QtGui.QColor(225, 222, 215))
+        p = QtGui.QPainter(img)
+        p.setRenderHint(QtGui.QPainter.Antialiasing)
+        p.setPen(QtCore.Qt.NoPen)
+        p.setBrush(QtGui.QColor(60, 62, 70))
+        p.drawRoundedRect(QtCore.QRectF(300, 250, 600, 400), 60, 60)  # Lasche mit runden Ecken und zwei Löchern
+        p.setBrush(QtGui.QColor(225, 222, 215))
+        p.drawEllipse(QtCore.QPointF(420, 450), 50, 50)
+        p.drawEllipse(QtCore.QPointF(780, 450), 50, 50)
+        p.end()
+        img.save(path)
+    step("photo", paint)
+    step("Design_PhotoToSketch", lambda: __import__("DesignGui").photoToSketch(path, 60.0))
+    wait(2)
+    step("fit", ci_fit)
+    wait(3)
+
+
 def ci_measure():
     ci_model(lambda: ci_body_xz(CI_STEP, 40, "Step"), 1.3, -80)  # nach links: rechts öffnet sich das Panel
     step("Design_Measure", lambda: use("Design_Measure"))
@@ -483,6 +507,7 @@ ci_scenario("Design_NewComponent", ci_new_component, final=None)
 ci_scenario("Design_Joint", ci_joint, final=(1.7, 90))
 ci_scenario("Design_PrintView", ci_print_view, final=None)
 ci_scenario("Design_CheckReferences", ci_check_references, final=None)
+ci_scenario("Design_PhotoToSketch", ci_photo_to_sketch, final=None)
 ci_scenario("Design_Measure", ci_measure, final=None)
 ci_scenario("Design_Section", ci_section, final=None)
 ci_scenario("Std_ViewFitAll", ci_fit_all, final=None)

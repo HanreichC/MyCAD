@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+"""Phase 11.9 Foto wird Skizze: ein gemaltes Foto (helles Papier, dunkle Platte 600 x 400 px mit rundem Loch r = 80 px,
+1200 x 900 px, wird dabei verkleinert) mit 60 mm Breite nachgezeichnet: Skizze 60 x 40 mm, das Loch etwa Ø16 mm, ein
+geschlossenes Profil mit Loch, das sich extrudieren lässt."""
+import os
+from harness import *
+import Design
+import DesignGui
+from PySide6 import QtGui
+
+S = {}
+W = ("wait", lambda: None)
+PI = 3.141592653589793
+
+
+def photo():
+    img = QtGui.QImage(1200, 900, QtGui.QImage.Format_RGB32)
+    img.fill(QtGui.QColor(225, 222, 215))  # Papier
+    p = QtGui.QPainter(img)
+    p.setRenderHint(QtGui.QPainter.Antialiasing)
+    p.setPen(QtCore.Qt.NoPen)
+    p.setBrush(QtGui.QColor(60, 62, 70))  # Teil
+    p.drawRect(300, 250, 600, 400)
+    p.setBrush(QtGui.QColor(225, 222, 215))  # Loch: Papier scheint durch
+    p.drawEllipse(QtCore.QPointF(600, 450), 80, 80)
+    p.end()
+    S["file"] = os.path.join(os.environ.get("TMPDIR", "/tmp"), "mycad_photo_part.png")
+    img.save(S["file"])
+
+
+def trace():
+    S["sk"] = DesignGui.photoToSketch(S["file"], 60.0)
+
+
+def traced():
+    sk = S["sk"]
+    wires = sk.Shape.Wires if sk else []
+    bb = sk.Shape.BoundBox if sk else None
+    prof = [o for o in sk.InList if o.TypeId == "Design::Profiles"][0] if sk else None
+    areas = sorted(f.Area for f in prof.Shape.Faces) if prof else []
+    ring, disc = 60 * 40 - PI * 8 * 8, PI * 8 * 8
+    check("the photo becomes a sketch to scale: 60 x 40 mm, outline and hole closed; profiles: the plate with its hole "
+          "and the disc inside (like Fusion)",
+          sk is not None and len(wires) == 2 and all(w.isClosed() for w in wires) and abs(bb.XLength - 60) < 1e-6
+          and abs(bb.YLength - 40) < 0.2 and len(areas) == 2 and abs(areas[1] - ring) < 0.02 * ring
+          and abs(areas[0] - disc) < 0.08 * disc,
+          "wires=%d bb=%s areas=%s want %.1f, %.1f" % (len(wires), bb, [round(a, 1) for a in areas], ring, disc))
+    holes = [w for w in wires if w.BoundBox.XLength < 30]
+    check("the hole is about 16 mm across", len(holes) == 1 and abs(holes[0].BoundBox.XLength - 16) < 0.6,
+          str([round(w.BoundBox.XLength, 2) for w in wires]))
+    shot("traced")
+
+
+def missing():
+    blank = QtGui.QImage(400, 300, QtGui.QImage.Format_RGB32)
+    blank.fill(QtGui.QColor(230, 230, 230))
+    path = os.path.join(os.environ.get("TMPDIR", "/tmp"), "mycad_photo_blank.png")
+    blank.save(path)
+    before = len([o for o in doc().Objects if o.TypeId == "Sketcher::SketchObject"])
+    result = DesignGui.photoToSketch(path, 50.0)
+    after = len([o for o in doc().Objects if o.TypeId == "Sketcher::SketchObject"])
+    check("an empty photo makes no sketch", result is None and after == before, "result=%s" % result)
+
+
+def told():
+    check("and says why", any("No part found" in n for n in notices()), str(notices()))
+
+
+run([("activate", activate), ("missing", missing), W, ("told", told),  # zuerst: der Hinweis "nachgezeichnet" verdeckte ihn sonst
+     ("photo", photo), ("trace", trace), W, W, ("traced", traced),
+     ("errors", lambda: check("no errors", not errors(), str(errors()))),
+     ])

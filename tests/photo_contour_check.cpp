@@ -1,0 +1,72 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// Prüfung von Foto wird Skizze (Phase 11.9) ohne FreeCAD:
+//   g++ -std=c++20 -I src tests/photo_contour_check.cpp -o /tmp/photo && /tmp/photo
+
+#include <Mod/Design/App/PhotoContour.h>
+
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+
+using namespace PhotoContour;
+
+namespace
+{
+double area(const Loop& l)  // mit Vorzeichen (Umlaufsinn)
+{
+    double a = 0;
+    for (size_t i = 0; i < l.size(); ++i) {
+        const Point& p = l[i];
+        const Point& q = l[(i + 1) % l.size()];
+        a += p.x * q.y - q.x * p.y;
+    }
+    return a / 2;
+}
+}  // namespace
+
+int main()
+{
+    // helles Papier 120 x 90, dunkle Platte 60 x 40 bei (30, 25), darin ein Loch r = 8 bei (60, 45); etwas Rauschen
+    const int w = 120, h = 90;
+    std::vector<std::uint8_t> img(w * h);
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            const bool plate = x >= 30 && x < 90 && y >= 25 && y < 65;
+            const bool hole = std::hypot(x + 0.5 - 60, y + 0.5 - 45) < 8;
+            const int noise = ((x * 7 + y * 13) % 11) - 5;
+            img[y * w + x] = static_cast<std::uint8_t>((plate && !hole ? 50 : 210) + noise);
+        }
+    }
+    const int t = otsu(img);
+    assert(t >= 55 && t < 205);  // irgendwo zwischen dunkel (45…55) und hell (205…215)
+
+    const auto mask = partMask(img, w, h);
+    size_t inside = 0;
+    for (auto m : mask) {
+        inside += m;
+    }
+    assert(inside > 60 * 40 - 220 && inside < 60 * 40 - 180);  // Platte ohne Loch (π·8² ≈ 201)
+
+    const auto loops = contours(img, w, h, 1.0);
+    assert(loops.size() == 2);  // außen und das Loch
+    const Loop& outer = std::abs(area(loops[0])) > std::abs(area(loops[1])) ? loops[0] : loops[1];
+    const Loop& hole = &outer == &loops[0] ? loops[1] : loops[0];
+    assert(outer.size() == 4);                         // ein Rechteck: vier Ecken
+    assert(std::abs(std::abs(area(outer)) - 2400) < 1e-9);
+    assert(area(outer) * area(hole) < 0);              // Loch andersherum
+    assert(std::abs(std::abs(area(hole)) - 201) < 25); // ungefähr ein Kreis r = 8
+    assert(hole.size() >= 8 && hole.size() <= 40);     // vereinfacht, aber noch rund
+    double minX = 1e9, maxX = -1e9;
+    for (const auto& p : outer) {
+        minX = std::min(minX, p.x);
+        maxX = std::max(maxX, p.x);
+    }
+    assert(minX == 30 && maxX == 90);  // Kanten genau auf den Pixelgrenzen
+
+    // nichts im Bild: leer
+    std::vector<std::uint8_t> blank(w * h, 200);
+    assert(contours(blank, w, h).empty());
+
+    std::puts("photo contour ok");
+    return 0;
+}

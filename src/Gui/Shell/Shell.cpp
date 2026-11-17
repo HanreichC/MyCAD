@@ -4198,6 +4198,7 @@ const std::map<std::string, std::vector<std::string>>& searchSynonyms()
                                "fase entfernen", "rundung entfernen", "bohrung schliessen", "weg"}},
         {"Design_RedPen", {"rotstift", "korrektur", "korrigieren", "anmerken", "markup", "red pen", "redline", "handschrift",
                            "aufs modell schreiben"}},
+        {"Design_PhotoToSketch", {"foto", "photo", "bild", "image", "picture", "kontur", "contour", "nachbauen", "ersatzteil", "spare part", "trace"}},
         {"Design_CheckReferences", {"bezuege", "bezug", "references", "lost", "verloren", "warnung", "warning", "pruefen", "check", "kaputt", "broken"}},
         {"Design_PrintView", {"druckansicht", "ueberhang", "overhang", "stuetzen", "support", "wandstaerke", "duenne wand",
                               "druckbar", "printable", "3d-druck pruefen"}},
@@ -5098,12 +5099,14 @@ void rebuildTimeline()
             QAction* showElements = elements && elements->getSize() ? menu.addAction(T("Show Affected Edges")) : nullptr;
             auto warn = freecad_cast<App::PropertyString*>(o->getPropertyByName("Warning"));
             QAction* looksRight = warn && *warn->getValue() ? menu.addAction(T("Looks Right")) : nullptr;
+            // Phase 11.11: von einer Warnung zur Liste aller unsicheren Bezüge
+            QAction* checkAll = warn && *warn->getValue() ? menu.addAction(T("Check References")) : nullptr;
             menu.addSeparator();
             QAction* remove = menu.addAction(T("Delete"));
             QAction* chosen = menu.exec(QCursor::pos());
             // Nach dem Menü ausführen, nicht innerhalb des Maus-Events
             QTimer::singleShot(0, [ref, chosen, edit, rollback, suppress, remove, group, ungroup, picked, fixes, showElements,
-                                   looksRight] {
+                                   looksRight, checkAll] {
                 auto o = ref.getObject();
                 if (!o || !chosen) {
                     return;
@@ -5149,6 +5152,9 @@ void rebuildTimeline()
                 }
                 else if (chosen == ungroup) {
                     setGroup(doc, groupMembers(doc, timelineGroupOf(o)), QString());
+                }
+                else if (chosen == checkAll) {
+                    Application::Instance->commandManager().runCommandByName("Design_CheckReferences");
                 }
                 else if (chosen == looksRight) {
                     doc->openTransaction("Confirm");
@@ -5563,7 +5569,7 @@ void Gui::Shell::install()
                  "Design_Shell", "Design_Draft", "Design_Combine|Design_SplitBody", "Design_Move|Design_Align|Design_Scale",
                  "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",
-                 "#INSPECT", "Design_Measure", "Design_Section", "Design_PrintView", "Design_CheckReferences", "Std_ViewFitAll",
+                 "#INSPECT", "Design_Measure", "Design_Section", "Design_PrintView", "Std_ViewFitAll",
                  "#UTILITIES", "MyCAD_Search", "Design_Parameters", "Design_Appearance", "Design_Scribble|Design_RedPen", "Design_Note"});
     state.sketchBar =
         toolbar({"#CREATE", "Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",
