@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <unordered_map>
+
 #include <Base/Persistence.h>
 #include <CXX/Objects.hxx>
 #include <Mod/Part/App/TopoShape.h>
@@ -629,7 +631,9 @@ private:
 
     // this map is intended to convert a parameter (double *) into a GeoId/PointPos and parameter
     // number
-    std::map<double*, std::tuple<int, Sketcher::PointPos, int>> param2geoelement;
+    // MyCAD: Hash statt Baum: je Lösen neu gefüllt (4 Parameter je Element, bei 10.000 Elementen 40.000 Knoten), nur
+    // find/emplace/clear, keine Reihenfolge nötig
+    std::unordered_map<double*, std::tuple<int, Sketcher::PointPos, int>> param2geoelement;
 
     // solving parameters
     std::vector<double*> Parameters;        // with memory allocation

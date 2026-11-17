@@ -4903,6 +4903,15 @@ int System::diagnose(Algorithm alg)
     return dofs;
 }
 
+namespace
+{
+/// Ab dieser Größe der Jacobi-Matrix lohnt ein eigener Thread für die zweite Zerlegung (vorher immer, auch bei 2 x 4)
+std::launch smallBlockPolicy(Eigen::Index rows, Eigen::Index cols)
+{
+    return rows * cols < 4096 ? std::launch::deferred : std::launch::async | std::launch::deferred;
+}
+}  // namespace
+
 bool System::diagnoseBlock(
     Algorithm alg,
     GCS::VEC_pD& pdiagnoselist,
@@ -5024,7 +5033,10 @@ bool System::diagnoseBlock(
         //
         // identifyDependentParametersDenseQR(J, jacobianconstraintmap, pdiagnoselist, true)
         //
+        // MyCAD: kleine Blöcke im selben Thread (deferred läuft bei wait()); einen Thread je Block anzulegen kostete in
+        // einer großen Skizze mit vielen kleinen Blöcken mehr als die Rechnung (pthread_create in ~1/4 der Stichproben)
         auto fut = std::async(
+            smallBlockPolicy(J.rows(), J.cols()),
             &System::identifyDependentParametersDenseQR,
             this,
             J,
@@ -5096,6 +5108,7 @@ bool System::diagnoseBlock(
         // std::async(std::launch::deferred,&System::identifyDependentParametersSparseQR, this,
         // J, jacobianconstraintmap, pdiagnoselist, false);
         auto fut = std::async(
+            smallBlockPolicy(J.rows(), J.cols()),
             &System::identifyDependentParametersSparseQR,
             this,
             J,

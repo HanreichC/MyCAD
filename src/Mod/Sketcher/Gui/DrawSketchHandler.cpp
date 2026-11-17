@@ -1556,6 +1556,28 @@ bool DrawSketchHandler::filterRedundantAutoConstraints(
 
     auto sketchobject = getSketchObject();
 
+    // MyCAD: Die Diagnose stellt die ganze Skizze neu auf (bei 10.000 Elementen gut 1/5 eines Klicks). Ein einzelnes
+    // Auto-Constraint an Geometrie ohne jedes Constraint nimmt genau einen freien Freiheitsgrad: weder doppelt noch
+    // widersprüchlich. Achsen und externe Geometrie (negative Ids) prüfen wir weiter.
+    if (autoConstraints.size() == 1) {
+        const auto& c = autoConstraints.front();
+        std::vector<int> geos;
+        for (int g : {c->First, c->Second, c->Third}) {
+            if (g != Sketcher::GeoEnum::GeoUndef) {
+                geos.push_back(g);
+            }
+        }
+        bool touched = std::ranges::any_of(geos, [](int g) { return g < 0; });
+        for (const Sketcher::Constraint* existing : sketchobject->Constraints.getValues()) {
+            for (int g : {existing->First, existing->Second, existing->Third}) {
+                touched = touched || std::ranges::find(geos, g) != geos.end();
+            }
+        }
+        if (!touched) {
+            return true;
+        }
+    }
+
     auto constraints = toPointerVector(autoConstraints);
 
     // Allows a diagnose with the new autoconstraints as if they were part of the sketchobject,

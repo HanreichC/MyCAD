@@ -3627,7 +3627,19 @@ float ViewProviderSketch::getScaleFactor() const
         // Kamera ab; eine Skizze weit weg vom Ursprung (Ende einer 56-cm-Leiste) bekam beim Neuzeichnen nach dem Drehen
         // riesige Maße und Symbole.
         Base::Vector3d at;  // Skizzenursprung, besser die Mitte ihrer Geometrie (Shape liegt in Skizzen-Placement)
-        const Base::BoundBox3d box = getSketchObject()->Shape.getBoundingBox();
+        // Die Mitte nur neu, wenn sich die Form geändert hat (Identität + Lage): der Hüllquader über 10.000 Kanten kostete
+        // je Aufruf gut 20 % eines Klicks, und gefragt wird je Neuzeichnen mehrmals
+        static const void* cachedShape = nullptr;
+        static TopLoc_Location cachedLocation;
+        static Base::BoundBox3d cachedBox;
+        const TopoDS_Shape shape = getSketchObject()->Shape.getShape().getShape();
+        const void* key = shape.IsNull() ? nullptr : shape.TShape().get();
+        if (key != cachedShape || !(shape.Location() == cachedLocation)) {
+            cachedBox = getSketchObject()->Shape.getBoundingBox();
+            cachedShape = key;
+            cachedLocation = shape.Location();
+        }
+        const Base::BoundBox3d& box = cachedBox;
         if (box.IsValid()) {
             getSketchObject()->Placement.getValue().inverse().multVec(box.GetCenter(), at);
         }
