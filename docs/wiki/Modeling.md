@@ -133,7 +133,8 @@ new body, join, cut, intersect. Clicking a flat face of a body and extruding it 
 
 Click **Hole**, then the face where it goes. Near the middle of the face (or the centre of a round face) the hole snaps
 there, elsewhere to the nearest 0.5 mm, and it gets dimensions to the two nearest edges by itself: to move it later,
-change them in its sketch. For several holes at exact spots, place points in a sketch on the face, select it, then
+change them in its sketch. While the panel is open, click more spots for more holes: one at the same distance from an
+edge as an earlier one snaps to it and is bound to it, so the row moves together. For several holes at exact spots, place points in a sketch on the face, select it, then
 **Hole**. With a **Standard** (ISO metric, ISO metric fine, UNC, UNF) MyCAD
 fills in everything: a **clearance hole** with fine/medium/coarse fit, or a **tapped hole** (core hole, optionally with
 a real thread), and the counterbore or countersink of the screw. With **Custom** every value is free.

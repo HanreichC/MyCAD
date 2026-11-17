@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Phase 11.5 Bohrung per Klick zu Ende gedacht: der Klickpunkt fängt auf die Mitte der Fläche und auf Kreismitten,
-sonst rundet er auf 0,5 mm; Maße zu den zwei nächsten Kanten entstehen von selbst, der Punkt ist voll bestimmt."""
+sonst rundet er auf 0,5 mm; Maße zu den zwei nächsten Kanten entstehen von selbst, der Punkt ist voll bestimmt.
+Weitere Klicks bei offenem Dialog machen weitere Bohrungen, gleicher Randabstand bindet sie zu einer Reihe."""
 from harness import *
 
 S = {}
@@ -49,6 +50,22 @@ def rounded():
           "point=%s dims=%s types=%s solve=%s" % (pt, dims, types, solved))
 
 
+def row():
+    """zweiter Klick bei offenem Dialog: zweite Bohrung; gleicher Abstand zur vorderen Kante -> an das erste Maß gebunden"""
+    h = [o for o in doc().Objects if o.TypeId == "Design::Hole"][-1]
+    sk = h.Sketch
+    pts = [sk.Placement.multVec(V(g.X, g.Y, g.Z)) for g in sk.Geometry if g.TypeId == "Part::GeomPoint"]
+    bound = [str(e) for _, e in sk.ExpressionEngine]
+    check("a second click in the open dialog adds a second hole in the same row, its edge distance bound to the first",
+          len(pts) == 2 and abs(pts[0].y - pts[1].y) < 1e-9 and any("Row" in e for e in bound)
+          and abs(S["box"].Shape.Volume - (16000 - 2 * 3.14159265 * 2.5 ** 2 * 8)) < 0.05,
+          "points=%s expressions=%s volume=%.3f" % (pts, bound, S["box"].Shape.Volume))
+    name = [c.Name for c in sk.Constraints if c.Name.startswith("Row")][0]
+    sk.setDatum(name, App.Units.Quantity("6 mm")); doc().recompute()
+    pts = [sk.Placement.multVec(V(g.X, g.Y, g.Z)) for g in sk.Geometry if g.TypeId == "Part::GeomPoint"]
+    check("changing the first distance moves the whole row", all(abs(p.y - 6) < 1e-6 for p in pts), str(pts))
+
+
 def cancel():
     click([b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "Cancel"][0])
 
@@ -64,6 +81,7 @@ run([("activate", activate), ("setup", setup), W,
      ("depth", lambda: (setattr([o for o in doc().Objects if o.TypeId == "Design::Hole"][-1], "Depth", 8), doc().recompute())), W,
      ("volume", lambda: check("the hole drills there", abs(S["box"].Shape.Volume - (16000 - 3.14159265 * 2.5 ** 2 * 8)) < 0.05,
                               "%.3f" % S["box"].Shape.Volume)),
+     ("second", lambda: click_3d(V(25.3, 4.8, 20))), W, W, ("row", row),
      ("ok", ok), W,
      ("hole 3", hole), W, ("pin", lambda: click_3d(V(60.6, 10.4, 20))), W, W,
      ("new", lambda: check("the next Hole waits for a click instead of reusing the hidden sketch of the last one",

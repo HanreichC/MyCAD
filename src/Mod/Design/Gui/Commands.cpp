@@ -2767,7 +2767,7 @@ Design::Body* bodyUnderSketch(App::DocumentObject* obj)
 /// - mit Abständen zu den zwei nächsten nicht parallelen Kanten: je Kante auf der Mitte der Fläche quer zu ihr, wenn der
 ///   Klick nah dran war, sonst auf 0,5 mm gerundet. Beide Abstände werden Maße, der Punkt ist voll bestimmt.
 /// pxPerMm: Maßstab der Ansicht an der Klickstelle (0 ohne Ansicht: nur runden).
-void dimensionHolePoint(Sketcher::SketchObject* sketch, Base::Vector3d& p, double pxPerMm)
+void dimensionHolePoint(Sketcher::SketchObject* sketch, int point, Base::Vector3d& p, double pxPerMm)
 {
     constexpr double SnapPx = 12;
     const auto snaps = [&](double mm) { return pxPerMm > 0 && std::abs(mm) * pxPerMm < SnapPx; };
@@ -2797,11 +2797,11 @@ void dimensionHolePoint(Sketcher::SketchObject* sketch, Base::Vector3d& p, doubl
                 p = centre;
                 auto c = std::make_unique<Sketcher::Constraint>();
                 c->Type = Sketcher::Coincident;
-                c->First = 0;
+                c->First = point;
                 c->FirstPos = Sketcher::PointPos::start;
                 c->Second = geo;
                 c->SecondPos = Sketcher::PointPos::mid;
-                sketch->setGeometry(0, std::make_unique<Part::GeomPoint>(p).get());
+                sketch->setGeometry(point, std::make_unique<Part::GeomPoint>(p).get());
                 sketch->addConstraint(std::move(c));
                 return;
             }
@@ -2851,6 +2851,13 @@ void dimensionHolePoint(Sketcher::SketchObject* sketch, Base::Vector3d& p, doubl
         if (across != 0 && snaps(s - across / 2)) {
             want = across / 2;
         }
+        // gleicher Randabstand wie eine Bohrung davor (weitere Klicks, 11.5): genau den, dann bindet ihn die Reihe
+        for (const Sketcher::Constraint* other : sketch->Constraints.getValues()) {
+            if (other->Type == Sketcher::Distance && other->Second == l->geo && other->First != point
+                && snaps(std::abs(s) - other->getValue())) {
+                want = s < 0 ? -other->getValue() : other->getValue();
+            }
+        }
         if (std::abs(want) < 1e-9) {
             want = s;  // auf der Kante geklickt: so lassen, ein Maß 0 hält den Punkt nicht auf der Seite
         }
@@ -2867,17 +2874,115 @@ void dimensionHolePoint(Sketcher::SketchObject* sketch, Base::Vector3d& p, doubl
     else if (dims.size() == 1) {
         p += dims[0].first->n * (dims[0].second - distance(*dims[0].first));
     }
-    sketch->setGeometry(0, std::make_unique<Part::GeomPoint>(p).get());
+    sketch->setGeometry(point, std::make_unique<Part::GeomPoint>(p).get());
     for (const auto& [l, value] : dims) {
+        // gleicher Abstand zur selben Kante wie eine frühere Bohrung: an deren Maß binden, die Reihe bleibt zusammen
+        int same = -1;
+        const auto& existing = sketch->Constraints.getValues();
+        for (size_t k = 0; k < existing.size() && same < 0; ++k) {
+            const Sketcher::Constraint* other = existing[k];
+            if (other->Type == Sketcher::Distance && other->Second == l->geo && other->First != point
+                && std::abs(other->getValue() - std::abs(value)) < 1e-9) {
+                same = static_cast<int>(k);
+            }
+        }
         auto c = std::make_unique<Sketcher::Constraint>();
         c->Type = Sketcher::Distance;
-        c->First = 0;
+        c->First = point;
         c->FirstPos = Sketcher::PointPos::start;
         c->Second = l->geo;
         c->setValue(std::abs(value));
-        sketch->addConstraint(std::move(c));
+        const int index = sketch->addConstraint(std::move(c));
+        if (same >= 0) {
+            std::string name = sketch->Constraints.getValues()[same]->Name;
+            if (name.empty()) {
+                name = "Row" + std::to_string(same + 1);
+                sketch->renameConstraint(same, name);
+            }
+            sketch->setExpression(sketch->Constraints.createPath(index),
+                                  std::shared_ptr<App::Expression>(App::Expression::parse(sketch, "Constraints." + name)));
+        }
     }
 }
+
+/// Maßstab der Ansicht an p (Skizze, 2D): 1 mm in x der Skizze, in Pixeln; 0 ohne 3D-Ansicht
+double pxPerMmAt(Design::Body* body, Sketcher::SketchObject* sketch, const Base::Vector3d& p)
+{
+    auto gdoc = Gui::Application::Instance->getDocument(body->getDocument());
+    auto view = gdoc ? dynamic_cast<Gui::View3DInventor*>(gdoc->getActiveView()) : nullptr;
+    if (!view) {
+        return 0;
+    }
+    const Base::Placement toGlobal = Design::componentOf(body)->globalPlacement() * sketch->Placement.getValue();
+    const auto screen = [&](double x) {
+        Base::Vector3d g;
+        toGlobal.multVec(Base::Vector3d(x, p.y, 0), g);
+        return view->getViewer()->getPointOnViewport(SbVec3f(float(g.x), float(g.y), float(g.z)));
+    };
+    const SbVec2s a = screen(p.x), b = screen(p.x + 1);
+    return std::hypot(double(a[0] - b[0]), double(a[1] - b[1]));  // ponytail: schräg gesehen in y anders
+}
+
+/// Phase 11.5: Solange der Dialog der eben angeklickten Bohrung offen ist, macht jeder weitere Klick auf dieselbe Fläche
+/// (Ebene der Skizze) dort eine weitere Bohrung derselben Art: ein Punkt mehr in ihrer Skizze, gefangen und bemaßt wie
+/// der erste. Gleicher Randabstand wie eine frühere Bohrung bindet das Maß an deren (eine Reihe). Abbrechen nimmt alle.
+class MoreHoles: public Gui::SelectionObserver
+{
+public:
+    static MoreHoles& instance()
+    {
+        static MoreHoles holes;
+        return holes;
+    }
+    void start(Design::Body* body, Sketcher::SketchObject* sketch)
+    {
+        this->body = App::DocumentObjectT(body);
+        this->sketch = App::DocumentObjectT(sketch);
+        dialog = Gui::Control().activeDialog();
+    }
+
+private:
+    void onSelectionChanged(const Gui::SelectionChanges& msg) override
+    {
+        if (!dialog || msg.Type != Gui::SelectionChanges::AddSelection) {
+            return;
+        }
+        if (Gui::Control().activeDialog() != dialog) {
+            dialog = nullptr;  // Dialog zu: fertig
+            return;
+        }
+        auto b = freecad_cast<Design::Body*>(body.getObject());
+        auto sk = freecad_cast<Sketcher::SketchObject*>(sketch.getObject());
+        if (!b || !sk || msg.pObjectName != std::string(b->getNameInDocument())) {
+            return;
+        }
+        const Base::Vector3d picked(msg.x, msg.y, msg.z);
+        QTimer::singleShot(0, [this, picked] { add(picked); });
+    }
+
+    void add(const Base::Vector3d& picked)
+    {
+        auto b = freecad_cast<Design::Body*>(body.getObject());
+        auto sk = freecad_cast<Sketcher::SketchObject*>(sketch.getObject());
+        if (!b || !sk || Gui::Control().activeDialog() != dialog) {
+            return;
+        }
+        Base::Vector3d p;
+        (Design::componentOf(b)->globalPlacement() * sk->Placement.getValue()).inverse().multVec(picked, p);
+        if (std::abs(p.z) > 1e-2) {
+            return;  // andere Fläche des Körpers: kein Teil dieser Bohrung
+        }
+        p.z = 0;
+        const Part::GeomPoint centre(p);
+        const int point = sk->addGeometry(&centre);
+        dimensionHolePoint(sk, point, p, pxPerMmAt(b, sk, p));
+        Gui::Selection().clearSelection();
+        sk->getDocument()->recompute();
+    }
+
+    App::DocumentObjectT body, sketch;
+    Gui::TaskView::TaskDialog* dialog = nullptr;  ///< nur vergleichen, nie benutzen
+};
 
 /// Bohrung auf einer ebenen Körperfläche wie in Fusion: eine verborgene Skizze auf der Fläche mit einem Punkt an der
 /// Klickstelle (der Rand der Fläche ist projiziert), daraus die Bohrung. Der Punkt fängt und bekommt Maße zu den Kanten
@@ -2911,21 +3016,8 @@ void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& poin
     if (sketch->getExternalGeometry().size() <= 2) {
         doc->recompute();  // Projektion des Rands
     }
-    // Maßstab der Ansicht an der Klickstelle: 1 mm in x der Skizze, in Pixeln
-    double pxPerMm = 0;
-    auto gdoc = Gui::Application::Instance->getDocument(doc);
-    if (auto view = gdoc ? dynamic_cast<Gui::View3DInventor*>(gdoc->getActiveView()) : nullptr) {
-        const Base::Placement toGlobal = Design::componentOf(body)->globalPlacement() * sketch->Placement.getValue();
-        const auto screen = [&](double x) {
-            Base::Vector3d g;
-            toGlobal.multVec(Base::Vector3d(x, onSketch.y, 0), g);
-            return view->getViewer()->getPointOnViewport(SbVec3f(float(g.x), float(g.y), float(g.z)));
-        };
-        const SbVec2s a = screen(onSketch.x), b = screen(onSketch.x + 1);
-        pxPerMm = std::hypot(double(a[0] - b[0]), double(a[1] - b[1]));  // ponytail: schräg gesehen in y anders
-    }
     Base::Vector3d p(onSketch.x, onSketch.y, 0);
-    dimensionHolePoint(sketch, p, pxPerMm);
+    dimensionHolePoint(sketch, 0, p, pxPerMmAt(body, sketch, p));
     sketch->Visibility.setValue(false);
     const auto items = Design::timeline(doc);  // Skizze vor die Bohrung, die sie braucht
     std::string error;
@@ -2934,6 +3026,7 @@ void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& poin
     modifyBodies(feature, {body});
     doc->recompute();
     startEditing(feature, false, nullptr);
+    MoreHoles::instance().start(body, sketch);  // weitere Klicks: weitere Bohrungen
 }
 
 /// Hat die Skizze einzelne Punkte (die Mitten der Bohrungen)?
