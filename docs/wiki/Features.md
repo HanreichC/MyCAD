@@ -81,7 +81,8 @@ Worth knowing:
   dimensioned to the two nearest edges; more clicks while the panel is open add more holes, the same edge distance
   snaps and binds them into a row.
 - **Photo to Sketch** (Import a PNG or JPG, or Ctrl+K): a flat part photographed on plain paper becomes a sketch to
-  scale, outline and holes; you type its real width.
+  scale, outline and holes (round ones as circles); on grid paper the squares set the scale, otherwise you type its
+  real width.
 - **Check References** (Ctrl+K, or the menu of a step with a warning): every uncertain reference in one list.
 - **Cuts across components:** an extrude cut goes through bodies of other components too, wherever they sit.
 - **Holes by standard:** ISO metric, ISO metric fine, UNC, UNF; clearance hole (fine/medium/coarse) or tapped hole;

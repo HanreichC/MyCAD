@@ -66,7 +66,36 @@ def told():
     check("and says why", any("No part found" in n for n in notices()), str(notices()))
 
 
+def grid_paper():
+    """Rasterpapier, Kästchen 20 px (= 5 mm), hellgraue Linien; das Teil 400 x 240 px = 100 x 60 mm"""
+    img = QtGui.QImage(1000, 750, QtGui.QImage.Format_RGB32)
+    img.fill(QtGui.QColor(232, 232, 228))
+    p = QtGui.QPainter(img)
+    p.setPen(QtGui.QPen(QtGui.QColor(190, 200, 210), 1.5))
+    for x in range(0, 1000, 20):
+        p.drawLine(x, 0, x, 750)
+    for y in range(0, 750, 20):
+        p.drawLine(0, y, 1000, y)
+    p.setPen(QtCore.Qt.NoPen)
+    p.setBrush(QtGui.QColor(50, 52, 60))
+    p.drawRect(300, 250, 400, 240)
+    p.end()
+    S["grid"] = os.path.join(os.environ.get("TMPDIR", "/tmp"), "mycad_photo_grid.png")
+    img.save(S["grid"])
+
+
+def gridded():
+    period = DesignGui.photoGrid(S["grid"])
+    sk = DesignGui.photoToSketch(S["grid"], 0.0, 5.0)
+    bb = sk.Shape.BoundBox if sk else None
+    check("on grid paper the squares set the scale: 5 mm squares make the part 100 x 60 mm",
+          abs(period - 20) < 0.1 and sk is not None and abs(bb.XLength - 100) < 0.5 and abs(bb.YLength - 60) < 0.5,
+          "period=%.3f bb=%s" % (period, bb))
+    check("a photo without a grid says so", DesignGui.photoGrid(S["file"]) == 0, str(DesignGui.photoGrid(S["file"])))
+
+
 run([("activate", activate), ("missing", missing), W, ("told", told),  # zuerst: der Hinweis "nachgezeichnet" verdeckte ihn sonst
      ("photo", photo), ("trace", trace), W, W, ("traced", traced),
+     ("grid paper", grid_paper), ("gridded", gridded), W,
      ("errors", lambda: check("no errors", not errors(), str(errors()))),
      ])

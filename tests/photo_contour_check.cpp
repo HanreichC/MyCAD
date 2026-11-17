@@ -88,6 +88,27 @@ int main()
     }
     assert(fitCircle(square, c) > 1.5);
 
+    // Rasterpapier: Kästchen 25 px (Linien 2 px, hellgrau), darauf ein dunkles Teil; die Periode stimmt auf 1/20 Pixel
+    {
+        const int gw = 800, gh = 600;
+        std::vector<std::uint8_t> grid(gw * gh);
+        for (int y = 0; y < gh; ++y) {
+            for (int x = 0; x < gw; ++x) {
+                const bool line = (x % 25) < 2 || (y % 25) < 2;
+                const bool part = x >= 200 && x < 520 && y >= 150 && y < 390;
+                const int light = 200 + ((x + 3 * y) % 7);  // ungleichmäßiges Papier
+                grid[y * gw + x] = static_cast<std::uint8_t>(part ? 55 : line ? light - 35 : light + 25);
+            }
+        }
+        const auto m = partMask(grid, gw, gh);
+        const double p = gridPeriod(grid, gw, gh, m);
+        assert(std::abs(p - 25) < 0.05);
+        const auto parts = outlines(grid, gw, gh);  // das Teil wird trotz Raster gefunden: 320 px breit
+        assert(parts.size() == 1 && parts[0].points.size() == 4);
+        // ohne Raster: 0
+        assert(gridPeriod(img, w, h, partMask(img, w, h)) == 0);
+    }
+
     // nichts im Bild: leer
     std::vector<std::uint8_t> blank(w * h, 200);
     assert(contours(blank, w, h).empty());

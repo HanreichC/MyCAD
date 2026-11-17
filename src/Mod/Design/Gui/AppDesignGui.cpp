@@ -31,7 +31,9 @@ public:
     Module()
         : Py::ExtensionModule<Module>("DesignGui")
     {
-        add_varargs_method("photoToSketch", &Module::photoToSketch, "photoToSketch(file, width_mm): sketch traced from a photo");
+        add_varargs_method("photoToSketch", &Module::photoToSketch,
+                           "photoToSketch(file, width_mm[, square_mm]): sketch traced from a photo; square_mm on grid paper");
+        add_varargs_method("photoGrid", &Module::photoGrid, "photoGrid(file): grid square in pixels, 0 without grid paper");
         add_varargs_method("dressUp", &Module::dressUp, "dressUp(kind, size, all): fillet or chamfer with a size");
         add_varargs_method("cornerHoles", &Module::cornerHoles,
                            "cornerHoles(size, diameter, offset): holes in the four corners of the selected face");
@@ -43,8 +45,13 @@ public:
 private:
     Py::Object photoToSketch(const Py::Tuple& args)
     {
-        App::DocumentObject* sketch = DesignGui::photoToSketch(Py::String(args[0]).as_std_string(), Py::Float(args[1]));
+        App::DocumentObject* sketch = DesignGui::photoToSketch(Py::String(args[0]).as_std_string(), Py::Float(args[1]),
+                                                               args.size() > 2 ? double(Py::Float(args[2])) : 0.0);
         return sketch ? Py::asObject(sketch->getPyObject()) : Py::None();
+    }
+    Py::Object photoGrid(const Py::Tuple& args)
+    {
+        return Py::Float(DesignGui::photoGrid(Py::String(args[0]).as_std_string()));
     }
     Py::Object dressUp(const Py::Tuple& args)
     {

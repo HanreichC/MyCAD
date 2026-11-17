@@ -2271,6 +2271,26 @@ bool reviewDxf(Geometries& geos, const std::vector<std::string>& layers, const Q
 }
 
 /// STEP: Timeline-Eintrag "Import" mit je einem Body pro Solid; DXF/SVG: Skizze auf der XY-Ebene
+/// Phase 11.9: Maßstab erfragen und nachzeichnen. Auf Rasterpapier nur die Kästchengröße (meist 5 mm), sonst die Breite
+void askAndTrace(const QString& file)
+{
+    bool ok = false;
+    if (DesignGui::photoGrid(file.toStdString()) > 0) {
+        const double square = QInputDialog::getDouble(Gui::getMainWindow(), T("Photo to Sketch"),
+                                                      T("Grid paper found. How big is one square (mm)?"), 5, 0.5, 100, 1, &ok);
+        if (ok) {
+            DesignGui::photoToSketch(file.toStdString(), 0, square);
+        }
+        return;
+    }
+    const double width = QInputDialog::getDouble(Gui::getMainWindow(), T("Photo to Sketch"),
+                                                 T("How wide is the part, left to right in the photo (mm)?"), 100, 1, 10000,
+                                                 1, &ok);
+    if (ok) {
+        DesignGui::photoToSketch(file.toStdString(), width);
+    }
+}
+
 void importFile(App::Document* doc)
 {
     // startet im zuletzt benutzten Ordner, sonst im Projektordner wie Öffnen und Speichern
@@ -2291,13 +2311,7 @@ void importFile(App::Document* doc)
     if (QStringList {QStringLiteral("png"), QStringLiteral("jpg"), QStringLiteral("jpeg"), QStringLiteral("bmp"),
                      QStringLiteral("webp")}
             .contains(suffix)) {
-        bool ok = false;
-        const double width = QInputDialog::getDouble(Gui::getMainWindow(), T("Photo to Sketch"),
-                                                     T("How wide is the part, left to right in the photo (mm)?"), 100, 1,
-                                                     10000, 1, &ok);
-        if (ok) {
-            DesignGui::photoToSketch(file.toStdString(), width);
-        }
+        askAndTrace(file);
         return;
     }
     App::Part* comp = activeContainer(doc);
@@ -3716,13 +3730,7 @@ void startPhotoToSketch(App::Document*)
     if (file.isEmpty()) {
         return;
     }
-    bool ok = false;
-    const double width = QInputDialog::getDouble(Gui::getMainWindow(), T("Photo to Sketch"),
-                                                 T("How wide is the part, left to right in the photo (mm)?"), 100, 1, 10000,
-                                                 1, &ok);
-    if (ok) {
-        DesignGui::photoToSketch(file.toStdString(), width);
-    }
+    askAndTrace(file);
 }
 
 /// Material per Ziehen: Kugel oder Chip ziehen, auf einem Körper in der Ansicht loslassen
@@ -4879,23 +4887,53 @@ std::string topFace(Design::Body* body)
 }
 }  // namespace
 
-App::DocumentObject* DesignGui::photoToSketch(const std::string& file, double widthMm)
+namespace
 {
-    App::Document* doc = App::GetApplication().getActiveDocument();
+/// Foto als Graustufen; ponytail: auf höchstens 1000 Pixel verkleinert (schnell, glättet Papierstruktur), feine Teile
+/// brauchen ein näheres Foto
+bool loadGray(const std::string& file, std::vector<std::uint8_t>& gray, int& w, int& h)
+{
     QImage image(QString::fromStdString(file));
-    if (!doc || image.isNull()) {
-        toolHint(T("Photo to Sketch"), T("The photo could not be opened."));
-        return nullptr;
+    if (image.isNull()) {
+        return false;
     }
-    // ponytail: auf höchstens 1000 Pixel verkleinert (schnell, glättet Papierstruktur); feine Teile brauchen ein näheres Foto
     if (std::max(image.width(), image.height()) > 1000) {
         image = image.scaled(1000, 1000, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
     image = image.convertToFormat(QImage::Format_Grayscale8);
-    const int w = image.width(), h = image.height();
-    std::vector<std::uint8_t> gray(size_t(w) * h);
+    w = image.width();
+    h = image.height();
+    gray.assign(size_t(w) * h, 0);
     for (int y = 0; y < h; ++y) {
         std::copy_n(image.constScanLine(y), w, gray.begin() + size_t(y) * w);
+    }
+    return true;
+}
+}  // namespace
+
+double DesignGui::photoGrid(const std::string& file)
+{
+    std::vector<std::uint8_t> gray;
+    int w = 0, h = 0;
+    return loadGray(file, gray, w, h) ? PhotoContour::gridPeriod(gray, w, h, PhotoContour::partMask(gray, w, h)) : 0;
+}
+
+App::DocumentObject* DesignGui::photoToSketch(const std::string& file, double widthMm, double squareMm)
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    std::vector<std::uint8_t> gray;
+    int w = 0, h = 0;
+    if (!doc || !loadGray(file, gray, w, h)) {
+        toolHint(T("Photo to Sketch"), T("The photo could not be opened."));
+        return nullptr;
+    }
+    double gridPx = 0;  // Rasterpapier: Maßstab aus der Kästchengröße
+    if (squareMm > 0) {
+        gridPx = PhotoContour::gridPeriod(gray, w, h, PhotoContour::partMask(gray, w, h));
+        if (gridPx <= 0) {
+            toolHint(T("Photo to Sketch"), T("No grid found on the paper. Type the width of the part instead."));
+            return nullptr;
+        }
     }
     const auto loops = PhotoContour::outlines(gray, w, h, 1.5);  // runde Löcher als Kreise
     if (loops.empty()) {
@@ -4915,7 +4953,8 @@ App::DocumentObject* DesignGui::photoToSketch(const std::string& file, double wi
             maxY = std::max(maxY, p.y);
         }
     }
-    const double scale = widthMm / std::max(1e-9, maxX - minX);  // mm je Pixel
+    const double scale = gridPx > 0 ? squareMm / gridPx : widthMm / std::max(1e-9, maxX - minX);  // mm je Pixel
+    widthMm = (maxX - minX) * scale;
     doc->openTransaction("Photo to Sketch");
     Sketcher::SketchObject* sketch = newSketch(activeContainer(doc));
     sketch->Label.setValue("Photo");

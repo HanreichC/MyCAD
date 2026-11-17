@@ -53,7 +53,7 @@ Every closed region in a sketch is its own profile. Draw two circles inside each
 
 **Inspect:** Measure · Section Analysis · Print View
 
-**Photo to Sketch** (Import a photo) traces a flat part photographed on plain paper into a sketch to scale (outline and holes): type its real width, extrude, done. Handy for spare parts.
+**Photo to Sketch** (Import a photo) traces a flat part photographed on plain paper into a sketch to scale (outline and holes, round ones as real circles). On grid paper it finds the squares and only asks their size; on plain paper you type the real width. Extrude, done. Handy for spare parts.
 
 A cut goes through everything in its way, even bodies of other components. Extrude one side, symmetric, two sides, up to an object or through all, with a taper and as a thin wall. Click a face to drill a hole: it snaps to the middle or to the centre of a round face and is dimensioned to the two nearest edges by itself. Keep clicking for more holes; one at the same edge distance joins the row and moves with it. Holes follow ISO metric, metric fine, UNC and UNF, as clearance or tapped holes with the counterbore or countersink of the right screw. Threads are real and printable. Fillets can vary along an edge, patterns can follow a path, and mirror, pattern and move work with any plane, face, edge or axis.
 

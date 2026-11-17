@@ -689,6 +689,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
          "CAD-Dateien und Fotos (*.step *.stp *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;STEP (*.step *.stp);;DXF (*.dxf);;SVG (*.svg);;Foto zu Skizze (*.png *.jpg *.jpeg *.bmp *.webp)"},
         {"How wide is the part, left to right in the photo (mm)?", "Wie breit ist das Teil, von links nach rechts im Foto (mm)?"},
         {"The photo could not be opened.", "Das Foto ließ sich nicht öffnen."},
+        {"Grid paper found. How big is one square (mm)?", "Rasterpapier erkannt. Wie groß ist ein Kästchen (mm)?"},
+        {"No grid found on the paper. Type the width of the part instead.", "Kein Raster auf dem Papier gefunden. Gib statt dessen die Breite des Teils ein."},
         {"No part found. Lay it on plain paper that fills the photo and take the photo from straight above.",
          "Kein Teil gefunden. Leg es auf helles Papier, das das Foto füllt, und fotografiere gerade von oben."},
         {"Traced %1 outlines (%2 of them circles), %3 mm wide. Check the size with Measure, then extrude it.",

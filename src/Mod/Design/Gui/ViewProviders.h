@@ -36,8 +36,11 @@ DesignGuiExport App::DocumentObject* parameters(App::Document* doc, bool create)
 DesignGuiExport void cornerHoles(const std::string& size, double diameter, double offset);
 /// Phase 11.10: Rundung ("Fillet") oder Fase ("Chamfer") mit size an den gewählten Kanten, mit all an allen Kanten
 DesignGuiExport void dressUp(const std::string& kind, double size, bool all);
-/// Phase 11.9: Umrisse eines Teils auf hellem Papier aus dem Foto file als Skizze, widthMm breit (Breite im Bild)
-DesignGuiExport App::DocumentObject* photoToSketch(const std::string& file, double widthMm);
+/// Phase 11.9: Umrisse eines Teils auf hellem Papier aus dem Foto file als Skizze, widthMm breit (Breite im Bild); auf
+/// Rasterpapier statt dessen squareMm = Kantenlänge eines Kästchens
+DesignGuiExport App::DocumentObject* photoToSketch(const std::string& file, double widthMm, double squareMm = 0);
+/// Kästchengröße in Pixeln, wenn das Foto Rasterpapier zeigt, sonst 0
+DesignGuiExport double photoGrid(const std::string& file);
 /// Idee 2: Karte mit den Maßen einer doppelt angeklickten Körperfläche (einmal beim Laden des Moduls)
 DesignGuiExport void startFaceDimensions();
 /// Parameternamen in einem Ausdruck auf die Tabelle beziehen: "Width * 2" -> "Parameters.Width * 2"

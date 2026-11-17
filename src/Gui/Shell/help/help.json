@@ -2248,13 +2248,13 @@
     "en": [
      "Lay the part on plain light paper that fills the picture and take the photo from straight above, without a flash.",
      "Click Import in the FILE section of the toolbar (or Ctrl+K, Photo to Sketch) and choose the photo (PNG or JPG).",
-     "Type how wide the part really is, left to right in the photo, in mm (measure it with a ruler or calliper). That sets the scale.",
+     "On grid paper MyCAD finds the squares and only asks how big one is (usually 5 mm); nothing to measure. On plain paper type how wide the part really is, left to right in the photo, in mm. That sets the scale.",
      "MyCAD traces the outline and every hole as a sketch. Check a size with Measure, then Extrude it to the thickness of the part."
     ],
     "de": [
      "Leg das Teil auf helles, einfarbiges Papier, das das Bild füllt, und fotografiere gerade von oben, ohne Blitz.",
      "Klicke im Bereich DATEI der Werkzeugleiste auf Einfügen (oder Strg+K, Foto zu Skizze) und wähle das Foto (PNG oder JPG).",
-     "Gib ein, wie breit das Teil wirklich ist, von links nach rechts im Foto, in mm (mit Lineal oder Messschieber gemessen). Das setzt den Maßstab.",
+     "Auf Rasterpapier findet MyCAD die Kästchen und fragt nur, wie groß eins ist (meist 5 mm); nichts zu messen. Auf glattem Papier gib ein, wie breit das Teil wirklich ist, von links nach rechts im Foto, in mm. Das setzt den Maßstab.",
      "MyCAD zeichnet den Umriss und jedes Loch als Skizze nach. Prüf ein Maß mit Messen, dann extrudiere sie auf die Dicke des Teils."
     ]
    },

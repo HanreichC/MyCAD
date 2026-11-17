@@ -296,4 +296,87 @@ inline std::vector<Outline> outlines(const std::vector<std::uint8_t>& gray, int 
     return out;
 }
 
+/// Rasterpapier: Kantenlänge eines Kästchens in Pixeln (Mittel aus x und y), 0 ohne erkennbares Raster. Gemessen wird
+/// nur auf dem Papier (part: Maske des Teils, wird ausgelassen): je Spalte bzw. Zeile die mittlere Helligkeit, die
+/// Rasterlinien sind darin periodische Senken; die Periode liefert die Autokorrelation, über mehrere Kästchen verfeinert.
+/// ponytail: Foto gerade von oben angenommen (keine Perspektive), Raster parallel zum Bildrand
+inline double gridPeriod(const std::vector<std::uint8_t>& gray, int w, int h, const std::vector<std::uint8_t>& part)
+{
+    const auto profile = [&](bool alongX) {
+        const int n = alongX ? w : h;
+        std::vector<double> sum(n, 0), count(n, 0);
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                if (!part.empty() && part[size_t(y) * w + x]) {
+                    continue;
+                }
+                const int i = alongX ? x : y;
+                sum[i] += gray[size_t(y) * w + x];
+                count[i] += 1;
+            }
+        }
+        std::vector<double> p(n);
+        for (int i = 0; i < n; ++i) {
+            p[i] = count[i] > 0 ? sum[i] / count[i] : 0;
+        }
+        std::vector<double> out(n);  // gleitenden Mittelwert abziehen: Licht, das über das Blatt wandert, zählt nicht
+        for (int i = 0; i < n; ++i) {
+            double s = 0;
+            int k = 0;
+            for (int j = std::max(0, i - 20); j <= std::min(n - 1, i + 20); ++j) {
+                s += p[j];
+                ++k;
+            }
+            out[i] = p[i] - s / k;
+        }
+        return out;
+    };
+    const auto period = [](const std::vector<double>& p) -> double {
+        const int n = static_cast<int>(p.size());
+        const auto ac = [&](int lag) {
+            double s = 0, a = 0, b = 0;
+            for (int i = 0; i + lag < n; ++i) {
+                s += p[i] * p[i + lag];
+                a += p[i] * p[i];
+                b += p[i + lag] * p[i + lag];
+            }
+            return a > 0 && b > 0 ? s / std::sqrt(a * b) : 0.0;
+        };
+        int best = 0;
+        for (int lag = 4; lag < n / 4 && !best; ++lag) {  // erstes deutliches Maximum
+            const double here = ac(lag);
+            if (here > 0.3 && here > ac(lag - 1) && here >= ac(lag + 1)) {
+                best = lag;
+            }
+        }
+        if (!best) {
+            return 0;
+        }
+        const int k = std::max(1, (n / 2) / best);  // über k Kästchen messen: Fehler eines Pixels / k
+        int at = k * best;
+        double peak = -1;
+        const int reach = std::max(1, best / 3);  // nur um das k-te Maximum, nie bis zum Nachbarn (der liegt best weiter)
+        for (int d = -reach; d <= reach; ++d) {
+            if (k * best + d > 1 && k * best + d + 1 < n) {
+                const double v = ac(k * best + d);
+                if (v > peak) {
+                    peak = v;
+                    at = k * best + d;
+                }
+            }
+        }
+        const double y0 = ac(at - 1), y1 = ac(at), y2 = ac(at + 1);
+        double offset = (y0 - y2) / (2 * (y0 - 2 * y1 + y2));
+        if (!std::isfinite(offset) || std::abs(offset) > 1) {
+            offset = 0;
+        }
+        return (at + offset) / k;
+    };
+    const double px = period(profile(true)), py = period(profile(false));
+    if (px <= 0 || py <= 0 || std::abs(px - py) > 0.05 * std::max(px, py)) {
+        return 0;  // keine Quadrate: kein Rasterpapier
+    }
+    return (px + py) / 2;
+}
+
 }  // namespace PhotoContour
