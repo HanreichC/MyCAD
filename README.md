@@ -105,7 +105,7 @@ Click **Note** in the toolbar and a yellow note lands on top of your model. Drag
 
 It can do the math too. End a line with `=` and the answer appears right after it: type `120 / 4 =` and you get `30`. Units work (`10 mm + 1 in =` gives `35.40 mm`), and so do the names from **Change Parameters**.
 
-And it is your parameter list. Write `Wall = 2 mm` and press Enter: that's a parameter now, ready for any dimension field. Formulas show their value (`Width = Wall * 20 → 40.00 mm`). Change the size on the model and the line in the note changes with it. Delete a line that a dimension still uses, and the parameter stays, with a note saying who needs it. Nothing gets lost quietly.
+And it is your parameter list. Write `Wall = 2 mm` and press Enter: that's a parameter now, ready for any dimension field. Formulas show their value (`Width = Wall * 20 → 40.00 mm`). Change the size on the model and the line in the note changes with it. Delete a line that a dimension still uses, and the parameter stays, with a note saying who needs it. Nothing gets lost quietly. Need the part in several sizes? Write `Size: S | M | L` and give values one per size (`Width = 40 mm | 60 mm | 80 mm`): the sizes show up as buttons on the note, one click switches the part.
 
 Closed a note? It's still under **Notes** in the browser, double-click to open it again. Notes are saved in the design file, so they're still there next time you open it.
 

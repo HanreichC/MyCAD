@@ -40,6 +40,24 @@ Width = Wall * 20        → 40.00 mm
 - **Nothing gets lost quietly:** if you delete the line of a parameter that a size still uses, the parameter stays and
   the note says `⚠ Wall is still used by Extrude`. Only when nothing needs it any more does it go away.
 
+## Configurations: one part, several sizes
+
+A line `Name: A | B | C` lists the configurations. Values with `|` have one entry per configuration:
+
+```
+Size: S | M | L
+Size = M
+Width = 40 mm | 60 mm | 80 mm
+Wall = 2 mm
+```
+
+- The configurations appear as **buttons at the top of the note**. Click one and the part switches; the note keeps the
+  choice as `Size = M` (without that line the first one counts). You can also just change that line.
+- Lines without `|` are the same in every configuration. Each line uses the nearest `Name: …` line above it, so one note
+  can hold several (e.g. Size and Material).
+- Changing the size on the model changes only the value of the chosen configuration in the note.
+- ⚠ marks a line with the wrong number of values, or a choice that isn't in the list.
+
 ## Change Parameters
 
 The classic way (UTILITIES → **Change Parameters**): a table with name, expression and value. **Add** creates a new

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "Shell.h"
+#include <Mod/Design/App/NoteParameters.h>  // nur Header, ohne FreeCAD
 #include "CommandSearch.h"
 #include "GlassPanel.h"
 #include "ViewCube.h"
@@ -229,6 +230,10 @@ QWidget#CommandSearch QListWidget::item:selected { background: @fillSecondary; c
 QToolButton#PaletteRow { border: 2px solid transparent; border-radius: 12px; padding: 0 8px; text-align: left; background: transparent; }
 QToolButton#PaletteRow:hover { background: @fillTertiary; }
 QToolButton#PaletteRow:checked { background: @fillSecondary; font-weight: 600; color: @accentText; }
+/* Konfigurationen in der Notiz (11.7): Spalten wie Seitenleisten-Zeilen, die gewählte gefüllt */
+QToolButton#NoteConfiguration { border: 2px solid transparent; border-radius: 8px; padding: 1px 10px; background: transparent; }
+QToolButton#NoteConfiguration:hover { background: @fillTertiary; }
+QToolButton#NoteConfiguration:checked { background: @fillSecondary; font-weight: 600; color: @accentText; }
 QFrame#GlassSeparator, QFrame#ToolbarSeparator { background: @separator; border: none; }
 QFrame#ToolbarSeparator { margin: 4px; }
 QLabel#Section, QLabel#Secondary, QLabel#StartDate, QLabel#StartCaption, QLabel#Hint { color: @labelSecondary; }
@@ -3874,7 +3879,8 @@ void syncNoteParameters(App::DocumentObject* obj, QPlainTextEdit* edit)
         return;  // keine Zeile mit "=" und nichts angelegt: nichts abzugleichen
     }
     static const char* hints[] = {"Already defined in", "This name is used twice", "Choose another name",
-                                  "Not a value or formula", " is still used by "};
+                                  "Not a value or formula", " is still used by ", "Needs one value per configuration",
+                                  "Not one of the configurations"};
     QString value = QString::fromUtf8(text->getValue());
     for (const char* hint : hints) {
         value.replace(T(hint), QString::fromUtf8(hint));
@@ -4014,6 +4020,14 @@ NotePanel makeNotePanel(App::DocumentObject* obj)
     });
     headLay->addWidget(close);
     lay->addWidget(head);
+    // Phase 11.7: Konfigurationen der Notiz ("Größe: S | M | L") als Knöpfe, ein Klick schaltet das Teil um
+    auto chips = new QWidget;
+    chips->setObjectName(QStringLiteral("NoteConfigurations"));
+    auto chipsLay = new QVBoxLayout(chips);
+    chipsLay->setContentsMargins(10, 4, 10, 0);
+    chipsLay->setSpacing(2);
+    chips->hide();
+    lay->addWidget(chips);
 
     auto edit = new NoteEdit;
     edit->calculate = [note](const QString& line) { return calculateLine(note, line); };
@@ -4031,6 +4045,71 @@ NotePanel makeNotePanel(App::DocumentObject* obj)
     note.panel->setSurface(&Theme::noteSurface);
     note.panel->setZValue(20);  // über den anderen Panels
     head->installEventFilter(new NoteGrip(note.panel, find, head));
+
+    // Knöpfe der Konfigurationen neu, wenn sich Kopfzeilen oder Auswahl ändern (auch beim Laden und nach dem Abgleich)
+    QObject::connect(edit->document(), &QTextDocument::contentsChanged, chips, [find, edit, chips] {
+        const auto lines = [edit] {
+            std::vector<std::string> out;
+            for (const QString& l : edit->toPlainText().split(QLatin1Char('\n'))) {
+                out.push_back(l.toStdString());
+            }
+            return out;
+        };
+        const auto configs = NoteParameters::configurations(lines());
+        QString key;
+        for (const auto& c : configs) {
+            key += QString::fromStdString(c.name + ":" + std::to_string(c.active) + ":" + std::to_string(c.header) + ":");
+            for (const auto& o : c.options) {
+                key += QString::fromStdString(o) + QLatin1Char('|');
+            }
+        }
+        if (chips->property("key").toString() == key) {
+            return;
+        }
+        chips->setProperty("key", key);
+        for (QWidget* w : chips->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
+            w->deleteLater();
+        }
+        for (const auto& c : configs) {
+            auto row = new QWidget(chips);
+            auto rowLay = new QHBoxLayout(row);
+            rowLay->setContentsMargins(0, 0, 0, 0);
+            rowLay->setSpacing(2);
+            auto label = new QLabel(QString::fromStdString(c.name));
+            label->setContentsMargins(0, 0, 6, 0);
+            rowLay->addWidget(label);
+            for (size_t k = 0; k < c.options.size(); ++k) {
+                auto option = new QToolButton;
+                option->setObjectName(QStringLiteral("NoteConfiguration"));
+                option->setText(QString::fromStdString(c.options[k]));
+                option->setCheckable(true);
+                option->setChecked(k == c.active);
+                option->setAccessibleName(QStringLiteral("%1 %2").arg(label->text(), option->text()));
+                const size_t header = c.header;
+                QObject::connect(option, &QToolButton::clicked, edit, [find, edit, lines, header, k] {
+                    QTimer::singleShot(0, edit, [find, edit, lines, header, k] {  // Knöpfe werden dabei neu gebaut
+                        auto text = lines();
+                        for (const auto& c : NoteParameters::configurations(text)) {
+                            if (c.header == header && k < c.options.size()) {
+                                NoteParameters::choose(text, c, k);
+                            }
+                        }
+                        QString joined;
+                        for (size_t i = 0; i < text.size(); ++i) {
+                            joined += (i ? QStringLiteral("\n") : QString()) + QString::fromStdString(text[i]);
+                        }
+                        // wie Tippen in der Notiz: die Notiz bestimmt, Strg+Z dreht sie nicht zurück (Note::onBeforeChange)
+                        edit->setPlainText(joined);
+                        syncNoteParameters(find(), edit);
+                    });
+                });
+                rowLay->addWidget(option);
+            }
+            rowLay->addStretch(1);
+            chips->layout()->addWidget(row);
+        }
+        chips->setVisible(!configs.empty());
+    });
 
     // Text direkt ins Objekt: ohne Speicher-Schritt, das Design gilt dadurch als geändert
     QObject::connect(edit, &QPlainTextEdit::textChanged, edit, [find, edit] {

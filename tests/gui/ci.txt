@@ -22,6 +22,7 @@ test_print_ui.py
 test_print_fixes_ui.py
 test_quick_measure_ui.py
 test_hole_snap.py
+test_note_config_ui.py
 test_red_pen_ui.py
 test_versions_ui.py
 test_sketch_contrast.py

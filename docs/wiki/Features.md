@@ -130,6 +130,8 @@ Worth knowing:
 
 - **A note is your parameter list:** `Wall = 2 mm` in a note creates the parameter; formulas show their value
   (`Width = Wall * 20 → 40.00 mm`); change the size on the model and the note changes too.
+- **Configurations in the note:** `Size: S | M | L`, values one per size (`Width = 40 mm | 60 mm | 80 mm`); the sizes
+  are buttons on the note and switch the part with one click.
 - **Notes calculate:** `120 / 4 =` gives `30`, with units (`10 mm + 1 in = 35.40 mm`) and parameter names.
 
   ![Note](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Note.gif)

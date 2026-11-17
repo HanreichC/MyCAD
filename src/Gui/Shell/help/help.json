@@ -5762,13 +5762,15 @@
      "Calculations understand + - * / and brackets, units such as 10 mm + 1 in, and your parameter names.",
      "Undo does not change notes: while typing, Ctrl+Z only takes back your text.",
      "A line marked with ⚠ did not become a parameter, e.g. because the name is used twice. Nothing is lost silently: if you delete the line of a parameter that the design still uses, the parameter stays and the note says where it is used.",
-     "Umlauts are fine: Wandstärke = 2,5 mm works."
+     "Umlauts are fine: Wandstärke = 2,5 mm works.",
+     "Several sizes of one part: write a line Size: S | M | L and give values one per size, e.g. Width = 40 mm | 60 mm | 80 mm. The sizes appear as buttons at the top of the note; click one and the part switches. The note keeps the choice as Size = M."
     ],
     "de": [
      "Rechnungen verstehen + - * / und Klammern, Einheiten wie 10 mm + 1 in und deine Parameternamen.",
      "Rückgängig ändert keine Notizen: Beim Tippen nimmt Strg+Z nur deinen Text zurück.",
      "Eine Zeile mit ⚠ wurde kein Parameter, z. B. weil der Name zweimal vorkommt. Nichts geht still verloren: Löschst du die Zeile eines Parameters, den das Design noch nutzt, bleibt der Parameter, und die Notiz sagt, wo er gebraucht wird.",
-     "Umlaute gehen: Wandstärke = 2,5 mm funktioniert."
+     "Umlaute gehen: Wandstärke = 2,5 mm funktioniert.",
+     "Mehrere Größen eines Teils: Schreib eine Zeile Größe: S | M | L und gib Werte je Größe an, z. B. Breite = 40 mm | 60 mm | 80 mm. Die Größen erscheinen als Knöpfe oben in der Notiz; ein Klick schaltet das Teil um. Die Notiz merkt sich die Wahl als Größe = M."
     ]
    },
    "images": [

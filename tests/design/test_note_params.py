@@ -124,3 +124,59 @@ class BothWays(DesignTest):
         n = doc.getObject(name)
         self.assertEqual(sorted(n.Defines), ["Breite", "Wand"])
         self.assertAlmostEqual(Design.parameterSet(doc, False).Breite.Value, 40)
+
+
+class Configurations(DesignTest):
+    """Phase 11.7: Kopfzeile "Größe: S | M | L", Werte je Spalte, "Größe = M" wählt; das Teil folgt"""
+    TEXT = "Größe: S | M | L\nBreite = 20 mm | 30 mm | 40 mm\nHoehe = 5 mm"
+
+    def part(self):
+        n = note(self.doc, self.TEXT)
+        sk = sketch(self.doc, rect(0, 0, 10, 10))
+        f, b = extrude(self.doc, sk, 1)
+        f.setExpression("Distance", "Parameters.Breite")
+        self.doc.recompute()
+        return n, f, b
+
+    def choose(self, n, option):
+        lines = [l for l in n.Text.split("\n") if not l.startswith("Größe =")]
+        edit(n, "\n".join(lines[:1] + ["Größe = " + option] + lines[1:]))
+        self.doc.recompute()
+
+    def test_first_column_without_a_choice(self):
+        n, f, b = self.part()
+        self.assertAlmostEqual(params(self.doc).Breite.Value, 20)
+        self.assertVolume(b, 2000)
+        self.assertEqual(sorted(n.Defines), ["Breite", "Hoehe"])  # die Auswahl ist kein Parameter
+        self.assertNotIn(WARN, n.Text)
+
+    def test_choosing_a_column_switches_the_part(self):
+        n, f, b = self.part()
+        self.choose(n, "L")
+        self.assertAlmostEqual(params(self.doc).Breite.Value, 40)
+        self.assertVolume(b, 4000)
+        self.assertFalse(hasattr(params(self.doc), "Groesse"))
+        self.choose(n, "M")
+        self.assertVolume(b, 3000)
+        self.assertNotIn(WARN, n.Text)
+
+    def test_wrong_column_count_and_unknown_choice_are_marked(self):
+        n = note(self.doc, "Größe: S | M\nGröße = XL\nBreite = 1 mm | 2 mm | 3 mm\nWand = 2 mm")
+        lines = n.Text.split("\n")
+        self.assertIn(WARN + " Not one of the configurations", lines[1])
+        self.assertIn(WARN + " Needs one value per configuration", lines[2])
+        self.assertFalse(hasattr(params(self.doc), "Breite"))
+        self.assertAlmostEqual(params(self.doc).Wand.Value, 2)  # der Rest geht weiter
+
+    def test_change_on_the_model_changes_only_the_active_column(self):
+        n, f, b = self.part()
+        self.choose(n, "M")
+        Design.setDrivingDimension(f, "Distance", 35)
+        self.assertEqual(n.Text.split("\n")[2], "Breite = 20 mm | 35 mm | 40 mm")
+        self.assertVolume(b, 3500)
+
+    def test_survives_save(self):
+        n, f, b = self.part()
+        self.choose(n, "L")
+        doc = save_and_reload(self.doc)
+        self.assertAlmostEqual(Design.parameterSet(doc, False).Breite.Value, 40)

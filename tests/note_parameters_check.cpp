@@ -43,6 +43,41 @@ int main()
     assert(withHint("Wand = 2 mm", "", "Name is used twice") == "Wand = 2 mm \xE2\x9A\xA0 Name is used twice");
     assert(withHint("Wand = 2 mm \xE2\x9A\xA0 old", "", "") == "Wand = 2 mm");
 
+    // Phase 11.7 Konfigurationen: Kopfzeile, Spalten je Wert, Auswahlzeile
+    Configuration c;
+    assert(parseHeader("Größe: S | M | L", c) && c.id == "Groesse" && c.options == std::vector<std::string>({"S", "M", "L"}));
+    assert(parseHeader("Länge: 10 | 20", c) && c.options.size() == 2);  // Zahlen als Spalten
+    assert(!parseHeader("Breite: 120 / 4 =", c));  // Rechenzeile
+    assert(!parseHeader("Größe: S", c));           // nur eine Spalte
+    assert(!parseHeader("Notiz: das ist | ein Satz", c));
+    assert(!parseHeader("Einkaufsliste", c));
+    std::vector<std::string> note = {"Größe: S | M | L", "Breite = 40 mm | 60 mm | 80 mm", "Wand = 2 mm"};
+    std::map<size_t, std::string> errors;
+    auto r = resolve(note, errors);
+    assert(errors.empty() && r[1].definition && r[1].expression == "40 mm" && r[1].column == 0 && r[1].columns.size() == 3);
+    assert(r[2].definition && r[2].expression == "2 mm" && r[2].column == -1);  // ohne "|" wie bisher
+    choose(note, configurations(note)[0], 2);  // keine Auswahlzeile: unter die Kopfzeile
+    assert(note.size() == 4 && note[1] == "Größe = L");
+    r = resolve(note, errors);
+    assert(errors.empty() && !r[1].definition && r[2].expression == "80 mm");  // Auswahl ist kein Parameter
+    choose(note, configurations(note)[0], 1);  // Auswahlzeile ersetzt
+    assert(note.size() == 4 && note[1] == "Größe = M" && resolve(note, errors)[2].expression == "60 mm");
+    assert(withColumn(resolve(note, errors)[2], "65 mm") == "Breite = 40 mm | 65 mm | 80 mm");
+    // Fehler: falsche Spaltenzahl, Werte ohne Kopfzeile, unbekannte Spalte
+    errors.clear();
+    resolve({"Größe: S | M", "Breite = 1 mm | 2 mm | 3 mm"}, errors);
+    assert(errors.at(1) == "Needs one value per configuration");
+    errors.clear();
+    resolve({"Breite = 1 mm | 2 mm"}, errors);
+    assert(errors.at(0) == "Needs one value per configuration");
+    errors.clear();
+    resolve({"Größe: S | M", "Größe = XL"}, errors);
+    assert(errors.at(1) == "Not one of the configurations");
+    // je Zeile gilt die nächste Kopfzeile darüber
+    errors.clear();
+    r = resolve({"Größe: S | M", "Größe = M", "A = 1 mm | 2 mm", "Farbe: Rot | Grün | Blau", "B = 1 | 2 | 3"}, errors);
+    assert(errors.empty() && r[2].expression == "2 mm" && r[4].expression == "1");
+
     std::puts("note parameters ok");
     return 0;
 }

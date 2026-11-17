@@ -2689,13 +2689,14 @@ void Design::syncNoteParameters(Note* note)
             }
         }
     }
-    const bool any = std::ranges::any_of(lines, [](const std::string& l) { return NoteParameters::parse(l).definition; });
+    std::map<size_t, std::string> errors;
+    const auto resolved = NoteParameters::resolve(lines, errors);  // Konfigurationen: Ausdruck der aktiven Spalte
+    const bool any = std::ranges::any_of(resolved, [](const NoteParameters::Line& l) { return l.definition; });
     App::DocumentObject* set = parameterSet(doc, any);
     std::vector<std::string> defined;
-    std::map<size_t, std::string> errors;
     syncingNotes = true;
     for (size_t i = 0; set && i < lines.size(); ++i) {
-        const NoteParameters::Line line = NoteParameters::parse(lines[i]);
+        const NoteParameters::Line& line = resolved[i];
         if (!line.definition) {
             continue;
         }
@@ -2813,12 +2814,15 @@ void Design::parameterChanged(App::DocumentObject* set, const char* name)
         }
         auto lines = splitLines(note->Text.getValue());
         bool changed = false;
-        for (auto& l : lines) {
-            const NoteParameters::Line line = NoteParameters::parse(l);
+        std::map<size_t, std::string> errors;
+        const auto resolved = NoteParameters::resolve(lines, errors);
+        for (size_t i = 0; i < lines.size(); ++i) {
+            const NoteParameters::Line& line = resolved[i];
             if (line.definition && line.id == name
                 && toParameterExpression(set->getDocument(), line.expression)
                        != toParameterExpression(set->getDocument(), expression)) {
-                l = line.name + " = " + expression;
+                // mit Konfigurationen nur die aktive Spalte, die anderen bleiben
+                lines[i] = line.column >= 0 ? NoteParameters::withColumn(line, expression) : line.name + " = " + expression;
                 changed = true;
             }
         }

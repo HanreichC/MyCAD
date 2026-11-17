@@ -681,6 +681,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Profile gone: ", "Profil weg: "},
         {"Enter applies, Esc cancels, Tab goes to the next dimension", "Enter übernimmt, Esc verwirft, Tab springt zum nächsten Maß"},
         {"Needed by: %1", "Wird gebraucht von: %1"},
+        {"Needs one value per configuration", "Braucht einen Wert je Konfiguration"},
+        {"Not one of the configurations", "Keine der Konfigurationen"},
         {"%1: click to use it as a parameter", "%1: Klick legt damit einen Parameter an"},
         {"Make printable", "Druckbar machen"},
         {"Teardrop hole: prints without support", "Tropfenform: druckt ohne Stütze"},
