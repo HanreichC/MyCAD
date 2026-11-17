@@ -2347,6 +2347,7 @@
      "Click a flat face of a body and then Extrude to pull that face out directly, without a sketch.",
      "Two circles inside each other: click only the ring to get a tube instead of a solid cylinder.",
      "To cut a pocket: sketch on the body face, extrude into the body and set Operation to Cut.",
+     "A cut goes through everything in its way, also bodies of other components (e.g. a hole through a part and the plate below it). A new part in its own component that only overlaps other components stays a body of its own.",
      "Every number field also takes units (e.g. 1 in) and formulas or parameter names such as Width * 2.",
      "Everything you create appears as a step in the timeline at the bottom of the window. Double-click the step to open the same panel again and change the values later."
     ],
@@ -2354,6 +2355,7 @@
      "Klicke eine ebene Fläche eines Körpers an und dann Extrudieren, um sie direkt ohne Skizze herauszuziehen.",
      "Zwei Kreise ineinander: Klicke nur den Ring an, dann entsteht ein Rohr statt eines vollen Zylinders.",
      "Für eine Tasche: auf der Körperfläche skizzieren, in den Körper hinein extrudieren und Vorgang auf Ausschneiden stellen.",
+     "Ein Ausschnitt geht durch alles auf seinem Weg, auch durch Körper anderer Komponenten (z. B. ein Loch durch ein Teil und die Platte darunter). Ein neues Teil in seiner eigenen Komponente, das nur andere Komponenten überlappt, bleibt ein eigener Körper.",
      "Jedes Zahlenfeld nimmt auch Einheiten (z. B. 1 in) sowie Formeln oder Parameternamen wie Breite * 2.",
      "Alles, was du erstellst, erscheint als Schritt in der Zeitleiste unten im Fenster. Doppelklick auf den Schritt öffnet dasselbe Panel wieder, dort änderst du die Werte später."
     ]

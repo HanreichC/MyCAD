@@ -77,6 +77,7 @@ Worth knowing:
 - **Hole by click:** snaps to the middle of the face or the centre of a round face, otherwise to 0.5 mm, and is
   dimensioned to the two nearest edges; more clicks while the panel is open add more holes, the same edge distance
   snaps and binds them into a row.
+- **Cuts across components:** an extrude cut goes through bodies of other components too, wherever they sit.
 - **Holes by standard:** ISO metric, ISO metric fine, UNC, UNF; clearance hole (fine/medium/coarse) or tapped hole;
   counterbore or countersink matching the screw (ISO 4762 socket head, ISO 10642 countersunk, ISO 7380 button head);
   threads can be modeled for real.

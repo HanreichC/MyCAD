@@ -391,6 +391,26 @@ PyMOD_INIT_FUNC(Design)
         if (obj.isDerivedFrom<App::VarSet>() && std::strcmp(obj.Label.getValue(), "Parameters") == 0 && prop.getName()) {
             Design::parameterChanged(const_cast<App::DocumentObject*>(&obj), prop.getName());
         }
+        // Phase 11.8: Komponente bewegt -> Schritte über Komponentengrenzen neu rechnen; sie hängen nicht an deren Lage,
+        // ihr Werkzeug muss aber in die neue Lage der anderen Komponente
+        App::Document* doc = obj.getDocument();
+        if (!obj.isDerivedFrom<App::Part>() || &prop != &static_cast<const App::Part&>(obj).Placement || !doc
+            || doc->testStatus(App::Document::Restoring)) {
+            return;
+        }
+        for (auto o : doc->getObjectsOfType(Design::Feature::getClassTypeId())) {
+            bool across = false;
+            for (const char* name : {"Bodies", "ToolBodies"}) {
+                if (auto list = freecad_cast<App::PropertyLinkList*>(o->getPropertyByName(name))) {
+                    for (auto b : list->getValues()) {
+                        across = across || (b && Design::componentOf(b) != Design::componentOf(o));
+                    }
+                }
+            }
+            if (across) {
+                o->touch();
+            }
+        }
     });
 
     App::GetApplication().signalRecomputed.connect([](const App::Document& doc) {

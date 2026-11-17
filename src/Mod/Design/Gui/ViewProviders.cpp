@@ -1986,12 +1986,13 @@ private:
         const auto& attached = feature->Bodies.getValues();
         const auto& bases = feature->BaseFeatures.getValues();
         std::vector<Design::Body*> hits;
+        bool own = false;  ///< ein getroffener Körper liegt in der Komponente des Features
         for (auto obj : feature->getDocument()->getObjectsOfType(Design::Body::getClassTypeId())) {
             auto candidate = static_cast<Design::Body*>(obj);
-            // Nur Körper der eigenen Komponente: Verweise über Komponentengrenzen gehen nicht, und ein Teil in einer
-            // neuen Komponente, das einen anderen berührt, soll ein eigener Körper werden (wie Fusion), kein Cut
-            if (candidate == newBody || !candidate->Visibility.getValue()
-                || Design::componentOf(candidate) != Design::componentOf(feature)) {
+            // Auch Körper anderer Komponenten (11.8: ein Cut geht durch alles darunter). Ob es ein Cut wird, entscheiden
+            // nur die Körper der eigenen Komponente: ein neues Teil in seiner Komponente, das die Grundplatte überlappt,
+            // soll ein eigener Körper werden wie in Fusion (test_joint), kein Cut der Platte
+            if (candidate == newBody || !candidate->Visibility.getValue()) {
                 continue;
             }
             TopoDS_Shape solid = candidate->Shape.getShape().getShape();
@@ -2004,18 +2005,31 @@ private:
             }
             GProp_GProps whole, shared;
             BRepGProp::VolumeProperties(solid, whole);
-            BRepAlgoAPI_Common common(solid, tool.getShape());
+            // Werkzeug in die Koordinaten der Komponente des Körpers
+            const Base::Matrix4D m = (Design::componentOf(candidate)->globalPlacement().inverse()
+                                      * Design::componentOf(feature)->globalPlacement())
+                                         .toMatrix();
+            Part::TopoShape toolThere(tool);
+            if (!m.isUnity()) {
+                toolThere.transformShape(m, true);
+            }
+            BRepAlgoAPI_Common common(solid, toolThere.getShape());
             if (common.IsDone()) {
                 BRepGProp::VolumeProperties(common.Shape(), shared);
             }
             if (shared.Mass() > 1e-6 && shared.Mass() < whole.Mass() * (1 - 1e-6)) {
                 hits.push_back(candidate);
+                own = own || Design::componentOf(candidate) == Design::componentOf(feature);
             }
         }
         auto want = op;
         std::vector<Design::Body*> targets = hits;
         if (automatic) {
-            want = !hits.empty() ? Design::Feature::Op::Cut : faceBody ? Design::Feature::Op::Join : Design::Feature::Op::NewBody;
+            want = own ? Design::Feature::Op::Cut : faceBody ? Design::Feature::Op::Join : Design::Feature::Op::NewBody;
+            if (!own) {
+                hits.clear();  // nur fremde Körper getroffen: kein Cut
+                targets.clear();
+            }
             if (hits.empty() && faceBody) {
                 targets = {faceBody};
             }

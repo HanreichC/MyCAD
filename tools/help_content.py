@@ -669,6 +669,8 @@ A("Design_Extrude", "create", "Design_Extrude", ("Extrude", "Extrudieren"),
          "Zwei Kreise ineinander: Klicke nur den Ring an, dann entsteht ein Rohr statt eines vollen Zylinders."),
         ("To cut a pocket: sketch on the body face, extrude into the body and set Operation to Cut.",
          "Für eine Tasche: auf der Körperfläche skizzieren, in den Körper hinein extrudieren und Vorgang auf Ausschneiden stellen."),
+        ("A cut goes through everything in its way, also bodies of other components (e.g. a hole through a part and the plate below it). A new part in its own component that only overlaps other components stays a body of its own.",
+         "Ein Ausschnitt geht durch alles auf seinem Weg, auch durch Körper anderer Komponenten (z. B. ein Loch durch ein Teil und die Platte darunter). Ein neues Teil in seiner eigenen Komponente, das nur andere Komponenten überlappt, bleibt ein eigener Körper."),
         FORMULA, EDIT_LATER],
   see=["Design_Revolve", "Design_PressPull", "sketch_basics"])
 

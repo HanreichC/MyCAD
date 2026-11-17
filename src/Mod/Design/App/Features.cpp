@@ -3258,8 +3258,9 @@ Part::TopoShape Feature::shapeFor(const App::DocumentObject* body) const
     return {};
 }
 
-App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& tool)
+App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& toolIn)
 {
+    const Part::TopoShape& tool = toolIn;  // in Koordinaten der eigenen Komponente
     const auto& bodies = Bodies.getValues();
     const auto& bases = BaseFeatures.getValues();
     std::vector<Part::TopoShape> results;
@@ -3271,12 +3272,19 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& tool)
         if (bodies.empty() || bases.size() != bodies.size()) {
             return new App::DocumentObjectExecReturn("Select a body to join, cut or intersect");
         }
+        const Base::Placement here = Design::componentOf(this)->globalPlacement();
         for (size_t i = 0; i < bodies.size(); ++i) {
             auto base = freecad_cast<Feature*>(bases[i]);
             if (!base) {
                 return new App::DocumentObjectExecReturn("Body has no previous feature");
             }
             const Part::TopoShape baseShape = base->shapeFor(bodies[i]);
+            // Phase 11.8: Körper einer anderen Komponente -> Werkzeug in deren Koordinaten (Cut durch alles darunter)
+            const Base::Matrix4D m = (Design::componentOf(bodies[i])->globalPlacement().inverse() * here).toMatrix();
+            const Part::TopoShape tool = m.isUnity() ? toolIn
+                                                     : Part::TopoShape(0, getDocument()->getStringHasher())
+                                                           .makeElementTransform(toolIn, m, nullptr, Part::CheckScale::noScaleCheck,
+                                                                                 Part::CopyType::copy);
             Part::TopoShape res(0, getDocument()->getStringHasher());
             switch (op()) {
                 case Op::Join:
