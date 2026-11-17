@@ -513,7 +513,7 @@ Tests, Hilfe/README/Wiki wo sichtbar, Status hier, ein Commit.
 | E25 | Kleinkram: Materialien ohne Zuordnung (Messing, Kupfer, Gummi, Stein, Lacke); Normgrößen außerhalb der Tabellen geschätzt; feste Werte für Einschmelzmuttern; Holztextur feiner als echt | offen |
 | D16–D19 | Foto zu Skizze: Blattecken nur bis ~35° Drehung, nur A4; Raster/glattes Papier nur gerade von oben; Bild auf 1000 px verkleinert; nie mit echten Handyfotos getestet | zurückgestellt, bis echte Fotos da sind |
 | F28 | Echter Rechner (CachyOS, Podman, echte GPU) nur durch Nutzung abgedeckt; Tests laufen mit Software-Rendering | Hinweis |
-| F29 | Ubuntu in WSL (für den `install.sh`-Test) ist noch installiert; entfernen mit `wsl --unregister Ubuntu` | Hinweis |
+| F29 | Ubuntu 26.04 in WSL bleibt für künftige Tests (`install.sh` mit Docker, Start über WSLg); Benutzer `tester`, Klon unter `~/MyCAD`, `docker.io` | so beschlossen |
 
 ---
 
