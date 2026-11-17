@@ -80,6 +80,9 @@ The other sketch tools:
 | CREATE | Sketch · Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil · Hole · Screw Here · Thread · Pattern · Mirror |
 | MODIFY | Press Pull · Fit · Remove Face · Replace Face · Split Face · Fillet · Chamfer · Shell · Draft · Combine · Split Body · Move · Align · Scale |
 | CONSTRUCT | Offset Plane · Plane at Angle · Midplane · Plane · Axis · Point |
+
+Align and Midplane stay true to what you picked: an aligned body follows its target when that moves or grows, a midplane
+stays in the middle when one of its two faces moves.
 | ASSEMBLE | New Component · Joint |
 | INSPECT | Measure · Section Analysis · Print View · Fit All |
 | UTILITIES | Search · Change Parameters · Appearance · Scribble / Red Pen · Note |

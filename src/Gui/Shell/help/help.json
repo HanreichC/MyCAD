@@ -4685,8 +4685,8 @@
     ]
    },
    "summary": {
-    "en": "Moves a body so that one of its faces, edges or points lands exactly on a target.",
-    "de": "Verschiebt einen Körper so, dass eine seiner Flächen, Kanten oder Punkte genau auf einem Ziel landet."
+    "en": "Moves a body so that one of its faces, edges or points lands exactly on a target. It stays there: if the target moves or grows later, the body follows.",
+    "de": "Verschiebt einen Körper so, dass eine seiner Flächen, Kanten oder Punkte genau auf einem Ziel landet. Er bleibt dort: Wandert oder wächst das Ziel später, folgt der Körper."
    },
    "steps": {
     "en": [
@@ -5018,8 +5018,8 @@
     ]
    },
    "summary": {
-    "en": "Creates a plane exactly halfway between two parallel planes or faces.",
-    "de": "Erstellt eine Ebene genau in der Mitte zwischen zwei parallelen Ebenen oder Flächen."
+    "en": "Creates a plane exactly halfway between two parallel planes or faces. It stays in the middle when one of them moves later.",
+    "de": "Erstellt eine Ebene genau in der Mitte zwischen zwei parallelen Ebenen oder Flächen. Sie bleibt in der Mitte, wenn sich eine davon später verschiebt."
    },
    "steps": {
     "en": [

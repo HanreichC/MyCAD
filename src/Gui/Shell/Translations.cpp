@@ -681,6 +681,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Enter applies, Esc cancels, Tab goes to the next dimension", "Enter übernimmt, Esc verwirft, Tab springt zum nächsten Maß"},
         {"Needed by: %1", "Wird gebraucht von: %1"},
         {"Check References", "Bezüge prüfen"},
+        {"Align lost one of its references; the body keeps its last position", "Ausrichten hat einen Bezug verloren; der Körper bleibt an seiner letzten Lage"},
         {"Photo to Sketch", "Foto zu Skizze"},
         {"Photo to Sketch: trace a part photographed on plain paper into a sketch to scale",
          "Foto zu Skizze: ein Teil, auf hellem Papier fotografiert, maßstäblich als Skizze nachzeichnen"},

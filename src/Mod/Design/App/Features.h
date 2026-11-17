@@ -9,6 +9,9 @@
 #include <App/PropertyUnits.h>
 #include <Mod/Design/DesignGlobal.h>
 #include <Mod/Part/App/PartFeature.h>
+#include <gp_Dir.hxx>
+#include <gp_Pnt.hxx>
+#include <Mod/PartDesign/App/DatumPlane.h>
 
 #include <functional>
 
@@ -468,7 +471,9 @@ public:
     App::PropertyVector Translation;
     App::PropertyEnumeration RotationAxis;
     App::PropertyAngle Angle;
-    App::PropertyPlacement Alignment;  ///< Align: vor Drehung und Verschiebung angewandt
+    App::PropertyPlacement Alignment;  ///< Align: vor Drehung und Verschiebung angewandt (letzte berechnete Lage)
+    App::PropertyString AlignFrom;     ///< Align: Element des bewegten Bodies (Stand davor), z. B. "Face3"
+    App::PropertyLinkSub AlignTo;      ///< Align: Element oder Ebene, an das ausgerichtet wird
     App::PropertyLinkSub AxisReference;  ///< Drehachse frei (Achse, Kante, Zylinder); leer = RotationAxis durch die Mitte
     App::DocumentObjectExecReturn* compute() override;
 };
@@ -876,6 +881,34 @@ public:
     {
         return "DesignGui::ViewProviderJoint";
     }
+};
+
+/// Bezugsrahmen eines Elements für Ausrichten (Align): Punkt, Richtung (Fläche: Normale, Kante/Zylinder: Achse)
+struct Frame
+{
+    gp_Pnt point;
+    gp_Dir dir;
+    bool hasDir = false;
+    bool planar = false;
+};
+/// Rahmen einer Konstruktionsebene (sub leer) oder eines Elements, global
+DesignExport bool frameOf(App::DocumentObject* obj, const std::string& sub, Frame& f);
+/// Rahmen einer Teilform (Punkt, Kante, Fläche), in deren Koordinaten
+DesignExport bool frameOf(const TopoDS_Shape& s, Frame& f);
+/// Lage, die from auf to legt: Flächen bündig gegeneinander, Achsen fluchtend, Punkte zusammen
+DesignExport Base::Placement alignment(const Frame& from, const Frame& to);
+
+/// Mittelebene zwischen zwei parallelen Ebenen oder ebenen Flächen (Aufräumliste B6). Eine Konstruktionsebene wie
+/// PartDesign::Plane, nur liegt sie immer in der Mitte: execute() rechnet die Lage aus beiden Flächen, und weil sie auf
+/// beide verweist, rechnet sie neu, wenn sich eine verschiebt (vorher: an der ersten befestigt, Abstand fest).
+class DesignExport Midplane: public PartDesign::Plane
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::Midplane);
+
+public:
+    Midplane();
+    App::PropertyLinkSubList Faces;  ///< die zwei Ebenen bzw. Flächen
+    App::DocumentObjectExecReturn* execute() override;
 };
 
 /// Post-it (Ordner "Notes"): schwebt über der Ansicht, die Shell zeichnet es. Offen = Visibility (Auge im Browser).

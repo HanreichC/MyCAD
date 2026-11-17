@@ -4307,6 +4307,10 @@ Move::Move()
     RotationAxis.setEnums(XYZEnums);
     ADD_PROPERTY_TYPE(Angle, (0.0), "Move", App::Prop_None, "Rotation angle");
     ADD_PROPERTY_TYPE(Alignment, (Base::Placement()), "Move", App::Prop_Hidden, "Alignment (Align)");
+    ADD_PROPERTY_TYPE(AlignFrom, (""), "Move", App::Prop_Hidden, "Align: element of the moved body (before this step)");
+    ADD_PROPERTY_TYPE(AlignTo, (nullptr), "Move", App::Prop_Hidden, "Align: element or plane it is aligned to");
+    AlignTo.setScope(App::LinkScope::Global);
+    Alignment.setStatus(App::Property::Output, true);  // compute() schreibt die zuletzt berechnete Lage hinein
     ADD_PROPERTY_TYPE(AxisReference, (nullptr), "Parameters", App::Prop_None, "Axis, edge or round face to rotate around");
     AxisReference.setScope(App::LinkScope::Global);
     Operation.setStatus(App::Property::Hidden, true);
@@ -4317,13 +4321,40 @@ App::DocumentObjectExecReturn* Move::compute()
     if (Bodies.getSize() == 0 || Bodies.getSize() != BaseFeatures.getSize()) {
         return new App::DocumentObjectExecReturn("Select one or more bodies");
     }
+    // Align (B6): aus beiden Bezügen neu, damit die Ausrichtung Änderungen folgt; fehlt ein Bezug, die letzte Lage
+    Base::Placement align = Alignment.getValue();
+    if (AlignTo.getValue() && *AlignFrom.getValue()) {
+        const TopoDS_Shape element = baseShape(0).getSubShape(AlignFrom.getValue(), true);
+        Frame from, to;
+        const auto& subs = AlignTo.getSubValues();
+        if (!element.IsNull() && frameOf(element, from)
+            && frameOf(AlignTo.getValue(), subs.empty() ? std::string() : subs.front(), to)) {
+            // das Element in globalen Koordinaten (die Form liegt in der Komponente des Bodies)
+            const Base::Placement comp = Design::componentOf(Bodies[0])->globalPlacement();
+            Base::Vector3d p(from.point.X(), from.point.Y(), from.point.Z()), d(from.dir.X(), from.dir.Y(), from.dir.Z());
+            comp.multVec(p, p);
+            comp.getRotation().multVec(d, d);
+            from.point = gp_Pnt(p.x, p.y, p.z);
+            from.dir = gp_Dir(d.x, d.y, d.z);
+            align = alignment(from, to);
+            if (!align.isSame(Alignment.getValue(), 1e-12)) {
+                Alignment.setValue(align);  // für den Fall, dass ein Bezug später fehlt
+            }
+            if (std::string(Warning.getValue()).rfind("Align lost", 0) == 0) {
+                Warning.setValue("");  // Bezug wieder da
+            }
+        }
+        else {
+            Warning.setValue("Align lost one of its references; the body keeps its last position");
+        }
+    }
     std::vector<Part::TopoShape> results;
     for (int i = 0; i < Bodies.getSize(); ++i) {
         const Part::TopoShape base = baseShape(i);
         // global rechnen, dann in die Komponente des Bodies umrechnen
         const Base::Matrix4D toGlobal = Design::componentOf(Bodies[i])->globalPlacement().toMatrix();
         Base::BoundBox3d bb = base.getBoundBox().Transformed(toGlobal);
-        bb = bb.Transformed(Alignment.getValue().toMatrix());  // gedreht wird um die Mitte nach dem Ausrichten
+        bb = bb.Transformed(align.toMatrix());  // gedreht wird um die Mitte nach dem Ausrichten
         Base::Vector3d axis, center = bb.GetCenter();
         axis[RotationAxis.getValue()] = 1;
         if (AxisReference.getValue()) {  // frei gewählte Achse (bei einer Ebene: ihre Normale durch ihren Punkt)
@@ -4337,7 +4368,7 @@ App::DocumentObjectExecReturn* Move::compute()
         }
         Base::Placement rot(Base::Vector3d(), Base::Rotation(axis, Angle.getValue() * M_PI / 180.0), center);
         Base::Placement move(Translation.getValue(), Base::Rotation());
-        Base::Matrix4D mat = inComponent(Bodies[i], (move * rot * Alignment.getValue()).toMatrix());
+        Base::Matrix4D mat = inComponent(Bodies[i], (move * rot * align).toMatrix());
         // Geometrie wirklich umrechnen (copy): eine bloße Lage würde Part::Feature beim Speichern im Body überschreiben
         results.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
                               .makeElementTransform(base, mat, nullptr, Part::CheckScale::noScaleCheck,
@@ -6660,6 +6691,134 @@ void Joint::unsetupObject()
         moving->setExpression(App::ObjectIdentifier(moving->Placement), nullptr);
     }
     App::DocumentObject::unsetupObject();
+}
+
+bool Design::frameOf(App::DocumentObject* obj, const std::string& sub, Frame& f)
+{
+    static const Base::Type datum = Base::Type::fromName("Part::Datum");
+    const bool plane = obj && (obj->isDerivedFrom<App::Plane>() || (!datum.isBad() && obj->getTypeId().isDerivedFrom(datum)));
+    if (sub.empty() && plane) {
+        const Base::Placement p = static_cast<App::GeoFeature*>(obj)->globalPlacement();
+        Base::Vector3d z;
+        p.getRotation().multVec(Base::Vector3d(0, 0, 1), z);
+        f = {gp_Pnt(p.getPosition().x, p.getPosition().y, p.getPosition().z), gp_Dir(z.x, z.y, z.z), true, true};
+        return true;
+    }
+    return frameOf(Part::Feature::getTopoShape(obj, Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform
+                                                        | Part::ShapeOption::NeedSubElement,
+                                                    sub.empty() ? nullptr : sub.c_str())
+                       .getShape(),
+                   f);
+}
+
+bool Design::frameOf(const TopoDS_Shape& s, Frame& f)
+{
+    if (s.IsNull()) {
+        return false;
+    }
+    GProp_GProps props;
+    switch (s.ShapeType()) {
+        case TopAbs_VERTEX:
+            f.point = BRep_Tool::Pnt(TopoDS::Vertex(s));
+            return true;
+        case TopAbs_EDGE: {
+            BRepGProp::LinearProperties(s, props);
+            f.point = props.CentreOfMass();
+            BRepAdaptor_Curve c(TopoDS::Edge(s));
+            if (c.GetType() == GeomAbs_Line) {
+                f.dir = c.Line().Direction();
+                f.hasDir = true;
+            }
+            else if (c.GetType() == GeomAbs_Circle) {
+                f.point = c.Circle().Location();
+                f.dir = c.Circle().Axis().Direction();
+                f.hasDir = true;
+            }
+            return true;
+        }
+        case TopAbs_FACE: {
+            BRepGProp::SurfaceProperties(s, props);
+            f.point = props.CentreOfMass();
+            BRepAdaptor_Surface surface(TopoDS::Face(s));
+            if (surface.GetType() == GeomAbs_Plane) {
+                f.dir = surface.Plane().Axis().Direction();
+                if (s.Orientation() == TopAbs_REVERSED) {
+                    f.dir.Reverse();
+                }
+                f.hasDir = f.planar = true;
+            }
+            else if (surface.GetType() == GeomAbs_Cylinder) {
+                const gp_Ax1 axis = surface.Cylinder().Axis();
+                f.dir = axis.Direction();
+                f.point = axis.Location().Translated(
+                    gp_Vec(axis.Direction()) * gp_Vec(axis.Location(), f.point).Dot(gp_Vec(axis.Direction())));
+                f.hasDir = true;
+            }
+            return true;
+        }
+        default:
+            return false;
+    }
+}
+
+Base::Placement Design::alignment(const Frame& from, const Frame& to)
+{
+    Base::Rotation rot;
+    if (from.hasDir && to.hasDir) {
+        const gp_Dir target = from.planar && to.planar ? to.dir.Reversed() : to.dir;
+        rot = Base::Rotation(Base::Vector3d(from.dir.X(), from.dir.Y(), from.dir.Z()),
+                             Base::Vector3d(target.X(), target.Y(), target.Z()));
+    }
+    Base::Vector3d moved;
+    rot.multVec(Base::Vector3d(from.point.X(), from.point.Y(), from.point.Z()), moved);
+    return Base::Placement(Base::Vector3d(to.point.X(), to.point.Y(), to.point.Z()) - moved, rot);
+}
+
+PROPERTY_SOURCE(Design::Midplane, PartDesign::Plane)
+
+Midplane::Midplane()
+{
+    ADD_PROPERTY_TYPE(Faces, (nullptr), "Midplane", App::Prop_None, "The two parallel planes or planar faces");
+    Faces.setScope(App::LinkScope::Global);
+    MapMode.setValue("Deactivated");  // die Lage rechnet execute(), nicht der Attacher
+}
+
+App::DocumentObjectExecReturn* Midplane::execute()
+{
+    const auto& objs = Faces.getValues();
+    const auto& subs = Faces.getSubValues();
+    if (objs.size() != 2 || subs.size() != 2) {
+        return new App::DocumentObjectExecReturn("Select two parallel planes or planar faces");
+    }
+    gp_Pnt centre[2];
+    gp_Dir normal[2];
+    for (int i = 0; i < 2; ++i) {
+        const Part::TopoShape s = Part::Feature::getTopoShape(
+            objs[i], Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform | Part::ShapeOption::NeedSubElement,
+            subs[i].empty() ? nullptr : subs[i].c_str());
+        TopExp_Explorer face(s.getShape(), TopAbs_FACE);
+        if (!face.More() || BRepAdaptor_Surface(TopoDS::Face(face.Current())).GetType() != GeomAbs_Plane) {
+            return new App::DocumentObjectExecReturn("The midplane lost one of its planes or faces");
+        }
+        GProp_GProps props;
+        BRepGProp::SurfaceProperties(face.Current(), props);
+        centre[i] = props.CentreOfMass();
+        normal[i] = BRepAdaptor_Surface(TopoDS::Face(face.Current())).Plane().Axis().Direction();
+        if (face.Current().Orientation() == TopAbs_REVERSED) {
+            normal[i].Reverse();
+        }
+    }
+    if (!normal[0].IsParallel(normal[1], 1e-6)) {
+        return new App::DocumentObjectExecReturn("The two planes are no longer parallel");
+    }
+    // Mitte der beiden Flächenmitten liegt auf der Mittelebene (parallele Ebenen); Normale wie die erste Fläche
+    const Base::Vector3d at((centre[0].X() + centre[1].X()) / 2, (centre[0].Y() + centre[1].Y()) / 2,
+                            (centre[0].Z() + centre[1].Z()) / 2);
+    const Base::Rotation turn(Base::Vector3d(0, 0, 1), Base::Vector3d(normal[0].X(), normal[0].Y(), normal[0].Z()));
+    const Base::Placement global(at, turn);
+    App::Part* container = Design::componentOf(this);
+    Placement.setValue(container ? container->globalPlacement().inverse() * global : global);
+    return PartDesign::Plane::execute();
 }
 
 PROPERTY_SOURCE(Design::Note, App::DocumentObject)

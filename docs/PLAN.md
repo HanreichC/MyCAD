@@ -492,7 +492,7 @@ Tests, Hilfe/README/Wiki wo sichtbar, Status hier, ein Commit.
 |---|---|---|
 | A1–A3 | Veraltete Notizen: PLAN zur Bohrung per Klick, Kommentar zu `addFeature` (Komponenten), `fadeBodies` (Phong) | erledigt 2026-11-17 |
 | B5 | Löschen eines ganzen Körpers ohne Vorschau | erledigt 2026-11-17 (`test_delete_body_impact`) |
-| B6 | Ausrichtung beim Platzieren (Commands.cpp, `ponytail` „folgt späteren Änderungen nicht“) und Abstand bei Ebenen („bleibt stehen, wenn sich die Flächen verschieben“): einmal berechnet | offen, als Nächstes |
+| B6 | Ausrichtung beim Platzieren (Commands.cpp, `ponytail` „folgt späteren Änderungen nicht“) und Abstand bei Ebenen („bleibt stehen, wenn sich die Flächen verschieben“): einmal berechnet | erledigt 2026-11-17: Mittelebene ist ein eigener Typ `Design::Midplane` (Lage aus beiden Flächen, rechnet neu, wenn eine sich bewegt); Ausrichten merkt sich beide Bezüge (`AlignFrom`/`AlignTo`) und richtet bei jeder Neuberechnung neu aus, fehlt einer, bleibt die letzte Lage mit Warnung (`test_midplane`, `test_align_follows`). Bestehende Dateien rechnen wie bisher |
 | B4 | Geometrischer statt topologischer Abgleich: Skizze, die ihre Fläche verliert (nächste Fläche über den Schwerpunkt), Teilung in 3+ Teile (Teile rücken auf), Wiederfinden nach Lage bei zwei deckungsgleichen Elementen | offen |
 | B9 | Aussehen je Fläche: nur die Farbe wechselt, Glanz/Metall/Lack kommen von der ersten Fläche | offen |
 | B7 | Gewinde ohne Auslauf und Fase an den Flächenenden | offen |

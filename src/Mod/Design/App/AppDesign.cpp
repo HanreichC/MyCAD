@@ -411,6 +411,7 @@ PyMOD_INIT_FUNC(Design)
     try {
         Base::Interpreter().runString("import Part");
         Base::Interpreter().runString("import Sketcher");
+        Base::Interpreter().runString("import PartDesign");  // Design::Midplane erbt von PartDesign::Plane
     }
     catch (const Base::Exception& e) {
         PyErr_SetString(PyExc_ImportError, e.what());
@@ -480,6 +481,7 @@ PyMOD_INIT_FUNC(Design)
     Design::SplitFace::init();
     Design::Emboss::init();
     Design::Joint::init();
+    Design::Midplane::init();
     Design::Note::init();
     Design::Scribble::init();
 
