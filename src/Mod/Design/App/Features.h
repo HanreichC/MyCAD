@@ -65,6 +65,8 @@ DesignExport void removeFromTimeline(App::DocumentObject* obj);
 /// Eingabe fehlt (Profil, Skizze, Bezug). Die Kette eines Körpers (BaseFeatures …) wird neu verbunden und zählt nicht.
 struct DeletionImpact
 {
+    /// bodies: was mitgeht (Körper; beim Löschen eines Körpers auch Schritte anderer Körper, z. B. ein Kombinieren, dessen
+    /// einziges Werkzeug er ist); sketches: verlieren ihre Fläche; broken: verlieren ihre Eingabe
     std::vector<App::DocumentObject*> bodies, sketches, broken;
     bool empty() const
     {

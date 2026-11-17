@@ -193,7 +193,9 @@ again, which is handy for imported STEP parts that have no history.
 - At the bottom center, one entry per step; double-click to open it again.
 - **What depends on it:** hold the mouse over a step and the steps that depend on it light up; the tooltip names them.
 - **Delete with a preview:** if something else depends on what you delete, MyCAD asks first and lists it: bodies that
-  go along, sketches that lose their face (they stay in place, with a warning), steps that lose their input.
+  go along, sketches that lose their face (they stay in place, with a warning), steps that lose their input. For a
+  whole body its own steps go along quietly; named are its mirror/pattern copies, a Combine that used it as the only
+  tool, and other bodies' sketches or steps built on its faces.
 - **Check References** (Ctrl+K, or right-click a step with a warning) lists in one place every step that no longer finds its edges or faces for certain:
   lost profiles and faces, edges found again by their position, references to elements that are gone. Each row has
   **Show**, **Edit** (choose again) and, for a guess, **Looks Right**.

@@ -65,6 +65,8 @@ public:
                            "printCheck(body[, up, angle, wall]): dict of overhang, bed and thin areas (mm²) and triangles");
         add_varargs_method("printFixes", &Module::printFixes,
                            "printFixes(doc): [(feature name, label, property, value)] that make the design print better");
+        add_varargs_method("deletionImpact", &Module::deletionImpact,
+                           "deletionImpact(obj): dict along/sketches/broken with the names of what deleting obj affects");
         add_varargs_method("referenceIssues", &Module::referenceIssues,
                            "referenceIssues(doc): [(object name, property, element, text, is warning)] not certainly assigned");
         add_varargs_method("completeDimensions", &Module::completeDimensions,
@@ -315,6 +317,25 @@ private:
                                   Py::Float(f.value)));
         }
         return out;
+    }
+    Py::Object deletionImpact(const Py::Tuple& args)
+    {
+        if (!PyObject_TypeCheck(args[0].ptr(), &App::DocumentObjectPy::Type)) {
+            throw Py::TypeError("expected a document object");
+        }
+        const auto impact = Design::deletionImpact(static_cast<App::DocumentObjectPy*>(args[0].ptr())->getDocumentObjectPtr());
+        const auto names = [](const std::vector<App::DocumentObject*>& list) {
+            Py::List out;
+            for (auto o : list) {
+                out.append(Py::String(o->getNameInDocument()));
+            }
+            return out;
+        };
+        Py::Dict d;
+        d["along"] = names(impact.bodies);
+        d["sketches"] = names(impact.sketches);
+        d["broken"] = names(impact.broken);
+        return d;
     }
     Py::Object referenceIssues(const Py::Tuple& args)
     {

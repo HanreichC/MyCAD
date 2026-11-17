@@ -1169,20 +1169,98 @@ void reattachSketches(Part::Feature* gone, const std::vector<App::DocumentObject
 Design::DeletionImpact Design::deletionImpact(App::DocumentObject* obj)
 {
     DeletionImpact impact;
-    if (!obj || obj->isDerivedFrom<Body>()) {
-        return impact;  // ponytail: Körper löschen (Schritte gehen mit) ohne Vorschau
+    if (!obj) {
+        return impact;
     }
     const auto add = [](std::vector<App::DocumentObject*>& list, App::DocumentObject* o) {
         if (std::ranges::find(list, o) == list.end()) {
             list.push_back(o);
         }
     };
+    static const std::set<std::string> chainLinks {"BaseFeatures", "ToolFeatures", "SourceFeatures", "Bodies",
+                                                   "ToolBodies", "SourceBodies"};
+    if (auto body = freecad_cast<Body*>(obj)) {
+        // wie removeBody: eigene Schritte gehen still mit (das erwartet man); genannt wird, was darüber hinaus geschieht
+        std::set<App::DocumentObject*> own;
+        for (App::DocumentObject* item : timeline(body->getDocument())) {
+            auto f = freecad_cast<Feature*>(item);
+            if (!f) {
+                continue;
+            }
+            const auto& bodies = f->Bodies.getValues();
+            if (bodies.size() == 1 && bodies.front() == body) {
+                own.insert(f);
+            }
+            if (auto combine = freecad_cast<Combine*>(f)) {
+                const auto& tools = combine->ToolBodies.getValues();
+                if (tools.size() == 1 && tools.front() == body) {
+                    own.insert(f);
+                    add(impact.bodies, f);  // ein Schritt eines anderen Körpers verschwindet
+                }
+            }
+            App::PropertyLinkList* sources = nullptr;
+            if (auto m = freecad_cast<Mirror*>(f)) {
+                sources = &m->SourceBodies;
+            }
+            else if (auto p = freecad_cast<Pattern*>(f)) {
+                sources = &p->SourceBodies;
+            }
+            if (sources) {  // Kopien dieses Körpers
+                const auto& src = sources->getValues();
+                const size_t s = std::ranges::find(src, body) - src.begin();
+                if (s < src.size() && s < bodies.size()) {
+                    add(impact.bodies, bodies[s]);
+                }
+            }
+            if (freecad_cast<Split*>(f) && !bodies.empty() && bodies.front() == body) {
+                for (size_t j = 1; j < bodies.size(); ++j) {  // die anderen Teile einer Teilung
+                    add(impact.bodies, bodies[j]);
+                }
+            }
+        }
+        std::vector<App::DocumentObject*> sources {body};
+        sources.insert(sources.end(), own.begin(), own.end());
+        for (App::DocumentObject* source : sources) {
+            for (App::DocumentObject* user : source->getInList()) {
+                if (user == body || own.contains(user) || user->isDerivedFrom<Body>() || user->isDerivedFrom<Profiles>()
+                    || user->isDerivedFrom<App::DocumentObjectGroup>() || user->isDerivedFrom<App::Part>()) {
+                    continue;
+                }
+                if (auto sketch = freecad_cast<Sketcher::SketchObject*>(user)) {
+                    // auf einer Fläche des Körpers: geht still mit, wenn nur eigene Schritte sie nutzen
+                    std::vector<App::DocumentObject*> users = sketch->getInList();
+                    if (auto profiles = Profiles::forSketch(sketch)) {
+                        const auto& more = profiles->getInList();
+                        users.insert(users.end(), more.begin(), more.end());
+                    }
+                    const bool onlyOwn = std::ranges::all_of(users, [&](App::DocumentObject* u) {
+                        return own.contains(u) || !u->isDerivedFrom<Feature>();
+                    });
+                    const auto& supports = sketch->AttachmentSupport.getValues();
+                    if (!onlyOwn && std::ranges::find(supports, source) != supports.end()) {
+                        add(impact.sketches, sketch);
+                    }
+                    continue;
+                }
+                std::vector<App::Property*> props;
+                user->getPropertyList(props);
+                for (App::Property* prop : props) {
+                    const auto links = user->getOutListOfProperty(prop);
+                    if (!chainLinks.contains(prop->getName()) && std::ranges::find(links, source) != links.end()) {
+                        add(impact.broken, user);  // z. B. Bis-Fläche, Gelenk an einer Fläche des Körpers
+                        break;
+                    }
+                }
+            }
+        }
+        return impact;
+    }
     // Schritte, die obj (bzw. das Profil einer Skizze) anders als über die Kette eines Körpers nutzen
     std::vector<App::DocumentObject*> sources {obj};
     if (auto profiles = Profiles::forSketch(obj)) {
         sources.push_back(profiles);
     }
-    static const std::set<std::string> chain {"BaseFeatures", "ToolFeatures", "SourceFeatures", "Bodies"};
+    const std::set<std::string>& chain = chainLinks;
     for (App::DocumentObject* source : sources) {
         for (App::DocumentObject* user : source->getInList()) {
             if (user == obj || !user->isDerivedFrom<Feature>()) {
