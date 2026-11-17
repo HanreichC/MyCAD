@@ -73,6 +73,25 @@ def back():
     check("after the sketch the body looks as before", abs(after - state["before"]) < 6, "before=%d after=%d" % (state["before"], after))
 
 
+def phong(on):
+    App.ParamGet("User parameter:BaseApp/Preferences/MyCAD").SetBool("RealisticMaterials", not on)
+
+
+def phong_faded():
+    now = body_light()
+    check("in the Phong mode (realistic materials off) the body steps back too", now > state["phong"] + 40,
+          "before=%d in sketch=%d" % (state["phong"], now))
+
+
+def phong_back():
+    after = body_light()
+    check("and looks as before after the sketch", abs(after - state["phong"]) < 6, "before=%d after=%d" % (state["phong"], after))
+
+
+def sketch_obj():
+    return [o for o in doc().Objects if o.TypeId == "Sketcher::SketchObject"][-1]
+
+
 run([
     ("setup", setup), ("before", lambda: state.update(before=body_light())),
     ("Create Sketch", lambda: click(button("Design_CreateSketch"))),
@@ -82,4 +101,11 @@ run([
     ("dimension", dimension), ("plate", plate), ("shot dim", lambda: shot("dimension")),
     ("finish", lambda: click(button("Sketcher_LeaveSketch"))),
     ("top 2", lambda: (Gui.ActiveDocument.ActiveView.viewTop(), Gui.SendMsgToActiveView("ViewFit"))), ("back", back),
+    ("phong", lambda: phong(True)), ("phong before", lambda: state.update(phong=body_light())),
+    ("edit", lambda: Gui.ActiveDocument.setEdit(sketch_obj())),
+    ("top 3", lambda: (Gui.ActiveDocument.ActiveView.viewTop(), Gui.SendMsgToActiveView("ViewFit"))), ("phong faded", phong_faded),
+    ("shot phong", lambda: shot("phong")),
+    ("leave", lambda: click(button("Sketcher_LeaveSketch"))),
+    ("top 4", lambda: (Gui.ActiveDocument.ActiveView.viewTop(), Gui.SendMsgToActiveView("ViewFit"))), ("phong back", phong_back),
+    ("realistic", lambda: phong(False)),
 ], delay=2000)

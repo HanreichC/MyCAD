@@ -149,6 +149,36 @@ void main()
 }
 )";
 
+/// Phong-Modus (RealisticMaterials aus) bei offener Skizze: nur Grundfarbe mal Licht, zur Hintergrundfarbe gemischt wie
+/// im physikalischen Shader. Ohne Skizze bleibt der Phong-Modus ganz ohne Shader wie früher.
+const char* const PlainVertex = R"(
+varying vec3 normal;
+varying vec3 position;
+varying vec4 color;
+void main()
+{
+    position = vec3(gl_ModelViewMatrix * gl_Vertex);
+    normal = normalize(gl_NormalMatrix * gl_Normal);
+    color = gl_Color;
+    gl_Position = ftransform();
+}
+)";
+
+const char* const PlainFragment = R"(
+varying vec3 normal;
+varying vec3 position;
+varying vec4 color;
+uniform float fade;
+uniform vec3 background;
+void main()
+{
+    vec3 n = normalize(gl_FrontFacing ? normal : -normal);
+    vec3 l = normalize(gl_LightSource[0].position.xyz - position * gl_LightSource[0].position.w);
+    vec3 lit = color.rgb * (0.35 + 0.65 * max(dot(n, l), 0.0));
+    gl_FragColor = vec4(mix(lit, background, fade), color.a);
+}
+)";
+
 const char* const Fragment = R"(
 #version 120
 uniform int coin_light_model;     // von Coin: 0 = Grundfarbe (Auswahl, Vorauswahl), 1 = beleuchtet
@@ -438,6 +468,19 @@ SoSwitch* root()
         auto sw = new SoSwitch;
         sw->ref();  // lebt bis zum Programmende, jeder Körper hängt ihn ein
         sw->addChild(group);
+        // Kind 1: Phong-Modus bei offener Skizze (fadeBodies), teilt fade und background mit dem physikalischen Shader
+        auto plainVertex = new SoVertexShader;
+        plainVertex->sourceType = SoShaderObject::GLSL_PROGRAM;
+        plainVertex->sourceProgram = PlainVertex;
+        auto plainFragment = new SoFragmentShader;
+        plainFragment->sourceType = SoShaderObject::GLSL_PROGRAM;
+        plainFragment->sourceProgram = PlainFragment;
+        plainFragment->parameter.set1Value(0, fade());
+        plainFragment->parameter.set1Value(1, background());
+        auto plain = new SoShaderProgram;
+        plain->shaderObject.set1Value(0, plainVertex);
+        plain->shaderObject.set1Value(1, plainFragment);
+        sw->addChild(plain);
         return sw;
     }();
     return node;
@@ -479,7 +522,8 @@ SoNode* Gui::Shell::bodyShading()
 void Gui::Shell::applyRenderQuality()
 {
     auto p = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
-    root()->whichChild = p->GetBool("RealisticMaterials", true) ? 0 : SO_SWITCH_NONE;  // aus: Phong wie früher
+    // aus: Phong wie früher, nur bei offener Skizze ein schlichter Shader, damit die Körper zurücktreten
+    root()->whichChild = p->GetBool("RealisticMaterials", true) ? 0 : fade()->value.getValue() > 0 ? 1 : SO_SWITCH_NONE;
     detail()->value = p->GetBool("SurfaceDetail", true) ? 1 : 0;
     environment()->whichChild = int(std::clamp(p->GetInt("Lighting", 0), 0L, 1L));
     reflections()->value = p->GetBool("Reflections", true) ? 1 : 0;
@@ -497,6 +541,7 @@ void Gui::Shell::fadeBodies(bool on)
     const SbColor bottom = SbColor().setPackedValue(view->GetUnsigned("BackgroundColor3", 0xE5E5EAFF), transparency);
     background()->value = (top + bottom) / 2.0F;
     fade()->value = on ? 0.5F : 0.0F;
+    applyRenderQuality();  // Phong-Modus: schlichten Shader nur bei offener Skizze
 }
 
 SoNode* Gui::Shell::bodyTexture(const std::string& path)
