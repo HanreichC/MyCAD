@@ -1614,8 +1614,8 @@ A("sketch_construction", S, "Sketcher_ToggleConstruction", ("Construction Geomet
   tips=[("Keys: G, N.", "Tasten: G, N.")],
   commands=["Sketcher_ToggleConstruction"], see=["sketch_basics"])
 A("sketch_palette", S, "Palette_LookAt", ("Sketch Palette", "Skizzenpalette"),
-  (["sketch palette", "look at", "slice", "section", "grid", "snap", "look straight", "body in the way"],
-   ["Skizzenpalette", "senkrecht ansehen", "Schnittansicht", "Schnitt", "Raster", "Fangen", "gerade draufsehen", "Körper im Weg"]),
+  (["sketch palette", "look at", "slice", "section", "grid", "snap", "look straight", "body in the way", "missing dimensions", "fully defined", "under-constrained", "complete dimensions"],
+   ["Skizzenpalette", "senkrecht ansehen", "Schnittansicht", "Schnitt", "Raster", "Fangen", "gerade draufsehen", "Körper im Weg", "fehlende Maße", "voll bestimmt", "unterbestimmt", "Maße ergänzen"]),
   ("The panel on the right while you sketch: turn the view straight onto the sketch, cut away what lies in front of it, switch the grid and snapping, and finish the sketch.",
    "Das Panel rechts beim Skizzieren: Ansicht gerade auf die Skizze drehen, Davorliegendes wegschneiden, Raster und Fangen schalten und die Skizze fertig stellen."),
   [("The Sketch Palette appears on the right, below the view cube, while you edit a sketch.",
@@ -1629,11 +1629,15 @@ A("sketch_palette", S, "Palette_LookAt", ("Sketch Palette", "Skizzenpalette"),
     "Fangen schaltet das Einrasten an oder aus: Enden und Ecken rasten an Punkten und Linien ein, Linien an vollen Grad."),
    ("Construction switches between drawing normal and construction geometry; with lines selected it converts them.",
     "Konstruktion schaltet zwischen normaler Geometrie und Konstruktion um; mit gewählten Linien wandelt es diese um."),
+   ("What's missing: a row tells you how many dimensions the sketch still needs (e.g. 4 dimensions missing), or Fully defined. Click it and MyCAD adds them the way you most likely mean: symmetric to the origin if the shape sits centered on it, then the sizes, then the distance to the origin.",
+    "Was fehlt: Eine Zeile sagt, wie viele Maße der Skizze noch fehlen (z. B. 4 Maße fehlen), oder Voll bestimmt. Ein Klick darauf ergänzt sie so, wie du es am wahrscheinlichsten meinst: symmetrisch zum Ursprung, wenn die Form mittig darauf liegt, dann die Größen, dann der Abstand zum Ursprung."),
+   ("Show What Can Move selects everything that is not fully defined yet, so you see where a dimension is missing.",
+    "Zeigen, was sich bewegen kann wählt alles, was noch nicht voll bestimmt ist; so siehst du, wo ein Maß fehlt."),
    ("Finish Sketch, the blue button at the bottom, leaves the sketch.", "Skizze fertig stellen, der blaue Knopf unten, verlässt die Skizze.")],
   tips=[("To draw freely just once, hold Shift instead of switching Snap off.",
          "Um nur einmal frei zu zeichnen, halte Umschalt, statt Fangen auszuschalten."),
         TOOLPARAMS],
-  commands=["Sketcher_ViewSketch", "Sketcher_ViewSection", "Sketcher_Grid", "Sketcher_Snap"],
+  commands=["Sketcher_ViewSketch", "Sketcher_ViewSection", "Sketcher_Grid", "Sketcher_Snap", "Design_SketchComplete", "Sketcher_SelectElementsWithDoFs"],
   see=["sketch_basics", "sketch_construction", "sketch_finish"])
 
 # --- Skizze: Abhängigkeiten -----------------------------------------------------------------------------------------

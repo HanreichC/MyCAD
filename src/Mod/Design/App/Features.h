@@ -21,6 +21,11 @@ class DocumentObjectGroup;
 class Part;
 }  // namespace App
 
+namespace Sketcher
+{
+class SketchObject;
+}  // namespace Sketcher
+
 /// Fusion-artiges Datenmodell:
 /// - Ein Design hat eine Root-Komponente (App::Part, Type "Design") mit Ordnern "Bodies" und "Sketches".
 /// - Features (Extrude, …) erzeugen oder verändern Bodies. Ein Body merkt sich nur sein letztes Feature (Tip).
@@ -157,6 +162,11 @@ struct QuickMeasure
     Base::Vector3d anchor;
 };
 DesignExport QuickMeasure quickMeasure(const std::vector<TopoDS_Shape>& shapes);
+/// "Was fehlt noch?" (Phase 11.6): Maße, die der Skizze fehlen, nach Absicht ergänzen. Ein Profil mittig um den
+/// Ursprung wird symmetrisch zu ihm, dann Längen, Durchmesser und Radien, dann die Lage (Abstand zum Ursprung in x und
+/// y), sonst Waagrecht/Senkrecht/Winkel. Jedes Maß bleibt nur, wenn es einen Freiheitsgrad nimmt (kein Widerspruch,
+/// nichts doppelt). Liefert die Zahl der neuen Maße; dof: was danach noch frei ist.
+DesignExport int completeDimensions(Sketcher::SketchObject* sketch, int& dof);
 /// Druckrichtung des Designs (global, "nach oben"); Vorgabe +Z. Gespeichert am Wurzel-Bauteil.
 DesignExport Base::Vector3d printUp(App::Document* doc);
 DesignExport void setPrintUp(App::Document* doc, const Base::Vector3d& up);

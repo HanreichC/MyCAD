@@ -36,7 +36,9 @@ A design is made of **bodies** in **components**. The root component is the desi
 
 - The **Sketch Palette** on the right: **Look At** turns the view straight onto the sketch again, **Slice** cuts away
   what lies in front of the sketch plane, **Grid** and **Snap** switch the grid and snapping, **Construction** draws
-  helper lines, and the blue **Finish Sketch** leaves the sketch.
+  helper lines, and the blue **Finish Sketch** leaves the sketch. One row says how many **dimensions are missing**
+  (or *Fully defined*); click it and MyCAD adds them by intent: symmetric when the shape is centered on the origin,
+  then the sizes, then its distance to the origin. **Show What Can Move** selects what is still free.
 
   ![Sketch Palette](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_palette.gif)
 

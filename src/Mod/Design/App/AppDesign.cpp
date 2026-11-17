@@ -12,6 +12,7 @@
 #include <Base/PyObjectBase.h>
 #include <Base/VectorPy.h>
 #include <Mod/Part/App/TopoShapePy.h>
+#include <Mod/Sketcher/App/SketchObject.h>
 #include <CXX/Extensions.hxx>
 
 #include "Features.h"
@@ -64,6 +65,8 @@ public:
                            "printCheck(body[, up, angle, wall]): dict of overhang, bed and thin areas (mm²) and triangles");
         add_varargs_method("printFixes", &Module::printFixes,
                            "printFixes(doc): [(feature name, label, property, value)] that make the design print better");
+        add_varargs_method("completeDimensions", &Module::completeDimensions,
+                           "completeDimensions(sketch): (dimensions added, degrees of freedom left)");
         add_varargs_method("quickMeasure", &Module::quickMeasure,
                            "quickMeasure(shape[, shape]): dict of distance, angle, diameter (missing ones absent) and anchor");
         add_varargs_method("printUp", &Module::printUp, "printUp(doc): print direction of the design (up)");
@@ -310,6 +313,13 @@ private:
                                   Py::Float(f.value)));
         }
         return out;
+    }
+    Py::Object completeDimensions(const Py::Tuple& args)
+    {
+        auto sketch = obj<Sketcher::SketchObject>(args[0]);
+        int dof = 0;
+        const int added = Design::completeDimensions(sketch, dof);
+        return Py::TupleN(Py::Long(added), Py::Long(dof));
     }
     Py::Object quickMeasure(const Py::Tuple& args)
     {

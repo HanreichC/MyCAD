@@ -6,6 +6,7 @@
 #include <App/Origin.h>
 #include <App/Part.h>
 #include <Gui/Application.h>
+#include <Gui/Action.h>
 #include <Gui/Command.h>
 #include <Gui/Control.h>
 #include <Gui/Document.h>
@@ -343,6 +344,67 @@ protected:
 
 private:
     std::function<void(App::Document*)> run;
+};
+
+void toolHint(const QString& tool, const QString& text);
+
+/// Phase 11.6 "Was fehlt noch?" in der Sketch Palette: die Zeile sagt, wie viele Maße fehlen ("Fully defined", wenn
+/// nichts), ein Klick ergänzt sie nach Absicht (Design::completeDimensions), in einer Transaktion.
+class SketchCompleteCommand: public DesignCommand
+{
+public:
+    SketchCompleteCommand()
+        : DesignCommand("Design_SketchComplete", "Complete Dimensions",
+                        "Complete Dimensions: add the dimensions the sketch still needs", "Sketcher_Dimension", "",
+                        [](App::Document*) { complete(); })
+    {}
+
+private:
+    static Sketcher::SketchObject* edited()
+    {
+        Gui::Document* gdoc = Gui::Application::Instance->activeDocument();
+        auto vp = gdoc ? dynamic_cast<Gui::ViewProviderDocumentObject*>(gdoc->getInEdit()) : nullptr;
+        return vp ? freecad_cast<Sketcher::SketchObject*>(vp->getObject()) : nullptr;
+    }
+
+    static void complete()
+    {
+        Sketcher::SketchObject* sketch = edited();
+        if (!sketch) {
+            return;
+        }
+        App::Document* doc = sketch->getDocument();
+        doc->openTransaction("Complete Dimensions");
+        int dof = 0;
+        const int added = Design::completeDimensions(sketch, dof);
+        doc->commitTransaction();
+        sketch->touch();
+        doc->recompute();
+        toolHint(T("Complete Dimensions"), dof == 0 ? T("Added %1 dimensions. The sketch is fully defined.").arg(added)
+                                                    : T("Added %1 dimensions. Still free: %2 (e.g. construction lines).")
+                                                          .arg(added)
+                                                          .arg(dof));
+    }
+
+protected:
+    bool isActive() override
+    {
+        Sketcher::SketchObject* sketch = edited();
+        const int dof = sketch ? sketch->getLastDoF() : 0;
+        if (QAction* action = getAction() ? getAction()->action() : nullptr) {
+            // Text der Zeile in der Palette (Shell liest paletteText, wenn sich die Aktion ändert)
+            const QString text = dof == 1 ? T("1 dimension missing")
+                                 : dof > 1 ? T("%1 dimensions missing").arg(dof)
+                                           : T("Fully defined");
+            if (action->property("paletteText").toString() != text) {
+                action->setProperty("paletteText", text);
+                action->setToolTip(text + QStringLiteral(". ") + (dof > 0 ? T("Click to add the missing dimensions: symmetric when centered, then "
+                                               "sizes, then the distance to the origin")
+                                           : T("Nothing missing: every element has its size and place")));
+            }
+        }
+        return sketch && dof > 0;
+    }
 };
 
 /// Neues Post-it. Auch mitten in der Skizze (man rechnet oft beim Zeichnen), aber nicht in einem Werkzeug-Dialog:
@@ -4495,6 +4557,7 @@ void CreateDesignCommands()
 {
     static QuickMeasureChip quickMeasure;
     auto& mgr = Gui::Application::Instance->commandManager();
+    mgr.addCommand(new SketchCompleteCommand);
     mgr.addCommand(new DesignCommand("Design_CreateSketch", "Create Sketch",
                                      "Create Sketch: click a plane or planar face to sketch on",
                                      "Sketcher_NewSketch", "S", createSketchCommand));

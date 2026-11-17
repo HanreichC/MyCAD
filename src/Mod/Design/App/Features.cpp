@@ -2093,6 +2093,124 @@ Design::QuickMeasure Design::quickMeasure(const std::vector<TopoDS_Shape>& shape
     return m;
 }
 
+int Design::completeDimensions(Sketcher::SketchObject* sketch, int& dof)
+{
+    using Sketcher::Constraint;
+    using Sketcher::PointPos;
+    const auto freedom = [sketch] {
+        sketch->solve();
+        return sketch->getLastDoF();
+    };
+    int added = 0;
+    dof = freedom();
+    // nur behalten, was einen Freiheitsgrad nimmt; sonst (doppelt, Widerspruch) wieder weg
+    const auto tryAdd = [&](Sketcher::ConstraintType type, int first, PointPos firstPos, int second, PointPos secondPos,
+                            double value, int third = Sketcher::GeoEnum::GeoUndef, PointPos thirdPos = PointPos::none) {
+        if (dof <= 0) {
+            return false;
+        }
+        auto c = std::make_unique<Constraint>();
+        c->Type = type;
+        c->First = first;
+        c->FirstPos = firstPos;
+        c->Second = second;
+        c->SecondPos = secondPos;
+        c->Third = third;
+        c->ThirdPos = thirdPos;
+        c->setValue(value);
+        const int index = sketch->addConstraint(std::move(c));
+        const int now = freedom();
+        if (now < dof && !sketch->getLastHasConflicts() && !sketch->getLastHasRedundancies()) {
+            dof = now;
+            ++added;
+            return true;
+        }
+        sketch->delConstraint(index);
+        dof = freedom();
+        return false;
+    };
+    // je Zugriff neu holen: jedes Lösen kann die Geometrie-Objekte ersetzen
+    const int count = sketch->getHighestCurveIndex() + 1;
+    const auto drawn = [sketch](int i) {
+        const Part::Geometry* g = sketch->getGeometry(i);
+        return g && !Sketcher::GeometryFacade::getConstruction(g) ? g : nullptr;
+    };
+    // 1. Absicht "mittig": Profil um den Ursprung zentriert -> die zwei äußersten Ecken symmetrisch zum Ursprung
+    Base::BoundBox3d box;
+    std::pair<int, PointPos> low {-1, PointPos::none}, high {-1, PointPos::none};
+    double lowSum = 1e100, highSum = -1e100;
+    for (int i = 0; i < count; ++i) {
+        auto line = dynamic_cast<const Part::GeomLineSegment*>(drawn(i));
+        if (!line) {
+            continue;
+        }
+        for (const auto& [p, pos] : {std::pair {line->getStartPoint(), PointPos::start}, {line->getEndPoint(), PointPos::end}}) {
+            box.Add(p);
+            if (p.x + p.y < lowSum) {
+                lowSum = p.x + p.y;
+                low = {i, pos};
+            }
+            if (p.x + p.y > highSum) {
+                highSum = p.x + p.y;
+                high = {i, pos};
+            }
+        }
+    }
+    if (box.IsValid() && low.first >= 0 && low != high) {
+        const double size = std::max(box.LengthX(), box.LengthY());
+        if (Base::Vector3d(box.GetCenter().x, box.GetCenter().y, 0).Length() < 0.02 * size) {
+            tryAdd(Sketcher::Symmetric, low.first, low.second, high.first, high.second, 0, Sketcher::GeoEnum::RtPnt,
+                   PointPos::start);
+        }
+    }
+    // 2. Größen: Längen, Durchmesser, Radien
+    for (int i = 0; i < count && dof > 0; ++i) {
+        const Part::Geometry* g = drawn(i);
+        if (auto line = dynamic_cast<const Part::GeomLineSegment*>(g)) {
+            tryAdd(Sketcher::Distance, i, PointPos::none, Sketcher::GeoEnum::GeoUndef, PointPos::none,
+                   (line->getEndPoint() - line->getStartPoint()).Length());
+        }
+        else if (auto circle = dynamic_cast<const Part::GeomCircle*>(g)) {
+            tryAdd(Sketcher::Diameter, i, PointPos::none, Sketcher::GeoEnum::GeoUndef, PointPos::none,
+                   2 * circle->getRadius());
+        }
+        else if (auto arc = dynamic_cast<const Part::GeomArcOfCircle*>(g)) {
+            tryAdd(Sketcher::Radius, i, PointPos::none, Sketcher::GeoEnum::GeoUndef, PointPos::none, arc->getRadius());
+        }
+    }
+    // 3. Lage und Richtung von dem, was noch frei ist: Punkte mit Abstand zum Ursprung, Linien waagrecht/senkrecht/Winkel
+    for (int pass = 0; pass < 3 && dof > 0; ++pass) {
+        std::vector<std::pair<int, PointPos>> loose;
+        sketch->getGeometryWithDependentParameters(loose);
+        for (const auto& [geo, pos] : loose) {
+            if (geo < 0 || geo >= count || !drawn(geo)) {
+                continue;
+            }
+            // freie Kante: Lage an ihrem Bezugspunkt (Kreis/Bogen: Mitte, Linie: Anfang), Linie zuerst ihre Richtung
+            auto line = dynamic_cast<const Part::GeomLineSegment*>(sketch->getGeometry(geo));
+            // ein Vollkreis hat nur seine Mitte (der Solver meldet sie als start)
+            const bool full = dynamic_cast<const Part::GeomCircle*>(sketch->getGeometry(geo));
+            const PointPos at = full ? PointPos::mid : pos != PointPos::none ? pos : line ? PointPos::start : PointPos::mid;
+            if (line) {  // auch bei freiem Punkt: der Solver schreibt eine freie Drehung dem Anfang zu
+                const Base::Vector3d d = line->getEndPoint() - line->getStartPoint();
+                if (std::abs(d.y) <= 0.02 * std::abs(d.x)) {
+                    tryAdd(Sketcher::Horizontal, geo, PointPos::none, Sketcher::GeoEnum::GeoUndef, PointPos::none, 0);
+                }
+                else if (std::abs(d.x) <= 0.02 * std::abs(d.y)) {
+                    tryAdd(Sketcher::Vertical, geo, PointPos::none, Sketcher::GeoEnum::GeoUndef, PointPos::none, 0);
+                }
+                else {
+                    tryAdd(Sketcher::Angle, geo, PointPos::none, Sketcher::GeoEnum::GeoUndef, PointPos::none, std::atan2(d.y, d.x));
+                }
+            }
+            const Base::Vector3d p = sketch->getPoint(geo, at);
+            tryAdd(Sketcher::DistanceX, Sketcher::GeoEnum::RtPnt, PointPos::start, geo, at, p.x);
+            tryAdd(Sketcher::DistanceY, Sketcher::GeoEnum::RtPnt, PointPos::start, geo, at, p.y);
+        }
+    }
+    return added;
+}
+
 Design::PrintCheckResult Design::printCheck(Body* body)
 {
     ParameterGrp::handle params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");

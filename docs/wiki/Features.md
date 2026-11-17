@@ -45,6 +45,9 @@ or search for it with Ctrl+K).
   ![Dimension](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_dimension.gif)
 
 - **Sketch Palette:** Look At, Slice (cut away what's in front of the sketch), Grid, Snap, Construction, Finish Sketch.
+- **What's missing:** the palette says how many dimensions the sketch still needs; one click adds them by intent
+  (symmetric when centered on the origin, then sizes, then the distance to the origin). Show What Can Move selects
+  what is still free.
 
   ![Sketch Palette](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_palette.gif)
 

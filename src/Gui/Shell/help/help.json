@@ -7807,7 +7807,9 @@
     "Sketcher_ViewSketch",
     "Sketcher_ViewSection",
     "Sketcher_Grid",
-    "Sketcher_Snap"
+    "Sketcher_Snap",
+    "Design_SketchComplete",
+    "Sketcher_SelectElementsWithDoFs"
    ],
    "title": {
     "en": "Sketch Palette",
@@ -7822,7 +7824,11 @@
      "grid",
      "snap",
      "look straight",
-     "body in the way"
+     "body in the way",
+     "missing dimensions",
+     "fully defined",
+     "under-constrained",
+     "complete dimensions"
     ],
     "de": [
      "Skizzenpalette",
@@ -7832,7 +7838,11 @@
      "Raster",
      "Fangen",
      "gerade draufsehen",
-     "Körper im Weg"
+     "Körper im Weg",
+     "fehlende Maße",
+     "voll bestimmt",
+     "unterbestimmt",
+     "Maße ergänzen"
     ]
    },
    "summary": {
@@ -7847,6 +7857,8 @@
      "Grid shows or hides the grid of the sketch.",
      "Snap switches snapping on or off: ends and corners catching on points and lines, lines on whole degrees.",
      "Construction switches between drawing normal and construction geometry; with lines selected it converts them.",
+     "What's missing: a row tells you how many dimensions the sketch still needs (e.g. 4 dimensions missing), or Fully defined. Click it and MyCAD adds them the way you most likely mean: symmetric to the origin if the shape sits centered on it, then the sizes, then the distance to the origin.",
+     "Show What Can Move selects everything that is not fully defined yet, so you see where a dimension is missing.",
      "Finish Sketch, the blue button at the bottom, leaves the sketch."
     ],
     "de": [
@@ -7856,6 +7868,8 @@
      "Raster blendet das Raster der Skizze ein oder aus.",
      "Fangen schaltet das Einrasten an oder aus: Enden und Ecken rasten an Punkten und Linien ein, Linien an vollen Grad.",
      "Konstruktion schaltet zwischen normaler Geometrie und Konstruktion um; mit gewählten Linien wandelt es diese um.",
+     "Was fehlt: Eine Zeile sagt, wie viele Maße der Skizze noch fehlen (z. B. 4 Maße fehlen), oder Voll bestimmt. Ein Klick darauf ergänzt sie so, wie du es am wahrscheinlichsten meinst: symmetrisch zum Ursprung, wenn die Form mittig darauf liegt, dann die Größen, dann der Abstand zum Ursprung.",
+     "Zeigen, was sich bewegen kann wählt alles, was noch nicht voll bestimmt ist; so siehst du, wo ein Maß fehlt.",
      "Skizze fertig stellen, der blaue Knopf unten, verlässt die Skizze."
     ]
    },

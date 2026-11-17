@@ -3189,6 +3189,11 @@ QWidget* toolPalette(const char* heading, std::initializer_list<PaletteRow> rows
         QObject::connect(action, &QAction::changed, btn, [btn, action] {
             btn->setCheckable(action->isCheckable());
             btn->setChecked(action->isChecked());
+            // Zeilen mit Zustand im Text (z. B. "2 dimensions missing", Phase 11.6)
+            if (const QVariant live = action->property("paletteText"); live.isValid()) {
+                btn->setText(live.toString());
+                btn->setToolTip(action->toolTip());
+            }
         });
         lay->addWidget(btn);
     }
@@ -5579,7 +5584,9 @@ void Gui::Shell::install()
                                                 {"Slice", "Sketcher_ViewSection", "Palette_Section"},
                                                 {"Grid", "Sketcher_Grid", "Palette_Grid"},
                                                 {"Snap", "Sketcher_Snap", "Palette_Snap"},
-                                                {"Construction", "Sketcher_ToggleConstruction", "Sketcher_ToggleConstruction"}},
+                                                {"Construction", "Sketcher_ToggleConstruction", "Sketcher_ToggleConstruction"},
+                                                {"Complete Dimensions", "Design_SketchComplete", "Sketcher_Dimension"},
+                                                {"Show What Can Move", "Sketcher_SelectElementsWithDoFs", "Nav_Select"}},
                                                "Sketcher_LeaveSketch", "Finish Sketch"),
                                    Token::RadiusPanel, true);
     // Scribble: Zeichenwerkzeuge oben, Blatt-Optionen hier, darüber die Suche in der Handschrift (setScribbleFind)
