@@ -419,6 +419,11 @@ PyMOD_INIT_FUNC(Design)
     }
     PyObject* mod = Base::Interpreter().addModule(new Design::Module);
 
+    // Externe Kanten an einem Body erzeugten einen Abhängigkeitskreis (Skizze -> Body -> späteres Feature -> Skizze):
+    // das Dokument rechnete dann nie fertig, alles wurde langsam und Profile fehlten
+    Sketcher::SketchObject::externalRefHook = [](const Sketcher::SketchObject* sketch, App::DocumentObject*& obj,
+                                                 std::string& element) { Design::sketchRef(sketch, obj, element); };
+
     // Idee 3: ändert sich ein Parameter anderswo (Maß am Modell, Parameter-Dialog), zieht die Notiz nach
     App::GetApplication().signalChangedObject.connect([](const App::DocumentObject& obj, const App::Property& prop) {
         if (obj.isDerivedFrom<App::VarSet>() && std::strcmp(obj.Label.getValue(), "Parameters") == 0 && prop.getName()) {

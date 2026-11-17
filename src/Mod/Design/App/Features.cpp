@@ -143,7 +143,8 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
     auto profiles = freecad_cast<Profiles*>(profile.getValue());
     sketch = profiles ? freecad_cast<Part::Feature*>(profiles->Sketch.getValue()) : nullptr;
     if (!sketch) {
-        error = "Select a profile";
+        // Hatte der Schritt schon ein Profil, ist seine Skizze gelöscht: wie ein verlorenes Profil überspringen
+        error = keys.getValues().empty() ? "Select a profile" : LostProfile;
         return {};
     }
     const Part::TopoShape all = profiles->Shape.getShape();
@@ -1401,6 +1402,35 @@ void Design::stableRef(App::DocumentObject*& obj, std::string& element)
     const std::string name = elementName(tip->Shape.getShape().getShape(), sub);
     if (!name.empty()) {
         obj = tip;
+        element = name;
+    }
+}
+
+void Design::sketchRef(const App::DocumentObject* sketch, App::DocumentObject*& obj, std::string& element)
+{
+    auto body = freecad_cast<Body*>(obj);
+    App::DocumentObject* state = body ? stateAtMarker(body) : nullptr;
+    if (!state || element.empty()) {
+        return;
+    }
+    // Zustand vor der Skizze: spätere Schritte dieses Bodies zurückgehen (eine ältere Skizze bearbeitet)
+    const auto items = timeline(sketch->getDocument());
+    const auto at = [&](const App::DocumentObject* o) { return std::ranges::find(items, o) - items.begin(); };
+    for (auto f = freecad_cast<Feature*>(state); f && at(f) > at(sketch); f = freecad_cast<Feature*>(state)) {
+        const auto& bodies = f->Bodies.getValues();
+        const auto& bases = f->BaseFeatures.getValues();
+        const auto idx = std::ranges::find(bodies, body) - bodies.begin();
+        state = idx < static_cast<long>(bases.size()) ? bases[idx] : nullptr;
+    }
+    auto feature = freecad_cast<Part::Feature*>(state);
+    if (!feature) {
+        return;
+    }
+    // Gleiche Kante im Zustand suchen; nicht gefunden: Namen behalten (so hieß sie, als der Body dieser Zustand war)
+    const TopoDS_Shape sub = body->Shape.getShape().getSubShape(element.c_str(), true);
+    const std::string name = elementName(feature->Shape.getShape().getShape(), sub);
+    obj = feature;
+    if (!name.empty()) {
         element = name;
     }
 }
@@ -3379,19 +3409,13 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& toolIn)
         if (bodies.empty() || bases.size() != bodies.size()) {
             return new App::DocumentObjectExecReturn("Select a body to join, cut or intersect");
         }
-        const Base::Placement here = Design::componentOf(this)->globalPlacement();
         for (size_t i = 0; i < bodies.size(); ++i) {
             auto base = freecad_cast<Feature*>(bases[i]);
             if (!base) {
                 return new App::DocumentObjectExecReturn("Body has no previous feature");
             }
             const Part::TopoShape baseShape = base->shapeFor(bodies[i]);
-            // Phase 11.8: Körper einer anderen Komponente -> Werkzeug in deren Koordinaten (Cut durch alles darunter)
-            const Base::Matrix4D m = (Design::componentOf(bodies[i])->globalPlacement().inverse() * here).toMatrix();
-            const Part::TopoShape tool = m.isUnity() ? toolIn
-                                                     : Part::TopoShape(0, getDocument()->getStringHasher())
-                                                           .makeElementTransform(toolIn, m, nullptr, Part::CheckScale::noScaleCheck,
-                                                                                 Part::CopyType::copy);
+            const Part::TopoShape tool = toolFor(i, toolIn);
             Part::TopoShape res(0, getDocument()->getStringHasher());
             switch (op()) {
                 case Op::Join:
@@ -3413,6 +3437,16 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& toolIn)
 
     setResults(results);
     return StdReturn;
+}
+
+Part::TopoShape Feature::toolFor(size_t i, const Part::TopoShape& tool) const
+{
+    // Phase 11.8: Körper einer anderen Komponente -> Werkzeug in deren Koordinaten (Cut durch alles darunter)
+    const Base::Placement here = Design::componentOf(this)->globalPlacement();
+    const Base::Matrix4D m = (Design::componentOf(Bodies.getValues()[i])->globalPlacement().inverse() * here).toMatrix();
+    return m.isUnity() ? tool
+                       : Part::TopoShape(0, getDocument()->getStringHasher())
+                             .makeElementTransform(tool, m, nullptr, Part::CheckScale::noScaleCheck, Part::CopyType::copy);
 }
 
 void Feature::setResults(const std::vector<Part::TopoShape>& results)
@@ -4959,9 +4993,34 @@ PressPull::PressPull()
     Size.setStatus(App::Property::Hidden, true);
 }
 
+bool PressPull::makeTool(Part::TopoShape& tool, std::string& error) const
+{
+    const double d = Distance.getValue();
+    std::vector<Part::TopoShape> prisms;
+    for (const auto& face : const_cast<PressPull*>(this)->elements(baseShape(0), TopAbs_FACE)) {  // pflegt nur Ausgaben
+        BRepAdaptor_Surface surf(TopoDS::Face(face.getShape()));
+        if (surf.GetType() != GeomAbs_Plane) {
+            error = "Only flat faces can be pushed through";
+            return false;
+        }
+        gp_Dir n = surf.Plane().Axis().Direction();  // nach außen zeigende Normale
+        if (face.getShape().Orientation() == TopAbs_REVERSED) {
+            n.Reverse();
+        }
+        prisms.push_back(Part::TopoShape(0, getDocument()->getStringHasher()).makeElementPrism(face, gp_Vec(n) * d));
+    }
+    if (prisms.empty()) {
+        error = "Select one or more faces";
+        return false;
+    }
+    tool = fuseAll(prisms, getDocument()->getStringHasher());
+    return true;
+}
+
 App::DocumentObjectExecReturn* PressPull::compute()
 {
-    if (Bodies.getSize() != 1 || BaseFeatures.getSize() != 1) {
+    // Bodies[0] trägt die Flächen; weitere Bodies schneidet das Hineindrücken mit (wie Extrude-Cut durch alles)
+    if (Bodies.getSize() < 1 || BaseFeatures.getSize() != Bodies.getSize()) {
         return new App::DocumentObjectExecReturn("Select faces of one body");
     }
     const double d = Distance.getValue();
@@ -4985,31 +5044,30 @@ App::DocumentObjectExecReturn* PressPull::compute()
         setResults({res});
         return StdReturn;
     }
-    std::vector<Part::TopoShape> prisms;
-    for (const auto& face : faces) {
-        BRepAdaptor_Surface surf(TopoDS::Face(face.getShape()));
-        gp_Dir n = surf.Plane().Axis().Direction();  // nach außen zeigende Normale
-        if (face.getShape().Orientation() == TopAbs_REVERSED) {
-            n.Reverse();
+    Part::TopoShape tool;
+    std::string error;
+    if (!makeTool(tool, error)) {
+        return new App::DocumentObjectExecReturn(error);
+    }
+    std::vector<Part::TopoShape> results;
+    for (int i = 0; i < Bodies.getSize(); ++i) {
+        if (i > 0 && d > 0) {  // Herausziehen ändert nur den eigenen Körper
+            results.push_back(baseShape(i));
+            continue;
         }
-        prisms.push_back(Part::TopoShape(0, getDocument()->getStringHasher())
-                             .makeElementPrism(face, gp_Vec(n) * d));
+        Part::TopoShape res(0, getDocument()->getStringHasher());
+        if (d > 0) {
+            res.makeElementFuse({shape, tool});
+        }
+        else {
+            res.makeElementCut({baseShape(i), toolFor(i, tool)});
+        }
+        if (res.isNull() || res.countSubShapes(TopAbs_SOLID) == 0) {
+            return new App::DocumentObjectExecReturn("Result would be empty");
+        }
+        results.push_back(res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched));
     }
-    if (prisms.empty()) {
-        return new App::DocumentObjectExecReturn("Select one or more faces");
-    }
-    const Part::TopoShape tool = fuseAll(prisms, getDocument()->getStringHasher());
-    Part::TopoShape res(0, getDocument()->getStringHasher());
-    if (d > 0) {
-        res.makeElementFuse({shape, tool});
-    }
-    else {
-        res.makeElementCut({shape, tool});
-    }
-    if (res.isNull() || res.countSubShapes(TopAbs_SOLID) == 0) {
-        return new App::DocumentObjectExecReturn("Result would be empty");
-    }
-    setResults({res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched)});
+    setResults(results);
     return StdReturn;
 }
 

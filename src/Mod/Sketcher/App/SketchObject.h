@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include <App/FeaturePython.h>
 #include <App/IndexedName.h>
 #include <App/PropertyFile.h>
@@ -249,6 +251,9 @@ public:
         bool defining = false,
         bool intersection = false
     );
+    /// MyCAD: biegt den Bezug einer externen Kante um, bevor er eingetragen wird, und beim Laden älterer Dateien.
+    /// Design setzt das: Körper -> sein Zustand vor der Skizze in der Timeline (sonst Abhängigkeitskreis).
+    static std::function<void(const SketchObject*, App::DocumentObject*&, std::string&)> externalRefHook;
     /** delete external
      *  ExtGeoId >= 0 with 0 corresponding to the first user defined
      *  external geometry

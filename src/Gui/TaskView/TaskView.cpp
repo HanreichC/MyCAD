@@ -974,6 +974,11 @@ void TaskView::accept(App::Document* doc)
         Base::Console().warning("ActiveDialog was null in call to TaskView::accept()\n");
         return;
     }
+    // MyCAD: ein zweiter Klick, den ein Fortschrittsbalken während der Neuberechnung durchlässt, kommt hier wieder an
+    // (verschachtelt im ersten); das Feature ist dann schon gelöscht -> Absturz. Nur der erste Klick zählt.
+    if (foundTaskInfo->ActiveDialog->property("taskview_accept_or_reject").isValid()) {
+        return;
+    }
 
     // Make sure that if 'accept' calls 'closeDialog' the deletion is postponed until
     // the dialog leaves the 'accept' method
@@ -991,6 +996,9 @@ void TaskView::reject(App::Document* doc)
     if (foundTaskInfo == taskInfos.end()) {  // Protect against segfaults due to out-of-order deletions
         Base::Console().warning("ActiveDialog was null in call to TaskView::reject()\n");
         return;
+    }
+    if (foundTaskInfo->ActiveDialog->property("taskview_accept_or_reject").isValid()) {
+        return;  // MyCAD: siehe accept()
     }
 
     // Make sure that if 'reject' calls 'closeDialog' the deletion is postponed until

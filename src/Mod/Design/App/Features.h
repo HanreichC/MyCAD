@@ -194,6 +194,9 @@ DesignExport std::string elementName(const TopoDS_Shape& shape, const TopoDS_Sha
 /// Bezug auf einen Body durch seinen Timeline-Zustand ersetzen (das Feature, das ihn gerade erzeugt hat).
 /// Sonst entsteht ein Kreis, sobald ein Feature aus einer Skizze/Ebene darauf denselben Body verändert.
 DesignExport void stableRef(App::DocumentObject*& obj, std::string& element);
+/// Externe Kante einer Skizze an einem Body: auf den Zustand des Bodies direkt vor der Skizze in der Timeline umhängen
+/// (Sketcher::SketchObject::externalRefHook; gilt für Projizieren, Maß an Körperkante und beim Laden alter Dateien)
+DesignExport void sketchRef(const App::DocumentObject* sketch, App::DocumentObject*& obj, std::string& element);
 
 class DesignExport Body: public Part::Feature
 {
@@ -314,6 +317,8 @@ protected:
     void setResults(const std::vector<Part::TopoShape>& results);
     /// Zustand von Bodies[i] vor diesem Feature
     Part::TopoShape baseShape(size_t i) const;
+    /// Werkzeug aus den Koordinaten dieser Komponente in die von Bodies[i]
+    Part::TopoShape toolFor(size_t i, const Part::TopoShape& tool) const;
 };
 
 class DesignExport Extrude: public Feature
@@ -774,6 +779,8 @@ class DesignExport PressPull: public DressUp
 public:
     PressPull();
     App::PropertyDistance Distance;
+    /// Prismen der ebenen Flächen um Distance (für das Mitschneiden weiterer Körper)
+    bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;
 };
 

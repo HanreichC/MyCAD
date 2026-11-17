@@ -29,6 +29,8 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QTimer>
+#include <optional>
+#include <utility>
 #include <cstring>
 #include <regex>
 #include <QLineEdit>
@@ -73,6 +75,8 @@
 
 #include <BRepAdaptor_Surface.hxx>
 #include <BRepAlgoAPI_Common.hxx>
+#include <BRepBndLib.hxx>
+#include <Bnd_Box.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 #include <BRepGProp.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
@@ -1005,6 +1009,11 @@ public:
         setZValue(5);  // unter den Glass-Panels
         setAcceptHoverEvents(true);
         viewer->scene()->addItem(this);
+        // Ziehen: nur den neuesten Wert rechnen. Jeder Mausschritt rechnete sonst das Feature neu (Boolean), die
+        // Schritte stauten sich und der Griff hing hinterher (~5 Bilder/s). Der Griff zeigt den Wert sofort.
+        pendingTimer.setSingleShot(true);
+        pendingTimer.setInterval(0);
+        QObject::connect(&pendingTimer, &QTimer::timeout, [this] { flush(); });
     }
 
     QRectF boundingRect() const override
@@ -1029,7 +1038,7 @@ public:
         if (!viewer) {
             return;
         }
-        const double d = get();
+        const double d = pending ? *pending : get();
         const QPointF from = viewer->toQPoint(viewer->getPointOnViewport(base));
         tip = viewer->toQPoint(viewer->getPointOnViewport(base + dir * float(d)));
         const Gui::Shell::Theme& th = Gui::Shell::theme();
@@ -1097,13 +1106,22 @@ protected:
         }
         // Punkt auf der Zugachse, der dem Mausstrahl am nächsten liegt
         const SbVec3f onAxis = viewer->getPointOnLine(viewer->fromQPoint(event->scenePos().toPoint()), base, dir);
-        const double d = std::round((onAxis - base).dot(dir) * 10.0) / 10.0;  // auf 0,1 mm rasten
-        set(d);
+        pending = std::round((onAxis - base).dot(dir) * 10.0) / 10.0;  // auf 0,1 mm rasten
+        update();
+        pendingTimer.start();
     }
     void mouseReleaseEvent(QGraphicsSceneMouseEvent*) override
     {
         dragging = false;
+        flush();
         update();
+    }
+    void flush()
+    {
+        pendingTimer.stop();
+        if (auto d = std::exchange(pending, std::nullopt)) {
+            set(*d);
+        }
     }
 
 private:
@@ -1114,6 +1132,8 @@ private:
     QPointF tip;
     bool hovered = false;
     bool dragging = false;
+    std::optional<double> pending;  ///< gezogen, noch nicht gerechnet
+    QTimer pendingTimer;
 };
 
 Gui::View3DInventorViewer* activeViewer(App::Document* doc)
@@ -1940,16 +1960,9 @@ private:
             operationChosen = true;  // ab jetzt entscheidet der Benutzer, nicht mehr die Richtung (autoJoinCut)
             if (this->create) {
                 const bool component = idx == NewComponentIndex;
+                // Die Richtung bleibt, wie gezogen (vorher drehte Cut sie um: aus -5 wurde beim Umschalten +5)
                 setOperation(component ? Design::Feature::Op::NewBody : static_cast<Design::Feature::Op>(idx),
                              selectedBody(), component);
-                // Wie Fusion: Cut zeigt standardmäßig in den Körper hinein (unabhängig vom eingegebenen Abstand)
-                const bool cut = static_cast<Design::Feature::Op>(idx) == Design::Feature::Op::Cut;
-                if (extrude && cut != autoFlipped) {
-                    autoFlipped = cut;
-                    flip->blockSignals(true);
-                    flip->setChecked(!flip->isChecked());
-                    flip->blockSignals(false);
-                }
             }
             else {
                 this->feature->Operation.setValue(idx);
@@ -1983,10 +1996,73 @@ private:
         if (!extrude->makeTool(tool, error) || tool.isNull()) {
             return;
         }
+        std::vector<Design::Body*> hits = bodiesHit(tool);
+        const bool own = std::ranges::any_of(hits, [this](Design::Body* b) {  ///< Treffer in der eigenen Komponente
+            return Design::componentOf(b) == Design::componentOf(feature);
+        });
+        auto want = op;
+        std::vector<Design::Body*> targets = hits;
+        if (automatic) {
+            want = own ? Design::Feature::Op::Cut : faceBody ? Design::Feature::Op::Join : Design::Feature::Op::NewBody;
+            if (!own) {
+                hits.clear();  // nur fremde Körper getroffen: kein Cut
+                targets.clear();
+            }
+            if (hits.empty() && faceBody) {
+                targets = {faceBody};
+            }
+        }
+        else if (hits.empty()) {
+            return;  // Cut von Hand ohne Durchdringung: Ziel-Body aus der Liste bleibt
+        }
+        std::vector<App::DocumentObject*> now(targets.begin(), targets.end());
+        if (want == op && (want == Design::Feature::Op::NewBody || now == feature->Bodies.getValues())) {
+            return;
+        }
+        setOperation(want, targets.empty() ? nullptr : targets.front());
+        if (targets.size() > 1) {
+            Design::detachFromBodies(feature);
+            Design::attachToBodies(feature, targets);
+        }
+        feature->recomputeFeature();
+    }
+
+    /// Press Pull hineindrücken schneidet wie Extrude-Cut durch alle Körper, die das Werkzeug trifft, nicht nur durch
+    /// den eigenen (Fläche des einen Halters bis durch den zweiten). Herausziehen ändert nur den eigenen Körper.
+    void pressThrough(Design::PressPull* pull)
+    {
+        // Nur der neueste Schritt (neu oder gleich wieder bearbeitet): Umhängen nimmt die Zustände am Marker als Basis
+        App::Document* doc = pull->getDocument();
+        const auto items = Design::timeline(doc);
+        const int marker = Design::rollbackMarker(doc);
+        const long at = std::ranges::find(items, pull) - items.begin();
+        if (pull->Bodies.getSize() == 0 || at != (marker < 0 ? static_cast<long>(items.size()) : marker) - 1) {
+            return;
+        }
+        auto owner = static_cast<Design::Body*>(pull->Bodies.getValues().front());
+        std::vector<Design::Body*> targets {owner};
+        Part::TopoShape tool;
+        std::string error;
+        if (pull->Distance.getValue() < 0 && pull->makeTool(tool, error)) {
+            for (auto b : bodiesHit(tool)) {
+                if (b != owner) {
+                    targets.push_back(b);
+                }
+            }
+        }
+        if (std::vector<App::DocumentObject*>(targets.begin(), targets.end()) != pull->Bodies.getValues()) {
+            Design::detachFromBodies(pull);
+            Design::attachToBodies(pull, targets);
+        }
+    }
+
+    /// Körper, durch die tool geht (gegen den Zustand vor diesem Feature: die Vorschau höhlt sie aus). Ein Körper, den
+    /// tool ganz enthält, zählt nicht (ein zweiter Extrude desselben Profils würde ihn sonst wegschneiden).
+    std::vector<Design::Body*> bodiesHit(const Part::TopoShape& tool) const
+    {
         const auto& attached = feature->Bodies.getValues();
         const auto& bases = feature->BaseFeatures.getValues();
         std::vector<Design::Body*> hits;
-        bool own = false;  ///< ein getroffener Körper liegt in der Komponente des Features
         for (auto obj : feature->getDocument()->getObjectsOfType(Design::Body::getClassTypeId())) {
             auto candidate = static_cast<Design::Body*>(obj);
             // Auch Körper anderer Komponenten (11.8: ein Cut geht durch alles darunter). Ob es ein Cut wird, entscheiden
@@ -2013,40 +2089,23 @@ private:
             if (!m.isUnity()) {
                 toolThere.transformShape(m, true);
             }
+            // Schneller Vorfilter: getrennte Hüllquader können sich nicht schneiden (der Boolean je Körper kostete bei
+            // jedem Ziehschritt spürbar Zeit)
+            Bnd_Box toolBox, solidBox;
+            BRepBndLib::Add(toolThere.getShape(), toolBox);
+            BRepBndLib::Add(solid, solidBox);
+            if (toolBox.IsOut(solidBox)) {
+                continue;
+            }
             BRepAlgoAPI_Common common(solid, toolThere.getShape());
             if (common.IsDone()) {
                 BRepGProp::VolumeProperties(common.Shape(), shared);
             }
             if (shared.Mass() > 1e-6 && shared.Mass() < whole.Mass() * (1 - 1e-6)) {
                 hits.push_back(candidate);
-                own = own || Design::componentOf(candidate) == Design::componentOf(feature);
             }
         }
-        auto want = op;
-        std::vector<Design::Body*> targets = hits;
-        if (automatic) {
-            want = own ? Design::Feature::Op::Cut : faceBody ? Design::Feature::Op::Join : Design::Feature::Op::NewBody;
-            if (!own) {
-                hits.clear();  // nur fremde Körper getroffen: kein Cut
-                targets.clear();
-            }
-            if (hits.empty() && faceBody) {
-                targets = {faceBody};
-            }
-        }
-        else if (hits.empty()) {
-            return;  // Cut von Hand ohne Durchdringung: Ziel-Body aus der Liste bleibt
-        }
-        std::vector<App::DocumentObject*> now(targets.begin(), targets.end());
-        if (want == op && (want == Design::Feature::Op::NewBody || now == feature->Bodies.getValues())) {
-            return;
-        }
-        setOperation(want, targets.empty() ? nullptr : targets.front());
-        if (targets.size() > 1) {
-            Design::detachFromBodies(feature);
-            Design::attachToBodies(feature, targets);
-        }
-        feature->recomputeFeature();
+        return hits;
     }
 
     /// Eine Fläche steht für alle ihre Kanten (wie beim Rechnen): gezählt werden die Kanten, nicht die Auswahl
@@ -2386,6 +2445,7 @@ private:
         }
         if (auto pull = freecad_cast<Design::PressPull*>(feature)) {
             pull->Distance.setValue(distance->value().getValue());
+            pressThrough(pull);
         }
         else if (dressUp && distance) {
             dressUp->Size.setValue(distance->value().getValue());
@@ -2608,7 +2668,6 @@ private:
     Design::Pattern* pattern;
     Design::Hole* hole;
     bool create;
-    bool autoFlipped = false;
     bool operationChosen = false;
     Design::Body* faceBody = nullptr;  ///< Körper, auf dessen Fläche die Skizze liegt (beim Anlegen)  ///< Operation von Hand gewählt: autoJoinCut schaltet nicht mehr um
     Design::Body* newBody = nullptr;

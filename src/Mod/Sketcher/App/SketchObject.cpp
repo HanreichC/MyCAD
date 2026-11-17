@@ -1463,6 +1463,24 @@ void SketchObject::onSketchRestore()
         }else
             acceptGeometry();
 
+        // MyCAD: ältere Dateien mit externen Kanten direkt an einem Körper (Abhängigkeitskreis) umhängen. Gleiche
+        // Anzahl Bezüge mit updateGeoRef: updateGeometryRefs benennt die Bezüge der Geometrie nur um, Maße bleiben.
+        if (externalRefHook) {
+            auto objs = ExternalGeometry.getValues();
+            auto subs = ExternalGeometry.getSubValues();
+            bool changed = false;
+            for (size_t i = 0; i < objs.size() && i < subs.size(); ++i) {
+                App::DocumentObject* before = objs[i];
+                externalRefHook(this, objs[i], subs[i]);
+                changed = changed || objs[i] != before;
+            }
+            if (changed && externalGeoRef.size() == objs.size()) {
+                FC_WARN(getFullName() << ": external geometry moved from a body to its timeline state");
+                updateGeoRef = true;
+                ExternalGeometry.setValues(objs, subs);
+            }
+        }
+
         // Must run after the external geometry above: the orientations are derived from the
         // geometry the constraints reference, and projected external geometry does not exist
         // before it is rebuilt or accepted.

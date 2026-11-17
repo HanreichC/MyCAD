@@ -733,10 +733,18 @@ int SketchObject::carbonCopy(App::DocumentObject* pObj, bool construction)
     return svals.size();
 }
 
+std::function<void(const SketchObject*, App::DocumentObject*&, std::string&)> SketchObject::externalRefHook;
+
 int SketchObject::addExternal(App::DocumentObject* Obj, const char* SubName, bool defining, bool intersection)
 {
     // no need to check input data validity as this is an sketchobject managed operation.
     Base::StateLocker lock(managedoperation, true);
+
+    std::string redirected = SubName ? SubName : "";
+    if (externalRefHook && Obj) {
+        externalRefHook(this, Obj, redirected);
+        SubName = redirected.c_str();
+    }
 
     // so far only externals to the support of the sketch and datum features
     if (!isExternalAllowed(Obj->getDocument(), Obj)) {

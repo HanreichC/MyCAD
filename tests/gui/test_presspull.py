@@ -7,6 +7,15 @@ def side_face(b):  # Fläche mit kleinstem x (linke Seite)
     return "Face%d" % (1 + min(range(len(b.Shape.Faces)), key=lambda k: b.Shape.Faces[k].CenterOfMass.x))
 
 
+def poly(*pts):
+    p = [App.Vector(x, y, 0) for x, y in pts]
+    return [Part.LineSegment(p[i], p[(i + 1) % len(p)]) for i in range(len(p))]
+
+
+def arm_end(b):  # Stirnfläche des unteren L-Arms (x=220)
+    return "Face%d" % (1 + [round(f.CenterOfMass.x, 3) for f in b.Shape.Faces].index(220.0))
+
+
 def ok_then_type():
     """Tasten, die noch ins Feld gehen, nachdem OK den Dialog geschlossen hat (er wird erst danach gelöscht)"""
     box = sorted(visible(QtWidgets.QAbstractSpinBox), key=lambda w: w.mapToGlobal(QtCore.QPoint(0, 0)).y())[0]
@@ -38,5 +47,14 @@ run([
     ("Press Pull 3", lambda: click(button("Design_PressPull"))),
     ("+2", lambda: type_into(0, "2 mm")),
     ("OK 3", ok), ("cyl", lambda: L("cylinder: %.0f expect 6283 (r 8 -> 10)" % body("Cyl").Shape.Volume)),
+    # Hineindrücken geht wie Extrude-Cut durch alle getroffenen Körper (Halter: Fläche des einen bis durch den zweiten)
+    ("L", lambda: make_body(poly((200, 0), (220, 0), (220, 5), (205, 5), (205, 10), (200, 10)), 0, 10, "L")),
+    ("cube", lambda: make_body(rect(185, 0, 195, 10), 0, 10, "Cube")),
+    ("pick arm", lambda: (Gui.Selection.clearSelection(), Gui.Selection.addSelection(body("L"), arm_end(body("L"))))),
+    ("Press Pull 4", lambda: click(button("Design_PressPull"))),
+    ("-40", lambda: type_into(0, "-40 mm")),
+    ("OK 4", ok),
+    ("through", lambda: check("pushing in cuts the body behind too",
+                              (round(body("L").Shape.Volume), round(body("Cube").Shape.Volume)) == (250, 500), str(volumes()))),
     ("errors", lambda: L("errors=%s" % errors())),
 ])
