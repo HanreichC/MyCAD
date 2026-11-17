@@ -79,7 +79,7 @@ A fillet too big for its edge? The step turns red in the timeline, the panel say
 
 ## Find anything. Ctrl+K.
 
-Press **Ctrl+K** and type. The search finds commands, bodies and sketches, forgives typos, and understands English, German and the words other CAD programs use: *pocket*, *pad*, *push pull*, *Gewinde*, *Passung*, *slicer*. The ones you used last are at the top. It even takes a sentence: *4 holes M3 in the corners, 5 mm from the edge* shows up as the first hit, and Enter opens exactly that, with a preview. *All edges 1 mm chamfer* and *edges 2 mm fillet* work too.
+Press **Ctrl+K** and type. The search finds commands, bodies and sketches, forgives typos, and understands English, German and the words other CAD programs use: *pocket*, *pad*, *push pull*, *Gewinde*, *Passung*, *slicer*. The ones you used last are at the top. It even takes a sentence: *4 holes M3 in the corners, 5 mm from the edge* shows up as the first hit, and Enter opens exactly that, with a preview. *All edges 1 mm chamfer*, *edges 2 mm fillet*, *6 holes M4 on a 40 mm circle* and *5 holes M3 in a row, 10 mm apart* work too, in English or German.
 
 ![Search](src/Gui/Shell/help/images/search.gif)
 

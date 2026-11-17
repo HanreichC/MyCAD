@@ -27,7 +27,8 @@ or search for it with Ctrl+K).
   and words from other CAD programs (*pad*, *pocket*, *push pull*). The ones you used last are at the top.
 - **Intent instead of a command:** Ctrl+K understands *4 holes M3 in the corners, 5 mm from the edge* (also in German,
   or with Ø3.4); the first hit says what it understood, Enter opens the holes with their preview. Also *edges 2 mm
-  fillet* (selected edges) and *all edges 1 mm chamfer*.
+  fillet* (selected edges), *all edges 1 mm chamfer*, *6 holes M4 on a 40 mm circle* (bolt circle) and *5 holes M3 in
+  a row, 10 mm apart*; every sentence works in English and German (*6 Löcher M4 auf Lochkreis 40*).
 
   ![Search](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/search.gif)
 

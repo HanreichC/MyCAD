@@ -35,6 +35,8 @@ public:
                            "photoToSketch(file, width_mm[, square_mm]): sketch traced from a photo; square_mm on grid paper");
         add_varargs_method("photoGrid", &Module::photoGrid, "photoGrid(file): grid square in pixels, 0 without grid paper");
         add_varargs_method("dressUp", &Module::dressUp, "dressUp(kind, size, all): fillet or chamfer with a size");
+        add_varargs_method("patternHoles", &Module::patternHoles,
+                           "patternHoles(circle, count, size, diameter, pitch): bolt circle or row of holes");
         add_varargs_method("cornerHoles", &Module::cornerHoles,
                            "cornerHoles(size, diameter, offset): holes in the four corners of the selected face");
         add_varargs_method("showCorrections", &Module::showCorrections,
@@ -56,6 +58,12 @@ private:
     Py::Object dressUp(const Py::Tuple& args)
     {
         DesignGui::dressUp(Py::String(args[0]).as_std_string(), Py::Float(args[1]), Py::Boolean(args[2]));
+        return Py::None();
+    }
+    Py::Object patternHoles(const Py::Tuple& args)
+    {
+        DesignGui::patternHoles(Py::Boolean(args[0]), int(Py::Long(args[1])), Py::String(args[2]).as_std_string(),
+                                Py::Float(args[3]), Py::Float(args[4]));
         return Py::None();
     }
     Py::Object cornerHoles(const Py::Tuple& args)

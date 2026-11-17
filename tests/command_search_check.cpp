@@ -70,6 +70,28 @@ int main()
     assert(intent("Rundung").kind == Intent::Kind::None);
     assert(intent("4 Löcher M3 in die Ecken, 5 mm vom Rand").kind == Intent::Kind::CornerHoles);  // weiter Bohrungen
 
+    // Bohrmuster, je Deutsch und Englisch
+    for (const char* s : {"6 Löcher M4 auf Lochkreis 40", "six holes M4 on a bolt circle 40 mm",
+                          "6 Bohrungen M4 im Kreis, \xC3\x98" "40", "6 holes M4 around a 40 mm circle"}) {
+        i = intent(s);
+        assert(i.kind == Intent::Kind::CircleHoles && i.count == 6 && i.size == "M4" && i.pitch == 40);
+    }
+    i = intent("6 Löcher im Kreis, \xC3\x98" "40");  // ohne Bohrungsmaß: Ø5 (wie das Werkzeug)
+    assert(i.kind == Intent::Kind::CircleHoles && i.count == 6 && i.pitch == 40 && i.diameter == 5);
+    i = intent("8 holes \xC3\x98" "3.4 on a 50 mm circle");
+    assert(i.kind == Intent::Kind::CircleHoles && i.count == 8 && i.diameter == 3.4 && i.pitch == 50);
+    i = intent("acht Bohrungen \xC3\x98" "6,5 auf Teilkreis 80");
+    assert(i.kind == Intent::Kind::CircleHoles && i.count == 8 && i.diameter == 6.5 && i.pitch == 80);
+    for (const char* s : {"5 Löcher M3 in einer Reihe, 10 mm Abstand", "5 holes M3 in a row, 10 mm apart",
+                          "fünf Bohrungen M3 in einer Reihe im Abstand von 10 mm", "five holes M3 in a line 10 mm spacing"}) {
+        i = intent(s);
+        assert(i.kind == Intent::Kind::RowHoles && i.count == 5 && i.size == "M3" && i.pitch == 10);
+    }
+    i = intent("3 holes \xC3\x98" "4 in a row");  // ohne Abstand: gleichmäßig verteilt
+    assert(i.kind == Intent::Kind::RowHoles && i.count == 3 && i.diameter == 4 && i.pitch == 0);
+    assert(intent("Lochkreis").kind == Intent::Kind::None);
+    assert(intent("1 Loch M3 in einer Reihe").kind == Intent::Kind::None);  // eins ist kein Muster
+
     std::puts("command search ok");
     return 0;
 }

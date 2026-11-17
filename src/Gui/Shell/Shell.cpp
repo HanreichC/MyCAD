@@ -4402,6 +4402,24 @@ void refreshSearch()
                         },
                         1000});
     }
+    if (const auto intent = CommandSearch::intent(query);
+        intent.kind == CommandSearch::Intent::Kind::CircleHoles || intent.kind == CommandSearch::Intent::Kind::RowHoles) {
+        const bool circle = intent.kind == CommandSearch::Intent::Kind::CircleHoles;
+        const QString size = intent.size.empty() ? QStringLiteral("\u2300 %1 mm").arg(intent.diameter) : QString::fromStdString(intent.size);
+        const QString text = circle ? T("Drill %1 \u00d7 %2 holes on a circle, \u2300 %3 mm").arg(intent.count).arg(size).arg(intent.pitch)
+                             : intent.pitch > 0 ? T("Drill %1 \u00d7 %2 holes in a row, %3 mm apart").arg(intent.count).arg(size).arg(intent.pitch)
+                                                : T("Drill %1 \u00d7 %2 holes in a row, evenly spaced").arg(intent.count).arg(size);
+        hits.push_back({"intent", text, T("Enter"), commandIcon(QStringLiteral("Design_Hole"), QIcon()),
+                        [intent, circle] {
+                            Base::PyGILStateLocker lock;
+                            Base::Interpreter().runString((std::string("import DesignGui; DesignGui.patternHoles(")
+                                                           + (circle ? "True" : "False") + ", " + std::to_string(intent.count) + ", '"
+                                                           + intent.size + "', " + std::to_string(intent.diameter) + ", "
+                                                           + std::to_string(intent.pitch) + ")")
+                                                              .c_str());
+                        },
+                        1000});
+    }
     // Beste Treffer zuerst; bei gleicher Güte die zuletzt benutzten
     const auto rank = [&recent](const SearchHit& h) {
         const auto it = std::ranges::find(recent, h.key);

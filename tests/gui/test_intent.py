@@ -55,6 +55,26 @@ def chamfer_opened():
           and abs(c.Size.Value - 1) < 1e-9, "edges=%d size=%s" % (len(c.Edges), c.Size))
 
 
+def centres():
+    h = [o for o in doc().Objects if o.TypeId == "Design::Hole"][-1]
+    return [h.Sketch.Placement.multVec(App.Vector(g.X, g.Y, g.Z)) for g in h.Sketch.Geometry if g.TypeId == "Part::GeomPoint"]
+
+
+def circle_opened():
+    pts = centres()
+    r = [round((p - App.Vector(20, 15, 10)).Length, 6) for p in pts]
+    check("Lochkreis: six holes on a circle Ø20 around the middle of the top, first one at the top",
+          Gui.Control.activeDialog() and len(pts) == 6 and all(abs(x - 10) < 1e-6 for x in r)
+          and abs(pts[0].y - 25) < 1e-6, "radii=%s first=%s" % (r, pts[0] if pts else None))
+
+
+def row_opened():
+    xs = sorted(round(p.x, 6) for p in centres())
+    check("row: five holes through the middle along the long side, 6 mm apart",
+          Gui.Control.activeDialog() and xs == [8.0, 14.0, 20.0, 26.0, 32.0] and all(abs(p.y - 15) < 1e-6 for p in centres()),
+          "x=%s" % xs)
+
+
 def cancel():
     click([b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "Cancel"][0])
 
@@ -95,6 +115,14 @@ run([("activate", activate), ("setup", setup), W,
      ("chamfer hit", lambda: first_hit("Chamfer all edges, 1 mm")),
      ("enter c", lambda: QtTest.QTest.keyClick(field(), QtCore.Qt.Key_Return)), W, W, ("chamfer opened", chamfer_opened),
      ("cancel c", cancel), W,
+     ("circle", lambda: type_sentence("6 Löcher M3 auf Lochkreis 20")), W,
+     ("circle hit", lambda: first_hit("Drill 6 × M3 holes on a circle, ⌀ 20 mm")),
+     ("enter o", lambda: QtTest.QTest.keyClick(field(), QtCore.Qt.Key_Return)), W, W, ("circle opened", circle_opened),
+     ("cancel o", cancel), W,
+     ("row", lambda: type_sentence("5 holes M3 in a row, 6 mm apart")), W,
+     ("row hit", lambda: first_hit("Drill 5 × M3 holes in a row, 6 mm apart")),
+     ("enter r", lambda: QtTest.QTest.keyClick(field(), QtCore.Qt.Key_Return)), W, W, ("row opened", row_opened),
+     ("cancel r", cancel), W,
      ("type", type_sentence), W, ("understood", understood),
      ("enter", lambda: QtTest.QTest.keyClick(field(), QtCore.Qt.Key_Return)), W, W, ("opened", opened),
      ("OK", ok), W, ("applied", applied),

@@ -3042,8 +3042,12 @@ private:
 /// in der Transaktion der Bohrung: Abbrechen nimmt auch die Skizze zurück. Lage ändern = Maße in der Skizze ändern.
 /// cornerOffset >= 0 (11.10, "in die Ecken"): statt des Klickpunkts vier Bohrungen in die Ecken der Fläche, so weit vom
 /// Rand, genau (ohne Raster), ihre Randabstände als Reihe gebunden. setup stellt die Bohrung vor dem Dialog ein.
+/// layout (11.10, Bohrmuster): legt die Punkte selbst an; bekommt die Skizze (Punkt 0 gibt es schon) und das Rechteck um
+/// den Rand der Fläche (Skizzen-Koordinaten)
+using HoleLayout = std::function<void(Sketcher::SketchObject*, const Base::BoundBox3d&)>;
+
 void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& point, double cornerOffset = -1,
-                const std::function<void(Design::Hole*)>& setup = {})
+                const std::function<void(Design::Hole*)>& setup = {}, const HoleLayout& layout = {})
 {
     const TopoDS_Shape shape = body->Shape.getShape().getSubShape(face.c_str(), true);
     if (shape.IsNull()) {
@@ -3072,21 +3076,31 @@ void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& poin
         doc->recompute();  // Projektion des Rands
     }
     Base::Vector3d p(onSketch.x, onSketch.y, 0);
-    if (cornerOffset < 0) {
+    // Rechteck um den Rand der Fläche (Linien und Kreise), für Ecken und Muster
+    Base::BoundBox3d box;
+    const auto& ext = sketch->getExternalGeometry();
+    for (size_t i = 2; i < ext.size(); ++i) {
+        if (auto seg = dynamic_cast<const Part::GeomLineSegment*>(ext[i])) {
+            box.Add(seg->getStartPoint());
+            box.Add(seg->getEndPoint());
+        }
+        else if (auto circle = dynamic_cast<const Part::GeomCircle*>(ext[i])) {
+            const Base::Vector3d c = circle->getCenter();
+            const double r = circle->getRadius();
+            box.Add(Base::Vector3d(c.x - r, c.y - r, 0));
+            box.Add(Base::Vector3d(c.x + r, c.y + r, 0));
+        }
+    }
+    if (!box.IsValid()) {
+        box.Add(p);
+    }
+    if (layout) {
+        layout(sketch, box);
+    }
+    else if (cornerOffset < 0) {
         dimensionHolePoint(sketch, 0, p, pxPerMmAt(body, sketch, p));
     }
     else {  // Ecken des Rands (Rechteck um die projizierten Kanten), nach innen versetzt
-        Base::BoundBox3d box;
-        const auto& ext = sketch->getExternalGeometry();
-        for (size_t i = 2; i < ext.size(); ++i) {
-            if (auto seg = dynamic_cast<const Part::GeomLineSegment*>(ext[i])) {
-                box.Add(seg->getStartPoint());
-                box.Add(seg->getEndPoint());
-            }
-        }
-        if (!box.IsValid()) {
-            box.Add(p);
-        }
         const double o = cornerOffset;
         const Base::Vector3d corners[] = {Base::Vector3d(box.MinX + o, box.MinY + o, 0), Base::Vector3d(box.MaxX - o, box.MinY + o, 0),
                                           Base::Vector3d(box.MaxX - o, box.MaxY - o, 0), Base::Vector3d(box.MinX + o, box.MaxY - o, 0)};
@@ -5012,15 +5026,14 @@ void DesignGui::dressUp(const std::string& kind, double size, bool all)
     }
 }
 
-void DesignGui::cornerHoles(const std::string& size, double diameter, double offset)
+namespace
 {
-    App::Document* doc = App::GetApplication().getActiveDocument();
-    if (!doc || Gui::Control().activeDialog()) {
-        return;
-    }
-    // Ziel: gewählte ebene Körperfläche, sonst Oberseite des gewählten oder einzigen sichtbaren Körpers
-    Design::Body* body = nullptr;
-    std::string face;
+/// Fläche für Bohrungen per Satz: gewählte ebene Körperfläche, sonst Oberseite des gewählten oder einzigen sichtbaren
+/// Körpers; false mit Hinweis, wenn es keine gibt
+bool holeTarget(App::Document* doc, Design::Body*& body, std::string& face)
+{
+    body = nullptr;
+    face.clear();
     for (const auto& sel : Gui::Selection().getSelectionEx()) {
         if (auto b = freecad_cast<Design::Body*>(const_cast<App::DocumentObject*>(sel.getObject()))) {
             body = b;
@@ -5043,9 +5056,15 @@ void DesignGui::cornerHoles(const std::string& size, double diameter, double off
     }
     if (!body || face.empty()) {
         toolHint(T("Hole"), T("Select the face (or the body) the holes go into."));
-        return;
+        return false;
     }
-    holeOnFace(body, face, Base::Vector3d(), offset, [&size, diameter](Design::Hole* hole) {
+    return true;
+}
+
+/// Bohrung als ISO-Durchgangsloch size ("M3") oder mit diameter, durch alles
+std::function<void(Design::Hole*)> holeSize(const std::string& size, double diameter)
+{
+    return [size, diameter](Design::Hole* hole) {
         hole->ThroughAll.setValue(true);
         if (!size.empty()) {
             hole->Standard.setValue("ISO metric");
@@ -5060,7 +5079,84 @@ void DesignGui::cornerHoles(const std::string& size, double diameter, double off
         if (diameter > 0) {
             hole->Diameter.setValue(diameter);
         }
-    });
+    };
+}
+}  // namespace
+
+void DesignGui::patternHoles(bool circle, int count, const std::string& size, double diameter, double pitch)
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    Design::Body* body = nullptr;
+    std::string face;
+    if (!doc || Gui::Control().activeDialog() || count < 2 || !holeTarget(doc, body, face)) {
+        return;
+    }
+    const double nominal = size.empty() ? diameter : std::strtod(size.c_str() + 1, nullptr);
+    holeOnFace(body, face, Base::Vector3d(), -1, holeSize(size, diameter),
+               [circle, count, pitch, nominal](Sketcher::SketchObject* sketch, const Base::BoundBox3d& box) {
+                   const Base::Vector3d centre(box.GetCenter().x, box.GetCenter().y, 0);
+                   std::vector<Base::Vector3d> at;
+                   if (circle) {  // erste Bohrung oben, dann gleichmäßig herum
+                       for (int k = 0; k < count; ++k) {
+                           const double a = M_PI / 2 + 2 * M_PI * k / count;
+                           at.emplace_back(centre.x + pitch / 2 * std::cos(a), centre.y + pitch / 2 * std::sin(a), 0);
+                       }
+                   }
+                   else {  // durch die Mitte entlang der längeren Seite; ohne Abstand gleichmäßig, 2 × Nennmaß vom Rand
+                       const bool alongX = box.LengthX() >= box.LengthY();
+                       const double length = alongX ? box.LengthX() : box.LengthY();
+                       const double step = pitch > 0 ? pitch : (length - 4 * nominal) / (count - 1);
+                       for (int k = 0; k < count; ++k) {
+                           const double t = (k - (count - 1) / 2.0) * step;
+                           at.push_back(alongX ? Base::Vector3d(centre.x + t, centre.y, 0) : Base::Vector3d(centre.x, centre.y + t, 0));
+                       }
+                   }
+                   int construction = -1;
+                   if (circle) {  // Lochkreis als Hilfskreis mit Durchmesser: im Skizzen-Bearbeiten änderbar
+                       Part::GeomCircle guide;
+                       guide.setCenter(centre);
+                       guide.setRadius(pitch / 2);
+                       construction = sketch->addGeometry(&guide, true);
+                       auto d = std::make_unique<Sketcher::Constraint>();
+                       d->Type = Sketcher::Diameter;
+                       d->First = construction;
+                       d->setValue(pitch);
+                       sketch->addConstraint(std::move(d));
+                   }
+                   for (int k = 0; k < count; ++k) {
+                       Base::Vector3d p = at[k];
+                       const Part::GeomPoint point(p);
+                       int index = 0;
+                       if (k == 0) {
+                           sketch->setGeometry(0, &point);
+                       }
+                       else {
+                           index = sketch->addGeometry(&point);
+                       }
+                       if (circle) {
+                           auto on = std::make_unique<Sketcher::Constraint>();
+                           on->Type = Sketcher::PointOnObject;
+                           on->First = index;
+                           on->FirstPos = Sketcher::PointPos::start;
+                           on->Second = construction;
+                           sketch->addConstraint(std::move(on));
+                       }
+                       else {
+                           dimensionHolePoint(sketch, index, p, 0, 0);  // Randabstände, als Reihe gebunden
+                       }
+                   }
+               });
+}
+
+void DesignGui::cornerHoles(const std::string& size, double diameter, double offset)
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    Design::Body* body = nullptr;
+    std::string face;
+    if (!doc || Gui::Control().activeDialog() || !holeTarget(doc, body, face)) {
+        return;
+    }
+    holeOnFace(body, face, Base::Vector3d(), offset, holeSize(size, diameter));
 }
 
 void CreateDesignCommands()

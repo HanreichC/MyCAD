@@ -144,7 +144,9 @@ struct Intent
         None,
         CornerHoles,
         Fillet,
-        Chamfer
+        Chamfer,
+        CircleHoles,  ///< Lochkreis: count Bohrungen auf einem Kreis mit pitch Durchmesser um die Mitte der Fläche
+        RowHoles      ///< Reihe: count Bohrungen durch die Mitte der Fläche, pitch Abstand (0: gleichmäßig verteilt)
     };
     Kind kind = Kind::None;
     std::string size;     ///< ISO-Gewinde, z. B. "M3"; leer bei Durchmesser
@@ -152,7 +154,126 @@ struct Intent
     double offset = 0;    ///< Abstand der Mitten zum Rand, mm (ohne Angabe: zweimal der Nenndurchmesser)
     double value = 0;     ///< Rundung: Radius, Fase: Abstand (mm)
     bool all = false;     ///< "alle Kanten": jede Kante des Körpers statt der gewählten
+    int count = 0;        ///< Muster: Anzahl der Bohrungen
+    double pitch = 0;     ///< Lochkreis: Durchmesser; Reihe: Abstand (mm)
 };
+
+/// Bohrmuster aus den Wörtern (gefaltet): "6 Löcher M4 auf Lochkreis 40", "six holes M4 on a 40 mm circle",
+/// "5 Löcher M3 in einer Reihe, 10 mm Abstand", "5 holes M3 in a row 10 mm apart". Kind::None, wenn es keins ist.
+inline Intent patternIntent(const std::vector<std::string>& ws)
+{
+    const auto starts = [](const std::string& w, std::initializer_list<const char*> stems) {
+        return std::ranges::any_of(stems, [&w](const char* s) { return w.rfind(s, 0) == 0; });
+    };
+    static const std::vector<std::pair<const char*, int>> numerals = {
+        {"zwei", 2}, {"two", 2},   {"drei", 3}, {"three", 3}, {"vier", 4},   {"four", 4},    {"fuenf", 5}, {"five", 5},
+        {"sechs", 6}, {"six", 6},  {"sieben", 7}, {"seven", 7}, {"acht", 8}, {"eight", 8},  {"neun", 9},  {"nine", 9},
+        {"zehn", 10}, {"ten", 10}, {"zwoelf", 12}, {"twelve", 12}};
+    bool holes = false, circle = false, row = false;
+    int circleWord = -1;
+    Intent out;
+    struct Num
+    {
+        double v;
+        bool mm, dia;
+        int at;
+    };
+    std::vector<Num> nums;
+    for (int i = 0; i < static_cast<int>(ws.size()); ++i) {
+        const std::string& w = ws[i];
+        if (starts(w, {"lochkreis", "teilkreis", "kreis", "circle", "around"}) || w == "bolt") {  // vor "Loch": Lochkreis
+            circle = true;
+            circleWord = i;
+        }
+        else if (starts(w, {"loch", "loech", "bohrung", "hole"})) {
+            holes = true;
+        }
+        else if (starts(w, {"reihe", "row", "line"})) {
+            row = true;
+        }
+        else if (w.size() > 1 && w[0] == 'm' && std::isdigit(static_cast<unsigned char>(w[1]))) {
+            out.size = "M" + w.substr(1, w.find('x') == std::string::npos ? std::string::npos : w.find('x') - 1);
+        }
+        else {
+            for (const auto& [word, n] : numerals) {
+                out.count = w == word ? n : out.count;
+            }
+            char* end = nullptr;
+            const double v = std::strtod(w.c_str(), &end);
+            if (end == w.c_str()) {
+                continue;
+            }
+            const std::string unit = end;
+            const bool mm = unit == "mm" || (unit.empty() && i + 1 < static_cast<int>(ws.size()) && ws[i + 1] == "mm");
+            const bool dia = i > 0 && (ws[i - 1] == "dia" || starts(ws[i - 1], {"durchmesser", "diameter"}));
+            nums.push_back({v, mm, dia, i});
+        }
+    }
+    if (!holes || circle == row) {
+        return {};
+    }
+    // Anzahl: eine ganze Zahl ohne Einheit vor dem Wort "Löcher" (oder als Wort geschrieben)
+    std::vector<Num> sizes;
+    for (const auto& n : nums) {
+        if (!n.mm && !n.dia && n.v == static_cast<int>(n.v) && out.count == 0 && !(circle && n.at == circleWord + 1)) {
+            out.count = static_cast<int>(n.v);
+        }
+        else {
+            sizes.push_back(n);
+        }
+    }
+    if (out.count < 2) {
+        return {};
+    }
+    if (circle) {
+        // Lochkreis: die größte Angabe (oder die Zahl direkt nach "Lochkreis"); eine kleinere Ø-Angabe ist die Bohrung
+        double pitch = 0, hole = 0;
+        for (const auto& n : nums) {
+            if (circleWord >= 0 && n.at == circleWord + 1) {
+                pitch = n.v;
+            }
+        }
+        for (const auto& n : sizes) {
+            if (n.v != pitch && (n.mm || n.dia)) {
+                if (n.v > pitch && pitch == 0) {
+                    pitch = n.v;
+                }
+                else if (n.v > pitch) {
+                    hole = std::max(hole, pitch);
+                    pitch = n.v;
+                }
+                else {
+                    hole = std::max(hole, n.v);
+                }
+            }
+        }
+        if (pitch <= 0 || (out.size.empty() && hole <= 0 && sizes.size() > 1)) {
+            return {};
+        }
+        out.kind = Intent::Kind::CircleHoles;
+        out.pitch = pitch;
+        out.diameter = out.size.empty() ? (hole > 0 ? hole : 5) : 0;
+        return out;
+    }
+    // Reihe: Abstand ist eine mm-Angabe neben "Abstand/apart/spacing", die Bohrung ein Ø oder M-Maß
+    for (const auto& n : sizes) {
+        bool spacing = false;
+        for (int k = std::max(0, n.at - 3); k < std::min(static_cast<int>(ws.size()), n.at + 4); ++k) {
+            spacing = spacing || starts(ws[k], {"abstand", "apart", "spacing", "pitch", "distance", "teilung"});
+        }
+        if (spacing && !n.dia) {
+            out.pitch = n.v;
+        }
+        else if (out.size.empty() && (n.dia || n.mm)) {
+            out.diameter = n.v;
+        }
+    }
+    if (out.size.empty() && out.diameter <= 0) {
+        return {};
+    }
+    out.kind = Intent::Kind::RowHoles;
+    return out;
+}
 
 inline Intent intent(const std::string& query)
 {
@@ -168,6 +289,9 @@ inline Intent intent(const std::string& query)
         }
     }
     const auto ws = words(f);
+    if (const Intent pattern = patternIntent(ws); pattern.kind != Intent::Kind::None) {
+        return pattern;
+    }
     const auto starts = [](const std::string& w, std::initializer_list<const char*> stems) {
         return std::ranges::any_of(stems, [&w](const char* s) { return w.rfind(s, 0) == 0; });
     };
