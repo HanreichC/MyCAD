@@ -482,6 +482,9 @@ private:
     SbVec3f rotationCenter;
     SbBool rotationCenterFound;
     SbBool rotationCenterIsScenePointAtCursor;
+    /** MyCAD: Drehpunkt des zuletzt per Doppelklick zentrierten Körpers; Drehen im Leeren nimmt ihn */
+    SbVec3f centeredPivot;
+    bool hasCenteredPivot = false;
     NavigationStyle::RotationCenterModes rotationCenterMode;
     std::optional<OrbitDragState> orbitDrag;
     float sensitivity;

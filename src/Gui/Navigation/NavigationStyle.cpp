@@ -603,6 +603,13 @@ void NavigationStyle::lookAtPoint(const SbVec2s screenpos)
     SbVec3f point;
     if (picked) {
         point = picked->getPoint();
+        // MyCAD: Drehpunkt merken (nach Einstellung, z. B. Mitte des Körpers), bevor die Kamera ihn in die Mitte holt.
+        // Die Maus steht danach neben ihm, und Wayland erlaubt nicht, sie hinzusetzen: Drehen im Leeren nimmt ihn
+        SoLocation2Event at;
+        at.setPosition(screenpos);
+        saveCursorPosition(&at);
+        centeredPivot = rotationCenterFound ? rotationCenter : point;
+        hasCenteredPivot = true;
     }
     else {
         const SbViewportRegion& vp = viewer->getViewportRegion();
@@ -1641,6 +1648,12 @@ void NavigationStyle::saveCursorPosition(const SoEvent* const ev)
                 rotateAround(box.getCenter());
                 return;
             }
+        }
+        // Kein Körper unter dem Cursor: um den zuletzt per Doppelklick zentrierten statt um alle (lookAtPoint).
+        // ponytail: bleibt bis zum nächsten Zentrieren, auch nach "Alles zeigen"; bei Bedarf dort zurücksetzen
+        if (hasCenteredPivot) {
+            rotateAround(centeredPivot);
+            return;
         }
     }
 
