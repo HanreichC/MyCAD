@@ -109,6 +109,51 @@ int main()
         assert(gridPeriod(img, w, h, partMask(img, w, h)) == 0);
     }
 
+    // Schräges Foto: ein A4-Blatt (210 x 297) perspektivisch verzerrt auf dunklem Tisch, darauf ein Teil 60 x 40 mm mit
+    // Loch r = 10 bei (80, 100) mm. Pixel für Pixel über die Umkehrung gerechnet: Ergebnis stimmt auf Zehntel Millimeter
+    {
+        const int pw = 1000, ph = 750;
+        const Point quad[4] = {{230, 60}, {760, 110}, {820, 700}, {170, 660}};  // oben links, oben rechts, unten rechts, unten links
+        const Point sheetMm[4] = {{0, 0}, {210, 0}, {210, 297}, {0, 297}};
+        const Homography toSheet = homography(quad, sheetMm);
+        std::vector<std::uint8_t> photo(pw * ph);
+        for (int y = 0; y < ph; ++y) {
+            for (int x = 0; x < pw; ++x) {
+                const Point m = apply(toSheet, {x + 0.5, y + 0.5});
+                const bool onSheet = m.x >= 0 && m.x <= 210 && m.y >= 0 && m.y <= 297;
+                const bool part = m.x >= 50 && m.x <= 110 && m.y >= 80 && m.y <= 120 && std::hypot(m.x - 80, m.y - 100) > 10;
+                photo[y * pw + x] = static_cast<std::uint8_t>(!onSheet ? 70 : part ? 35 : 225);
+            }
+        }
+        const Sheet sheet = findSheet(photo, pw, ph);
+        assert(sheet.found);
+        for (int k = 0; k < 4; ++k) {
+            assert(std::hypot(sheet.corner[k].x - quad[k].x, sheet.corner[k].y - quad[k].y) < 2.5);
+        }
+        const auto shapes = outlinesOnSheet(photo, pw, ph, 210, 297, 0.4);
+        assert(shapes.size() == 2);
+        double minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+        bool hole = false;
+        for (const auto& o : shapes) {
+            if (o.circle) {
+                hole = std::abs(o.c.radius - 10) < 0.6 && std::hypot(o.c.centre.x - 80, o.c.centre.y - 100) < 0.6;
+                continue;
+            }
+            for (const auto& p : o.points) {
+                minX = std::min(minX, p.x);
+                maxX = std::max(maxX, p.x);
+                minY = std::min(minY, p.y);
+                maxY = std::max(maxY, p.y);
+            }
+        }
+        assert(hole);                                  // die Ellipse im Foto ist wieder ein Kreis
+        assert(std::abs(maxX - minX - 60) < 1.0);      // 60 mm breit
+        assert(std::abs(maxY - minY - 40) < 1.0);      // 40 mm hoch
+        assert(std::abs(minX - 50) < 1.0 && std::abs(minY - 80) < 1.0);
+        // ohne Blatt (Teil auf Papier, das das Bild füllt): kein Blatt
+        assert(!findSheet(img, w, h).found);
+    }
+
     // nichts im Bild: leer
     std::vector<std::uint8_t> blank(w * h, 200);
     assert(contours(blank, w, h).empty());

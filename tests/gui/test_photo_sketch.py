@@ -94,8 +94,58 @@ def gridded():
     check("a photo without a grid says so", DesignGui.photoGrid(S["file"]) == 0, str(DesignGui.photoGrid(S["file"])))
 
 
+def homography(src, dst):
+    """3 x 3 (als QTransform), die die vier Punkte src auf dst abbildet"""
+    a = []
+    for (x, y), (u, v) in zip(src, dst):
+        a.append([x, y, 1, 0, 0, 0, -u * x, -u * y, u])
+        a.append([0, 0, 0, x, y, 1, -v * x, -v * y, v])
+    for c in range(8):
+        p = max(range(c, 8), key=lambda r: abs(a[r][c]))
+        a[c], a[p] = a[p], a[c]
+        for r in range(8):
+            if r != c:
+                f = a[r][c] / a[c][c]
+                a[r] = [x - f * y for x, y in zip(a[r], a[c])]
+    h = [a[i][8] / a[i][i] for i in range(8)] + [1.0]
+    # QTransform: x' = m11 x + m21 y + m31, w = m13 x + m23 y + m33
+    return QtGui.QTransform(h[0], h[3], h[6], h[1], h[4], h[7], h[2], h[5], h[8])
+
+
+def sheet_photo():
+    """A4-Blatt schräg fotografiert auf dunklem Tisch; darauf ein Teil 60 x 40 mm mit Loch Ø20 bei (80, 100) mm"""
+    img = QtGui.QImage(1000, 750, QtGui.QImage.Format_RGB32)
+    img.fill(QtGui.QColor(70, 72, 75))
+    p = QtGui.QPainter(img)
+    p.setRenderHint(QtGui.QPainter.Antialiasing)
+    p.setTransform(homography([(0, 0), (210, 0), (210, 297), (0, 297)], [(230, 60), (760, 110), (820, 700), (170, 660)]))
+    p.setPen(QtCore.Qt.NoPen)
+    p.setBrush(QtGui.QColor(230, 230, 226))
+    p.drawRect(QtCore.QRectF(0, 0, 210, 297))
+    p.setBrush(QtGui.QColor(38, 40, 46))
+    p.drawRect(QtCore.QRectF(50, 80, 60, 40))
+    p.setBrush(QtGui.QColor(230, 230, 226))
+    p.drawEllipse(QtCore.QPointF(80, 100), 10, 10)
+    p.end()
+    S["sheet"] = os.path.join(os.environ.get("TMPDIR", "/tmp"), "mycad_photo_sheet.png")
+    img.save(S["sheet"])
+
+
+def straightened():
+    found = DesignGui.photoSheet(S["sheet"])
+    sk = DesignGui.photoToSketch(S["sheet"], 0.0, 0.0)
+    bb = sk.Shape.BoundBox if sk else None
+    circles = [e.Curve.Radius for e in sk.Shape.Edges if e.Curve.TypeId == "Part::GeomCircle"] if sk else []
+    check("a whole A4 sheet photographed at an angle: found, straightened, to scale without asking (60 x 40 mm, hole Ø20)",
+          found and sk is not None and abs(bb.XLength - 60) < 1 and abs(bb.YLength - 40) < 1
+          and len(circles) == 1 and abs(circles[0] - 10) < 0.6,
+          "found=%s bb=%s circles=%s" % (found, bb, circles))
+    check("a photo without a whole sheet is not taken for one", not DesignGui.photoSheet(S["file"]), "")
+
+
 run([("activate", activate), ("missing", missing), W, ("told", told),  # zuerst: der Hinweis "nachgezeichnet" verdeckte ihn sonst
      ("photo", photo), ("trace", trace), W, W, ("traced", traced),
      ("grid paper", grid_paper), ("gridded", gridded), W,
+     ("sheet photo", sheet_photo), ("straightened", straightened), W,
      ("errors", lambda: check("no errors", not errors(), str(errors()))),
      ])

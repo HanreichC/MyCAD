@@ -8,6 +8,7 @@
 /// tests/photo_contour_check.cpp
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <map>
@@ -54,7 +55,8 @@ inline int otsu(const std::vector<std::uint8_t>& gray)
 }
 
 /// Maske des Teils: größte Fläche einer Klasse, die den Rand nicht berührt; Löcher darin bleiben 0
-inline std::vector<std::uint8_t> partMask(const std::vector<std::uint8_t>& gray, int w, int h)
+/// shade: -1 hell oder dunkel, 0 nur dunkle, 1 nur helle Flächen
+inline std::vector<std::uint8_t> partMask(const std::vector<std::uint8_t>& gray, int w, int h, int shade = -1)
 {
     const int t = otsu(gray);
     std::vector<int> label(gray.size(), -1);
@@ -88,7 +90,7 @@ inline std::vector<std::uint8_t> partMask(const std::vector<std::uint8_t>& gray,
                 }
             }
         }
-        if (!border && members.size() > bestSize) {
+        if (!border && members.size() > bestSize && (shade < 0 || (shade == 0) == dark)) {
             bestSize = members.size();
             best.assign(gray.size(), 0);
             for (int i : members) {
@@ -290,6 +292,121 @@ inline std::vector<Outline> outlines(const std::vector<std::uint8_t>& gray, int 
         o.circle = loop.size() >= 12 && fitCircle(loop, o.c) <= tol && o.c.radius >= 3;
         if (!o.circle) {
             o.points = simplify(loop, tol);
+        }
+        out.push_back(o);
+    }
+    return out;
+}
+
+/// Projektive Abbildung (Homographie) als 3 x 3, h[8] = 1
+using Homography = std::array<double, 9>;
+
+inline Point apply(const Homography& h, const Point& p)
+{
+    const double w = h[6] * p.x + h[7] * p.y + h[8];
+    return {(h[0] * p.x + h[1] * p.y + h[2]) / w, (h[3] * p.x + h[4] * p.y + h[5]) / w};
+}
+
+/// Homographie, die die vier Punkte from auf to abbildet (lineares 8 x 8-System, Gauß)
+inline Homography homography(const Point from[4], const Point to[4])
+{
+    double a[8][9] = {};
+    for (int i = 0; i < 4; ++i) {
+        const double x = from[i].x, y = from[i].y, u = to[i].x, v = to[i].y;
+        const double r1[9] = {x, y, 1, 0, 0, 0, -u * x, -u * y, u};
+        const double r2[9] = {0, 0, 0, x, y, 1, -v * x, -v * y, v};
+        std::copy(r1, r1 + 9, a[2 * i]);
+        std::copy(r2, r2 + 9, a[2 * i + 1]);
+    }
+    for (int c = 0; c < 8; ++c) {
+        int pivot = c;
+        for (int r = c + 1; r < 8; ++r) {
+            pivot = std::abs(a[r][c]) > std::abs(a[pivot][c]) ? r : pivot;
+        }
+        std::swap(a[c], a[pivot]);
+        for (int r = 0; r < 8; ++r) {
+            if (r != c && a[c][c] != 0) {
+                const double f = a[r][c] / a[c][c];
+                for (int k = c; k < 9; ++k) {
+                    a[r][k] -= f * a[c][k];
+                }
+            }
+        }
+    }
+    Homography h {};
+    for (int i = 0; i < 8; ++i) {
+        h[i] = a[i][i] != 0 ? a[i][8] / a[i][i] : 0;
+    }
+    h[8] = 1;
+    return h;
+}
+
+/// Ein ganzes Blatt im Foto (hell auf dunklerem Grund, berührt den Bildrand nicht): seine Ecken oben links, oben rechts,
+/// unten rechts, unten links. ponytail: Ecken als äußerste Punkte in den Diagonalen, reicht bis ~35° Drehung
+struct Sheet
+{
+    bool found = false;
+    Point corner[4];
+};
+
+inline Sheet findSheet(const std::vector<std::uint8_t>& gray, int w, int h)
+{
+    Sheet s;
+    const auto paper = partMask(gray, w, h, 1);
+    if (paper.empty()) {
+        return s;
+    }
+    double best[4] = {1e100, -1e100, -1e100, 1e100};  // min x+y, max x-y, max x+y, min x-y
+    size_t area = 0;
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            if (!paper[size_t(y) * w + x]) {
+                continue;
+            }
+            ++area;
+            const double px[4] = {double(x), double(x) + 1, double(x) + 1, double(x)};  // Pixelecke nach außen
+            const double py[4] = {double(y), double(y), double(y) + 1, double(y) + 1};
+            const double key[4] = {px[0] + py[0], px[1] - py[1], px[2] + py[2], px[3] - py[3]};
+            for (int k = 0; k < 4; ++k) {
+                const bool better = k == 0 || k == 3 ? key[k] < best[k] : key[k] > best[k];
+                if (better) {
+                    best[k] = key[k];
+                    s.corner[k] = {px[k], py[k]};
+                }
+            }
+        }
+    }
+    s.found = area > size_t(w) * h / 10;  // mindestens ein Zehntel des Bilds
+    return s;
+}
+
+/// Umrisse des Teils auf einem ganzen Blatt sheetW x sheetH mm, perspektivisch entzerrt: Koordinaten in mm auf dem Blatt
+/// (Ursprung oben links, y nach unten). Liegt das Blatt quer im Bild, sind Breite und Höhe vertauscht. Leer ohne Blatt.
+inline std::vector<Outline> outlinesOnSheet(const std::vector<std::uint8_t>& gray, int w, int h, double sheetW, double sheetH,
+                                            double tolMm = 0.4)
+{
+    const Sheet sheet = findSheet(gray, w, h);
+    if (!sheet.found) {
+        return {};
+    }
+    const auto len = [](const Point& a, const Point& b) { return std::hypot(a.x - b.x, a.y - b.y); };
+    const double across = len(sheet.corner[0], sheet.corner[1]) + len(sheet.corner[3], sheet.corner[2]);
+    const double down = len(sheet.corner[0], sheet.corner[3]) + len(sheet.corner[1], sheet.corner[2]);
+    if (across > down) {
+        std::swap(sheetW, sheetH);  // Blatt liegt quer
+    }
+    const Point target[4] = {{0, 0}, {sheetW, 0}, {sheetW, sheetH}, {0, sheetH}};
+    const Homography toMm = homography(sheet.corner, target);
+    std::vector<Outline> out;
+    for (const auto& loop : trace(partMask(gray, w, h, 0), w, h)) {
+        Loop mm;
+        for (const auto& p : loop) {
+            mm.push_back(apply(toMm, p));
+        }
+        Outline o;
+        o.circle = mm.size() >= 12 && fitCircle(mm, o.c) <= tolMm && o.c.radius >= 1;
+        if (!o.circle) {
+            o.points = simplify(mm, tolMm);
         }
         out.push_back(o);
     }

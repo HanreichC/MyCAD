@@ -2274,6 +2274,10 @@ bool reviewDxf(Geometries& geos, const std::vector<std::string>& layers, const Q
 /// Phase 11.9: Maßstab erfragen und nachzeichnen. Auf Rasterpapier nur die Kästchengröße (meist 5 mm), sonst die Breite
 void askAndTrace(const QString& file)
 {
+    if (DesignGui::photoSheet(file.toStdString())) {  // ganzes A4-Blatt im Bild: Maßstab und Perspektive von selbst
+        DesignGui::photoToSketch(file.toStdString(), 0, 0);
+        return;
+    }
     bool ok = false;
     if (DesignGui::photoGrid(file.toStdString()) > 0) {
         const double square = QInputDialog::getDouble(Gui::getMainWindow(), T("Photo to Sketch"),
@@ -4925,6 +4929,13 @@ bool loadGray(const std::string& file, std::vector<std::uint8_t>& gray, int& w, 
 }
 }  // namespace
 
+bool DesignGui::photoSheet(const std::string& file)
+{
+    std::vector<std::uint8_t> gray;
+    int w = 0, h = 0;
+    return loadGray(file, gray, w, h) && PhotoContour::findSheet(gray, w, h).found;
+}
+
 double DesignGui::photoGrid(const std::string& file)
 {
     std::vector<std::uint8_t> gray;
@@ -4949,7 +4960,10 @@ App::DocumentObject* DesignGui::photoToSketch(const std::string& file, double wi
             return nullptr;
         }
     }
-    const auto loops = PhotoContour::outlines(gray, w, h, 1.5);  // runde Löcher als Kreise
+    // ohne Breite und Kästchen: ganzes A4-Blatt im Bild, entzerrt, Koordinaten schon in mm (y nach unten)
+    const bool sheet = widthMm <= 0 && squareMm <= 0;
+    const auto loops = sheet ? PhotoContour::outlinesOnSheet(gray, w, h, 210, 297, 0.4)
+                             : PhotoContour::outlines(gray, w, h, 1.5);  // runde Löcher als Kreise
     if (loops.empty()) {
         toolHint(T("Photo to Sketch"), T("No part found. Lay it on plain paper that fills the photo and take the photo from straight above."));
         return nullptr;
@@ -4967,7 +4981,7 @@ App::DocumentObject* DesignGui::photoToSketch(const std::string& file, double wi
             maxY = std::max(maxY, p.y);
         }
     }
-    const double scale = gridPx > 0 ? squareMm / gridPx : widthMm / std::max(1e-9, maxX - minX);  // mm je Pixel
+    const double scale = sheet ? 1.0 : gridPx > 0 ? squareMm / gridPx : widthMm / std::max(1e-9, maxX - minX);  // mm je Pixel
     widthMm = (maxX - minX) * scale;
     doc->openTransaction("Photo to Sketch");
     Sketcher::SketchObject* sketch = newSketch(activeContainer(doc));

@@ -34,6 +34,7 @@ public:
         add_varargs_method("photoToSketch", &Module::photoToSketch,
                            "photoToSketch(file, width_mm[, square_mm]): sketch traced from a photo; square_mm on grid paper");
         add_varargs_method("photoGrid", &Module::photoGrid, "photoGrid(file): grid square in pixels, 0 without grid paper");
+        add_varargs_method("photoSheet", &Module::photoSheet, "photoSheet(file): does the photo show a whole A4 sheet?");
         add_varargs_method("dressUp", &Module::dressUp, "dressUp(kind, size, all): fillet or chamfer with a size");
         add_varargs_method("patternHoles", &Module::patternHoles,
                            "patternHoles(circle, count, size, diameter, pitch): bolt circle or row of holes");
@@ -50,6 +51,10 @@ private:
         App::DocumentObject* sketch = DesignGui::photoToSketch(Py::String(args[0]).as_std_string(), Py::Float(args[1]),
                                                                args.size() > 2 ? double(Py::Float(args[2])) : 0.0);
         return sketch ? Py::asObject(sketch->getPyObject()) : Py::None();
+    }
+    Py::Object photoSheet(const Py::Tuple& args)
+    {
+        return Py::Boolean(DesignGui::photoSheet(Py::String(args[0]).as_std_string()));
     }
     Py::Object photoGrid(const Py::Tuple& args)
     {

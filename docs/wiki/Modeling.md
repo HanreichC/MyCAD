@@ -124,8 +124,9 @@ The other tools in short clips; the ones with more to say have their own section
 ### Photo to Sketch
 
 Lay a flat part on plain light paper, photograph it from straight above, then FILE → **Import** and choose the photo
-(PNG or JPG; also Ctrl+K → **Photo to Sketch**). On grid paper MyCAD finds the squares and only asks their size
-(usually 5 mm); on plain paper type how wide the part really is: MyCAD traces the outline and every hole
+(PNG or JPG; also Ctrl+K → **Photo to Sketch**). Easiest: the part on a whole white **A4 sheet** on a darker table,
+all four corners in the photo, angle doesn't matter: MyCAD straightens the perspective and asks nothing. On grid paper it
+finds the squares and only asks their size (usually 5 mm); on plain paper type how wide the part really is: MyCAD traces the outline and every hole
 as a sketch to scale, ready to extrude. Round holes become real circles, everything else straight lines.
 
 ### Extrude
