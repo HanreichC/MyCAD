@@ -4386,6 +4386,22 @@ void refreshSearch()
                         },
                         1000});
     }
+    if (const auto intent = CommandSearch::intent(query);
+        intent.kind == CommandSearch::Intent::Kind::Fillet || intent.kind == CommandSearch::Intent::Kind::Chamfer) {
+        const bool fillet = intent.kind == CommandSearch::Intent::Kind::Fillet;
+        const QString text = fillet ? (intent.all ? T("Fillet all edges, %1 mm") : T("Fillet the selected edges, %1 mm"))
+                                    : (intent.all ? T("Chamfer all edges, %1 mm") : T("Chamfer the selected edges, %1 mm"));
+        hits.push_back({"intent", text.arg(intent.value), T("Enter"),
+                        commandIcon(fillet ? QStringLiteral("Design_Fillet") : QStringLiteral("Design_Chamfer"), QIcon()),
+                        [intent, fillet] {
+                            Base::PyGILStateLocker lock;
+                            Base::Interpreter().runString((std::string("import DesignGui; DesignGui.dressUp('")
+                                                           + (fillet ? "Fillet" : "Chamfer") + "', "
+                                                           + std::to_string(intent.value) + ", " + (intent.all ? "True" : "False") + ")")
+                                                              .c_str());
+                        },
+                        1000});
+    }
     // Beste Treffer zuerst; bei gleicher Güte die zuletzt benutzten
     const auto rank = [&recent](const SearchHit& h) {
         const auto it = std::ranges::find(recent, h.key);

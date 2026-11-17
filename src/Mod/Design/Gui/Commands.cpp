@@ -1080,7 +1080,10 @@ void startPrimitive(App::Document* doc, long type)
 }
 
 /// Fillet, Chamfer: Kanten oder Flächen eines Bodies aus der Auswahl
-void startDressUp(App::Document* doc, const char* type, const char* name, bool bodyAlone = false)
+/// size > 0: Radius bzw. Fasenabstand vorgeben (11.10, "Kanten 2 mm abrunden"); all: jede Kante des gewählten oder
+/// einzigen sichtbaren Körpers statt der gewählten Kanten
+void startDressUp(App::Document* doc, const char* type, const char* name, bool bodyAlone = false, double size = 0,
+                  bool all = false)
 {
     Design::Body* body = nullptr;
     std::vector<std::string> edges;
@@ -1097,6 +1100,22 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
             }
         }
     }
+    if (all || (size > 0 && edges.empty())) {
+        if (!body) {  // nichts gewählt: der einzige sichtbare Körper
+            std::vector<Design::Body*> shown;
+            for (auto obj : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
+                if (obj->Visibility.getValue()) {
+                    shown.push_back(static_cast<Design::Body*>(obj));
+                }
+            }
+            body = shown.size() == 1 ? shown.front() : nullptr;
+        }
+        edges.clear();
+        const int count = body ? body->Shape.getShape().countSubShapes(TopAbs_EDGE) : 0;
+        for (int i = 1; i <= count; ++i) {
+            edges.push_back("Edge" + std::to_string(i));
+        }
+    }
     if (!body || (edges.empty() && !bodyAlone) || !Design::stateAtMarker(body)) {
         toolHint(T(name),
                                  T("Select edges (or faces) of a body first."));
@@ -1108,6 +1127,9 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
     Design::componentOf(body)->addObject(feature);
     Design::addToTimeline(feature);
     feature->Edges.setValues(edges);
+    if (size > 0) {
+        feature->Size.setValue(size);
+    }
     Design::attachToBodies(feature, {body});
     doc->recompute();
     startEditing(feature, false, nullptr);
@@ -4935,6 +4957,20 @@ App::DocumentObject* DesignGui::photoToSketch(const std::string& file, double wi
                                       .arg(circles)
                                       .arg(widthMm));
     return sketch;
+}
+
+void DesignGui::dressUp(const std::string& kind, double size, bool all)
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    if (!doc || Gui::Control().activeDialog()) {
+        return;
+    }
+    if (kind == "Chamfer") {
+        startDressUp(doc, "Design::Chamfer", "Chamfer", false, size, all);
+    }
+    else {
+        startDressUp(doc, "Design::Fillet", "Fillet", false, size, all);
+    }
 }
 
 void DesignGui::cornerHoles(const std::string& size, double diameter, double offset)

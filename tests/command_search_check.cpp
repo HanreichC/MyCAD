@@ -53,7 +53,22 @@ int main()
     assert(intent("Bohrung").kind == Intent::Kind::None);                  // das ist ein Befehl, kein Satz
     assert(intent("4 Löcher M3").kind == Intent::Kind::None);              // wohin?
     assert(intent("6 Löcher M3 in die Ecken").kind == Intent::Kind::None); // vier Ecken
-    assert(intent("Ecken abrunden").kind == Intent::Kind::None);
+    assert(intent("Ecken abrunden").kind == Intent::Kind::None);  // Rundung ohne Maß: nichts Ausführbares
+    // Rundung und Fase
+    i = intent("Kanten 2 mm abrunden");
+    assert(i.kind == Intent::Kind::Fillet && i.value == 2 && !i.all);
+    i = intent("alle Kanten 1,5 mm verrunden");
+    assert(i.kind == Intent::Kind::Fillet && i.value == 1.5 && i.all);
+    i = intent("fillet all edges R3");
+    assert(i.kind == Intent::Kind::Fillet && i.value == 3 && i.all);
+    i = intent("Fase 0,5 mm");
+    assert(i.kind == Intent::Kind::Chamfer && i.value == 0.5);
+    i = intent("chamfer every edge 1 mm");
+    assert(i.kind == Intent::Kind::Chamfer && i.value == 1 && i.all);
+    i = intent("alle 4 Kanten 2 mm abrunden");  // die Anzahl ist nicht das Maß
+    assert(i.kind == Intent::Kind::Fillet && i.value == 2);
+    assert(intent("Rundung").kind == Intent::Kind::None);
+    assert(intent("4 Löcher M3 in die Ecken, 5 mm vom Rand").kind == Intent::Kind::CornerHoles);  // weiter Bohrungen
 
     std::puts("command search ok");
     return 0;

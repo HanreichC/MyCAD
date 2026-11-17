@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Phase 11.10 Absicht statt Befehl: Strg+K, "4 Löcher M3 in die Ecken, 5 mm vom Rand" steht als erster Treffer da;
 Enter öffnet die Bohrung mit ihrem Dialog (Vorschau), vier Mitten 5 mm von den Rändern der Oberseite, ISO-Durchgangsloch
-M3 durch alles; OK übernimmt, Abbrechen nimmt alles zurück."""
+M3 durch alles; OK übernimmt, Abbrechen nimmt alles zurück. Auch "Kanten 2 mm abrunden" (gewählte Kante) und "alle
+Kanten 1 mm fasen" öffnen Rundung bzw. Fase mit dem Maß."""
 from harness import *
 
 S = {}
@@ -23,9 +24,39 @@ def setup():
     Gui.ActiveDocument.ActiveView.viewIsometric(); Gui.SendMsgToActiveView("ViewFit")
 
 
-def type_sentence():
+def type_sentence(text=SENTENCE):
     Gui.runCommand("MyCAD_Search")
-    f = field(); f.clear(); f.insert(SENTENCE)  # keyClicks kann keine Umlaute (Qt-Assert)
+    f = field(); f.clear(); f.insert(text)  # keyClicks kann keine Umlaute (Qt-Assert)
+
+
+def dress(kind):
+    return [o for o in doc().Objects if o.TypeId == "Design::" + kind][-1]
+
+
+def one_edge():
+    Gui.Selection.clearSelection()
+    Gui.Selection.addSelection(S["box"], "Edge1")
+
+
+def first_hit(want):
+    r = results()
+    check("understood: " + want, bool(r) and r[0] == want, str(r[:3]))
+
+
+def fillet_opened():
+    f = dress("Fillet")
+    check("Enter opens Fillet on the selected edge with 2 mm", Gui.Control.activeDialog() and list(f.Edges) == ["Edge1"]
+          and abs(f.Size.Value - 2) < 1e-9, "edges=%s size=%s" % (list(f.Edges), f.Size))
+
+
+def chamfer_opened():
+    c = dress("Chamfer")
+    check("all edges: Chamfer on each of the 12 edges with 1 mm", Gui.Control.activeDialog() and len(c.Edges) == 12
+          and abs(c.Size.Value - 1) < 1e-9, "edges=%d size=%s" % (len(c.Edges), c.Size))
+
+
+def cancel():
+    click([b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "Cancel"][0])
 
 
 def understood():
@@ -56,6 +87,14 @@ def applied():
 
 
 run([("activate", activate), ("setup", setup), W,
+     ("edge", one_edge), ("fillet", lambda: type_sentence("Kanten 2 mm abrunden")), W,
+     ("fillet hit", lambda: first_hit("Fillet the selected edges, 2 mm")),
+     ("enter f", lambda: QtTest.QTest.keyClick(field(), QtCore.Qt.Key_Return)), W, W, ("fillet opened", fillet_opened),
+     ("cancel f", cancel), W,
+     ("none", lambda: Gui.Selection.clearSelection()), ("chamfer", lambda: type_sentence("alle Kanten 1 mm fasen")), W,
+     ("chamfer hit", lambda: first_hit("Chamfer all edges, 1 mm")),
+     ("enter c", lambda: QtTest.QTest.keyClick(field(), QtCore.Qt.Key_Return)), W, W, ("chamfer opened", chamfer_opened),
+     ("cancel c", cancel), W,
      ("type", type_sentence), W, ("understood", understood),
      ("enter", lambda: QtTest.QTest.keyClick(field(), QtCore.Qt.Key_Return)), W, W, ("opened", opened),
      ("OK", ok), W, ("applied", applied),

@@ -26,7 +26,8 @@ or search for it with Ctrl+K).
 - **Command search** with **Ctrl+K**: finds commands, bodies and sketches; forgives typos; understands English, German
   and words from other CAD programs (*pad*, *pocket*, *push pull*). The ones you used last are at the top.
 - **Intent instead of a command:** Ctrl+K understands *4 holes M3 in the corners, 5 mm from the edge* (also in German,
-  or with Ø3.4); the first hit says what it understood, Enter opens the holes with their preview.
+  or with Ø3.4); the first hit says what it understood, Enter opens the holes with their preview. Also *edges 2 mm
+  fillet* (selected edges) and *all edges 1 mm chamfer*.
 
   ![Search](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/search.gif)
 

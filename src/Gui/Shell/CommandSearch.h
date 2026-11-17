@@ -142,12 +142,16 @@ struct Intent
     enum class Kind
     {
         None,
-        CornerHoles
+        CornerHoles,
+        Fillet,
+        Chamfer
     };
     Kind kind = Kind::None;
     std::string size;     ///< ISO-Gewinde, z. B. "M3"; leer bei Durchmesser
     double diameter = 0;  ///< mm, wenn kein M-Maß
     double offset = 0;    ///< Abstand der Mitten zum Rand, mm (ohne Angabe: zweimal der Nenndurchmesser)
+    double value = 0;     ///< Rundung: Radius, Fase: Abstand (mm)
+    bool all = false;     ///< "alle Kanten": jede Kante des Körpers statt der gewählten
 };
 
 inline Intent intent(const std::string& query)
@@ -171,6 +175,9 @@ inline Intent intent(const std::string& query)
         {"vier", 4}, {"four", 4}, {"zwei", 2}, {"two", 2}, {"drei", 3}, {"three", 3}};
     bool holes = false;
     bool corners = false;
+    bool fillet = false;
+    bool chamfer = false;
+    double firstMm = -1, firstPlain = -1, radius = -1;
     int count = -1;
     double offset = -1;
     Intent out;
@@ -182,6 +189,22 @@ inline Intent intent(const std::string& query)
         }
         if (starts(w, {"ecke", "corner"})) {
             corners = true;
+            continue;
+        }
+        if (starts(w, {"rund", "abrund", "verrund", "fillet", "round"})) {
+            fillet = true;
+            continue;
+        }
+        if (starts(w, {"fase", "anfas", "abfas", "chamfer", "bevel"})) {
+            chamfer = true;
+            continue;
+        }
+        if (w == "alle" || w == "all" || w == "every" || starts(w, {"saemtlich", "jede"})) {
+            out.all = true;
+            continue;
+        }
+        if (w.size() > 1 && w[0] == 'r' && std::isdigit(static_cast<unsigned char>(w[1]))) {  // "R2"
+            radius = std::strtod(w.c_str() + 1, nullptr);
             continue;
         }
         for (const auto& [word, n] : numerals) {
@@ -200,6 +223,12 @@ inline Intent intent(const std::string& query)
         if (unit.empty() && i + 1 < ws.size() && ws[i + 1] == "mm") {
             unit = "mm";
         }
+        if (unit == "mm" && firstMm < 0) {
+            firstMm = v;
+        }
+        else if (unit.empty() && firstPlain < 0) {
+            firstPlain = v;
+        }
         const bool afterDia = i > 0 && (ws[i - 1] == "dia" || starts(ws[i - 1], {"durchmesser", "diameter", "d="}));
         bool edge = false;  // folgt ein Randwort ("5 mm vom Rand", "6 mm from the edge")?
         for (size_t k = i + 1; k < std::min(ws.size(), i + 5); ++k) {
@@ -217,6 +246,15 @@ inline Intent intent(const std::string& query)
         else if (unit.empty() && v == static_cast<int>(v) && count < 0) {
             count = static_cast<int>(v);
         }
+    }
+    // Rundung oder Fase: Wert in mm (sonst die erste Zahl, oder R2)
+    if (!holes && (fillet || chamfer) && !(fillet && chamfer)) {
+        out.value = radius > 0 ? radius : firstMm > 0 ? firstMm : firstPlain;
+        if (out.value <= 0) {
+            return {};
+        }
+        out.kind = fillet ? Intent::Kind::Fillet : Intent::Kind::Chamfer;
+        return out;
     }
     if (!holes || !corners || (out.size.empty() && out.diameter <= 0) || (count >= 0 && count != 4)) {
         return {};
