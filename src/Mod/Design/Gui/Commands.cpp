@@ -1276,8 +1276,8 @@ std::vector<Design::Body*> selectedBodies()
     return bodies;
 }
 
-/// Alle in derselben Komponente? Verweise über Komponentengrenzen erlaubt FreeCAD nicht.
-/// ponytail: Operationen über mehrere Komponenten (Fusion kann das) brauchen globale Links + Transformationen
+/// Neuer Schritt in der Komponente von near. Körper anderer Komponenten darf er trotzdem ändern (11.8): Feature::applyTool
+/// bringt das Werkzeug in deren Koordinaten, die Verweise darauf sind global bzw. versteckt
 Design::Feature* addFeature(App::Document* doc, const char* type, const char* name, App::DocumentObject* near)
 {
     doc->openTransaction(name);

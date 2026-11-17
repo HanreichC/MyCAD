@@ -547,7 +547,7 @@ Offene Entscheidungen, mit dem Benutzer entschieden und umgesetzt (2026-11-16, j
 - Bohrung per Klick auf eine Fläche wie Fusion: mit gewählter ebener Körperfläche an der Klickstelle (ohne Klickpunkt
   in der Mitte), ohne Auswahl wartet sie auf einen Klick. Dafür entsteht eine verborgene Skizze mit einem Punkt, in der
   Timeline vor der Bohrung; Abbrechen nimmt beides zurück. Bohren an einer Skizze mit Punkten geht weiter.
-  ponytail: keine Maße zu den Kanten wie in Fusion; verschieben über die Skizze.
+  Seit 11.5 (2026-11-17) mit Maßen zu den zwei nächsten Kanten, Fangen und Reihen; verschieben über diese Maße.
 - Ein Profil, das die Vorschau eines offenen Extrude/Rotieren zudeckt: ein Klick auf die Vorschau darüber nimmt es
   heraus (Punkt im Werkzeugkörper → nächstes gewähltes Profil, beim Rotieren über seinen Kreis um die Achse).
 - Feature unter einer Skizze löschen: die Skizze hängt an dieselbe Fläche im Zustand davor (eine Rundung oder Fase am

@@ -40,7 +40,7 @@ GuiExport void applyRenderQuality();
 
 /// Solange eine Skizze offen ist, treten Körper zur Hintergrundfarbe hin zurück (halb), damit dünne Skizzenlinien und
 /// Maße auch auf dunklen Körpern lesbar sind (wie Onshape andere Teile beim Bearbeiten zurücknimmt). Ändert nichts im Dokument.
-/// ponytail: nur mit "Realistische Materialien" (der Shader); im Phong-Modus bleiben Körper wie sie sind
+/// Im Phong-Modus (ohne "Realistische Materialien") übernimmt das ein schlichter Shader, nur solange die Skizze offen ist
 GuiExport void fadeBodies(bool on);
 
 }  // namespace Gui::Shell
