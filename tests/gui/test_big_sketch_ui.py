@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Leistungsgrenzen in einer großen Skizze (10.000 Elemente wie ein Platinen-DXF): eine Mausbewegung (Vorauswahl,
 ohne Zeichnen, gilt so auch unter Xvfb) und der Klick, der eine Linie anlegt. Gemessen am Desktop: 8 ms und 0,5 s;
-die Grenzen haben Reserve für eine ausgelastete CI, brechen aber bei quadratischen Stellen (vorher 450 ms, 13 s)."""
+die Grenzen haben Reserve und wachsen mit slowness() (langsame CI, parallele Tests), brechen aber bei quadratischen
+Stellen (vorher 450 ms, 13 s)."""
 import math
 import os
 import sys
@@ -47,7 +48,8 @@ def hover():
         a = i * 0.15
         move(QtCore.QPoint(int(w * 0.5 + 80 * math.cos(a)), int(h * 0.5 + 80 * math.sin(a))))
     ms = (time.monotonic() - t) / 40 * 1000
-    check("mouse move in a 10,000-element sketch under 30 ms", ms < 30, "%.1f ms" % ms)
+    limit = 30 * slowness()
+    check("mouse move in a 10,000-element sketch under 30 ms (x machine slowness)", ms < limit, "%.1f ms, limit %.0f" % (ms, limit))
 
 
 def tool():
@@ -71,7 +73,9 @@ def first():
 def second():
     s = click(0.55, 0.52)
     added = len(state["sketch"].Geometry) - state["n"]
-    check("clicking a line into a 10,000-element sketch under 1.5 s", added == 1 and s < 1.5, "%.2f s, %d added" % (s, added))
+    limit = 1.5 * slowness()
+    check("clicking a line into a 10,000-element sketch under 1.5 s (x machine slowness)", added == 1 and s < limit,
+          "%.2f s, limit %.1f, %d added" % (s, limit, added))
 
 
 def leave():
@@ -79,5 +83,5 @@ def leave():
     QtTest.QTest.keyClick(vp(), QtCore.Qt.Key_Escape)
 
 
-in_order([("setup", setup), ("fit", fit), ("hover", hover), ("tool", tool), ("first", first), ("second", second),
+in_order([("calibrate", slowness), ("setup", setup), ("fit", fit), ("hover", hover), ("tool", tool), ("first", first), ("second", second),
           ("leave", leave)], delay=800)

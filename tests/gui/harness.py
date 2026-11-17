@@ -424,6 +424,28 @@ def notices():
     return [w.text() for w in visible(QtWidgets.QLabel) if w.inherits("Gui::NotificationLabel")]
 
 
+# Desktop (Ryzen, Container, sonst ruhig): so lange braucht slowness() für ihre feste Arbeit
+REFERENCE_SECONDS = 0.11  # gemessen 2026-11-17, dreimal allein: 0,110 … 0,112 s
+_slowness = []
+
+
+def slowness():
+    """Wie viel langsamer diese Maschine gerade ist als der Desktop, auf dem die Zeitgrenzen gemessen sind (1 … 4).
+    Zeitgrenzen damit malnehmen: eine langsame CI oder parallele Tests reißen sie dann nicht mehr, eine quadratische
+    Stelle (zehn- bis fünfzigmal langsamer) aber weiter. Feste Arbeit: OCC-Booleans und eine Python-Schleife."""
+    if not _slowness:
+        import time
+        t = time.monotonic()
+        b = Part.makeBox(10, 10, 10)
+        for i in range(30):
+            b = b.cut(Part.makeCylinder(1 + i * 0.05, 10, App.Vector(5, 5, 0)))
+        sum(i * i for i in range(300000))
+        raw = time.monotonic() - t
+        _slowness.append(min(4.0, max(1.0, raw / REFERENCE_SECONDS)) if REFERENCE_SECONDS else 1.0)
+        L("slowness: reference work took %.3f s -> factor %.2f" % (raw, _slowness[0]))
+    return _slowness[0]
+
+
 def check(name, ok, detail=""):
     """Prüfung fürs Protokoll; Fehler stehen als FAIL darin"""
     L("%s %s %s" % ("ok  " if ok else "FAIL", name, detail))

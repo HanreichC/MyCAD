@@ -474,8 +474,9 @@ ein Feature nach dem anderen (je Tests, Hilfe EN/DE, README, Wiki, ein Commit). 
 | 11.10 | Absicht statt Befehl | Strg+K versteht Sätze wie „4 Löcher M3 in die Ecken, 5 mm vom Rand“, zeigt eine Vorschau, Enter übernimmt (Grundlage: Handschrift-Lesen). | offen |
 | 11.11 | Bezüge, die sich selbst prüfen | Jede unsichere geometrische Zuordnung wird angezeigt und per Klick repariert (systematisch statt je Fall). | offen |
 
-Kleinigkeiten aus dem Check vom 16.11.: Zeittests an der Maschinengeschwindigkeit kalibrieren (auf ausgelasteten
-Rechnern rot, `test_big_sketch_ui`); Körper treten im Phong-Modus nicht zurück (`fadeBodies`); `install.sh` auch mit
+Kleinigkeiten aus dem Check vom 16.11.: ~~Zeittests an der Maschinengeschwindigkeit kalibrieren~~ (erledigt 2026-11-17:
+`harness.slowness()` misst eine feste Arbeit und vergrößert die Grenzen um bis zu 4×; in der CI 31–40 ms bei 30 ms
+Grenze, unter lokaler Last Faktor 3,4); Körper treten im Phong-Modus nicht zurück (`fadeBodies`); `install.sh` auch mit
 Docker statt Podman (Build auf Windows lief von Hand über ein Docker-Volume).
 
 ---
