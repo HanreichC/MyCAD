@@ -295,7 +295,7 @@ mycad          # starts MyCAD
 
 The build runs inside a Podman container (`.devcontainer/`), or Docker if there is no Podman (`ENGINE=docker ./install.sh` picks it), so the compiler and dependencies stay off your system. Running it again only rebuilds what changed. `JOBS=8 ./install.sh` sets how many cores to use (the default is 8, at lowest priority).
 
-**You need** Linux with Wayland, Podman or Docker, and a GPU with OpenGL.
+**You need** Linux with Wayland, Podman or Docker, and a GPU with OpenGL. Windows 11 works too, through WSL2 (the Linux in Windows, with its WSLg display): install Ubuntu there, then the same three lines.
 
 <br>
 

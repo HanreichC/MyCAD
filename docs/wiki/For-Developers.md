@@ -11,7 +11,7 @@ git submodule update --init
 ```
 
 The build runs in a Podman container (`.devcontainer/`), or Docker if there is no Podman (`ENGINE=docker` picks it);
-nothing lands on your system:
+nothing lands on your system (also on Windows 11 in WSL2 with Ubuntu: the launcher passes the GPU through as /dev/dxg):
 
 ```sh
 ./install.sh   # builds MyCAD and adds the `mycad` launcher and a menu entry

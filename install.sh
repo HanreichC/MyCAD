@@ -19,7 +19,16 @@ if [ "$ENGINE" = podman ]; then
     WITH_GROUPS="--userns=keep-id --group-add keep-groups"
 else
     AS_USER=(--user "$(id -u):$(id -g)")
+    # Benutzer und Gruppen des Rechners nur lesend hinein: sonst kennt der Container die Id nicht, und MyCAD scheitert
+    # beim Start mit "Getting HOME path from system failed" (Podman trägt den Benutzer bei keep-id selbst ein)
     WITH_GROUPS="--user $(id -u):$(id -g)$(for g in $(id -G); do printf ' --group-add %s' "$g"; done)"
+    WITH_GROUPS="$WITH_GROUPS -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro"
+fi
+
+# Untermodule (OndselSolver, der Gelenk-Löser): fehlen sie, weil ohne --recursive geklont wurde, scheitert CMake mit
+# einer unverständlichen Meldung. Hier holen statt in der Anleitung zu hoffen.
+if [ -d "$ROOT/.git" ] && command -v git >/dev/null; then
+    git -C "$ROOT" submodule update --init --recursive
 fi
 
 echo "==> Container-Image bauen ($ENGINE)"
@@ -44,6 +53,12 @@ cat > "$BIN" <<EOF
 # MyCAD im Container starten: Wayland + GPU durchgereicht, Home gemountet (Dateien öffnen/speichern, Einstellungen).
 # Nvidia: im Image ist nur Mesa, und der Treiber muss exakt zum Kernelmodul passen, also den vom Rechner hineinreichen.
 # AMD und Intel laufen über Mesa aus dem Image. Welche GPU genutzt wird, entscheidet MyCAD beim Start.
+GPU=()
+[ -e /dev/dri ] && GPU+=(--device /dev/dri)
+# WSL (Linux unter Windows): die GPU heißt /dev/dxg, Mesa (d3d12) braucht Microsofts Bibliotheken aus /usr/lib/wsl
+if [ -e /dev/dxg ]; then
+    GPU+=(--device /dev/dxg -v /usr/lib/wsl:/usr/lib/wsl:ro -e LD_LIBRARY_PATH=/usr/lib/wsl/lib)
+fi
 NVIDIA=()
 if [ -e /dev/nvidiactl ]; then
     for dev in /dev/nvidia0 /dev/nvidiactl /dev/nvidia-modeset /dev/nvidia-uvm; do
@@ -64,7 +79,7 @@ for dir in /usr/bin /usr/local/bin /var/lib/flatpak/app; do
 done
 # /dev/input + /run/udev: Touchpad selbst lesen (3 Finger drehen), braucht die udev-Regel aus jomaa.kb96trackpad.config
 exec $ENGINE run --rm $WITH_GROUPS \\
-    --device /dev/dri "\${NVIDIA[@]}" "\${HOST[@]}" \\
+    "\${GPU[@]}" "\${NVIDIA[@]}" "\${HOST[@]}" \\
     -v "$ROOT:/workspace" -v "\$HOME:\$HOME" -w "\$PWD" \\
     -v "\$XDG_RUNTIME_DIR/\$WAYLAND_DISPLAY:/tmp/runtime/\$WAYLAND_DISPLAY" \\
     -v "\$XDG_RUNTIME_DIR/bus:/tmp/runtime/bus" -e DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/runtime/bus \\
