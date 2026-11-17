@@ -2093,6 +2093,35 @@ Design::QuickMeasure Design::quickMeasure(const std::vector<TopoDS_Shape>& shape
     return m;
 }
 
+std::vector<Design::ReferenceIssue> Design::referenceIssues(App::Document* doc)
+{
+    std::vector<ReferenceIssue> issues;
+    for (App::DocumentObject* obj : doc->getObjects()) {
+        if (auto warning = freecad_cast<App::PropertyString*>(obj->getPropertyByName("Warning")); warning && *warning->getValue()) {
+            issues.push_back({obj, "Warning", "", warning->getValue(), true});
+        }
+        std::vector<App::Property*> props;
+        obj->getPropertyList(props);
+        for (App::Property* prop : props) {
+            auto link = freecad_cast<App::PropertyLinkBase*>(prop);
+            if (!link) {
+                continue;
+            }
+            std::vector<App::DocumentObject*> targets;
+            std::vector<std::string> subs;
+            link->getLinks(targets, true, &subs, false);  // alte Schreibweise: verlorene Elemente tragen "?"
+            for (const std::string& sub : subs) {
+                if (Data::hasMissingElement(sub.c_str())) {
+                    std::string shown = sub;
+                    std::erase(shown, '?');
+                    issues.push_back({obj, prop->getName(), shown, "Lost reference: " + shown, false});
+                }
+            }
+        }
+    }
+    return issues;
+}
+
 int Design::completeDimensions(Sketcher::SketchObject* sketch, int& dof)
 {
     using Sketcher::Constraint;

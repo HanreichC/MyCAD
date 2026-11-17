@@ -51,11 +51,11 @@ Every closed region in a sketch is its own profile. Draw two circles inside each
 
 **Construct:** Offset Plane · Plane at Angle · Midplane · Plane · Axis · Point
 
-**Inspect:** Measure · Section Analysis · Print View
+**Inspect:** Measure · Section Analysis · Print View · Check References
 
 A cut goes through everything in its way, even bodies of other components. Extrude one side, symmetric, two sides, up to an object or through all, with a taper and as a thin wall. Click a face to drill a hole: it snaps to the middle or to the centre of a round face and is dimensioned to the two nearest edges by itself. Keep clicking for more holes; one at the same edge distance joins the row and moves with it. Holes follow ISO metric, metric fine, UNC and UNF, as clearance or tapped holes with the counterbore or countersink of the right screw. Threads are real and printable. Fillets can vary along an edge, patterns can follow a path, and mirror, pattern and move work with any plane, face, edge or axis.
 
-Every step goes into the **Timeline**. Go back, change a dimension, and the rest of the design follows. Drag steps into a new order, and group them into chips you can fold away. Hover a step and everything that depends on it lights up; delete something others rely on and MyCAD tells you first what goes along, instead of you finding out later. With **Change Parameters** you can drive the whole model from named values and formulas.
+Every step goes into the **Timeline**. Go back, change a dimension, and the rest of the design follows. Drag steps into a new order, and group them into chips you can fold away. Hover a step and everything that depends on it lights up; delete something others rely on and MyCAD tells you first what goes along, instead of you finding out later. With **Change Parameters** you can drive the whole model from named values and formulas. **Check References** lists every step that no longer finds its edges or faces for certain, with a button to show, re-pick or confirm each.
 
 ![Extrude](src/Gui/Shell/help/images/Design_Extrude.gif)
 

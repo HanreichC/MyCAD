@@ -67,7 +67,7 @@ Combine · Split Body · Move · Align · Scale
 
 **Construct:** Offset Plane · Plane at Angle · Midplane · Plane · Axis · Point
 
-**Inspect:** Measure · Section Analysis · **Print View**
+**Inspect:** Measure · Section Analysis · **Print View** · **Check References**
 
 Worth knowing:
 

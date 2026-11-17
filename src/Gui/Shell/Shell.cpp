@@ -4198,6 +4198,7 @@ const std::map<std::string, std::vector<std::string>>& searchSynonyms()
                                "fase entfernen", "rundung entfernen", "bohrung schliessen", "weg"}},
         {"Design_RedPen", {"rotstift", "korrektur", "korrigieren", "anmerken", "markup", "red pen", "redline", "handschrift",
                            "aufs modell schreiben"}},
+        {"Design_CheckReferences", {"bezuege", "bezug", "references", "lost", "verloren", "warnung", "warning", "pruefen", "check", "kaputt", "broken"}},
         {"Design_PrintView", {"druckansicht", "ueberhang", "overhang", "stuetzen", "support", "wandstaerke", "duenne wand",
                               "druckbar", "printable", "3d-druck pruefen"}},
         {"Design_PrintDown", {"druckrichtung", "auf das bett", "unterseite", "flach hinlegen", "lay flat", "print direction",
@@ -5562,7 +5563,7 @@ void Gui::Shell::install()
                  "Design_Shell", "Design_Draft", "Design_Combine|Design_SplitBody", "Design_Move|Design_Align|Design_Scale",
                  "#CONSTRUCT", "Design_OffsetPlane|Design_AnglePlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point",
                  "#ASSEMBLE", "Design_NewComponent", "Design_Joint",
-                 "#INSPECT", "Design_Measure", "Design_Section", "Design_PrintView", "Std_ViewFitAll",
+                 "#INSPECT", "Design_Measure", "Design_Section", "Design_PrintView", "Design_CheckReferences", "Std_ViewFitAll",
                  "#UTILITIES", "MyCAD_Search", "Design_Parameters", "Design_Appearance", "Design_Scribble|Design_RedPen", "Design_Note"});
     state.sketchBar =
         toolbar({"#CREATE", "Sketcher_CreateLine", "Sketcher_CreatePolyline", "Sketcher_CompCreateRectangles",

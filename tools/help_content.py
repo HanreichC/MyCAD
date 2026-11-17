@@ -1203,6 +1203,23 @@ A("Design_PrintView", "inspect", "Design_PrintView", ("Print View", "Druckansich
          "Überhänge liegen unten: dreh die Ansicht, um das Teil von unten zu sehen.")],
   commands=["Design_PrintView", "Design_PrintDown"], see=["Design_Print", "Design_Measure"])
 
+A("Design_CheckReferences", "inspect", "Design_CheckReferences", ("Check References", "Bezüge prüfen"),
+  (["check references", "lost reference", "broken", "warning", "which edge", "model changed", "repair"],
+   ["Bezüge prüfen", "verlorener Bezug", "kaputt", "Warnung", "welche Kante", "Modell geändert", "reparieren"]),
+  ("Lists every step that no longer finds the edges or faces it was made with for certain, and lets you check or fix each one.",
+   "Listet jeden Schritt, der die Kanten oder Flächen, mit denen er gemacht wurde, nicht mehr sicher findet, und lässt dich jeden prüfen oder reparieren."),
+  [("In the toolbar at the top, in the INSPECT section, click Check References. The panel opens on the right.",
+    "Klicke in der Werkzeugleiste oben im Bereich PRÜFEN auf Bezüge prüfen. Rechts öffnet sich das Panel."),
+   ("Each row names a step and what is uncertain: a profile or face that went away, edges found again by their position after a change, or a reference to an element that no longer exists, in any step.",
+    "Jede Zeile nennt einen Schritt und was unsicher ist: ein Profil oder eine Fläche, die weg ist, Kanten, die nach einer Änderung über ihre Lage wiedergefunden wurden, oder ein Bezug auf ein Element, das es nicht mehr gibt, in jedem Schritt."),
+   ("Show selects the step and the edges or faces concerned. Edit opens the step to choose them again. Looks Right confirms a guess that is fine.",
+    "Zeigen wählt den Schritt und die betroffenen Kanten oder Flächen. Bearbeiten öffnet den Schritt, um sie neu zu wählen. Stimmt so bestätigt eine Vermutung, die passt."),
+   ("With nothing uncertain the panel says that all references are certain. Close it with Close or Esc.",
+    "Ist nichts unsicher, sagt das Panel, dass alle Bezüge sicher sind. Schließe es mit Schließen oder Esc.")],
+  tips=[("Steps with a warning also carry an orange badge in the timeline; their menu has the same Looks Right.",
+         "Schritte mit einer Warnung tragen auch in der Zeitleiste ein orangefarbenes Abzeichen; ihr Menü hat dasselbe Stimmt so.")],
+  see=["Design_Measure", "start_timeline"])
+
 A("Design_Measure", "inspect", "Design_Measure", ("Measure", "Messen"),
   (["measure", "distance", "length", "angle", "area", "volume", "radius", "diameter", "size"], ["messen", "Abstand", "Länge", "Winkel", "Fläche", "Volumen", "Radius", "Durchmesser", "Größe"]),
   ("Shows lengths, distances, angles, radii, areas and volumes of what you click.", "Zeigt Längen, Abstände, Winkel, Radien, Flächen und Volumen von dem, was du anklickst."),

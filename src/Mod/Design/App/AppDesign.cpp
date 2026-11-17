@@ -65,6 +65,8 @@ public:
                            "printCheck(body[, up, angle, wall]): dict of overhang, bed and thin areas (mm²) and triangles");
         add_varargs_method("printFixes", &Module::printFixes,
                            "printFixes(doc): [(feature name, label, property, value)] that make the design print better");
+        add_varargs_method("referenceIssues", &Module::referenceIssues,
+                           "referenceIssues(doc): [(object name, property, element, text, is warning)] not certainly assigned");
         add_varargs_method("completeDimensions", &Module::completeDimensions,
                            "completeDimensions(sketch): (dimensions added, degrees of freedom left)");
         add_varargs_method("quickMeasure", &Module::quickMeasure,
@@ -311,6 +313,15 @@ private:
         for (const auto& f : Design::printFixes(doc(args))) {
             out.append(Py::TupleN(Py::String(f.feature->getNameInDocument()), Py::String(f.label), Py::String(f.property),
                                   Py::Float(f.value)));
+        }
+        return out;
+    }
+    Py::Object referenceIssues(const Py::Tuple& args)
+    {
+        Py::List out;
+        for (const auto& i : Design::referenceIssues(doc(args))) {
+            out.append(Py::TupleN(Py::String(i.object->getNameInDocument()), Py::String(i.property), Py::String(i.element),
+                                  Py::String(i.text), Py::Boolean(i.warning)));
         }
         return out;
     }

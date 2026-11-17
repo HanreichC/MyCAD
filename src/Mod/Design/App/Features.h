@@ -162,6 +162,19 @@ struct QuickMeasure
     Base::Vector3d anchor;
 };
 DesignExport QuickMeasure quickMeasure(const std::vector<TopoDS_Shape>& shapes);
+/// Phase 11.11 Bezüge, die sich selbst prüfen: alles, was nicht sicher zugeordnet ist, an einer Stelle. Warnungen der
+/// Schritte (Profil weg, Skizze ohne Fläche, Kanten nach Lage wiedergefunden) und jeder Verweis auf ein Element, das
+/// FreeCAD als verloren markiert ("?"), in jeder Eigenschaft jedes Objekts. warning: die Meldung stammt aus "Warning"
+/// (bestätigen leert sie), sonst ein verlorener Verweis (property, element).
+struct ReferenceIssue
+{
+    App::DocumentObject* object;
+    std::string property;
+    std::string element;
+    std::string text;
+    bool warning;
+};
+DesignExport std::vector<ReferenceIssue> referenceIssues(App::Document* doc);
 /// "Was fehlt noch?" (Phase 11.6): Maße, die der Skizze fehlen, nach Absicht ergänzen. Ein Profil mittig um den
 /// Ursprung wird symmetrisch zu ihm, dann Längen, Durchmesser und Radien, dann die Lage (Abstand zum Ursprung in x und
 /// y), sonst Waagrecht/Senkrecht/Winkel. Jedes Maß bleibt nur, wenn es einen Freiheitsgrad nimmt (kein Widerspruch,

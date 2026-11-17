@@ -369,6 +369,25 @@ def ci_print_view():
     wait(3)
 
 
+def ci_check_references():
+    def build():
+        dz = ci_design(); d = doc()
+        f, b = dz.box(d, 30, 20, 10, at=(-15, -10))
+        # so sähe es nach einer Änderung aus: Kanten nach Lage wiedergefunden
+        f.Warning = "The model changed under this step; check that it still uses the right edges or faces: Edge3"
+        f.ErrorElements = ["Edge3"]
+        for o in d.Objects:
+            if o.TypeId == "Sketcher::SketchObject":
+                o.Visibility = False
+    ci_model(build, 1.3, -80)  # nach links: rechts öffnet sich das Panel
+    step("Design_CheckReferences", lambda: use("Design_CheckReferences"))
+    wait(2)
+    step("show", lambda: ci_press([b for b in visible(QtWidgets.QPushButton) if b.text() == "Show"][0]))
+    wait(2)
+    step("looks right", lambda: ci_press([b for b in visible(QtWidgets.QPushButton) if b.text() == "Looks Right"][0]))
+    wait(3)
+
+
 def ci_measure():
     ci_model(lambda: ci_body_xz(CI_STEP, 40, "Step"), 1.3, -80)  # nach links: rechts öffnet sich das Panel
     step("Design_Measure", lambda: use("Design_Measure"))
@@ -463,6 +482,7 @@ ci_scenario("Design_Point", ci_point, final=None)
 ci_scenario("Design_NewComponent", ci_new_component, final=None)
 ci_scenario("Design_Joint", ci_joint, final=(1.7, 90))
 ci_scenario("Design_PrintView", ci_print_view, final=None)
+ci_scenario("Design_CheckReferences", ci_check_references, final=None)
 ci_scenario("Design_Measure", ci_measure, final=None)
 ci_scenario("Design_Section", ci_section, final=None)
 ci_scenario("Std_ViewFitAll", ci_fit_all, final=None)

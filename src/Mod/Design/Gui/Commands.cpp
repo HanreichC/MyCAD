@@ -3551,6 +3551,125 @@ private:
     QLabel* result;
 };
 
+/// Phase 11.11 Bezüge, die sich selbst prüfen: alles, was nicht sicher zugeordnet ist (Design::referenceIssues), in
+/// einer Liste. Je Zeile Zeigen (wählt den Schritt und die betroffenen Elemente), Bearbeiten (Dialog zum neu Wählen)
+/// und bei Warnungen Sieht richtig aus (bestätigen). Leer: "Alle Bezüge sind sicher".
+class TaskReferences: public Gui::TaskView::TaskDialog
+{
+public:
+    explicit TaskReferences(App::Document* doc)
+        : doc(doc)
+    {
+        box = new QWidget;
+        box->setWindowTitle(T("Check References"));
+        box->setObjectName(QStringLiteral("References"));
+        new QVBoxLayout(box);
+        addTaskBox(box, false);
+        refresh();
+    }
+    QDialogButtonBox::StandardButtons getStandardButtons() const override
+    {
+        return QDialogButtonBox::Close;
+    }
+    bool accept() override
+    {
+        return true;
+    }
+    bool reject() override
+    {
+        return true;
+    }
+
+private:
+    void refresh()
+    {
+        for (QWidget* w : box->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
+            w->deleteLater();
+        }
+        auto lay = static_cast<QVBoxLayout*>(box->layout());
+        const auto issues = Design::referenceIssues(doc);
+        if (issues.empty()) {
+            auto ok = new QLabel(T("All references are certain: every step finds the edges and faces it was made with."));
+            ok->setWordWrap(true);
+            lay->addWidget(ok);
+            return;
+        }
+        for (const auto& issue : issues) {
+            auto row = new QWidget;
+            row->setObjectName(QStringLiteral("ReferenceIssue"));
+            auto rowLay = new QVBoxLayout(row);
+            rowLay->setContentsMargins(0, 4, 0, 8);
+            QString text = issue.warning ? T(issue.text.c_str()) : T("Lost reference: %1").arg(QString::fromStdString(issue.element));
+            auto label = new QLabel(QStringLiteral("<b>%1</b><br>%2").arg(QString::fromUtf8(issue.object->Label.getValue()).toHtmlEscaped(),
+                                                                       text.toHtmlEscaped()));
+            label->setWordWrap(true);
+            rowLay->addWidget(label);
+            auto buttons = new QHBoxLayout;
+            const App::DocumentObjectT target(issue.object);
+            const auto add = [&buttons](const QString& name, std::function<void()> run) {
+                auto b = new QPushButton(name);
+                b->setAutoDefault(false);
+                QObject::connect(b, &QPushButton::clicked, b, [run] { QTimer::singleShot(0, run); });
+                buttons->addWidget(b);
+            };
+            add(T("Show"), [target] {
+                App::DocumentObject* o = target.getObject();
+                if (!o) {
+                    return;
+                }
+                Gui::Selection().clearSelection();
+                Gui::Selection().addSelection(o->getDocument()->getName(), o->getNameInDocument());
+                // betroffene Kanten/Flächen am Körper (Warnung "Kanten nach Lage wiedergefunden")
+                auto elements = freecad_cast<App::PropertyStringList*>(o->getPropertyByName("ErrorElements"));
+                auto bodies = freecad_cast<App::PropertyLinkList*>(o->getPropertyByName("Bodies"));
+                if (elements && bodies && bodies->getSize()) {
+                    App::DocumentObject* body = bodies->getValues().front();
+                    for (const auto& e : elements->getValues()) {
+                        Gui::Selection().addSelection(o->getDocument()->getName(), body->getNameInDocument(), e.c_str());
+                    }
+                }
+            });
+            add(T("Edit"), [target] {
+                App::DocumentObject* o = target.getObject();
+                if (!o) {
+                    return;
+                }
+                Gui::Control().closeDialog();  // ein Dialog zur Zeit: erst die Liste zu, dann der Schritt
+                QTimer::singleShot(0, [target] {
+                    if (App::DocumentObject* again = target.getObject()) {
+                        auto gdoc = Gui::Application::Instance->getDocument(again->getDocument());
+                        gdoc->setEdit(gdoc->getViewProvider(again));
+                    }
+                });
+            });
+            if (issue.warning) {
+                add(T("Looks Right"), [this, target] {
+                    App::DocumentObject* o = target.getObject();
+                    auto warning = o ? freecad_cast<App::PropertyString*>(o->getPropertyByName("Warning")) : nullptr;
+                    if (!warning) {
+                        return;
+                    }
+                    doc->openTransaction("Confirm");
+                    warning->setValue("");
+                    doc->commitTransaction();
+                    refresh();
+                });
+            }
+            buttons->addStretch(1);
+            rowLay->addLayout(buttons);
+            lay->addWidget(row);
+        }
+    }
+
+    App::Document* doc;
+    QWidget* box = nullptr;
+};
+
+void startCheckReferences(App::Document* doc)
+{
+    Gui::Control().showDialog(new TaskReferences(doc));
+}
+
 /// Material per Ziehen: Kugel oder Chip ziehen, auf einem Körper in der Ansicht loslassen
 constexpr const char* MaterialMime = "application/x-mycad-material";
 
@@ -4852,6 +4971,9 @@ void CreateDesignCommands()
                                      }));
     // ohne Menütext: nicht in Suche und Leisten, nur für den Doppelklick auf eine Konstruktionsebene
     mgr.addCommand(new DesignCommand("Design_EditConstruction", "", "", "", "", editConstruction));
+    mgr.addCommand(new DesignCommand("Design_CheckReferences", "Check References",
+                                     "Check References: list every step that no longer finds its edges or faces for certain",
+                                     "Design_CheckReferences", "", startCheckReferences));
     mgr.addCommand(new DesignCommand("Design_Measure", "Measure",
                                      "Measure: select one or two points, edges, faces or bodies", "Std_Measure",
                                      "I", startMeasure));
