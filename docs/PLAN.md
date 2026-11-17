@@ -476,8 +476,9 @@ ein Feature nach dem anderen (je Tests, Hilfe EN/DE, README, Wiki, ein Commit). 
 
 Kleinigkeiten aus dem Check vom 16.11.: ~~Zeittests an der Maschinengeschwindigkeit kalibrieren~~ (erledigt 2026-11-17:
 `harness.slowness()` misst eine feste Arbeit und vergrößert die Grenzen um bis zu 4×; in der CI 31–40 ms bei 30 ms
-Grenze, unter lokaler Last Faktor 3,4); ~~Körper treten im Phong-Modus nicht zurück~~ (erledigt 2026-11-17: schlichter Shader nur bei offener Skizze, `test_sketch_contrast`); `install.sh` auch mit
-Docker statt Podman (Build auf Windows lief von Hand über ein Docker-Volume).
+Grenze, unter lokaler Last Faktor 3,4); ~~Körper treten im Phong-Modus nicht zurück~~ (erledigt 2026-11-17: schlichter Shader nur bei offener Skizze, `test_sketch_contrast`); ~~`install.sh` auch mit
+Docker statt Podman~~ (erledigt 2026-11-17: `ENGINE=docker`, ohne Podman von selbst; Docker läuft als Benutzer mit
+seinen Gruppen; Trockenlauf mit Attrappe geprüft, auf Linux noch nicht echt gestartet).
 
 ---
 

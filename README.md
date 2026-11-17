@@ -287,13 +287,13 @@ The AppImage is built for current Arch-based systems such as CachyOS.
 ```sh
 git clone --recursive https://github.com/HanreichC/MyCAD.git   # --recursive fetches the joint solver
 cd MyCAD
-./install.sh   # builds MyCAD in a Podman container and adds the `mycad` launcher and a menu entry
+./install.sh   # builds MyCAD in a Podman (or Docker) container and adds the `mycad` launcher and a menu entry
 mycad          # starts MyCAD
 ```
 
-The build runs inside a Podman container (`.devcontainer/`), so the compiler and dependencies stay off your system. Running it again only rebuilds what changed. `JOBS=8 ./install.sh` sets how many cores to use (the default is 6, at lowest priority).
+The build runs inside a Podman container (`.devcontainer/`), or Docker if there is no Podman (`ENGINE=docker ./install.sh` picks it), so the compiler and dependencies stay off your system. Running it again only rebuilds what changed. `JOBS=8 ./install.sh` sets how many cores to use (the default is 8, at lowest priority).
 
-**You need** Linux with Wayland, Podman, and a GPU with OpenGL.
+**You need** Linux with Wayland, Podman or Docker, and a GPU with OpenGL.
 
 <br>
 

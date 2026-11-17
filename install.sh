@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Baut MyCAD im Podman-Container und legt den Starter `mycad` + Menüeintrag an.
+# Baut MyCAD im Podman- oder Docker-Container und legt den Starter `mycad` + Menüeintrag an.
 # Nichts wird global installiert (siehe CLAUDE.md). Nochmal ausführen = inkrementell neu bauen.
-#   JOBS=6 ./install.sh     # Anzahl paralleler Compiler (Standard 6, läuft mit niedrigster Priorität)
+#   JOBS=6 ./install.sh            # Anzahl paralleler Compiler (Standard 8, läuft mit niedrigster Priorität)
+#   ENGINE=docker ./install.sh     # Docker statt Podman (ohne Angabe: Podman, wenn vorhanden, sonst Docker)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,14 +10,25 @@ JOBS="${JOBS:-8}"
 IMAGE=mycad-dev
 BIN="$HOME/.local/bin/mycad"
 DESKTOP="$HOME/.local/share/applications/mycad.desktop"
+ENGINE="${ENGINE:-$(command -v podman >/dev/null && echo podman || echo docker)}"
+command -v "$ENGINE" >/dev/null || { echo "Weder Podman noch Docker gefunden: eins davon installieren." >&2; exit 1; }
+# Dateien im Repo und im Home gehören dem Benutzer, nicht root: Podman bildet ihn ab (keep-id), Docker läuft als er,
+# mit seinen Gruppen (video/render für die GPU, input für das Touchpad)
+if [ "$ENGINE" = podman ]; then
+    AS_USER=(--userns=keep-id)
+    WITH_GROUPS="--userns=keep-id --group-add keep-groups"
+else
+    AS_USER=(--user "$(id -u):$(id -g)")
+    WITH_GROUPS="--user $(id -u):$(id -g)$(for g in $(id -G); do printf ' --group-add %s' "$g"; done)"
+fi
 
-echo "==> Container-Image bauen"
-podman build -q -t "$IMAGE" "$ROOT/.devcontainer" >/dev/null
+echo "==> Container-Image bauen ($ENGINE)"
+"$ENGINE" build -q -t "$IMAGE" "$ROOT/.devcontainer" >/dev/null
 
 # Nach Absturz/Stromausfall bleiben leere Objektdateien liegen, an denen der Linker scheitert.
 find "$ROOT/build" \( -name '*.o' -o -name '*.so' -o -name '*.a' \) -size 0 -delete 2>/dev/null || true
 
-run() { podman run --rm --userns=keep-id -v "$ROOT:/workspace" -w /workspace \
+run() { "$ENGINE" run --rm "${AS_USER[@]}" -v "$ROOT:/workspace" -w /workspace \
             -e CCACHE_DIR=/workspace/.ccache "$IMAGE" "$@"; }
 
 echo "==> Konfigurieren"
@@ -51,7 +63,7 @@ for dir in /usr/bin /usr/local/bin /var/lib/flatpak/app; do
     [ -d "\$dir" ] && HOST+=(-v "\$dir:/run/host\$dir:ro")
 done
 # /dev/input + /run/udev: Touchpad selbst lesen (3 Finger drehen), braucht die udev-Regel aus jomaa.kb96trackpad.config
-exec podman run --rm --userns=keep-id --group-add keep-groups \\
+exec $ENGINE run --rm $WITH_GROUPS \\
     --device /dev/dri "\${NVIDIA[@]}" "\${HOST[@]}" \\
     -v "$ROOT:/workspace" -v "\$HOME:\$HOME" -w "\$PWD" \\
     -v "\$XDG_RUNTIME_DIR/\$WAYLAND_DISPLAY:/tmp/runtime/\$WAYLAND_DISPLAY" \\
