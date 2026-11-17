@@ -52,3 +52,6 @@ test_sketch_grid_zoom.py
 test_enter_and_type.py
 test_zoom_into.py
 test_sketch_open_fit.py
+test_reentrancy.py
+test_orbit_pivot.py
+test_presspull.py

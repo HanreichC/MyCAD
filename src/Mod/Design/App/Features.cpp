@@ -908,18 +908,20 @@ void Design::attachToBodies(Feature* feature, const std::vector<Body*>& bodies)
 {
     std::vector<App::DocumentObject*> objs, bases;
     for (auto b : bodies) {
-        objs.push_back(b);
-        bases.push_back(stateAtMarker(b));
+        // Körper, den es am Marker noch nicht gibt (sein Erzeuger ist zurückgerollt): nichts zu verändern. Ein leerer
+        // Vorzustand ließ BaseFeatures.setValues werfen (Zufalls-Workflow, Seed 30)
+        if (App::DocumentObject* state = stateAtMarker(b)) {
+            objs.push_back(b);
+            bases.push_back(state);
+        }
     }
     feature->Bodies.setValues(objs);
     feature->BaseFeatures.setValues(bases);
-    for (size_t i = 0; i < bodies.size(); ++i) {
-        if (!bases[i]) {
-            continue;
-        }
-        rewireUsers(bases[i], feature, bodies[i], feature);  // eingefügt: spätere Features bauen auf diesem auf
-        if (bodies[i]->Tip.getValue() == bases[i]) {
-            bodies[i]->Tip.setValue(feature);
+    for (size_t i = 0; i < objs.size(); ++i) {
+        auto body = static_cast<Body*>(objs[i]);
+        rewireUsers(bases[i], feature, body, feature);  // eingefügt: spätere Features bauen auf diesem auf
+        if (body->Tip.getValue() == bases[i]) {
+            body->Tip.setValue(feature);
         }
     }
 }
@@ -1394,15 +1396,23 @@ std::string Design::elementName(const TopoDS_Shape& shape, const TopoDS_Shape& e
 void Design::stableRef(App::DocumentObject*& obj, std::string& element)
 {
     auto body = freecad_cast<Body*>(obj);
-    auto tip = body ? freecad_cast<Feature*>(stateAtMarker(body)) : nullptr;
-    if (!tip || element.empty()) {
+    if (!body || element.empty()) {
         return;
     }
+    // Der Body zeigt den letzten gelungenen Zustand: ist der letzte Schritt rot (leeres Ergebnis), steht das Element
+    // weiter vorn. Ohne Treffer blieb der Bezug am Body, und der nächste Cut aus dieser Skizze schloss einen Kreis
     const TopoDS_Shape sub = body->Shape.getShape().getSubShape(element.c_str(), true);
-    const std::string name = elementName(tip->Shape.getShape().getShape(), sub);
-    if (!name.empty()) {
-        obj = tip;
-        element = name;
+    for (auto f = freecad_cast<Feature*>(stateAtMarker(body)); f;) {
+        const std::string name = elementName(f->Shape.getShape().getShape(), sub);
+        if (!name.empty()) {
+            obj = f;
+            element = name;
+            return;
+        }
+        const auto& bodies = f->Bodies.getValues();
+        const auto& bases = f->BaseFeatures.getValues();
+        const auto idx = std::ranges::find(bodies, body) - bodies.begin();
+        f = idx < static_cast<long>(bases.size()) ? freecad_cast<Feature*>(bases[idx]) : nullptr;
     }
 }
 

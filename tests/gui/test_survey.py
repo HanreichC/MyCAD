@@ -48,7 +48,8 @@ run([
     ("recompute", lambda: App.ActiveDocument.recompute()),
     ("shot sketch", lambda: shot("sketch")),
     ("finish", lambda: click(button("Sketcher_LeaveSketch"))),
-    ("msg", lambda: QtCore.QTimer.singleShot(800, lambda: (QtWidgets.QApplication.activeModalWidget().grab().save(os.environ["OUT"] + ".msgbox.png"), QtWidgets.QApplication.activeModalWidget().close()))),
+    # Seit 2026-11-11 meist ein Hinweis unter dem ViewCube statt eines Meldungsfensters: nur ein offenes Fenster fotografieren
+    ("msg", lambda: QtCore.QTimer.singleShot(800, lambda: (lambda w: w and (w.grab().save(os.environ["OUT"] + ".msgbox.png"), w.close()))(QtWidgets.QApplication.activeModalWidget()))),
     ("extrude without selection", lambda: (Gui.Selection.clearSelection(), [setattr(p, "Visibility", True) for p in []], click(button("Design_Combine")))),
     ("wait", lambda: None),
 ])

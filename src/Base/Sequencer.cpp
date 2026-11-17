@@ -273,6 +273,9 @@ bool SequencerLauncher::next(bool canAbort)
 void SequencerLauncher::setProgress(size_t pos)
 {
     std::lock_guard<std::recursive_mutex> locker(SequencerP::mutex);
+    if (SequencerP::_topLauncher != this) {
+        return;  // MyCAD: wie next(): nur der äußerste Fortschritt zeigt an
+    }
     SequencerBase::Instance().setProgress(pos);
 }
 
@@ -290,5 +293,10 @@ bool SequencerLauncher::wasCanceled() const
 void SequencerLauncher::stop()
 {
     std::lock_guard<std::recursive_mutex> locker(SequencerP::mutex);
+    // MyCAD: ein innerer Fortschritt (jede Boolesche Operation in einer Neuberechnung) baute hier die Eingabesperre des
+    // äußeren ab; danach liefen Klicks mitten in die Rechnung (Abbrechen während der Vorschau -> Absturz)
+    if (SequencerP::_topLauncher != this) {
+        return;
+    }
     SequencerBase::Instance().stop();
 }

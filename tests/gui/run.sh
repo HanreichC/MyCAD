@@ -56,4 +56,10 @@ else
         mycad-dev /workspace/build/bin/FreeCAD "$SCRIPT" > "$OUT.log" 2>&1 || true
     [ -n "$WATCH" ] && kill "$WATCH" 2> /dev/null
 fi
+# Log-Wächter: Meldungen, hinter denen Fehlerklassen stecken (Abhängigkeitskreis, Endlos-Neuberechnung, Rechnen im
+# Rechnen, Absturz, Python-Fehler), standen sonst nur im Log; so blieb der Kreis aus "Monitor Light" unbemerkt.
+# Ein Test, der eine davon absichtlich auslöst, nennt sie in einer Zeile "# log-ok: <Text>".
+LOG_BAD='graph must be a DAG|still touched after recompute|Recursive calling of recompute|Program received signal|Unhandled .* caught|ActiveDialog was null|^Traceback'
+grep -E "$LOG_BAD" "$OUT.log" 2> /dev/null | { ok="$(sed -n 's/^# log-ok: //p' "$SCRIPT")"; if [ -n "$ok" ]; then grep -v -F "$ok"; else cat; fi; } \
+    | sort | uniq -c | sed 's/^ *\([0-9]*\) /FAIL log (\1x): /' >> "$OUT.txt" || true
 cat "$OUT.txt"

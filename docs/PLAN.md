@@ -252,6 +252,14 @@ danach kommen sieben neue Ideen. Notizen und Scribble waren der Anfang.
 - **H** Headless-Test: `tests/design/test_<name>.py` mit `FreeCADCmd` und `unittest` aus der Standardbibliothek. Prüft
   Geometrie über Volumen, Flächen, Maße, Gültigkeit; deckt Speichern/Laden und Undo ab.
 - **G** GUI-Test: `tests/gui/test_<name>.py`, echte Klicks wie bisher, in CI unter Xvfb.
+- **Fehlerklassen statt Einzelfälle** (seit 2026-11-17, nach "Monitor Light"):
+  - Jeder H-Test prüft am Ende `model_problems`: kein Abhängigkeitskreis, nach dem Neuberechnen bleibt nichts liegen.
+  - `tests/design/test_fuzz.py`: zufällige, per Seed reproduzierbare Arbeitsabläufe auf den Wegen der Oberfläche,
+    Invarianten nach jedem Schritt. Länger suchen: `FUZZ_SEEDS=200 FUZZ_STEPS=25`, echte Dateien: `FUZZ_FILES=a.mycad:b.mycad`,
+    Fund nachstellen: `FUZZ_SEED=n`.
+  - Log-Wächter in `tests/gui/run.sh`: Kreis, Endlos-Neuberechnung, Rechnen im Rechnen, Absturz, Python-Traceback im Log
+    = FAIL (absichtliche: `# log-ok: <Text>` im Test).
+  - `test_reentrancy`: Klicks und Esc mitten in einer langen Neuberechnung.
 - Jede neue Oberfläche geht durch MyStyle § 14 (Hell, Dunkel, Kontrast, Transparenz und Bewegung reduziert, Deutsch).
 
 **Fertig heißt** für jedes Paket: alle Tests grün (auch die alten), Hilfe-Artikel EN/DE, Übersetzungen, README-Abschnitt

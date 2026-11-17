@@ -3735,16 +3735,28 @@ std::string pyObject(const App::DocumentObject* obj)
 std::string runDesign(App::Document* doc, const char* transaction, const std::string& expr)
 {
     doc->openTransaction(transaction);
+    // Erwartete Ablehnung (ValueError, z. B. "It needs Sketch" beim Verschieben) in Python abfangen: sonst schreibt
+    // FreeCAD jede Python-Ausnahme als Traceback ins Log, und der Log-Wächter der GUI-Tests hielte sie für einen Fehler
+    static constexpr char refused = '\x01';
+    std::string result, error;
     try {
         Base::PyGILStateLocker lock;
-        const std::string result = Base::Interpreter().runStringWithKey(
-            ("import FreeCAD as App, Design\n_r = repr(" + expr + ")").c_str(), "_r");
-        doc->commitTransaction();
-        return result;
+        result = Base::Interpreter().runStringWithKey(
+            ("import FreeCAD as App, Design\ntry:\n    _r = repr(" + expr + ")\nexcept ValueError as e:\n    _r = '\\x01ValueError: ' + str(e)")
+                .c_str(),
+            "_r");
+        if (result.empty() || result.front() != refused) {
+            doc->commitTransaction();
+            return result;
+        }
+        error = result.substr(1);
     }
     catch (const Base::Exception& e) {
+        error = e.what();
+    }
+    {
         doc->abortTransaction();
-        QString text = QString::fromUtf8(e.what()).trimmed();
+        QString text = QString::fromUtf8(error).trimmed();
         static const QRegularExpression needs(QStringLiteral("It (needs|is needed by) (.*)$"));
         const auto m = needs.match(text);
         if (m.hasMatch()) {

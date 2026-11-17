@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # runs: 2  (tests/run_all.sh startet ihn zweimal mit demselben Home: erst abstürzen, dann prüfen)
+# log-ok: Program received signal
 """Absturz: der erste Lauf stürzt absichtlich ab (Nullzeiger). Der zweite sagt beim Start, dass MyCAD unerwartet beendet
 wurde und die Designs gespeichert sind; im Archiv liegen der Bericht und daneben der lesbare Stack mit Funktionsnamen.
     MYCAD_HOME=/tmp/c tests/gui/run.sh tests/gui/test_crash_report.py /tmp/c1   → stürzt ab

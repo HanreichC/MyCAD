@@ -65,3 +65,17 @@ class DeletedSketch(DesignTest):
         self.assertEqual(errors(self.doc), [])
         self.assertIn("Profile gone", cut.Warning)
         self.assertAlmostEqual(b.Shape.Volume, 4000, delta=1e-3)
+
+
+class FailedLastStep(DesignTest):
+    def test_sketch_on_body_with_red_last_step_does_not_hang_on_the_body(self):
+        # Zufalls-Workflow Seed 111: Press Pull, das den ganzen Quader wegnähme, ist rot; eine Skizze auf den Körper hing
+        # dann am Body selbst, und der nächste Cut aus ihr schloss einen Kreis
+        _, b = box(self.doc, 20, 20, 10)
+        pull = dress(self.doc, "Design::PressPull", b, [top_face(b)], Distance=-30)
+        self.assertTrue(failed(pull))
+        obj, sub = Design.stableRef(b, top_face(b))
+        self.assertNotEqual(obj.TypeId, "Design::Body")
+        sk = sketch(self.doc, rect(5, 5, 10, 10), support=(obj, sub))
+        extrude(self.doc, sk, 5, op="Cut", bodies=[b], Reversed=True)
+        self.assertEqual(model_problems(self.doc), [])
