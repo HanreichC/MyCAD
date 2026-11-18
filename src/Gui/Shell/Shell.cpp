@@ -668,7 +668,26 @@ void applyTheme()
 /// Icon für einen Befehl: eigenes MyCAD-Icon, sonst das FreeCAD-Icon neutral eingefärbt
 QIcon commandIcon(const QString& name, const QIcon& fallback)
 {
-    QIcon icon = designIcon(name);
+    // Aufräumliste E22: Befehle, für die ein vorhandenes MyCAD-Bild passt (gesehen in Menüs, Leisten und Strg+K)
+    static const std::map<QString, QString> same = {
+        {QStringLiteral("Design_Body"), QStringLiteral("Tree_Body")},
+        {QStringLiteral("Design_Delete"), QStringLiteral("Design_ScribbleDeleteSelection")},
+        {QStringLiteral("Std_SaveAs"), QStringLiteral("Std_Save")},
+        {QStringLiteral("Sketcher_NewSketch"), QStringLiteral("Design_CreateSketch")},
+        {QStringLiteral("Sketcher_Grid"), QStringLiteral("Palette_Grid")},
+        {QStringLiteral("Sketcher_Snap"), QStringLiteral("Palette_Snap")},
+        {QStringLiteral("Sketcher_ViewSection"), QStringLiteral("Palette_Section")},
+        {QStringLiteral("Sketcher_ConstrainCoincident"), QStringLiteral("Sketcher_ConstrainCoincidentUnified")},
+        {QStringLiteral("Sketcher_ConstrainPointOnObject"), QStringLiteral("Sketcher_ConstrainCoincidentUnified")},
+        {QStringLiteral("Sketcher_ConstrainDistance"), QStringLiteral("Sketcher_Dimension")},
+        {QStringLiteral("Sketcher_ConstrainDistanceX"), QStringLiteral("Sketcher_Dimension")},
+        {QStringLiteral("Sketcher_ConstrainDistanceY"), QStringLiteral("Sketcher_Dimension")},
+        {QStringLiteral("Sketcher_ChangeDimensionConstraint"), QStringLiteral("Sketcher_Dimension")},
+        {QStringLiteral("Sketcher_ConstrainRadiam"), QStringLiteral("Sketcher_ConstrainRadius")},
+        {QStringLiteral("Sketcher_CompConstrainRadDia"), QStringLiteral("Sketcher_ConstrainRadius")},
+    };
+    const auto alias = same.find(name);
+    QIcon icon = designIcon(alias == same.end() ? name : alias->second);
     return icon.isNull() ? neutralIcon(fallback) : icon;
 }
 

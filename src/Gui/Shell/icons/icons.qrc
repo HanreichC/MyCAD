@@ -2,6 +2,20 @@
     <qresource prefix="/mycad/icons">
         <file>Std_New.svg</file>
         <file>Std_Open.svg</file>
+        <file>Sketcher_ConstrainAngle.svg</file>
+        <file>Sketcher_ConstrainDiameter.svg</file>
+        <file>Sketcher_ConstrainHorVer.svg</file>
+        <file>Sketcher_ConstrainLock.svg</file>
+        <file>Sketcher_ConstrainRadius.svg</file>
+        <file>Sketcher_ViewSketch.svg</file>
+        <file>Std_ViewBottom.svg</file>
+        <file>Std_ViewFront.svg</file>
+        <file>Std_ViewIsometric.svg</file>
+        <file>Std_ViewLeft.svg</file>
+        <file>Std_ViewRear.svg</file>
+        <file>Std_ViewRight.svg</file>
+        <file>Std_ViewTop.svg</file>
+        <file>Sketcher_LeaveSketch.svg</file>
         <file>Std_Save.svg</file>
         <file>Design_Plane.svg</file>
         <file>Design_Midplane.svg</file>
