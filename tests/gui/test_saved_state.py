@@ -24,6 +24,19 @@ def state(expect, why):
     check(why, m.isVisible() == expect, "visible=%s tip=%s" % (m.isVisible(), m.toolTip()))
 
 
+def keep_wheeling(seconds=4.0):
+    """H3: Mausrad in kleinen Schritten, wie beim Zoomen, alle 200 ms; währenddessen speichert MyCAD nicht"""
+    from PySide6 import QtGui
+    vp = view().viewport(); p = QtCore.QPointF(vp.rect().center())
+    for k in range(int(seconds / 0.2)):
+        def turn(k=k):
+            ev = QtGui.QWheelEvent(p, QtCore.QPointF(vp.mapToGlobal(p.toPoint())), QtCore.QPoint(),
+                                   QtCore.QPoint(0, 15 if k % 2 else -15), QtCore.Qt.NoButton, QtCore.Qt.NoModifier,
+                                   QtCore.Qt.NoScrollPhase, False)
+            QtWidgets.QApplication.sendEvent(vp, ev)
+        QtCore.QTimer.singleShot(int(k * 200), turn)
+
+
 def restore():
     grp.SetBool("AlwaysSave", False)
     grp.SetString("ProjectsFolder", old_folder) if old_folder else grp.RemString("ProjectsFolder")
@@ -39,5 +52,10 @@ in_order([
     ("unsaved", lambda: state(False, "a change hides the Saved mark until it is saved")),
     ("wait", lambda: None), ("wait", lambda: None), ("wait", lambda: None), ("wait", lambda: None),
     ("saved again", lambda: state(True, "saved again after the change")),
+    ("change 2", lambda: (setattr(body("Bar"), "Label", "Baz"), Gui.ActiveDocument.Document.recompute(), keep_wheeling())),
+    ("wait", lambda: None), ("wait", lambda: None),
+    ("not while wheeling", lambda: state(False, "H3: no saving while the mouse wheel is still turning")),
+    ("wait", lambda: None), ("wait", lambda: None), ("wait", lambda: None), ("wait", lambda: None),
+    ("saved after", lambda: state(True, "saved once the wheel rests")),
     ("restore", restore),
 ], delay=1000)

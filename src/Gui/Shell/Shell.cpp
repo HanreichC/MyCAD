@@ -4799,6 +4799,28 @@ namespace
 void startAlwaysSave()
 {
     static std::map<std::string, qint64> lastChange;
+    // H3: nicht mitten in einer Bewegung speichern, die keine Maustaste hält: Mausrad, Trackpad-Gesten, Tippen. Das
+    // Speichern (samt Vorschaubild) kostete dort spürbar ein Ruckeln; gewartet wird, bis 1 s lang Ruhe ist
+    static qint64 lastInput = 0;
+    struct InputWatch: QObject
+    {
+        bool eventFilter(QObject*, QEvent* e) override
+        {
+            switch (e->type()) {
+                case QEvent::Wheel:
+                case QEvent::NativeGesture:
+                case QEvent::Gesture:
+                case QEvent::TouchUpdate:
+                case QEvent::KeyPress:
+                    lastInput = QDateTime::currentMSecsSinceEpoch();
+                    break;
+                default:
+                    break;
+            }
+            return false;
+        }
+    };
+    qApp->installEventFilter(new InputWatch);
     App::GetApplication().signalChangedObject.connect([](const App::DocumentObject& obj, const App::Property&) {
         if (const App::Document* doc = obj.getDocument()) {
             lastChange[doc->getName()] = QDateTime::currentMSecsSinceEpoch();
@@ -4809,11 +4831,11 @@ void startAlwaysSave()
     QObject::connect(timer, &QTimer::timeout, timer, [] {
         // nur in der Hauptschleife: in einer verschachtelten (Kamera-Animation, Dialog) würde das Speichern samt
         // Vorschaubild mitten in die laufende Darstellung greifen
+        const qint64 now = QDateTime::currentMSecsSinceEpoch();
         if (!alwaysSave() || Control().activeDialog() || QApplication::mouseButtons() != Qt::NoButton
-            || QApplication::activeModalWidget() || QThread::currentThread()->loopLevel() > 1) {
+            || QApplication::activeModalWidget() || QThread::currentThread()->loopLevel() > 1 || now - lastInput < 1000) {
             return;
         }
-        const qint64 now = QDateTime::currentMSecsSinceEpoch();
         for (App::Document* doc : App::GetApplication().getDocuments()) {
             Gui::Document* gdoc = Application::Instance->getDocument(doc);
             // offene Transaktion: mitten in einer Aktion (Werkzeug, Vorschau des Rotstifts) – erst danach speichern
