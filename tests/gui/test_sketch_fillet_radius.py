@@ -40,17 +40,29 @@ def setup():
 
 
 def dialog_open():
-    m = QtWidgets.QApplication.activeModalWidget()
+    m = modal()
     if m and "shot" not in S:  # Bild des Felds einmal, für den Abgleich mit MyStyle
         S["shot"] = m.grab().save(os.environ["OUT"] + ".fillet_field.png")
     check("clicking a corner asks for the radius", m is not None, str(m and m.windowTitle()))
+
+
+def modal(timeout=15.0):
+    """Den Feld-Dialog abwarten: der Klick öffnet ihn über die Ereignisschleife, unter Last (parallele Tests) erst nach
+    den festen Wartezeiten. Vorher gingen die Tasten ins Leere, und die Rundung behielt ihren Vorschlag (0,707 statt 5)."""
+    import time
+    end = time.monotonic() + timeout
+    m = QtWidgets.QApplication.activeModalWidget()
+    while (m is None or m.findChild(QtWidgets.QAbstractSpinBox) is None) and time.monotonic() < end:
+        QtWidgets.QApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
+        m = QtWidgets.QApplication.activeModalWidget()
+    return m
 
 
 def keys(*ks):
     """Tasten an das Wertfeld des offenen Dialogs (der Wert ist vorgewählt). PySide kann für das Feld eine alte,
     gelöschte Hülle an derselben Adresse liefern (Dialog auf dem Stack, Feld-Prüfungen im Harness): verwerfen und
     neu holen."""
-    m = QtWidgets.QApplication.activeModalWidget()
+    m = modal()
     box = m.findChild(QtWidgets.QAbstractSpinBox)
     while not shiboken6.isValid(box):
         shiboken6.invalidate(box)
@@ -60,8 +72,13 @@ def keys(*ks):
         QtTest.QTest.keyClick(box, k)
 
 
-def type_value(text):
+def type_value(text, closes=True):
+    """Wert tippen, Enter; schließt der Dialog (passender Wert), auch das abwarten, bevor die nächste Ecke kommt"""
+    import time
     keys(*text, QtCore.Qt.Key_Return)
+    end = time.monotonic() + 15
+    while closes and QtWidgets.QApplication.activeModalWidget() is not None and time.monotonic() < end:
+        QtWidgets.QApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
 
 
 def rounded():
@@ -148,6 +165,6 @@ in_order([
     ("r5 again", lambda: type_value("5")), wait,
     ("half circle", half_circle),
     ("top left", lambda: click_corner(0, 10)), wait, wait,
-    ("r30", lambda: type_value("30")), wait, ("too big", too_big),
+    ("r30", lambda: type_value("30", closes=False)), wait, ("too big", too_big),
     ("r2", lambda: type_value("2")), wait, ("small", small_after_big),
 ])
