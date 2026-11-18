@@ -1066,6 +1066,12 @@ bool GeomCurve::closestParameter(const Base::Vector3d& point, double& u) const
         if (!curve.IsNull()) {
             gp_Pnt pnt(point.x, point.y, point.z);
             GeomAPI_ProjectPointOnCurve ppc(pnt, curve);
+            // MyCAD: liegt der Fußpunkt außerhalb einer begrenzten Kurve, findet OCCT (8.0) keinen Punkt, meldet die
+            // Projektion aber als fertig; LowerDistanceParameter liest dann einen ungesetzten Index (mal Ausnahme, mal
+            // ein zufälliger Parameter: Trim-Unit-Tests wechselnd rot). Also wie "nicht fertig": das nähere Ende
+            if (ppc.NbPoints() == 0) {
+                throw StdFail_NotDone("no projection on the curve");
+            }
             u = ppc.LowerDistanceParameter();
             return true;
         }
