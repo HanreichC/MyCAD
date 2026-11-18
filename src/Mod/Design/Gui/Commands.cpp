@@ -2722,8 +2722,7 @@ void exportBodies(App::Document* doc)
         code = "import Import\nImport.writeDXFObject(" + objs + ", " + target + ")";
     }
     else if (suffix == QLatin1String("step") || suffix == QLatin1String("stp")) {
-        code = "try:\n    import ImportGui as Step\nexcept ImportError:\n    import Import as Step\nStep.export(" + objs + ", "
-            + target + ")";
+        code = "import DesignExport\nDesignExport.write_step(" + target + ", " + objs + ")";  // U6: Namen als ASCII
     }
     else if (suffix == QLatin1String("3mf")) {
         code = "import DesignExport\nDesignExport.write_3mf(" + target + ", " + objs + ", '" + qualities[quality] + "')";

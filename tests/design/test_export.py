@@ -95,3 +95,37 @@ class Step(DesignTest):
         shape = Part.read(path)
         self.assertEqual(len(shape.Solids), 2)
         self.assertAlmostEqual(shape.Volume, 1000 + PI * 25 * 10, delta=0.01)
+
+    def test_names_are_ascii(self):
+        # U6: OCCT schreibt Namen roh als UTF-8; andere CAD-Programme brauchen ISO 10303-21 (\X2\…\X0\)
+        self.assertEqual(DesignExport.step_ascii("Gehäuse Ø12"), "Geh\\X2\\00E4\\X0\\use \\X2\\00D8\\X0\\12")
+        self.assertEqual(DesignExport.step_ascii("Größe"), "Gr\\X2\\00F600DF\\X0\\e")  # eine Folge, ein Block
+        _, a = box(self.doc, 20, 10, 5)
+        a.Label = "Gehäuse"
+        path = tmp("u.step")
+        DesignExport.write_step(path, [a])
+        data = open(path, "rb").read()
+        self.assertTrue(data.isascii())
+        self.assertIn(b"Geh\\X2\\00E4\\X0\\use", data)
+        self.assertAlmostEqual(Part.read(path).Volume, 1000, delta=0.01)  # die Datei bleibt lesbar
+
+    def test_component_round_trip(self):
+        # U7: Komponente mit Versatz und Drehung, Körper mit Rundungen: Lage und Volumen kommen so an (FreeCAD#25150)
+        comp = Design.newComponent(Design.root(self.doc))
+        comp.Placement = App.Placement(V(100, 20, 5), App.Rotation(V(0, 0, 1), 30))
+        sk = sketch(self.doc, rect(0, 0, 30, 20), component=comp)
+        _, b = extrude(self.doc, sk, 10)
+        dress(self.doc, "Design::Fillet", b, ["Edge%d" % i for i in range(1, 5)], Size=2)
+        self.doc.recompute()
+        expected = b.Shape.copy()
+        expected.Placement = comp.Placement.multiply(expected.Placement)
+        path = tmp("c.step")
+        DesignExport.write_step(path, [b])
+        shape = Part.read(path)
+        self.assertAlmostEqual(shape.Volume, b.Shape.Volume, delta=0.01 * b.Shape.Volume)
+        self.assertLess((shape.BoundBox.Center - expected.BoundBox.Center).Length, 0.01)
+        self.assertGreater(len([f for f in shape.Faces if "Cylinder" in f.Surface.TypeId or "BSpline" in f.Surface.TypeId]), 0)
+        self.assertNotIn("StepExport", [o.Name[:10] for o in self.doc.Objects])  # die Kopie ist wieder weg
+        b.Label = "Gehäuse"
+        DesignExport.write_step(path, [b])
+        self.assertIn(b"Geh\\X2\\00E4\\X0\\use'", open(path, "rb").read())  # Name des Originals, ohne 001

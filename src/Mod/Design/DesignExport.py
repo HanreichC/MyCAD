@@ -25,6 +25,84 @@ RELS = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 
+def step_ascii(text):
+    """U6: Zeichen außerhalb von ASCII in einer STEP-Datei nach ISO 10303-21 kodieren (\\X2\\…\\X0\\ für UCS-2,
+    \\X4\\…\\X0\\ darüber). OCCT schreibt Namen roh als UTF-8 (FreeCAD#33914, Fix nur in OCCT#1742); andere
+    CAD-Programme zeigen dann Zeichensalat oder öffnen die Datei nicht. Außerhalb von Zeichenketten steht in STEP nur
+    ASCII, darum genügt es, jede Folge von Nicht-ASCII-Zeichen zu ersetzen."""
+    out, run = [], []
+
+    def flush():
+        if run:
+            wide = any(ord(c) > 0xFFFF for c in run)
+            out.append(("\\X4\\" if wide else "\\X2\\") + "".join(("%08X" if wide else "%04X") % ord(c) for c in run)
+                       + "\\X0\\")
+            run.clear()
+
+    for c in text:
+        if ord(c) < 128:
+            flush()
+            out.append(c)
+        else:
+            run.append(c)
+    flush()
+    return "".join(out)
+
+
+def _in_world(objects):
+    """U7 (FreeCAD#25150): der Export schreibt keine Lage, weder die übergeordneter Komponenten noch die eigene; ein
+    Körper in einer verschobenen oder gedrehten Komponente käme an seiner lokalen Stelle an. Solche Körper gehen als
+    vorübergehende Kopie hinaus, deren Geometrie selbst in Weltlage steht (starr kopiert, Zylinder bleiben Zylinder),
+    mit Name und Aussehen des Originals; Liste (zu exportieren, wieder zu löschen)"""
+    out, temps = [], []
+    for o in objects:
+        world = o.getGlobalPlacement() if hasattr(o, "getGlobalPlacement") else o.Placement
+        if world.isIdentity(1e-12):
+            out.append(o)
+            continue
+        t = o.Document.addObject("Part::Feature", "StepExport")
+        shape = o.Shape.copy()
+        shape.Placement = App.Placement()
+        shape.transformShape(world.toMatrix(), True)  # copy: neue Geometrie statt einer Lage, die verloren ginge
+        t.Shape = shape
+        t.Label = o.Label
+        if App.GuiUp and getattr(o, "ViewObject", None) and getattr(t, "ViewObject", None):
+            t.ViewObject.ShapeAppearance = o.ViewObject.ShapeAppearance
+        temps.append(t)
+        out.append(t)
+    return out, temps
+
+
+def write_step(path, objects):
+    """STEP mit Farben und Struktur (ImportGui, ohne Oberfläche Import), Körper in Weltlage (_in_world), danach reines
+    ASCII (step_ascii)"""
+    try:
+        import ImportGui as step
+    except ImportError:
+        import Import as step
+    params = App.ParamGet("User parameter:BaseApp/Preferences/Document")
+    duplicates = params.GetBool("DuplicateLabels", False)
+    params.SetBool("DuplicateLabels", True)  # die Kopie trägt den Namen des Originals, nicht "Gehäuse001"
+    try:
+        world, temps = _in_world(objects)
+        try:
+            step.export(world, path)
+        finally:
+            for t in temps:
+                t.Document.removeObject(t.Name)
+    finally:
+        params.SetBool("DuplicateLabels", duplicates)
+    with open(path, "rb") as f:
+        data = f.read()
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return  # nicht UTF-8: so lassen, wie OCCT es schrieb
+    if not text.isascii():
+        with open(path, "w", encoding="ascii", newline="") as f:
+            f.write(step_ascii(text))
+
+
 def body_color(body):
     """Farbe der Appearance (nur mit Oberfläche bekannt), sonst None"""
     if not App.GuiUp or not getattr(body, "ViewObject", None):
