@@ -1,0 +1,12 @@
+---
+# MyCAD: Dichte für Masse und Schwerpunkt (Aufräumliste E25), typischer Mittelwert
+General:
+  UUID: "71f4a808-b025-4770-bef4-9c04f94ad771"
+  Author: "MyCAD"
+  License: "CC-BY-3.0"
+  Name: "Ceramic"
+  Description: "Generic fired ceramic (porcelain, stoneware)"
+Models:
+  Density:
+    UUID: '454661e5-265b-4320-8e6f-fcf6223ac3af'
+    Density: "2400 kg/m^3"

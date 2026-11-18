@@ -1,0 +1,12 @@
+---
+# MyCAD: Dichte für Masse und Schwerpunkt (Aufräumliste E25), typischer Mittelwert
+General:
+  UUID: "9e646032-d41f-4380-bd2c-7068865eb2c9"
+  Author: "MyCAD"
+  License: "CC-BY-3.0"
+  Name: "Granite"
+  Description: "Generic granite"
+Models:
+  Density:
+    UUID: '454661e5-265b-4320-8e6f-fcf6223ac3af'
+    Density: "2700 kg/m^3"

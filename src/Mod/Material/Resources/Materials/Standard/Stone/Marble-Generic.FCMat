@@ -1,0 +1,12 @@
+---
+# MyCAD: Dichte für Masse und Schwerpunkt (Aufräumliste E25), typischer Mittelwert
+General:
+  UUID: "212c193d-5cfb-4e51-a638-a9e0037f4ef5"
+  Author: "MyCAD"
+  License: "CC-BY-3.0"
+  Name: "Marble"
+  Description: "Generic marble"
+Models:
+  Density:
+    UUID: '454661e5-265b-4320-8e6f-fcf6223ac3af'
+    Density: "2700 kg/m^3"

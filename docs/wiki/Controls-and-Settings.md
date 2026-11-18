@@ -97,7 +97,8 @@ scans with relief; wood shows end grain where it's cut.
 
 - Click a sphere (applies to the selected bodies) or drag it onto a body; with single faces selected, only those change.
 - Right-click to keep a favorite; the top shows what the design already uses.
-- **Physical material** in the same panel: the density used by **Measure** (mass); otherwise it follows the appearance.
+- **Physical material** in the same panel: the density used by **Measure** (mass); otherwise it follows the appearance
+  (metals, wood, plastics, rubber, stone and ceramic; lacquer and powder coat leave it to you).
 
   ![Appearance](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Appearance.gif)
 

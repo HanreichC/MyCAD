@@ -461,7 +461,27 @@ double clearanceDiameter(long standard, const PartDesign::Hole::ThreadDescriptio
             }
         }
     }
-    return t.diameter * (1.06 + 0.06 * fit);  // ponytail: Näherung für Größen außerhalb der Tabellen
+    // Größen, die ISO 273 nicht nennt (dritte Wahl wie M9, M11, M15 …): Spiel zwischen den Nachbarn der Tabelle
+    // geradlinig verteilt; über das Ende der Tabelle hinaus wie ihr letzter Eintrag
+    if (standard <= 2) {
+        const double(*below)[4] = nullptr;
+        const double(*above)[4] = nullptr;
+        for (const auto& row : PartDesign::Hole::metricHoleDiameters) {
+            if (row[0] < t.diameter && (!below || row[0] > (*below)[0])) {
+                below = &row;
+            }
+            if (row[0] > t.diameter && (!above || row[0] < (*above)[0])) {
+                above = &row;
+            }
+        }
+        if (below || above) {
+            const auto play = [fit](const double(*r)[4]) { return (*r)[1 + fit] - (*r)[0]; };
+            const double k = below && above ? (t.diameter - (*below)[0]) / ((*above)[0] - (*below)[0]) : 0;
+            const double extra = below && above ? play(below) + k * (play(above) - play(below)) : play(below ? below : above);
+            return t.diameter + extra;
+        }
+    }
+    return t.diameter * (1.06 + 0.06 * fit);  // ponytail: Zoll-Größen außerhalb der Tabelle, Näherung
 }
 
 /// Senkung je Schraubennorm (Mod/PartDesign/Resources/Hole/*.json); gleichnamige Dateien (Regel/Fein) zusammen
@@ -1641,6 +1661,13 @@ const std::vector<Design::PhysicalMaterial>& Design::physicalMaterials()
         {"Acrylic", "f255cd82-91d5-4e97-9032-1843128a2eaa"},
         {"Glass", "3e3a3e13-04a4-410e-8e36-bbd83ca66847"},
         {"Concrete", "26042aa5-56e6-4d99-8b63-dd8b9ea5a37a"},
+        {"Brass", "231a3664-7285-4340-b5af-63a9e9a2d7af"},  // Copper-443, Admiralitätsmessing 8,53 g/cm³
+        {"Copper", "6c03899d-496e-4c60-a41b-3d66f2337fb9"},
+        {"Rubber", "5a0ae2b7-e3cb-4aae-babd-2896596c63f4"},  // eigene Karten: Standard/Elastomer, Standard/Stone
+        {"Silicone", "1dcdd60c-07fb-433a-8bb7-da9032f85515"},
+        {"Granite", "9e646032-d41f-4380-bd2c-7068865eb2c9"},
+        {"Marble", "212c193d-5cfb-4e51-a638-a9e0037f4ef5"},
+        {"Ceramic", "71f4a808-b025-4770-bef4-9c04f94ad771"},
     };
     return list;
 }
@@ -1656,13 +1683,19 @@ std::string Design::physicalMaterialFor(const std::string& appearance, const std
         }
         return std::string();
     };
-    // ponytail: Zuordnung über Namen und Gruppe; Messing, Kupfer, Gummi, Stein und Lacke bleiben offen (keine passende
-    // Karte bzw. Farbe sagt nichts über den Werkstoff)
+    // Zuordnung über Namen und Gruppe; Lacke, Pulverlack und reine Farben bleiben offen: eine Beschichtung sagt nichts
+    // über den Werkstoff darunter
     if (group == "Anodized" || has("Aluminum")) {
         return uuid("Aluminum");
     }
     if (has("Steel") || has("Chrome")) {
         return uuid("Steel");
+    }
+    if (has("Brass")) {
+        return uuid("Brass");
+    }
+    if (has("Copper")) {
+        return uuid("Copper");
     }
     if (has("Iron")) {
         return uuid("Cast Iron");
@@ -1690,6 +1723,18 @@ std::string Design::physicalMaterialFor(const std::string& appearance, const std
     }
     if (has("Concrete")) {
         return uuid("Concrete");
+    }
+    if (has("Granite")) {
+        return uuid("Granite");
+    }
+    if (has("Marble")) {
+        return uuid("Marble");
+    }
+    if (has("Ceramic") || has("Porcelain") || has("Stoneware")) {
+        return uuid("Ceramic");
+    }
+    if (group == "Rubber") {
+        return uuid(has("Silicone") ? "Silicone" : "Rubber");
     }
     if (group == "Plastic") {
         return uuid("ABS");

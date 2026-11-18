@@ -1,0 +1,12 @@
+---
+# MyCAD: Dichte für Masse und Schwerpunkt (Aufräumliste E25), typischer Mittelwert
+General:
+  UUID: "5a0ae2b7-e3cb-4aae-babd-2896596c63f4"
+  Author: "MyCAD"
+  License: "CC-BY-3.0"
+  Name: "Rubber"
+  Description: "Generic rubber (NR, EPDM)"
+Models:
+  Density:
+    UUID: '454661e5-265b-4320-8e6f-fcf6223ac3af'
+    Density: "1150 kg/m^3"

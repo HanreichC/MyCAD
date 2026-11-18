@@ -24,6 +24,13 @@ class Mass(DesignTest):
             self.assertTrue(Design.setPhysicalMaterial(b, u), name)
             self.assertGreater(Design.mass(b), 0, name)
 
+    def test_brass_and_rubber(self):
+        _, b = box(self.doc, 100, 100, 100)  # 1 dm³
+        Design.setPhysicalMaterial(b, uuid("Brass"))
+        self.assertAlmostEqual(Design.mass(b), 8.53, delta=0.01)
+        Design.setPhysicalMaterial(b, uuid("Rubber"))
+        self.assertAlmostEqual(Design.mass(b), 1.15, delta=0.01)
+
     def test_unknown_uuid_is_rejected(self):
         _, b = box(self.doc, 10, 10, 10)
         self.assertFalse(Design.setPhysicalMaterial(b, "00000000-0000-0000-0000-000000000000"))
@@ -42,11 +49,14 @@ class FromAppearance(DesignTest):
                  ("Stainless Steel", "Metal"): "Steel", ("Cast Iron", "Metal"): "Cast Iron",
                  ("Walnut, Oiled", "Wood"): "Wood", ("PLA Orange", "3D Print"): "PLA", ("PETG Clear", "3D Print"): "PETG",
                  ("Nylon SLS", "3D Print"): "Nylon", ("Clear Acrylic", "Glass"): "Acrylic", ("Clear Glass", "Glass"): "Glass",
-                 ("Plastic Matte Black", "Plastic"): "ABS", ("Concrete", "Stone"): "Concrete"}
+                 ("Plastic Matte Black", "Plastic"): "ABS", ("Concrete", "Stone"): "Concrete",
+                 # Aufräumliste E25
+                 ("Brass", "Metal"): "Brass", ("Brushed Copper", "Metal"): "Copper", ("Rubber Black", "Rubber"): "Rubber",
+                 ("Silicone Red", "Rubber"): "Silicone", ("Granite", "Stone"): "Granite", ("Black Marble", "Stone"): "Marble",
+                 ("Porcelain", "Stone"): "Ceramic", ("Stoneware", "Stone"): "Ceramic"}
         for (appearance, group), name in cases.items():
             self.assertEqual(Design.physicalMaterialFor(appearance, group), uuid(name), appearance)
 
     def test_paint_says_nothing_about_the_material(self):
-        for appearance, group in (("Lacquer Red", "Coatings"), ("Space Gray", "Colors"), ("Rubber Black", "Rubber"),
-                                  ("Brass", "Metal")):
+        for appearance, group in (("Lacquer Red", "Coatings"), ("Space Gray", "Colors"), ("Powder Coat Blue", "Coatings")):
             self.assertEqual(Design.physicalMaterialFor(appearance, group), "", appearance)

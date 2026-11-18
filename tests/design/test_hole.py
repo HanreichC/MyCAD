@@ -42,6 +42,15 @@ class Metric(DesignTest):
         self.assertIn("ReadOnly", f.getPropertyStatus("Diameter"))
         self.assertEqual(f.ThreadDesignation, "")
 
+    def test_clearance_between_iso_273_sizes(self):
+        # Aufräumliste E25: M11 nennt ISO 273 nicht; das Spiel liegt zwischen M10 und M12
+        b = block(self.doc)
+        f = hole(self.doc, b, [(0, 0)], 10, Standard="ISO metric", Size="M11x1.5", Kind="Clearance hole")
+        for fit, d in (("Fine", 11.75), ("Medium", 12.25), ("Coarse", 13.25)):
+            f.Fit = fit
+            self.doc.recompute()
+            self.assertAlmostEqual(f.Diameter.Value, d, places=6, msg=fit)
+
     def test_tapped_uses_tap_drill(self):
         b = block(self.doc)
         f = hole(self.doc, b, [(0, 0)], 10, Standard="ISO metric", Size="M8x1.25", Kind="Tapped hole", Depth=8)

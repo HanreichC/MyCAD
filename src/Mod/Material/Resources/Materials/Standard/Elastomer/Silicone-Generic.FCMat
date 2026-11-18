@@ -1,0 +1,12 @@
+---
+# MyCAD: Dichte für Masse und Schwerpunkt (Aufräumliste E25), typischer Mittelwert
+General:
+  UUID: "1dcdd60c-07fb-433a-8bb7-da9032f85515"
+  Author: "MyCAD"
+  License: "CC-BY-3.0"
+  Name: "Silicone"
+  Description: "Generic silicone rubber"
+Models:
+  Density:
+    UUID: '454661e5-265b-4320-8e6f-fcf6223ac3af'
+    Density: "1150 kg/m^3"

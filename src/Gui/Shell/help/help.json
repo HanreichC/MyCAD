@@ -6407,7 +6407,7 @@
    "tips": {
     "en": [
      "You can also drag a sphere straight onto a body in the view, without selecting it first.",
-     "Physical material sets what the body is made of, for its mass. From appearance follows the look (walnut → wood, PLA → PLA); pick a material to keep it.",
+     "Physical material sets what the body is made of, for its mass. From appearance follows the look (walnut → wood, PLA → PLA, brass → brass, porcelain → ceramic); pick a material to keep it. Lacquer and powder coat say nothing about the part below, there pick it yourself.",
      "Right-click a sphere to add it to Favorites. In this design shows the materials you already use.",
      "Single faces only take the colour of a material. Textures, gloss and lacquer apply to whole bodies.",
      "Settings → General → Materials and Light: Lighting Studio (light from the top left, every face of a body gets its own shade – best for modelling) or Room (soft all round, like a product preview in the browser).",
@@ -6416,7 +6416,7 @@
     ],
     "de": [
      "Du kannst eine Kugel auch direkt auf einen Körper in der Ansicht ziehen, ohne ihn vorher zu wählen.",
-     "Werkstoff legt fest, woraus der Körper ist, für seine Masse. Aus dem Aussehen folgt der Darstellung (Nussbaum → Holz, PLA → PLA); wähle einen Werkstoff, damit er bleibt.",
+     "Werkstoff legt fest, woraus der Körper ist, für seine Masse. Aus dem Aussehen folgt der Darstellung (Nussbaum → Holz, PLA → PLA, Messing → Messing, Porzellan → Keramik); wähle einen Werkstoff, damit er bleibt. Lack und Pulverlack sagen nichts über das Teil darunter, dort wählst du selbst.",
      "Ein Rechtsklick auf eine Kugel legt sie unter Favoriten ab. In diesem Design zeigt die Materialien, die du schon verwendest.",
      "Einzelne Flächen übernehmen nur die Farbe eines Materials. Texturen, Glanz und Lack gibt es für ganze Körper.",
      "Einstellungen → Allgemein → Materialien und Licht: Licht Studio (Licht von links oben, jede Fläche eines Körpers hat ihren eigenen Ton – am besten zum Konstruieren) oder Raum (weich von überall, wie eine Produktvorschau im Browser).",

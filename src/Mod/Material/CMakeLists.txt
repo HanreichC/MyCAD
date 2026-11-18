@@ -165,6 +165,11 @@ SET(MaterialLib_Files
     Resources/Materials/Standard/Thermoplast/PVC-Generic.FCMat
     Resources/Materials/Standard/Thermoplast/PC-Molded.FCMat
     Resources/Materials/Standard/Wood/Wood-Generic.FCMat
+    Resources/Materials/Standard/Elastomer/Rubber-Generic.FCMat
+    Resources/Materials/Standard/Elastomer/Silicone-Generic.FCMat
+    Resources/Materials/Standard/Stone/Granite-Generic.FCMat
+    Resources/Materials/Standard/Stone/Marble-Generic.FCMat
+    Resources/Materials/Standard/Stone/Ceramic-Generic.FCMat
 )
 
 SET(FluidMaterial_Files
