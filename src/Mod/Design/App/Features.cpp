@@ -2201,12 +2201,9 @@ Design::PrintCheckResult Design::printCheck(Part::TopoShape shape, const Base::V
     for (const auto& p : points) {
         bed = std::min(bed, p * up);
     }
-    IntCurvesFace_ShapeIntersector inside;
-    if (minWall > 0) {
-        inside.Load(shape.getShape(), 1e-6);
-    }
-    // ponytail: Wanddicke je Dreieck per Strahl, O(Dreiecke × Flächen); über 50 000 Dreiecken nur jedes k-te geprüft
-    const size_t step = std::max<size_t>(1, facets.size() / 50000);
+    // Wanddicke je Dreieck per Strahl (unten, parallel über alle Kerne). ponytail: über 400 000 Dreiecken nur jedes k-te
+    const size_t step = std::max<size_t>(1, facets.size() / 400000);
+    std::vector<size_t> probe;  // Dreiecke, deren Wanddicke geprüft wird
     const double u[3] = {up.x, up.y, up.z};
     for (size_t i = 0; i < facets.size(); ++i) {
         const Base::Vector3d& a = points[facets[i].I1];
@@ -2234,9 +2231,24 @@ Design::PrintCheckResult Design::printCheck(Part::TopoShape shape, const Base::V
             add(result.bed, result.bedArea);
         }
         if (minWall > 0 && i % step == 0) {
-            // vom Mittelpunkt gegen die Normale ins Material: verlässt der Strahl das Material vor minWall wieder,
-            // ist die Wand hier dünner. Nur Austritte zählen: in einer Bohrung liegt der Mittelpunkt eines Dreiecks
-            // (Sehne) bis zur Netzgenauigkeit in der Luft, der Strahl tritt dort erst durch die eigene Fläche ein.
+            probe.push_back(i);
+        }
+    }
+    if (probe.empty()) {
+        return result;
+    }
+    // vom Mittelpunkt gegen die Normale ins Material: verlässt der Strahl das Material vor minWall wieder, ist die Wand
+    // hier dünner. Nur Austritte zählen: in einer Bohrung liegt der Mittelpunkt eines Dreiecks (Sehne) bis zur
+    // Netzgenauigkeit in der Luft, der Strahl tritt dort erst durch die eigene Fläche ein. Je Faden ein eigener
+    // Schnitt-Rechner (OCCT-Objekte sind nicht threadsicher), jeder schreibt nur seine eigenen Einträge.
+    std::vector<char> thin(probe.size(), 0);
+    const auto check = [&](size_t from, size_t to) {
+        IntCurvesFace_ShapeIntersector inside;
+        inside.Load(shape.getShape(), 1e-6);
+        for (size_t j = from; j < to; ++j) {
+            const auto& f = facets[probe[j]];
+            const Base::Vector3d &a = points[f.I1], &b = points[f.I2], &c = points[f.I3];
+            const Base::Vector3d n = ((b - a) % (c - a)).Normalize();
             const Base::Vector3d m = (a + b + c) / 3 - n * 1e-4;
             const gp_Dir dir(-n.x, -n.y, -n.z);
             inside.Perform(gp_Lin(gp_Pnt(m.x, m.y, m.z), dir), 1e-6, minWall);
@@ -2247,9 +2259,27 @@ Design::PrintCheckResult Design::printCheck(Part::TopoShape shape, const Base::V
                 BRepGProp_Face(inside.Face(k)).Normal(inside.UParameter(k), inside.VParameter(k), p, out);
                 leaves = out.Dot(gp_Vec(dir)) > 0;
             }
-            if (leaves) {
-                add(result.thin, result.thinArea);
+            thin[j] = leaves;
+        }
+    };
+    // unter ~2000 Strahlen lohnt kein Faden (Load kostet je Faden)
+    const size_t threads = std::clamp<size_t>(probe.size() / 2000, 1, std::max(1U, std::thread::hardware_concurrency()));
+    std::vector<std::thread> pool;
+    for (size_t t = 1; t < threads; ++t) {
+        pool.emplace_back(check, probe.size() * t / threads, probe.size() * (t + 1) / threads);
+    }
+    check(0, probe.size() / threads);
+    for (auto& t : pool) {
+        t.join();
+    }
+    for (size_t j = 0; j < probe.size(); ++j) {
+        if (thin[j]) {
+            const auto& f = facets[probe[j]];
+            const Base::Vector3d &a = points[f.I1], &b = points[f.I2], &c = points[f.I3];
+            for (const auto* p : {&a, &b, &c}) {
+                result.thin.emplace_back(float(p->x), float(p->y), float(p->z));
             }
+            result.thinArea += ((b - a) % (c - a)).Length() / 2;
         }
     }
     return result;
