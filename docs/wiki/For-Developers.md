@@ -18,6 +18,8 @@ nothing lands on your system (also on Windows 11 in WSL2 with Ubuntu: the launch
 mycad
 ```
 
+The container image builds OpenCascade 8.0, Coin 4.0.10 and Pivy from source (Arch ships older versions); the first image build takes about 20 minutes, later builds come from the cache.
+
 `tools/appimage.sh` builds the release AppImage; CI (`.github/workflows/release.yml`) builds it after every commit,
 once all tests pass.
 

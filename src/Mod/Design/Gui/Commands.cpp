@@ -42,7 +42,7 @@
 #include <Bnd_Box.hxx>
 #include <TopExp_Explorer.hxx>
 #include <Mod/Part/App/Part2DObject.h>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopTools_ListOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopoDS_Vertex.hxx>
 #include <gp_Pln.hxx>
@@ -1229,7 +1229,7 @@ void startFastener(App::Document* doc)
                 TopTools_IndexedDataMapOfShapeListOfShape owners;
                 TopExp::MapShapesAndAncestors(shape.getShape(), TopAbs_EDGE, TopAbs_FACE, owners);
                 const int i = owners.FindIndex(element);
-                for (TopTools_ListIteratorOfListOfShape it(i ? owners(i) : TopTools_ListOfShape()); it.More(); it.Next()) {
+                for (TopTools_ListOfShape::Iterator it(i ? owners(i) : TopTools_ListOfShape()); it.More(); it.Next()) {
                     if (BRepAdaptor_Surface(TopoDS::Face(it.Value())).GetType() == GeomAbs_Plane) {
                         face = TopoDS::Face(it.Value());
                     }
@@ -4890,7 +4890,7 @@ void startAnglePlane(App::Document* doc)
             TopExp::MapShapesAndAncestors(body->Shape.getShape().getShape(), TopAbs_EDGE, TopAbs_FACE, adjacency);
             const int idx = adjacency.FindIndex(edge);
             if (idx > 0) {
-                for (TopTools_ListIteratorOfListOfShape it(adjacency(idx)); it.More(); it.Next()) {
+                for (TopTools_ListOfShape::Iterator it(adjacency(idx)); it.More(); it.Next()) {
                     const std::string name = elementName(body->Shape.getShape().getShape(), it.Value());
                     if (isPlanarFace(body, name)) {
                         ref = body;

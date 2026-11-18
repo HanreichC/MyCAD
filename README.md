@@ -266,7 +266,7 @@ Want to try something risky? Make a **variant**. Switch between the main design 
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
 | **Pen tablet** | Pressure and hover on Wayland, side buttons navigate, keys for tablet buttons (E eraser, V select, L look at) |
 | **Materials** | 119 in 12 groups (metal, anodized, coatings, plastic, 3D print, rubber, glass, wood, stone, fabric and leather, composites, Apple colors), 19 CC0 photo scans with relief, studio or room lighting, clear coat, end grain, contact shadow |
-| **Core** | FreeCAD with OpenCascade |
+| **Core** | FreeCAD with OpenCascade 8.0 and Coin 4.0.10 (built in the container) |
 | **License** | LGPL-2.1-or-later |
 
 <br>

@@ -49,7 +49,7 @@
 #include <TopoDS.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_DataMapOfShapeInteger.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopTools_ListOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <BRepAdaptor_Curve2d.hxx>
 #include <BRepGProp_Face.hxx>
@@ -3413,9 +3413,9 @@ Profiles::Regions Profiles::computeRegions(const TopoDS_Shape& local)
     // Welche Skizzenkante steckt hinter jedem Kantenstück? (für die Profil-Signaturen)
     TopTools_DataMapOfShapeInteger source;
     int edgeIndex = 0;
-    for (TopTools_ListIteratorOfListOfShape it(edges); it.More(); it.Next(), ++edgeIndex) {
+    for (TopTools_ListOfShape::Iterator it(edges); it.More(); it.Next(), ++edgeIndex) {
         source.Bind(it.Value(), edgeIndex);
-        for (TopTools_ListIteratorOfListOfShape piece(splitter.Modified(it.Value())); piece.More(); piece.Next()) {
+        for (TopTools_ListOfShape::Iterator piece(splitter.Modified(it.Value())); piece.More(); piece.Next()) {
             source.Bind(piece.Value(), edgeIndex);
         }
     }
@@ -4156,7 +4156,7 @@ bool overhangingEdge(const TopoDS_Shape& shape, const TopoDS_Edge& edge, const g
         return false;
     }
     gp_Vec sum;
-    for (TopTools_ListIteratorOfListOfShape f(*faces); f.More(); f.Next()) {
+    for (TopTools_ListOfShape::Iterator f(*faces); f.More(); f.Next()) {
         const TopoDS_Face& face = TopoDS::Face(f.Value());
         BRepAdaptor_Curve2d curve(edge, face);
         const gp_Pnt2d uv = curve.Value((curve.FirstParameter() + curve.LastParameter()) / 2);
@@ -4265,7 +4265,7 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
             }
             gp_Vec normals[2];
             int i = 0;
-            for (TopTools_ListIteratorOfListOfShape f(*faces); f.More(); f.Next()) {
+            for (TopTools_ListOfShape::Iterator f(*faces); f.More(); f.Next()) {
                 const TopoDS_Face& face = TopoDS::Face(f.Value());
                 BRepAdaptor_Curve2d curve(edge, face);
                 const gp_Pnt2d uv = curve.Value((curve.FirstParameter() + curve.LastParameter()) / 2);
