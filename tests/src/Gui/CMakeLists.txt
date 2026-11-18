@@ -30,6 +30,7 @@ add_executable(Gui_tests_run
         NavigationStyleWheelTest.cpp
         SelectionTest.cpp
         SoMouseWheelEventTest.cpp
+        InputDevicePositionTest.cpp
 )
 
 # Qt tests
