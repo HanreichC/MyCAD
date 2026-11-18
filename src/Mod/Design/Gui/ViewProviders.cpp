@@ -8,6 +8,7 @@
 #include <App/DocumentObjectGroup.h>
 #include <App/Part.h>
 #include <Gui/Application.h>
+#include <Gui/Action.h>
 #include <Gui/Command.h>
 #include <Gui/BitmapFactory.h>
 #include <Gui/Control.h>
@@ -877,6 +878,14 @@ void DesignGui::setPrintView(bool on)
     printViewOn = on;
     refreshPrintView();
     legend().show(on);
+    // H1: der Knopf oben bleibt gedrückt, solange die Ansicht an ist, gleich auf welchem Weg sie an- oder ausging
+    // (die Leiste folgt der Aktion, Shell.cpp)
+    Gui::Command* cmd = Gui::Application::Instance->commandManager().getCommandByName("Design_PrintView");
+    if (cmd && cmd->getAction()) {
+        QAction* action = cmd->getAction()->action();
+        action->setCheckable(true);
+        action->setChecked(on);
+    }
 }
 
 bool DesignGui::printView()

@@ -21,7 +21,8 @@ it reads without color vision too:
   - a shell or thin-wall extrude that is too thin grows to the **minimum wall**.
   The same options are in the Hole and Fillet panels (Teardrop for printing, Chamfer bottom edges for printing).
 - Overhang angle and minimum wall are in **Settings**.
-- Click **Print View** again to hide it.
+- The **Print View** button stays pressed while it is on; **Exit Print View** in the legend (or another click on the
+  button) hides it.
 
   ![Print View](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_PrintView.gif)
 
