@@ -70,8 +70,9 @@ def inspect():
               and "duplicates" not in b.text()]
     names = [b.text() for b in layers]
     note = [w.text() for w in d.findChildren(QtWidgets.QLabel) if w.objectName() == "DxfTexts" and w.isVisible()]
-    check("H4: the review says which texts are not inserted",
-          len(note) == 1 and "2 texts" in note[0] and "Platine V2" in note[0] and "Rev A" in note[0], str(note))
+    check("H4: the review names the texts and says they become construction text",
+          len(note) == 1 and "2 texts become construction text" in note[0] and "Platine V2" in note[0] and "Rev A" in note[0],
+          str(note))
     check("all layers with their counts, also entities without one",
           names == ["No layer (1)", "Holes (7)", "Outline (5)", "Text (2)"], str(names))
     check("tiny pieces and duplicates are counted",
@@ -92,8 +93,14 @@ def result():
     if not sk:
         return
     from collections import Counter
-    kinds = dict(Counter(g.TypeId.split("::")[1] for g in sk[0].Geometry))
-    bb = sk[0].Shape.BoundBox
+    drawing = [g for i, g in enumerate(sk[0].Geometry) if not sk[0].getConstruction(i)]
+    kinds = dict(Counter(g.TypeId.split("::")[1] for g in drawing))
+    texts = [c.Text for c in sk[0].Constraints if c.Type == "Text"] if hasattr(sk[0].Constraints[0], "Text") else \
+        [c.Name for c in sk[0].Constraints if c.Type == "Text"]
+    L("  texts: %s" % texts)
+    check("H4: both texts are in the sketch as construction text (not part of the profile)",
+          len([c for c in sk[0].Constraints if c.Type == "Text"]) == 2, str(texts))
+    bb = Part.Compound([g.toShape() for g in drawing]).BoundBox
     check("sketch has the outline once, the loose line and the two holes, scaled to cm",
           kinds == {"GeomLineSegment": 5, "GeomCircle": 2} and abs(bb.XLength - 400) < 1e-6 and abs(bb.YLength - 200) < 1e-6,
           "%s %.1f x %.1f" % (kinds, bb.XLength, bb.YLength))

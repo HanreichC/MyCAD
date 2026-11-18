@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
+#include <iomanip>
+#include <sstream>
+
 #include <App/Datums.h>
 #include <App/Document.h>
 #include <App/DocumentObjectGroup.h>
@@ -23,6 +26,7 @@
 #include <Mod/Design/App/Features.h>
 #include <Mod/Sketcher/App/Constraint.h>
 #include <Mod/Sketcher/App/SketchObject.h>
+#include <Mod/Sketcher/Gui/FontProvider.h>
 #include <Base/BoundBox.h>
 #include <Standard_Failure.hxx>
 #include <Mod/Part/App/Geometry.h>
@@ -2079,34 +2083,115 @@ DxfCleanup::Piece cleanupPiece(const Part::Geometry* geo)
 
 /// DXF einfügen wie in Fusion mit Rückfrage: Größe (falsche Einheit fällt hier auf), Ebenen, Winzlinge und Doppelte.
 /// Behält in geos nur, was übernommen wird, skaliert es; false = abgebrochen
-/// H4: Texte einer DXF-Datei (TEXT, MTEXT; Gruppencode 0 = Art, 1 = Inhalt). FreeCADs Leser legt Texte nur über das
-/// Draft-Modul an, das MyCAD nicht hat; ohne diesen Blick gingen sie still verloren.
-/// ponytail: nur nennen, nicht übernehmen; als Skizzentext bräuchte es Schrift, Griff-Linie und Text-Bedingung je Text
-std::vector<QString> dxfTexts(const QString& file)
+/// H4: ein Text einer DXF-Datei: Inhalt, Einfügepunkt (links unten), Höhe, Drehung in Grad
+struct DxfText
 {
-    std::vector<QString> texts;
+    QString text;
+    Base::Vector3d at;
+    double height = 0;
+    double angle = 0;
+};
+
+/// H4: Texte einer DXF-Datei (TEXT, MTEXT; Gruppencodes 1/3 Inhalt, 10/20 Punkt, 40 Höhe, 50 Drehung). FreeCADs
+/// Leser legt Texte nur über das Draft-Modul an, das MyCAD nicht hat; ohne diesen Blick gingen sie still verloren.
+std::vector<DxfText> dxfTexts(const QString& file)
+{
+    std::vector<DxfText> texts;
     QFile f(file);
     if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return texts;
     }
     QString kind;
+    DxfText cur;
+    const auto flush = [&] {
+        if ((kind == QLatin1String("TEXT") || kind == QLatin1String("MTEXT")) && !cur.text.isEmpty()) {
+            // MTEXT-Formate (\fArial|b0; \P {…}) weg
+            cur.text.replace(QRegularExpression(QStringLiteral("\\\\[A-Za-z][^;]*;|[{}]|\\\\P")), QStringLiteral(" "));
+            cur.text = cur.text.simplified();
+            if (!cur.text.isEmpty()) {
+                texts.push_back(cur);
+            }
+        }
+        cur = DxfText();
+    };
     while (!f.atEnd()) {
         const QString code = QString::fromUtf8(f.readLine()).trimmed();
         const QString value = QString::fromUtf8(f.readLine()).trimmed();
         if (code == QLatin1String("0")) {
+            flush();
             kind = value;
         }
-        else if (code == QLatin1String("1") && (kind == QLatin1String("TEXT") || kind == QLatin1String("MTEXT"))) {
-            QString text = value;
-            text.replace(QRegularExpression(QStringLiteral("\\\\[A-Za-z][^;]*;|[{}]|\\\\P")), QStringLiteral(" "));  // MTEXT-Formate
-            texts.push_back(text.simplified());
+        else if (code == QLatin1String("1") || code == QLatin1String("3")) {
+            cur.text += value;  // 3: Vorlauf langer MTEXTe, 1: der Rest
+        }
+        else if (code == QLatin1String("10")) {
+            cur.at.x = value.toDouble();
+        }
+        else if (code == QLatin1String("20")) {
+            cur.at.y = value.toDouble();
+        }
+        else if (code == QLatin1String("40")) {
+            cur.height = value.toDouble();
+        }
+        else if (code == QLatin1String("50")) {
+            cur.angle = value.toDouble();
         }
     }
+    flush();
     return texts;
 }
 
+/// Schrift für übernommene Texte: wie das Text-Werkzeug der Skizze Inter, sonst eine schlichte Sans; leer ohne Schrift
+std::string dxfTextFont()
+{
+    const QMap<QString, QString> fonts = SketcherGui::findAvailableFontFiles();
+    for (const char* want : {"Inter-Regular", "Inter", "DejaVuSans", "NotoSans-Regular"}) {
+        for (auto it = fonts.begin(); it != fonts.end(); ++it) {
+            if (it.key().compare(QString::fromUtf8(want), Qt::CaseInsensitive) == 0) {
+                return it.value().toStdString();
+            }
+        }
+    }
+    for (auto it = fonts.begin(); it != fonts.end(); ++it) {
+        if (it.key().endsWith(QLatin1String("Sans"), Qt::CaseInsensitive)) {
+            return it.value().toStdString();
+        }
+    }
+    return fonts.isEmpty() ? std::string() : fonts.first().toStdString();
+}
+
+/// Texte als Skizzentext wie das Text-Werkzeug: Griff-Linie vom Einfügepunkt quer zur Grundlinie, so lang wie die
+/// Texthöhe, dazu die Text-Bedingung. Als Hilfsgeometrie: Beschriftung soll sichtbar sein, aber kein Profil werden
+/// (Buchstaben-Löcher in der Platte)
+void addDxfTexts(Sketcher::SketchObject* sketch, const std::vector<DxfText>& texts, const std::string& font)
+{
+    const auto hex = [](const QString& s) { return QString::fromLatin1(s.toUtf8().toHex()).toStdString(); };
+    for (const DxfText& t : texts) {
+        if (t.height <= 0) {
+            continue;
+        }
+        const double r = t.angle * M_PI / 180;
+        const Base::Vector3d up(-std::sin(r) * t.height, std::cos(r) * t.height, 0);
+        std::ostringstream py;
+        py << std::setprecision(17) << "import FreeCAD as App, Part, Sketcher\n"
+           << "sk = App.getDocument('" << sketch->getDocument()->getName() << "').getObject('" << sketch->getNameInDocument() << "')\n"
+           << "t = bytes.fromhex('" << hex(t.text) << "').decode()\n"
+           << "f = bytes.fromhex('" << hex(QString::fromStdString(font)) << "').decode()\n"
+           << "h = sk.addGeometry(Part.LineSegment(App.Vector(" << t.at.x << ", " << t.at.y << ", 0), App.Vector("
+           << t.at.x + up.x << ", " << t.at.y + up.y << ", 0)), True)\n"
+           << "sk.addConstraint(Sketcher.Constraint('Text', [h, 0], t, f, True))\n"
+           << "sk.setTextAndFont(len(sk.Constraints) - 1, t, f, True, True)\n";
+        try {
+            Base::Interpreter().runString(py.str().c_str());
+        }
+        catch (const Base::Exception& e) {
+            Base::Console().warning("DXF text not inserted: %s\n", e.what());
+        }
+    }
+}
+
 bool reviewDxf(Geometries& geos, const std::vector<std::string>& layers, const QString& name,
-               const std::vector<QString>& texts = {})
+               std::vector<DxfText>* texts = nullptr, bool canInsertTexts = false)
 {
     std::vector<DxfCleanup::Piece> pieces;
     std::vector<Base::BoundBox3d> boxes;
@@ -2127,18 +2212,20 @@ bool reviewDxf(Geometries& geos, const std::vector<std::string>& layers, const Q
     auto summary = new QLabel;
     summary->setWordWrap(true);
     lay->addWidget(summary);
-    if (!texts.empty()) {
+    if (texts && !texts->empty()) {
         QStringList shown;
-        for (size_t i = 0; i < texts.size() && i < 3; ++i) {
-            shown << QStringLiteral("„%1“").arg(texts[i]);
+        for (size_t i = 0; i < texts->size() && i < 3; ++i) {
+            shown << QStringLiteral("„%1“").arg((*texts)[i].text);
         }
-        if (texts.size() > 3) {
+        if (texts->size() > 3) {
             shown << QStringLiteral("…");
         }
-        auto skipped = new QLabel(T("%1 texts are not inserted, only the drawing: %2").arg(texts.size()).arg(shown.join(QStringLiteral(", "))));
-        skipped->setObjectName(QStringLiteral("DxfTexts"));
-        skipped->setWordWrap(true);
-        lay->addWidget(skipped);
+        const QString what = canInsertTexts ? T("%1 texts become construction text in the sketch: %2")
+                                            : T("%1 texts are not inserted, only the drawing: %2");
+        auto note = new QLabel(what.arg(texts->size()).arg(shown.join(QStringLiteral(", "))));
+        note->setObjectName(QStringLiteral("DxfTexts"));
+        note->setWordWrap(true);
+        lay->addWidget(note);
     }
     auto scaleRow = new QHBoxLayout;
     scaleRow->addWidget(new QLabel(T("Drawn in")));
@@ -2245,6 +2332,12 @@ bool reviewDxf(Geometries& geos, const std::vector<std::string>& layers, const Q
         return false;
     }
     const double f = scale->currentData().toDouble();
+    if (texts) {
+        for (DxfText& t : *texts) {  // Texte im selben Maßstab wie die Zeichnung
+            t.at *= f;
+            t.height *= f;
+        }
+    }
     Geometries kept;
     for (size_t i = 0; i < geos.size(); ++i) {
         if (keep[i]) {
@@ -2342,7 +2435,9 @@ void importFile(App::Document* doc)
             if (geos.empty()) {
                 throw Base::RuntimeError(error);
             }
-            if (suffix == QLatin1String("dxf") && !reviewDxf(geos, layers, QFileInfo(file).fileName(), dxfTexts(file))) {
+            std::vector<DxfText> texts = suffix == QLatin1String("dxf") ? dxfTexts(file) : std::vector<DxfText>();
+            const std::string font = texts.empty() ? std::string() : dxfTextFont();
+            if (suffix == QLatin1String("dxf") && !reviewDxf(geos, layers, QFileInfo(file).fileName(), &texts, !font.empty())) {
                 return;
             }
             doc->openTransaction("Insert");
@@ -2353,6 +2448,9 @@ void importFile(App::Document* doc)
                 raw.push_back(g.get());
             }
             sketch->addGeometry(raw);
+            if (!font.empty()) {
+                addDxfTexts(sketch, texts, font);
+            }
         }
         doc->recompute();
         doc->commitTransaction();

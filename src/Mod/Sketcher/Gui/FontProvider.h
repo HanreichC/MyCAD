@@ -17,11 +17,13 @@
 #include <QMap>
 #include <QString>
 
+#include <Mod/Sketcher/SketcherGlobal.h>
+
 namespace SketcherGui
 {
 
 /// Availible font files, according to OS-specific logic.
 /// @return A map of "Font Name" -> "Font Path".
-QMap<QString, QString> findAvailableFontFiles();
+SketcherGuiExport QMap<QString, QString> findAvailableFontFiles();
 
 }  // namespace SketcherGui

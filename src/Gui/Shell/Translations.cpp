@@ -595,6 +595,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Print View", "Druckansicht"},
         {"Exit Print View", "Druckansicht verlassen"},
         {"%1 texts are not inserted, only the drawing: %2", "%1 Texte werden nicht eingefügt, nur die Zeichnung: %2"},
+        {"%1 texts become construction text in the sketch: %2", "%1 Texte kommen als Hilfstext in die Skizze: %2"},
         {"Choose Bottom Face", "Unterseite wählen"},
         {"Print View: shows overhangs, faces on the bed and thin walls; click again to hide",
          "Druckansicht: zeigt Überhänge, Flächen auf dem Bett und dünne Wände; nochmal klicken blendet sie aus"},
