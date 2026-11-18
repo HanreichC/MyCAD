@@ -4,6 +4,7 @@ erste hinein, das Feature war schon gelöscht). Ein Cut mit 225 Löchern rechnet
 Ereignisse verarbeitet; Timer klicken dann OK, Abbrechen oder drücken Esc, während noch gerechnet wird. Erwartet: kein
 Absturz (sonst fehlt "step done"), danach ein stimmiger Zustand: Dialog offen mit Extrude oder Dialog zu, und Abbrechen
 lässt die Platte heil. Der Log-Wächter in run.sh meldet zusätzlich verschachteltes Neuberechnen."""
+# log-ok: nicht zur Ruhe (die Platte mit 225 Löchern rechnet absichtlich lange)
 from harness import *
 from PySide6 import QtGui
 

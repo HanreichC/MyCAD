@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """L6 im Dialog: Gelenktyp mit passenden Feldern, Grenzen, Animieren bleibt in den Grenzen, Kollision als Text"""
+# log-ok: nicht zur Ruhe (die Animation zeichnet absichtlich jedes Bild)
 from harness import *
 import Design
 

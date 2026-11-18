@@ -337,10 +337,13 @@ def _when_idle(fn, quiet=0.25, limit=10.0):
         before[0], last = last, now
         if now - calm >= quiet or now - start >= limit:
             if now - calm < quiet:
-                # H2: zeichnet MyCAD ständig neu, kostet das Akku. Ein Fehler, außer der Test erwartet es (Animation):
-                # dann steht im Test eine Zeile "# log-ok: nicht zur Ruhe"
+                # H2: zeichnet MyCAD ständig neu, kostet das Akku. Ein Fehler, außer der Test erwartet es (Animation,
+                # absichtlich lange Rechnung): dann steht im Test eine Zeile "# log-ok: nicht zur Ruhe". Auf einer stark
+                # belasteten Maschine (CI: 8 GUI-Tests parallel mit Software-OpenGL) nur ein Hinweis: dort dauert schon
+                # gewöhnliche Arbeit länger als 10 s, und ein Test fiele ohne eigenen Fehler
                 script = os.environ.get("SCRIPT", "")
-                allowed = not script or "# log-ok: nicht zur Ruhe" in open(script, encoding="utf-8").read()
+                allowed = not script or "# log-ok: nicht zur Ruhe" in open(script, encoding="utf-8").read() \
+                    or slowness() >= 2.0
                 L(("  busy" if allowed else "FAIL busy") + ": MyCAD kam %.0f s lang nicht zur Ruhe" % limit)
             fn()
         else:
