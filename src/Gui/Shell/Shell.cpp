@@ -5473,7 +5473,7 @@ void attach(View3DInventor* view)
                 }
                 return list;
             };
-            root->addChild(Gui::Shell::contactShadow(path->getTail(), others));  // vor dem Raster: Linien über dem Schatten
+            root->addChild(Gui::Shell::contactShadow(path->getTail(), others, view));  // vor dem Raster: Linien über dem Schatten
         }
         root->addChild(groundGrid().node);
     }

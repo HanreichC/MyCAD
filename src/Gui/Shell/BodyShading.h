@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+class QObject;
 class SoNode;
 class SoSwitch;
 
@@ -31,7 +32,8 @@ GuiExport SoNode* bodyTexture(const std::string& path);
 /// Kontaktschatten unter den Körpern einer Ansicht (Einstellung "Kontaktschatten"): ihr Grundriss nah am Boden, von unten gesehen,
 /// weich und halbdurchsichtig auf dem Boden. objects = alles in der Ansicht (ObjectGroup des Viewers); others liefert die
 /// Anzeige-Schalter von allem, was keinen Schatten werfen soll (Skizzen, Scribbles …): beim Rendern der Maske aus.
-GuiExport SoNode* contactShadow(SoNode* objects, std::function<std::vector<SoSwitch*>()> others);
+/// Endet owner (die Ansicht), gibt der Schatten alles frei, auch die Szene, die er festhält.
+GuiExport SoNode* contactShadow(SoNode* objects, std::function<std::vector<SoSwitch*>()> others, QObject* owner);
 
 /// Einstellungen "Materialien und Licht" neu lesen und anwenden (MyCAD/Lighting: 0 Studio mit drei klaren Tonwerten je
 /// Ansicht, 1 Raum wie three.js/model-viewer; RealisticMaterials: aus = Phong wie früher,

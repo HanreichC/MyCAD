@@ -612,8 +612,23 @@ constexpr int MaskSize = 128;
 
 std::vector<ContactShadow*>& shadows()
 {
-    static std::vector<ContactShadow*> list;  // ponytail: je Ansicht ein Eintrag, der bis zum Programmende bleibt
+    static std::vector<ContactShadow*> list;  // je Ansicht ein Eintrag, bis die Ansicht endet (release)
     return list;
+}
+
+/// U8: die Ansicht ist zu. Der Schatten hielt ihre ganze Szene (objects) fest; ohne Freigabe blieben je geschlossenem
+/// Design seine Körper, Skizzen und Texturen im Speicher (gemessen ~9 MB je Design, tests/gui/test_endurance)
+void release(ContactShadow* s)
+{
+    std::erase(shadows(), s);
+    s->sensor->detach();
+    delete s->sensor;
+    s->timer->stop();
+    s->timer->deleteLater();
+    s->objects->unref();
+    s->under->unref();
+    s->sw->unref();
+    delete s;
 }
 
 /// dreimal Kastenfilter waagrecht und senkrecht ≈ Gauß mit Sigma ≈ r; außerhalb der Maske ist nichts
@@ -776,7 +791,7 @@ void shadowEnd(void* data, SoAction* action)
 
 }  // namespace
 
-SoNode* Gui::Shell::contactShadow(SoNode* objects, std::function<std::vector<SoSwitch*>()> others)
+SoNode* Gui::Shell::contactShadow(SoNode* objects, std::function<std::vector<SoSwitch*>()> others, QObject* owner)
 {
     auto s = new ContactShadow {};
     s->others = std::move(others);
@@ -860,5 +875,7 @@ SoNode* Gui::Shell::contactShadow(SoNode* objects, std::function<std::vector<SoS
     s->sensor->attach(s->objects);
     s->timer->start();
     shadows().push_back(s);
+    // destroyed kommt nach dem Abbau der Ansicht (ihr Viewer zeichnet dann nicht mehr)
+    QObject::connect(owner, &QObject::destroyed, [s] { release(s); });
     return s->sw;
 }
