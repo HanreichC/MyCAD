@@ -35,7 +35,40 @@
 
 #include "BackupPolicy.h"
 
+#if !defined(_WIN32)
+#include <fcntl.h>
+#include <unistd.h>
+#endif
+
 using namespace App;
+
+namespace
+{
+/// MyCAD (U1): Inhalt einer Datei bzw. eines Ordners (das Umbenennen) wirklich auf die Platte schreiben. Ohne wäre
+/// nach einem Stromausfall die neue Datei womöglich leer, obwohl sie die alte schon ersetzt hat.
+void syncToDisk([[maybe_unused]] const std::string& path)
+{
+#if !defined(_WIN32)
+    const int fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
+    if (fd >= 0) {
+        ::fsync(fd);
+        ::close(fd);
+    }
+#endif
+}
+
+/// MyCAD (U1): die temporäre Datei ersetzt die Design-Datei in einem Schritt (rename ist atomar). Vorher löschte
+/// FreeCAD die alte Datei ohne Sicherung zuerst; endete das Programm dazwischen, war das Design weg.
+void replaceWith(const std::string& sourcename, const std::string& targetname, const char* error)
+{
+    syncToDisk(sourcename);
+    Base::FileInfo tmp(sourcename);
+    if (!tmp.renameFile(targetname.c_str())) {
+        throw Base::FileException(error, tmp);
+    }
+    syncToDisk(Base::FileInfo(targetname).dirPath());
+}
+}  // namespace
 
 void BackupPolicy::setPolicy(const Policy p)
 {
@@ -114,15 +147,10 @@ void BackupPolicy::applyStandard(const std::string& sourcename, const std::strin
                 Base::Console().warning("Cannot rename project file to backup file\n");
             }
         }
-        else {
-            fi.deleteFile();
-        }
+        // ohne Sicherung: nichts löschen, das Umbenennen unten ersetzt die Datei
     }
 
-    if (Base::FileInfo tmp(sourcename); !tmp.renameFile(targetname.c_str())) {
-        throw Base::FileException("Cannot rename tmp save file to project file",
-                                  Base::FileInfo(targetname));
-    }
+    replaceWith(sourcename, targetname, "Cannot rename tmp save file to project file");
 }
 
 void BackupPolicy::applyTimeStamp(const std::string& sourcename, const std::string& targetname)
@@ -305,24 +333,10 @@ void BackupPolicy::applyTimeStamp(const std::string& sourcename, const std::stri
                 }
             }
         }
-        else {
-            try {
-                fi.deleteFile();
-            }
-            catch (...) {
-                Base::Console().warning("Cannot remove backup file: {}\n",
-                                        fi.fileName());
-                backupManagementError = true;
-            }
-        }
+        // ohne Sicherung: nichts löschen, das Umbenennen unten ersetzt die Datei
     }
 
-    Base::FileInfo tmp(sourcename);
-    if (!tmp.renameFile(targetname.c_str())) {
-        throw Base::FileException(
-            "Save interrupted: Cannot rename temporary file to project file",
-            tmp);
-    }
+    replaceWith(sourcename, targetname, "Save interrupted: Cannot rename temporary file to project file");
 
     if (backupManagementError) {
         throw Base::FileException(
