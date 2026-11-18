@@ -1047,6 +1047,19 @@ void removeBody(Design::Body* body)
             remove(f);
             continue;
         }
+        if (auto split = freecad_cast<Split*>(f); split && i > 0) {
+            // Body i hat das i-te noch nicht gelöschte Teil: dieses Teil künftig auslassen
+            auto dropped = split->Dropped.getValues();
+            long piece = -1;
+            for (long seen = -1; seen < long(i);) {
+                ++piece;
+                if (std::ranges::find(dropped, piece) == dropped.end()) {
+                    ++seen;
+                }
+            }
+            dropped.push_back(piece);
+            split->Dropped.setValues(dropped);
+        }
         eraseAt(f->Bodies, i);
         eraseAt(f->BaseFeatures, i);
         if (sources) {
@@ -1060,7 +1073,7 @@ void removeBody(Design::Body* body)
                 imported->Imported.setValue(Part::TopoShape().makeElementCompound(parts));
             }
         }
-        // ponytail: ein Teil einer Teilung in 3+ Teile: die Teile dahinter rücken auf (Split ordnet nach Reihenfolge zu)
+        // (ein Teil einer Teilung merkt sich die Teilung als gelöscht, siehe oben: die Teile dahinter rücken nicht auf)
     }
     if (doc->getObject(name.c_str())) {
         doc->removeObject(name.c_str());
@@ -1081,7 +1094,7 @@ constexpr const char* FaceGone = "Face gone: the step this sketch was drawn on w
 /// Fläche face eines gelöschten Schritts im Zustand davor (before): dieselbe (Schwerpunkt + Größe) oder, weil einer
 /// Skizze die Ebene genügt, die nächste ebene Fläche in derselben Ebene und Richtung (eine Rundung oder Fase am Rand
 /// ändert die Größe der Fläche).
-/// ponytail: nächste Fläche über den Schwerpunkt; zwei getrennte Flächen in einer Ebene können verwechselt werden
+/// Unter mehreren Flächen in der Ebene gewinnt die, die die alte am meisten überdeckt; nur ohne Überdeckung die nächste.
 std::string faceBefore(const TopoDS_Shape& before, const TopoDS_Shape& face)
 {
     std::string name = Design::elementName(before, face);
@@ -1108,14 +1121,25 @@ std::string faceBefore(const TopoDS_Shape& before, const TopoDS_Shape& face)
     const TopoDS_Vertex centre = BRepBuilderAPI_MakeVertex(props.CentreOfMass());
     TopTools_IndexedMapOfShape faces;
     TopExp::MapShapes(before, TopAbs_FACE, faces);
-    double best = Precision::Infinite();
+    double best = Precision::Infinite(), overlap = 0;
     for (int i = 1; i <= faces.Extent(); ++i) {
         if (!normal(TopoDS::Face(faces(i)), other) || !other.Axis().Direction().IsEqual(plane.Axis().Direction(), Precision::Angular())
             || plane.Distance(other.Location()) > Precision::Confusion()) {
             continue;
         }
+        // zwei getrennte Flächen in derselben Ebene (z. B. durch eine Nut geteilt): die mit der größten Überdeckung
+        GProp_GProps shared;
+        BRepAlgoAPI_Common common(face, faces(i));
+        if (common.IsDone()) {
+            BRepGProp::SurfaceProperties(common.Shape(), shared);
+        }
+        if (shared.Mass() > overlap + 1e-9) {
+            overlap = shared.Mass();
+            name = "Face" + std::to_string(i);
+            continue;
+        }
         BRepExtrema_DistShapeShape dist(centre, faces(i));
-        if (dist.IsDone() && dist.Value() < best) {
+        if (overlap <= 0 && dist.IsDone() && dist.Value() < best) {
             best = dist.Value();
             name = "Face" + std::to_string(i);
         }
@@ -1360,7 +1384,13 @@ void Design::removeFromTimeline(App::DocumentObject* obj)
 }
 
 /// Name ("FaceN", "EdgeN", "VertexN") des Elements in shape, das geometrisch element entspricht (Schwerpunkt + Größe).
-/// ponytail: geometrischer Abgleich statt topologischer Benennung; kann bei zwei deckungsgleichen Elementen irren
+/// Passen mehrere (deckungsgleich), entscheidet erst die topologische Gleichheit, dann die Richtung (Normale bzw. Lauf
+/// der Kante); erst danach der erste Treffer.
+std::string Design::sameFaceBefore(const TopoDS_Shape& before, const TopoDS_Shape& face)
+{
+    return faceBefore(before, face);
+}
+
 std::string Design::elementName(const TopoDS_Shape& shape, const TopoDS_Shape& element)
 {
     if (element.IsNull()) {
@@ -1381,14 +1411,47 @@ std::string Design::elementName(const TopoDS_Shape& shape, const TopoDS_Shape& e
     const GProp_GProps ref = props(element);
     TopTools_IndexedMapOfShape all;
     TopExp::MapShapes(shape, type, all);
+    std::vector<int> matches;
     for (int i = 1; i <= all.Extent(); ++i) {
         const GProp_GProps p = props(all(i));
         if (std::abs(p.Mass() - ref.Mass()) < 1e-6 * (1 + ref.Mass())
             && p.CentreOfMass().Distance(ref.CentreOfMass()) < 1e-6) {
-            return prefix + std::to_string(i);
+            matches.push_back(i);
         }
     }
-    return {};
+    if (matches.size() > 1) {
+        // Richtung: Flächennormale (mit Orientierung) bzw. Anfang -> Ende der Kante
+        const auto direction = [type](const TopoDS_Shape& s) {
+            if (type == TopAbs_FACE) {
+                BRepAdaptor_Surface surface(TopoDS::Face(s));
+                const double u = (surface.FirstUParameter() + surface.LastUParameter()) / 2;
+                const double v = (surface.FirstVParameter() + surface.LastVParameter()) / 2;
+                gp_Pnt p;
+                gp_Vec du, dv;
+                surface.D1(u, v, p, du, dv);
+                gp_Vec n = du.Crossed(dv);
+                return s.Orientation() == TopAbs_REVERSED ? n.Reversed() : n;
+            }
+            if (type == TopAbs_EDGE) {
+                BRepAdaptor_Curve curve(TopoDS::Edge(s));
+                return gp_Vec(curve.Value(curve.FirstParameter()), curve.Value(curve.LastParameter()));
+            }
+            return gp_Vec();
+        };
+        for (int i : matches) {
+            if (all(i).IsPartner(element)) {
+                return prefix + std::to_string(i);
+            }
+        }
+        const gp_Vec want = direction(element);
+        for (int i : matches) {
+            const gp_Vec have = direction(all(i));
+            if (want.Magnitude() > 1e-12 && have.Magnitude() > 1e-12 && want.IsParallel(have, 1e-6) && want.Dot(have) > 0) {
+                return prefix + std::to_string(i);
+            }
+        }
+    }
+    return matches.empty() ? std::string() : prefix + std::to_string(matches.front());
 }
 
 /// Bezug auf einen Body durch seinen Timeline-Zustand ersetzen (das Feature, das ihn gerade erzeugt hat).
@@ -5832,6 +5895,7 @@ Split::Split()
 {
     ADD_PROPERTY_TYPE(Tool, (nullptr), "Split", App::Prop_None, "Plane or face to split with");
     ADD_PROPERTY_TYPE(Pieces, (0L), "Split", App::PropertyType(App::Prop_Output | App::Prop_Hidden), "Pieces");
+    ADD_PROPERTY_TYPE(Dropped, (), "Split", App::Prop_Hidden, "Pieces whose body was deleted (skipped)");
     Operation.setStatus(App::Property::Hidden, true);
 }
 
@@ -5876,6 +5940,15 @@ App::DocumentObjectExecReturn* Split::compute()
     if (Pieces.getValue() != long(pieces.size())) {
         Pieces.setValue(long(pieces.size()));
     }
+    // gelöschte Teile (Body gelöscht) auslassen: sonst rückten die Teile dahinter in fremde Bodies auf
+    const auto& dropped = Dropped.getValues();
+    std::vector<Part::TopoShape> kept;
+    for (size_t i = 0; i < pieces.size(); ++i) {
+        if (std::ranges::find(dropped, long(i)) == dropped.end()) {
+            kept.push_back(pieces[i]);
+        }
+    }
+    pieces = kept;
     std::vector<Part::TopoShape> results;
     for (int i = 0; i < Bodies.getSize(); ++i) {
         results.push_back(i < int(pieces.size()) ? pieces[i] : Part::TopoShape());

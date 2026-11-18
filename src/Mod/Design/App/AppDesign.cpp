@@ -65,6 +65,10 @@ public:
                            "printCheck(body[, up, angle, wall]): dict of overhang, bed and thin areas (mm²) and triangles");
         add_varargs_method("printFixes", &Module::printFixes,
                            "printFixes(doc): [(feature name, label, property, value)] that make the design print better");
+        add_varargs_method("elementName", &Module::elementName,
+                           "elementName(shape, element): name of the element in shape that matches element ('' if none)");
+        add_varargs_method("faceBefore", &Module::faceBefore,
+                           "faceBefore(shape, face): the same face in shape, or the most overlapping one in its plane");
         add_varargs_method("deletionImpact", &Module::deletionImpact,
                            "deletionImpact(obj): dict along/sketches/broken with the names of what deleting obj affects");
         add_varargs_method("referenceIssues", &Module::referenceIssues,
@@ -317,6 +321,21 @@ private:
                                   Py::Float(f.value)));
         }
         return out;
+    }
+    static TopoDS_Shape shapeArg(const Py::Object& o)
+    {
+        if (!PyObject_TypeCheck(o.ptr(), &Part::TopoShapePy::Type)) {
+            throw Py::TypeError("expected a Part shape");
+        }
+        return static_cast<Part::TopoShapePy*>(o.ptr())->getTopoShapePtr()->getShape();
+    }
+    Py::Object elementName(const Py::Tuple& args)
+    {
+        return Py::String(Design::elementName(shapeArg(args[0]), shapeArg(args[1])));
+    }
+    Py::Object faceBefore(const Py::Tuple& args)
+    {
+        return Py::String(Design::sameFaceBefore(shapeArg(args[0]), shapeArg(args[1])));
     }
     Py::Object deletionImpact(const Py::Tuple& args)
     {

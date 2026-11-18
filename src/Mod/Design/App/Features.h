@@ -191,6 +191,9 @@ DesignExport void setPrintUp(App::Document* doc, const Base::Vector3d& up);
 
 /// Name ("FaceN", "EdgeN", "VertexN") des Elements in shape, das geometrisch element entspricht (Schwerpunkt + Größe)
 DesignExport std::string elementName(const TopoDS_Shape& shape, const TopoDS_Shape& element);
+/// Fläche face (eines gelöschten Schritts) im Zustand before: dieselbe, sonst die in derselben Ebene mit der größten
+/// Überdeckung (für Skizzen, deren Fläche wegfällt)
+DesignExport std::string sameFaceBefore(const TopoDS_Shape& before, const TopoDS_Shape& face);
 /// Bezug auf einen Body durch seinen Timeline-Zustand ersetzen (das Feature, das ihn gerade erzeugt hat).
 /// Sonst entsteht ein Kreis, sobald ein Feature aus einer Skizze/Ebene darauf denselben Body verändert.
 DesignExport void stableRef(App::DocumentObject*& obj, std::string& element);
@@ -667,6 +670,7 @@ public:
     Split();
     App::PropertyLinkSub Tool;
     App::PropertyInteger Pieces;  ///< Anzahl der Teile beim letzten Berechnen
+    App::PropertyIntegerList Dropped;  ///< gelöschte Teile (Index unter allen Teilen): übersprungen, die übrigen rücken nicht auf
     App::DocumentObjectExecReturn* compute() override;
 };
 
