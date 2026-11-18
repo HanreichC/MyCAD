@@ -189,6 +189,27 @@ private Q_SLOTS:
         QCOMPARE(spinBox.valueFromText(QStringLiteral("5,5 mm")), Base::Quantity(5.5, "mm"));
     }
 
+    // U9 (FreeCAD#33388): gerechnet im Maßfeld ohne Einheit, "10/2" darf nicht als "10/2 mm" = 10 / (2 mm) enden
+    void test_ArithmeticInLengthField_data()  // NOLINT
+    {
+        QTest::addColumn<QString>("input");
+        QTest::addColumn<double>("mm");
+        QTest::newRow("division") << QStringLiteral("10/2") << 5.0;
+        QTest::newRow("product") << QStringLiteral("10*2") << 20.0;
+        QTest::newRow("brackets") << QStringLiteral("(10+2)/2") << 6.0;
+        QTest::newRow("unit first") << QStringLiteral("10 mm/2") << 5.0;
+        QTest::newRow("sum") << QStringLiteral("10+2.5") << 12.5;
+    }
+
+    void test_ArithmeticInLengthField()  // NOLINT
+    {
+        QFETCH(QString, input);
+        QFETCH(double, mm);
+        auto spinBox = lengthSpinBox(input);
+        QVERIFY2(spinBox->hasValidInput(), qPrintable(input));
+        QCOMPARE(spinBox->valueFromText(input), Base::Quantity(mm, "mm"));
+    }
+
     void test_UnitInNumerator()  // NOLINT
     {
         auto result = qsb->valueFromText("1mm/10");
