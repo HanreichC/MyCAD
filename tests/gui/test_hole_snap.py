@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Phase 11.5 Bohrung per Klick zu Ende gedacht: der Klickpunkt fängt auf die Mitte der Fläche und auf Kreismitten,
-sonst rundet er auf 0,5 mm; Maße zu den zwei nächsten Kanten entstehen von selbst, der Punkt ist voll bestimmt.
+sonst rundet er auf ein Raster, das zum Zoom passt (Aufräumliste E20: ein Schritt mindestens 6 px); Maße zu den zwei nächsten Kanten entstehen von selbst, der Punkt ist voll bestimmt.
 Weitere Klicks bei offenem Dialog machen weitere Bohrungen, gleicher Randabstand bindet sie zu einer Reihe."""
 from harness import *
 
@@ -41,13 +41,24 @@ def expect(tag, at, dims, kinds=None):
           "point=%s dims=%s types=%s solve=%s" % (pt, got, types, solved))
 
 
+def grid(direction):
+    """Raster je Richtung wie in dimensionHolePoint: der kleinste Schritt, der in der Ansicht mindestens 6 px misst"""
+    v = Gui.ActiveDocument.ActiveView
+    a, b = v.getPointOnViewport(V(7.3, 4.8, 20)), v.getPointOnViewport(V(7.3, 4.8, 20) + direction * 10)
+    px = ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5 / 10
+    return next((g for g in (0.1, 0.2, 0.5, 1.0, 2.0, 5.0) if g * px >= 6), 10.0)
+
+
 def rounded():
-    """ein Pixel ist hier gut 0,2 mm: geklickt bei (7,3 | 4,8), gemessen auf ein 0,5-mm-Raster nahe daran"""
+    """geklickt bei (7,3 | 4,8): auf das Raster des Zooms nahe daran, je Richtung eigenes Raster (schräg gesehen)"""
     pt, dims, types, solved = placed()
-    on_grid = all(abs(d * 2 - round(d * 2)) < 1e-9 for d in dims) and abs(pt.x - dims[1]) < 1e-9 and abs(pt.y - dims[0]) < 1e-9
-    check("elsewhere it rounds to 0.5 mm, dimensioned to the two nearest edges",
-          types == ["Distance", "Distance"] and on_grid and (pt - V(7.3, 4.8, 20)).Length < 0.6 and solved == 0,
-          "point=%s dims=%s types=%s solve=%s" % (pt, dims, types, solved))
+    gx, gy = grid(V(1, 0, 0)), grid(V(0, 1, 0))
+    on = lambda d, g: abs(d / g - round(d / g)) < 1e-6
+    on_grid = on(dims[1], gx) and on(dims[0], gy) and abs(pt.x - dims[1]) < 1e-9 and abs(pt.y - dims[0]) < 1e-9
+    near = abs(pt.x - 7.3) <= gx / 2 + 1e-6 and abs(pt.y - 4.8) <= gy / 2 + 1e-6
+    check("elsewhere it rounds to a grid that fits the zoom, dimensioned to the two nearest edges",
+          types == ["Distance", "Distance"] and on_grid and near and solved == 0,
+          "point=%s dims=%s grid=%s/%s types=%s solve=%s" % (pt, dims, gx, gy, types, solved))
 
 
 def row():

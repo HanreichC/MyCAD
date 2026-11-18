@@ -2766,15 +2766,32 @@ Design::Body* bodyUnderSketch(App::DocumentObject* obj)
     return nullptr;
 }
 
+/// Maßstab der Ansicht an einer Stelle der Skizze: wohin 1 mm in x und in y der Skizze auf dem Bildschirm führt. Schräg
+/// gesehen ist er je Richtung anders. Leer (alles 0) ohne Ansicht.
+struct ViewScale
+{
+    double xu = 0, xv = 0, yu = 0, yv = 0;
+    /// Pixel je mm entlang d (Skizze, 2D)
+    double along(const Base::Vector3d& d) const
+    {
+        const double len = std::hypot(d.x, d.y);
+        return len > 0 ? std::hypot(d.x * xu + d.y * yu, d.x * xv + d.y * yv) / len : std::max(std::hypot(xu, xv), std::hypot(yu, yv));
+    }
+};
+
 /// Phase 11.5: Lage einer Bohrung auf der Fläche fangen und bemaßen wie Fusion. p (Skizze, 2D) liegt danach
 /// - auf der Mitte eines Kreises/Bogens der Fläche, wenn der Klick weniger als SnapPx davon weg war (deckungsgleich), sonst
 /// - mit Abständen zu den zwei nächsten nicht parallelen Kanten: je Kante auf der Mitte der Fläche quer zu ihr, wenn der
-///   Klick nah dran war, sonst auf 0,5 mm gerundet. Beide Abstände werden Maße, der Punkt ist voll bestimmt.
-/// pxPerMm: Maßstab der Ansicht an der Klickstelle (0 ohne Ansicht: nur runden).
-void dimensionHolePoint(Sketcher::SketchObject* sketch, int point, Base::Vector3d& p, double pxPerMm, double grid = 0.5)
+///   Klick nah dran war, sonst gerundet auf ein Raster, das zum Zoom passt (0,1 … 10 mm, ein Schritt mindestens 6 px;
+///   grid ist das Raster ohne Ansicht, 0 = nicht runden). Beide Abstände werden Maße, der Punkt ist voll bestimmt.
+/// scale: Maßstab der Ansicht an der Klickstelle (leer ohne Ansicht: nur runden).
+void dimensionHolePoint(Sketcher::SketchObject* sketch, int point, Base::Vector3d& p, const ViewScale& scale, double grid = 0.5)
 {
     constexpr double SnapPx = 12;
-    const auto snaps = [&](double mm) { return pxPerMm > 0 && std::abs(mm) * pxPerMm < SnapPx; };
+    const auto snaps = [&](double mm, const Base::Vector3d& dir) {
+        const double px = scale.along(dir);
+        return px > 0 && std::abs(mm) * px < SnapPx;
+    };
     struct Line
     {
         int geo;
@@ -2797,7 +2814,7 @@ void dimensionHolePoint(Sketcher::SketchObject* sketch, int point, Base::Vector3
         }
         if (round) {
             centre.z = 0;
-            if (snaps((centre - p).Length())) {
+            if (snaps((centre - p).Length(), centre - p)) {
                 p = centre;
                 auto c = std::make_unique<Sketcher::Constraint>();
                 c->Type = Sketcher::Coincident;
@@ -2851,14 +2868,23 @@ void dimensionHolePoint(Sketcher::SketchObject* sketch, int point, Base::Vector3
                 across = t;
             }
         }
-        double want = grid > 0 ? std::round(s / grid) * grid : s;  // ponytail: festes 0,5-mm-Raster, unabhängig vom Zoom
-        if (across != 0 && snaps(s - across / 2)) {
+        double step = grid;
+        if (const double px = scale.along(l->n); grid > 0 && px > 0) {
+            for (double g : {0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0}) {
+                step = g;
+                if (g * px >= 6) {
+                    break;
+                }
+            }
+        }
+        double want = step > 0 ? std::round(s / step) * step : s;
+        if (across != 0 && snaps(s - across / 2, l->n)) {
             want = across / 2;
         }
         // gleicher Randabstand wie eine Bohrung davor (weitere Klicks, 11.5): genau den, dann bindet ihn die Reihe
         for (const Sketcher::Constraint* other : sketch->Constraints.getValues()) {
             if (other->Type == Sketcher::Distance && other->Second == l->geo && other->First != point
-                && snaps(std::abs(s) - other->getValue())) {
+                && snaps(std::abs(s) - other->getValue(), l->n)) {
                 want = s < 0 ? -other->getValue() : other->getValue();
             }
         }
@@ -2909,22 +2935,23 @@ void dimensionHolePoint(Sketcher::SketchObject* sketch, int point, Base::Vector3
     }
 }
 
-/// Maßstab der Ansicht an p (Skizze, 2D): 1 mm in x der Skizze, in Pixeln; 0 ohne 3D-Ansicht
-double pxPerMmAt(Design::Body* body, Sketcher::SketchObject* sketch, const Base::Vector3d& p)
+/// Maßstab der Ansicht an p (Skizze, 2D), in x und y der Skizze; leer ohne 3D-Ansicht
+ViewScale viewScaleAt(Design::Body* body, Sketcher::SketchObject* sketch, const Base::Vector3d& p)
 {
     auto gdoc = Gui::Application::Instance->getDocument(body->getDocument());
     auto view = gdoc ? dynamic_cast<Gui::View3DInventor*>(gdoc->getActiveView()) : nullptr;
     if (!view) {
-        return 0;
+        return {};
     }
     const Base::Placement toGlobal = Design::componentOf(body)->globalPlacement() * sketch->Placement.getValue();
-    const auto screen = [&](double x) {
+    const auto screen = [&](double x, double y) {
         Base::Vector3d g;
-        toGlobal.multVec(Base::Vector3d(x, p.y, 0), g);
+        toGlobal.multVec(Base::Vector3d(x, y, 0), g);
         return view->getViewer()->getPointOnViewport(SbVec3f(float(g.x), float(g.y), float(g.z)));
     };
-    const SbVec2s a = screen(p.x), b = screen(p.x + 1);
-    return std::hypot(double(a[0] - b[0]), double(a[1] - b[1]));  // ponytail: schräg gesehen in y anders
+    // 10 mm statt 1 mm: der Bildschirm rundet auf ganze Pixel, weit herausgezoomt wäre 1 mm sonst 0 px
+    const SbVec2s o = screen(p.x, p.y), x = screen(p.x + 10, p.y), y = screen(p.x, p.y + 10);
+    return {(x[0] - o[0]) / 10.0, (x[1] - o[1]) / 10.0, (y[0] - o[0]) / 10.0, (y[1] - o[1]) / 10.0};
 }
 
 /// Phase 11.5: Solange der Dialog der eben angeklickten Bohrung offen ist, macht jeder weitere Klick auf dieselbe Fläche
@@ -2979,7 +3006,7 @@ private:
         p.z = 0;
         const Part::GeomPoint centre(p);
         const int point = sk->addGeometry(&centre);
-        dimensionHolePoint(sk, point, p, pxPerMmAt(b, sk, p));
+        dimensionHolePoint(sk, point, p, viewScaleAt(b, sk, p));
         Gui::Selection().clearSelection();
         sk->getDocument()->recompute();
     }
@@ -3050,7 +3077,7 @@ void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& poin
         layout(sketch, box);
     }
     else if (cornerOffset < 0) {
-        dimensionHolePoint(sketch, 0, p, pxPerMmAt(body, sketch, p));
+        dimensionHolePoint(sketch, 0, p, viewScaleAt(body, sketch, p));
     }
     else {  // Ecken des Rands (Rechteck um die projizierten Kanten), nach innen versetzt
         const double o = cornerOffset;
@@ -3063,7 +3090,7 @@ void holeOnFace(Design::Body* body, std::string face, const Base::Vector3d& poin
             if (k == 0) {
                 sketch->setGeometry(0, &at);
             }
-            dimensionHolePoint(sketch, index, c, 0, 0);
+            dimensionHolePoint(sketch, index, c, {}, 0);
         }
     }
     sketch->Visibility.setValue(false);
@@ -5102,7 +5129,7 @@ void DesignGui::patternHoles(bool circle, int count, const std::string& size, do
                            sketch->addConstraint(std::move(on));
                        }
                        else {
-                           dimensionHolePoint(sketch, index, p, 0, 0);  // Randabstände, als Reihe gebunden
+                           dimensionHolePoint(sketch, index, p, {}, 0);  // Randabstände, als Reihe gebunden
                        }
                    }
                });
