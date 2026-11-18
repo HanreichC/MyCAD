@@ -684,3 +684,12 @@ wenn es im Alltag auftaucht, dann Test aus dem Ticket):
 **Zurückmelden (freiwillig):** Eigene Fixes, die FreeCAD noch fehlen und dort offene Tickets betreffen könnten:
 Sequencer-Sperre bei verschachtelten Fortschritten (cf7c4f78), doppelter OK-Klick im TaskView (4d25e896),
 Dauer-Neuzeichnen offener Skizzen (db6921d4, vermutlich Teil von FreeCAD#29376), Zoom-Grenzen (a3c24152, vgl. #29619).
+
+## Hakeliges im Alltag (2026-11-18)
+
+Was sich bei der Arbeit mit MyCAD umständlich oder träge anfühlt, gesammelt aus Rückmeldungen des Benutzers und aus
+Messungen. Nichts davon ist umgesetzt; je Punkt wie in 4.5: Test, Status hier, ein Commit.
+
+| Nr. | Punkt | Abhilfe | Status |
+|---|---|---|---|
+| H1 | **Druckansicht zeigt nicht, dass sie an ist** (Rückmeldung Benutzer). Ein Klick auf „Print View“ oben in der Leiste schaltet sie ein, der Knopf sieht danach aber aus wie vorher. Dass man noch einmal klicken muss, um sie zu verlassen, steht nur im Tooltip. Ursache: `Design_PrintView` ist ein einfacher Befehl ohne Umschaltzustand (`Commands.cpp`), die Leiste zeigt gedrückte Knöpfe aber schon an, wenn die Aktion umschaltbar ist (`Shell.cpp`, `setCheckable`/`setChecked`), so wie „Construction“ in der Sketch Palette | 1) Knopf bleibt gedrückt, solange die Druckansicht an ist (umschaltbare Aktion, Zustand folgt `DesignGui::printView()`, auch wenn sie anders verlassen wird). 2) In der Legende der Druckansicht unten rechts (`PrintLegend`, dort stehen schon „Choose Bottom Face“ und „Print“) ein Knopf „Druckansicht verlassen“, wie „Finish Sketch“ in der Sketch Palette. Test: Klick → Knopf gedrückt und Legende mit Verlassen-Knopf; Verlassen-Knopf → Ansicht aus, Knopf nicht mehr gedrückt | offen |
