@@ -58,14 +58,19 @@ namespace
 constexpr int SurfaceUnit = 1;  ///< Normale und Rauheit des Fotoscans; Stufe 0 hat seine Farbe (TextureExtension)
 constexpr int EnvUnit = 2;      ///< Umgebung "Raum"
 
-/// Bild als GL-Textur je Kontext an eine Stufe binden. Direkt in GL statt über einen SoTexture2-Knoten: Coin erzeugte
-/// sonst für die Stufe Texturkoordinaten und ließe den schnellen Zeichenweg der Flächen aus.
+/// Bild als GL-Textur an eine Stufe binden. Direkt in GL statt über einen SoTexture2-Knoten: Coin erzeugte sonst für
+/// die Stufe Texturkoordinaten und ließe den schnellen Zeichenweg der Flächen aus.
+/// Eine Textur je GL-Gruppe (Kontexte, die sich Texturen teilen; die Ansichten von Qt alle): vorher je Kontext, und
+/// beim Schließen einer Ansicht wurde nur der Eintrag vergessen; die Textur blieb in der gemeinsamen Gruppe liegen
+/// (U8: ~6 MB je geschlossenem Design, gemessen mit heaptrack). Ein Eintrag fällt erst weg, wenn der letzte Kontext
+/// seiner Gruppe endet; dann gibt der Treiber die Textur mit dem Kontext frei.
 struct GlImage
 {
     QString path;
     int unit;
     bool tiled;  ///< kachelt und hat Mipmaps (Fotoscan); sonst Kugelkarte
-    std::map<QOpenGLContext*, GLuint> textures;
+    std::map<QOpenGLContextGroup*, GLuint> textures;
+    std::set<QOpenGLContext*> watched;  ///< Kontexte, deren Ende geprüft wird
 };
 
 void bindImage(void* data, SoAction* action)
@@ -80,7 +85,16 @@ void bindImage(void* data, SoAction* action)
     auto image = static_cast<GlImage*>(data);
     QOpenGLFunctions* f = ctx->functions();
     f->glActiveTexture(GL_TEXTURE0 + image->unit);
-    auto known = image->textures.find(ctx);
+    QOpenGLContextGroup* group = ctx->shareGroup();
+    if (image->watched.insert(ctx).second) {
+        QObject::connect(ctx, &QOpenGLContext::aboutToBeDestroyed, [image, ctx, group] {
+            image->watched.erase(ctx);
+            if (group->shares().size() <= 1) {
+                image->textures.erase(group);  // letzter Kontext der Gruppe: die Textur geht mit ihm
+            }
+        });
+    }
+    auto known = image->textures.find(group);
     if (known == image->textures.end()) {
         // 16 Bit (Umgebung) bleibt 16 Bit: 8 Bit reichten nicht für Lichtflächen und dunkle Ecken zugleich
         const QImage source(image->path);
@@ -99,8 +113,7 @@ void bindImage(void* data, SoAction* action)
         f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, image->tiled ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-        known = image->textures.emplace(ctx, tex).first;
-        QObject::connect(ctx, &QOpenGLContext::aboutToBeDestroyed, [image, ctx] { image->textures.erase(ctx); });
+        known = image->textures.emplace(group, tex).first;
     }
     f->glBindTexture(GL_TEXTURE_2D, known->second);
     f->glActiveTexture(GL_TEXTURE0);

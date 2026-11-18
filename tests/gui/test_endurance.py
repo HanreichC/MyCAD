@@ -122,12 +122,12 @@ def verdict():
     (ms0, mb0), (ms1, mb1) = state["start"], state["end"]
     L("frame %.2f -> %.2f ms, memory %.0f -> %.0f MB after %d cycles" % (ms0, ms1, mb0, mb1, state["cycles"]))
     # Grenzen: ein Bild höchstens 50 % (plus 2 ms Messrauschen) langsamer. Speicher: 150 MB für alles, was beim ersten
-    # Mal angelegt wird, dazu je geschlossenem Design der bekannte Rest von ~7,5 MB (PLAN U8: mit "Realistische
-    # Materialien" in Software-Rendering, Ursache offen) mit Luft; mehr heißt, es ist ein neues Leck dazugekommen
+    # Mal angelegt wird, dazu höchstens 3 MB je geschlossenem Design. Gemessen 1,35 MB (PLAN U8: Rest in Qts
+    # Framebuffern je Ansicht); vorher 9 MB, weil Texturen und die Szene des Kontaktschattens liegen blieben
     per = (mb1 - mb0) / max(1, state["cycles"])
     L("memory per closed design: %.2f MB" % per)
     check("U8: the same scene is not slower after working", ms1 <= ms0 * 1.5 + 2, "%.2f -> %.2f ms" % (ms0, ms1))
-    check("U8: memory does not keep growing beyond the known rest", mb1 - mb0 <= 150 + 10 * state["cycles"],
+    check("U8: memory does not keep growing", mb1 - mb0 <= 150 + 3 * state["cycles"],
           "%.0f -> %.0f MB (%.2f MB per design)" % (mb0, mb1, per))
 
 
