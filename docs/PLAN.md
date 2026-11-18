@@ -514,7 +514,7 @@ Tests, Hilfe/README/Wiki wo sichtbar, Status hier, ein Commit.
 | C14 | Druckansicht: Wanddicke ab 50.000 Dreiecken nur stichprobenhaft | offen |
 | C15 | Versionen als ganze Dateikopien (Platz bei großen Designs) | offen |
 | E20 | Bohrung per Klick: festes 0,5-mm-Raster unabhängig vom Zoom; Maßstab fürs Fangen nur in einer Richtung | erledigt 2026-11-18: Raster je Kante nach Zoom (0,1/0,2/0,5/1/2/5/10 mm, ein Schritt mindestens 6 px); der Maßstab der Ansicht gilt je Richtung (schräg gesehen kürzer), fürs Fangen wie fürs Raster (`test_hole_snap`) |
-| E21 | Messkarte und Flächen-Maße folgen der Kamera per Timer statt per Ereignis | offen |
+| E21 | Messkarte und Flächen-Maße folgen der Kamera per Timer statt per Ereignis | erledigt 2026-11-18: `CameraFollow` (Coin-Sensor auf der Kamera, neu angehängt bei Wechsel Perspektive/Orthografisch, Größenänderung der Ansicht) für beide Karten, Bild für Bild statt im 50-ms-Takt (`test_quick_measure_ui`: Karte folgt nach Drehen). Ob ein Werkzeug aufging, prüft die Messkarte weiter ruhig im 250-ms-Takt: FreeCAD meldet das nicht |
 | E22 | Befehle ohne eigenes MyCAD-Symbol zeigen ein ausgegrautes FreeCAD-Symbol | offen |
 | E23 | Scribble-Wert 0,25 ist kein MyStyle-Token | offen |
 | E24 | Touchpad-Gesten: feste Schwellen; unter manchen Compositors (Sway) dreht 3-Finger-Wischen doppelt | offen |

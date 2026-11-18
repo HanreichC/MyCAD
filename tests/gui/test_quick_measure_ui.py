@@ -38,14 +38,14 @@ def distance():
     shot("distance")
 
 
-def card_near():
+def card_near(tag="the card sits just below the measured spot"):
     """die Karte steht unter der Mitte der kürzesten Verbindung (2,5 mm über dem Boden, mittig im Quader)"""
     w = [b for b in visible(QtWidgets.QPushButton) if b.objectName() == "QuickMeasureValue"][0]
     vp = view().viewport()
     p = Gui.ActiveDocument.ActiveView.getPointOnViewport(App.Vector(10, 5, 2.5))
     anchor = QtCore.QPoint(int(p[0] / vp.devicePixelRatioF()), int(vp.height() - p[1] / vp.devicePixelRatioF()))
     card = vp.mapFromGlobal(w.mapToGlobal(w.rect().center()))
-    check("the card sits just below the measured spot", 0 < card.y() - anchor.y() < 80 and abs(card.x() - anchor.x()) < 80,
+    check(tag, 0 < card.y() - anchor.y() < 80 and abs(card.x() - anchor.x()) < 80,
           "card=%s anchor=%s" % (card, anchor))
 
 
@@ -88,6 +88,8 @@ def parameter():
 
 run([("activate", activate), ("setup", setup), W,
      ("two faces", lambda: pick(S["top"], S["bottom"])), W, ("distance", distance), ("near", card_near),
+     ("turn", lambda: (Gui.ActiveDocument.ActiveView.viewRear(), Gui.SendMsgToActiveView("ViewFit"))), W,
+     ("follows", lambda: card_near("Aufräumliste E21: after turning the view the card follows its spot")),
      ("three faces", lambda: pick(S["top"], S["bottom"], S["front"])), W,
      ("three: none", lambda: check("a third element closes the card", values() == [], str(values()))),
      ("touching", lambda: pick(S["top"], S["front"])), W, ("angle", angle),

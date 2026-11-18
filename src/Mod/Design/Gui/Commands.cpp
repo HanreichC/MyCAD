@@ -4450,13 +4450,12 @@ class QuickMeasureChip: public Gui::SelectionObserver
 public:
     QuickMeasureChip()
     {
-        timer.setInterval(50);  // ponytail: folgt der Kamera im Takt statt über einen Coin-Sensor (wie die Flächen-Maße)
-        QObject::connect(&timer, &QTimer::timeout, [this] {
+        // die Kamera bewegt die Karte (CameraFollow); ein geöffnetes Werkzeug ändert nicht immer die Auswahl, das prüft
+        // ein ruhiger Takt
+        dialogCheck.setInterval(250);
+        QObject::connect(&dialogCheck, &QTimer::timeout, [this] {
             if (Gui::Control().activeDialog()) {
                 hide();
-            }
-            else {
-                place();
             }
         });
     }
@@ -4466,13 +4465,14 @@ private:
     {
         if (msg.Type == Gui::SelectionChanges::AddSelection || msg.Type == Gui::SelectionChanges::RmvSelection
             || msg.Type == Gui::SelectionChanges::ClrSelection || msg.Type == Gui::SelectionChanges::SetSelection) {
-            QTimer::singleShot(0, &timer, [this] { refresh(); });
+            QTimer::singleShot(0, &follow, [this] { refresh(); });
         }
     }
 
     void hide()
     {
-        timer.stop();
+        follow.stop();
+        dialogCheck.stop();
         if (panel) {
             panel->hide();
         }
@@ -4522,7 +4522,8 @@ private:
         }
         content->adjustSize();
         place();
-        timer.start();
+        follow.start(viewer);
+        dialogCheck.start();
     }
 
     void build(App::Document* doc)
@@ -4595,7 +4596,8 @@ private:
     QPointer<Gui::View3DInventorViewer> viewer;
     QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
     QWidget* content = nullptr;
-    QTimer timer;
+    DesignGui::CameraFollow follow {[this] { place(); }};
+    QTimer dialogCheck;
 };
 
 /// Schnittansicht: das Modell an einer Ebene oder ebenen Fläche aufschneiden (nochmal: Schnitt aufheben)

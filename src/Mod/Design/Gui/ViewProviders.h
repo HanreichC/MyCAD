@@ -8,7 +8,10 @@
 
 #include "ScribbleRead.h"
 
+#include <functional>
 #include <memory>
+
+#include <QObject>
 
 namespace Design
 {
@@ -22,8 +25,34 @@ namespace Part
 class TopoShape;
 }
 
+class SoNodeSensor;
+namespace Gui
+{
+class View3DInventorViewer;
+}
+
 namespace DesignGui
 {
+/// Ruft moved bei jeder Kamerabewegung der Ansicht (Coin-Sensor auf der Kamera, auch nach einem Wechsel
+/// Perspektive/Orthografisch) und wenn die Ansicht ihre Größe ändert: Glas-Karten an Modellpunkten folgen Bild für Bild
+class CameraFollow: public QObject
+{
+public:
+    explicit CameraFollow(std::function<void()> moved);
+    ~CameraFollow() override;
+    void start(Gui::View3DInventorViewer* viewer);
+    void stop();
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
+private:
+    std::function<void()> moved;
+    std::unique_ptr<SoNodeSensor> sensor;
+    Gui::View3DInventorViewer* viewer = nullptr;
+    QMetaObject::Connection swapped, gone;
+};
+
 
 /// Handschrift auf dem aktuellen Blatt eines Scribbles lesen (freie Fineliner- und Bleistift-Striche), mit
 /// CAD-Schreibweise; die Strich-Nummern der Zeilen zählen in scribble->strokes(). Leer ohne Handschrift-Modell.

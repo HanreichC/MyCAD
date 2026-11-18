@@ -29,6 +29,8 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QTimer>
+#include <Inventor/sensors/SoNodeSensor.h>
+#include <Inventor/nodes/SoCamera.h>
 #include <optional>
 #include <utility>
 #include <cstring>
@@ -3073,8 +3075,6 @@ class FaceDimensions: public QObject, public Gui::SelectionObserver
 public:
     FaceDimensions()
     {
-        timer.setInterval(50);  // ponytail: folgt der Kamera im Takt statt über einen Coin-Sensor
-        QObject::connect(&timer, &QTimer::timeout, [this] { place(); });
         qApp->installEventFilter(this);
         // Strg+Z/Strg+Y: die offene Karte zeigt die zurückgeholten Werte (Fläche kann neu heißen)
         for (auto* signal : {&App::GetApplication().signalUndo, &App::GetApplication().signalRedo}) {
@@ -3119,7 +3119,7 @@ private:
 
     void hide()
     {
-        timer.stop();
+        follow.stop();
         shown.clear();
         if (panel) {
             panel->hide();
@@ -3166,7 +3166,7 @@ private:
         }
         content->adjustSize();
         place();
-        timer.start();
+        follow.start(viewer);
         shown = selectedFace();
     }
 
@@ -3251,10 +3251,67 @@ private:
     QWidget* content = nullptr;
     QFormLayout* form = nullptr;
     QLabel* error = nullptr;
-    QTimer timer;
+    CameraFollow follow {[this] { place(); }};
     std::string shown;  ///< Fläche, zu der die Karte offen ist
 };
 }  // namespace
+
+DesignGui::CameraFollow::CameraFollow(std::function<void()> moved)
+    : moved(std::move(moved))
+    , sensor(std::make_unique<SoNodeSensor>([](void* data, SoSensor*) { static_cast<CameraFollow*>(data)->moved(); }, this))
+{}
+
+DesignGui::CameraFollow::~CameraFollow()
+{
+    stop();
+}
+
+void DesignGui::CameraFollow::start(Gui::View3DInventorViewer* v)
+{
+    stop();
+    viewer = v;
+    if (!viewer) {
+        return;
+    }
+    if (SoCamera* camera = viewer->getCamera()) {
+        sensor->attach(camera);
+    }
+    swapped = QObject::connect(viewer, &Gui::View3DInventorViewer::cameraChanged, this, [this] {
+        sensor->detach();
+        if (viewer && viewer->getCamera()) {
+            sensor->attach(viewer->getCamera());
+        }
+        moved();
+    });
+    gone = QObject::connect(viewer, &QObject::destroyed, this, [this] {
+        sensor->detach();
+        viewer = nullptr;
+    });
+    viewer->viewport()->installEventFilter(this);
+}
+
+void DesignGui::CameraFollow::stop()
+{
+    sensor->detach();  // darf aus moved() heraus aufgerufen werden: der Sensor selbst bleibt
+    QObject::disconnect(swapped);
+    QObject::disconnect(gone);
+    if (viewer) {
+        viewer->viewport()->removeEventFilter(this);
+    }
+    viewer = nullptr;
+}
+
+bool DesignGui::CameraFollow::eventFilter(QObject*, QEvent* event)
+{
+    if (event->type() == QEvent::Resize) {
+        QTimer::singleShot(0, this, [this] {
+            if (viewer) {
+                moved();
+            }
+        });
+    }
+    return false;
+}
 
 void DesignGui::startFaceDimensions()
 {
