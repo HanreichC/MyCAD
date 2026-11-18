@@ -2533,13 +2533,22 @@ std::vector<std::pair<App::DocumentObject*, App::DocumentObject*>> Design::colli
         s.setPlacement(static_cast<Body*>(o)->globalPlacement());
         return s.getShape();
     };
-    for (auto a : mine) {
-        const TopoDS_Shape sa = global(a);
-        for (auto b : others) {
-            const TopoDS_Shape sb = global(b);
-            Bnd_Box ba, bb;
-            BRepBndLib::Add(sa, ba);
-            BRepBndLib::Add(sb, bb);
+    // Lage und Hüllquader je Körper einmal; die teure Schnittmenge nur, wo sich die Quader überlappen
+    const auto prepare = [&global](const std::vector<App::DocumentObject*>& list) {
+        std::vector<std::pair<TopoDS_Shape, Bnd_Box>> out;
+        for (auto o : list) {
+            out.emplace_back(global(o), Bnd_Box());
+            BRepBndLib::Add(out.back().first, out.back().second);
+        }
+        return out;
+    };
+    const auto inner = prepare(mine), outer = prepare(others);
+    for (size_t i = 0; i < mine.size(); ++i) {
+        const auto& [sa, ba] = inner[i];
+        for (size_t k = 0; k < others.size(); ++k) {
+            const auto& [sb, bb] = outer[k];
+            App::DocumentObject* a = mine[i];
+            App::DocumentObject* b = others[k];
             if (ba.IsOut(bb)) {
                 continue;
             }
@@ -6879,7 +6888,9 @@ Base::Placement Joint::motion() const
 /// Geschlossene Kette (L6): alle Joints der Gruppe gemeinsam mit dem Solver. Der erste Joint der Gruppe treibt mit
 /// seinem Winkel bzw. Weg (wie Fusions "Drive Joints"), feste Joints ebenso; die übrigen bewegen sich frei. Komponenten,
 /// die keiner der Joints bewegt, bleiben stehen. Jeder Joint setzt danach die Lage seiner Komponente in Result.
-/// ponytail: jeder Joint der Gruppe löst die ganze Gruppe (n-mal dasselbe); bei großen Baugruppen einmal je Neuberechnen
+/// Jeder Joint der Gruppe braucht dieselbe Lösung: sie wird einmal gerechnet und für gleiche Eingaben (feste Teile,
+/// Joints) wiederverwendet. Die Startlagen der beweglichen Teile zählen nicht, nach dem ersten Joint stehen sie schon
+/// auf der Lösung.
 App::DocumentObjectExecReturn* Joint::solveLoop(const std::vector<Joint*>& group)
 {
     std::vector<Solver::Part> parts;
@@ -6929,9 +6940,38 @@ App::DocumentObjectExecReturn* Joint::solveLoop(const std::vector<Joint*>& group
                          j->Moving.getValue()->getNameInDocument(), drives ? placeA * j->motion() : placeA,
                          f1 * flip.inverse()});
     }
-    std::string error;
-    if (!Solver::solve(parts, links, error)) {
-        return new App::DocumentObjectExecReturn(error);
+    std::ostringstream key;
+    key << std::setprecision(17);
+    const auto put = [&key](const Base::Placement& p) {
+        const Base::Vector3d& v = p.getPosition();
+        double q[4];
+        p.getRotation().getValue(q[0], q[1], q[2], q[3]);
+        key << v.x << ' ' << v.y << ' ' << v.z << ' ' << q[0] << ' ' << q[1] << ' ' << q[2] << ' ' << q[3] << ';';
+    };
+    for (const auto& p : parts) {
+        key << p.name << (p.fixed ? '!' : '~');
+        if (p.fixed) {
+            put(p.pose);
+        }
+    }
+    for (const auto& l : links) {
+        key << l.name << int(l.kind) << l.a << '>' << l.b;
+        put(l.onA);
+        put(l.onB);
+    }
+    static std::map<std::string, std::vector<Solver::Part>> solved;  // Eingaben -> gelöste Lagen
+    if (auto hit = solved.find(key.str()); hit != solved.end()) {
+        parts = hit->second;
+    }
+    else {
+        std::string error;
+        if (!Solver::solve(parts, links, error)) {
+            return new App::DocumentObjectExecReturn(error);
+        }
+        if (solved.size() > 64) {
+            solved.clear();  // genug: Ziehen am Antrieb erzeugt laufend neue Eingaben
+        }
+        solved[key.str()] = parts;
     }
     // Grenzen der frei folgenden Joints: wo der Mechanismus sie verlassen müsste, sagen statt still überschreiten
     for (size_t i = 0; i < group.size(); ++i) {

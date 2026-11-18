@@ -107,7 +107,8 @@ DesignExport double mass(const Part::Feature* body);
 ///@}
 
 /// Körper der Komponente moving (mit Unterkomponenten), die einen Körper außerhalb durchdringen: Paare (innen, außen).
-/// ponytail: prüft jedes Paar mit einer booleschen Schnittmenge, für Baugruppen mit wenigen Dutzend Körpern gedacht
+/// Schnittmenge nur für Paare mit überlappenden Hüllquadern. ponytail: die Paare selbst bleiben n × m, für Baugruppen
+/// bis zu einigen hundert Körpern; darüber bräuchte es einen räumlichen Index (Bnd_BoundSortBox)
 DesignExport std::vector<std::pair<App::DocumentObject*, App::DocumentObject*>> collisions(App::Part* moving);
 
 /// Idee 1: Rotstift. Eine gelesene Zeile an einer Stelle des Modells wird eine Korrektur am nächsten passenden
