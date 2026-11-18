@@ -970,7 +970,8 @@ public:
         Rectangle,
         Polygon,  ///< gerade Stücke von Punkt zu Punkt: Pfeil, Dreieck, Sechseck
         Ellipse,  ///< achsparallel zum Blatt, Punkt 0 auf der x-Halbachse, Punkt 24 auf der y-Halbachse (96 + 1 Punkte)
-        Fill      ///< gefüllte Fläche innerhalb der Punkte (Umriss), ohne Linie
+        Fill,     ///< gefüllte Fläche innerhalb der Punkte (Umriss), ohne Linie
+        Arc       ///< Kreisbogen (beim Halten begradigt), 48 + 1 Punkte vom Anfang zum Ende
     };
     struct Stroke
     {

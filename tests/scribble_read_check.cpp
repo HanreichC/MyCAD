@@ -262,6 +262,7 @@ int main(int argc, char** argv)
             for (int i = 0; i < 3; ++i) {
                 const auto& l = lines[size_t(i)];
                 assert(l.chars.size() == size_t(l.text.size()));
+                assert(ScribbleRead::looksRead(l, ink));  // Schrift bleibt Schrift (Aufräumliste B11)
                 for (size_t c = 1; c < l.chars.size(); ++c) {
                     assert(l.chars[c].x >= l.chars[c - 1].x);  // Zeichen von links nach rechts
                 }
@@ -277,6 +278,41 @@ int main(int argc, char** argv)
     }
     std::printf("mittlere Zeichenfehlerrate (ohne Ø-Zeile): %.1f %%\n", 100 * total / n);
     assert(total / n < 0.25);
+
+    // Zeichnungen liest das Modell auch (Haus: "PoA)", kleine Formen: "III0n"); als Text gelten sie nicht
+    {
+        const auto poly = [](std::initializer_list<std::pair<double, double>> pts) {
+            Stroke s;
+            std::pair<double, double> prev = *pts.begin();
+            for (const auto& p : pts) {
+                for (int k = 1; k <= 10; ++k) {
+                    const double t = k / 10.0;
+                    s.push_back({prev.first + t * (p.first - prev.first), prev.second + t * (p.second - prev.second), 0.5});
+                }
+                prev = p;
+            }
+            return s;
+        };
+        const auto circle = [](double cx, double cy, double r) {
+            Stroke s;
+            for (int i = 0; i <= 60; ++i) {
+                s.push_back({cx + r * std::cos(2 * M_PI * i / 60), cy + r * std::sin(2 * M_PI * i / 60), 0.5});
+            }
+            return s;
+        };
+        const std::vector<std::vector<Stroke>> drawings = {
+            {poly({{0, 0}, {40, 0}, {40, 30}, {0, 30}, {0, 0}}), poly({{0, 30}, {20, 50}, {40, 30}}), circle(12, 18, 5),
+             poly({{25, 0}, {25, 18}, {33, 18}, {33, 0}})},
+            {poly({{0, 0}, {5, 0}, {5, 5}, {0, 5}, {0, 0}}), poly({{10, 0}, {15, 5}}), circle(25, 2.5, 2.5),
+             poly({{30, 0}, {35, 5}, {40, 0}})},
+        };
+        for (const auto& d : drawings) {
+            for (const auto& l : ScribbleRead::read(d)) {
+                std::printf("Zeichnung gelesen als [%s]\n", l.text.toUtf8().constData());
+                assert(!ScribbleRead::looksRead(l, d));
+            }
+        }
+    }
 
     // M von vorn bis hinten: "o12" ohne Schrägstrich bekommt einen in die Tinte, ein geschriebenes Ø keinen zweiten
     int diameters = 0;

@@ -82,14 +82,53 @@ int main()
     assert(std::abs(std::atan2(s.points[1].y - s.points[0].y, s.points[1].x - s.points[0].x) - 30 * M_PI / 180) < 0.05
            || std::abs(std::atan2(s.points[1].y - s.points[0].y, s.points[1].x - s.points[0].x) + 60 * M_PI / 180) < 0.05);
 
-    // bleibt frei: Bogen, Haken, Ellipse, Zickzack, Punkt
-    assert(recognize(ellipse({0, 0}, 30, 30, 0.5, M_PI)).kind == Kind::Free);
+    // Aufräumliste B11: Bogen (halb und flach), Ellipse (auch gedreht), Dreieck
+    s = recognize(ellipse({0, 0}, 30, 30, 0.5, M_PI));
+    assert(s.kind == Kind::Arc && s.points.size() == 49);
+    assert(dist(s.points.front(), {30, 0}) < 1.5 && dist(s.points.back(), {-30, 0}) < 1.5);
+    assert(std::abs(dist(s.points[24], {0, 0}) - 30) < 1 && s.points[24].y > 25);  // über oben, nicht unten herum
+    s = recognize(ellipse({0, -100}, 100, 100, 0.3, M_PI / 4));  // 45°-Bogen: Sehne fast so lang wie der Bogen
+    assert(s.kind == Kind::Arc);
+    s = recognize(ellipse({0, 0}, 60, 25, 0.5));
+    assert(s.kind == Kind::Ellipse && s.points.size() == 97);
+    assert(std::abs(dist(s.points[0], {0, 0}) - 60) < 2 && std::abs(dist(s.points[24], {0, 0}) - 25) < 2);
+    {
+        std::vector<P> tilted = ellipse({0, 0}, 50, 20, 0.4);
+        for (P& q : tilted) {
+            q = {std::cos(0.5) * q.x - std::sin(0.5) * q.y, std::sin(0.5) * q.x + std::cos(0.5) * q.y};
+        }
+        s = recognize(tilted);
+        assert(s.kind == Kind::Ellipse);
+        const double major = std::max(dist(s.points[0], {0, 0}), dist(s.points[24], {0, 0}));
+        assert(std::abs(major - 50) < 2.5);
+    }
+    std::vector<P> tri = line({0, 0}, {60, 0}, 0.4);
+    for (const P& q : line({60, 0}, {30, 45}, 0.4)) {
+        tri.push_back(q);
+    }
+    for (const P& q : line({30, 45}, {0, 0}, 0.4)) {
+        tri.push_back(q);
+    }
+    s = recognize(tri);
+    assert(s.kind == Kind::Polygon && s.points.size() == 4);
+    std::vector<P> fromSide(tri.begin() + 30, tri.end());  // mitten auf der Grundseite angefangen
+    fromSide.insert(fromSide.end(), tri.begin(), tri.begin() + 31);
+    s = recognize(fromSide);
+    assert(s.kind == Kind::Polygon && s.points.size() == 4);
+    for (const P& corner : {P {0, 0}, P {60, 0}, P {30, 45}}) {
+        double nearest = 1e9;
+        for (const P& q : s.points) {
+            nearest = std::min(nearest, dist(q, corner));
+        }
+        assert(nearest < 2);
+    }
+
+    // bleibt frei: Haken, Zickzack, Punkt
     std::vector<P> hook = line({0, 0}, {50, 0}, 0.3);
     for (const P& q : line({50, 0}, {50, 40}, 0.3)) {
         hook.push_back(q);
     }
     assert(recognize(hook).kind == Kind::Free);
-    assert(recognize(ellipse({0, 0}, 60, 25, 0.5)).kind == Kind::Free);
     std::vector<P> zigzag;
     for (int i = 0; i <= 10; ++i) {
         zigzag.push_back({i * 10.0, i % 2 ? 12.0 : 0.0});

@@ -235,7 +235,7 @@ SoSeparator* strokeNode(const Stroke& s)
         }
         const double scale = 1e4 / extent;
         const QTriangleSet set = qTriangulate(flat.data(), int(flat.size() / 2),
-                                              uint(QVectorPath::PolygonHint | QVectorPath::OddEvenFill),
+                                              uint(QVectorPath::PolygonHint | QVectorPath::WindingFill),
                                               QTransform::fromScale(scale, scale));
         std::vector<SbVec3f> pts;
         for (qsizetype i = 0; i + 1 < set.vertices.size(); i += 2) {
@@ -937,9 +937,10 @@ void ViewProviderScribble::Private::rebuild(bool editOnly)
                 }
                 editInk->addChild(hairlineNode(onModel(shifted)));
             }
-            // offene Striche rasten an ihren Enden ein (Freihand, Linie, Pfeil)
+            // offene Striche rasten an ihren Enden ein (Freihand, Linie, Bogen, Pfeil)
             if (!s.points.empty()
-                && (s.kind == Design::Scribble::Free || s.kind == Design::Scribble::Line || s.kind == Design::Scribble::Polygon)) {
+                && (s.kind == Design::Scribble::Free || s.kind == Design::Scribble::Line || s.kind == Design::Scribble::Polygon
+                    || s.kind == Design::Scribble::Arc)) {
                 endpoints.push_back(s.points.front());
                 endpoints.push_back(s.points.back());
             }
@@ -1447,6 +1448,14 @@ void ViewProviderScribble::Private::tidyWriting()
     if (strength <= 0 || !ScribbleTidy::looksLikeWriting(flat, pixelSize())) {
         return;
     }
+    // die Größe allein hält auch eine kleine Zeichnung für Schrift: liest das Modell darin keine Zeile, die nach Schrift
+    // aussieht, bleibt sie, wie sie ist
+    if (ScribbleRead::available()) {
+        const auto raw = ScribbleRead::read(flat);
+        if (std::none_of(raw.begin(), raw.end(), [&flat](const ScribbleRead::Line& l) { return ScribbleRead::looksRead(l, flat); })) {
+            return;
+        }
+    }
     ScribbleTidy::Options options;
     // Rotstift: jede Korrektur bleibt an ihrer Stelle am Modell; Glätten und Geraderücken lassen die Erkennung danach
     // öfter danebenliegen (4 als A, 1 als I, Ø fehlt; tests/scribble_read_check), also ohne
@@ -1525,7 +1534,7 @@ bool ViewProviderScribble::Private::hits(const Stroke& s, const QPointF& pos) co
         }
         prev = here;
     }
-    return s.kind == Design::Scribble::Fill && screenPolygon(s).containsPoint(pos, Qt::OddEvenFill);
+    return s.kind == Design::Scribble::Fill && screenPolygon(s).containsPoint(pos, Qt::WindingFill);
 }
 
 int ViewProviderScribble::Private::hitStroke(const QPointF& pos) const
@@ -1728,7 +1737,7 @@ void ViewProviderScribble::Private::fillAt(const QPointF& pos)
         }
         const QPolygonF poly = screenPolygon(s);
         const QPointF gap = poly.front() - poly.back();
-        if (std::hypot(gap.x(), gap.y()) > 1.5 || !poly.containsPoint(pos, Qt::OddEvenFill)) {
+        if (std::hypot(gap.x(), gap.y()) > 1.5 || !poly.containsPoint(pos, Qt::WindingFill)) {
             continue;  // offen, oder der Stift ist nicht darin
         }
         double area = 0;
@@ -2222,9 +2231,9 @@ std::vector<ScribbleRead::Line> DesignGui::readScribble(const Design::Scribble* 
             index.push_back(i);
         }
     }
-    // ponytail: gruppiert alle freien Striche des Blatts zu Zeilen, auch Zeichnungen; die liest das Modell als Unsinn,
-    // der niemandem schadet. Besser wäre, nur Gruppen zu lesen, die looksLikeWriting bestehen
+    // alle freien Striche des Blatts werden zu Zeilen gruppiert, auch Zeichnungen: deren Unsinn fällt hier weg
     auto lines = ScribbleRead::read(flat);
+    std::erase_if(lines, [&flat](const ScribbleRead::Line& l) { return !ScribbleRead::looksRead(l, flat); });
     for (ScribbleRead::Line& line : lines) {
         ScribbleRead::correct(line);
         for (size_t& i : line.strokes) {

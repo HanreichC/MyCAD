@@ -8,13 +8,14 @@
 
 - **Pens:** Pencil, Fineliner, Marker, in five colors; press harder for a thicker line. Erase with the back of the pen
   or key **E** (**E** again goes back to the pen).
-- **Clean shapes:** hold still for a moment at the end of a stroke and it becomes a line, circle or rectangle, snapping
+- **Clean shapes:** hold still for a moment at the end of a stroke and it becomes a line, arc, circle, ellipse, triangle
+  or rectangle, snapping
   to horizontal, vertical and other stroke ends.
 - **Shapes:** drag out a line, arrow, rectangle, triangle, hexagon, circle or ellipse. **Fill** colors an area.
 - **Select** (**V**): tap strokes or draw around them, then drag; a small bar recolors or deletes them.
 - **Text** writes on the sheet with the keyboard.
 - **Tidy handwriting:** a second after you lift the pen, your words line up: straight, the same size and slant, still in
-  your own hand. Ctrl+Z brings back the raw version. Setting: **Pen & Handwriting**.
+  your own hand; small drawings that don't read as text stay as drawn. Ctrl+Z brings back the raw version. Setting: **Pen & Handwriting**.
 - **Reads handwriting** (offline, German model): **Find handwriting** in the palette jumps to any word; sizes get CAD
   notation (o12 → Ø12, 2x45 → 2×45°, 25mm → 25 mm).
 - **Tracing Paper:** the model shows through. **Only the Sheet** (**Tab**) hides everything else.

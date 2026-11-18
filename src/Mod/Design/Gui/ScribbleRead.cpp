@@ -73,6 +73,27 @@ void setModelFile(const QString& file)
     modelFile = file;
 }
 
+bool looksRead(const Line& line, const std::vector<ScribbleTidy::Stroke>& strokes)
+{
+    if (line.chars.size() < 3) {
+        return !line.chars.empty();
+    }
+    double sure = 0;
+    for (const Char& c : line.chars) {
+        sure += c.confidence / double(line.chars.size());
+    }
+    double x0 = 1e300, x1 = -1e300, y0 = 1e300, y1 = -1e300;
+    for (size_t i : line.strokes) {
+        for (const auto& p : strokes[i]) {
+            x0 = std::min(x0, p.x);
+            x1 = std::max(x1, p.x);
+            y0 = std::min(y0, p.y);
+            y1 = std::max(y1, p.y);
+        }
+    }
+    return sure >= 0.6 && x1 - x0 >= 1.2 * (y1 - y0);
+}
+
 bool available()
 {
 #ifdef MYCAD_HTR

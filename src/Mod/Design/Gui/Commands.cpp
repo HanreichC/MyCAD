@@ -722,6 +722,27 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
             circle->setRadius((pts.front() - center).Length());
             geos.push_back(std::move(circle));
         }
+        else if (s.kind == Design::Scribble::Arc && pts.size() > 2) {
+            // Kreis durch Anfang, Mitte und Ende; die Skizze will Bögen gegen den Uhrzeigersinn
+            const Base::Vector3d a = pts.front(), m = pts[pts.size() / 2], b = pts.back();
+            const double d = 2 * (a.x * (m.y - b.y) + m.x * (b.y - a.y) + b.x * (a.y - m.y));
+            if (std::abs(d) > 1e-9) {
+                const auto sq = [](const Base::Vector3d& p) { return p.x * p.x + p.y * p.y; };
+                const Base::Vector3d c((sq(a) * (m.y - b.y) + sq(m) * (b.y - a.y) + sq(b) * (a.y - m.y)) / d,
+                                       (sq(a) * (b.x - m.x) + sq(m) * (a.x - b.x) + sq(b) * (m.x - a.x)) / d, 0);
+                const auto angle = [&c](const Base::Vector3d& p) { return std::atan2(p.y - c.y, p.x - c.x); };
+                double t0 = angle(a), t1 = angle(b);
+                const auto ccw = [](double from, double to) { return std::fmod(to - from + 4 * M_PI, 2 * M_PI); };
+                if (ccw(t0, angle(m)) > ccw(t0, t1)) {
+                    std::swap(t0, t1);  // die Mitte liegt nicht gegen den Uhrzeigersinn zwischen den Enden
+                }
+                auto arc = std::make_unique<Part::GeomArcOfCircle>();
+                arc->setCenter(c);
+                arc->setRadius((a - c).Length());
+                arc->setRange(t0, t0 + ccw(t0, t1), true);
+                geos.push_back(std::move(arc));
+            }
+        }
         else if (s.kind == Design::Scribble::Ellipse && pts.size() == 97) {
             Base::Vector3d center;
             for (size_t i = 0; i + 1 < pts.size(); ++i) {

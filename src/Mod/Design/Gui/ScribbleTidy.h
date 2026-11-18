@@ -165,8 +165,8 @@ inline std::vector<std::vector<size_t>> lines(std::vector<Stroke> S)
 
 /// Sieht die Gruppe nach Schrift aus? Mindestens zwei Striche, auf dem Bildschirm schriftgroß, zusammen nicht schmaler
 /// als hoch. unitsPerPx: Blatt-Einheiten je Bildschirm-Pixel.
-/// ponytail: reine Größen-Heuristik, eine Skizze aus kleinen Strichen wird auch aufgeräumt (Rückgängig holt sie zurück);
-/// sobald eine Schrifterkennung da ist, sollte deren Sicherheit entscheiden
+/// Nur die Größe: mit Schrifterkennung entscheidet danach noch, ob sie Schrift liest (ScribbleRead::looksRead in
+/// Scribble.cpp); ohne bleibt eine Skizze aus kleinen Strichen ein Fall fürs Aufräumen (Rückgängig holt sie zurück)
 inline bool looksLikeWriting(const std::vector<Stroke>& strokes, double unitsPerPx)
 {
     if (strokes.size() < 2 || unitsPerPx <= 0) {

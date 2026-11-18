@@ -36,6 +36,13 @@ bool available();
 /// Striche in Blatt-Koordinaten (y nach oben), in Schreibreihenfolge → gelesene Zeilen von oben nach unten
 std::vector<Line> read(const std::vector<ScribbleTidy::Stroke>& strokes);
 
+/// Ist die gelesene Zeile wohl Schrift? Das Modell liest auch Zeichnungen (ein Haus als "PoA)"), dann aber unsicherer
+/// (synthetische Schrift 0,71…1,0, Zeichnungen 0,54…0,85) oder als Block, der nicht breiter als hoch ist. Kurze
+/// Lesungen (1–2 Zeichen) bleiben immer: eine einzelne Ziffer ist ein Maß und so hoch wie breit.
+/// ponytail: Schwellen aus synthetischer Schrift (tests/scribble_read_check.cpp); kleine Zeichnungen, die zu 1–2
+/// Zeichen gelesen werden (Kreuz im Kreis: "et"), bleiben Text
+bool looksRead(const Line& line, const std::vector<ScribbleTidy::Stroke>& strokes);
+
 /// Wo der Tinte ein Zeichen fehlt, das die Korrektur ergänzt hat
 struct InkEdit
 {

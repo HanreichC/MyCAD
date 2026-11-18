@@ -158,7 +158,7 @@ Worth knowing:
 
   ![Scribble](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Scribble.gif)
 
-- Straight lines, circles and rectangles when you hold still; handwriting tidies itself up.
+- Straight lines, arcs, circles, ellipses, triangles and rectangles when you hold still; handwriting tidies itself up.
 - **Reads handwriting** offline: find text on a sheet, CAD notation (o12 → Ø12, 2x45 → 2×45°).
 - **Move Sheet** onto any face or upright along a stroke: sketch in 3D.
 - **Convert to Sketch:** strokes become a real sketch; a written `Ø12` next to a circle becomes its dimension.

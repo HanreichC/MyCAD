@@ -23,7 +23,11 @@ enum class Kind  ///< gleiche Nummern wie Design::Scribble::Kind
     Free,
     Line,
     Circle,
-    Rectangle
+    Rectangle,
+    Polygon,  ///< hier: Dreieck (4 Punkte, geschlossen)
+    Ellipse,  ///< 96 + 1 Punkte, Punkt 0 auf der einen, Punkt 24 auf der anderen Halbachse
+    Fill,
+    Arc  ///< Kreisbogen, 48 + 1 Punkte vom Anfang zum Ende
 };
 
 struct Shape
@@ -120,9 +124,82 @@ inline void bounds(const std::vector<P>& pts, double angle, P& lo, P& hi)
 }
 }  // namespace detail
 
-/// Linie (fast gerade), sonst bei geschlossenem Strich Rechteck (Punkte auf dem Rand des kleinsten umschließenden
-/// Rechtecks, alle vier Ecken getroffen) oder Kreis (Abstand zur Mitte fast überall gleich). Alles andere bleibt frei.
-/// ponytail: keine Ellipsen, Dreiecke oder Bögen; die Toleranzen sind Erfahrungswerte für Hand-Striche
+namespace detail
+{
+/// Kreis durch die Punkte (kleinste Quadrate, algebraisch nach Kåsa): Mitte und Radius; false, wenn sie auf einer Geraden
+/// liegen
+inline bool fitCircle(const std::vector<P>& pts, P& c, double& r)
+{
+    // x² + y² + D x + E y + F = 0 → Normalgleichungen 3 × 3, gelöst nach Cramer
+    double sxx = 0, sxy = 0, syy = 0, sx = 0, sy = 0, sxz = 0, syz = 0, sz = 0;
+    const double n = double(pts.size());
+    for (const P& q : pts) {
+        const double z = q.x * q.x + q.y * q.y;
+        sxx += q.x * q.x, sxy += q.x * q.y, syy += q.y * q.y, sx += q.x, sy += q.y;
+        sxz += q.x * z, syz += q.y * z, sz += z;
+    }
+    const auto det = [](double a, double b, double c, double d, double e, double f, double g, double h, double i) {
+        return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    };
+    const double m = det(sxx, sxy, sx, sxy, syy, sy, sx, sy, n);
+    if (std::abs(m) < 1e-12) {
+        return false;
+    }
+    const double D = det(-sxz, sxy, sx, -syz, syy, sy, -sz, sy, n) / m;
+    const double E = det(sxx, -sxz, sx, sxy, -syz, sy, sx, -sz, n) / m;
+    const double F = det(sxx, sxy, -sxz, sxy, syy, -syz, sx, sy, -sz) / m;
+    c = {-D / 2, -E / 2};
+    const double rr = c.x * c.x + c.y * c.y - F;
+    if (rr <= 0) {
+        return false;
+    }
+    r = std::sqrt(rr);
+    return true;
+}
+
+/// offener Strich als Kreisbogen? Alle Punkte nah am Kreis und der Winkel läuft ohne Umkehr in eine Richtung
+inline bool arc(const std::vector<P>& pts, Shape& out)
+{
+    P c;
+    double r = 0;
+    if (!fitCircle(pts, c, r)) {
+        return false;
+    }
+    double worst = 0, sweep = 0, back = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        worst = std::max(worst, std::abs(dist(pts[i], c) - r));
+        if (i > 0) {
+            double d = std::atan2(pts[i].y - c.y, pts[i].x - c.x) - std::atan2(pts[i - 1].y - c.y, pts[i - 1].x - c.x);
+            d = std::remainder(d, 2 * M_PI);
+            sweep += d;
+            back += std::abs(d);
+        }
+    }
+    const double span = std::abs(sweep);
+    // flacher als 20° ist es eine Linie mit Zittern, Umkehr heißt Haken oder Welle
+    if (worst > 0.08 * r || span < 20 * M_PI / 180 || span > 1.9 * M_PI || back > 1.15 * span) {
+        return false;
+    }
+    const double t0 = std::atan2(pts.front().y - c.y, pts.front().x - c.x);
+    out = {Kind::Arc, {}};
+    constexpr int n = 48;
+    for (int i = 0; i <= n; ++i) {
+        const double t = t0 + sweep * i / n;
+        out.points.push_back({c.x + r * std::cos(t), c.y + r * std::sin(t)});
+    }
+    out.points.front() = pts.front();  // Enden genau am Strich: dort kann eingerastet worden sein
+    out.points.back() = pts.back();
+    return true;
+}
+}  // namespace detail
+
+inline std::vector<P> simplify(const std::vector<P>& p, double tol);
+
+/// Linie (fast gerade) oder Kreisbogen, sonst bei geschlossenem Strich Rechteck (Punkte auf dem Rand des kleinsten
+/// umschließenden Rechtecks, alle vier Ecken getroffen), Kreis (Abstand zur Mitte fast überall gleich), Ellipse
+/// (Abstand zur Ellipse im umschließenden Rechteck klein) oder Dreieck (drei Ecken bleiben beim Vereinfachen). Alles
+/// andere bleibt frei.
+/// ponytail: die Toleranzen sind Erfahrungswerte für Hand-Striche
 inline Shape recognize(const std::vector<P>& raw)
 {
     if (raw.size() < 3) {
@@ -142,10 +219,10 @@ inline Shape recognize(const std::vector<P>& raw)
         if (dev < 0.06 * chord) {
             return {Kind::Line, {a, snapAxis(a, b)}};
         }
-        return {};
     }
-    if (chord > 0.25 * len) {
-        return {};  // offen: Bogen, Haken, Wellenlinie
+    if (chord > 0.25 * len) {  // offen: Bogen, sonst Haken oder Wellenlinie (frei)
+        Shape s;
+        return detail::arc(resample(raw, 64), s) ? s : Shape {};
     }
     const std::vector<P> pts = resample(raw, 96);
 
@@ -210,6 +287,45 @@ inline Shape recognize(const std::vector<P>& raw)
             s.points.push_back({c.x + mean * std::cos(t), c.y + mean * std::sin(t)});
         }
         return s;
+    }
+
+    // Ellipse: im kleinsten umschließenden Rechteck (gedreht wie gezeichnet) liegen die Punkte nah an der Ellipse
+    {
+        const double rx = w / 2, ry = h / 2;
+        const P m {(lo.x + hi.x) / 2, (lo.y + hi.y) / 2};
+        double off = 0;
+        for (const P& q : pts) {
+            const P r = detail::rotate(q, -bestAngle);
+            off += std::abs(std::hypot((r.x - m.x) / rx, (r.y - m.y) / ry) - 1) / double(pts.size());
+        }
+        if (rx > 0 && ry > 0 && side > 0.15 * std::max(w, h) && off < 0.06) {
+            Shape s {Kind::Ellipse, {}};
+            constexpr int n = 96;
+            for (int i = 0; i <= n; ++i) {
+                const double t = 2 * M_PI * i / n;
+                s.points.push_back(detail::rotate({m.x + rx * std::cos(t), m.y + ry * std::sin(t)}, bestAngle));
+            }
+            return s;
+        }
+    }
+
+    // Dreieck: beim Vereinfachen bleiben drei Ecken (der Anfang zählt nicht, wenn er mitten auf einer Seite liegt)
+    std::vector<P> loop = pts;
+    loop.back() = loop.front();
+    std::vector<P> corners = simplify(loop, 0.06 * std::max(w, h));
+    if (corners.size() > 2) {
+        corners.pop_back();  // = Anfang
+        const auto straight = [](P a, P b, P c) {
+            const double cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+            return std::abs(cross) < 0.1 * dist(a, b) * dist(b, c);  // Knick unter ~6°
+        };
+        if (corners.size() == 4 && straight(corners[3], corners[0], corners[1])) {
+            corners.erase(corners.begin());
+        }
+        if (corners.size() == 3) {
+            corners.push_back(corners.front());
+            return {Kind::Polygon, corners};
+        }
     }
     return {};
 }
@@ -312,7 +428,7 @@ inline std::vector<P> simplify(const std::vector<P>& p, double tol)
 /// Umrandete Fläche zum Füllen: ohne Zittern (simplify mit tol) und geschlossen. Wer über den Anfang hinaus
 /// weiterzeichnet, dessen Überhang fällt weg (Schnitt am Punkt im letzten Drittel, der dem Anfang am nächsten ist):
 /// sonst kreuzte sich der Umriss und die Überlappung bliebe leer.
-/// ponytail: Umrisse, die sich mittendrin kreuzen (Acht), füllen nur die ungeraden Bereiche
+/// Gefüllt wird nach der Umlaufzahl: auch eine Acht oder ein zweimal umfahrener Bereich ist ganz gefüllt (Scribble.cpp)
 inline std::vector<P> lasso(const std::vector<P>& raw, double tol)
 {
     std::vector<P> p = simplify(raw, tol);
