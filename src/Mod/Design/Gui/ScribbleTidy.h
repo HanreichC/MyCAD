@@ -28,6 +28,9 @@ struct Options
     /// jede Zeile bleibt, wo sie steht: kein gemeinsamer linker Rand, kein gleicher Zeilenabstand (Rotstift: jede Zeile
     /// ist eine eigene Korrektur an ihrer Stelle im Modell)
     bool inPlace = false;
+    /// alle Zeilen am linken Rand der Runde; ohne beginnt jede, wo sie anfängt, und follow richtet sie an der Zeile
+    /// darüber aus (auch an schon Geschriebenem: die Fortsetzung einer Zeile bleibt rechts, wo sie hingehört)
+    bool margin = true;
 };
 
 namespace detail
@@ -166,7 +169,8 @@ inline std::vector<std::vector<size_t>> lines(std::vector<Stroke> S)
 /// Sieht die Gruppe nach Schrift aus? Mindestens zwei Striche, auf dem Bildschirm schriftgroß, zusammen nicht schmaler
 /// als hoch. unitsPerPx: Blatt-Einheiten je Bildschirm-Pixel.
 /// Nur die Größe: mit Schrifterkennung entscheidet danach noch, ob sie Schrift liest (ScribbleRead::looksRead in
-/// Scribble.cpp); ohne bleibt eine Skizze aus kleinen Strichen ein Fall fürs Aufräumen (Rückgängig holt sie zurück)
+/// Scribble.cpp); ohne bleibt eine Skizze aus kleinen Strichen ein Fall fürs Aufräumen (Rückgängig holt sie zurück).
+/// Größer (Grafiktablett) gilt mit Schrifterkennung trotzdem als Schrift, wenn sie darin ein Wort ab drei Zeichen liest
 inline bool looksLikeWriting(const std::vector<Stroke>& strokes, double unitsPerPx)
 {
     if (strokes.size() < 2 || unitsPerPx <= 0) {
@@ -282,6 +286,7 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
             std::vector<size_t> idx;
             double base = 0, xh = 0;
             std::vector<Word> words;
+            bool beside = false;  ///< eine andere Zeile steht auf gleicher Höhe daneben: beide bleiben, wo sie stehen
         };
         std::vector<Line> lines;
         for (auto& idx : groupLines(S, h)) {
@@ -360,6 +365,13 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
                 else {
                     L.words.push_back(u);
                 }
+            }
+        }
+        // Gruppen auf gleicher Höhe (x-Höhen überlappen) sind getrennte Notizen nebeneinander: an den gemeinsamen linken
+        // Rand gerückt, lägen sie übereinander
+        for (Line& L : lines) {
+            for (const Line& M : lines) {
+                L.beside = L.beside || (&L != &M && std::abs(L.base - M.base) < (L.xh + M.xh) / 2);
             }
         }
         std::vector<Word*> words;
@@ -448,14 +460,21 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
         }
         // Wörter auf die Grundlinie ihrer Zeile; ab drei Zeilen auch gleicher Zeilenabstand
         if (o.straight) {
+            std::vector<Line*> stacked;  // Zeilen untereinander; die nebeneinander behalten ihre Höhe
+            for (Line& L : lines) {
+                if (!L.beside) {
+                    stacked.push_back(&L);
+                }
+            }
             std::vector<double> gaps;
-            for (size_t i = 1; i < lines.size(); ++i) {
-                gaps.push_back(lines[i].base - lines[i - 1].base);
+            for (size_t i = 1; i < stacked.size(); ++i) {
+                gaps.push_back(stacked[i]->base - stacked[i - 1]->base);
             }
             const double step = gaps.size() > 1 && !o.inPlace ? median(gaps) : 0;
-            for (size_t li = 0; li < lines.size(); ++li) {
-                const double target = step > 0 && li > 0 ? lines[0].base + double(li) * step : lines[li].base;
-                for (Word& w : lines[li].words) {
+            for (Line& L : lines) {
+                const size_t k = size_t(std::find(stacked.begin(), stacked.end(), &L) - stacked.begin());
+                const double target = !L.beside && step > 0 && k > 0 ? stacked[0]->base + double(k) * step : L.base;
+                for (Word& w : L.words) {
                     const double dy = target - w.base;
                     each(w.idx, [dy](Pt& p) { p.y += dy; });
                     w.base = target;
@@ -482,14 +501,14 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
             std::vector<double> gaps;
             double margin = INFINITY;
             for (const Line& L : lines) {
-                margin = std::min(margin, left(L.words.front()));
+                margin = L.beside ? margin : std::min(margin, left(L.words.front()));
                 for (size_t i = 1; i < L.words.size(); ++i) {
                     gaps.push_back(left(L.words[i]) - right(L.words[i - 1]));
                 }
             }
             const double gap = std::clamp(gaps.empty() ? pageXh : median(gaps), 0.55 * pageXh, 1.1 * pageXh);
             for (Line& L : lines) {
-                double cursor = o.inPlace ? left(L.words.front()) : margin;
+                double cursor = o.inPlace || !o.margin || L.beside ? left(L.words.front()) : margin;
                 for (Word& w : L.words) {
                     const double dx = cursor - left(w);
                     each(w.idx, [dx](Pt& p) { p.x += dx; });
@@ -501,6 +520,102 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
     }();
     flip();
     return S;
+}
+
+/// Maße einer Zeile wie in tidy (y nach oben): Grundlinie, x-Höhe, Breite, typischer Wortabstand (0 bei einem Wort)
+struct Row
+{
+    double base = 0, xh = 0, minX = INFINITY, maxX = -INFINITY, gap = 0;
+};
+
+inline Row row(const std::vector<Stroke>& S, const std::vector<size_t>& idx)
+{
+    using namespace detail;
+    Row r;
+    double tallest = 0;
+    for (size_t i : idx) {
+        const Box b = box(S[i]);
+        tallest = std::max(tallest, b.h());
+        r.minX = std::min(r.minX, b.minX);
+        r.maxX = std::max(r.maxX, b.maxX);
+    }
+    std::vector<double> bottoms, tops;
+    for (size_t i : idx) {
+        if (const Box b = box(S[i]); b.h() > 0.3 * tallest) {
+            bottoms.push_back(b.minY);
+            tops.push_back(b.maxY);
+        }
+    }
+    r.base = median(bottoms);
+    for (double& t : tops) {
+        t -= r.base;
+    }
+    r.xh = quant(tops, 0.25);
+    // Wörter: Lücken ab 0,6 x-Höhe zwischen waagrecht nicht überlappenden Strichen
+    std::vector<size_t> order = idx;
+    std::sort(order.begin(), order.end(), [&S](size_t a, size_t b) { return box(S[a]).minX < box(S[b]).minX; });
+    std::vector<double> gaps;
+    double reach = -INFINITY;
+    for (size_t i : order) {
+        const Box b = box(S[i]);
+        if (reach > -INFINITY && b.minX - reach >= 0.6 * r.xh) {
+            gaps.push_back(b.minX - reach);
+        }
+        reach = std::max(reach, b.maxX);
+    }
+    r.gap = gaps.empty() ? 0 : median(gaps);
+    return r;
+}
+
+/// Weiterschreiben nach einer Pause: tidy sieht nur die Striche seit der letzten Pause. Jede Zeile von fresh (eben
+/// aufgeräumt, Blatt-Koordinaten) bekommt die x-Höhe der Zeile aus before (schon da, je Zeile die Nummern ihrer Striche),
+/// an die sie anschließt: rechts daneben auf deren Grundlinie mit deren Wortabstand, oder darunter an deren linken Rand.
+/// So wird, was mit abgesetztem Stift geschrieben ist, so gleich wie in einem Zug.
+inline void follow(std::vector<Stroke>& fresh, std::vector<Stroke> before, std::vector<std::vector<size_t>> beforeLines)
+{
+    std::vector<Row> rows;
+    for (const auto& idx : beforeLines) {
+        rows.push_back(row(before, idx));
+    }
+    for (const std::vector<size_t>& idx : lines(fresh)) {  // von oben nach unten: die nächste kann an diese anschließen
+        const Row F = row(fresh, idx);
+        const Row* same = nullptr;
+        const Row* above = nullptr;
+        for (const Row& C : rows) {
+            if (C.xh <= 0) {
+                continue;
+            }
+            if (std::abs(F.base - C.base) < (F.xh + C.xh) / 2) {
+                if (F.minX > C.maxX - C.xh && F.minX < C.maxX + 4 * C.xh && (!same || C.maxX > same->maxX)) {
+                    same = &C;
+                }
+            }
+            else if (C.base > F.base && C.base - F.base < 4 * C.xh && F.minX < C.maxX && F.maxX > C.minX
+                     && (!above || C.base < above->base)) {
+                above = &C;
+            }
+        }
+        const Row* C = same ? same : above;
+        if (!C || F.xh <= 0) {
+            continue;
+        }
+        const double f = std::clamp(C->xh / F.xh, 0.7, 1.45);  // wie tidy je Wort
+        const double x0 = same ? C->maxX + (C->gap > 0 ? C->gap : C->xh) : C->minX;
+        const double y0 = same ? C->base : F.base;
+        for (size_t i : idx) {
+            for (Pt& p : fresh[i]) {
+                p.x = x0 + (p.x - F.minX) * f;
+                p.y = y0 + (p.y - F.base) * f;
+            }
+        }
+        // gleich mit in den Bestand: die nächste Zeile von fresh schließt an diese an
+        std::vector<size_t> added;
+        for (size_t i : idx) {
+            added.push_back(before.size());
+            before.push_back(fresh[i]);
+        }
+        rows.push_back(row(before, added));
+    }
 }
 
 }  // namespace ScribbleTidy

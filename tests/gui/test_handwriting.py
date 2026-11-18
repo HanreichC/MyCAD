@@ -26,7 +26,14 @@ def send(kind, x, y, button, buttons):
     QtWidgets.QApplication.sendEvent(vp, QtGui.QMouseEvent(kind, p, vp.mapToGlobal(p), button, buttons, QtCore.Qt.NoModifier))
 
 
-def draw(points):
+def draw(points, pen=False):
+    if pen:  # Grafiktablett mit wechselndem Druck
+        L, N = QtCore.Qt.LeftButton, QtCore.Qt.NoButton
+        tablet(QtCore.QEvent.TabletPress, *points[0], .3, L, L)
+        for k, (x, y) in enumerate(points[1:]):
+            tablet(QtCore.QEvent.TabletMove, x, y, .4 + .4 * math.sin(k * .3) ** 2, N, L)
+        tablet(QtCore.QEvent.TabletRelease, *points[-1], 0, L, N)
+        return
     send(QtCore.QEvent.MouseButtonPress, *points[0], QtCore.Qt.LeftButton, QtCore.Qt.LeftButton)
     for x, y in points[1:]:
         send(QtCore.QEvent.MouseMove, x, y, QtCore.Qt.NoButton, QtCore.Qt.LeftButton)
@@ -69,8 +76,8 @@ def dense(poly, step=.06):
     return out
 
 
-def write(text, fx, fy, u=20, tilt=3.0, messy=1.0):
-    """Text in Pixeln aufs Blatt; Wörter verschieden hoch, groß und schräg, die Zeile gekippt"""
+def write(text, fx, fy, u=20, tilt=3.0, messy=1.0, pen=False):
+    """Text in Pixeln aufs Blatt; Wörter verschieden hoch, groß und schräg, die Zeile gekippt. pen: mit dem Grafiktablett"""
     v = view(); x0, y0 = v.width() * fx, v.height() * fy
     t = math.radians(tilt * messy); cx = 0
     for wi, word in enumerate(text.split(" ")):
@@ -84,7 +91,7 @@ def write(text, fx, fy, u=20, tilt=3.0, messy=1.0):
                     px, py = (px + gx) * scale - py * scale * shear + cx, py * scale + dy
                     rx, ry = px * math.cos(t) - py * math.sin(t), px * math.sin(t) + py * math.cos(t)
                     pts.append((x0 + rx * u, y0 + ry * u))
-                draw(pts)
+                draw(pts, pen)
             gx += w + .08
         cx += gx * scale + .6 + messy * .3 * (wi % 2)
 
@@ -101,6 +108,12 @@ def spread_of_bottoms(ss, words):
         lows = sorted(min(p.y for p in st) for st in ss[a:b])
         bottoms.append(lows[len(lows) // 2])
     return max(bottoms) - min(bottoms)
+
+
+def word_metrics(ss):
+    """Grundlinie (Median der Unterkanten) und x-Höhe (das o, der letzte Strich) eines geschriebenen "hello", in mm"""
+    lows = sorted(min(p.y for p in st) for st in ss)
+    return lows[len(lows) // 2], max(p.y for p in ss[-1]) - min(p.y for p in ss[-1])
 
 
 _pen = []
@@ -224,6 +237,21 @@ in_order([
                               len(s().Counts) < saved["n"] and not shown("Design_ScribbleDeleteSelection"), "%d -> %d" % (saved["n"], len(s().Counts)))),
     ("undo delete", lambda: Gui.runCommand("Std_Undo")),
     ("back", lambda: check("undo brings the line back", len(s().Counts) == saved["n"])),
+
+    # Grafiktablett (ConceptKey 0.1): auf dem Bildschirm groß geschrieben (x-Höhe 70 px, Grenze für Schrift sonst 60)
+    # wird trotzdem aufgeräumt; das nächste Wort nach einer Schreibpause, größer und höher, rechts daneben kommt auf
+    # dieselbe Grundlinie und Größe. Jeder Schritt ist eine eigene Runde (Pause 1 s, Schritte 1,2 s)
+    ("look first", lambda: (Gui.runCommand("Design_ScribbleLookAt"), Gui.runCommand("Design_ScribblePen"))),  # Suchen wählte aus
+    ("big", lambda: (saved.update(n=len(s().Counts)), write("hello", .2, .88, u=70, pen=True))),
+    ("big tidied", lambda: check("big handwriting from a pen tablet is tidied too",
+                                 len(s().Counts) == saved["n"] + 6 and doc().UndoNames[:2] == ["Tidy Handwriting", "Scribble"],
+                                 "%d strokes, %s" % (len(s().Counts) - saved["n"], doc().UndoNames[:3]))),
+    ("next word", lambda: write("hello", .2 + 340 / view().width(), .86, u=85, pen=True)),
+    ("joined", lambda: (lambda a, b: check("after a pause the next word joins the line: same baseline and size",
+                                           abs(a[0] - b[0]) < .15 * a[1] and abs(a[1] - b[1]) < .15 * a[1],
+                                           "base %.2f / %.2f mm, x-height %.2f / %.2f mm" % (a[0], b[0], a[1], b[1])))(
+        word_metrics(strokes()[saved["n"]:saved["n"] + 6]), word_metrics(strokes()[saved["n"] + 6:saved["n"] + 12]))),
+    ("shot tablet", lambda: shot("tablet")),
 
     # T: Ø12 neben einem Kreis wird beim Umwandeln dessen Durchmesser. Die Suche hat die Ansicht verschoben: erst wieder
     # gerade aufs Blatt, sonst landen Kreis und Maß in der Zeile von "Bohrung Ø12"

@@ -181,7 +181,8 @@ int main()
 
     // Rotstift: Korrekturen verteilt am Modell (eine links oben, eine weit rechts tiefer, die dritte zuletzt links
     // daneben, wie Ø4.5 / Ø4.5 / C1). Jede ist eine eigene Zeile, auch die linke, die nach der rechten kam, und mit
-    // inPlace bleibt jede, wo sie steht; ohne rückt die rechte an den linken Rand unter die anderen
+    // inPlace bleibt jede, wo sie steht. Ohne stehen die beiden unteren fast auf gleicher Höhe nebeneinander: auch sie
+    // bleiben, statt dass die rechte an den linken Rand auf die andere rutscht
     std::vector<Stroke> notes = line(0, 0, {{0, 1, 0}});
     for (auto [dx, dy] : {std::pair {11.0, -6.4}, std::pair {1.5, -5.8}}) {
         for (Stroke s : line(dy * 1.6 * Xh, 0, {{0, 1, 0}})) {
@@ -203,7 +204,61 @@ int main()
         assert(std::abs(left(kept, 3 * n, 3 * n + 3) - left(notes, 3 * n, 3 * n + 3)) < 0.2 * Xh);
         assert(std::abs(measure(kept, n, 1).bases[0] - measure(notes, n, 1).bases[0]) < 0.2 * Xh);
     }
-    assert(std::abs(left(moved, 3, 6) - left(notes, 3, 6)) > 5 * Xh);  // ohne: der gemeinsame Rand zieht sie weg
+    assert(std::abs(left(moved, 3, 6) - left(notes, 3, 6)) < 0.2 * Xh);
+    assert(left(moved, 3, 6) > right(moved, 6, 9));  // nicht übereinander
+
+    // Tablet (ConceptKey 0.1): "Das ist ein" und mit großer Lücke "Test" auf derselben Höhe. Zwei Gruppen; früher rückte
+    // der gemeinsame linke Rand "Test" auf "Das"
+    std::vector<Stroke> row = line(0, 0, {{0, 1, 0}, {0, 1, 0}});
+    for (Stroke s : line(0.1 * Xh, 0, {{0, 1.2, 0.1}})) {
+        for (Pt& p : s) {
+            p.x += right(row, 0, 6) + 5 * Xh;
+        }
+        row.push_back(s);
+    }
+    assert(lines(row).size() == 2);
+    const std::vector<Stroke> rowNeat = tidy(row);
+    std::printf("daneben: 'Test' links %.1f mm, 'Das ist ein' rechts %.1f mm\n", left(rowNeat, 6, 9), right(rowNeat, 0, 6));
+    assert(left(rowNeat, 6, 9) > right(rowNeat, 0, 6) + 3 * Xh);
+
+    // Weiterschreiben nach einer Pause (Tablet: zwischen Wörtern abgesetzt): das neue Wort, anders groß, höher und mit
+    // eigener Lücke, kommt nach dem eigenen Aufräumen auf Grundlinie und x-Höhe der Zeile davor, mit deren Wortabstand.
+    // Eine Zeile darunter beginnt an deren linkem Rand.
+    const std::vector<Stroke> first(neat.begin(), neat.begin() + 9);
+    const Metrics had = measure(first, 0, 3);
+    std::vector<Stroke> later = line(0, 0.04, {{0.0, 1.4, 0.2}});
+    for (Stroke& s : later) {
+        for (Pt& p : s) {
+            p.x += right(first, 0, 9) + 2.5 * Xh;
+            p.y += 0.6 * Xh;
+        }
+    }
+    std::vector<Stroke> under = line(0, 0, {{0, 0.75, 0}});
+    for (Stroke& s : under) {
+        for (Pt& p : s) {
+            p.x += left(first, 0, 9) + 4 * Xh;
+            p.y += had.bases[0] - 3 * Xh;
+        }
+    }
+    later.insert(later.end(), under.begin(), under.end());
+    Options cont;
+    cont.margin = false;  // wie in Scribble.cpp: den Rand setzt follow
+    std::vector<Stroke> fresh = tidy(later, cont);
+    follow(fresh, first, lines(first));
+    const Metrics now = measure(fresh, 0, 2);
+    std::printf("weiter: Grundlinie %.2f / %.2f mm, x-Höhe %.2f / %.2f mm, Lücke %.2f / %.2f mm, Rand %.2f / %.2f mm\n",
+                now.bases[0], had.bases[0], now.sizes[0], had.sizes[0], left(fresh, 0, 3) - right(first, 0, 9), had.gaps[0],
+                left(fresh, 3, 6), left(first, 0, 9));
+    assert(std::abs(now.bases[0] - had.bases[0]) < 0.1 * Xh);
+    assert(std::abs(now.sizes[0] - had.sizes[0]) < 0.1 * Xh);
+    assert(std::abs(left(fresh, 0, 3) - right(first, 0, 9) - had.gaps[0]) < 0.1 * Xh);
+    assert(std::abs(left(fresh, 3, 6) - left(first, 0, 9)) < 0.05 * Xh);
+    assert(std::abs(now.sizes[1] - had.sizes[0]) < 0.1 * Xh);
+    // weit weg oder ohne Schrift davor: bleibt, wo es ist
+    std::vector<Stroke> far = tidy(line(-20 * Xh, 0, {{0, 1, 0}})), alone = far;
+    follow(far, first, lines(first));
+    follow(alone, {}, {});
+    assert(left(far, 0, 3) == left(tidy(line(-20 * Xh, 0, {{0, 1, 0}})), 0, 3) && left(alone, 0, 3) == left(far, 0, 3));
 
     // Stärke: halb überblendet liegt zwischen vorher und nachher
     const Stroke half = blend(page[1], neat[1], 0.5);

@@ -106,6 +106,36 @@ Nib nib(long tool)
     }
 }
 
+/// Freie Stift-Striche (ohne Marker und Formen) unter den ersten count Strichen, die auf dem aktuellen Blatt liegen:
+/// in Blatt-Koordinaten, dazu je Strich seine Nummer im Scribble
+std::pair<std::vector<ScribbleTidy::Stroke>, std::vector<size_t>> sheetWriting(const Design::Scribble* scribble, size_t count)
+{
+    const auto all = scribble->strokes();
+    const Base::Matrix4D toSheet = scribble->Sheet.getValue().inverse().toMatrix();
+    std::vector<ScribbleTidy::Stroke> flat;
+    std::vector<size_t> index;
+    for (size_t i = 0; i < std::min(count, all.size()); ++i) {
+        const Stroke& s = all[i];
+        if (s.kind != Design::Scribble::Free || s.tool == Design::Scribble::Marker) {
+            continue;
+        }
+        ScribbleTidy::Stroke f;
+        for (size_t j = 0; j < s.points.size(); ++j) {
+            const Base::Vector3d q = toSheet * s.points[j];
+            if (std::abs(q.z) > 1e-3) {
+                f.clear();
+                break;  // auf einem anderen Blatt
+            }
+            f.push_back({q.x, q.y, s.widths[j]});
+        }
+        if (!f.empty()) {
+            flat.push_back(f);
+            index.push_back(i);
+        }
+    }
+    return {flat, index};
+}
+
 /// Tinte: gespeichert als labelPrimary des hellen Modus, damit die Datei nicht vom Modus abhängt
 constexpr Base::Color Ink(0x1D / 255.0F, 0x1D / 255.0F, 0x1F / 255.0F);
 
@@ -1384,6 +1414,11 @@ void ViewProviderScribble::Private::release(const QPointF& pos)
             current.points.push_back(fromSheet * Base::Vector3d(q.x, q.y, 0));
         }
         current.widths.assign(current.points.size(), 0);
+        if (current.points.size() < 3) {  // kaum bewegt: bleibt keine Fläche, sonst läge eine unsichtbare im Scribble
+            live->removeAllChildren();
+            current = Stroke();
+            return;
+        }
     }
     else if (!isPen(gesture) && tapped) {
         current = Stroke();  // nur getippt: keine Form ohne Größe
@@ -1444,14 +1479,18 @@ void ViewProviderScribble::Private::tidyWriting()
         flat.push_back(f);
     }
     const double strength = double(std::clamp(tidyParams()->GetInt("ScribbleTidyStrength", 100), 0L, 100L)) / 100;
-    if (strength <= 0 || !ScribbleTidy::looksLikeWriting(flat, pixelSize())) {
+    const bool small = ScribbleTidy::looksLikeWriting(flat, pixelSize());
+    if (strength <= 0 || flat.size() < 2 || (!small && !ScribbleRead::available())) {
         return;
     }
     // die Größe allein hält auch eine kleine Zeichnung für Schrift: liest das Modell darin keine Zeile, die nach Schrift
-    // aussieht, bleibt sie, wie sie ist
+    // aussieht, bleibt sie, wie sie ist. Mit dem Grafiktablett schreibt man auf dem Bildschirm oft größer als die
+    // Grenze für Schrift (bis 230 px statt 60): ein sicher gelesenes Wort ab drei Zeichen ist trotzdem Schrift
     if (ScribbleRead::available()) {
         const auto raw = ScribbleRead::read(flat);
-        if (std::none_of(raw.begin(), raw.end(), [&flat](const ScribbleRead::Line& l) { return ScribbleRead::looksRead(l, flat); })) {
+        if (std::none_of(raw.begin(), raw.end(), [&flat, small](const ScribbleRead::Line& l) {
+                return ScribbleRead::looksRead(l, flat) && (small || l.chars.size() >= 3);
+            })) {
             return;
         }
     }
@@ -1460,7 +1499,20 @@ void ViewProviderScribble::Private::tidyWriting()
     // öfter danebenliegen (4 als A, 1 als I, Ø fehlt; tests/scribble_read_check), also ohne
     options.inPlace = object()->OnModel.getValue();
     options.smooth = options.straight = !options.inPlace;
-    const auto neat = ScribbleTidy::tidy(flat, options);
+    options.margin = false;  // den linken Rand setzt follow, auch an schon Geschriebenem
+    auto neat = ScribbleTidy::tidy(flat, options);
+    if (!options.inPlace) {  // nach einer Pause weitergeschrieben: so groß und auf der Zeile wie das, was schon dasteht
+        // nur, was das Modell als Schrift liest: an eine Zeichnung daneben schließt nichts an.
+        // ponytail: liest jedes Mal das ganze Blatt (je Zeile wenige ms); bei sehr vollen Blättern nur Zeilen nahe fresh
+        const auto before = sheetWriting(object(), size_t(from)).first;
+        std::vector<std::vector<size_t>> lines;
+        for (const ScribbleRead::Line& l : ScribbleRead::read(before)) {
+            if (ScribbleRead::looksRead(l, before)) {
+                lines.push_back(l.strokes);
+            }
+        }
+        ScribbleTidy::follow(neat, before, lines);
+    }
     std::vector<ScribbleTidy::Stroke> done;
     for (size_t i = 0; i < neat.size(); ++i) {
         done.push_back(ScribbleTidy::blend(flat[i], neat[i], strength));
@@ -2207,29 +2259,7 @@ std::vector<ScribbleRead::Line> DesignGui::readScribble(const Design::Scribble* 
     if (!ScribbleRead::available()) {
         return {};
     }
-    const auto all = scribble->strokes();
-    const Base::Matrix4D toSheet = scribble->Sheet.getValue().inverse().toMatrix();
-    std::vector<ScribbleTidy::Stroke> flat;
-    std::vector<size_t> index;  // Nummer in flat → Nummer in all
-    for (size_t i = 0; i < all.size(); ++i) {
-        const Stroke& s = all[i];
-        if (s.kind != Design::Scribble::Free || s.tool == Design::Scribble::Marker) {
-            continue;
-        }
-        ScribbleTidy::Stroke f;
-        for (size_t j = 0; j < s.points.size(); ++j) {
-            const Base::Vector3d q = toSheet * s.points[j];
-            if (std::abs(q.z) > 1e-3) {
-                f.clear();
-                break;  // auf einem anderen Blatt
-            }
-            f.push_back({q.x, q.y, s.widths[j]});
-        }
-        if (!f.empty()) {
-            flat.push_back(f);
-            index.push_back(i);
-        }
-    }
+    const auto [flat, index] = sheetWriting(scribble, SIZE_MAX);  // index: Nummer in flat → Nummer im Scribble
     // alle freien Striche des Blatts werden zu Zeilen gruppiert, auch Zeichnungen: deren Unsinn fällt hier weg
     auto lines = ScribbleRead::read(flat);
     std::erase_if(lines, [&flat](const ScribbleRead::Line& l) { return !ScribbleRead::looksRead(l, flat); });
