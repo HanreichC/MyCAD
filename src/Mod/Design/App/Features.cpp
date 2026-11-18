@@ -24,6 +24,7 @@
 #include "PrintCheck.h"
 #include "AssemblySolver.h"
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepOffsetAPI_MakeOffset.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
 #include <Mod/Part/App/Geometry.h>
 #include <Mod/Sketcher/App/SketchObject.h>
@@ -6189,35 +6190,86 @@ App::DocumentObjectExecReturn* Rib::compute()
         }
     }
     int made = 0;
+    const bool web = Mode.getValue() == 1;
     for (const auto& edge : edges) {
         BRepAdaptor_Curve curve(TopoDS::Edge(edge));
-        if (curve.GetType() != GeomAbs_Line) {
-            continue;  // ponytail: nur gerade Linien; gebogene Rippen bräuchten einen 2D-Versatz
+        const bool straight = curve.GetType() == GeomAbs_Line;
+        // Web (wächst senkrecht zur Skizze) auch aus Bögen, Splines und geschlossenen Kurven: die Dicke ist dann ein
+        // 2D-Versatz der Kurve. ponytail: eine Rippe in der Ebene aus einer Kurve (Versatz bis zum Körper, auf der
+        // Innenseite eines Bogens überschlägt er sich) nur aus geraden Linien
+        if (!straight && !web) {
+            continue;
         }
         const gp_Pnt a = curve.Value(curve.FirstParameter()), b = curve.Value(curve.LastParameter());
-        const gp_Vec along(a, b);
+        const bool closed = !straight && a.Distance(b) < Precision::Confusion();
+        const gp_Vec along = straight ? gp_Vec(a, b) : gp_Vec(normal.Crossed(gp_Vec(1, 0, 0)).Magnitude() > 1e-6
+                                                                    ? normal.Crossed(gp_Vec(1, 0, 0)) : normal.Crossed(gp_Vec(0, 1, 0)));
         const gp_Vec inPlane = normal.Crossed(along).Normalized();  // in der Skizzenebene quer zur Linie
         // Rib wächst in der Ebene (quer zur Linie), die Dicke liegt senkrecht dazu; Web umgekehrt
-        const bool web = Mode.getValue() == 1;
         const gp_Vec grow = web ? normal.Normalized() : inPlane;
         const gp_Vec across = web ? inPlane : normal.Normalized();
         const gp_Vec side = grow;
-        const gp_Pnt mid = a.Translated(along * 0.5);
+        const gp_Pnt mid = curve.Value((curve.FirstParameter() + curve.LastParameter()) / 2);
+        // Grundfläche der Wand aus einer Kurve: die Kurve um t/2 nach beiden Seiten versetzt (geschlossen: Ring)
+        TopoDS_Face curvedFoot;
+        if (!straight) {
+            try {
+                const TopoDS_Wire wire = BRepBuilderAPI_MakeWire(TopoDS::Edge(edge)).Wire();
+                const auto offset = [&](double d) {
+                    BRepOffsetAPI_MakeOffset off(wire, GeomAbs_Arc, false);
+                    off.Perform(d);
+                    TopExp_Explorer w(off.Shape(), TopAbs_WIRE);
+                    return w.More() ? BRepBuilderAPI_MakeFace(TopoDS::Wire(w.Current()), true).Face() : TopoDS_Face();
+                };
+                if (closed) {
+                    const TopoDS_Face outer = offset(t / 2), inner = offset(-t / 2);
+                    TopExp_Explorer f(BRepAlgoAPI_Cut(outer, inner).Shape(), TopAbs_FACE);
+                    curvedFoot = f.More() ? TopoDS::Face(f.Current()) : TopoDS_Face();
+                }
+                else {
+                    curvedFoot = offset(t / 2);  // offener Draht: Kontur rund um die Kurve
+                }
+            }
+            catch (const Standard_Failure&) {
+            }
+            if (curvedFoot.IsNull()) {
+                return new App::DocumentObjectExecReturn("This curve cannot be thickened into a web; try a thinner web");
+            }
+            // der Versatz eines geschlossenen Drahts trägt die Lage der Skizze doppelt: zurück in die Skizzenebene
+            TopExp_Explorer v(curvedFoot, TopAbs_VERTEX);
+            const gp_Vec n = normal.Normalized();
+            const double off = gp_Vec(BRep_Tool::Pnt(TopoDS::Vertex(v.Current())), mid).Dot(n);
+            if (std::abs(off) > Precision::Confusion()) {
+                gp_Trsf back;
+                back.SetTranslation(n * off);
+                curvedFoot = TopoDS::Face(BRepBuilderAPI_Transform(curvedFoot, back).Shape());
+            }
+        }
         // beide Seiten probieren: genommen wird das Stück an der Linie, das ringsum vom Körper begrenzt ist
         bool done = false;
         for (double s : {1.0, -1.0}) {
             const gp_Vec out = grow * (s * far);
-            BRepBuilderAPI_MakePolygon outline(a, b, b.Translated(out), a.Translated(out), Standard_True);
-            const TopoDS_Face face = BRepBuilderAPI_MakeFace(outline.Wire()).Face();
-            gp_Trsf shift;
-            shift.SetTranslation(across * (-t / 2));
-            const TopoDS_Shape slab = BRepPrimAPI_MakePrism(BRepBuilderAPI_Transform(face, shift).Shape(), across * t)
-                                          .Shape();
+            TopoDS_Shape slab;
+            if (straight) {
+                BRepBuilderAPI_MakePolygon outline(a, b, b.Translated(out), a.Translated(out), Standard_True);
+                const TopoDS_Face face = BRepBuilderAPI_MakeFace(outline.Wire()).Face();
+                gp_Trsf shift;
+                shift.SetTranslation(across * (-t / 2));
+                slab = BRepPrimAPI_MakePrism(BRepBuilderAPI_Transform(face, shift).Shape(), across * t).Shape();
+            }
+            else {
+                slab = BRepPrimAPI_MakePrism(curvedFoot, out).Shape();
+                GProp_GProps props;  // Fläche gegen die Wuchsrichtung orientiert: der Körper wäre umgestülpt
+                BRepGProp::VolumeProperties(slab, props);
+                if (props.Mass() < 0) {
+                    slab.Reverse();
+                }
+            }
             BRepAlgoAPI_Cut cut(slab, original);
             if (!cut.IsDone()) {
                 continue;
             }
-            const gp_Pnt probe = mid.Translated(side * (s * 1e-3 * (1 + along.Magnitude())));
+            const gp_Pnt probe = mid.Translated(side * (s * 1e-3 * (1 + (straight ? along.Magnitude() : 1.0))));
             for (TopExp_Explorer piece(cut.Shape(), TopAbs_SOLID); piece.More(); piece.Next()) {
                 BRepClass3d_SolidClassifier inside(piece.Current(), probe, 1e-7);
                 if (inside.State() != TopAbs_IN) {
@@ -6232,8 +6284,25 @@ App::DocumentObjectExecReturn* Rib::compute()
                     || y1 > bb.MaxY + tol || z1 > bb.MaxZ + tol) {
                     break;  // läuft ins Leere: diese Seite ist offen
                 }
-                // Web: beide Enden der Linie liegen an einer Wand an, sonst stünde die Wand frei im Raum (nur am Boden)
-                if (web) {
+                // Web: beide Enden der Linie liegen an einer Wand an, sonst stünde die Wand frei im Raum (nur am Boden).
+                // Eine gebogene Linie prüft ihre Endpunkte; eine geschlossene hat keine Enden (Ring auf dem Boden)
+                if (web && !straight && !closed) {
+                    const auto touchesAt = [&](const gp_Pnt& end) {
+                        const gp_Pnt below = end.Translated(side * (s * 1e-3 * 2));
+                        const gp_Vec tangent = gp_Vec(end, mid).Normalized();
+                        const gp_Pnt beyond = below.Translated(tangent * (-(t / 2 + 1e-3)));  // ein Stück hinter dem Ende
+                        for (TopExp_Explorer solid(original, TopAbs_SOLID); solid.More(); solid.Next()) {
+                            if (BRepClass3d_SolidClassifier(solid.Current(), beyond, 1e-6).State() != TopAbs_OUT) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
+                    if (!touchesAt(a) || !touchesAt(b)) {
+                        break;
+                    }
+                }
+                else if (web && straight) {
                     const gp_Vec dir = along.Normalized();
                     double u0 = 1e100, u1 = -1e100;
                     for (TopExp_Explorer v(piece.Current(), TopAbs_VERTEX); v.More(); v.Next()) {
@@ -6271,7 +6340,8 @@ App::DocumentObjectExecReturn* Rib::compute()
         ++made;
     }
     if (!made) {
-        return new App::DocumentObjectExecReturn("Select straight sketch lines for the rib");
+        return new App::DocumentObjectExecReturn(web ? "Select sketch lines or curves for the web"
+                                                     : "Select straight sketch lines for the rib");
     }
     setResults({shape});
     return StdReturn;

@@ -2866,7 +2866,7 @@
    "steps": {
     "en": [
      "Hollow the part first, e.g. with Shell.",
-     "Create a sketch on the open top (or a plane above the floor) and draw straight lines from wall to wall. Lines may cross. Finish the sketch.",
+     "Create a sketch on the open top (or a plane above the floor) and draw lines or arcs from wall to wall. Lines may cross. A circle becomes a ring wall, e.g. around a screw post. Finish the sketch.",
      "Click the body, then Ctrl+click the lines (or select the whole sketch).",
      "In the toolbar at the top, in the CREATE section, click the small arrow ▾ next to Sweep and choose Web. The button now shows Web, so next time one click is enough.",
      "A panel opens on the right; the model shows a live preview of the result.",
@@ -2874,7 +2874,7 @@
     ],
     "de": [
      "Höhle das Teil zuerst aus, z. B. mit Wandstärke.",
-     "Erstelle eine Skizze auf der offenen Oberseite (oder einer Ebene über dem Boden) und zeichne gerade Linien von Wand zu Wand. Linien dürfen sich kreuzen. Beende die Skizze.",
+     "Erstelle eine Skizze auf der offenen Oberseite (oder einer Ebene über dem Boden) und zeichne Linien oder Bögen von Wand zu Wand. Linien dürfen sich kreuzen. Ein Kreis wird eine Ringwand, z. B. um einen Schraubdom. Beende die Skizze.",
      "Klicke den Körper an, dann mit Strg+Klick die Linien (oder die ganze Skizze).",
      "Klicke in der Werkzeugleiste oben im Bereich ERSTELLEN auf den kleinen Pfeil ▾ neben Sweep und wähle Steg. Der Knopf zeigt danach Steg, beim nächsten Mal reicht also ein Klick.",
      "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
@@ -2901,10 +2901,10 @@
    },
    "tips": {
     "en": [
-     "Each wall grows down until it meets the floor and needs walls at both ends; open ends are reported in red in the panel."
+     "Each wall grows down until it meets the floor and needs walls at both ends; open ends are reported in red in the panel. A closed curve has no ends and only needs the floor."
     ],
     "de": [
-     "Jede Wand wächst nach unten bis zum Boden und braucht an beiden Enden Wände; offene Enden meldet das Panel rot."
+     "Jede Wand wächst nach unten bis zum Boden und braucht an beiden Enden Wände; offene Enden meldet das Panel rot. Eine geschlossene Kurve hat keine Enden und braucht nur den Boden."
     ]
    },
    "images": [

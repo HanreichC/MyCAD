@@ -85,6 +85,8 @@ Worth knowing:
   scale, outline and holes (round ones as circles). On a whole A4 sheet the photo may be taken at an angle: it is
   straightened and needs no input; on grid paper the squares set the scale, otherwise you type its real width.
 - **Check References** (Ctrl+K, or the menu of a step with a warning): every uncertain reference in one list.
+- **Web** from lines, arcs and splines from wall to wall; a circle becomes a ring wall on the floor (e.g. around a
+  screw post).
 - **Cuts across components:** an extrude cut goes through bodies of other components too, wherever they sit.
 - **Holes by standard:** ISO metric, ISO metric fine, UNC, UNF; clearance hole (fine/medium/coarse) or tapped hole;
   counterbore or countersink matching the screw (ISO 4762 socket head, ISO 10642 countersunk, ISO 7380 button head);
