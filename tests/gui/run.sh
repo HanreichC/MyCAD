@@ -21,7 +21,7 @@ if [ -z "${ALLOW_STALE:-}" ]; then
         cat "$OUT.txt"; exit 1
     fi
 fi
-ENV=(HOME="$APPHOME" OUT="$OUT" LANGWANT="${LANGWANT:-}" HELP_ONLY="${HELP_ONLY:-}" HELP_DUMP="${HELP_DUMP:-}"
+ENV=(HOME="$APPHOME" OUT="$OUT" SCRIPT="$SCRIPT" LANGWANT="${LANGWANT:-}" HELP_ONLY="${HELP_ONLY:-}" HELP_DUMP="${HELP_DUMP:-}"
      PYTHONPATH="$(dirname "$SCRIPT")")
 if [ -e /run/.containerenv ] || [ -e /.dockerenv ]; then
     if [ -n "${WAYLAND_DISPLAY:-}" ]; then

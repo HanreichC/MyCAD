@@ -336,8 +336,12 @@ def _when_idle(fn, quiet=0.25, limit=10.0):
             calm = now
         before[0], last = last, now
         if now - calm >= quiet or now - start >= limit:
-            if now - calm < quiet:  # Hinweis, kein Fehler: zeichnet MyCAD ständig neu, kostet das Akku
-                L("  busy: MyCAD kam %.0f s lang nicht zur Ruhe" % limit)
+            if now - calm < quiet:
+                # H2: zeichnet MyCAD ständig neu, kostet das Akku. Ein Fehler, außer der Test erwartet es (Animation):
+                # dann steht im Test eine Zeile "# log-ok: nicht zur Ruhe"
+                script = os.environ.get("SCRIPT", "")
+                allowed = not script or "# log-ok: nicht zur Ruhe" in open(script, encoding="utf-8").read()
+                L(("  busy" if allowed else "FAIL busy") + ": MyCAD kam %.0f s lang nicht zur Ruhe" % limit)
             fn()
         else:
             QtCore.QTimer.singleShot(25, tick)

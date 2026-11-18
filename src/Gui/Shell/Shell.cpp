@@ -658,6 +658,15 @@ void applyTheme()
     sketcher->SetBool("BSplineDegreeVisible", false);
     // Keine FreeCAD-Rückfrage, wenn Tangential an verbundenen Enden zur Endpunkt-Tangente wird: das Ergebnis sieht man
     sketcher->SetBool("NotifyConstraintSubstitutions", false);
+    // H2: der Textcursor blinkt nicht. Die Glas-Panels liegen über der 3D-Ansicht; jedes Blinken zeichnete die ganze
+    // Ansicht samt Weichzeichner neu (2 Bilder je Sekunde, solange ein Feld den Fokus hat: Akku, zähe große Modelle).
+    // Wer Blinken will, schaltet es in den FreeCAD-Einstellungen wieder ein (EnableCursorBlinking)
+    auto general = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/General");
+    if (!general->GetBool("MyCADCursorBlinkingSet", false)) {
+        general->SetBool("EnableCursorBlinking", false);
+        general->SetBool("MyCADCursorBlinkingSet", true);
+    }
+    QApplication::setCursorFlashTime(general->GetBool("EnableCursorBlinking", false) ? -1 : 0);
     // Skizzenraster: feine Linien wie Trennlinien, jede n-te etwas kräftiger
     sketcher->SetUnsigned("GridLineColor", packed(t.separatorOpaque));
     sketcher->SetUnsigned("GridDivLineColor", packed(t.gray2));
