@@ -132,6 +132,7 @@
 #include <QDateTime>
 #include <QLocale>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QSet>
 #include <QTextBrowser>
 #include <QJsonObject>
@@ -1371,6 +1372,86 @@ protected:
 private:
     QPoint pressPos;
     bool dragging = false;
+};
+
+/// Weiches Scroll-Edge (MyStyle W-3, hier waagerecht): an der Seite, hinter der noch Inhalt liegt, blendet der Inhalt
+/// von 15 % auf 100 % aus, über eine Knopfbreite statt 14 px: die Knöpfe enden meist am Rand, ihr Symbol beginnt
+/// erst 8 px weiter, 14 px blieben unsichtbar. Als Schicht über dem Inhalt, die dessen Deckkraft zurücknimmt (DestinationIn):
+/// QGraphicsEffect wirkt in den Glas-Panels (Proxy-Widgets) nicht. Geht nur, weil der Proxy in ein eigenes, sonst
+/// durchsichtiges Bild zeichnet.
+class ScrollEdgeFade: public QWidget
+{
+public:
+    explicit ScrollEdgeFade(QScrollArea* area)
+        : QWidget(area)
+        , bar(area->horizontalScrollBar())
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        connect(bar, &QScrollBar::valueChanged, this, qOverload<>(&QWidget::update));
+        connect(bar, &QScrollBar::rangeChanged, this, qOverload<>(&QWidget::update));
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const qreal edge = std::min<qreal>(Token::WindowButton, width() / 4.0);
+        const QColor faded(0, 0, 0, qRound(0.15 * 255));
+        QPainter p(this);
+        p.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+        if (bar->value() > bar->minimum()) {
+            QLinearGradient g(0, 0, edge, 0);
+            g.setColorAt(0, faded);
+            g.setColorAt(1, Qt::black);
+            p.fillRect(QRectF(0, 0, edge, height()), g);
+        }
+        if (bar->value() < bar->maximum()) {
+            QLinearGradient g(width() - edge, 0, width(), 0);
+            g.setColorAt(0, Qt::black);
+            g.setColorAt(1, faded);
+            p.fillRect(QRectF(width() - edge, 0, edge, height()), g);
+        }
+    }
+
+private:
+    QScrollBar* bar;
+};
+
+/// Timeline-Schritte: so breit wie alle Schritte, schmaler gesetzt rollen sie waagerecht (auch mit dem normalen Mausrad)
+class TimelineScroll: public QScrollArea
+{
+public:
+    TimelineScroll()
+        : fade(new ScrollEdgeFade(this))
+    {
+        setFrameShape(QFrame::NoFrame);
+        setWidgetResizable(true);
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        viewport()->setAutoFillBackground(false);
+    }
+    QSize sizeHint() const override
+    {
+        return widget() ? widget()->sizeHint() : QSize();
+    }
+    QSize minimumSizeHint() const override  // sonst so hoch wie zwei Scrollbalken, obwohl keine zu sehen sind
+    {
+        return {0, sizeHint().height()};
+    }
+
+protected:
+    void wheelEvent(QWheelEvent* event) override
+    {
+        QCoreApplication::sendEvent(horizontalScrollBar(), event);
+    }
+    void resizeEvent(QResizeEvent* event) override
+    {
+        QScrollArea::resizeEvent(event);
+        fade->setGeometry(viewport()->geometry());
+        fade->raise();
+    }
+
+private:
+    ScrollEdgeFade* fade;
 };
 
 void toggleMaximized()
@@ -3467,8 +3548,12 @@ void layout()
         const QSizeF ts = state.timeline->content()->sizeHint();
         const bool show = state.timeline->content()->property("count").toInt() > 0;
         state.timeline->setVisible(show);
+        // mittig wie die Toolbar; rückt nur zur Seite, statt die Seitenleiste zu überdecken; ist sie breiter als der
+        // Platz daneben, rollen ihre Schritte (TimelineScroll)
+        const qreal lo = browser ? m + BrowserWidth + m : m, hi = r.width() - m;
+        const qreal tw = std::min<qreal>(ts.width(), hi - lo);
         state.timeline->setGeometry(
-            QRectF(r.center().x() - ts.width() / 2, r.height() - m - ts.height(), ts.width(), ts.height())
+            QRectF(std::clamp(r.center().x() - tw / 2, lo, hi - tw), r.height() - m - ts.height(), tw, ts.height())
         );
     }
 
@@ -4987,6 +5072,10 @@ void rebuildTimeline()
     syncNotes();
     QWidget* box = state.timeline->content();
     auto lay = static_cast<QHBoxLayout*>(box->layout());
+    static int scrolled = 0;  // Rollstand über den Neuaufbau retten (z. B. Gruppe aufklappen)
+    if (auto old = box->findChild<QScrollArea*>()) {
+        scrolled = old->horizontalScrollBar()->value();
+    }
     while (QLayoutItem* item = lay->takeAt(0)) {
         delete item->widget();
         delete item;
@@ -5030,11 +5119,22 @@ void rebuildTimeline()
         lay->addWidget(sep);
         lay->addSpacing(4);
     }
+    // die Schritte rollen, die Wiedergabe-Knöpfe davor bleiben stehen
+    auto scroll = new TimelineScroll;
+    auto strip = new QWidget;
+    auto row = new QHBoxLayout(strip);
+    row->setContentsMargins(0, 0, 0, 0);
+    row->setSpacing(lay->spacing());
+    scroll->setWidget(strip);
+    strip->setAutoFillBackground(false);  // setWidget schaltet es ein
+    lay->addWidget(scroll);
+    QWidget* focus = nullptr;  // bleibt nach dem Aufbau sichtbar: Marker, sonst der letzte Schritt
     auto markerLine = [&] {
         auto line = new QFrame;
         line->setObjectName(QStringLiteral("TimelineMarker"));
         line->setFixedSize(4, 30);
-        lay->addWidget(line);
+        row->addWidget(line);
+        focus = line;
     };
 
     for (int index = 0; index < total && gdoc; ++index) {
@@ -5088,7 +5188,8 @@ void rebuildTimeline()
                         }
                     });
                 });
-                lay->addWidget(chip);
+                row->addWidget(chip);
+                focus = marker < 0 ? chip : focus;
                 ++count;
             }
             if (!open) {
@@ -5315,7 +5416,8 @@ void rebuildTimeline()
                 gd->setEdit(gd->getViewProvider(o));
             }
         };
-        lay->addWidget(btn);
+        row->addWidget(btn);
+        focus = marker < 0 ? btn : focus;
         ++count;
     }
     if (marker >= 0 && marker >= total && total > 0) {
@@ -5323,13 +5425,28 @@ void rebuildTimeline()
     }
     box->setProperty("count", count);
     // Knöpfe eines verborgenen Panels gelten sonst als versteckt und zählen nicht zur Größe (Timeline war zu flach)
-    for (int i = 0; i < lay->count(); ++i) {
-        if (QWidget* w = lay->itemAt(i)->widget()) {
-            w->show();
+    for (QLayout* l : {static_cast<QLayout*>(lay), static_cast<QLayout*>(row)}) {
+        for (int i = 0; i < l->count(); ++i) {
+            if (QWidget* w = l->itemAt(i)->widget()) {
+                w->show();
+            }
         }
     }
-    box->adjustSize();
+    // ohne box->adjustSize(): das kappt ein Fenster ohne Eltern auf einen Teil des Bildschirms (1280 × 100), und
+    // GlassPanel::setGeometry korrigiert es nicht, solange das Panel gleich groß bleibt
     layout();
+    // Rollstand halten; nach einer echten Änderung (neuer Schritt, Marker bewegt, anderes Dokument) Marker bzw. letzten
+    // Schritt ins Bild holen
+    static std::tuple<std::string, int, int> last;
+    const std::tuple<std::string, int, int> now(doc ? doc->getName() : "", total, marker);
+    const bool changed = now != last;
+    last = now;
+    QTimer::singleShot(0, scroll, [scroll, focus = QPointer<QWidget>(focus), changed] {
+        scroll->horizontalScrollBar()->setValue(scrolled);
+        if (changed && focus) {
+            scroll->ensureWidgetVisible(focus, Token::WindowButton, 0);
+        }
+    });
 }
 
 void rebuildTimelineLater()
