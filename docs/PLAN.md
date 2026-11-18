@@ -516,7 +516,7 @@ Tests, Hilfe/README/Wiki wo sichtbar, Status hier, ein Commit.
 | E20 | Bohrung per Klick: festes 0,5-mm-Raster unabhängig vom Zoom; Maßstab fürs Fangen nur in einer Richtung | erledigt 2026-11-18: Raster je Kante nach Zoom (0,1/0,2/0,5/1/2/5/10 mm, ein Schritt mindestens 6 px); der Maßstab der Ansicht gilt je Richtung (schräg gesehen kürzer), fürs Fangen wie fürs Raster (`test_hole_snap`) |
 | E21 | Messkarte und Flächen-Maße folgen der Kamera per Timer statt per Ereignis | erledigt 2026-11-18: `CameraFollow` (Coin-Sensor auf der Kamera, neu angehängt bei Wechsel Perspektive/Orthografisch, Größenänderung der Ansicht) für beide Karten, Bild für Bild statt im 50-ms-Takt (`test_quick_measure_ui`: Karte folgt nach Drehen). Ob ein Werkzeug aufging, prüft die Messkarte weiter ruhig im 250-ms-Takt: FreeCAD meldet das nicht |
 | E22 | Befehle ohne eigenes MyCAD-Symbol zeigen ein ausgegrautes FreeCAD-Symbol | offen |
-| E23 | Scribble-Wert 0,25 ist kein MyStyle-Token | offen |
+| E23 | Scribble-Wert 0,25 ist kein MyStyle-Token | erledigt 2026-11-18: Token `opacity.markerDark` in MyStyle (Commit 76abda7, Plattform-Dateien neu gebaut), in MyCAD `Token::OpacityMarkerDark` |
 | E24 | Touchpad-Gesten: feste Schwellen; unter manchen Compositors (Sway) dreht 3-Finger-Wischen doppelt | offen |
 | E25 | Kleinkram: Materialien ohne Zuordnung (Messing, Kupfer, Gummi, Stein, Lacke); Normgrößen außerhalb der Tabellen geschätzt; feste Werte für Einschmelzmuttern; Holztextur feiner als echt | offen |
 | D16–D19 | Foto zu Skizze: Blattecken nur bis ~35° Drehung, nur A4; Raster/glattes Papier nur gerade von oben; Bild auf 1000 px verkleinert; nie mit echten Handyfotos getestet | zurückgestellt, bis echte Fotos da sind |

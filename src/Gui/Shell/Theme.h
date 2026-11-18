@@ -61,6 +61,7 @@ constexpr int IconM = 16, IconWindow = 18, IconL = 20;
 constexpr int ContentMaxWidth = 560;
 constexpr int DurationFade = 150;
 constexpr double OpacityDisabledGlyph = 0.35;
+constexpr double OpacityMarkerDark = 0.25;  ///< opacity.markerDark: Textmarker im Dunkelmodus
 }  // namespace Token
 
 const Theme& theme();

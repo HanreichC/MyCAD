@@ -203,8 +203,7 @@ SoSeparator* strokeNode(const Stroke& s)
     Base::Color color = shown(s.color);
     if (s.tool == Design::Scribble::Marker && Gui::Shell::theme().dark) {
         // Marker im Dunkeln: aufgehellte Farbe (shown) und weniger deckend, ein leiser Schimmer statt Senfbalken
-        // ponytail: 0,25 ist kein MyStyle-Token; gehörte als "scribble.markerDark" in die Tokens
-        color.a = 0.25F;
+        color.a = float(Gui::Shell::Token::OpacityMarkerDark);
     }
     auto sep = new SoSeparator;
     auto material = new SoMaterial;
