@@ -673,6 +673,14 @@ bool ProgressBar::eventFilter(QObject* o, QEvent* e)
             case QEvent::MouseButtonRelease:
             case QEvent::MouseMove:
             case QEvent::NativeGesture:
+            // MyCAD (U2): Mausrad, Touch und Qt-Gesten bewegen die Kamera; Zoom pickt dabei per Strahl in eine Szene,
+            // die gerade umgebaut wird (gleiche Fehlerklasse wie Rechtsklick beim Laden, FreeCAD#30179). Ende und
+            // Abbruch einer Berührung kommen durch, sonst bliebe sie hängen
+            case QEvent::Wheel:
+            case QEvent::TouchBegin:
+            case QEvent::TouchUpdate:
+            case QEvent::Gesture:
+            case QEvent::GestureOverride:
             case QEvent::ContextMenu: {
                 if (!d->isModalDialog(o)) {
                     return true;

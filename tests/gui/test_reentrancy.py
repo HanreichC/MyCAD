@@ -5,6 +5,7 @@ Ereignisse verarbeitet; Timer klicken dann OK, Abbrechen oder drücken Esc, wäh
 Absturz (sonst fehlt "step done"), danach ein stimmiger Zustand: Dialog offen mit Extrude oder Dialog zu, und Abbrechen
 lässt die Platte heil. Der Log-Wächter in run.sh meldet zusätzlich verschachteltes Neuberechnen."""
 from harness import *
+from PySide6 import QtGui
 
 PLATE = 200 * 200 * 4
 
@@ -60,6 +61,16 @@ def answer_abort_question():
         w.reject()  # weiterrechnen
 
 
+def wheel_and_touch():
+    """U2: Mausrad (Zoom pickt per Strahl) und Berührung mitten in der Rechnung, wie ein ungeduldiger Mensch"""
+    vp = view().viewport(); p = QtCore.QPointF(vp.rect().center())
+    for _ in range(5):
+        ev = QtGui.QWheelEvent(p, QtCore.QPointF(vp.mapToGlobal(p.toPoint())), QtCore.QPoint(), QtCore.QPoint(0, 120),
+                               QtCore.Qt.NoButton, QtCore.Qt.NoModifier, QtCore.Qt.NoScrollPhase, False)
+        QtWidgets.QApplication.sendEvent(vp, ev)
+    L("  wheel sent during recompute")
+
+
 def start():
     BEFORE.update(o.Name for o in doc().Objects if o.TypeId == "Design::Extrude")
     holes()
@@ -90,6 +101,9 @@ run([
     ("esc while typing", lambda: (later(150, esc), type_into(0, "8 mm"))),
     ("abort question", answer_abort_question),
     ("after esc", lambda: consistent("Esc during a recompute leaves a consistent state")),
+    ("reopen 4", lambda: None if Gui.Control.activeDialog() else start()),
+    ("wheel while typing", lambda: (later(150, wheel_and_touch), type_into(0, "10 mm"))),
+    ("after wheel", lambda: consistent("U2: mouse wheel during a recompute leaves a consistent state")),
     ("close", lambda: Gui.Control.activeDialog() and esc()),
     ("errors", lambda: L("errors=%s volumes=%s" % (errors(), volumes()))),
 ])
