@@ -5893,17 +5893,9 @@ void Gui::Shell::install()
         }
     });
 
-    // Inspector ein-/ausblenden, wenn ein Werkzeug-Dialog startet oder endet
-    // ponytail: Polling, weil ControlSingleton kein Signal hat; 4 Hz reicht fürs Auge
-    auto poll = new QTimer(qApp);
-    QObject::connect(poll, &QTimer::timeout, [] {
-        static bool active = false;
-        if (active != (Control().activeDialog() != nullptr)) {
-            active = !active;
-            layout();
-        }
-    });
-    poll->start(250);
+    // Inspector ein-/ausblenden, wenn ein Werkzeug-Dialog startet oder endet (H5: Signal statt 4-Hz-Polling, kein
+    // Springen nach dem Öffnen)
+    QObject::connect(&Control(), &ControlSingleton::dialogChanged, qApp, [] { layout(); }, Qt::QueuedConnection);
 
     // Startseite beim Start und nach dem Schließen des letzten Designs; ein neues oder geöffnetes Design blendet sie aus
     startPage = new StartPage;

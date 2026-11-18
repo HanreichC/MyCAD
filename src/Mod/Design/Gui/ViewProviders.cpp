@@ -231,7 +231,7 @@ public:
             if (panel) {
                 panel->hide();
             }
-            timer.stop();
+            resized.stop();
             return;
         }
         if (!panel) {
@@ -242,6 +242,9 @@ public:
                 panel->scene()->removeItem(panel);
             }
             viewer->scene()->addItem(panel);
+            // H5: einer Notiz oder einem anderen Panel ausweichen, das später erscheint oder wandert (vorher im
+            // 250-ms-Takt); bleibt die Lage gleich, ändert setGeometry nichts und es bleibt ruhig
+            QObject::connect(viewer->scene(), &QGraphicsScene::changed, panel, [this] { place(); }, Qt::QueuedConnection);
         }
         this->viewer = viewer;
         const auto params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
@@ -250,7 +253,7 @@ public:
         refreshFixes();
         place();
         panel->show();
-        timer.start();
+        resized.start(viewer);
     }
 
     /// Phase 11.3 Druckbar machen: je Schritt, der mit einer Einstellung besser druckt, eine Zeile mit Übernehmen
@@ -373,10 +376,17 @@ private:
             buttons->addWidget(button);
         }
         lay->addLayout(buttons);
+        // H1: verlassen wie "Finish Sketch" in der Sketch Palette, nicht nur über einen zweiten Klick oben
+        auto leave = new QPushButton(T("Exit Print View"));
+        leave->setObjectName(QStringLiteral("ExitPrintView"));
+        leave->setAutoDefault(false);
+        QObject::connect(leave, &QPushButton::clicked, leave, [] { QTimer::singleShot(0, [] { DesignGui::setPrintView(false); }); });
+        lay->addWidget(leave);
         panel = new Gui::Shell::GlassPanel(content, Gui::Shell::Token::RadiusPanel, true);
         panel->setZValue(8);
-        timer.setInterval(250);  // Fenstergröße und Panels ändern sich: nachziehen
-        QObject::connect(&timer, &QTimer::timeout, [this] { place(); });
+        // H5: nachziehen, wenn die Ansicht ihre Größe ändert (resized) oder ein Werkzeug-Panel auf- oder zugeht
+        QObject::connect(&Gui::Control(), &Gui::ControlSingleton::dialogChanged, panel, [this] { place(); },
+                         Qt::QueuedConnection);
     }
 
     void place()
@@ -395,7 +405,7 @@ private:
     QLabel* texts[3] = {};
     QPointer<QWidget> fixBox;
     QPointer<Gui::View3DInventorViewer> viewer;
-    QTimer timer;
+    DesignGui::CameraFollow resized {[this] { place(); }};  // folgt auch der Größe der Ansicht
 };
 
 PrintLegend& legend()

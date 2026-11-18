@@ -94,6 +94,11 @@ public:
      */
     bool isAllowedAlterSelection(App::Document* attachedTo = nullptr) const;
 
+Q_SIGNALS:
+    /// MyCAD (H5): ein Task-Dialog ging auf oder zu. Verbunden wird verzögert (Qt::QueuedConnection), dann gibt
+    /// activeDialog() schon den neuen Stand
+    void dialogChanged();
+
 public Q_SLOTS:
     void accept(App::Document* attachedTo = nullptr);
     void reject(App::Document* attachedTo = nullptr);

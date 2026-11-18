@@ -4449,14 +4449,12 @@ class QuickMeasureChip: public Gui::SelectionObserver
 public:
     QuickMeasureChip()
     {
-        // die Kamera bewegt die Karte (CameraFollow); ein geöffnetes Werkzeug ändert nicht immer die Auswahl, das prüft
-        // ein ruhiger Takt
-        dialogCheck.setInterval(250);
-        QObject::connect(&dialogCheck, &QTimer::timeout, [this] {
+        // die Kamera bewegt die Karte (CameraFollow); ein geöffnetes Werkzeug ändert nicht immer die Auswahl (H5: Signal)
+        QObject::connect(&Gui::Control(), &Gui::ControlSingleton::dialogChanged, &follow, [this] {
             if (Gui::Control().activeDialog()) {
                 hide();
             }
-        });
+        }, Qt::QueuedConnection);
     }
 
 private:
@@ -4471,7 +4469,6 @@ private:
     void hide()
     {
         follow.stop();
-        dialogCheck.stop();
         if (panel) {
             panel->hide();
         }
@@ -4522,7 +4519,6 @@ private:
         content->adjustSize();
         place();
         follow.start(viewer);
-        dialogCheck.start();
     }
 
     void build(App::Document* doc)
@@ -4596,7 +4592,6 @@ private:
     QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
     QWidget* content = nullptr;
     DesignGui::CameraFollow follow {[this] { place(); }};
-    QTimer dialogCheck;
 };
 
 /// Schnittansicht: das Modell an einer Ebene oder ebenen Fläche aufschneiden (nochmal: Schnitt aufheben)

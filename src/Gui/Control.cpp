@@ -197,6 +197,7 @@ void ControlSingleton::showDialog(Gui::TaskView::TaskDialog* dlg, App::Document*
     connect(dlg, &TaskView::TaskDialog::aboutToBeDestroyed, this, [this, attachTo] {
         closedDialog(attachTo);
     });
+    Q_EMIT dialogChanged();
 }
 
 Gui::TaskView::TaskDialog* ControlSingleton::activeDialog(App::Document* attachedTo) const
@@ -261,6 +262,7 @@ void ControlSingleton::closeDialog(App::Document* attachedTo)
 
 void ControlSingleton::closedDialog(App::Document* /*attachedTo*/)
 {
+    Q_EMIT dialogChanged();
     Gui::TaskView::TaskView* taskView = taskPanel();
     assert(taskView);
 
