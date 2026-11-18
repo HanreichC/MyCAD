@@ -72,7 +72,8 @@ searchable in English and German.
 **General**
 - Color scheme Automatic / Light / Dark, **Liquid Glass** from Ultra Clear to Tinted, Show tool names, Show grid
 - Language English / German
-- **Materials and Light:** body material for new bodies (Steel unless you pick another); Lighting Studio (every face
+- **Materials and Light:** body material for new bodies (Steel unless you pick another; switching recolours bodies with
+  the standard look, looks you picked stay); Lighting Studio (every face
   its own shade, best for modelling) or Room (soft, like a browser preview); Realistic materials, Reflections, Relief
   and end grain, Contact shadow
 - Accessibility: Increase contrast, Reduce transparency, Reduce motion

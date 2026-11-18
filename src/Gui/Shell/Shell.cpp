@@ -6073,8 +6073,9 @@ void Gui::Shell::setBodyMaterial(int index)
     setDefaultMaterial();
     const BodyMaterial& m = bodyMaterial();
     const App::Material mat = bodyMaterialAppearance(index);
-    // Körper mit der bisherigen Vorgabe (oder einem früheren Grau) umfärben, eigene Farben und Texturen bleiben.
-    // ponytail: erkennt "Standard" an Grundfarbe bzw. Textur; was zufällig gleich aussieht, wird mit umgefärbt
+    // Körper mit der bisherigen Vorgabe (oder einem früheren Grau) umfärben, eigene Farben und Texturen bleiben: ein im
+    // Aussehen-Panel gewählter Look ist markiert (AppearanceChosen), sonst (ältere Dateien, Skripte) entscheidet der Look.
+    // Einzeln gefärbte Flächen behalten ihre Farbe, die übrigen Flächen folgen der Vorgabe
     std::set<uint32_t> presets = {0xCDD1D8, 0xA4A9B2, 0xD5D9DF, 0xAEB3BC, 0xC8CCD4, 0x9EA3AD, 0xCCCCCC};
     if (!previous.texture) {
         presets.insert(previous.diffuse >> 8);
@@ -6086,12 +6087,27 @@ void Gui::Shell::setBodyMaterial(int index)
             if (!vp || !obj->isDerivedFrom(body)) {
                 continue;
             }
-            const std::string& texture = vp->ShapeAppearance[0].imagePath;
-            if (texture.empty() ? !presets.contains(vp->ShapeAppearance.getDiffuseColor().getPackedValue() >> 8)
-                                : !previous.texture || texture != previous.texture) {
+            if (auto chosen = dynamic_cast<App::PropertyBool*>(obj->getPropertyByName("AppearanceChosen"));
+                chosen && chosen->getValue()) {
                 continue;
             }
-            vp->ShapeAppearance.setValue(mat);
+            std::vector<App::Material> list = vp->ShapeAppearance.getValues();
+            bool changed = false;
+            for (auto& entry : list) {
+                if (entry.imagePath.empty() ? !presets.contains(entry.diffuseColor.getPackedValue() >> 8)
+                                            : !previous.texture || entry.imagePath != previous.texture) {
+                    continue;
+                }
+                entry = mat;
+                if (list.size() > 1) {
+                    entry.imagePath.clear();  // Flächen tragen keine Textur (applyMaterial)
+                }
+                changed = true;
+            }
+            if (!changed) {
+                continue;
+            }
+            vp->ShapeAppearance.setValues(list);
             if (auto line = dynamic_cast<App::PropertyColor*>(vp->getPropertyByName("LineColor"))) {
                 line->setValue(Base::Color(m.line));
             }

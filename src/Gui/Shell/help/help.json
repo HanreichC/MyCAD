@@ -6412,7 +6412,7 @@
      "Single faces only take the colour of a material. Textures, gloss and lacquer apply to whole bodies.",
      "Settings → General → Materials and Light: Lighting Studio (light from the top left, every face of a body gets its own shade – best for modelling) or Room (soft all round, like a product preview in the browser).",
      "Settings → General → Materials and Light switches each effect on or off: Realistic materials, Reflections, Relief and end grain, Contact shadow. Turn off whatever distracts you while you work.",
-     "The default look of new bodies is set in Settings → General → Body material."
+     "The default look of new bodies is set in Settings → General → Body material. Changing it recolours bodies that still have the standard look; a look you picked yourself stays, even if it is the same material."
     ],
     "de": [
      "Du kannst eine Kugel auch direkt auf einen Körper in der Ansicht ziehen, ohne ihn vorher zu wählen.",
@@ -6421,7 +6421,7 @@
      "Einzelne Flächen übernehmen nur die Farbe eines Materials. Texturen, Glanz und Lack gibt es für ganze Körper.",
      "Einstellungen → Allgemein → Materialien und Licht: Licht Studio (Licht von links oben, jede Fläche eines Körpers hat ihren eigenen Ton – am besten zum Konstruieren) oder Raum (weich von überall, wie eine Produktvorschau im Browser).",
      "Einstellungen → Allgemein → Materialien und Licht schaltet jeden Effekt einzeln an oder aus: Realistische Materialien, Spiegelungen, Relief und Hirnholz, Kontaktschatten. Schalte ab, was dich beim Arbeiten stört.",
-     "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Allgemein → Körpermaterial ein."
+     "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Allgemein → Körpermaterial ein. Eine Änderung färbt Körper mit Standard-Aussehen um; ein selbst gewähltes Aussehen bleibt, auch wenn es dasselbe Material ist."
     ]
    },
    "images": [

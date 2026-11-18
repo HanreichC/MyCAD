@@ -1417,8 +1417,8 @@ A("Design_Appearance", "utilities", "Design_Appearance", ("Appearance", "Darstel
          "Einstellungen → Allgemein → Materialien und Licht: Licht Studio (Licht von links oben, jede Fläche eines Körpers hat ihren eigenen Ton – am besten zum Konstruieren) oder Raum (weich von überall, wie eine Produktvorschau im Browser)."),
         ("Settings → General → Materials and Light switches each effect on or off: Realistic materials, Reflections, Relief and end grain, Contact shadow. Turn off whatever distracts you while you work.",
          "Einstellungen → Allgemein → Materialien und Licht schaltet jeden Effekt einzeln an oder aus: Realistische Materialien, Spiegelungen, Relief und Hirnholz, Kontaktschatten. Schalte ab, was dich beim Arbeiten stört."),
-        ("The default look of new bodies is set in Settings → General → Body material.",
-         "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Allgemein → Körpermaterial ein.")],
+        ("The default look of new bodies is set in Settings → General → Body material. Changing it recolours bodies that still have the standard look; a look you picked yourself stays, even if it is the same material.",
+         "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Allgemein → Körpermaterial ein. Eine Änderung färbt Körper mit Standard-Aussehen um; ein selbst gewähltes Aussehen bleibt, auch wenn es dasselbe Material ist.")],
   see=["settings"])
 
 A("search", "utilities", "MyCAD_Search", ("Search", "Suchen"),

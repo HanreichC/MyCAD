@@ -3722,6 +3722,14 @@ void applyMaterial(App::DocumentObject* obj, const std::vector<int>& faces, App:
     }
     if (faces.empty() || !part) {
         vp->ShapeAppearance.setValue(material);
+        // eigene Wahl merken: ein anderes Körper-Material in den Einstellungen färbt nur Körper im Standard-Look um,
+        // auch wenn diese Wahl zufällig genauso aussieht (Shell::setBodyMaterial)
+        auto flag = freecad_cast<App::PropertyBool*>(obj->getPropertyByName("AppearanceChosen"));
+        if (!flag) {
+            flag = static_cast<App::PropertyBool*>(obj->addDynamicProperty(
+                "App::PropertyBool", "AppearanceChosen", "Design", "Appearance picked by the user", App::Prop_Hidden));
+        }
+        flag->setValue(true);
         return;
     }
     material.imagePath.clear();
