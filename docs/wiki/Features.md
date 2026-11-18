@@ -88,7 +88,7 @@ Worth knowing:
 - **Cuts across components:** an extrude cut goes through bodies of other components too, wherever they sit.
 - **Holes by standard:** ISO metric, ISO metric fine, UNC, UNF; clearance hole (fine/medium/coarse) or tapped hole;
   counterbore or countersink matching the screw (ISO 4762 socket head, ISO 10642 countersunk, ISO 7380 button head);
-  threads can be modeled for real.
+  threads can be modeled for real, with a 45° chamfer at the free ends of a bolt.
 
   ![Hole](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Hole.gif)
 

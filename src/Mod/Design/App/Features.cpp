@@ -24,6 +24,7 @@
 #include "PrintCheck.h"
 #include "AssemblySolver.h"
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepPrimAPI_MakeRevol.hxx>
 #include <Mod/Part/App/Geometry.h>
 #include <Mod/Sketcher/App/SketchObject.h>
 #include <IntCurvesFace_ShapeIntersector.hxx>
@@ -5974,6 +5975,8 @@ Thread::Thread()
     ADD_PROPERTY_TYPE(Clearance, (0.0), "Parameters", App::Prop_None,
                       "Clearance per side, e.g. 0.2 mm for 3D printing; negative gives interference");
     ADD_PROPERTY_TYPE(LeftHanded, (false), "Parameters", App::Prop_None, "Left-handed thread");
+    // aus für alte Dateien und Skripte (Form bleibt), neue Gewinde aus der Oberfläche schalten es ein
+    ADD_PROPERTY_TYPE(EndChamfer, (false), "Parameters", App::Prop_None, "Chamfer the free ends");
     ADD_PROPERTY_TYPE(ForPrinting, (false), "Parameters", App::Prop_None,
                       "Clearance for 3D printing; warns when the pitch is too fine to print");
     ADD_PROPERTY_TYPE(AutoSize, (""), "Thread", App::PropertyType(App::Prop_Output | App::Prop_Hidden | App::Prop_Transient),
@@ -6100,12 +6103,36 @@ App::DocumentObjectExecReturn* Thread::compute()
     if (std::abs(clearance) >= 0.3 * p) {
         return new App::DocumentObjectExecReturn("Clearance must be smaller than a third of the pitch");
     }
-    // ponytail: Gewinde läuft bis an die Flächenenden und ist dort abgeschnitten (kein Auslauf, keine Fase)
+    // ponytail: kein Auslauf (an einem Absatz endet der Gang abrupt); freie Enden bekommen auf Wunsch eine Fase
     Part::TopoShape res(0, getDocument()->getStringHasher());
     try {
         const TopoDS_Shape tool = threadTool(axis, t0, height, r, p, external, LeftHanded.getValue(), clearance);
         // Toleranz: die Enden der Rillen liegen genau in den Stirnflächen, ohne sie trennt OCCT nur Flächen auf
         res.makeElementCut({shape, Part::TopoShape(tool)}, nullptr, 1e-5);
+        if (external && EndChamfer.getValue()) {
+            // 45° vom Kern (r - Gewindetiefe) an der Stirn bis r: der erste Gang beginnt ohne scharfe Kante
+            const double depth = 0.6134 * p;
+            const gp_Dir along = axis.Direction();
+            gp_Dir radial = along.IsParallel(gp::DZ(), 1e-6) ? gp_Dir(along.Crossed(gp::DX())) : gp_Dir(along.Crossed(gp::DZ()));
+            const auto at = [&](double t, double rad) {
+                return axis.Location().Translated(gp_Vec(along) * t).Translated(gp_Vec(radial) * rad);
+            };
+            BRepClass3d_SolidClassifier inside(shape.getShape());
+            for (const auto& [end, inward] : {std::pair {t0, 1.0}, std::pair {t1, -1.0}}) {
+                // ein Absatz (Material gleich hinter der Stirn): dort keine Fase
+                inside.Perform(at(end - inward * 0.1 * p, r - depth / 2), 1e-6);
+                if (inside.State() == TopAbs_IN) {
+                    continue;
+                }
+                const double e = 0.05 * p;  // über die Stirn und r hinaus, damit OCCT sauber schneidet
+                BRepBuilderAPI_MakePolygon tri(at(end - inward * e, r - depth - e), at(end - inward * e, r + e),
+                                               at(end + inward * (depth + e), r + e), true);
+                const TopoDS_Shape ring = BRepPrimAPI_MakeRevol(BRepBuilderAPI_MakeFace(tri.Wire()).Face(), axis, 2 * M_PI).Shape();
+                Part::TopoShape cut(0, getDocument()->getStringHasher());
+                cut.makeElementCut({res, Part::TopoShape(ring)}, nullptr, 1e-5);
+                res = cut;
+            }
+        }
     }
     catch (const Standard_Failure&) {
         return new App::DocumentObjectExecReturn("Thread failed");

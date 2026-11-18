@@ -736,6 +736,7 @@ public:
     App::PropertyDistance Clearance;  ///< Spiel je Seite (3D-Druck), negativ = Übermaß
     App::PropertyBool LeftHanded;
     App::PropertyBool ForPrinting;  ///< Idee 4: Spiel für den 3D-Druck, Hinweis bei zu feiner Steigung
+    App::PropertyBool EndChamfer;   ///< Außengewinde: 45°-Fase bis zum Kern an freien Enden (nicht an einem Absatz)
     App::PropertyString AutoSize;   ///< Ausgabe: die Größe, die "Auto" gewählt hat (leer bei fester Größe)
     App::DocumentObjectExecReturn* compute() override;
 

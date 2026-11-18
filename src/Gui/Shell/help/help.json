@@ -3610,6 +3610,10 @@
       "Turns the other way."
      ],
      [
+      "Chamfer the free ends",
+      "On by default for a bolt: a 45° chamfer down to the root at every free end, so the nut starts easily. Not at a shoulder."
+     ],
+     [
       "Clearance for 3D printing",
       "Adds the play for printing by itself (instead of the Clearance field) and warns when the pitch is too fine for a 0.4 mm nozzle."
      ]
@@ -3632,6 +3636,10 @@
       "Dreht andersherum."
      ],
      [
+      "Freie Enden fasen",
+      "Bei einem Bolzen von selbst an: eine 45°-Fase bis zum Gewindegrund an jedem freien Ende, damit die Mutter leicht ansetzt. Nicht an einer Schulter."
+     ],
+     [
       "Spiel für den 3D-Druck",
       "Gibt das Spiel für den Druck selbst dazu (statt des Felds Spiel) und warnt, wenn die Steigung für eine 0,4-mm-Düse zu fein ist."
      ]
@@ -3639,11 +3647,11 @@
    },
    "tips": {
     "en": [
-     "The thread runs over the whole face and ends flush at both ends; a shoulder or the bottom of a hole stays untouched.",
+     "The thread runs over the whole face; a bolt gets a chamfer at its free ends, a shoulder or the bottom of a hole stays untouched.",
      "The face must be at least two turns long."
     ],
     "de": [
-     "Das Gewinde läuft über die ganze Fläche und endet bündig an beiden Enden; eine Schulter oder der Grund einer Bohrung bleibt unberührt.",
+     "Das Gewinde läuft über die ganze Fläche; ein Bolzen bekommt an seinen freien Enden eine Fase, eine Schulter oder der Grund einer Bohrung bleibt unberührt.",
      "Die Fläche muss mindestens zwei Gänge lang sein."
     ]
    },

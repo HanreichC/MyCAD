@@ -5256,6 +5256,12 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_Thread", "Thread", "Thread: select a cylindrical face of a body",
                                      "PartDesign_Hole", "", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Thread", "Thread");
+                                         // neue Gewinde mit Fase an freien Enden (alte Dateien behalten ihre Form)
+                                         auto threads = doc->getObjectsOfType(Design::Thread::getClassTypeId());
+                                         if (!threads.empty() && Gui::Control().activeDialog()) {
+                                             static_cast<Design::Thread*>(threads.back())->EndChamfer.setValue(true);
+                                             doc->recompute();
+                                         }
                                      }));
     mgr.addCommand(new DesignCommand("Design_Appearance", "Appearance",
                                      "Appearance: select bodies, then pick a material or color", "Std_SetAppearance",

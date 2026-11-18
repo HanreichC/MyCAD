@@ -90,6 +90,9 @@ run([
     ("thread texts", lambda: check("thread panel: every text fits (T-8)", not cut_off(), str(cut_off()))), ("ok", ok), ("wait", lambda: None), ("wait", lambda: None),
     ("thread?", lambda: L("thread: D volume=%.0f (Zylinder %.0f, mit Gewinde kleiner) faces=%d errors=%s" % (
         body("D").Shape.Volume, 3.14159265 * 64 * 20, len(body("D").Shape.Faces), errors()))),
+    ("thread chamfer", lambda: check("a new thread chamfers its free ends (B7) and the body stays valid",
+                                     [o for o in doc().Objects if o.TypeId == "Design::Thread"][0].EndChamfer
+                                     and body("D").Shape.isValid() and not errors(), str(errors()))),
     ("plate", lambda: make_body(rect(-140, -20, -100, 20) + circle(6, -120, 0), 0, 15, "E")),
     ("ring only", lambda: (lambda ext: (setattr(ext, "Profile", (ext.Profile[0], ["Face%d" % (1 + max(range(len(ext.Profile[0].Shape.Faces)),
         key=lambda k: len(ext.Profile[0].Shape.Faces[k].Wires)))])), doc().recompute()))(body("E").Tip)),
