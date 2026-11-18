@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""Trackpad-Gesten ohne Tasten: 3 Finger wischen dreht, 2 Finger scrollen schiebt, Spreizen zoomt."""
+"""Trackpad-Gesten ohne Tasten: 3 Finger wischen dreht, 2 Finger scrollen schiebt, Spreizen zoomt. Aufräumliste E24:
+liest MyCAD das Touchpad selbst, dreht ein vom Compositor zusätzlich gemeldetes Wischen (Sway) nicht doppelt."""
 from harness import *
 from PySide6 import QtGui
 
@@ -11,18 +12,34 @@ def cam(key):
     return [l.strip() for l in c.splitlines() if l.strip().startswith(key)][0]
 
 
-def gesture(kind, fingers, value=0.0, delta=QtCore.QPointF()):
+READER = QtGui.QPointingDevice("MyCAD touchpad reader", 0x4d79, QtGui.QInputDevice.DeviceType.TouchPad,
+                               QtGui.QPointingDevice.PointerType.Finger, QtGui.QInputDevice.Capability.Position, 5, 0)
+
+
+def gesture(kind, fingers, value=0.0, delta=QtCore.QPointF(), device=None):
     vp = view().viewport(); p = QtCore.QPointF(vp.rect().center())
-    ev = QtGui.QNativeGestureEvent(kind, QtGui.QPointingDevice.primaryPointingDevice(), fingers,
+    ev = QtGui.QNativeGestureEvent(kind, device or QtGui.QPointingDevice.primaryPointingDevice(), fingers,
                                    p, p, QtCore.QPointF(vp.mapToGlobal(p.toPoint())), value, delta)
     QtWidgets.QApplication.sendEvent(vp, ev)
 
 
-def swipe3():
-    gesture(QtCore.Qt.BeginNativeGesture, 3)
+def swipe3(device=None):
+    gesture(QtCore.Qt.BeginNativeGesture, 3, device=device)
     for _ in range(10):
-        gesture(QtCore.Qt.PanNativeGesture, 3, delta=QtCore.QPointF(20, 5))
-    gesture(QtCore.Qt.EndNativeGesture, 3)
+        gesture(QtCore.Qt.PanNativeGesture, 3, delta=QtCore.QPointF(20, 5), device=device)
+    gesture(QtCore.Qt.EndNativeGesture, 3, device=device)
+
+
+def no_double():
+    """der Reader liefert (Eigenschaft gesetzt): sein Wischen dreht, das Doppel des Compositors nicht"""
+    QtWidgets.QApplication.instance().setProperty("mycadTouchpadReaderSwipes", True)
+    try:
+        before = cam("orientation"); swipe3(READER); after_reader = cam("orientation")
+        swipe3(); after_double = cam("orientation")
+    finally:
+        QtWidgets.QApplication.instance().setProperty("mycadTouchpadReaderSwipes", False)
+    ok = before != after_reader and after_reader == after_double
+    L("%s Doppel des Compositors dreht nicht mit: %s" % ("OK  " if ok else "FAIL", after_double))
 
 
 def pinch():
@@ -63,4 +80,5 @@ run([
     ("2 Finger schieben", lambda: check("2 Finger schieben", "position", scroll2)),
     ("Spreizen zoomt", lambda: check("Spreizen zoomt", "height", pinch)),
     ("Tempo Schieben", pan_speed),
+    ("kein Doppel", no_double),
 ])

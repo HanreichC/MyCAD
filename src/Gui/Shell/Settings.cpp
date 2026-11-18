@@ -245,6 +245,12 @@ struct FlipGesture: QNativeGestureEvent
     }
 };
 
+/// 3-Finger-Wischen, das MyCAD selbst vom Touchpad liest (TouchpadReader), trägt dieses Gerät. Sobald es welche
+/// geliefert hat (Eigenschaft am qApp, prüfbar in tests/gui/test_gestures), sind 3-Finger-Gesten anderer Herkunft
+/// Doppel: ein Compositor wie Sway reicht sie zusätzlich weiter, die Ansicht drehte sich doppelt so schnell.
+const char* const ReaderDevice = "MyCAD touchpad reader";
+const char* const ReaderSwipes = "mycadTouchpadReaderSwipes";
+
 class Trackpad: public QObject
 {
 public:
@@ -282,6 +288,10 @@ protected:
         }
         // 3 Finger wischen = drehen wie Ziehen mit der Maus (2 Finger sind Scrollen; 4 belegen KDE/GNOME selbst).
         // Qt meldet Beginn/Ende für Wischen und Spreizen gleich, darum erst bei der ersten Wischbewegung anfangen.
+        const bool fromReader = ge->device() && ge->device()->name() == QLatin1String(ReaderDevice);
+        if (ge->fingerCount() >= 3 && !fromReader && qApp->property(ReaderSwipes).toBool()) {
+            return true;  // das Doppel des Compositors: gedreht wird mit dem, was der Reader liest
+        }
         auto nav = static_cast<Gui::View3DInventorViewer*>(obj->parent())->navigationStyle();
         if (ge->gestureType() == Qt::PanNativeGesture && ge->fingerCount() >= 3 && nav) {
             auto vp = static_cast<QWidget*>(obj);
@@ -313,8 +323,8 @@ private:
 /// MyCAD lesbare Touchpads selbst mit, neben KWin (wie libinput-gestures), und reicht 3-Finger-Wischen als Qt-Geste
 /// an die 3D-Ansicht unter dem Zeiger; dort dreht Trackpad oben. Lesbar macht Touchpads eine udev-Regel (uaccess,
 /// siehe jomaa.kb96trackpad.config); ohne Zugriff passiert einfach nichts.
-/// ponytail: leitet ein Compositor 3-Finger-Wischen doch weiter (z. B. Sway), dreht es doppelt; dann Qt-Gesten
-/// mit 3 Fingern im Trackpad-Filter ignorieren, sobald hier ein Touchpad offen ist.
+/// Leitet ein Compositor 3-Finger-Wischen doch weiter (z. B. Sway), verwirft der Trackpad-Filter dieses Doppel, sobald
+/// hier Wischen ankommt.
 class TouchpadReader: public QObject
 {
 public:
@@ -391,8 +401,11 @@ private:
         }
         const QPointF global = QCursor::pos();
         const QPointF local = viewport->mapFromGlobal(global);
+        static const QPointingDevice device(QLatin1String(ReaderDevice), 0x4d79, QInputDevice::DeviceType::TouchPad,
+                                            QPointingDevice::PointerType::Finger, QInputDevice::Capability::Position, 5, 0);
+        qApp->setProperty(ReaderSwipes, true);
         QNativeGestureEvent ev(type == LIBINPUT_EVENT_GESTURE_SWIPE_END ? Qt::EndNativeGesture : Qt::PanNativeGesture,
-                               QPointingDevice::primaryPointingDevice(), 3, local, local, global, 0, delta);
+                               &device, 3, local, local, global, 0, delta);
         QApplication::sendEvent(viewport, &ev);
     }
 
