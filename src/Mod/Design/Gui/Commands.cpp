@@ -2079,7 +2079,34 @@ DxfCleanup::Piece cleanupPiece(const Part::Geometry* geo)
 
 /// DXF einfügen wie in Fusion mit Rückfrage: Größe (falsche Einheit fällt hier auf), Ebenen, Winzlinge und Doppelte.
 /// Behält in geos nur, was übernommen wird, skaliert es; false = abgebrochen
-bool reviewDxf(Geometries& geos, const std::vector<std::string>& layers, const QString& name)
+/// H4: Texte einer DXF-Datei (TEXT, MTEXT; Gruppencode 0 = Art, 1 = Inhalt). FreeCADs Leser legt Texte nur über das
+/// Draft-Modul an, das MyCAD nicht hat; ohne diesen Blick gingen sie still verloren.
+/// ponytail: nur nennen, nicht übernehmen; als Skizzentext bräuchte es Schrift, Griff-Linie und Text-Bedingung je Text
+std::vector<QString> dxfTexts(const QString& file)
+{
+    std::vector<QString> texts;
+    QFile f(file);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return texts;
+    }
+    QString kind;
+    while (!f.atEnd()) {
+        const QString code = QString::fromUtf8(f.readLine()).trimmed();
+        const QString value = QString::fromUtf8(f.readLine()).trimmed();
+        if (code == QLatin1String("0")) {
+            kind = value;
+        }
+        else if (code == QLatin1String("1") && (kind == QLatin1String("TEXT") || kind == QLatin1String("MTEXT"))) {
+            QString text = value;
+            text.replace(QRegularExpression(QStringLiteral("\\\\[A-Za-z][^;]*;|[{}]|\\\\P")), QStringLiteral(" "));  // MTEXT-Formate
+            texts.push_back(text.simplified());
+        }
+    }
+    return texts;
+}
+
+bool reviewDxf(Geometries& geos, const std::vector<std::string>& layers, const QString& name,
+               const std::vector<QString>& texts = {})
 {
     std::vector<DxfCleanup::Piece> pieces;
     std::vector<Base::BoundBox3d> boxes;
@@ -2100,6 +2127,19 @@ bool reviewDxf(Geometries& geos, const std::vector<std::string>& layers, const Q
     auto summary = new QLabel;
     summary->setWordWrap(true);
     lay->addWidget(summary);
+    if (!texts.empty()) {
+        QStringList shown;
+        for (size_t i = 0; i < texts.size() && i < 3; ++i) {
+            shown << QStringLiteral("„%1“").arg(texts[i]);
+        }
+        if (texts.size() > 3) {
+            shown << QStringLiteral("…");
+        }
+        auto skipped = new QLabel(T("%1 texts are not inserted, only the drawing: %2").arg(texts.size()).arg(shown.join(QStringLiteral(", "))));
+        skipped->setObjectName(QStringLiteral("DxfTexts"));
+        skipped->setWordWrap(true);
+        lay->addWidget(skipped);
+    }
     auto scaleRow = new QHBoxLayout;
     scaleRow->addWidget(new QLabel(T("Drawn in")));
     auto scale = new QComboBox;
@@ -2302,7 +2342,7 @@ void importFile(App::Document* doc)
             if (geos.empty()) {
                 throw Base::RuntimeError(error);
             }
-            if (suffix == QLatin1String("dxf") && !reviewDxf(geos, layers, QFileInfo(file).fileName())) {
+            if (suffix == QLatin1String("dxf") && !reviewDxf(geos, layers, QFileInfo(file).fileName(), dxfTexts(file))) {
                 return;
             }
             doc->openTransaction("Insert");

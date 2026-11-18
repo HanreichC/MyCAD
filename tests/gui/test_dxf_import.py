@@ -31,6 +31,9 @@ def write_dxf():
         rows += circle("Holes", 5 + k, 2, 0.0000762)  # Winzlinge wie aus einem Platinen-Export
     rows += line("Text", 5, 25, 15, 25) + line("Text", 5, 28, 15, 28)
     rows += ["0", "LINE", "10", "5", "20", "15", "30", "0", "11", "15", "21", "15", "31", "0"]  # ohne Ebene (Code 8)
+    # H4: Beschriftung als TEXT und MTEXT (mit Formatcode), die MyCAD nicht übernimmt, aber nennt
+    rows += entity("TEXT", "Labels", (10, 2), (20, 30), (30, 0), (40, 2.5), (1, "Platine V2"))
+    rows += entity("MTEXT", "Labels", (10, 2), (20, 34), (30, 0), (40, 2.5), (1, "{\\fArial|b0;Rev A}"))
     with open(DXF, "w") as f:
         f.write("\n".join(["0", "SECTION", "2", "ENTITIES"] + rows + ["0", "ENDSEC", "0", "EOF"]) + "\n")
 
@@ -66,6 +69,9 @@ def inspect():
     layers = [b for b in d.findChildren(QtWidgets.QCheckBox) if b.isVisible() and " (" in b.text() and "tiny" not in b.text()
               and "duplicates" not in b.text()]
     names = [b.text() for b in layers]
+    note = [w.text() for w in d.findChildren(QtWidgets.QLabel) if w.objectName() == "DxfTexts" and w.isVisible()]
+    check("H4: the review says which texts are not inserted",
+          len(note) == 1 and "2 texts" in note[0] and "Platine V2" in note[0] and "Rev A" in note[0], str(note))
     check("all layers with their counts, also entities without one",
           names == ["No layer (1)", "Holes (7)", "Outline (5)", "Text (2)"], str(names))
     check("tiny pieces and duplicates are counted",
