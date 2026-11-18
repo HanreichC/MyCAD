@@ -50,6 +50,7 @@ else
     fi
     timeout "${MYCAD_TIMEOUT:-180}" podman run --rm --userns=keep-id --group-add keep-groups --device /dev/dri \
         -v "$ROOT:/workspace" -v "$APPHOME:$APPHOME" -v "$(dirname "$OUT"):$(dirname "$OUT")" -v "$(dirname "$SCRIPT"):$(dirname "$SCRIPT")" \
+        -v "$ROOT/tests:$ROOT/tests" `# Tests holen Hilfen aus Nachbarordnern (tests/design) über ihren eigenen Pfad` \
         -v "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:/tmp/runtime/$WAYLAND_DISPLAY" \
         -e XDG_RUNTIME_DIR=/tmp/runtime -e WAYLAND_DISPLAY="$WAYLAND_DISPLAY" -e QT_QPA_PLATFORM=wayland \
         "${PASS[@]}" \
