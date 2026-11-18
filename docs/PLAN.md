@@ -605,3 +605,82 @@ Beim vollen Testlauf danach aufgefallen, schon vor dieser Runde rot (je mit best
 - Seit das Hauptmaß beim Öffnen gleich den Fokus hat (ea2e3c74), setzte ein Klick hinein nur den Cursor, und Tippen
   hängte an den alten Wert an („5.00 mm25“, `test_sketch_tools`). Der erste Klick in ein so fokussiertes Feld wählt
   jetzt alles.
+
+
+## FreeCAD-Erbe: Fehler, Upstream-Fixes, Abhängigkeiten (Analyse 2026-11-18)
+
+Anlass: Die Fehler aus dem Alltag vom 17.11. lagen fast alle im übernommenen FreeCAD-Code (Abhängigkeitskreis über
+externe Kanten, verschachtelter Sequencer baut die Eingabesperre ab, zweiter OK-Klick während der Neuberechnung,
+Dauer-Neuzeichnen durch ignorierte SoDepthBuffer-Felder). Deshalb einmal systematisch gesucht:
+
+- **MyCAD-Code**: was `Mod/Design` tatsächlich von FreeCAD nutzt (`Part::TopoShape` mit Fillet/Chamfer/Boolean/Refine/
+  ThickSolid/Draft/Loft/Helix/Defeaturing, Sketcher mit planegcs, `PartDesign::Hole`, Attacher, Materials, STEP-Import
+  über `TopoShape.read`, STEP-Export über `ImportGui.export`, STL über `Mesh.export`), dazu Speichern, Eingabesperre,
+  Zeiger-Umrechnung.
+- **FreeCAD-Upstream**: alle 432 Commits von unserer Basis `e9b474306f` bis `51089c6` (17.11.2026), 133 davon in
+  übernommenen Pfaden. Bei jedem unten genannten Fix ist geprüft, dass die fehlerhafte Stelle bei uns noch so steht.
+- **FreeCAD-Issues**: alle 3.526 offenen, gefiltert auf Fehler in Bereichen, die MyCAD nutzt (~1.100); bestätigte,
+  Abstürze, Regressionen und Performance einzeln gelesen.
+- **Abhängigkeiten** im Container (Arch-Archiv vom 09.11.2026): OCCT 7.9.3, Coin 4.0.4, Qt/PySide 6.12.0. FreeCAD
+  selbst baut inzwischen mit OCCT 8.0.1 und Coin 4.0.10.
+
+Vorschlag zur Reihenfolge: U1 (Datenverlust), dann U2 und U3, dann die Upstream-Fixes aus U10–U16 (klein, je ein
+Commit), dann U20 (OCCT 8) mit Messung, der Rest nach Bedarf. Wie in 4.5: je Punkt Test, Status hier, ein Commit.
+
+**In MyCAD bestätigt (Code gelesen)**
+
+| Nr. | Punkt | Abhilfe | Status |
+|---|---|---|---|
+| U1 | **Speichern kann die Design-Datei verlieren.** MyCAD schaltet Sicherungsdateien ab (`CreateBackupFiles=false`, `Shell.cpp`). Dann löscht `BackupPolicy::apply` zuerst die `.mycad` und benennt erst danach die temporäre Datei um (`App/BackupPolicy.cpp`). Endet MyCAD dazwischen (Absturz, kill, Strom weg), fehlt die Datei; übrig ist nur `<name>.mycad.<UUID>`. Bei Speichern alle 2 s ist das Fenster ständig offen. Ohne `fsync` vor dem Umbenennen kann die neue Datei nach Stromausfall leer sein. Upstream ähnlich FreeCAD#33493 (offen, dort mit Sicherung) | Ohne Löschen direkt umbenennen (`rename` ersetzt unter Linux atomar), vorher Datei und Ordner `fsync`. Test: Prozess zwischen Schreiben und Umbenennen beenden, danach muss die alte oder die neue Datei vollständig da sein | offen, **hoch** |
+| U2 | **Eingabesperre mit Lücken.** Während einer Neuberechnung (`ProgressBar::eventFilter`) sind Klicks, Tasten, Kontextmenü und `NativeGesture` gesperrt, Mausrad, Touch (`TouchBegin/Update`) und Qt-Gesten (`QEvent::Gesture`) aber nicht. Zoom macht bei MyCAD einen Strahl-Pick in eine Szene, die gerade umgebaut wird. Gleiche Fehlerklasse wie der Absturz vom 17.11. und FreeCAD#30179 (Rechtsklick während des Ladens → SIGSEGV), FreeCAD#31313 (Absturz in der Gesten-Navigation) | `test_reentrancy` um Mausrad und Trackpad-Gesten erweitern; wird er rot, die Ereignisse in die Sperre aufnehmen | offen, Verdacht |
+| U3 | **Zeiger trifft bei gebrochener Skalierung daneben** (KDE/Wayland 125 %, 150 % …). `InputDevice::toDevicePixelPosition` spiegelt Y in logischen Pixeln und multipliziert erst danach, der Viewport ist aber in gerundeten Gerätepixeln angelegt. Picken, Fangen und Vorauswahl liegen ein bis mehrere Gerätepixel neben dem Cursor. FreeCAD#32898, Fix als PR #32899 (offen) | PR übernehmen (erst skalieren, dann spiegeln); Test mit `QT_SCALE_FACTOR=1.5`: Pick auf eine 1-px-Kante | offen |
+| U4 | **Rundung, Fase, Schale stürzen bei unmöglichen Werten ab statt Fehler zu melden.** OCCT-Segfaults lassen sich nicht abfangen. FreeCAD#33698 (unmögliche Rundung → Absturz, auch mit OCCT 8.1-dev), #23818 (Fase an Kante neben Rundung), #25868 (Radius ändern), #29352/#22921 („alle Kanten“), #20085 (Rundung friert ein), #12522 (Rundung frisst Speicher) | Testdateien aus den Tickets in `test_fuzz` aufnehmen (Rundung/Fase/Schale mit zu großen Werten); wo es knallt, vor OCCT prüfen (Radius gegen Kantenlänge und Flächenbreite, Schalendicke gegen Höhe, vgl. #25050) und als erklärten Fehler (10.2) melden | offen |
+| U5 | **Refine an Bohrungen und Taschen.** MyCAD ruft `makeElementRefine` an sechs Stellen und nutzt `PartDesign::Hole`. Offen upstream: „Removing splitter failed“ bei mehreren bzw. Gewindebohrungen (FreeCAD#15353, #17802), Refine bringt Wände zurück (#22737), Rundung scheitert auf verfeinerter Form (#16654) | In `test_fuzz` mehrere Bohrungen mit Gewinde nebeneinander; scheitert Refine, ohne Refine weiterrechnen und warnen statt den Schritt rot zu machen | offen |
+| U6 | **Umlaute im STEP-Export.** OCCT schreibt Namen roh als UTF-8 statt `\X2\…\X0\`; „Gehäuse“ wird in anderen CAD-Programmen zu Zeichensalat oder die Datei lässt sich nicht öffnen. FreeCAD#33914, Fix nur in OCCT (PR Open-Cascade-SAS/OCCT#1742) | Bis OCCT es kann: Namen vor dem Export selbst nach ISO 10303-21 kodieren; Test: Körper „Gehäuse“ exportieren, Datei enthält nur ASCII | offen |
+| U7 | **STEP-Rundreise mit Komponenten.** FreeCAD#25150: Export lässt die Placement weg (Teile in KiCad falsch gedreht/verschoben); #20889: Rundungen kommen im STEP falsch an (OCCT, hoch priorisiert) | Test: Komponente mit Versatz und Drehung plus Rundungen exportieren, wieder einfügen, Volumen und Lage vergleichen | offen, prüfen |
+| U8 | **Wird MyCAD mit der Zeit langsamer?** FreeCAD#29376 (Rechner nach 5–30 min zäh, schlimmer im Sketcher mit projizierter Geometrie, auch KDE/Wayland) und #29636 (Verzögerung wächst über Stunden). Ein Teil davon dürfte das Dauer-Neuzeichnen sein, das MyCAD am 16.11. behoben hat (db6921d4) | Dauerlauf: `test_fuzz` 30 min in einem Prozess, Bildzeit und Speicher am Anfang und Ende messen; Grenze im Test festhalten | offen |
+| U9 | **Division im Maßfeld.** FreeCAD#33388 (Blocker, Regression): „10/2“ im Maßfeld ergibt „incompatible unit“, weil das Feld „10/2 mm“ liest. Betrifft „Maß am Maß eintippen“ (11.1). Fix upstream offen (PR #33728, #34068) | Test im Maßfeld: `10/2`, `10*2`, `(10+2)/2`, `10 mm/2`; wenn rot, Einheit erst nach der Rechnung anhängen | offen, prüfen |
+
+**Upstream-Fixes nachziehen** (FreeCAD nach `e9b474306f`; Stelle bei uns unverändert geprüft; „M“ = Datei hat MyCAD
+schon geändert, also von Hand einarbeiten statt `git apply`)
+
+| Nr. | Commit | Was er behebt | Status |
+|---|---|---|---|
+| U10 | `ba8ded0` (`Gui/Application.cpp`, M, 2 Zeilen) | Cursor dreht nach dem Start unter Wayland lange, weil zwei Hilfs-Labels kurz als eigene Fenster aufgehen (`show()` statt `ensurePolished()`) | offen |
+| U11 | `920d147` (`Gui/NotificationArea.cpp`) | Hänger: eine Qt-Warnung beim Anzeigen einer Meldung (unter Wayland „This plugin does not support raise()“) läuft in dieselbe Sperre zurück | offen |
+| U12 | `33adf61` (`Gui/SoDatumLabel.cpp`, M) | Geisterlinien an Maßen (Durchmesser an Bögen): das Feld wird nie verkleinert, alte Punkte bleiben stehen | offen |
+| U13 | `44a651a` (`GestureNavigationStyle`), `ec5a304` (`Gui/Tree.cpp`, M) | Absturz der Gesten-Navigation, wenn ein verzögerter Klick einen Maß-Dialog öffnet (MyCAD bietet „Gesture“ an); Absturz bei wiedereintretendem `clearSelection` | offen |
+| U14 | Sketcher: `56062b6`, `c3fa28b`, `5b76ae4`, `02a1de6`, `8df06f6`, `95862d4` (meist M) | Null-Längen-Maße stabil (mit a0058bfb abgleichen); redundante Bedingungen gehen an den Entferner bzw. Benutzer statt still verworfen zu werden (vgl. FreeCAD#23189 „redundante Bedingung löschte alle Maße“); ungültiger Bedingungs-Index; Bearbeitung auf-/abbauen nur einmal; Polylinie verliert nach Rundung den letzten Punkt; Kegelschnitt teilen behält Hilfsgeometrie | offen |
+| U15 | `b91dff9`, `cd97347` (`PartDesign/App/FeatureHole.cpp`, `FeatureAddSub.cpp`) | Gewindebohrung mit einem vereinigten Werkzeug (35 % schneller, Vorschau 67 %, 22 % weniger Speicher; Neuberechnen 19 % langsamer, also messen); Vorschau ohne zweite Schnittberechnung (Vorschau 30 % schneller) | offen, messen |
+| U16 | `219c993` (`Gui/Quarter/EventFilter.cpp`, M) | Mausbewegungen zusammenfassen: höchstens zwei Szenendurchläufe je Schub. Hilft großen Skizzen und Szenen (vgl. FreeCAD#27319, #32971) | offen, messen |
+| U17 | `b64d77b` (`Base/Reader.cpp`), `f5823b9` (`Part/App/Geometry.cpp`) | Sicherheit beim Öffnen fremder `.mycad`: XML-„Billion Laughs“ und Bezier-Kurve mit unsinniger Polzahl (Speicher) | offen |
+| U18 | `80df03c`, `0cafef1`, `636365f` | Hänger bei Kamerafahrt mit Dauer 0; hängender Zeiger aus `getUserParameterTemplatePath()`; fehlendes Include für PySide 6.12 (unser Stand) | offen |
+| U19 | PR FreeCAD#30919 (offen) | Lesen außerhalb des Speichers beim Öffnen einer Skizze (Achsenkreuz), gelegentliche Abstürze; FreeCAD#30914 | offen, beobachten |
+
+Nicht übernehmen: Material-Fixes `9eb48c6`…`ede34e7` (Vergleich, Prüfung, Lizenzfelder, Fehlertexte; MyCAD holt
+Materialien nur per UUID aus dem `MaterialManager`), PartDesign-DressUp/Body-Fixes `06f3dd6`, `a76e067`, `b8c7f16` (MyCAD rundet über `TopoShape`,
+nicht über PartDesign-Bodies), `fffb6ee` (MyCAD ruft `ImportGui.export` direkt, Farben gehen nicht verloren).
+
+**Abhängigkeiten**
+
+| Nr. | Punkt | Abhilfe | Status |
+|---|---|---|---|
+| U20 | **OCCT 7.9.3 → 8.0.x.** Arch liefert kein OCCT 8; FreeCAD baut damit, unser Code hat die Versionsweichen schon (`OCC_VERSION_HEX >= 0x080000`). OCCT 8.0 behebt u. a. Abstürze in `ChFi3d` (Rundung/Fase an Ecken nach Booleans, an Ellipsen), Hänger in `MakeFillet::Add`, Segfault bei Fuse an Lofts, Absturz in `PipeShell`, Schalen-Regression, Absturz in `UnifySameDomain` (= Refine), STEP-Import-Abstürze und -Hänger; Booleans, B-Splines und STEP sind schneller. Risiken: Dateien mit unendlicher Geometrie lassen sich nach 8.0.1 nicht mehr öffnen (FreeCAD#33058, OCCT#1560); STEP-Import mit Torus-Buckeln bleibt (FreeCAD#34326, OCCT#1652) | OCCT 8.0.1 (oder 8.0.2) im Container selbst bauen, dazu `install.sh`/AppImage. Vorher alle Testdateien und eigene Designs laden, volle Testsuite und `test_performance` vorher/nachher. Bauzeit und Image-Größe vorher mit dem Benutzer abstimmen | offen, Entscheidung |
+| U21 | **Coin 4.0.4 → 4.0.10.** 4.0.6 „EGL und GLX unter Wayland korrigiert“, 4.0.8 Umgehung für einen Intel-Treiberfehler bei der GL-Versionsprüfung (der Container nutzt die Intel-iGPU), 4.0.10 robusterer Parser. Arch hängt bei 4.0.4, FreeCAD bündelt 4.0.10 | Mit U20 zusammen im Container bauen; Pivy dagegen prüfen | offen, Entscheidung |
+
+**Weitere offene FreeCAD-Fehler im Blick** (MyCAD nutzt den Bereich, aber noch nicht als Fehler gesehen; erst handeln,
+wenn es im Alltag auftaucht, dann Test aus dem Ticket):
+
+- Skizzen-Löser: Freiheitsgrade falsch gezählt (FreeCAD#15850, #8324, #11899; daran hängt der orange Punkt); Kippen
+  beim Bemaßen (#10890, #23221, #33872 „Rechteck mit Rahmen“); DogLeg scheitert beim Ziehen Bogen + Linie (#32859);
+  gedrehtes Rechteck mit Formel nicht lösbar (#33575) und Winkel per Formel löscht Bedingungen (#33453), beides
+  wichtig für Parameter aus der Notiz (10.4); Bedingungsnamen mit Leerzeichen (#5750); große Ellipse (#30691).
+- Gewinde/Helix: langsam bis Absturz bei vielen Gängen (#18367, #29949), Refine stört Gewinde (#17846).
+- STEP-Import aus dem Netz: Speicher-DoS mit präparierten Dateien (#31724); importierte Teile langsam beim Drehen
+  (#26148).
+- Darstellung: große Koordinaten wackeln (float in Coin, #6036; betrifft DXF mit Landeskoordinaten);
+  Kopieren/Einfügen unter Wayland (#15198; die Sketcher-Zwischenablage läuft über `QClipboard`).
+
+**Zurückmelden (freiwillig):** Eigene Fixes, die FreeCAD noch fehlen und dort offene Tickets betreffen könnten:
+Sequencer-Sperre bei verschachtelten Fortschritten (cf7c4f78), doppelter OK-Klick im TaskView (4d25e896),
+Dauer-Neuzeichnen offener Skizzen (db6921d4, vermutlich Teil von FreeCAD#29376), Zoom-Grenzen (a3c24152, vgl. #29619).
