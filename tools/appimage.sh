@@ -20,7 +20,7 @@ cmake --install "$ROOT/build" --prefix "$APPDIR/usr" >/dev/null
 echo "==> Python (Standardbibliothek + benötigte Pakete)"
 mkdir -p "$APPDIR/usr/lib/$PY/site-packages"
 (cd "/usr/lib/$PY" && tar --exclude=site-packages --exclude=test --exclude=__pycache__ --exclude=idlelib \
-    --exclude=tkinter --exclude=turtledemo --exclude='config-*' -cf - .) | tar -C "$APPDIR/usr/lib/$PY" -xf -
+    --exclude=tkinter --exclude='_tkinter*' --exclude=turtledemo --exclude='config-*' -cf - .) | tar -C "$APPDIR/usr/lib/$PY" -xf -
 for pkg in PySide6 shiboken6 pivy yaml _yaml packaging freecad; do
     [ -e "$SITE/$pkg" ] && cp -a "$SITE/$pkg" "$APPDIR/usr/lib/$PY/site-packages/"
 done
