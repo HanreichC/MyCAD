@@ -129,5 +129,19 @@ command -v xdg-mime >/dev/null && xdg-mime default mycad.desktop application/x-m
 # KDE-Cache der Menüeinträge/Icons auffrischen, sonst zeigt die Taskleiste noch das alte Icon
 command -v kbuildsycoca6 >/dev/null && kbuildsycoca6 >/dev/null 2>&1 || true
 
+# Tasten am Grafiktablett (Einstellungen › Tablett): MyCAD liest sie im Container selbst aus /dev/input. Lesbar macht sie
+# eine udev-Regel wie die fürs Touchpad (uaccess für den angemeldeten Benutzer), nur für die Tasten-Geräte von
+# Tabletts, nie für Tastaturen. Einmalig mit sudo, nur wenn ein Tablett angeschlossen ist und die Regel fehlt.
+# Gleiche Regel wie "Zugriff erlauben" in src/Gui/Shell/Settings.cpp (dort für MyCAD außerhalb des Containers)
+TABLET_RULE=/etc/udev/rules.d/70-mycad-tablet.rules
+if [ ! -f "$TABLET_RULE" ] && [ -t 0 ] && command -v udevadm >/dev/null \
+    && udevadm info --export-db 2>/dev/null | grep -q '^E: ID_INPUT_TABLET_PAD=1'; then
+    echo "==> Grafiktablett gefunden: damit MyCAD seine Tasten lesen darf, legt sudo einmal $TABLET_RULE an"
+    printf '%s\n' 'ACTION!="remove", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_TABLET_PAD}=="1", TAG+="uaccess"' \
+        | sudo tee "$TABLET_RULE" >/dev/null \
+        && sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=input \
+        || echo "    Übersprungen. Ohne die Regel kann MyCAD die Tasten am Tablett nicht lesen (der Stift geht trotzdem)."
+fi
+
 echo "==> Fertig. Starten mit: mycad   (oder über das App-Menü)"
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) echo "    Hinweis: ~/.local/bin ist nicht im PATH.";; esac

@@ -150,6 +150,10 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"MyCAD asks for your password once, then it may read the keys of graphics tablets (never keyboards)",
          "MyCAD fragt einmal nach deinem Passwort und darf dann die Tasten von Grafiktabletts lesen (nie Tastaturen)"},
         {"Connected", "Angeschlossen"},
+        {"MyCAD runs in a container here. Run install.sh once more: it sets up access (asks for your password once). Then restart MyCAD.",
+         "MyCAD läuft hier im Container. Führ install.sh noch einmal aus: Es richtet den Zugriff ein (fragt einmal nach deinem "
+         "Passwort). Danach MyCAD neu starten."},
+        {"Couldn't set up access. In a terminal:", "Zugriff ließ sich nicht einrichten. Im Terminal:"},
         {"Connected, but MyCAD can't read its keys yet.", "Angeschlossen, aber MyCAD kann die Tasten noch nicht lesen."},
         {"No tablet connected", "Kein Tablett angeschlossen"},
         {"Press a key on the tablet or pen: its row lights up.", "Drück eine Taste am Tablett oder Stift: ihre Zeile leuchtet auf."},

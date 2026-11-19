@@ -1811,6 +1811,13 @@ void Gui::Shell::showSettings()
         info->addWidget(w);
     }
     info->addWidget(allow, 0, Qt::AlignLeft);
+    auto accessHint = new QLabel;  // im Container, oder wenn "Zugriff erlauben" nicht ging: wie es von Hand geht
+    accessHint->setObjectName(QStringLiteral("Hint"));
+    accessHint->setWordWrap(true);
+    accessHint->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    setTextStyle(accessHint, Text::Caption);
+    accessHint->hide();
+    info->addWidget(accessHint);
     info->addStretch();
     heroLay->addLayout(info, 1);
     addRow(tabletCard, QString(), hero, true);
@@ -1949,7 +1956,14 @@ void Gui::Shell::showSettings()
         status->setText(pad.denied          ? T("Connected, but MyCAD can't read its keys yet.")
                         : pad.name.isEmpty() ? T("No tablet connected")
                                              : T("Connected"));
-        allow->setVisible(pad.denied);
+        // im Container (install.sh) gibt es kein pkexec und keinen Weg nach /etc: dort legt install.sh die Regel an
+        static const bool contained = QFile::exists(QStringLiteral("/run/.containerenv")) || QFile::exists(QStringLiteral("/.dockerenv"));
+        allow->setVisible(pad.denied && !contained);
+        if (pad.denied && contained) {
+            accessHint->setText(T("MyCAD runs in a container here. Run install.sh once more: it sets up access (asks for your "
+                                  "password once). Then restart MyCAD."));
+        }
+        accessHint->setVisible(pad.denied && (contained || !accessHint->text().isEmpty()));
         device->setText(pad.name);
         device->setVisible(!pad.name.isEmpty());
         const std::string chosen = myParams()->GetASCII("TabletModel", "");
@@ -1971,24 +1985,33 @@ void Gui::Shell::showSettings()
     });
     // Zugriff: dieselbe Art Regel wie für Touchpads (uaccess für den angemeldeten Benutzer), nur für die Tasten-Geräte
     // von Tabletts, nie für Tastaturen. pkexec fragt nach dem Passwort; danach öffnet der Reader die Geräte neu.
-    QObject::connect(allow, &QPushButton::clicked, allow, [allow, &dlg] {
+    // Gleiche Regel legt install.sh an (MyCAD im Container)
+    QObject::connect(allow, &QPushButton::clicked, allow, [allow, accessHint, &dlg] {
         const QString rule = QStringLiteral(
             R"(ACTION!="remove", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_TABLET_PAD}=="1", TAG+="uaccess")");
         auto proc = new QProcess(&dlg);
         allow->setEnabled(false);
-        const auto done = [proc, allow](bool ok) {
+        // Abbrechen im Passwort-Dialog (pkexec: 126) ist kein Fehler; sonst nie still scheitern: der Befehl fürs Terminal
+        const auto done = [proc, allow, accessHint, rule](int code) {
             proc->deleteLater();
             allow->setEnabled(true);
-            if (ok) {
+            if (code == 0) {
+                accessHint->hide();
                 QTimer::singleShot(500, allow, [] { TouchpadReader::install().reconnect(); });  // bis udev die Rechte setzt
+            }
+            else if (code != 126) {
+                accessHint->setText(T("Couldn't set up access. In a terminal:") + QStringLiteral("\necho '") + rule
+                                    + QStringLiteral("' | sudo tee /etc/udev/rules.d/70-mycad-tablet.rules && sudo udevadm "
+                                                     "control --reload && sudo udevadm trigger --subsystem-match=input"));
+                accessHint->show();
             }
         };
         QObject::connect(proc, &QProcess::finished, allow, [done](int code, QProcess::ExitStatus st) {
-            done(code == 0 && st == QProcess::NormalExit);
+            done(st == QProcess::NormalExit ? code : -1);
         });
         QObject::connect(proc, &QProcess::errorOccurred, allow, [done](QProcess::ProcessError e) {
             if (e == QProcess::FailedToStart) {
-                done(false);
+                done(-1);
             }
         });
         proc->start(QStringLiteral("pkexec"),
