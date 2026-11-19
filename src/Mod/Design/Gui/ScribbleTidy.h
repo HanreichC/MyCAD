@@ -346,8 +346,9 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
                 tops.push_back(L.base - B[i].minY);
             }
             L.xh = quant(tops, 0.25);
-            // Wörter: waagrecht überlappende Striche sind ein Stück (ein Buchstabe), eine große Lücke trennt Wörter, und
-            // ist die ganze Zeile gelesen, auch eine Wortgrenze der Schrifterkennung (dann Wort für Wort sortiert)
+            // Wörter: waagrecht überlappende Striche sind ein Stück (ein Buchstabe), eine große Lücke trennt Wörter. Ist die
+            // ganze Zeile gelesen, entscheidet nur die Schrifterkennung (dann Wort für Wort sortiert): in echter
+            // Tablett-Schrift sind Lücken im Wort oft so groß wie zwischen Wörtern (tests/projects/Scribble Test.mycad)
             const auto wordOf = [&o](size_t i) { return i < o.word.size() ? o.word[i] : -1; };
             const bool read = std::all_of(L.idx.begin(), L.idx.end(), [&](size_t i) { return wordOf(i) >= 0; });
             const auto same = [&](size_t a, size_t b) { return !read || wordOf(a) == wordOf(b); };
@@ -366,7 +367,7 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
                 }
             }
             for (const Word& u : units) {
-                if (!L.words.empty() && u.minX - L.words.back().maxX < 0.6 * L.xh && same(u.idx.front(), L.words.back().idx.front())) {
+                if (!L.words.empty() && (read || u.minX - L.words.back().maxX < 0.6 * L.xh) && same(u.idx.front(), L.words.back().idx.front())) {
                     Word& w = L.words.back();
                     w.idx.insert(w.idx.end(), u.idx.begin(), u.idx.end());
                     w.maxX = std::max(w.maxX, u.maxX);

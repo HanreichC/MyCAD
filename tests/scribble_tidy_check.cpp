@@ -271,6 +271,23 @@ int main()
     assert(tidy({}).empty());
     assert(tidy({{{1, 2, 0.3}}, {{4, 2, 0.3}}}).size() == 2);  // nur Punkte: bleibt heil
 
+    // Echte Tablett-Schrift (tests/projects): Lücken in einem Wort sind oft so groß wie zwischen Wörtern ("Die s ist").
+    // Liest die Schrifterkennung die Zeile, entscheidet nur sie über Wortgrenzen: die Lücke im Wort bleibt, wie sie ist,
+    // statt als Wortabstand gleichgezogen zu werden. Sechs senkrechte Striche, 4 hoch: Wort 0 = 0, 2, | 5.5, 7.5, Wort 1 = 13, 15
+    {
+        std::vector<Stroke> word;
+        for (double x : {0.0, 2.0, 5.5, 7.5, 13.0, 15.0}) {
+            word.push_back({{x, 0, 0.3}, {x, 2, 0.3}, {x, 4, 0.3}});
+        }
+        Options only;  // nur die Abstände
+        only.smooth = only.straight = only.size = only.slant = only.width = false;
+        const auto inner = [](const std::vector<Stroke>& S) { return S[2][0].x - S[1][0].x; };  // Lücke im Wort 0
+        Options read = only;
+        read.word = {0, 0, 0, 0, 1, 1};
+        assert(std::abs(inner(tidy(word, read)) - 3.5) < 1e-9);  // ein Wort: Lücke bleibt
+        assert(std::abs(inner(tidy(word, only)) - 3.5) > 0.1);   // ohne Lesen: zwei Wörter, Lücke gleichgezogen
+    }
+
     std::puts("ok");
     return 0;
 }
