@@ -387,7 +387,9 @@ private:
                     return v && std::strcmp(v, "1") == 0;
                 };
                 const bool touchpad = is("ID_INPUT_TOUCHPAD"), pad = is("ID_INPUT_TABLET_PAD");
-                const char* name = dev ? udev_device_get_property_value(dev, "NAME") : nullptr;
+                // NAME trägt das Eingabegerät darüber (input42), nicht eventN; gehört dev, kein eigenes unref
+                struct udev_device* input = dev ? udev_device_get_parent_with_subsystem_devtype(dev, "input", nullptr) : nullptr;
+                const char* name = input ? udev_device_get_property_value(input, "NAME") : nullptr;
                 const QString padName = pad && name ? QString::fromUtf8(name).remove(QLatin1Char('"')) : QString();
                 udev_device_unref(dev);
                 if (!touchpad && !pad) {
