@@ -288,6 +288,28 @@ int main()
         assert(std::abs(inner(tidy(word, only)) - 3.5) > 0.1);   // ohne Lesen: zwei Wörter, Lücke gleichgezogen
     }
 
+    // Stärke des Glättens (Einstellung): stärker glättet ein Zittern weiter weg
+    {
+        Stroke zigzag;
+        for (int i = 0; i <= 40; ++i) {
+            zigzag.push_back({i * 0.25, (i % 2) * 0.3, 0.3});
+        }
+        const std::vector<Stroke> one = {zigzag, {{0, 0, 0.3}, {0, 4, 0.3}}};  // zweiter Strich gibt die Höhe vor
+        const auto wobble = [](const Stroke& s) {
+            double w = 0;
+            for (size_t i = 1; i + 1 < s.size(); ++i) {
+                w += std::abs(s[i].y - (s[i - 1].y + s[i + 1].y) / 2);
+            }
+            return w;
+        };
+        Options soft, strong;
+        soft.straight = soft.size = soft.slant = soft.gaps = soft.width = false;
+        strong = soft;
+        soft.smoothing = 0.05;
+        strong.smoothing = 0.25;
+        assert(wobble(tidy(one, strong)[0]) < 0.5 * wobble(tidy(one, soft)[0]));
+    }
+
     std::puts("ok");
     return 0;
 }

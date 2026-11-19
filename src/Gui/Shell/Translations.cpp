@@ -142,6 +142,20 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"acts as", "wirkt als"},
         {"Remove", "Entfernen"},
         {"Add Key…", "Taste hinzufügen…"},
+        // Einstellungen › Navigation › Stift & Handschrift: Schritte der Schönschrift
+        {"Smooth lines", "Glatte Linien"},
+        {"Smoothing", "Stärke des Glättens"},
+        {"Straight lines", "Gerade Zeilen"},
+        {"Same size", "Gleiche Größe"},
+        {"Same slant", "Gleiche Schräge"},
+        {"Even word spacing", "Gleiche Wortabstände"},
+        {"Even line width", "Gleichmäßige Strichstärke"},
+        {"A second after you lift the pen, what you just wrote in a Scribble lines up: straight lines, even size, slant and "
+         "spacing. Undo brings back the raw handwriting. Smoother lines look calmer, but MyCAD reads them a little less "
+         "reliably (search, written sizes).",
+         "Eine Sekunde nachdem du den Stift absetzt, wird das eben Geschriebene im Scribble ordentlich: gerade Zeilen, gleiche "
+         "Größe, Schräge und Abstände. Rückgängig holt die rohe Handschrift zurück. Glattere Linien wirken ruhiger, MyCAD "
+         "liest sie aber etwas unsicherer (Suche, geschriebene Maße)."},
         // Einstellungen › Tablett (Grafiktablett)
         {"Tablet", "Tablett"},
         {"Tablet and pen", "Tablett und Stift"},
@@ -1201,8 +1215,6 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Not found on this sheet", "Auf diesem Blatt nicht gefunden"},
         {"Tidy handwriting after a pause", "Handschrift nach einer Pause aufräumen"},
         {"Tidying strength", "Stärke des Aufräumens"},
-        {"A second after you lift the pen, what you just wrote in a Scribble lines up: straight lines, even size, slant and spacing. Undo brings back the raw handwriting.",
-         "Eine Sekunde nachdem du den Stift absetzt, wird das eben Geschriebene im Scribble ordentlich: gerade Zeilen, gleiche Größe, Schräge und Abstände. Rückgängig holt die rohe Handschrift zurück."},
         {"TOP", "OBEN"},
         {"BOTTOM", "UNTEN"},
         {"FRONT", "VORNE"},

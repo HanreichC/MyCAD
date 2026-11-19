@@ -1503,14 +1503,24 @@ void ViewProviderScribble::Private::tidyWriting()
         }
     }
     ScribbleTidy::Options options;
+    // jeder Schritt einzeln abschaltbar (Einstellungen › Navigation › Stift & Handschrift), Glätten auch in der Stärke
+    const auto p = tidyParams();
+    options.smooth = p->GetBool("ScribbleTidySmooth", true);
+    options.smoothing = double(std::clamp(p->GetInt("ScribbleTidySmoothing", 10), 1L, 30L)) / 100;
+    options.straight = p->GetBool("ScribbleTidyStraight", true);
+    options.size = p->GetBool("ScribbleTidySize", true);
+    options.slant = p->GetBool("ScribbleTidySlant", true);
+    options.gaps = p->GetBool("ScribbleTidyGaps", true);
+    options.width = p->GetBool("ScribbleTidyWidth", true);
     // Rotstift: jede Korrektur bleibt an ihrer Stelle am Modell; Glätten und Geraderücken lassen die Erkennung danach
     // öfter danebenliegen (4 als A, 1 als I, Ø fehlt; tests/scribble_read_check), also ohne
     options.inPlace = object()->OnModel.getValue();
-    options.smooth = options.straight = !options.inPlace;
+    options.smooth = options.smooth && !options.inPlace;
+    options.straight = options.straight && !options.inPlace;
     options.margin = false;  // den linken Rand setzt follow, auch an schon Geschriebenem
     options.word = ScribbleRead::words(raw, flat);  // eng geschrieben („derPlan“): das Modell liest die Wortgrenze
     auto neat = ScribbleTidy::tidy(flat, options);
-    if (!options.inPlace) {  // nach einer Pause weitergeschrieben: so groß und auf der Zeile wie das, was schon dasteht
+    if (options.straight) {  // nach einer Pause weitergeschrieben: so groß und auf der Zeile wie das, was schon dasteht
         // nur, was das Modell als Schrift liest: an eine Zeichnung daneben schließt nichts an.
         // ponytail: liest jedes Mal das ganze Blatt (je Zeile wenige ms); bei sehr vollen Blättern nur Zeilen nahe fresh
         const auto before = sheetWriting(object(), size_t(from)).first;
@@ -1520,7 +1530,7 @@ void ViewProviderScribble::Private::tidyWriting()
                 lines.push_back(l.strokes);
             }
         }
-        ScribbleTidy::follow(neat, before, lines);
+        ScribbleTidy::follow(neat, before, lines, options.size);
     }
     std::vector<ScribbleTidy::Stroke> done;
     for (size_t i = 0; i < neat.size(); ++i) {
