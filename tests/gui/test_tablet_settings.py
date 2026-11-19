@@ -4,9 +4,11 @@ bleibt beim Wiederöffnen, Vorschlag wiederherstellen, eine Stift-Taste lässt i
 nichts), ein unbekanntes Modell lernt seine Tasten. Außerhalb der Einstellungen dreht die untere Stift-Taste die
 Ansicht (Vorschlag), solange sie gehalten ist. Die Tasten am Tablett selbst liest MyCAD per libinput: das prüft
 tests/tablet_keys_check.cpp ohne Gerät, am echten Tablett von Hand. Fehler stehen als FAIL im Protokoll."""
+import os
 from harness import *
 
 grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
+old_look = grp.GetInt("Appearance", 0)
 old = {k: grp.GetString(k, "") for k in ("TabletModel", "TabletKeys")}
 old_seen = grp.GetInt("TabletKeysSeen", 0)
 grp.SetString("TabletModel", "h640p")
@@ -74,7 +76,7 @@ def press_lower_in_dialog():
     pen(dialog(), QtCore.QEvent.TabletRelease, QtCore.Qt.MiddleButton, QtCore.Qt.NoButton)
     check("lower pen button in the open settings lights its row (and says pressed), only that one",
           took and lit and label.isVisible() and not others, "accepted=%s lit=%s label=%s others=%d" % (took, lit, label.isVisible(), len(others)))
-    shot("tablet-pressed")
+    snap("pressed")
 
 
 def other_model():
@@ -83,8 +85,18 @@ def other_model():
     empty = [l for l in visible(QtWidgets.QLabel) if l.text().startswith("No keys yet. Press each key")]
     check("unknown model: no tablet rows until a key is pressed, the pen keeps its two",
           len(rows()) == 2 and len(empty) == 1, "rows=%d hint=%d" % (len(rows()), len(empty)))
-    box.setCurrentIndex(box.findData("h640p"))
-    check("back to the H640P: its 6 rows again", len(rows()) == 8, str(len(rows())))
+    snap("other")
+    box.setCurrentIndex(box.findData("h640p"))  # neue Zeilen zeigt Qt erst in der nächsten Runde der Ereignisschleife
+
+
+def scheme(text):
+    """Farbschema wie auf der Seite General umschalten (der Knopf liegt dort, versteckt, klickt aber trotzdem)"""
+    [b for b in dialog().findChildren(QtWidgets.QPushButton) if b.objectName() == "Segment" and b.text() == text][0].click()
+
+
+def snap(name):
+    """der Einstellungsdialog ist ein eigenes Fenster: shot() sähe nur das Hauptfenster"""
+    dialog().grab().save(os.environ["OUT"] + "." + name + ".png")
 
 
 def close():
@@ -125,10 +137,14 @@ in_order([
     ("open", open_settings), wait,
     ("tablet", to_tablet), wait,
     ("suggestion", check_suggestion),
-    ("shot", lambda: shot("tablet")),
+    ("shot", lambda: snap("tablet")),
+    ("dark", lambda: scheme("Dark")), wait,
+    ("dark shot", lambda: snap("tablet-dark")),
+    ("light", lambda: scheme(["Automatic", "Light", "Dark"][old_look])), wait,
     ("change", change_key2),
     ("pen key", press_lower_in_dialog),
-    ("other model", other_model),
+    ("other model", other_model), wait,
+    ("back", lambda: check("back to the H640P: its 6 rows again", len(rows()) == 8, str(len(rows())))),
     ("close", close), wait,
     ("reopen", open_settings), wait,
     ("tablet again", to_tablet), wait,

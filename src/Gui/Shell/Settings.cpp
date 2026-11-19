@@ -1094,7 +1094,7 @@ class TabletPicture: public QWidget
 public:
     TabletPicture()
     {
-        setFixedSize(240, 150);
+        setFixedSize(260, 150);  // der schräge Stift reicht oben bis x 258
         setAccessibleName(T("Tablet and pen"));
     }
     int keys = 0;          ///< Tasten am Tablett
@@ -1850,7 +1850,8 @@ void Gui::Shell::showSettings()
         chip->setObjectName(QStringLiteral("Chip"));
         setTextStyle(chip, Text::Caption);
         chip->setFixedHeight(Token::Chip);
-        chip->setMinimumWidth(Token::Chip);
+        // alle gleich breit (Platz für zwei Ziffern), sonst stehen die Namen je nach Ziffer versetzt
+        chip->setFixedWidth(chip->fontMetrics().horizontalAdvance(QStringLiteral("88")) + 20);
         chip->setAlignment(Qt::AlignCenter);
         h->addWidget(chip);
         auto text = new QLabel(label);
@@ -2013,8 +2014,10 @@ void Gui::Shell::showSettings()
         const auto light = [keyRows, picture](const std::string& on) {
             for (const KeyRow& r : *keyRows) {
                 r.field->setProperty("pressed", r.key == on);
-                r.field->style()->unpolish(r.field);
-                r.field->style()->polish(r.field);
+                for (QWidget* w : r.field->findChildren<QWidget*>() << r.field) {  // auch der Chip (Regel hängt an der Zeile)
+                    w->style()->unpolish(w);
+                    w->style()->polish(w);
+                }
                 r.pressed->setVisible(r.key == on);
             }
             picture->pressed = on;
