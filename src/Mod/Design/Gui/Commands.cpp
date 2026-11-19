@@ -5475,8 +5475,12 @@ void CreateDesignCommands()
         tool("Design_ScribblePencil", "Pencil", "Pencil: a soft line, thinner the lighter you press", Tool::Pencil);
         tool("Design_ScribblePen", "Fineliner", "Fineliner: an even, dark line", Tool::Pen);
         tool("Design_ScribbleMarker", "Marker", "Marker: a broad, see-through stroke for highlighting", Tool::Marker);
-        tool("Design_ScribbleEraser", "Eraser",
-             "Eraser (E): wipe over strokes to remove them. E again goes back to the pen. On pens with an eraser end, the back of the pen erases too", Tool::Eraser);
+        // Radierer und Auswählen schalten wie E und V um: noch einmal geht zurück zum Stift (auch für Tablett-Tasten)
+        const auto toggle = [&mgr](const char* name, const char* text, const char* tip, Tool t) {
+            mgr.addCommand(new ScribbleTool(name, text, tip, [t](ViewProviderScribble*) { ViewProviderScribble::toggleTool(t); }));
+        };
+        toggle("Design_ScribbleEraser", "Eraser",
+               "Eraser (E): wipe over strokes to remove them. E again goes back to the pen. On pens with an eraser end, the back of the pen erases too", Tool::Eraser);
         tool("Design_ScribbleSheet", "Move Sheet",
              "Move Sheet: tap a body face to lay the sheet on it, a straight stroke to stand it up along that line, "
              "or empty space to turn it towards you",
@@ -5488,9 +5492,9 @@ void CreateDesignCommands()
         tool("Design_ScribbleTriangle", "Triangle", "Triangle: drag across it, the tip points up", Tool::Triangle);
         tool("Design_ScribbleHexagon", "Hexagon", "Hexagon: drag from the center to a corner", Tool::Hexagon);
         tool("Design_ScribbleEllipse", "Ellipse", "Ellipse: drag across it from corner to corner", Tool::Ellipse);
-        tool("Design_ScribbleSelect", "Select",
-             "Select (V): tap a stroke or draw around strokes, then drag them. Delete removes them, a colour recolours them",
-             Tool::Select);
+        toggle("Design_ScribbleSelect", "Select",
+               "Select (V): tap a stroke or draw around strokes, then drag them. Delete removes them, a colour recolours them",
+               Tool::Select);
         tool("Design_ScribbleText", "Text", "Text: click on the sheet and type. Enter or Esc puts it down, Shift+Enter starts a new line", Tool::Text);
         tool("Design_ScribbleFill", "Fill",
              "Fill: tap inside a closed shape to colour it, or draw around an area to fill it", Tool::Fill);
@@ -5507,11 +5511,20 @@ void CreateDesignCommands()
             {"Design_ScribbleGreen", "Green", Base::Color(0x34C759FFu)},
             {"Design_ScribbleYellow", "Yellow", Base::Color(0xFFCC00FFu)},
         };
+        std::vector<Base::Color> colors;
         for (const auto& ink : inks) {
             const Base::Color color = ink.color;
+            colors.push_back(color);
             mgr.addCommand(new ScribbleTool(ink.name, ink.text, "Color for the next strokes",
                                             [color](ViewProviderScribble*) { ViewProviderScribble::setColor(color); }));
         }
+        // für eine Tablett-Taste: reihum durch die Farben oben (eine eigene Farbe geht zurück zur ersten)
+        mgr.addCommand(new ScribbleTool("Design_ScribbleNextColor", "Next Color", "Next Color: switch to the next Scribble color",
+                                        [colors](ViewProviderScribble*) {
+                                            const auto it = std::find(colors.begin(), colors.end(), ViewProviderScribble::color());
+                                            const size_t i = it == colors.end() ? colors.size() - 1 : size_t(it - colors.begin());
+                                            ViewProviderScribble::setColor(colors[(i + 1) % colors.size()]);
+                                        }));
         mgr.addCommand(new ScribbleTool("Design_ScribbleLookAt", "Look At", "Look At (L): view the sheet straight on",
                                         [](ViewProviderScribble* vp) { vp->lookAtSheet(); }));
         mgr.addCommand(new ScribbleTool("Design_ScribbleTracing", "Tracing Paper",

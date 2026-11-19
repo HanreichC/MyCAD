@@ -183,7 +183,7 @@ Choose from twelve navigation styles, including **Fusion 360**, **SolidWorks**, 
 
 You can map a key to a mouse button, for example **Shift** as the middle button, and then navigate with your touchpad. Shift still works as Shift when you type. MyCAD orbits around the body under your cursor. If you'd rather see names than icons, turn on **Show tool names**.
 
-Pen tablets work on Wayland with pressure and hover. The side buttons orbit and pan, even while the tip is on the paper. In KDE's **Drawing Tablet** settings you can give the buttons on your tablet keys: **E** for the eraser, **V** to select, **L** to look straight at the sheet, Ctrl+Z to undo. With **E** on a button, you can erase in one press even with a pen that has no eraser end, like the Huion Inspiroy H640P's.
+Pen tablets work on Wayland with pressure and hover. **Tablet** in Settings gives every button its job: pick your model (MyCAD recognizes it when it's plugged in), press a button and its row lights up, then choose what it does. Undo, eraser, select, pencil, fineliner, marker, next color, Only the Sheet, look at the sheet, or orbit and pan while you hold it. The Huion Inspiroy H640P comes set up for its six buttons and two on the pen. Models MyCAD doesn't know yet learn their buttons as you press them. Reading the tablet's buttons needs permission once: **Allow Access…** asks for your password and lets MyCAD read tablet buttons (never keyboards). If KDE still has shortcuts on the same buttons, MyCAD ignores them, so nothing happens twice.
 
 ![Settings](src/Gui/Shell/help/images/settings.gif)
 
@@ -264,7 +264,7 @@ Want to try something risky? Make a **variant**. Switch between the main design 
 | **Import** | STEP · DXF · SVG |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
-| **Pen tablet** | Pressure and hover on Wayland, side buttons navigate, keys for tablet buttons (E eraser, V select, L look at) |
+| **Pen tablet** | Pressure and hover on Wayland, every tablet and pen button assignable in Settings (H640P preset, other models learn their buttons), KDE shortcuts on the same buttons ignored |
 | **Materials** | 119 in 12 groups (metal, anodized, coatings, plastic, 3D print, rubber, glass, wood, stone, fabric and leather, composites, Apple colors), 19 CC0 photo scans with relief, studio or room lighting, clear coat, end grain, contact shadow |
 | **Core** | FreeCAD with OpenCascade 8.0 and Coin 4.0.10 (built in the container) |
 | **License** | LGPL-2.1-or-later |

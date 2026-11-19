@@ -218,7 +218,10 @@ public:
     static ViewProviderScribble* editing();
     static Tool tool();
     static void setTool(Tool tool);
+    /// wie die Tasten E und V: noch einmal dasselbe Werkzeug geht zurück zum letzten Stift
+    static void toggleTool(Tool tool);
     static void setColor(const Base::Color& color);
+    static const Base::Color& color();
     /// Tinte "Schwarz" (im Dunkelmodus ohne Blatt hell dargestellt)
     static const Base::Color& ink();
     /// Kamera gerade aufs Blatt (nur im Zeichenmodus)

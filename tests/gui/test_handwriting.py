@@ -183,10 +183,11 @@ in_order([
     ("redo", lambda: Gui.runCommand("Std_Redo")),
     ("tidy again", lambda: check("redo tidies again", spread_of_bottoms(strokes(), WORDS) < 0.4 * spread_of_bottoms(saved["raw"], WORDS))),
 
-    # Grafiktablett: Seitentaste ist Navigation, auch wenn dabei die Spitze aufsetzt
+    # Grafiktablett: Seitentaste ist Navigation, auch wenn dabei die Spitze aufsetzt. Die untere Taste nimmt MyCAD
+    # selbst an (Einstellungen › Tablett, Vorschlag: Ansicht drehen), die Spitze bleibt dabei ohne Strich
     ("side button", side_button_and_tip),
-    ("no stroke", lambda: check("side button held + tip down: no stroke, left to navigation",
-                                len(s().Counts) == saved["n"] and not saved["side"] and not saved["tip"],
+    ("no stroke", lambda: check("side button held + tip down: no stroke, the side button rotates the view",
+                                len(s().Counts) == saved["n"] and saved["side"] and not saved["tip"],
                                 "strokes +%d, accepted side=%s tip=%s" % (len(s().Counts) - saved["n"], saved["side"], saved["tip"]))),
     ("hover mouse", hover_with_mouse_button),
     ("hover passes", lambda: check("pen hovering while a (remapped) mouse button is held goes on as mouse",

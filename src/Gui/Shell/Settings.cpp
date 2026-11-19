@@ -2,6 +2,7 @@
 
 #include "Settings.h"
 #include "Shell.h"
+#include "TabletKeys.h"
 #include "Theme.h"
 
 #include <App/Application.h>
@@ -61,6 +62,9 @@
 #include <QFile>
 #include <QButtonGroup>
 #include <QAbstractButton>
+#include <QElapsedTimer>
+#include <QProcess>
+#include <QTabletEvent>
 
 #include <cstring>
 #include <cerrno>
@@ -319,18 +323,51 @@ private:
     bool orbiting = false;
 };
 
+/// Tasten am Grafiktablett (Einstellungen › Tablett): was der TouchpadReader über das Tablett weiß, und wer gerade
+/// zuhört. Ist die Seite offen, leuchten nur ihre Zeilen auf, statt dass die Tasten etwas tun.
+struct TabletPad
+{
+    QString name;         ///< Gerätename von libinput, leer = keins angeschlossen (oder nicht lesbar)
+    bool denied = false;  ///< ein Tablett ist da, aber MyCAD darf es nicht lesen (udev-Regel fehlt)
+    std::function<void(const std::string& key, bool down)> listener;
+    std::function<void()> changed;
+};
+TabletPad& tabletPad()
+{
+    static TabletPad pad;
+    return pad;
+}
+/// eine Taste am Tablett ("pad1" …) oder am Stift ("penLow", "penHigh") ist gedrückt/losgelassen (TabletActions)
+void tabletKey(const std::string& key, bool down, bool pad);
+
 /// KWin behält jedes Wischen mit 3+ Fingern für sich (auch ohne Kürzel), Programme bekommen es nie. Darum liest
 /// MyCAD lesbare Touchpads selbst mit, neben KWin (wie libinput-gestures), und reicht 3-Finger-Wischen als Qt-Geste
 /// an die 3D-Ansicht unter dem Zeiger; dort dreht Trackpad oben. Lesbar macht Touchpads eine udev-Regel (uaccess,
 /// siehe jomaa.kb96trackpad.config); ohne Zugriff passiert einfach nichts.
 /// Leitet ein Compositor 3-Finger-Wischen doch weiter (z. B. Sway), verwirft der Trackpad-Filter dieses Doppel, sobald
 /// hier Wischen ankommt.
+/// Ebenso liest er die Tasten am Grafiktablett (Qt meldet sie unter Wayland nicht) für Einstellungen › Tablett; lesbar
+/// macht sie die udev-Regel, die die Seite mit "Zugriff erlauben" anlegt.
 class TouchpadReader: public QObject
 {
 public:
-    static void install()
+    static TouchpadReader& install()
     {
         static TouchpadReader reader;
+        return reader;
+    }
+    /// alle Geräte neu öffnen, z. B. nachdem die udev-Regel für Tabletts angelegt ist
+    void reconnect()
+    {
+        if (li) {
+            tabletPad().denied = false;
+            libinput_suspend(li);
+            libinput_resume(li);
+            read();
+            if (tabletPad().changed) {
+                tabletPad().changed();
+            }
+        }
     }
 
 private:
@@ -338,20 +375,31 @@ private:
     {
         static const libinput_interface io {
             [](const char* path, int flags, void* udev) -> int {
-                // nur Touchpads öffnen, nie Tastaturen (falls der Benutzer z. B. in der Gruppe input ist)
+                // nur Touchpads und die Tasten von Grafiktabletts öffnen, nie Tastaturen (falls der Benutzer z. B. in
+                // der Gruppe input ist)
                 struct stat st {};
                 if (stat(path, &st) != 0) {
                     return -errno;
                 }
                 auto dev = udev_device_new_from_devnum(static_cast<struct udev*>(udev), 'c', st.st_rdev);
-                const char* tp = dev ? udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD") : nullptr;
-                const bool touchpad = tp && std::strcmp(tp, "1") == 0;
+                const auto is = [dev](const char* property) {
+                    const char* v = dev ? udev_device_get_property_value(dev, property) : nullptr;
+                    return v && std::strcmp(v, "1") == 0;
+                };
+                const bool touchpad = is("ID_INPUT_TOUCHPAD"), pad = is("ID_INPUT_TABLET_PAD");
+                const char* name = dev ? udev_device_get_property_value(dev, "NAME") : nullptr;
+                const QString padName = pad && name ? QString::fromUtf8(name).remove(QLatin1Char('"')) : QString();
                 udev_device_unref(dev);
-                if (!touchpad) {
+                if (!touchpad && !pad) {
                     return -EPERM;
                 }
                 const int fd = ::open(path, flags | O_CLOEXEC);
-                return fd < 0 ? -errno : fd;
+                const int err = errno;
+                if (fd < 0 && pad && (err == EACCES || err == EPERM)) {
+                    tabletPad().denied = true;  // da, aber nicht lesbar: die Seite bietet "Zugriff erlauben" an
+                    tabletPad().name = padName;
+                }
+                return fd < 0 ? -err : fd;
             },
             [](int fd, void*) { ::close(fd); }};
         struct udev* udev = udev_new();
@@ -379,6 +427,22 @@ private:
                 auto g = libinput_event_get_gesture_event(e);
                 if (libinput_event_gesture_get_finger_count(g) == 3) {  // 4 Finger gehören KDE
                     swipe(type, QPointF(libinput_event_gesture_get_dx(g), libinput_event_gesture_get_dy(g)));
+                }
+            }
+            else if (type == LIBINPUT_EVENT_TABLET_PAD_BUTTON) {
+                auto p = libinput_event_get_tablet_pad_event(e);
+                tabletKey(Gui::Shell::TabletKeys::padKey(int(libinput_event_tablet_pad_get_button_number(p)) + 1),
+                          libinput_event_tablet_pad_get_button_state(p) == LIBINPUT_BUTTON_STATE_PRESSED, true);
+            }
+            else if (type == LIBINPUT_EVENT_DEVICE_ADDED || type == LIBINPUT_EVENT_DEVICE_REMOVED) {
+                libinput_device* dev = libinput_event_get_device(e);
+                if (libinput_device_has_capability(dev, LIBINPUT_DEVICE_CAP_TABLET_PAD)) {
+                    const bool added = type == LIBINPUT_EVENT_DEVICE_ADDED;
+                    tabletPad().name = added ? QString::fromUtf8(libinput_device_get_name(dev)) : QString();
+                    tabletPad().denied = tabletPad().denied && !added;
+                    if (tabletPad().changed) {
+                        tabletPad().changed();
+                    }
                 }
             }
             libinput_event_destroy(e);
@@ -433,6 +497,221 @@ bool typing()
         return true;
     }
     return qobject_cast<QLineEdit*>(f) && !qobject_cast<QAbstractSpinBox*>(f->parentWidget());
+}
+
+/// Tasten am Grafiktablett tun, was in Einstellungen › Tablett steht (TabletKeys.h): einen Befehl ausführen, oder die
+/// Ansicht drehen/verschieben, solange die Taste gedrückt ist (wie die Maustaste, mit der der Navigationsstil das tut).
+/// Tasten am Tablett liest der TouchpadReader, die Stift-Tasten kommen von Qt (Mitte = untere, Rechts = obere).
+/// Belegt KDE dieselben Tasten noch, überhört MyCAD das: das Tastenkürzel direkt nach einer selbst gelesenen
+/// Tablett-Taste, die Maustaste einer Stift-Taste, solange der Stift in Reichweite ist. Andere Programme bekommen die
+/// KDE-Belegung weiter.
+/// ponytail: angenommen, die selbst gelesene Taste kommt vor dem Kürzel von KWin an (KWin reicht es erst weiter);
+/// eine echte Taste der Tastatur in den 150 ms danach geht verloren. Kommt das Kürzel je zuerst: Tasten kurz zurückhalten.
+/// Welche Stift-Taste Qt als Mitte meldet, hängt an KDE; die Seite zeigt beim Drücken, welche Zeile es ist.
+class TabletActions: public QObject
+{
+public:
+    static TabletActions& instance()
+    {
+        static TabletActions actions;
+        return actions;
+    }
+
+    void key(const std::string& key, bool down, bool pad)
+    {
+        if (pad) {
+            quiet.start();
+        }
+        if (tabletPad().listener) {
+            tabletPad().listener(key, down);  // Einstellungen offen: nur zeigen, welche Taste es ist
+            return;
+        }
+        using Gui::Shell::TabletKeys::Kind;
+        const auto& a = Gui::Shell::TabletKeys::actionFor(Gui::Shell::TabletKeys::parse(myParams()->GetASCII("TabletKeys", "")), key);
+        if (a.kind == Kind::Command && down) {
+            run(a.command);
+        }
+        else if (a.kind == Kind::Hold) {
+            run(a.command);  // umschalten beim Drücken, zurück beim Loslassen
+        }
+        else if ((a.kind == Kind::Rotate || a.kind == Kind::Pan) && down) {
+            beginDrag(a.kind == Kind::Rotate);
+        }
+        else if ((a.kind == Kind::Rotate || a.kind == Kind::Pan) && !down) {
+            endDrag();
+        }
+    }
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (sending) {
+            return false;
+        }
+        switch (event->type()) {
+            case QEvent::TabletEnterProximity:
+                nearPen = true;
+                return false;
+            case QEvent::TabletLeaveProximity:
+                nearPen = false;
+                return false;
+            case QEvent::ShortcutOverride:
+            case QEvent::KeyPress:
+            case QEvent::KeyRelease:
+                if (quiet.isValid() && quiet.elapsed() < 150) {
+                    event->accept();  // das KDE-Kürzel der Tablett-Taste: weder als Kürzel noch als Taste
+                    return true;
+                }
+                return false;
+            case QEvent::TabletPress:
+            case QEvent::TabletRelease:
+            case QEvent::MouseButtonPress:
+            case QEvent::MouseButtonRelease:
+                return button(obj, event);
+            case QEvent::TabletMove:
+            case QEvent::MouseMove:
+                return move(obj, event);
+            default:
+                return false;
+        }
+    }
+
+private:
+    TabletActions()
+    {
+        qApp->installEventFilter(this);
+    }
+
+    static void run(const char* name)
+    {
+        if (Gui::Command* cmd = Gui::Application::Instance->commandManager().getCommandByName(name)) {
+            cmd->invoke(0);  // prüft selbst, ob der Befehl gerade geht (Scribble-Befehle nur im Scribble)
+        }
+    }
+
+    static QPointF globalOf(QEvent* event)
+    {
+        return event->type() == QEvent::TabletPress || event->type() == QEvent::TabletRelease || event->type() == QEvent::TabletMove
+            ? static_cast<QTabletEvent*>(event)->globalPosition()
+            : static_cast<QMouseEvent*>(event)->globalPosition();
+    }
+
+    /// Stift-Taste gedrückt/losgelassen: als Taste melden statt als Maustaste (sofern belegt oder die Seite offen ist)
+    bool button(QObject* obj, QEvent* event)
+    {
+        const bool tablet = event->type() == QEvent::TabletPress || event->type() == QEvent::TabletRelease;
+        const Qt::MouseButton b = tablet ? static_cast<QTabletEvent*>(event)->button() : static_cast<QMouseEvent*>(event)->button();
+        if ((b == Qt::MiddleButton || b == Qt::RightButton) && (tablet || nearPen)) {
+            const std::string which = b == Qt::MiddleButton ? "penLow" : "penHigh";
+            const bool down = event->type() == QEvent::TabletPress || event->type() == QEvent::MouseButtonPress;
+            using Gui::Shell::TabletKeys::Kind;
+            const auto& a = Gui::Shell::TabletKeys::actionFor(Gui::Shell::TabletKeys::parse(myParams()->GetASCII("TabletKeys", "")), which);
+            if (a.kind == Kind::None && !tabletPad().listener) {
+                return false;  // Nichts: wie bisher (KDE/Qt machen daraus eine Maustaste)
+            }
+            if (down != bool(penHeld & b)) {  // Tablett- und Mausereignis derselben Taste: einmal
+                penHeld.setFlag(b, down);
+                penHolding.setFlag(b, down && a.kind == Kind::Hold && !tabletPad().listener);
+                key(which, down, false);
+            }
+            event->accept();
+            return true;
+        }
+        if (!tablet || !(static_cast<QTabletEvent*>(event)->buttons() & penHolding)) {
+            return false;  // sonst bleibt es, wie Qt es meldet: Spitze mit Seitentaste ist Navigation, kein Strich
+        }
+        // Spitze aufsetzen, während eine Stift-Taste gehalten ist (Radierer, solange gedrückt): ohne die Stift-Taste
+        // weiterreichen, sonst hielte das Scribble es für Navigation
+        strip(obj, static_cast<QTabletEvent*>(event));
+        return true;
+    }
+
+    bool move(QObject* obj, QEvent* event)
+    {
+        const QPointF global = globalOf(event);
+        if (dragButton == Qt::NoButton) {
+            if (isViewport(obj)) {  // 3D-Ansicht unter dem Zeiger merken (QCursor::pos() ist unter Wayland unzuverlässig)
+                view = static_cast<QWidget*>(obj);
+                pos = view->mapFromGlobal(global);
+            }
+            if (event->type() == QEvent::TabletMove && (static_cast<QTabletEvent*>(event)->buttons() & penHolding)) {
+                strip(obj, static_cast<QTabletEvent*>(event));
+                return true;
+            }
+            return false;
+        }
+        // Ansicht drehen/verschieben: jede Bewegung (Stift in der Luft oder Maus) zieht mit der Taste des Stils
+        if (view) {
+            pos = view->mapFromGlobal(global);
+            send(QEvent::MouseMove);
+        }
+        event->accept();
+        return true;
+    }
+
+    void strip(QObject* obj, QTabletEvent* te)
+    {
+        QTabletEvent copy(te->type(), te->pointingDevice(), te->position(), te->globalPosition(), te->pressure(),
+                          te->xTilt(), te->yTilt(), te->tangentialPressure(), te->rotation(), te->z(), te->modifiers(),
+                          te->button(), te->buttons() & ~penHolding);
+        sending = true;
+        QCoreApplication::sendEvent(obj, &copy);
+        sending = false;
+        te->setAccepted(copy.isAccepted());
+    }
+
+    void beginDrag(bool rotate)
+    {
+        const std::string style = viewParams()->GetASCII("NavigationStyle", "Gui::RevitNavigationStyle");
+        Gui::Shell::TabletKeys::Drag d;
+        for (const Style& s : Styles) {
+            if (style == s.type) {
+                d = Gui::Shell::TabletKeys::drag(rotate ? s.rotate : s.pan);
+            }
+        }
+        if (!d.ok || !view || dragButton != Qt::NoButton) {
+            return;
+        }
+        dragButton = d.button == 'L' ? Qt::LeftButton : d.button == 'M' ? Qt::MiddleButton : Qt::RightButton;
+        dragModifiers = Qt::KeyboardModifiers().setFlag(Qt::ShiftModifier, d.shift).setFlag(Qt::ControlModifier, d.ctrl)
+                            .setFlag(Qt::AltModifier, d.alt);
+        send(QEvent::MouseButtonPress);
+    }
+
+    void endDrag()
+    {
+        if (dragButton != Qt::NoButton) {
+            if (view) {
+                send(QEvent::MouseButtonRelease);
+            }
+            dragButton = Qt::NoButton;
+        }
+    }
+
+    void send(QEvent::Type type)
+    {
+        const Qt::MouseButton b = type == QEvent::MouseMove ? Qt::NoButton : dragButton;
+        const Qt::MouseButtons held = type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::MouseButtons(dragButton);
+        QMouseEvent event(type, pos, view->mapToGlobal(pos), b, held, dragModifiers);
+        sending = true;
+        QApplication::sendEvent(view, &event);
+        sending = false;
+    }
+
+    QElapsedTimer quiet;  ///< seit der letzten selbst gelesenen Tablett-Taste
+    bool nearPen = false;
+    Qt::MouseButtons penHeld;
+    Qt::MouseButtons penHolding;  ///< davon mit "…, solange gedrückt": Spitze aufsetzen zeichnet bzw. radiert dann
+    QPointer<QWidget> view;
+    QPointF pos;
+    Qt::MouseButton dragButton = Qt::NoButton;
+    Qt::KeyboardModifiers dragModifiers;
+    bool sending = false;
+};
+
+void tabletKey(const std::string& key, bool down, bool pad)
+{
+    TabletActions::instance().key(key, down, pad);
 }
 
 /// Modifier-Taste -> Modifier (sonst NoModifier)
@@ -625,6 +904,7 @@ void Gui::Shell::registerSettings()
     MouseKeyMapper::instance();
     Trackpad::install();
     TouchpadReader::install();
+    TabletActions::instance();
 }
 
 namespace
@@ -778,6 +1058,9 @@ QFrame#Card { background: @materialFill; border: 1px solid @materialBorder; bord
 QFrame#Separator { background: @separator; border: none; min-height: 1px; max-height: 1px; }
 QLabel#Section, QLabel#Secondary, QLabel#Hint { color: @labelSecondary; }
 QLabel#Chip { background: @fillTertiary; border-radius: 12px; padding: 0 10px; }
+QWidget#KeyRow[pressed="true"] { background: @fillSecondary; border-radius: 8px; }
+QWidget#KeyRow[pressed="true"] QLabel#Chip { background: @accent; color: @labelOnAccent; }
+QLabel#Pressed { color: @accentText; }
 QComboBox { background: transparent; border: 2px solid transparent; border-radius: 8px; padding: 2px 8px; min-height: 22px; color: @labelSecondary; }
 QComboBox:hover { background: @fillTertiary; }
 QComboBox:focus { border-color: @focusRing; }
@@ -803,6 +1086,58 @@ QToolButton#CloseSettings:hover, QToolButton#Remove:hover { background: @fillSec
 QToolButton#CloseSettings:focus, QToolButton#Remove:focus { border-color: @focusRing; }
 )"));
 }
+/// Tablett und Stift als Zeichnung (Einstellungen › Tablett, Hero-Karte): die gedrückte Taste in Akzentfarbe, die
+/// Taste der Zeile unter der Maus mit Ring. Maße wie im Prototyp.
+/// MyStyle: kein Token für Maße der Geräte-Zeichnung
+class TabletPicture: public QWidget
+{
+public:
+    TabletPicture()
+    {
+        setFixedSize(240, 150);
+        setAccessibleName(T("Tablet and pen"));
+    }
+    int keys = 0;          ///< Tasten am Tablett
+    std::string pressed;   ///< "pad3", "penLow" …
+    std::string hovered;
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const Theme& t = theme();
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+        const auto key = [&](const QRectF& r, const std::string& id, int radius, const QString& label) {
+            p.setPen(id == hovered ? QPen(t.accentText, 2) : Qt::NoPen);
+            p.setBrush(id == pressed ? t.accent : t.fillPrimary);
+            p.drawRoundedRect(r, radius, radius);
+            if (!label.isEmpty()) {
+                p.setPen(id == pressed ? t.labelOnAccent : t.labelPrimary);
+                p.setFont(textFont(Text::Section));
+                p.drawText(r, Qt::AlignCenter, label);
+            }
+        };
+        const QRectF tablet(0.5, 11.5, 196, 128);
+        p.setPen(QPen(t.separator, 1));
+        p.setBrush(t.gray5);
+        p.drawRoundedRect(tablet, Token::RadiusTile, Token::RadiusTile);
+        p.setBrush(Qt::NoBrush);
+        p.drawRoundedRect(tablet.adjusted(36, 12, -12, -12), Token::RadiusControl, Token::RadiusControl);
+        const double step = keys > 0 ? std::min(19.0, (tablet.height() - 16) / keys) : 0;
+        for (int n = 1; n <= keys; ++n) {
+            key(QRectF(10, tablet.top() + 8 + (n - 1) * step, 18, std::min(16.0, step - 3)), Gui::Shell::TabletKeys::padKey(n),
+            Token::RadiusCheckbox, QString::number(n));
+        }
+        // Stift, leicht schräg, mit unterer und oberer Taste
+        p.translate(217, 142);
+        p.rotate(14);
+        p.setPen(Qt::NoPen);
+        p.setBrush(t.fillPrimary);
+        p.drawRoundedRect(QRectF(-7, -140, 14, 140), 7, 7);
+        key(QRectF(-5, -112, 10, 18), "penHigh", 4, QString());
+        key(QRectF(-5, -90, 10, 18), "penLow", 4, QString());
+    }
+};
 }  // namespace
 
 void Gui::Shell::showSettings()
@@ -839,7 +1174,8 @@ void Gui::Shell::showSettings()
     headLay->addWidget(title);
     headLay->addStretch();
     auto pages = new QStackedWidget;
-    auto pageSwitch = segmented({T("General"), T("Navigation"), T("Keys")}, 0, [pages](int i) { pages->setCurrentIndex(i); });
+    auto pageSwitch = segmented({T("General"), T("Navigation"), T("Keys"), T("Tablet")}, 0,
+                                [pages](int i) { pages->setCurrentIndex(i); });
     pageSwitch->setProperty("backdrop", true);  // steht auf dem Backdrop: Material statt Fill
     headLay->addWidget(pageSwitch);
     headLay->addSpacing(8);
@@ -1437,6 +1773,263 @@ void Gui::Shell::showSettings()
     keys->addLayout(addRowLay);
     keys->addStretch();
 
+    // --- Seite Tablett: Tasten am Grafiktablett und am Stift (TabletKeys.h, ausgeführt von TabletActions) ---
+    namespace TK = Gui::Shell::TabletKeys;
+    QVBoxLayout* tabletPage = newPage();
+    auto picture = new TabletPicture;
+    auto model = std::make_shared<std::string>();  // angezeigtes Modell; leer: refresh() baut beim ersten Mal die Zeilen
+    auto assignment = std::make_shared<TK::Assignment>(TK::parse(myParams()->GetASCII("TabletKeys", "")));
+    auto saveTablet = [assignment] { myParams()->SetASCII("TabletKeys", TK::format(*assignment)); };
+
+    auto tabletCard = addCard(tabletPage, T("Tablet"));
+    auto hero = new QWidget;  // Hero-Karte (MyStyle § 9.2): Zeichnung links, rechts Modell und Zustand
+    auto heroLay = new QHBoxLayout(hero);
+    heroLay->setContentsMargins(0, 4, 0, 4);
+    heroLay->setSpacing(16);
+    heroLay->addWidget(picture);
+    auto info = new QVBoxLayout;
+    info->setSpacing(6);
+    auto modelName = new QLabel;
+    setTextStyle(modelName, Text::Headline);
+    auto status = new QLabel;
+    status->setWordWrap(true);
+    setTextStyle(status, Text::Callout);
+    auto device = new QLabel;
+    device->setObjectName(QStringLiteral("Secondary"));
+    device->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    setTextStyle(device, Text::Caption);
+    auto padHint = new QLabel;
+    padHint->setObjectName(QStringLiteral("Hint"));
+    padHint->setWordWrap(true);
+    setTextStyle(padHint, Text::Caption);
+    auto allow = new QPushButton(T("Allow Access…"));
+    allow->setAutoDefault(false);
+    allow->setToolTip(T("MyCAD asks for your password once, then it may read the keys of graphics tablets (never keyboards)"));
+    info->addStretch();
+    for (QWidget* w : {static_cast<QWidget*>(modelName), static_cast<QWidget*>(status), static_cast<QWidget*>(device),
+                       static_cast<QWidget*>(padHint)}) {
+        info->addWidget(w);
+    }
+    info->addWidget(allow, 0, Qt::AlignLeft);
+    info->addStretch();
+    heroLay->addLayout(info, 1);
+    addRow(tabletCard, QString(), hero, true);
+    auto modelBox = new QComboBox;
+    QString brand;
+    for (const TK::Model& m : TK::Models) {
+        const QString b = QString::fromLatin1(m.label).section(QLatin1Char(' '), 0, 0);  // Trennlinie je Hersteller
+        if (modelBox->count() > 0 && b != brand) {
+            modelBox->insertSeparator(modelBox->count());
+        }
+        brand = b;
+        modelBox->addItem(T(m.label), QString::fromLatin1(m.id));
+    }
+    modelBox->setMaxVisibleItems(20);
+    addRow(tabletCard, T("Model"), modelBox);
+
+    // Zeilen: Chip mit der Nummer, Name, "gedrückt" und die Aktion. Eine gedrückte Taste färbt ihre Zeile (fill.secondary)
+    // und ihre Taste in der Zeichnung; über einer Zeile leuchtet ihre Taste in der Zeichnung auf.
+    struct KeyRow
+    {
+        std::string key;
+        QWidget* row;
+        QWidget* field;
+        QLabel* pressed;
+        QComboBox* action;
+    };
+    auto keyRows = std::make_shared<std::vector<KeyRow>>();
+    auto makeRow = [&, picture, assignment, saveTablet, keyRows](const std::shared_ptr<Card>& card, const std::string& key, const QString& num,
+                                                          const QString& label) {
+        auto field = new QWidget;
+        field->setObjectName(QStringLiteral("KeyRow"));
+        field->setAttribute(Qt::WA_StyledBackground);
+        auto h = new QHBoxLayout(field);
+        h->setContentsMargins(0, 0, 0, 0);
+        h->setSpacing(10);
+        auto chip = new QLabel(num);
+        chip->setObjectName(QStringLiteral("Chip"));
+        setTextStyle(chip, Text::Caption);
+        chip->setFixedHeight(Token::Chip);
+        chip->setMinimumWidth(Token::Chip);
+        chip->setAlignment(Qt::AlignCenter);
+        h->addWidget(chip);
+        auto text = new QLabel(label);
+        setTextStyle(text, Text::Body);
+        h->addWidget(text, 1);
+        auto pressed = new QLabel(T("pressed"));
+        pressed->setObjectName(QStringLiteral("Pressed"));
+        setTextStyle(pressed, Text::Caption);
+        pressed->hide();
+        h->addWidget(pressed);
+        auto box = new QComboBox;
+        int group = TK::Actions[0].group;
+        for (const TK::Action& a : TK::Actions) {
+            if (a.group != group) {
+                box->insertSeparator(box->count());
+                group = a.group;
+            }
+            box->addItem(T(a.label), QString::fromLatin1(a.id));
+        }
+        box->setMaxVisibleItems(20);
+        box->setCurrentIndex(box->findData(QString::fromLatin1(TK::actionFor(*assignment, key).id)));
+        box->setAccessibleName(label);
+        QObject::connect(box, &QComboBox::currentIndexChanged, box, [box, key, assignment, saveTablet](int i) {
+            (*assignment)[key] = box->itemData(i).toString().toStdString();
+            saveTablet();
+        });
+        h->addWidget(box);
+        new EventHook(field, QEvent::Enter, [picture, key] {
+            picture->hovered = key;
+            picture->update();
+        });
+        new EventHook(field, QEvent::Leave, [picture] {
+            picture->hovered.clear();
+            picture->update();
+        });
+        keyRows->push_back({key, addRow(card, QString(), field, true), field, pressed, box});
+    };
+
+    auto tabletKeysCard = addCard(tabletPage, T("Keys on the Tablet"));
+    auto padEmpty = new QLabel(T("No keys yet. Press each key on the tablet once, then its row appears here."));
+    padEmpty->setObjectName(QStringLiteral("Secondary"));
+    padEmpty->setWordWrap(true);
+    padEmpty->setContentsMargins(0, 12, 0, 12);
+    tabletKeysCard->rows->addWidget(padEmpty);
+    // so viele Zeilen, wie das Modell Tasten hat; unbekannte Modelle lernen sie beim Drücken
+    auto padCount = [model] {
+        const TK::Model& m = TK::model(*model);
+        return m.buttons > 0 ? m.buttons : int(myParams()->GetInt("TabletKeysSeen", 0));
+    };
+    auto buildPadRows = [&, keyRows, tabletKeysCard, padEmpty, picture, padCount] {
+        std::erase_if(*keyRows, [](const KeyRow& r) {
+            if (r.key.rfind("pad", 0) == 0) {
+                delete r.row;
+                return true;
+            }
+            return false;
+        });
+        tabletKeysCard->first = true;
+        const int n = padCount();
+        for (int k = 1; k <= n; ++k) {
+            makeRow(tabletKeysCard, TK::padKey(k), QString::number(k), T("Key %1").arg(k));
+        }
+        padEmpty->setVisible(n == 0);
+        picture->keys = n;
+        picture->update();
+    };
+    auto tabletPenCard = addCard(tabletPage, T("Keys on the Pen"));
+    makeRow(tabletPenCard, "penLow", QStringLiteral("1"), T("Lower Button"));
+    makeRow(tabletPenCard, "penHigh", QStringLiteral("2"), T("Upper Button"));
+    tabletPage->addWidget(hint(T("Rotate and pan the view work while the key is held. Eraser switches over, a second press "
+                                 "brings back the pen.")));
+    auto restoreLay = new QHBoxLayout;
+    restoreLay->setContentsMargins(16, 4, 16, 0);
+    auto restore = new QPushButton(T("Restore Suggestion"));
+    restore->setAutoDefault(false);
+    QObject::connect(restore, &QPushButton::clicked, restore, [assignment, saveTablet, keyRows] {
+        assignment->clear();
+        saveTablet();
+        for (const KeyRow& r : *keyRows) {
+            QSignalBlocker block(r.action);
+            r.action->setCurrentIndex(r.action->findData(QString::fromLatin1(TK::actionFor({}, r.key).id)));
+        }
+    });
+    restoreLay->addWidget(restore);
+    restoreLay->addStretch();
+    tabletPage->addLayout(restoreLay);
+    tabletPage->addWidget(hint(T("If KDE still maps these keys to shortcuts or mouse buttons, MyCAD ignores what KDE sends "
+                                 "right after a key it read itself, so nothing happens twice. Other programs keep the KDE mapping.")));
+    tabletPage->addStretch();
+
+    // Zustand: angeschlossen, nicht lesbar (dann "Zugriff erlauben"), kein Tablett; ein erkanntes Modell wird vorgewählt,
+    // solange keins gewählt ist
+    auto refresh = [&, model, modelBox, buildPadRows] {
+        const TabletPad& pad = tabletPad();
+        status->setText(pad.denied          ? T("Connected, but MyCAD can't read its keys yet.")
+                        : pad.name.isEmpty() ? T("No tablet connected")
+                                             : T("Connected"));
+        allow->setVisible(pad.denied);
+        device->setText(pad.name);
+        device->setVisible(!pad.name.isEmpty());
+        const std::string chosen = myParams()->GetASCII("TabletModel", "");
+        const std::string shown = !chosen.empty() ? chosen : TK::detect(pad.name.toStdString()).id;
+        if (shown != *model) {
+            *model = shown;
+            QSignalBlocker block(modelBox);
+            modelBox->setCurrentIndex(modelBox->findData(QString::fromStdString(shown)));
+            buildPadRows();
+        }
+        const TK::Model& m = TK::model(*model);
+        modelName->setText(T(m.label));
+        padHint->setText(m.buttons > 0 ? T("Press a key on the tablet or pen: its row lights up.")
+                                       : T("MyCAD doesn't know the keys of this model yet. Press each key once, then its row appears."));
+    };
+    QObject::connect(modelBox, &QComboBox::currentIndexChanged, modelBox, [modelBox, refresh](int i) {
+        myParams()->SetASCII("TabletModel", modelBox->itemData(i).toString().toStdString());
+        refresh();
+    });
+    // Zugriff: dieselbe Art Regel wie für Touchpads (uaccess für den angemeldeten Benutzer), nur für die Tasten-Geräte
+    // von Tabletts, nie für Tastaturen. pkexec fragt nach dem Passwort; danach öffnet der Reader die Geräte neu.
+    QObject::connect(allow, &QPushButton::clicked, allow, [allow, &dlg] {
+        const QString rule = QStringLiteral(
+            R"(ACTION!="remove", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_TABLET_PAD}=="1", TAG+="uaccess")");
+        auto proc = new QProcess(&dlg);
+        allow->setEnabled(false);
+        const auto done = [proc, allow](bool ok) {
+            proc->deleteLater();
+            allow->setEnabled(true);
+            if (ok) {
+                QTimer::singleShot(500, allow, [] { TouchpadReader::install().reconnect(); });  // bis udev die Rechte setzt
+            }
+        };
+        QObject::connect(proc, &QProcess::finished, allow, [done](int code, QProcess::ExitStatus st) {
+            done(code == 0 && st == QProcess::NormalExit);
+        });
+        QObject::connect(proc, &QProcess::errorOccurred, allow, [done](QProcess::ProcessError e) {
+            if (e == QProcess::FailedToStart) {
+                done(false);
+            }
+        });
+        proc->start(QStringLiteral("pkexec"),
+                    {QStringLiteral("sh"), QStringLiteral("-c"),
+                     QStringLiteral("printf '%s\\n' \"$1\" > /etc/udev/rules.d/70-mycad-tablet.rules"
+                                    " && udevadm control --reload && udevadm trigger --subsystem-match=input"),
+                     QStringLiteral("sh"), rule});
+    });
+    // eine Taste drücken: ihre Zeile und ihre Taste leuchten kurz auf (die Tasten tun dabei nichts)
+    auto flashes = std::make_shared<int>(0);
+    tabletPad().listener = [&, keyRows, picture, model, flashes, buildPadRows](const std::string& key, bool down) {
+        if (!down) {
+            return;
+        }
+        if (key.rfind("pad", 0) == 0 && TK::model(*model).buttons == 0) {
+            const int n = std::atoi(key.c_str() + 3);
+            if (n > myParams()->GetInt("TabletKeysSeen", 0)) {  // unbekanntes Modell: die Taste bekommt eine Zeile
+                myParams()->SetInt("TabletKeysSeen", n);
+                buildPadRows();
+            }
+        }
+        const int flash = ++*flashes;
+        const auto light = [keyRows, picture](const std::string& on) {
+            for (const KeyRow& r : *keyRows) {
+                r.field->setProperty("pressed", r.key == on);
+                r.field->style()->unpolish(r.field);
+                r.field->style()->polish(r.field);
+                r.pressed->setVisible(r.key == on);
+            }
+            picture->pressed = on;
+            picture->update();
+        };
+        light(key);
+        QTimer::singleShot(1600, picture, [light, flashes, flash] {
+            if (*flashes == flash) {
+                light({});
+            }
+        });
+    };
+    tabletPad().changed = refresh;
+    refresh();
+
     updateStyle();
     // so hoch wie die längste Seite, höchstens so hoch wie der Bildschirm (dann rollt die Seite); ohne das zeigte Qt
     // den Dialog in der Mindesthöhe der Rollflächen
@@ -1445,4 +2038,6 @@ void Gui::Shell::showSettings()
     window->setFocusPolicy(Qt::ClickFocus);  // kein Fokusring beim Öffnen; Tab führt zu den Bedienelementen
     window->setFocus();
     dlg.exec();
+    tabletPad().listener = nullptr;  // die Seite ist zu: Tablett-Tasten tun wieder, was belegt ist
+    tabletPad().changed = nullptr;
 }

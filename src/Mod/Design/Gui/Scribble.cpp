@@ -722,8 +722,7 @@ protected:
                         d->vp->lookAtSheet();
                     }
                     else {
-                        const Tool tool = key == Qt::Key_E ? Tool::Eraser : Tool::Select;
-                        ViewProviderScribble::setTool(currentTool == tool ? lastDrawTool : tool);
+                        ViewProviderScribble::toggleTool(key == Qt::Key_E ? Tool::Eraser : Tool::Select);
                     }
                 }
                 event->accept();
@@ -2203,6 +2202,16 @@ void ViewProviderScribble::setTool(Tool tool)
         }
     }
     syncActions();
+}
+
+void ViewProviderScribble::toggleTool(Tool tool)
+{
+    setTool(currentTool == tool ? lastDrawTool : tool);
+}
+
+const Base::Color& ViewProviderScribble::color()
+{
+    return currentColor;
 }
 
 void ViewProviderScribble::setColor(const Base::Color& color)
