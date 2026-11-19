@@ -543,7 +543,7 @@ Rendering-Workspace, Simulation, Cloud-Zusammenarbeit, Windows/macOS.
 
 | Nr. | Paket | Kern | Aufwand | Status |
 |---|---|---|---|---|
-| 12.0 | README neu | Botschaft vorn, Wechselgründe, ehrlich was fehlt; Funktionen nach Nutzen statt nach Menü | S | offen |
+| 12.0 | README neu | Botschaft vorn, Wechselgründe, ehrlich was fehlt; Funktionen nach Nutzen statt nach Menü | S | erledigt 2026-11-19: Kopf „Fusion-style CAD. Native on Linux. Local. No subscription. Made for 3D printing.“ (Marke Fusion nur beschreibend), „Why MyCAD.“ mit fünf Wechselgründen, Abschnitte nach Nutzen (Druck, Versionen, Hilfe vorn; Liquid Glass hinten), „Coming next.“ ehrlich als geplant, Plattform/Import/Download ehrlich (AppImage nur Arch); Wiki-Startseite gleich |
 | 12.0b | Anleitung Flathub | `docs/FLATHUB.md`: Manifest, App-ID, Metainfo, Sandbox (Wayland, GPU, Tablett, Slicer), Abhängigkeiten aus den Quellen, Einreichen, Pflege | S | offen |
 | 12.1 | Mesh-Brücke | Stufe 1: STL/3MF/OBJ als Referenz öffnen (halbtransparent, fangen, messen, Skizze auf Mesh-Ebene). Stufe 2: Ebenen, Zylinder, Kegel erkennen (RANSAC) und als Features übernehmen. Stufe 3 (Forschung): einfache Meshes werden Körper | L | offen |
 | 12.2 | Kontext-Leiste | Glas-Kapsel an der Auswahl mit 4–6 passenden Werkzeugen + „Mehr…“ (Strg+K gefiltert); auf dem Grafiktablett als Radialmenü auf einer Stift-Taste | M | offen |

@@ -2,10 +2,10 @@
 
 # MyCAD
 
-### Pro CAD. Featherlight.
+### Fusion-style CAD. Native on Linux.
 
-Sketch. Extrude. Done.<br>
-The workflow of Fusion 360 with the look of Liquid Glass. Built for Linux.
+Local. No subscription. Made for 3D printing.<br>
+Sketch, extrude, print: the workflow you know from Fusion 360, with the look of Liquid Glass.
 
 <br>
 
@@ -17,15 +17,13 @@ The workflow of Fusion 360 with the look of Liquid Glass. Built for Linux.
 
 <br>
 
-## Liquid Glass. Down to the last pixel.
+## Why MyCAD.
 
-Every surface in MyCAD is made of glass. The toolbar, browser, window buttons and inspector float above your model, so you can still see the model behind them. A custom GPU shader blurs the background, bends it at the edges like a real lens, and adds a thin highlight and a soft shadow. It all runs in real time while you orbit.
-
-The **Liquid Glass** slider in Settings works like the one in iOS 27: slide it from **Ultra Clear** to see more of your design through the glass, or towards **Tinted** for a denser, easier-to-read glass. **Default** sits in the middle.
-
-MyCAD comes in **Light** and **Dark**. **Automatic** follows your desktop. Dark mode is made for modeling: a calm dark-gray background instead of black, white lines for fully constrained sketches, and a subtle grid. Increase Contrast, Reduce Transparency and Reduce Motion are built in.
-
-Messages show up as floating glass alerts with no window frame and capsule-shaped buttons. Corners are rounded concentrically and icons are monochrome.
+- **Runs on Linux, for real.** Not in a virtual machine, not in a browser tab. Wayland, your GPU, pen tablets and touchpad gestures, all native.
+- **Your files stay yours.** Designs live in a folder on your disk. MyCAD saves after every step and keeps versions the way Time Machine keeps backups. No cloud, no account, no subscription, and no limit on how many designs you can edit.
+- **Made for 3D printing.** Print View shows overhangs and thin walls and fixes them in a click. Fits know the play a printed part needs, threads print, **Screw Here** adds the holes for screws and heat-set inserts, and **Print** hands the part to your slicer.
+- **It helps instead of blaming.** A fillet too big? MyCAD offers the largest one that works. About to delete something other steps need? It tells you first. Double-click a face to change the number behind it.
+- **Works like Fusion 360.** Sketches with profiles, a global timeline, components and joints, the same tool names. If you know Fusion, you already know your way around.
 
 <br>
 
@@ -63,6 +61,28 @@ Every step goes into the **Timeline**. Go back, change a dimension, and the rest
 
 <br>
 
+## Made for makers.
+
+**Print View** shows on the model what your printer will struggle with: overhangs hatched red, faces on the bed dotted green, walls that are too thin cross-hatched yellow. Under **Make printable** it offers the fix, one click each: a sideways hole becomes a teardrop that needs no supports, a fillet chamfers its bottom edges at 45°, a thin wall grows to the minimum. Pick the face that should lie on the bed, then hit **Print**: MyCAD finds **OrcaSlicer**, **Bambu Studio**, **PrusaSlicer** or **UltiMaker Cura**, installed as a program, a **Flatpak** or an AppImage, and opens your design there as a colored 3MF, right side down.
+
+![Print View](src/Gui/Shell/help/images/Design_PrintView.gif)
+
+**Fit** makes a hole and its pin fit: with a little play for printing (tight, normal, loose) or exactly to ISO 286 (H7/g6, H7/h6, H7/k6, H7/p6, H8/f7), with the resulting play shown in microns. **Screw Here** joins two parts in one click: a clearance hole with counterbore or countersink in the top part, and a tapped hole, a hole for a heat-set insert or a nut trap in the bottom part, with the screw length picked from the standard. Threads have a 3D print setting that adds the play and warns when the pitch is too fine for a 0.4 mm nozzle.
+
+<br>
+
+## Never lose a thing.
+
+There is no save button to forget. MyCAD saves after every step, as soon as you pause for two seconds, and a new design gets its own folder in your projects folder. Closing never asks. If something crashes, at most the last two seconds are missing.
+
+Every saved state becomes a **version**, kept like Time Machine keeps backups: everything from the last day, then one per hour for a week, then one per day. **Ctrl+S** gives the current state a name. Open any version, **compare** it with today as a ghost over your model (added in green, removed in red, plus the list of changed steps), or **restore** it, which never deletes anything.
+
+Want to try something risky? Make a **variant**. Switch between the main design and its variants right in the browser, compare them, and make a variant the main design when it wins.
+
+![Versions and variants](src/Gui/Shell/help/images/Design_Versions.gif)
+
+<br>
+
 ## Double-click a face. Change a number.
 
 Double-click any face with no tool active and the dimensions that make it appear right next to it: the length of an extrusion, the sketch dimension behind a side face, the diameter of a hole, the radius of a fillet. Type a new value, press Enter, done. If the dimension is a parameter, the parameter changes, and so does the note it lives in.
@@ -74,24 +94,6 @@ Double-click any face with no tool active and the dimensions that make it appear
 ## Errors that explain themselves.
 
 A fillet too big for its edge? The step turns red in the timeline, the panel says what went wrong in plain words, and it offers the largest radius that still works. One click sets it. The same goes for shells, threads, revolve axes and screws that are too short. When the model changes under a step and an edge might no longer be the one you meant, MyCAD picks the closest match, marks the step, and lets you check it.
-
-<br>
-
-## Find anything. Ctrl+K.
-
-Press **Ctrl+K** and type. The search finds commands, bodies and sketches, forgives typos, and understands English, German and the words other CAD programs use: *pocket*, *pad*, *push pull*, *Gewinde*, *Passung*, *slicer*. The ones you used last are at the top. It even takes a sentence: *4 holes M3 in the corners, 5 mm from the edge* shows up as the first hit, and Enter opens exactly that, with a preview. *All edges 1 mm chamfer*, *edges 2 mm fillet*, *6 holes M4 on a 40 mm circle* and *5 holes M3 in a row, 10 mm apart* work too, in English or German.
-
-![Search](src/Gui/Shell/help/images/search.gif)
-
-<br>
-
-## Parts that fit together.
-
-Create **components** and connect them with **joints**. Each component has its own bodies, sketches and origin, and all of it lives in a single design file.
-
-Joints come as **Rigid**, **Revolute**, **Slider**, **Cylindrical**, **Pin-Slot**, **Planar** and **Ball**, with limits for angle and travel. **Animate** swings a joint between its limits and shows when parts collide. Chains follow along, and **closed loops** like a four-bar linkage are solved together: the first joint drives, the others follow. **Measure** gives you the mass, material and center of mass of a body, with the material taken from its appearance. For a quick check you don't even need the tool: select two faces, edges or points and their distance (or angle) shows right next to them; click it and it becomes a parameter.
-
-![Joint](src/Gui/Shell/help/images/Design_Joint.gif)
 
 <br>
 
@@ -112,6 +114,24 @@ And it is your parameter list. Write `Wall = 2 mm` and press Enter: that's a par
 Closed a note? It's still under **Notes** in the browser, double-click to open it again. Notes are saved in the design file, so they're still there next time you open it.
 
 ![Note](src/Gui/Shell/help/images/Design_Note.gif)
+
+<br>
+
+## Find anything. Ctrl+K.
+
+Press **Ctrl+K** and type. The search finds commands, bodies and sketches, forgives typos, and understands English, German and the words other CAD programs use: *pocket*, *pad*, *push pull*, *Gewinde*, *Passung*, *slicer*. The ones you used last are at the top. It even takes a sentence: *4 holes M3 in the corners, 5 mm from the edge* shows up as the first hit, and Enter opens exactly that, with a preview. *All edges 1 mm chamfer*, *edges 2 mm fillet*, *6 holes M4 on a 40 mm circle* and *5 holes M3 in a row, 10 mm apart* work too, in English or German.
+
+![Search](src/Gui/Shell/help/images/search.gif)
+
+<br>
+
+## Parts that fit together.
+
+Create **components** and connect them with **joints**. Each component has its own bodies, sketches and origin, and all of it lives in a single design file.
+
+Joints come as **Rigid**, **Revolute**, **Slider**, **Cylindrical**, **Pin-Slot**, **Planar** and **Ball**, with limits for angle and travel. **Animate** swings a joint between its limits and shows when parts collide. Chains follow along, and **closed loops** like a four-bar linkage are solved together: the first joint drives, the others follow. **Measure** gives you the mass, material and center of mass of a body, with the material taken from its appearance. For a quick check you don't even need the tool: select two faces, edges or points and their distance (or angle) shows right next to them; click it and it becomes a parameter.
+
+![Joint](src/Gui/Shell/help/images/Design_Joint.gif)
 
 <br>
 
@@ -163,20 +183,6 @@ The red pen knows fillets (`R2`), chamfers (`C2`, `2×45°`), press-pull (`+5`, 
 
 <br>
 
-## Everything at a glance.
-
-<div align="center">
-
-![MyCAD start page](docs/images/start.png)
-
-</div>
-
-The start page lists your recent designs and everything in your project folder, each with a large preview. Type a few letters into the search box to find a part, then click it to pick up where you left off. Right-click a design to rename it (its project folder and versions follow) or move it to the trash. **Home** at the top right brings you back here at any time, and the back arrow next to it returns you to your design.
-
-![Start page](src/Gui/Shell/help/images/file_start_page.gif)
-
-<br>
-
 ## Your hands. Your rules.
 
 Choose from twelve navigation styles, including **Fusion 360**, **SolidWorks**, **Blender**, **Siemens NX** and **Touchpad**. MyCAD shows you which key or gesture orbits, pans, zooms and selects in the style you picked.
@@ -189,9 +195,15 @@ Pen tablets work on Wayland with pressure and hover. **Tablet** in Settings give
 
 <br>
 
-## Speaks your language.
+## Liquid Glass. Down to the last pixel.
 
-Switch to **Deutsch** in the settings and MyCAD is in German, from the toolbar down to the error messages. The terms are the ones you know from the German version of Fusion 360 (Extrudieren, Drehen, Abrunden, Bohrung, Gelenk), and new sketches and bodies are called Skizze1 and Körper1.
+Every surface in MyCAD is made of glass. The toolbar, browser, window buttons and inspector float above your model, so you can still see the model behind them. A custom GPU shader blurs the background, bends it at the edges like a real lens, and adds a thin highlight and a soft shadow. It all runs in real time while you orbit.
+
+The **Liquid Glass** slider in Settings works like the one in iOS 27: slide it from **Ultra Clear** to see more of your design through the glass, or towards **Tinted** for a denser, easier-to-read glass. **Default** sits in the middle.
+
+MyCAD comes in **Light** and **Dark**. **Automatic** follows your desktop. Dark mode is made for modeling: a calm dark-gray background instead of black, white lines for fully constrained sketches, and a subtle grid. Increase Contrast, Reduce Transparency and Reduce Motion are built in.
+
+Messages show up as floating glass alerts with no window frame and capsule-shaped buttons. Corners are rounded concentrically and icons are monochrome.
 
 <br>
 
@@ -213,25 +225,23 @@ The woods, stone, leather, cork, fabric, carbon and brushed metals are real phot
 
 <br>
 
-## Made for makers.
+## Speaks your language.
 
-**Print View** shows on the model what your printer will struggle with: overhangs hatched red, faces on the bed dotted green, walls that are too thin cross-hatched yellow. Under **Make printable** it offers the fix, one click each: a sideways hole becomes a teardrop that needs no supports, a fillet chamfers its bottom edges at 45°, a thin wall grows to the minimum. Pick the face that should lie on the bed, then hit **Print**: MyCAD finds **OrcaSlicer**, **Bambu Studio**, **PrusaSlicer** or **UltiMaker Cura**, installed as a program, a **Flatpak** or an AppImage, and opens your design there as a colored 3MF, right side down.
-
-![Print View](src/Gui/Shell/help/images/Design_PrintView.gif)
-
-**Fit** makes a hole and its pin fit: with a little play for printing (tight, normal, loose) or exactly to ISO 286 (H7/g6, H7/h6, H7/k6, H7/p6, H8/f7), with the resulting play shown in microns. **Screw Here** joins two parts in one click: a clearance hole with counterbore or countersink in the top part, and a tapped hole, a hole for a heat-set insert or a nut trap in the bottom part, with the screw length picked from the standard. Threads have a 3D print setting that adds the play and warns when the pitch is too fine for a 0.4 mm nozzle.
+Switch to **Deutsch** in the settings and MyCAD is in German, from the toolbar down to the error messages. The terms are the ones you know from the German version of Fusion 360 (Extrudieren, Drehen, Abrunden, Bohrung, Gelenk), and new sketches and bodies are called Skizze1 and Körper1.
 
 <br>
 
-## Never lose a thing.
+## Everything at a glance.
 
-There is no save button to forget. MyCAD saves after every step, as soon as you pause for two seconds, and a new design gets its own folder in your projects folder. Closing never asks. If something crashes, at most the last two seconds are missing.
+<div align="center">
 
-Every saved state becomes a **version**, kept like Time Machine keeps backups: everything from the last day, then one per hour for a week, then one per day. **Ctrl+S** gives the current state a name. Open any version, **compare** it with today as a ghost over your model (added in green, removed in red, plus the list of changed steps), or **restore** it, which never deletes anything.
+![MyCAD start page](docs/images/start.png)
 
-Want to try something risky? Make a **variant**. Switch between the main design and its variants right in the browser, compare them, and make a variant the main design when it wins.
+</div>
 
-![Versions and variants](src/Gui/Shell/help/images/Design_Versions.gif)
+The start page lists your recent designs and everything in your project folder, each with a large preview. Type a few letters into the search box to find a part, then click it to pick up where you left off. Right-click a design to rename it (its project folder and versions follow) or move it to the trash. **Home** at the top right brings you back here at any time, and the back arrow next to it returns you to your design.
+
+![Start page](src/Gui/Shell/help/images/file_start_page.gif)
 
 <br>
 
@@ -243,11 +253,24 @@ Want to try something risky? Make a **variant**. Switch between the main design 
 
 <br>
 
+## Coming next.
+
+MyCAD is young and grows fast. This is what comes next, roughly in this order (details in the [roadmap](docs/PLAN.md)):
+
+- **Open STL, 3MF and OBJ** as a reference you can snap to and measure, with holes and flat faces recognized as real features. For remixing and spare parts.
+- **Tools at your selection.** The handful of tools that fit what you picked appear right next to it, and the toolbar shrinks to one calm row.
+- **Your printer, measured.** Print a small test piece once, click what fits, and every fit, hole and thread uses the real play of your printer.
+- **Workshop sheet.** One click makes a PDF with views, a table of holes, threads and fits, and the main dimensions, ready for whoever machines the part.
+- **Flathub**, so MyCAD installs on any Linux.
+- Standard parts as real bodies (screws, nuts, bearings, magnets), gears and hinges, multi-color painting for AMS and MMU printers, splitting parts that are too big for the bed, and a local assistant that turns a sentence into steps, offline.
+
+<br>
+
 ## Tech specs
 
 | | |
 |---|---|
-| **Platform** | Linux, developed and tested on CachyOS with KDE Plasma (Wayland) |
+| **Platform** | Linux, developed and tested on CachyOS with KDE Plasma (Wayland); the AppImage needs an Arch-based system for now, Flathub is coming |
 | **Interface** | Liquid Glass with a GPU glass shader, light and dark mode, English or German |
 | **Model** | Parametric, with a global timeline (reorder, groups, roll back), components and joints |
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
@@ -261,7 +284,7 @@ Want to try something risky? Make a **variant**. Switch between the main design 
 | **Search** | Ctrl+K for commands, bodies and sketches, typo-tolerant, English and German |
 | **Scribbles** | Pen tablet with pressure, 7 shapes, fill, text, select and move with a color and delete bar, sheets in 3D, convert to sketch, handwriting tidy-up, offline handwriting recognition (find, CAD notation, written dimensions), Only the Sheet mode |
 | **Export** | STL · 3MF (with colors) · STEP (with colors) · DXF (sketches) |
-| **Import** | STEP · DXF · SVG |
+| **Import** | STEP · DXF · SVG · photos (traced into a sketch) |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
 | **Pen tablet** | Pressure and hover on Wayland, every tablet and pen button assignable in Settings (H640P preset, other models learn their buttons), KDE shortcuts on the same buttons ignored |
@@ -280,7 +303,7 @@ chmod +x MyCAD-*-x86_64.AppImage
 ./MyCAD-*-x86_64.AppImage
 ```
 
-The AppImage is built for current Arch-based systems such as CachyOS.
+The AppImage is built for current Arch-based systems such as CachyOS. On Ubuntu, Fedora and other distributions, build it yourself (below) until MyCAD is on Flathub.
 
 <br>
 
