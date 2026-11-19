@@ -1406,6 +1406,9 @@ void Gui::Shell::showSettings()
     auto names = new Switch(myParams()->GetBool("ToolNames", false));
     QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
     addRow(lookCard, T("Show tool names"), names);
+    // 12.3: kompakt = häufigste Werkzeuge + Kategorien, vollständig = alle Werkzeuge wie bisher
+    addRow(lookCard, T("Toolbar"), segmented({T("Compact"), T("All Tools")}, myParams()->GetBool("ToolbarFull", false) ? 1 : 0,
+                                             [](int i) { Gui::Shell::setFullToolbar(i == 1); }));
     // Kontext-Leiste (12.2): die passenden Werkzeuge schweben über der Auswahl
     toggle(lookCard, T("Tools at the selection"), myParams()->GetBool("ContextBar", true),
            [](bool on) { myParams()->SetBool("ContextBar", on); });
@@ -1465,8 +1468,61 @@ void Gui::Shell::showSettings()
         }
     });
     addRow(generalCard, T("Projects folder"), folder);
+    auto version = new QLabel(Gui::Shell::version());
+    version->setTextInteractionFlags(Qt::TextSelectableByMouse);  // zum Kopieren in Fehlerberichte
+    addRow(generalCard, T("Version"), version);
+
+    // --- 3D-Druck (12.4): Testteil einmal drucken, anklicken, was gepasst hat (DesignCalibrate); daraus Spiel,
+    // Überhanggrenze und kleinste Wand, die Passung, Gewinde und Druckansicht lesen. Darunter die Werte zum Feinstellen
+    auto printCard = addCard(general, T("3D Printing"));
+    auto testPiece = new QPushButton(T("Make Test Piece"));
+    testPiece->setAutoDefault(false);
+    testPiece->setToolTip(T("Opens a new design with a fit plate, a pin and a plate with overhangs and thin walls"));
+    QObject::connect(testPiece, &QPushButton::clicked, &dlg, [&dlg] {
+        dlg.accept();
+        QTimer::singleShot(0, [] { Gui::Application::Instance->commandManager().runCommandByName("Design_PrinterTest"); });
+    });
+    addRow(printCard, T("Test piece"), testPiece);
+    auto fields = std::make_shared<std::map<std::string, QDoubleSpinBox*>>();  // Feinstellung unten, folgt den Antworten
+    // eine Frage als Segmente; values: was DesignCalibrate.apply(arg=…) je Segment bekommt
+    auto answer = [&addRow, &printCard, fields](const QString& label, const QStringList& items, const QStringList& values,
+                                                int current, const char* arg) {
+        addRow(printCard, label, segmented(items, current, [fields, values, arg](int i) {
+                   try {
+                       Base::PyGILStateLocker lock;
+                       Base::Interpreter().runString(QStringLiteral("import DesignCalibrate\nDesignCalibrate.apply(%1=%2)")
+                                                         .arg(QLatin1String(arg), values[i]).toUtf8().constData());
+                   }
+                   catch (const Base::Exception& e) {
+                       e.reportException();
+                   }
+                   for (const auto& [key, box] : *fields) {
+                       box->setValue(myParams()->GetFloat(key.c_str(), box->value()));
+                   }
+               }));
+    };
+    // wie im Testteil (DesignCalibrate: CLEARANCES, ANGLES, WALLS); markiert ist, was gerade eingestellt ist
+    QStringList holes, angles, angleValues, walls, wallValues;
+    int holeNow = -1, angleNow = -1, wallNow = -1;
+    for (int i = 0; i < 8; ++i) {
+        holes << QString::number(i + 1);
+        holeNow = std::abs(myParams()->GetFloat("PrintFitNormal", 0.2) - 0.05 * (i + 1)) < 1e-6 ? i : holeNow;
+    }
+    for (int i = 0; i < 5; ++i) {
+        const int angle = 30 + 10 * i;
+        const double wall = 0.4 + 0.2 * i;
+        angles << QStringLiteral("%1°").arg(angle);
+        angleValues << QString::number(angle);
+        walls << QLocale().toString(wall, 'f', 1);
+        wallValues << QString::number(wall, 'f', 1);
+        angleNow = std::abs(myParams()->GetFloat("OverhangAngle", 45) - angle) < 1e-6 ? i : angleNow;
+        wallNow = std::abs(myParams()->GetFloat("MinWall", 0.8) - wall) < 1e-6 ? i : wallNow;
+    }
+    answer(T("Pin slides into hole"), holes, holes, holeNow, "hole");
+    answer(T("Last clean overhang"), angles, angleValues, angleNow, "angle");
+    answer(T("Thinnest full wall (mm)"), walls, wallValues, wallNow, "wall");
     // Wie fein gekrümmte Flächen beim Export als STL/3MF in Dreiecke zerlegt werden (DesignExport.QUALITY)
-    addRow(generalCard, T("Export resolution"),
+    addRow(printCard, T("Export resolution"),
            segmented({T("Coarse"), T("Normal"), T("Fine")}, int(myParams()->GetInt("ExportQuality", 1)),
                      [](int i) { myParams()->SetInt("ExportQuality", i); }));
     // Slicer für Drucken (Design_Print merkt sich die erste Wahl); zu wählen gibt es erst mit mehreren installierten
@@ -1485,7 +1541,7 @@ void Gui::Shell::showSettings()
         slicer->setCurrentIndex(int(slicers.indexOf(QString::fromStdString(myParams()->GetASCII("Slicer", "")))));
         QObject::connect(slicer, &QComboBox::currentTextChanged, slicer,
                          [](const QString& name) { myParams()->SetASCII("Slicer", name.toStdString()); });
-        addRow(generalCard, T("Slicer"), slicer);
+        addRow(printCard, T("Slicer"), slicer);
     }
     // Spiel je Seite für die Passungen "3D-Druck eng/normal/locker" (Design::Fitting, Idee 4); je eine Zeile wie die
     // anderen Zahlenfelder: alle drei in einer Zeile ließen dem Label keinen Platz, es wurde abgeschnitten
@@ -1499,7 +1555,8 @@ void Gui::Shell::showSettings()
         box->setSuffix(QStringLiteral(" mm"));
         box->setValue(myParams()->GetFloat(plays[i][0], 0.1 * (i + 1)));
         QObject::connect(box, &QDoubleSpinBox::valueChanged, box, [key = plays[i][0]](double v) { myParams()->SetFloat(key, v); });
-        addRow(generalCard, T(plays[i][1]), box);
+        addRow(printCard, T(plays[i][1]), box);
+        (*fields)[plays[i][0]] = box;
     }
     // Grenzen der Druckansicht (Design::printCheck): Überhang in Grad, kleinste Wand in mm
     for (const auto& [key, label, fallback, suffix, top] :
@@ -1511,11 +1568,10 @@ void Gui::Shell::showSettings()
         box->setSuffix(QString::fromUtf8(suffix));
         box->setValue(myParams()->GetFloat(key, fallback));
         QObject::connect(box, &QDoubleSpinBox::valueChanged, box, [key](double v) { myParams()->SetFloat(key, v); });
-        addRow(generalCard, T(label), box);
+        addRow(printCard, T(label), box);
+        (*fields)[key] = box;
     }
-    auto version = new QLabel(Gui::Shell::version());
-    version->setTextInteractionFlags(Qt::TextSelectableByMouse);  // zum Kopieren in Fehlerberichte
-    addRow(generalCard, T("Version"), version);
+    general->addWidget(hint(T("Print the test piece once and click what fit. Fit, Thread and Print View use these values.")));
     general->addStretch();
 
     // --- Seite Navigation ---

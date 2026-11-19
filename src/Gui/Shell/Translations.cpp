@@ -121,6 +121,10 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Step Forward", "Einen Schritt vor"},
         {"Go to End", "Zum Ende"},
         {"Show tool names", "Werkzeugnamen anzeigen"},
+        {"Toolbar", "Werkzeugleiste"},
+        {"Compact", "Kompakt"},
+        {"All Tools", "Alle Werkzeuge"},
+        {"PRINT", "DRUCKEN"},
         {"Body material", "Körpermaterial"},
         {"Designs in this folder appear on the start page; Save starts here", "Designs in diesem Ordner erscheinen auf der Startseite; Speichern beginnt hier"},
         {"Projects Folder", "Projektordner"},
@@ -660,6 +664,33 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Print: opens the design in your slicer (OrcaSlicer, Bambu Studio, PrusaSlicer, Cura)",
          "Drucken: öffnet das Design in deinem Slicer (OrcaSlicer, Bambu Studio, PrusaSlicer, Cura)"},
         {"Click the flat face that should lie on the print bed.", "Klicke auf die ebene Fläche, die auf dem Druckbett liegen soll."},
+        // 12.4 Druckerprofil
+        {"Printer Test", "Druckertest"},
+        {"Printer Test: print it once, then click in Settings what fit; fits, threads and the print view use it",
+         "Druckertest: einmal drucken, dann in den Einstellungen anklicken, was gepasst hat; Passung, Gewinde und Druckansicht nehmen es"},
+        {"Fit Plate", "Passungsplatte"},
+        {"Pin", "Stift"},
+        {"Limits", "Grenzen"},
+        {"Printer test\n"
+         "1. Print all three parts with your usual settings.\n"
+         "2. Push the pin into the holes: which is the first it slides into?\n"
+         "3. Look at the overhangs (30 to 70°) and walls (0.4 to 1.2 mm).\n"
+         "4. Settings › 3D Printing: click what fit.",
+         "Druckertest\n"
+         "1. Druck alle drei Teile mit deinen üblichen Einstellungen.\n"
+         "2. Steck den Stift in die Löcher: In welches gleitet er als Erstes?\n"
+         "3. Sieh dir die Überhänge (30 bis 70°) und Wände (0,4 bis 1,2 mm) an.\n"
+         "4. Einstellungen › 3D-Druck: anklicken, was gepasst hat."},
+        {"3D Printing", "3D-Druck"},
+        {"Test piece", "Testteil"},
+        {"Make Test Piece", "Testteil anlegen"},
+        {"Opens a new design with a fit plate, a pin and a plate with overhangs and thin walls",
+         "Öffnet ein neues Design mit Passungsplatte, Stift und einer Platte mit Überhängen und dünnen Wänden"},
+        {"Pin slides into hole", "Stift gleitet in Loch"},
+        {"Last clean overhang", "Letzter sauberer Überhang"},
+        {"Thinnest full wall (mm)", "Dünnste ganze Wand (mm)"},
+        {"Print the test piece once and click what fit. Fit, Thread and Print View use these values.",
+         "Druck das Testteil einmal und klick an, was gepasst hat. Passung, Gewinde und Druckansicht nehmen diese Werte."},
         {"There is no body to print.", "Es gibt keinen Körper zum Drucken."},
         {"No slicer found (OrcaSlicer, Bambu Studio, PrusaSlicer or Cura). Save a 3MF file and open it in your slicer.",
          "Kein Slicer gefunden (OrcaSlicer, Bambu Studio, PrusaSlicer oder Cura). Speichere eine 3MF-Datei und öffne sie in deinem Slicer."},

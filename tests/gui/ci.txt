@@ -56,3 +56,6 @@ test_reentrancy.py
 test_orbit_pivot.py
 test_presspull.py
 test_tablet_settings.py
+test_context_bar.py
+test_toolbar_categories.py
+test_printer_profile.py

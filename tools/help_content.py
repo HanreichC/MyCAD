@@ -46,11 +46,24 @@ def A(id, group, icon, title, keywords, summary, steps, options=(), tips=(), see
 
 # --- Bausteine: wo etwas liegt --------------------------------------------------------------------------------------
 SEC = {"FILE": "DATEI", "CREATE": "ERSTELLEN", "MODIFY": "ÄNDERN", "CONSTRUCT": "KONSTRUIEREN", "ASSEMBLE": "ZUSAMMENFÜGEN",
-       "INSPECT": "PRÜFEN", "UTILITIES": "WERKZEUGE", "CONSTRAINTS": "ABHÄNGIGKEITEN"}
+       "INSPECT": "PRÜFEN", "PRINT": "DRUCKEN", "UTILITIES": "WERKZEUGE", "CONSTRAINTS": "ABHÄNGIGKEITEN"}
+# kompakte Werkzeugleiste (12.3, Standard): diese stehen direkt darin (unter dieser Überschrift), alle anderen öffnet die
+# Überschrift ▾ als Raster
+DIRECT = {"Save Version": "FILE", "Sketch": "CREATE", "Extrude": "CREATE", "Hole": "CREATE", "Press Pull": "MODIFY",
+          "Fillet": "MODIFY", "Offset Plane": "CONSTRUCT", "Component": "ASSEMBLE", "Measure": "INSPECT",
+          "Print View": "PRINT", "Search": "UTILITIES"}
 
 
 def tool(section, button, variant=None, sketch=False):
     """Schritt: Werkzeug in der Leiste oben finden (button/variant: (en, de))"""
+    if not sketch:
+        name = variant or button
+        if name[0] in DIRECT:
+            sec = DIRECT[name[0]]
+            return (f"In the toolbar at the top, in the {sec} section, click {name[0]}.",
+                    f"Klicke in der Werkzeugleiste oben im Bereich {SEC[sec]} auf {name[1]}.")
+        return (f"In the toolbar at the top, click {section} ▾ and choose {name[0]}.",
+                f"Klicke in der Werkzeugleiste oben auf {SEC[section]} ▾ und wähle {name[1]}.")
     bar_en = "sketch toolbar at the top" if sketch else "toolbar at the top"
     bar_de = "Skizzen-Werkzeugleiste oben" if sketch else "Werkzeugleiste oben"
     if not variant or variant == button:
@@ -324,6 +337,8 @@ A("start_first", "start", "Std_New", ("Your first design", "Dein erstes Design")
   tips=[EDIT_LATER,
         ("Hold the mouse over any tool for its name, and press F1 to open its help page.",
          "Halte die Maus über ein Werkzeug, um seinen Namen zu sehen, und drücke F1 für seine Hilfeseite."),
+        ("The toolbar shows the tools you need most. Click a heading such as CREATE ▾ and every tool of that group opens in a grid with names; one click starts it. Settings › Toolbar › All Tools shows every tool at once instead.",
+         "Die Werkzeugleiste zeigt die Werkzeuge, die du am häufigsten brauchst. Klicke eine Überschrift wie ERSTELLEN ▾ an, und alle Werkzeuge dieser Gruppe öffnen sich im Raster mit Namen; ein Klick startet eins. Einstellungen › Werkzeugleiste › Alle Werkzeuge zeigt stattdessen alle auf einmal."),
         ("Settings (bottom of the sidebar) can show the tool names under the icons: Show tool names.",
          "In den Einstellungen (unten in der Seitenleiste) kannst du die Namen unter den Symbolen einblenden: Werkzeugnamen anzeigen."),
         ("Click a face, an edge or a profile and the tools that fit float right above it: Press Pull, Sketch and Hole on a flat face, Fillet and Chamfer on an edge, Extrude and Revolve on a profile. The magnifier at the end opens every command. Settings › Tools at the selection turns this off.",
@@ -797,8 +812,8 @@ A("primitives", "create", "Design_Box", ("Box, Cylinder and more", "Quader, Zyli
   [("Optional: click a plane or a flat face of a body to place the shape on it (otherwise it sits on the floor, XY).",
     "Optional: Klicke eine Ebene oder flache Körperfläche an, um die Form darauf zu setzen (sonst steht sie auf dem Boden, XY)."),
    tool("CREATE", ("Box", "Quader"), ("Box", "Quader")),
-   ("Click the small arrow ▾ next to Box to choose Cylinder, Sphere, Torus or Coil instead; you can also change Type in the panel later.",
-    "Über den kleinen Pfeil ▾ neben Quader wählst du stattdessen Zylinder, Kugel, Torus oder Spirale; im Panel lässt sich der Typ auch später ändern."),
+   ("Cylinder, Sphere, Torus and Coil sit right next to Box; you can also change Type in the panel later.",
+    "Zylinder, Kugel, Torus und Spirale stehen gleich neben Quader; im Panel lässt sich der Typ auch später ändern."),
    PANEL, ("Type the sizes and the position on the plane, choose the Operation.", "Tippe Größen und Position auf der Ebene ein und wähle den Vorgang."), OK],
   options=[("Type", "Box, Cylinder, Sphere, Torus or Coil.", "Typ", "Quader, Zylinder, Kugel, Torus oder Spirale."),
            ("Length, Width, Height", "Box size; Height also for Cylinder and Coil.", "Länge, Breite, Höhe", "Größe des Quaders; Höhe auch bei Zylinder und Spirale."),
@@ -1059,8 +1074,8 @@ A("Design_Move", "modify", "Design_Move", ("Move", "Verschieben"),
   (["move", "rotate", "translate", "position", "turn body", "shift"], ["verschieben", "drehen", "bewegen", "positionieren", "Körper drehen", "versetzen"]),
   ("Moves and rotates bodies by exact distances and angles.", "Verschiebt und dreht Körper um genaue Abstände und Winkel."),
   [("Click the body (any face of it); Ctrl+click for several.", "Klicke den Körper an (irgendeine seiner Flächen); Strg+Klick für mehrere."),
-   ("In the toolbar at the top, in the MODIFY section, click Move (key M). (If the button shows Align or Scale, use the small arrow ▾ next to it.)",
-    "Klicke in der Werkzeugleiste oben im Bereich ÄNDERN auf Verschieben (Taste M). (Zeigt der Knopf Ausrichten oder Skalieren, nimm den kleinen Pfeil ▾ daneben.)"),
+   ("In the toolbar at the top, click MODIFY ▾ and choose Move (or press M).",
+    "Klicke in der Werkzeugleiste oben auf ÄNDERN ▾ und wähle Verschieben (oder drücke M)."),
    PANEL, ("Type X distance, Y distance and Z distance, and if needed choose Rotate around and an Angle.", "Tippe X-Abstand, Y-Abstand und Z-Abstand ein und wähle bei Bedarf Drehen um und einen Winkel."), OK],
   options=[("X distance, Y distance, Z distance", "How far to move along each axis.", "X-Abstand, Y-Abstand, Z-Abstand", "Wie weit entlang jeder Achse verschoben wird."),
            ("Rotate around, Angle", "Axis through the body centre and the rotation angle.", "Drehen um, Winkel", "Achse durch die Körpermitte und der Drehwinkel."),
@@ -1219,13 +1234,35 @@ A("Design_PrintView", "inspect", "Design_PrintView", ("Print View", "Druckansich
     "Unter Druckbar machen nennt die Legende, was eine Einstellung beheben würde: eine Bohrung quer zur Druckrichtung bekommt eine Tropfenform mit 45°-Spitze, eine Rundung fast ihre Unterkanten mit 45°, eine zu dünne Wand wächst auf das Minimum. Ausführen übernimmt einen Vorschlag, Alle ausführen alle (Strg+Z nimmt sie zurück)."),
    ("The Print View button stays pressed while it is on. Exit Print View in the legend, or another click on the button, hides it.",
     "Der Knopf Druckansicht bleibt gedrückt, solange sie an ist. Druckansicht verlassen in der Legende oder ein weiterer Klick auf den Knopf blendet sie aus.")],
-  tips=[("The limits (overhang angle, minimum wall) and the 3D print clearance are in Settings.",
-         "Die Grenzen (Überhang-Winkel, kleinste Wand) und das Spiel für den 3D-Druck stehen in den Einstellungen."),
+  tips=[("The limits (overhang angle, minimum wall) and the 3D print clearance are in Settings › 3D Printing. Printer Test measures them on your printer.",
+         "Die Grenzen (Überhang-Winkel, kleinste Wand) und das Spiel für den 3D-Druck stehen in Einstellungen › 3D-Druck. Der Druckertest misst sie an deinem Drucker."),
         ("The chosen bottom face is saved with the design and used by Print.",
          "Die gewählte Unterseite wird mit dem Design gespeichert und von Drucken benutzt."),
         ("Overhangs are on the underside: turn the view to look at the part from below.",
          "Überhänge liegen unten: dreh die Ansicht, um das Teil von unten zu sehen.")],
-  commands=["Design_PrintView", "Design_PrintDown"], see=["Design_Print", "Design_Measure"])
+  commands=["Design_PrintView", "Design_PrintDown"], see=["Design_Print", "Design_Measure", "Design_PrinterTest"])
+
+A("Design_PrinterTest", "inspect", "Design_PrinterTest", ("Printer Test", "Druckertest"),
+  (["printer test", "calibration", "calibrate", "clearance", "tolerance", "test print", "fit test", "overhang test", "printer profile"],
+   ["Druckertest", "Kalibrierung", "kalibrieren", "Spiel", "Toleranz", "Testdruck", "Passungstest", "Überhangtest", "Druckerprofil"]),
+  ("Measures your printer once: how much play a pin needs to slide into a hole, how steep an overhang can get and how thin a wall can be. Fit, Thread and Print View then use your values instead of guesses.",
+   "Misst deinen Drucker einmal aus: wie viel Spiel ein Stift braucht, um in ein Loch zu gleiten, wie flach ein Überhang werden darf und wie dünn eine Wand sein kann. Passung, Gewinde und Druckansicht nehmen danach deine Werte statt Schätzungen."),
+  [tool("PRINT", ("Printer Test", "Druckertest")),
+   ("A new design opens with three parts: a fit plate with holes 1 to 8 (each 0.05 mm more play per side), a pin, and a plate with overhangs from 30 to 70° and walls from 0.4 to 1.2 mm. A note lists the steps.",
+    "Ein neues Design öffnet sich mit drei Teilen: einer Passungsplatte mit den Löchern 1 bis 8 (je 0,05 mm mehr Spiel pro Seite), einem Stift und einer Platte mit Überhängen von 30 bis 70° und Wänden von 0,4 bis 1,2 mm. Eine Notiz nennt die Schritte."),
+   ("Click Print and print all three parts with your usual settings.",
+    "Klicke auf Drucken und druck alle drei Teile mit deinen üblichen Einstellungen."),
+   ("Push the pin into the holes, starting at 1. The first hole it slides into without force is your normal fit.",
+    "Steck den Stift in die Löcher, angefangen bei 1. Das erste Loch, in das er ohne Kraft gleitet, ist deine normale Passung."),
+   ("Look at the overhangs from below and at the walls: which overhang is the last one without drooping, which wall is the thinnest that printed whole?",
+    "Sieh dir die Überhänge von unten und die Wände an: Welcher Überhang hängt als letzter nicht durch, welche Wand ist die dünnste, die ganz gedruckt wurde?"),
+   ("Open Settings › 3D Printing and click the hole, the overhang and the wall. The clearance fields below update right away.",
+    "Öffne Einstellungen › 3D-Druck und klicke das Loch, den Überhang und die Wand an. Die Spiel-Felder darunter ändern sich sofort.")],
+  tips=[("Tight is 0.1 mm less play than normal, loose 0.1 mm more. You can fine-tune all three in the fields.",
+         "Eng ist 0,1 mm weniger Spiel als normal, locker 0,1 mm mehr. In den Feldern kannst du alle drei fein einstellen."),
+        ("Settings › 3D Printing › Make Test Piece opens the same design.",
+         "Einstellungen › 3D-Druck › Testteil anlegen öffnet dasselbe Design.")],
+  see=["Design_Fit", "Design_Thread", "Design_PrintView", "Design_Print"])
 
 A("Design_CheckReferences", "inspect", "Design_CheckReferences", ("Check References", "Bezüge prüfen"),
   (["check references", "lost reference", "broken", "warning", "which edge", "model changed", "repair"],
@@ -1451,14 +1488,14 @@ A("settings", "utilities", "MyCAD_Settings", ("Settings", "Einstellungen"),
     "hell", "Kontrast", "Material", "Projektordner", "Zoomrichtung"]),
   ("Adjusts look, navigation, keys and language. Open it with Settings at the bottom of the sidebar or Ctrl+,; close it with the ✕ at the top right of the window or Esc.",
    "Passt Aussehen, Navigation, Tasten und Sprache an. Öffnen mit Einstellungen unten in der Seitenleiste oder Strg+,; schließen mit dem ✕ oben rechts im Fenster oder Esc."),
-  [("General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Show tool names, Tools at the selection (the tools that fit float above what you clicked) and Show grid (the grid on the ground plane under the bodies).",
-    "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen, Werkzeuge an der Auswahl (die passenden Werkzeuge schweben über dem, was du angeklickt hast) und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern)."),
+  [("General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Show tool names, Toolbar (Compact: the tools you need most, the rest behind the headings; All Tools: every tool at once), Tools at the selection (the tools that fit float above what you clicked) and Show grid (the grid on the ground plane under the bodies).",
+    "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen, Werkzeugleiste (Kompakt: die häufigsten Werkzeuge, der Rest hinter den Überschriften; Alle Werkzeuge: alle auf einmal), Werkzeuge an der Auswahl (die passenden Werkzeuge schweben über dem, was du angeklickt hast) und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern)."),
    ("Materials and Light: Body material for new bodies (Steel unless you choose another), Lighting (Studio or Room), and switches for Realistic materials, Reflections, Relief and end grain and Contact shadow.",
     "Materialien und Licht: Körpermaterial für neue Körper (Stahl, solange du nichts anderes wählst), Licht (Studio oder Raum) und Schalter für Realistische Materialien, Spiegelungen, Relief und Hirnholz und Kontaktschatten."),
-   ("Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart) and Projects folder.",
-    "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart) und Projektordner."),
-   ("Further down under General: Export resolution (how fine curves become in STL and 3MF), 3D print clearance for the Fit tool (tight, normal, loose), and Overhang angle and Minimum wall for the Print View.",
-    "Weiter unten unter Allgemein: Export-Auflösung (wie fein Rundungen in STL und 3MF werden), Spiel beim 3D-Druck für die Passung (eng, normal, locker) sowie Überhang-Winkel und kleinste Wand für die Druckansicht."),
+   ("Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart), Projects folder and Version.",
+    "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart), Projektordner und Version."),
+   ("3D Printing: Make Test Piece opens the Printer Test; then click the hole the pin slides into, the last clean overhang and the thinnest full wall. Below: Clearance tight, normal and loose (for Fit and printable threads), Overhang angle and Minimum wall (for the Print View), Export resolution (how fine curves become in STL and 3MF) and the Slicer.",
+    "3D-Druck: Testteil anlegen öffnet den Druckertest; danach klickst du das Loch an, in das der Stift gleitet, den letzten sauberen Überhang und die dünnste ganze Wand. Darunter: Spiel eng, normal und locker (für Passung und druckbare Gewinde), Überhang-Winkel und kleinste Wand (für die Druckansicht), Export-Auflösung (wie fein Rundungen in STL und 3MF werden) und der Slicer."),
    ("Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
     "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen."),
    ("View: Camera, Rotate, Rotate around and Animate view changes.",

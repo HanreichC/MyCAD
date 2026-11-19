@@ -5519,12 +5519,67 @@ void DesignGui::cornerHoles(const std::string& size, double diameter, double off
     holeOnFace(body, face, Base::Vector3d(), offset, holeSize(size, diameter));
 }
 
+/// 12.4: Testteil fürs Druckerprofil (DesignCalibrate) in einem neuen Design, mit einer Notiz, was zu tun ist. Geht
+/// auch ohne offenes Design (von der Startseite und aus den Einstellungen)
+class PrinterTestCommand: public DesignCommand
+{
+public:
+    PrinterTestCommand()
+        : DesignCommand("Design_PrinterTest", "Printer Test",
+                        "Printer Test: print it once, then click in Settings what fit; fits, threads and the print view use it",
+                        "Std_Print", "", [](App::Document*) { make(); })
+    {}
+
+protected:
+    bool isActive() override
+    {
+        return !Gui::Control().activeDialog();
+    }
+
+private:
+    static void make()
+    {
+        Gui::Application::Instance->commandManager().runCommandByName("Std_New");
+        App::Document* doc = App::GetApplication().getActiveDocument();
+        if (!doc) {
+            return;
+        }
+        const auto hex = [](const QString& s) { return QString::fromLatin1(s.toUtf8().toHex()).toStdString(); };
+        doc->Label.setValue(T("Printer Test").toStdString());
+        doc->openTransaction("Printer Test");
+        try {
+            Base::Interpreter().runString(
+                ("import DesignCalibrate, FreeCAD\nDesignCalibrate.make(FreeCAD.ActiveDocument, bytes.fromhex('"
+                 + hex(QString::fromStdString(dxfTextFont())) + "').decode(), [bytes.fromhex(n).decode() for n in ('"
+                 + hex(T("Fit Plate")) + "', '" + hex(T("Pin")) + "', '" + hex(T("Limits")) + "')])")
+                    .c_str());
+        }
+        catch (const Base::Exception& e) {
+            doc->abortTransaction();
+            e.reportException();
+            return;
+        }
+        auto note = static_cast<Design::Note*>(doc->addObject("Design::Note", "Note"));
+        Design::folder(Design::root(doc, true), "Notes")->addObject(note);
+        note->Text.setValue(T("Printer test\n"
+                              "1. Print all three parts with your usual settings.\n"
+                              "2. Push the pin into the holes: which is the first it slides into?\n"
+                              "3. Look at the overhangs (30 to 70°) and walls (0.4 to 1.2 mm).\n"
+                              "4. Settings › 3D Printing: click what fit.")
+                                .toStdString());
+        doc->recompute();
+        doc->commitTransaction();
+        Gui::Command::doCommand(Gui::Command::Gui, "Gui.SendMsgToActiveView('ViewFit')");
+    }
+};
+
 void CreateDesignCommands()
 {
     static QuickMeasureChip quickMeasure;
     static ContextBar contextBar;
     auto& mgr = Gui::Application::Instance->commandManager();
     mgr.addCommand(new SketchCompleteCommand);
+    mgr.addCommand(new PrinterTestCommand);
     mgr.addCommand(new DesignCommand("Design_CreateSketch", "Create Sketch",
                                      "Create Sketch: click a plane or planar face to sketch on",
                                      "Sketcher_NewSketch", "S", createSketchCommand));

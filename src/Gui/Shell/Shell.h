@@ -31,6 +31,8 @@ void install();
 void prepareWindow();
 /// Namen unter den Symbolen der Toolbar ein-/ausblenden (Einstellung "Show tool names")
 void setToolNames(bool on);
+/// Werkzeugleiste mit allen Werkzeugen statt kompakt mit Kategorien (Einstellung "Toolbar")
+void setFullToolbar(bool on);
 /// QAction eines Befehls (nullptr, wenn es ihn nicht gibt); Symbol und kurzer Name wie in der Werkzeugleiste
 QAction* actionOf(const char* command);
 QIcon iconOf(const char* command);

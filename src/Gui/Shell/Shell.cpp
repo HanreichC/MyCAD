@@ -204,6 +204,11 @@ QToolButton#GlassButton::menu-button { border: none; width: 14px; }
 QToolButton#GlassButton::menu-arrow { image: url(:/mycad/icons/Menu_Chevron.svg); width: 14px; height: 14px; }
 QToolButton#GlassButton[error="true"] { background: @errorFill; }
 QToolButton#GlassButton[related="true"] { background: @fillSecondary; border-color: @accent; }
+/* Kategorie-Knöpfe der kompakten Toolbar (12.3): Abschnittskopf als Kapsel, Hover/offen wie Glass-Buttons */
+QToolButton#CategoryButton { border: 2px solid transparent; border-radius: 12px; background: transparent; color: @labelSecondary; padding: 0 0 0 4px; }
+QToolButton#CategoryButton:hover { background: @fillTertiary; }
+QToolButton#CategoryButton:pressed, QToolButton#CategoryButton:checked { background: @fillSecondary; color: @labelPrimary; }
+QToolButton#CategoryButton:focus { border-color: @focusRing; }
 QToolButton#WindowClose:hover { background: @red; }
 QToolButton#WindowClose:pressed { background: @redPressed; }
 /* Schließen-Knopf der Post-its wie beim Hinweis-Popup (MyStyle § 9.4): 28 rund, fill.tertiary */
@@ -923,9 +928,8 @@ bool toolNames()
         "ToolNames", false);
 }
 
-void styleToolButton(QToolButton* btn)
+void styleToolButton(QToolButton* btn, bool names = toolNames())
 {
-    const bool names = toolNames();
     const bool dropdown = btn->popupMode() == QToolButton::MenuButtonPopup;
     btn->setToolButtonStyle(names ? Qt::ToolButtonTextUnderIcon : Qt::ToolButtonIconOnly);
     btn->setProperty("names", names);
@@ -1132,8 +1136,58 @@ void followEnabled(QToolButton* btn, QAction* action)
     btn->setEnabled(action->isEnabled());
 }
 
+/// Kategorien der kompakten Werkzeugleiste (12.3): alle Werkzeuge einer Überschrift, im Popover als Raster mit Namen
+const std::vector<const char*>& categoryTools(const QString& key)
+{
+    static const std::map<QString, std::vector<const char*>> all = {
+        {QStringLiteral("FILE"),
+         {"Std_New", "Std_Open", "MyCAD_SaveVersion", "Design_Versions", "Design_Import", "Design_Export", "Design_Print"}},
+        {QStringLiteral("CREATE"),
+         {"Design_CreateSketch", "Design_Extrude", "Design_Revolve", "Design_Sweep", "Design_Loft", "Design_Rib", "Design_Web",
+          "Design_Emboss", "Design_Box", "Design_Cylinder", "Design_Sphere", "Design_Torus", "Design_Coil", "Design_Hole",
+          "Design_Fastener", "Design_Thread", "Design_Pattern", "Design_Mirror", "Design_PhotoToSketch"}},
+        {QStringLiteral("MODIFY"),
+         {"Design_PressPull", "Design_Fillet", "Design_Chamfer", "Design_Shell", "Design_Draft", "Design_Fit", "Design_RemoveFace",
+          "Design_ReplaceFace", "Design_SplitFace", "Design_Combine", "Design_SplitBody", "Design_Move", "Design_Align", "Design_Scale"}},
+        {QStringLiteral("CONSTRUCT"),
+         {"Design_OffsetPlane", "Design_AnglePlane", "Design_Midplane", "Design_Plane", "Design_Axis", "Design_Point"}},
+        {QStringLiteral("ASSEMBLE"), {"Design_NewComponent", "Design_Joint"}},
+        {QStringLiteral("INSPECT"), {"Design_Measure", "Design_Section", "Design_CheckReferences", "Std_ViewFitAll"}},
+        // alles für den Druck an einer Stelle (heute verteilt auf Prüfen, Datei und Strg+K)
+        {QStringLiteral("PRINT"),
+         {"Design_PrintView", "Design_PrintDown", "Design_Fit", "Design_PrinterTest", "Design_Export", "Design_Print"}},
+        {QStringLiteral("UTILITIES"),
+         {"MyCAD_Search", "Design_Parameters", "Design_Appearance", "Design_Scribble", "Design_RedPen", "Design_Note"}},
+    };
+    static const std::vector<const char*> none;
+    auto it = all.find(key);
+    return it == all.end() ? none : it->second;
+}
+
+void showCategory(QToolButton* source, const QString& key);  // Popover, weiter unten
+
+/// Abschnittskopf als Knopf ("ERSTELLEN ⌄" unter den Symbolen, wie Fusions Gruppen-Menüs): öffnet das Popover
+QToolButton* categoryButton(const QString& key)
+{
+    auto btn = new QToolButton;
+    btn->setObjectName(QStringLiteral("CategoryButton"));
+    btn->setProperty("category", key);
+    btn->setText(T(key.toLatin1().constData()));
+    btn->setAccessibleName(btn->text());
+    btn->setIcon(designIcon(QStringLiteral("Menu_Chevron"), &Theme::labelSecondary));
+    btn->setIconSize(QSize(14, 14));  // wie der Menü-Pfeil der Glass-Buttons
+    btn->setLayoutDirection(Qt::RightToLeft);  // Pfeil rechts vom Text
+    btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    btn->setFixedHeight(Token::Chip);  // kleinste Trefferfläche am Desktop (MyStyle W-6)
+    btn->setCheckable(true);  // gefüllt, solange sein Popover offen ist
+    setTextStyle(btn, Text::Section);
+    QObject::connect(btn, &QToolButton::clicked, btn, [btn, key] { showCategory(btn, key); });
+    return btn;
+}
+
 /// Kapsel-Toolbar mit Befehls-Buttons in Abschnitten wie bei Fusion: "#CREATE" beginnt einen Abschnitt mit dieser
-/// Überschrift (darunter), Abschnitte sind durch eine Linie getrennt; "A|B" = Knopf mit Varianten-Menü.
+/// Überschrift (darunter), "#@CREATE" einen, dessen Überschrift alle Werkzeuge aus categoryTools öffnet (kompakte
+/// Toolbar); Abschnitte sind durch eine Linie getrennt; "A|B" = Knopf mit Varianten-Menü.
 QWidget* toolbar(const std::vector<const char*>& commands)
 {
 
@@ -1142,7 +1196,7 @@ QWidget* toolbar(const std::vector<const char*>& commands)
     lay->setContentsMargins(10, 6, 10, 6);
     lay->setSpacing(2);
     FlowLayout* row = nullptr;  // Knöpfe des aktuellen Abschnitts; bricht um, wenn der Abschnitt allein zu breit ist
-    auto section = [&](const QString& caption) {
+    auto section = [&](const char* caption) {
         if (row) {
             auto sep = new QFrame;
             sep->setObjectName(QStringLiteral("ToolbarSeparator"));
@@ -1158,8 +1212,11 @@ QWidget* toolbar(const std::vector<const char*>& commands)
         row->setContentsMargins(0, 0, 0, 0);
         row->setSpacing(2);
         column->addWidget(buttons);
-        if (!caption.isEmpty()) {
-            auto label = sectionLabel(caption);
+        if (*caption == '@') {
+            column->addWidget(categoryButton(QString::fromLatin1(caption + 1)), 0, Qt::AlignHCenter);
+        }
+        else if (*caption) {
+            auto label = sectionLabel(T(caption));
             label->setAlignment(Qt::AlignCenter);
             column->addWidget(label);
         }
@@ -1167,14 +1224,14 @@ QWidget* toolbar(const std::vector<const char*>& commands)
     };
     for (const char* name : commands) {
         if (*name == '#') {
-            section(T(name + 1));
+            section(name + 1);
             continue;
         }
         if (!*name) {
             continue;
         }
         if (!row) {
-            section(QString());
+            section("");
         }
         const auto choices = variants(QString::fromLatin1(name));
         QAction* action = choices.empty() ? commandAction(name) : choices.front().second;
@@ -3400,7 +3457,8 @@ struct NotePanel
 struct State
 {
     GlassPanel* header = nullptr;  ///< Kopfleiste über die ganze Fensterbreite: Seitenleisten-Knopf, Toolbar, Fensterknöpfe
-    QWidget* modelBar = nullptr;
+    QWidget* modelBar = nullptr;  ///< kompakt: Kategorie-Knöpfe statt aller Werkzeuge (12.3)
+    QWidget* fullBar = nullptr;   ///< alle Werkzeuge in Abschnitten (Einstellung "Toolbar: Full")
     QWidget* sketchBar = nullptr;
     QWidget* scribbleBar = nullptr;
     GlassPanel* collapsedBar = nullptr;  ///< Name und Seitenleisten-Knopf, solange die Seitenleiste eingeklappt ist (W-1)
@@ -3426,13 +3484,21 @@ struct State
 
 extern GlassPanel* searchPanel;  // Befehlssuche (Strg+K), weiter unten
 extern QLineEdit* searchField;
+GlassPanel* categoryPanel = nullptr;   ///< Popover einer Kategorie der kompakten Toolbar
+QPointer<QToolButton> categorySource;  ///< sein Kategorie-Knopf
+
+/// Einstellung "Toolbar": kompakt (Standard) oder alle Werkzeuge
+bool fullToolbar()
+{
+    return App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("ToolbarFull", false);
+}
 
 std::vector<GlassPanel*> panels()
 {
     std::vector<GlassPanel*> all;
     // auch die Suche: sie lag sonst noch in der Szene eines geschlossenen Designs und starb mit ihr (Absturz danach)
     for (auto p : {state.header, state.browser, state.inspector, state.timeline, state.palette, state.scribblePalette,
-                   state.scribblePill, state.scribbleActions, state.collapsedBar, state.windowPanel, searchPanel}) {
+                   state.scribblePill, state.scribbleActions, state.collapsedBar, state.windowPanel, searchPanel, categoryPanel}) {
         if (p) {
             all.push_back(p);
         }
@@ -3475,6 +3541,7 @@ void setNotePosition(App::DocumentObject* note, const QPointF& pos, const QRectF
 }
 
 void placeSearch(const QRectF& r, qreal top);
+void placeCategory(const QRectF& r, qreal top);
 
 void layout()
 {
@@ -3486,8 +3553,11 @@ void layout()
     if (state.corners) {
         state.corners->setRect(r);
     }
-    QWidget* bar = state.sketchMode ? state.sketchBar : state.scribbleMode ? state.scribbleBar : state.modelBar;
-    for (QWidget* b : {state.modelBar, state.sketchBar, state.scribbleBar}) {
+    QWidget* bar = state.sketchMode ? state.sketchBar
+        : state.scribbleMode        ? state.scribbleBar
+        : fullToolbar()             ? state.fullBar
+                                    : state.modelBar;
+    for (QWidget* b : {state.modelBar, state.fullBar, state.sketchBar, state.scribbleBar}) {
         b->setVisible(b == bar);
     }
     const QSizeF bs = bar->sizeHint();  // eine Reihe
@@ -3531,6 +3601,7 @@ void layout()
     const qreal headerH = std::max<qreal>(barH, Token::BarHeight);  // eine höhere Toolbar macht nur die Titelzeile höher
     state.header->setGeometry(QRectF(std::max(left, std::min((r.width() - barW) / 2, right - barW)), m, barW, headerH));
     placeSearch(r, m + headerH + m);
+    placeCategory(r, m + headerH + m);
     bar->setGeometry(QRectF(0, (headerH - barH) / 2, barW, barH).toRect());
     if (state.titleGrip) {
         state.titleGrip->setRect(0, 0, r.width(), m + headerH);
@@ -5035,6 +5106,152 @@ void placeSearch(const QRectF& r, qreal top)
     }
 }
 
+void hideCategory()
+{
+    if (categoryPanel) {
+        categoryPanel->hide();
+    }
+    if (categorySource) {
+        categorySource->setChecked(false);
+    }
+    categorySource = nullptr;
+}
+
+/// unter seinem Kategorie-Knopf, ganz im Fenster (aus layout()); verschwindet mit seiner Toolbar (Skizze, Scribble)
+void placeCategory(const QRectF& r, qreal top)
+{
+    if (!categoryPanel || !categoryPanel->isVisible()) {
+        return;
+    }
+    if (!categorySource || !categorySource->isVisible()) {
+        hideCategory();
+        return;
+    }
+    QWidget* box = categoryPanel->content();
+    box->adjustSize();
+    const QSizeF s = box->sizeHint();
+    const QPoint below = categorySource->mapTo(state.header->content(), QPoint(categorySource->width() / 2, 0));
+    const qreal x = state.header->mapToScene(QPointF(below)).x() - s.width() / 2;
+    // nicht über die Seitenleiste (Glas auf Glas, MyStyle GL-2): frühestens am Anfang der Kopfleiste
+    const qreal lo = state.header->x(), hi = std::max(lo, r.width() - Token::WindowInset - s.width());
+    categoryPanel->setGeometry(QRectF(std::clamp(x, lo, hi), top, s.width(), s.height()));
+}
+
+/// Klick daneben oder Esc schließt das Kategorie-Popover (MyStyle: Popover schließt bei Klick daneben)
+class CategoryCloser: public QObject
+{
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (!categoryPanel || !categoryPanel->isVisible()) {
+            return false;
+        }
+        if (event->type() == QEvent::KeyPress && static_cast<QKeyEvent*>(event)->key() == Qt::Key_Escape) {
+            hideCategory();
+            return true;
+        }
+        if (event->type() != QEvent::MouseButtonPress && event->type() != QEvent::TabletPress) {
+            return false;
+        }
+        auto w = qobject_cast<QWidget*>(obj);
+        if (!w) {
+            return false;
+        }
+        // Klicks auf Glas kommen erst beim Viewport an, dann beim Widget im Panel: dort entscheiden
+        if (auto view = qobject_cast<QGraphicsView*>(w->parentWidget()); view && view->viewport() == w) {
+            QGraphicsItem* item = view->itemAt(static_cast<QSinglePointEvent*>(event)->position().toPoint());
+            while (item && item->parentItem()) {
+                item = item->parentItem();
+            }
+            if (item == categoryPanel || item == state.header) {
+                return false;
+            }
+        }
+        // Kategorie-Knöpfe schalten selbst um (zweiter Klick schließt), Werkzeuge im Popover schließen beim Start
+        else if (w->property("category").isValid() || categoryPanel->content()->isAncestorOf(w)) {
+            return false;
+        }
+        hideCategory();
+        return false;
+    }
+};
+
+/// Popover einer Kategorie: alle Werkzeuge im Raster mit Namen, ein Klick startet eins; zweiter Klick auf die
+/// Kategorie, Klick daneben oder Esc schließt
+void showCategory(QToolButton* source, const QString& key)
+{
+    if (!state.scene) {
+        return;
+    }
+    const bool again = categoryPanel && categoryPanel->isVisible() && categorySource == source;
+    hideCategory();
+    if (again) {
+        return;
+    }
+    if (!categoryPanel) {
+        auto box = content();
+        auto grid = new QGridLayout(box);
+        grid->setContentsMargins(8, 8, 8, 8);
+        grid->setSpacing(2);
+        categoryPanel = new GlassPanel(box, Token::RadiusPanel, true);  // Text-Glas wie alle Popover
+        categoryPanel->setZValue(10);
+        qApp->installEventFilter(new CategoryCloser);
+    }
+    QWidget* box = categoryPanel->content();
+    auto grid = static_cast<QGridLayout*>(box->layout());
+    while (QLayoutItem* item = grid->takeAt(0)) {
+        delete item->widget();
+        delete item;
+    }
+    const auto& tools = categoryTools(key);
+    const int columns = std::min<int>(4, int(tools.size()));
+    int i = 0;
+    for (const char* name : tools) {
+        QAction* action = commandAction(name);
+        if (!action) {
+            continue;
+        }
+        const QString n = QString::fromLatin1(name);
+        auto btn = new QToolButton;
+        btn->setObjectName(QStringLiteral("GlassButton"));
+        btn->setProperty("command", n);
+        btn->setProperty("help", n);
+        btn->setIcon(commandIcon(n, action->icon()));
+        btn->setIconSize(QSize(Token::IconL, Token::IconL));
+        btn->setToolTip(action->toolTip().isEmpty() ? action->text() : action->toolTip());
+        btn->setProperty("label", toolLabel(n, action));
+        btn->setAccessibleName(btn->property("label").toString());
+        styleToolButton(btn, true);  // hier immer mit Namen: das Popover ist zum Finden da
+        btn->setFixedWidth(108);     // gleich breit, damit das Raster ruhig steht (breitester Knopf mit Namen)
+        btn->setEnabled(action->isEnabled());
+        btn->installEventFilter(QuickTip::instance());
+        QObject::connect(btn, &QToolButton::clicked, action, [action] {
+            QTimer::singleShot(0, action, [action] {  // erst nach dem Klick: der Befehl baut die Oberfläche um
+                hideCategory();
+                action->trigger();
+            });
+        });
+        QObject::connect(action, &QAction::changed, btn, [btn, action] { followEnabled(btn, action); });
+        grid->addWidget(btn, i / columns, i % columns);
+        ++i;
+    }
+    if (categoryPanel->scene() != state.scene) {
+        state.scene->addItem(categoryPanel);
+    }
+    categorySource = source;
+    source->setChecked(true);
+    categoryPanel->show();  // erst sichtbar, dann auslegen (wie die Suche)
+    if (source->hasFocus() && grid->count()) {  // mit der Tastatur geöffnet (Tab, Leertaste): weiter mit Tab und Leertaste
+        grid->itemAt(0)->widget()->setFocus(Qt::TabFocusReason);
+    }
+    // wie die Kontext-Leiste: neue Knöpfe erscheinen erst über nachgereichte Ereignisse; ohne die maß das Glas 0 × 0
+    for (QWidget* w : box->findChildren<QWidget*>()) {
+        QCoreApplication::sendPostedEvents(w);
+    }
+    layout();
+    QTimer::singleShot(0, box, [] { layout(); });
+}
+
 void rebuildTimelineLater();
 
 /// Einträge einer Gruppe in Timeline-Reihenfolge
@@ -5819,7 +6036,17 @@ void Gui::Shell::install()
     startAlwaysSave();
     reportLastCrash();
 
+    // kompakt (12.3): eine ruhige Zeile mit den häufigsten Werkzeugen, alles andere hinter den Kategorien
     state.modelBar =
+        toolbar({"#@FILE", "MyCAD_SaveVersion|Design_Versions", "Std_Undo", "Std_Redo",
+                 "#@CREATE", "Design_CreateSketch", "Design_Extrude", "Design_Hole",
+                 "#@MODIFY", "Design_PressPull", "Design_Fillet",
+                 "#@CONSTRUCT", "Design_OffsetPlane",
+                 "#@ASSEMBLE", "Design_NewComponent",
+                 "#@INSPECT", "Design_Measure",
+                 "#@PRINT", "Design_PrintView",
+                 "#@UTILITIES", "MyCAD_Search"});
+    state.fullBar =
         toolbar({"#FILE", "Std_New", "Std_Open", "MyCAD_SaveVersion|Design_Versions", "Design_Import", "Design_Export", "Design_Print",
                  "Std_Undo", "Std_Redo",
                  "#CREATE", "Design_CreateSketch", "Design_Extrude", "Design_Revolve",
@@ -5857,6 +6084,7 @@ void Gui::Shell::install()
                  "#UTILITIES", "Design_Note"});
     QWidget* header = content();
     state.modelBar->setParent(header);
+    state.fullBar->setParent(header);
     state.sketchBar->setParent(header);
     state.scribbleBar->setParent(header);
     state.header = new GlassPanel(header, Token::RadiusCapsule);
@@ -5913,7 +6141,7 @@ void Gui::Shell::install()
         state.titleGrip = new TitleGrip;
         state.windowControls = new WindowControls({}, {}, true);
         state.windowPanel = new GlassPanel(state.windowControls, Token::RadiusCapsule);
-        for (QWidget* w : {header, state.modelBar, state.sketchBar, state.scribbleBar, static_cast<QWidget*>(state.windowControls)}) {
+        for (QWidget* w : {header, state.modelBar, state.fullBar, state.sketchBar, state.scribbleBar, static_cast<QWidget*>(state.windowControls)}) {
             w->installEventFilter(windowGrip());
         }
         qApp->installEventFilter(new EdgeResizer);
@@ -6417,7 +6645,7 @@ QString Gui::Shell::labelOf(const char* command)
 void Gui::Shell::setToolNames(bool on)
 {
     App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetBool("ToolNames", on);
-    for (QWidget* bar : {state.modelBar, state.sketchBar}) {
+    for (QWidget* bar : {state.modelBar, state.fullBar, state.sketchBar}) {
         if (!bar) {
             continue;
         }
@@ -6440,5 +6668,12 @@ void Gui::Shell::setToolNames(bool on)
         }
         bar->layout()->invalidate();
     }
+    layout();
+}
+
+void Gui::Shell::setFullToolbar(bool on)
+{
+    App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetBool("ToolbarFull", on);
+    hideCategory();
     layout();
 }

@@ -6,6 +6,8 @@ from PySide6 import QtCore, QtGui, QtWidgets, QtTest
 
 # Immer gespeichert (Idee 7) stört den festen Takt der Tests: aus, test_versions_ui schaltet es gezielt ein
 App.ParamGet("User parameter:BaseApp/Preferences/MyCAD").SetBool("AlwaysSave", False)
+# Tests klicken Werkzeuge direkt in der Toolbar: alle zeigen (kompakt mit Kategorien prüft test_toolbar_categories)
+App.ParamGet("User parameter:BaseApp/Preferences/MyCAD").SetBool("ToolbarFull", True)
 # Hinweise unter dem ViewCube erscheinen nur bei aktivem Fenster (für Nutzer bleibt das so). Am Desktop läuft ein Test
 # oft ohne Fokus und sähe sie nie, unter Xvfb ist das Fenster dagegen aktiv: für Tests immer zeigen
 App.ParamGet("User parameter:BaseApp/Preferences/NotificationArea").SetBool("PreventNonIntrusiveNotificationsWhenWindowNotActive", False)
@@ -202,9 +204,9 @@ def visible(cls):
 
 
 def button(cmd):
-    """Glass-Toolbar-Button eines Befehls"""
+    """Glass-Toolbar-Button eines Befehls (nicht der gleichnamige der Kontext-Leiste an der Auswahl)"""
     for b in visible(QtWidgets.QToolButton):
-        if b.objectName() in ("GlassButton", "GlassProminent") and cmd in (b.property("command"), str(b.property("command")).split("|")[0]):
+        if b.objectName() in ("GlassButton", "GlassProminent") and not b.property("contextBar") and cmd in (b.property("command"), str(b.property("command")).split("|")[0]):
             return b
     raise RuntimeError("no glass button for " + cmd)
 

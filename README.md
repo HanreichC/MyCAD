@@ -51,7 +51,9 @@ Every closed region in a sketch is its own profile. Draw two circles inside each
 
 **Inspect:** Measure · Section Analysis · Print View
 
-You rarely need the toolbar for the next step. Click a face, an edge or a profile, and the tools that fit float right above it: Press Pull, Sketch, Hole and Shell on a flat face, Fillet and Chamfer on an edge, Extrude and Revolve on a profile, Move, Mirror and Pattern on a whole body. The magnifier at the end opens every command.
+The toolbar is one calm row with the tools you use most: Sketch, Extrude, Hole, Press Pull, Fillet, Measure. Click a heading such as **CREATE ▾** and every tool of the group opens in a glass grid with its name. **PRINT** gathers everything for the printer: Print View, the bottom face, fits, export and your slicer. Prefer every tool at once? Settings › Toolbar › All Tools.
+
+And you rarely need the toolbar for the next step. Click a face, an edge or a profile, and the tools that fit float right above it: Press Pull, Sketch, Hole and Shell on a flat face, Fillet and Chamfer on an edge, Extrude and Revolve on a profile, Move, Mirror and Pattern on a whole body. The magnifier at the end opens every command.
 
 **Photo to Sketch** (Import a photo) traces a flat part photographed on plain paper into a sketch to scale (outline and holes, round ones as real circles). Lay it on an A4 sheet and the photo may even be taken at an angle: MyCAD straightens it and needs no input. On grid paper it finds the squares and only asks their size; on plain paper you type the real width. Extrude, done. Handy for spare parts.
 
@@ -70,6 +72,8 @@ Every step goes into the **Timeline**. Go back, change a dimension, and the rest
 ![Print View](src/Gui/Shell/help/images/Design_PrintView.gif)
 
 **Fit** makes a hole and its pin fit: with a little play for printing (tight, normal, loose) or exactly to ISO 286 (H7/g6, H7/h6, H7/k6, H7/p6, H8/f7), with the resulting play shown in microns. **Screw Here** joins two parts in one click: a clearance hole with counterbore or countersink in the top part, and a tapped hole, a hole for a heat-set insert or a nut trap in the bottom part, with the screw length picked from the standard. Threads have a 3D print setting that adds the play and warns when the pitch is too fine for a 0.4 mm nozzle.
+
+How much play is right depends on your printer, so measure it once. **Printer Test** opens a fit plate with eight holes, each a little looser than the last, a pin, and a plate with overhangs from 30 to 70° and walls from 0.4 to 1.2 mm. Print it, push the pin in, look at the overhangs, then click in Settings › 3D Printing what fit. From then on every fit, printable thread and the Print View use your printer's numbers.
 
 <br>
 
@@ -260,8 +264,6 @@ The start page lists your recent designs and everything in your project folder, 
 MyCAD is young and grows fast. This is what comes next, roughly in this order (details in the [roadmap](docs/PLAN.md)):
 
 - **Open STL, 3MF and OBJ** as a reference you can snap to and measure, with holes and flat faces recognized as real features. For remixing and spare parts.
-- **One calm toolbar row.** Categories that open into a grid of named tools, with a category of its own for printing.
-- **Your printer, measured.** Print a small test piece once, click what fits, and every fit, hole and thread uses the real play of your printer.
 - **Workshop sheet.** One click makes a PDF with views, a table of holes, threads and fits, and the main dimensions, ready for whoever machines the part.
 - **Flathub**, so MyCAD installs on any Linux.
 - Standard parts as real bodies (screws, nuts, bearings, magnets), gears and hinges, multi-color painting for AMS and MMU printers, splitting parts that are too big for the bed, and a local assistant that turns a sentence into steps, offline.
@@ -280,7 +282,7 @@ MyCAD is young and grows fast. This is what comes next, roughly in this order (d
 | **Dimensions** | Double-click a face to change the dimensions that make it; errors explain themselves and offer a value that works |
 | **Notes** | Saved in the design, lines ending in `=` are calculated, `Name = value` lines are parameters (both ways) |
 | **Red Pen** | Handwritten corrections on the model become features: R, C, ±, M, Ø, H7, 3×, dimensions, remove face |
-| **3D printing** | Print View (overhangs, bed, thin walls), print direction, Print to OrcaSlicer, Bambu Studio, PrusaSlicer and Cura (program, Flatpak, AppImage) |
+| **3D printing** | Print View (overhangs, bed, thin walls), print direction, Printer Test (clearance, overhang, wall), Print to OrcaSlicer, Bambu Studio, PrusaSlicer and Cura (program, Flatpak, AppImage) |
 | **Saving** | Always saved, versions with Time Machine retention, compare as a ghost, restore, variants |
 | **Assembly** | 7 joint types with limits, animate with collisions, chains, closed loops solved with OndselSolver, mass and center of mass |
 | **Search** | Ctrl+K for commands, bodies and sketches, typo-tolerant, English and German |
