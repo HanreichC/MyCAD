@@ -115,8 +115,8 @@ const std::map<QChar, Glyph>& glyphs()
     return g;
 }
 
-/// Text als Striche (Blatt-Koordinaten in mm, y nach oben); messy 0 = sauber, 1 = Sauklaue
-std::vector<Stroke> write(const QStringList& lines, double messy, unsigned seed)
+/// Text als Striche (Blatt-Koordinaten in mm, y nach oben); messy 0 = sauber, 1 = Sauklaue; gap: Wortabstand in x-Höhen
+std::vector<Stroke> write(const QStringList& lines, double messy, unsigned seed, double gap = 0.55)
 {
     std::mt19937 rng(seed);
     std::uniform_real_distribution<double> uni(-1, 1);
@@ -149,7 +149,7 @@ std::vector<Stroke> write(const QStringList& lines, double messy, unsigned seed)
                 }
                 gx += g.w * gs + 0.08;
             }
-            cx += gx * ws + 0.55 + messy * std::abs(r()) * 0.5;
+            cx += gx * ws + gap + messy * std::abs(r()) * 0.5;
         }
     }
     return out;
@@ -468,6 +468,54 @@ int main(int argc, char** argv)
         }
     }
     assert(tutorials >= 4);
+
+    // Eng geschrieben (S5, „derPlan“): unter 0,6 x-Höhe Lücke trennte das Aufräumen die Wörter nicht. Ein Leerzeichen
+    // liest das Modell dort auch nicht („WelleFormRahmen“), wohl aber den Großbuchstaben: dort beginnt ein Wort und
+    // bekommt den gemeinsamen Wortabstand. Normal geschrieben zerteilt es kein Wort
+    const auto wordGaps = [](const std::vector<Stroke>& ink, const std::vector<int>& word, size_t n) {
+        std::vector<double> lo(n, INFINITY), hi(n, -INFINITY), gaps;
+        for (size_t i = 0; i < ink.size(); ++i) {
+            for (const auto& p : ink[i]) {
+                lo[size_t(word[i])] = std::min(lo[size_t(word[i])], p.x);
+                hi[size_t(word[i])] = std::max(hi[size_t(word[i])], p.x);
+            }
+        }
+        for (size_t k = 1; k < n; ++k) {
+            gaps.push_back(lo[k] - hi[k - 1]);
+        }
+        return gaps;
+    };
+    int found = 0, mergedBefore = 0;
+    for (const double gap : {0.55, 0.25, 0.1, 0.0}) {
+        for (const unsigned seed : {1U, 2U, 3U}) {
+            const std::vector<Stroke> ink = write({QStringLiteral("Welle Form Rahmen Bohrung")}, 0.3, seed, gap);
+            const auto lines = ScribbleRead::read(ink);
+            Options o;
+            o.word = ScribbleRead::words(lines, ink);
+            const std::set<int> ids(o.word.begin(), o.word.end());
+            std::printf("Wortabstand %.2f seed %u: [%s], %zu Wörter", gap, seed, lines.empty() ? "" : lines[0].text.toUtf8().constData(),
+                        ids.size());
+            assert(ids.size() <= 4 && !ids.count(-1) && *ids.rbegin() == int(ids.size()) - 1);  // nie mehr als geschrieben
+            const auto before = wordGaps(tidy(ink), o.word, ids.size()), after = wordGaps(tidy(ink, o), o.word, ids.size());
+            std::printf(", Lücken vorher");
+            for (double g : before) {
+                std::printf(" %.2f", g);
+            }
+            std::printf(", nachher");
+            for (double g : after) {
+                std::printf(" %.2f", g);
+            }
+            std::printf("\n");
+            if (after.empty()) {
+                continue;
+            }
+            const auto [amin, amax] = std::minmax_element(after.begin(), after.end());
+            assert(*amin > 2 && *amax - *amin < 0.1);  // gleich und mindestens 0,5 x-Höhe (4 mm)
+            found += ids.size() >= 3;  // „Welleform“: das F liest es oft klein
+            mergedBefore += *std::min_element(before.begin(), before.end()) < 0.6 * *amin;  // klebte vorher zusammen
+        }
+    }
+    assert(found >= 9 && mergedBefore >= 2);
     std::puts("ok");
     return 0;
 }

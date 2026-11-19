@@ -43,6 +43,13 @@ std::vector<Line> read(const std::vector<ScribbleTidy::Stroke>& strokes);
 /// Zeichen gelesen werden (Kreuz im Kreis: "et"), bleiben Text
 bool looksRead(const Line& line, const std::vector<ScribbleTidy::Stroke>& strokes);
 
+/// Wortnummer je Strich für ScribbleTidy::Options::word: sicher gelesene Leerzeichen und Großbuchstaben nach kleinen
+/// („derPlan“) trennen Wörter auch ohne sichtbare Lücke. -1 für Striche außerhalb von Zeilen, die nach Schrift
+/// aussehen, und für Zeilen mit einem Strich über mehrere Wortgrenzen (Unterstreichung): die räumt ScribbleTidy wie
+/// bisher nach Lücken auf.
+/// ponytail: eine Unterstreichung unter genau zwei Wörtern gehört dem linken; erst ändern, wenn das im Alltag stört
+std::vector<int> words(const std::vector<Line>& lines, const std::vector<ScribbleTidy::Stroke>& strokes);
+
 /// Wo der Tinte ein Zeichen fehlt, das die Korrektur ergänzt hat
 struct InkEdit
 {

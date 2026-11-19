@@ -6,6 +6,7 @@
 #include <QPainter>
 #include <QPainterPath>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <memory>
@@ -21,6 +22,7 @@ constexpr int Height = 64;     ///< Eingabehöhe des Modells (htr/config.json)
 constexpr int MaxWidth = 1024;
 constexpr int Stride = 4;      ///< so viele Pixel je Ausgabeschritt
 constexpr double Margin = 6;   ///< px Rand links und rechts
+constexpr float SureSpace = 0.5F;  ///< ab so sicher trennt ein gelesenes Leerzeichen Wörter (words)
 
 /// Zeichen der Klassen 1…111 (0 ist CTC-blank), wörtlich aus htr/config.json
 const QString& alphabet()
@@ -92,6 +94,49 @@ bool looksRead(const Line& line, const std::vector<ScribbleTidy::Stroke>& stroke
         }
     }
     return sure >= 0.6 && x1 - x0 >= 1.2 * (y1 - y0);
+}
+
+std::vector<int> words(const std::vector<Line>& lines, const std::vector<ScribbleTidy::Stroke>& strokes)
+{
+    std::vector<int> out(strokes.size(), -1);
+    int next = 0;
+    for (const Line& l : lines) {
+        if (!looksRead(l, strokes)) {
+            continue;
+        }
+        // Wortgrenzen: sichere Leerzeichen, und ein Großbuchstabe nach zwei kleinen („derPlan“: im Deutschen beginnt dort
+        // ein Nomen; „MyCAD“, „kN“ bleiben ganz). Eng geschrieben liest das Modell kein Leerzeichen (wo es eins liest,
+        // trennt ScribbleTidy schon nach der Lücke), den Großbuchstaben aber schon
+        // ponytail: zwei kleine Wörter eng („istder“) bleiben eins; trennen ginge nur mit einer Wortliste
+        std::vector<double> spaces;
+        for (size_t k = 0; k < l.chars.size(); ++k) {
+            const Char& c = l.chars[k];
+            if (c.c == QLatin1Char(' ') && c.confidence >= SureSpace) {
+                spaces.push_back(c.x);
+            }
+            else if (k >= 2 && c.c.isUpper() && l.chars[k - 1].c.isLower() && l.chars[k - 2].c.isLower()) {
+                spaces.push_back((l.chars[k - 1].x + c.x) / 2);
+            }
+        }
+        std::vector<int> mine;
+        for (size_t i : l.strokes) {
+            double x0 = INFINITY, x1 = -INFINITY;
+            for (const auto& p : strokes[i]) {
+                x0 = std::min(x0, p.x), x1 = std::max(x1, p.x);
+            }
+            if (std::count_if(spaces.begin(), spaces.end(), [&](double x) { return x > x0 && x < x1; }) > 1) {
+                mine.clear();
+                break;
+            }
+            const double cx = (x0 + x1) / 2;
+            mine.push_back(next + int(std::count_if(spaces.begin(), spaces.end(), [cx](double x) { return x < cx; })));
+        }
+        for (size_t k = 0; k < mine.size(); ++k) {
+            out[l.strokes[k]] = mine[k];
+        }
+        next += int(spaces.size()) + 1;
+    }
+    return out;
 }
 
 bool available()

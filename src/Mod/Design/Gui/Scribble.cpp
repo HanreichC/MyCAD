@@ -1486,8 +1486,9 @@ void ViewProviderScribble::Private::tidyWriting()
     // die Größe allein hält auch eine kleine Zeichnung für Schrift: liest das Modell darin keine Zeile, die nach Schrift
     // aussieht, bleibt sie, wie sie ist. Mit dem Grafiktablett schreibt man auf dem Bildschirm oft größer als die
     // Grenze für Schrift (bis 230 px statt 60): ein sicher gelesenes Wort ab drei Zeichen ist trotzdem Schrift
+    std::vector<ScribbleRead::Line> raw;
     if (ScribbleRead::available()) {
-        const auto raw = ScribbleRead::read(flat);
+        raw = ScribbleRead::read(flat);
         if (std::none_of(raw.begin(), raw.end(), [&flat, small](const ScribbleRead::Line& l) {
                 return ScribbleRead::looksRead(l, flat) && (small || l.chars.size() >= 3);
             })) {
@@ -1500,6 +1501,7 @@ void ViewProviderScribble::Private::tidyWriting()
     options.inPlace = object()->OnModel.getValue();
     options.smooth = options.straight = !options.inPlace;
     options.margin = false;  // den linken Rand setzt follow, auch an schon Geschriebenem
+    options.word = ScribbleRead::words(raw, flat);  // eng geschrieben („derPlan“): das Modell liest die Wortgrenze
     auto neat = ScribbleTidy::tidy(flat, options);
     if (!options.inPlace) {  // nach einer Pause weitergeschrieben: so groß und auf der Zeile wie das, was schon dasteht
         // nur, was das Modell als Schrift liest: an eine Zeichnung daneben schließt nichts an.

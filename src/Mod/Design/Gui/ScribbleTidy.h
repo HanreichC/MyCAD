@@ -31,6 +31,9 @@ struct Options
     /// alle Zeilen am linken Rand der Runde; ohne beginnt jede, wo sie anfängt, und follow richtet sie an der Zeile
     /// darüber aus (auch an schon Geschriebenem: die Fortsetzung einer Zeile bleibt rechts, wo sie hingehört)
     bool margin = true;
+    /// je Strich die Nummer seines Worts, wie die Schrifterkennung es liest (ScribbleRead::words; leer oder -1: nicht
+    /// gelesen). Trennt auch eng geschriebene Wörter („derPlan“), die sonst erst ab 0,6 x-Höhe Lücke zwei wären
+    std::vector<int> word;
 };
 
 namespace detail
@@ -343,12 +346,18 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
                 tops.push_back(L.base - B[i].minY);
             }
             L.xh = quant(tops, 0.25);
-            // Wörter: waagrecht überlappende Striche sind ein Stück (ein Buchstabe), eine große Lücke trennt Wörter
+            // Wörter: waagrecht überlappende Striche sind ein Stück (ein Buchstabe), eine große Lücke trennt Wörter, und
+            // ist die ganze Zeile gelesen, auch eine Wortgrenze der Schrifterkennung (dann Wort für Wort sortiert)
+            const auto wordOf = [&o](size_t i) { return i < o.word.size() ? o.word[i] : -1; };
+            const bool read = std::all_of(L.idx.begin(), L.idx.end(), [&](size_t i) { return wordOf(i) >= 0; });
+            const auto same = [&](size_t a, size_t b) { return !read || wordOf(a) == wordOf(b); };
             std::vector<size_t> order = L.idx;
-            std::sort(order.begin(), order.end(), [&B](size_t a, size_t b) { return B[a].minX < B[b].minX; });
+            std::sort(order.begin(), order.end(), [&](size_t a, size_t b) {
+                return read && wordOf(a) != wordOf(b) ? wordOf(a) < wordOf(b) : B[a].minX < B[b].minX;
+            });
             std::vector<Word> units;
             for (size_t i : order) {
-                if (!units.empty() && B[i].minX <= units.back().maxX + 0.02 * h) {
+                if (!units.empty() && B[i].minX <= units.back().maxX + 0.02 * h && same(i, units.back().idx.front())) {
                     units.back().idx.push_back(i);
                     units.back().maxX = std::max(units.back().maxX, B[i].maxX);
                 }
@@ -357,7 +366,7 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
                 }
             }
             for (const Word& u : units) {
-                if (!L.words.empty() && u.minX - L.words.back().maxX < 0.6 * L.xh) {
+                if (!L.words.empty() && u.minX - L.words.back().maxX < 0.6 * L.xh && same(u.idx.front(), L.words.back().idx.front())) {
                     Word& w = L.words.back();
                     w.idx.insert(w.idx.end(), u.idx.begin(), u.idx.end());
                     w.maxX = std::max(w.maxX, u.maxX);
