@@ -1,7 +1,7 @@
 # MyCAD – Masterplan
 
 > Stand: 2026-11-10 (Phase 10 neu) · Basis: FreeCAD 27.1-dev, Commit `e9b474306f`
-> Zielplattform: **ausschließlich Linux / CachyOS** (KDE Plasma, Wayland)
+> Zielplattform: **Linux** (entwickelt auf CachyOS mit KDE Plasma, Wayland; seit Phase 12 auch über Flathub für jedes Linux)
 
 ---
 
@@ -10,15 +10,17 @@
 MyCAD ist ein schlankes, parametrisches CAD-Programm für **Skizzen und Volumenkörper**.
 Es arbeitet wie **Fusion 360** und sieht aus wie eine **native Apple-App mit Liquid Glass**.
 Alles andere (FEM, CAM, BIM, TechDraw, Animation, Rendering, Elektronik …) lassen wir weg.
+Seit Phase 12 (4.6): **„Das Fusion für Linux. Lokal, ohne Abo, gemacht für den 3D-Druck.“** Zeichnungen kommen als
+Werkstattblatt ohne eigene Werkbank, Meshes (STL/3MF/OBJ) als Eingang.
 
 ### Feste Entscheidungen
 
 | Thema | Entscheidung |
 |---|---|
-| Plattform | Nur Linux (CachyOS). Systempakete statt LibPack. Kein Windows-/macOS-Code. |
+| Plattform | Nur Linux (entwickelt auf CachyOS; ab 12.6 Flatpak für jedes Linux). Systempakete statt LibPack. Kein Windows-/macOS-Code. |
 | Projektmodell | Wie Fusion: **eine Design-Datei**, beliebig viele **Komponenten**. Jede Komponente hat Bodies, Sketches, Construction-Geometrie und einen eigenen Ursprung. Darüber liegt eine **globale Timeline**. |
 | Anordnung | Move/Copy und Align ab sofort. **Joints erst in einer späteren Phase** (Phase 9). |
-| Formate | Export: **STL, 3MF, STEP**, Skizzen als **DXF**. Import: **STEP, DXF, SVG** (in eine Skizze). Nativ: `.mycad` (ZIP, auf Basis von FCStd). |
+| Formate | Export: **STL, 3MF, STEP**, Skizzen als **DXF**. Import: **STEP, DXF, SVG** (in eine Skizze); ab 12.1 **STL, 3MF, OBJ** (Mesh als Referenz, erkannte Formen als Features). Nativ: `.mycad` (ZIP, auf Basis von FCStd). |
 | Theme | **Hell + Dunkel**, folgt dem KDE-Farbschema. |
 | Sprache | **Englisch**, gleiche Begriffe wie Fusion. |
 | UI-Technik | **Neue Oberfläche in Qt Quick / QML**. Der 3D-Viewport ist ein Item im Scene Graph, damit die Glass-Panels den Viewport-Inhalt echt weichzeichnen und brechen können. |
@@ -522,6 +524,42 @@ Tests, Hilfe/README/Wiki wo sichtbar, Status hier, ein Commit.
 | D16–D19 | Foto zu Skizze: Blattecken nur bis ~35° Drehung, nur A4; Raster/glattes Papier nur gerade von oben; Bild auf 1000 px verkleinert; nie mit echten Handyfotos getestet | zurückgestellt, bis echte Fotos da sind |
 | F28 | Echter Rechner (CachyOS, Podman, echte GPU) nur durch Nutzung abgedeckt; Tests laufen mit Software-Rendering | Hinweis |
 | F29 | Ubuntu 26.04 in WSL bleibt für künftige Tests (`install.sh` mit Docker, Start über WSLg); Benutzer `tester`, Klon unter `~/MyCAD`, `docker.io` | so beschlossen |
+
+---
+
+### 4.6 Phase 12: Das Fusion für Linux (beschlossen 2026-11-19)
+
+Grundlage: `docs/ANALYSE.md` (Standort, Markt 2026, Wechselgründe, Ideen). Mit dem Benutzer abgestimmt: alles
+übernehmen. Zuerst die README neu (Botschaft), dann eine Anleitung für Flathub, danach die Pakete in sinnvoller
+Reihenfolge, je eins nach dem anderen (Tests, Hilfe EN/DE, README, ein Commit). Status je Punkt hier nachtragen.
+
+**Botschaft:** „Das Fusion für Linux. Lokal, ohne Abo, gemacht für den 3D-Druck.“ Zielgruppe: Maker und Konstrukteure
+auf Linux, die für 3D-Druck, Laser und CNC entwerfen; dazu kleine Werkstätten, die an die Grenzen der
+Fusion-Personal-Lizenz stoßen. Nicht: Teams mit PDM, CAM, tausende Teile.
+
+**Änderungen an der Vision (1.):** Zeichnung kommt als Werkstattblatt ohne eigene Werkbank (12.5); Plattform jedes
+Linux, nicht nur CachyOS (12.6); Mesh-Import (12.1). Weiter bewusst nicht: CAM, Flächen/T-Splines, Blech,
+Rendering-Workspace, Simulation, Cloud-Zusammenarbeit, Windows/macOS.
+
+| Nr. | Paket | Kern | Aufwand | Status |
+|---|---|---|---|---|
+| 12.0 | README neu | Botschaft vorn, Wechselgründe, ehrlich was fehlt; Funktionen nach Nutzen statt nach Menü | S | offen |
+| 12.0b | Anleitung Flathub | `docs/FLATHUB.md`: Manifest, App-ID, Metainfo, Sandbox (Wayland, GPU, Tablett, Slicer), Abhängigkeiten aus den Quellen, Einreichen, Pflege | S | offen |
+| 12.1 | Mesh-Brücke | Stufe 1: STL/3MF/OBJ als Referenz öffnen (halbtransparent, fangen, messen, Skizze auf Mesh-Ebene). Stufe 2: Ebenen, Zylinder, Kegel erkennen (RANSAC) und als Features übernehmen. Stufe 3 (Forschung): einfache Meshes werden Körper | L | offen |
+| 12.2 | Kontext-Leiste | Glas-Kapsel an der Auswahl mit 4–6 passenden Werkzeugen + „Mehr…“ (Strg+K gefiltert); auf dem Grafiktablett als Radialmenü auf einer Stift-Taste | M | offen |
+| 12.3 | Werkzeugleiste als Kategorien | eine Zeile: Kategorien als Knöpfe (Skizze, Erzeugen, Ändern, Konstruieren, Baugruppe, Prüfen, Drucken) + die häufigsten Werkzeuge direkt; Klick öffnet Glas-Popover mit Raster und Namen; Kategorie „Drucken“ bündelt Druckansicht, Druckbar machen, Druckrichtung, Kalibrierung, Teilen, Slicer | M | offen |
+| 12.4 | Druckerprofil und Kalibrierung | Testteil (Bolzen/Löcher in 0,05-mm-Stufen, Gewindeprobe, Überhangtreppe, Brücke); anklicken, was passt; Profil (Spiel je Passungsart, Lochschrumpf, Überhanggrenze, kleinste Wand, Bettgröße) gilt in Passung, Bohrung, Gewinde, Einschmelzmutter, Druckansicht | M | offen |
+| 12.5 | Werkstattblatt | ein Knopf: Ansichten (drei Seiten + Iso, Schnitt durch Bohrungen), Bohrungs-/Passungs-/Gewindetabelle, Hauptmaße aus Skizzen, Schriftfeld aus dem Design; PDF und DXF; ändern übers Modell | L | offen |
+| 12.6 | Flathub | Flatpak bauen und einreichen (nach 12.0b), „läuft auf jedem Linux“ | M | offen |
+| 12.7 | Normteile und Zweck-Werkzeuge | Schrauben, Muttern, Scheiben, Einschmelzmuttern, Lager, Magnete, Alu-Profile als echte Körper („Schraube hier“ setzt die Schraube ein, Stückliste); Zahnrad (Evolvente), Feder, Scharnier (auch Print-in-Place), Schnapphaken, Gehäuse mit Deckel; eigene Teile-Bibliothek aus früheren Designs | M | offen |
+| 12.8 | Druckfertig von Ende zu Ende | Mehrfarben je Fläche in den 3MF; Druckrichtung vorschlagen (wenig Stützfläche, geringe Höhe); zu groß fürs Bett → teilen mit Verbindern (Schwalbenschwanz, Stifte, Laschen) mit Spiel aus 12.4 | M | offen |
+| 12.9 | Lokaler Assistent | erst eine kleine, geprüfte Befehlssprache (ohne KI nutzbar und testbar, baut auf 11.10 und Rotstift), dann optional ein lokales Sprachmodell (llama.cpp, Download auf Wunsch) für Sätze; jede Antwort als Vorschau, Enter übernimmt; „Warum ist das rot?“, „Was hängt daran?“ | L | offen |
+| 12.10 | Code-Schritt | Timeline-Schritt aus Python-Code (build123d-artig auf MyCADs Funktionen) mit Parametern aus der Notiz; ausführen nur nach Bestätigung | M | offen |
+| 12.11 | Vorlagen und Umsteiger-Hilfe | beim ersten Start Vorlagen mit Notiz-Parametern (Box mit Deckel, Wandhalter, Platinengehäuse, Distanzhülse, Kabelclip); Hilfe-Pfad „Von Fusion umsteigen“ (Begriffe, Kürzel, was anders ist) | S | offen |
+| 12.12 | Stift zuerst | mit dem Stift gezeichnete Linien/Kreise direkt als Skizzengeometrie mit Bedingungen; Gesten (Häkchen = Fertig, Kritzeln = Löschen, Pfeil von Fläche = Press Pull); optional Handschrift-Erkennung auf die eigene Schrift anlernen | M | offen |
+| 12.13 | Oberfläche klüger | Browser eingeklappt als Kapsel, aufgeklappt mit Parametern und Notizen; Timeline-Vorschau beim Überfahren, Filter nach Körper | S | offen |
+| 12.14 | Bestehendes verbessern | SpaceMouse (spnav im FreeCAD-Kern prüfen), Auto-Bedingungen nach ganzen Formen, Rundung/Fase robuster mit Teilergebnis; dazu weiter C12, C13, D16–D19 nach Bedarf | M | offen |
+| 12.15 | Versionen zusammenführen | Varianten zusammenführen wie Onshape-Branches; erst, wenn danach gefragt wird | M | zurückgestellt |
 
 ---
 
