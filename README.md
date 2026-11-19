@@ -51,6 +51,8 @@ Every closed region in a sketch is its own profile. Draw two circles inside each
 
 **Inspect:** Measure · Section Analysis · Print View
 
+You rarely need the toolbar for the next step. Click a face, an edge or a profile, and the tools that fit float right above it: Press Pull, Sketch, Hole and Shell on a flat face, Fillet and Chamfer on an edge, Extrude and Revolve on a profile, Move, Mirror and Pattern on a whole body. The magnifier at the end opens every command.
+
 **Photo to Sketch** (Import a photo) traces a flat part photographed on plain paper into a sketch to scale (outline and holes, round ones as real circles). Lay it on an A4 sheet and the photo may even be taken at an angle: MyCAD straightens it and needs no input. On grid paper it finds the squares and only asks their size; on plain paper you type the real width. Extrude, done. Handy for spare parts.
 
 A cut goes through everything in its way, even bodies of other components. Extrude one side, symmetric, two sides, up to an object or through all, with a taper and as a thin wall. Click a face to drill a hole: it snaps to the middle or to the centre of a round face and is dimensioned to the two nearest edges by itself. Keep clicking for more holes; one at the same edge distance joins the row and moves with it. Holes follow ISO metric, metric fine, UNC and UNF, as clearance or tapped holes with the counterbore or countersink of the right screw. Threads are real and printable. Fillets can vary along an edge, patterns can follow a path, and mirror, pattern and move work with any plane, face, edge or axis.
@@ -258,7 +260,7 @@ The start page lists your recent designs and everything in your project folder, 
 MyCAD is young and grows fast. This is what comes next, roughly in this order (details in the [roadmap](docs/PLAN.md)):
 
 - **Open STL, 3MF and OBJ** as a reference you can snap to and measure, with holes and flat faces recognized as real features. For remixing and spare parts.
-- **Tools at your selection.** The handful of tools that fit what you picked appear right next to it, and the toolbar shrinks to one calm row.
+- **One calm toolbar row.** Categories that open into a grid of named tools, with a category of its own for printing.
 - **Your printer, measured.** Print a small test piece once, click what fits, and every fit, hole and thread uses the real play of your printer.
 - **Workshop sheet.** One click makes a PDF with views, a table of holes, threads and fits, and the main dimensions, ready for whoever machines the part.
 - **Flathub**, so MyCAD installs on any Linux.

@@ -1406,6 +1406,9 @@ void Gui::Shell::showSettings()
     auto names = new Switch(myParams()->GetBool("ToolNames", false));
     QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
     addRow(lookCard, T("Show tool names"), names);
+    // Kontext-Leiste (12.2): die passenden Werkzeuge schweben über der Auswahl
+    toggle(lookCard, T("Tools at the selection"), myParams()->GetBool("ContextBar", true),
+           [](bool on) { myParams()->SetBool("ContextBar", on); });
     myToggle(lookCard, T("Show grid"), "GroundGrid", myParams()->GetBool("GroundGrid", true));
 
     auto a11yCard = addCard(general, T("Accessibility"));

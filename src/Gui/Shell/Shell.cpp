@@ -6397,6 +6397,23 @@ void Gui::Shell::showScribbleActions(const QRectF& selection)
     state.scribbleActions->setVisible(true);
 }
 
+QAction* Gui::Shell::actionOf(const char* command)
+{
+    return commandAction(command);
+}
+
+QIcon Gui::Shell::iconOf(const char* command)
+{
+    QAction* a = commandAction(command);
+    return a ? commandIcon(QString::fromLatin1(command), a->icon()) : QIcon();
+}
+
+QString Gui::Shell::labelOf(const char* command)
+{
+    QAction* a = commandAction(command);
+    return a ? toolLabel(QString::fromLatin1(command), a) : QString();
+}
+
 void Gui::Shell::setToolNames(bool on)
 {
     App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->SetBool("ToolNames", on);

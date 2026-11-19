@@ -992,12 +992,14 @@
     "en": [
      "Everything you create appears as a step in the timeline at the bottom of the window. Double-click the step to open the same panel again and change the values later.",
      "Hold the mouse over any tool for its name, and press F1 to open its help page.",
-     "Settings (bottom of the sidebar) can show the tool names under the icons: Show tool names."
+     "Settings (bottom of the sidebar) can show the tool names under the icons: Show tool names.",
+     "Click a face, an edge or a profile and the tools that fit float right above it: Press Pull, Sketch and Hole on a flat face, Fillet and Chamfer on an edge, Extrude and Revolve on a profile. The magnifier at the end opens every command. Settings › Tools at the selection turns this off."
     ],
     "de": [
      "Alles, was du erstellst, erscheint als Schritt in der Zeitleiste unten im Fenster. Doppelklick auf den Schritt öffnet dasselbe Panel wieder, dort änderst du die Werte später.",
      "Halte die Maus über ein Werkzeug, um seinen Namen zu sehen, und drücke F1 für seine Hilfeseite.",
-     "In den Einstellungen (unten in der Seitenleiste) kannst du die Namen unter den Symbolen einblenden: Werkzeugnamen anzeigen."
+     "In den Einstellungen (unten in der Seitenleiste) kannst du die Namen unter den Symbolen einblenden: Werkzeugnamen anzeigen.",
+     "Klicke eine Fläche, eine Kante oder ein Profil an, und die passenden Werkzeuge schweben direkt darüber: Press Pull, Skizze und Bohrung an einer ebenen Fläche, Abrunden und Fasen an einer Kante, Extrudieren und Drehen an einem Profil. Die Lupe am Ende öffnet alle Befehle. Einstellungen › Werkzeuge an der Auswahl schaltet das ab."
     ]
    },
    "images": [
@@ -6564,7 +6566,7 @@
    },
    "steps": {
     "en": [
-     "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Show tool names and Show grid (the grid on the ground plane under the bodies).",
+     "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Show tool names, Tools at the selection (the tools that fit float above what you clicked) and Show grid (the grid on the ground plane under the bodies).",
      "Materials and Light: Body material for new bodies (Steel unless you choose another), Lighting (Studio or Room), and switches for Realistic materials, Reflections, Relief and end grain and Contact shadow.",
      "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart) and Projects folder.",
      "Further down under General: Export resolution (how fine curves become in STL and 3MF), 3D print clearance for the Fit tool (tight, normal, loose), and Overhang angle and Minimum wall for the Print View.",
@@ -6575,7 +6577,7 @@
      "Tablet tab: choose your graphics tablet (MyCAD recognizes it when it's plugged in) and what each button on the tablet and the pen does: eraser, select, pencil, fineliner, marker, next color, undo, redo, Only the Sheet, Look At, or rotate and pan the view while held. Pressing a button lights up its row. Restore Suggestion goes back to the preset."
     ],
     "de": [
-     "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
+     "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen, Werkzeuge an der Auswahl (die passenden Werkzeuge schweben über dem, was du angeklickt hast) und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
      "Materialien und Licht: Körpermaterial für neue Körper (Stahl, solange du nichts anderes wählst), Licht (Studio oder Raum) und Schalter für Realistische Materialien, Spiegelungen, Relief und Hirnholz und Kontaktschatten.",
      "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart) und Projektordner.",
      "Weiter unten unter Allgemein: Export-Auflösung (wie fein Rundungen in STL und 3MF werden), Spiel beim 3D-Druck für die Passung (eng, normal, locker) sowie Überhang-Winkel und kleinste Wand für die Druckansicht.",

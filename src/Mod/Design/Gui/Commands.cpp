@@ -4732,6 +4732,245 @@ private:
     DesignGui::CameraFollow follow {[this] { place(); }};
 };
 
+/// Kontext-Leiste (Phase 12.2): die paar Werkzeuge, die zur Auswahl passen, als Glas-Kapsel direkt über ihr (die
+/// Messkarte steht darunter). Profil → Extrude, Revolve …; ebene Fläche → Press Pull, Skizze, Bohrung …; runde Fläche →
+/// Gewinde, Passung …; Kante → Rundung, Fase; ganzer Körper → Bewegen, Spiegeln, Muster …; Ebene → Skizze. "Suchen"
+/// am Ende öffnet alle Befehle. Nur ohne offenes Werkzeug, außerhalb von Skizze und Scribble; abschaltbar
+/// (Einstellungen › Allgemein › Werkzeuge an der Auswahl).
+class ContextBar: public Gui::SelectionObserver
+{
+public:
+    ContextBar()
+    {
+        QObject::connect(&Gui::Control(), &Gui::ControlSingleton::dialogChanged, &follow, [this] {
+            if (Gui::Control().activeDialog()) {
+                hide();
+            }
+        }, Qt::QueuedConnection);
+    }
+
+    /// Befehle zur aktuellen Auswahl, in dieser Reihenfolge; leer = keine Leiste
+    static std::vector<const char*> commandsForSelection()
+    {
+        enum class Kind
+        {
+            None,
+            Profile,
+            FlatFaces,
+            CurvedFaces,
+            Edges,
+            Bodies,
+            Plane
+        } kind = Kind::None;
+        bool mixed = false;
+        int bodies = 0;
+        const auto is = [&](Kind k) {
+            mixed = mixed || (kind != Kind::None && kind != k);
+            kind = k;
+        };
+        for (auto& sel : Gui::Selection().getSelectionEx()) {
+            App::DocumentObject* obj = sel.getObject();
+            if (!obj) {
+                continue;
+            }
+            const auto& subs = sel.getSubNames();
+            if (obj->isDerivedFrom<Design::Profiles>() || obj->isDerivedFrom<Sketcher::SketchObject>()) {
+                is(Kind::Profile);
+            }
+            else if (obj->isDerivedFrom<Design::Body>()) {
+                ++bodies;
+                if (subs.empty()) {
+                    is(Kind::Bodies);
+                }
+                for (const std::string& s : subs) {
+                    if (s.rfind("Edge", 0) == 0) {
+                        is(Kind::Edges);
+                    }
+                    else if (s.rfind("Face", 0) == 0) {
+                        is(isPlanarFace(obj, s) ? Kind::FlatFaces : Kind::CurvedFaces);
+                    }
+                    else {
+                        mixed = true;  // Ecken: nichts Eindeutiges anzubieten
+                    }
+                }
+            }
+            else if (obj->isDerivedFrom<App::Plane>() || obj->getTypeId().isDerivedFrom(Base::Type::fromName("PartDesign::Plane"))) {
+                is(Kind::Plane);
+            }
+            else {
+                mixed = true;
+            }
+        }
+        if (mixed) {
+            return {};
+        }
+        switch (kind) {
+            case Kind::Profile:
+                return {"Design_Extrude", "Design_Revolve", "Design_Sweep", "Design_Loft", "MyCAD_Search"};
+            case Kind::FlatFaces:
+                return {"Design_PressPull", "Design_CreateSketch", "Design_Hole", "Design_Shell", "Design_Appearance", "MyCAD_Search"};
+            case Kind::CurvedFaces:
+                return {"Design_PressPull", "Design_Thread", "Design_Fit", "Design_Appearance", "MyCAD_Search"};
+            case Kind::Edges:
+                return {"Design_Fillet", "Design_Chamfer", "MyCAD_Search"};
+            case Kind::Bodies:
+                if (bodies >= 2) {
+                    return {"Design_Combine", "Design_Move", "Design_Mirror", "Design_Pattern", "Design_Appearance", "MyCAD_Search"};
+                }
+                return {"Design_Move", "Design_Mirror", "Design_Pattern", "Design_Shell", "Design_Appearance", "MyCAD_Search"};
+            case Kind::Plane:
+                return {"Design_CreateSketch", "Design_OffsetPlane", "MyCAD_Search"};
+            default:
+                return {};
+        }
+    }
+
+private:
+    void onSelectionChanged(const Gui::SelectionChanges& msg) override
+    {
+        if (msg.Type == Gui::SelectionChanges::AddSelection || msg.Type == Gui::SelectionChanges::RmvSelection
+            || msg.Type == Gui::SelectionChanges::ClrSelection || msg.Type == Gui::SelectionChanges::SetSelection) {
+            QTimer::singleShot(0, &follow, [this] { refresh(); });
+        }
+    }
+
+    void hide()
+    {
+        follow.stop();
+        if (panel) {
+            panel->hide();
+        }
+    }
+
+    void refresh()
+    {
+        hide();
+        const auto selection = Gui::Selection().getSelectionEx();
+        App::Document* doc = selection.empty() || !selection.back().getObject() ? nullptr : selection.back().getObject()->getDocument();
+        auto gdoc = doc ? Gui::Application::Instance->getDocument(doc) : nullptr;
+        if (!gdoc || gdoc->getInEdit() || Gui::Control().activeDialog()
+            || !App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("ContextBar", true)) {
+            return;
+        }
+        std::vector<const char*> commands;
+        for (const char* name : commandsForSelection()) {
+            if (Gui::Shell::actionOf(name)) {
+                commands.push_back(name);
+            }
+        }
+        auto view = dynamic_cast<Gui::View3DInventor*>(gdoc->getActiveView());
+        viewer = view ? view->getViewer() : nullptr;
+        if (commands.empty() || !viewer || !anchorOf(selection)) {
+            return;
+        }
+        build(commands);
+        panel->show();
+        // wie die Messkarte: erst Schrift und Stil der Szene an alle Knöpfe, dann messen; sonst stand die Leiste mit
+        // der Größe vor dem Stil (8 × 9 px) und wuchs danach über den angeklickten Punkt
+        QCoreApplication::sendPostedEvents(content);
+        for (QWidget* w : content->findChildren<QWidget*>()) {
+            QCoreApplication::sendPostedEvents(w);
+        }
+        content->adjustSize();
+        place();
+        QTimer::singleShot(0, &follow, [this] { place(); });
+        follow.start(viewer);
+    }
+
+    /// Wo die Leiste hingehört: der zuletzt angeklickte Punkt, sonst die Mitte der Auswahl (gewählt im Browser)
+    bool anchorOf(const std::vector<Gui::SelectionObject>& selection)
+    {
+        for (auto it = selection.rbegin(); it != selection.rend(); ++it) {
+            if (!it->getPickedPoints().empty()) {
+                anchor = it->getPickedPoints().back();
+                return true;
+            }
+        }
+        Base::BoundBox3d box;
+        for (const auto& sel : selection) {
+            const auto& subs = sel.getSubNames();
+            for (size_t i = 0; i < std::max<size_t>(1, subs.size()); ++i) {
+                const Part::TopoShape s = Part::Feature::getTopoShape(
+                    sel.getObject(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform
+                                         | (subs.empty() ? Part::ShapeOption::NoFlag : Part::ShapeOption::NeedSubElement),
+                    subs.empty() ? nullptr : subs[i].c_str());
+                if (!s.isNull()) {
+                    box.Add(s.getBoundBox());
+                }
+            }
+        }
+        if (!box.IsValid()) {
+            return false;
+        }
+        anchor = box.GetCenter();
+        return true;
+    }
+
+    void build(const std::vector<const char*>& commands)
+    {
+        if (!panel) {
+            content = new QWidget;
+            content->setObjectName(QStringLiteral("GlassContent"));
+            auto lay = new QHBoxLayout(content);
+            lay->setContentsMargins(4, 4, 4, 4);
+            lay->setSpacing(2);
+            panel = new Gui::Shell::GlassPanel(content, Gui::Shell::Token::RadiusCapsule);
+            panel->setZValue(9);
+        }
+        if (panel->scene() != viewer->scene()) {
+            viewer->scene()->addItem(panel);
+        }
+        for (QWidget* w : content->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
+            delete w;
+        }
+        for (const char* name : commands) {
+            QAction* action = Gui::Shell::actionOf(name);
+            auto button = new QToolButton;
+            button->setObjectName(QStringLiteral("GlassButton"));
+            button->setProperty("command", QString::fromLatin1(name));
+            button->setProperty("contextBar", true);  // für Tests: von den gleichen Knöpfen der Werkzeugleiste zu unterscheiden
+            button->setIcon(Gui::Shell::iconOf(name));  // MyCADs Symbol wie in der Werkzeugleiste, nicht das von FreeCAD
+            button->setIconSize(QSize(Gui::Shell::Token::IconWindow, Gui::Shell::Token::IconWindow));
+            button->setFixedSize(Gui::Shell::Token::WindowButton, Gui::Shell::Token::WindowButton);
+            button->setToolTip(action->toolTip().isEmpty() ? action->text() : action->toolTip());
+            button->setAccessibleName(Gui::Shell::labelOf(name));
+            button->setCursor(Qt::PointingHandCursor);
+            const std::string command = name;
+            QObject::connect(button, &QToolButton::clicked, button, [this, command] {
+                hide();
+                QTimer::singleShot(0, [command] {  // die Auswahl bleibt, das Werkzeug nimmt sie
+                    Gui::Application::Instance->commandManager().runCommandByName(command.c_str());
+                });
+            });
+            content->layout()->addWidget(button);
+        }
+        content->adjustSize();
+    }
+
+    /// über dem Anker, ist dort kein Platz (Toolbar), darunter; nie auf dem Anker selbst: der zweite Klick eines
+    /// Doppelklicks (Maße an der Fläche) muss die Fläche treffen, nicht die Leiste
+    void place()
+    {
+        if (!panel || !viewer || !panel->isVisible()) {
+            return;
+        }
+        const QPoint p = viewer->toQPoint(viewer->getPointOnViewport(SbVec3f(float(anchor.x), float(anchor.y), float(anchor.z))));
+        const QSizeF s = content->sizeHint();
+        const QRectF view = viewer->scene()->sceneRect();
+        constexpr qreal gap = 24, top = 150, bottom = 90;  // Abstand zum Punkt; oben Toolbar, unten Timeline frei
+        const qreal x = std::clamp<qreal>(p.x() - s.width() / 2, view.left() + 12, view.right() - s.width() - 12);
+        const qreal above = p.y() - gap - s.height();
+        const qreal y = above >= view.top() + top ? above : std::min<qreal>(p.y() + gap, view.bottom() - s.height() - bottom);
+        panel->setGeometry(QRectF(x, y, s.width(), s.height()));
+    }
+
+    Base::Vector3d anchor;
+    QPointer<Gui::View3DInventorViewer> viewer;
+    QPointer<Gui::Shell::GlassPanel> panel;
+    QWidget* content = nullptr;
+    DesignGui::CameraFollow follow {[this] { place(); }};
+};
+
 /// Schnittansicht: das Modell an einer Ebene oder ebenen Fläche aufschneiden (nochmal: Schnitt aufheben)
 void toggleSection(App::Document* doc)
 {
@@ -5283,6 +5522,7 @@ void DesignGui::cornerHoles(const std::string& size, double diameter, double off
 void CreateDesignCommands()
 {
     static QuickMeasureChip quickMeasure;
+    static ContextBar contextBar;
     auto& mgr = Gui::Application::Instance->commandManager();
     mgr.addCommand(new SketchCompleteCommand);
     mgr.addCommand(new DesignCommand("Design_CreateSketch", "Create Sketch",

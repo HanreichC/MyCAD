@@ -10,6 +10,9 @@
 #include <functional>
 #include <vector>
 
+class QAction;
+class QIcon;
+
 namespace App
 {
 class Material;
@@ -28,6 +31,10 @@ void install();
 void prepareWindow();
 /// Namen unter den Symbolen der Toolbar ein-/ausblenden (Einstellung "Show tool names")
 void setToolNames(bool on);
+/// QAction eines Befehls (nullptr, wenn es ihn nicht gibt); Symbol und kurzer Name wie in der Werkzeugleiste
+QAction* actionOf(const char* command);
+QIcon iconOf(const char* command);
+QString labelOf(const char* command);
 /// Handschrift suchen in Scribbles: das Design-Modul meldet hier die Suche an (nur mit Handschrift-Modell), dann zeigt
 /// die Scribble-Palette ein Suchfeld. Die Suche bekommt den Text und sagt, ob sie ihn gefunden hat.
 void setScribbleFind(std::function<bool(const QString&)> find);

@@ -142,6 +142,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"acts as", "wirkt als"},
         {"Remove", "Entfernen"},
         {"Add Key…", "Taste hinzufügen…"},
+        // Kontext-Leiste über der Auswahl (12.2)
+        {"Tools at the selection", "Werkzeuge an der Auswahl"},
         // Timeline: Pfeile zum Rollen, wenn nicht alle Schritte passen
         {"Earlier Steps", "Frühere Schritte"},
         {"Later Steps", "Spätere Schritte"},
