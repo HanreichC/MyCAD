@@ -271,6 +271,45 @@ int main()
     assert(tidy({}).empty());
     assert(tidy({{{1, 2, 0.3}}, {{4, 2, 0.3}}}).size() == 2);  // nur Punkte: bleibt heil
 
+    // Echte Tablett-Schrift (tests/projects): Lücken in einem Wort sind oft so groß wie zwischen Wörtern ("Die s ist").
+    // Liest die Schrifterkennung die Zeile, entscheidet nur sie über Wortgrenzen: die Lücke im Wort bleibt, wie sie ist,
+    // statt als Wortabstand gleichgezogen zu werden. Sechs senkrechte Striche, 4 hoch: Wort 0 = 0, 2, | 5.5, 7.5, Wort 1 = 13, 15
+    {
+        std::vector<Stroke> word;
+        for (double x : {0.0, 2.0, 5.5, 7.5, 13.0, 15.0}) {
+            word.push_back({{x, 0, 0.3}, {x, 2, 0.3}, {x, 4, 0.3}});
+        }
+        Options only;  // nur die Abstände
+        only.smooth = only.straight = only.size = only.slant = only.width = false;
+        const auto inner = [](const std::vector<Stroke>& S) { return S[2][0].x - S[1][0].x; };  // Lücke im Wort 0
+        Options read = only;
+        read.word = {0, 0, 0, 0, 1, 1};
+        assert(std::abs(inner(tidy(word, read)) - 3.5) < 1e-9);  // ein Wort: Lücke bleibt
+        assert(std::abs(inner(tidy(word, only)) - 3.5) > 0.1);   // ohne Lesen: zwei Wörter, Lücke gleichgezogen
+    }
+
+    // Stärke des Glättens (Einstellung): stärker glättet ein Zittern weiter weg
+    {
+        Stroke zigzag;
+        for (int i = 0; i <= 40; ++i) {
+            zigzag.push_back({i * 0.25, (i % 2) * 0.3, 0.3});
+        }
+        const std::vector<Stroke> one = {zigzag, {{0, 0, 0.3}, {0, 4, 0.3}}};  // zweiter Strich gibt die Höhe vor
+        const auto wobble = [](const Stroke& s) {
+            double w = 0;
+            for (size_t i = 1; i + 1 < s.size(); ++i) {
+                w += std::abs(s[i].y - (s[i - 1].y + s[i + 1].y) / 2);
+            }
+            return w;
+        };
+        Options soft, strong;
+        soft.straight = soft.size = soft.slant = soft.gaps = soft.width = false;
+        strong = soft;
+        soft.smoothing = 0.05;
+        strong.smoothing = 0.25;
+        assert(wobble(tidy(one, strong)[0]) < 0.5 * wobble(tidy(one, soft)[0]));
+    }
+
     std::puts("ok");
     return 0;
 }

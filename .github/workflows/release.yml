@@ -1,22 +1,59 @@
-# Bei jedem Push auf main: MyCAD im Dev-Container bauen, als AppImage verpacken und als Release veröffentlichen.
-# Version 1.0.N: N = Anzahl Commits seit dem Commit, der diese Datei eingeführt hat (dieser selbst = 1.0.0).
-name: Release AppImage
+# MyCAD im Dev-Container bauen und testen; ein AppImage-Release nur, wenn eins gewollt ist:
+#   Push auf main   → bauen + testen (rot fällt früh auf), kein Release. Nur Doku geändert (docs/, *.md): gar nichts.
+#                     Ein neuerer Push bricht den laufenden Test-Lauf ab: nur der neueste Stand zählt.
+#   Tag v1.2.0      → bauen + testen + Release 1.2.0
+#   Run workflow    → bauen + testen + Release 1.0.N (Knopf in GitHub › Actions)
+#   jede Nacht      → wie Run workflow, aber nur, wenn main seit dem letzten Release neu ist
+# Version 1.0.N: N = Anzahl Commits seit dem Commit, der diese Datei eingeführt hat (dieser selbst = 1.0.0); daher den
+# Dateinamen nicht ändern.
+name: Build, Test, Release
 
 on:
   push:
     branches: [main]
+    tags: ['v*']
+    paths-ignore: ['docs/**', '**/*.md']  # gilt nicht für Tags
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # 2 Uhr UTC (3 bzw. 4 Uhr in Deutschland)
 
 permissions:
   contents: write
 
+# Pushes auf main teilen sich eine Gruppe und lösen einander ab; Releases laufen nacheinander und werden nie abgebrochen
 concurrency:
-  group: release
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') && 'ci' || 'release' }}
+  cancel-in-progress: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
+  # Nachts nur bauen, wenn main seit dem letzten Release neu ist (kostet sonst 1,5 h für nichts)
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.c.outputs.build }}
+    steps:
+      - id: c
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          build=true
+          if [ "${{ github.event_name }}" = schedule ]; then
+            last=$(gh release list --limit 1 --json tagName --jq '.[0].tagName // empty')
+            if [ -n "$last" ] && [ "$(gh release view "$last" --json targetCommitish --jq .targetCommitish)" = "$GITHUB_SHA" ]; then
+              build=false
+              echo "main ist seit $last unverändert: kein nächtlicher Build"
+            fi
+          fi
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
   appimage:
+    needs: check
+    if: needs.check.outputs.build == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 300
+    env:
+      RELEASE: ${{ github.event_name != 'push' || startsWith(github.ref, 'refs/tags/') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,8 +63,12 @@ jobs:
       - name: Version
         id: version
         run: |
-          first=$(git log --diff-filter=A --format=%H -- .github/workflows/release.yml | tail -1)
-          echo "version=1.0.$(( $(git rev-list --count HEAD) - $(git rev-list --count "$first") ))" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.ref_type }}" = tag ]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            first=$(git log --diff-filter=A --format=%H -- .github/workflows/release.yml | tail -1)
+            echo "version=1.0.$(( $(git rev-list --count HEAD) - $(git rev-list --count "$first") ))" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Platz schaffen
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
@@ -62,9 +103,11 @@ jobs:
           path: build/test-results
 
       - name: AppImage packen
+        if: env.RELEASE == 'true'
         run: docker run --rm -v "$PWD:/workspace" -w /workspace mycad-dev tools/appimage.sh "${{ steps.version.outputs.version }}"
 
       - name: Release veröffentlichen
+        if: env.RELEASE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

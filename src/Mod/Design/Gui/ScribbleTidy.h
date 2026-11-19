@@ -24,6 +24,9 @@ using Stroke = std::vector<Pt>;
 struct Options
 {
     bool smooth = true, straight = true, size = true, slant = true, gaps = true, width = true;
+    /// wie stark geglättet wird, als Anteil der typischen Strichhöhe. Gemessen an echter Tablett-Schrift (tests/projects):
+    /// stärker wirkt ruhiger, die Schrifterkennung liest dann aber etwas schlechter (0,10: 25 % Zeichenfehler, 0,20: 29 %)
+    double smoothing = 0.1;
     bool upright = false;  ///< Schräge: aufrecht statt der eigenen mittleren
     /// jede Zeile bleibt, wo sie steht: kein gemeinsamer linker Rand, kein gleicher Zeilenabstand (Rotstift: jede Zeile
     /// ist eine eigene Korrektur an ihrer Stelle im Modell)
@@ -220,7 +223,7 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
         }
         if (o.smooth) {
             for (Stroke& s : S) {
-                smooth(s, 0.1 * h);
+                smooth(s, o.smoothing * h);
             }
         }
         if (o.width) {
@@ -346,8 +349,9 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
                 tops.push_back(L.base - B[i].minY);
             }
             L.xh = quant(tops, 0.25);
-            // Wörter: waagrecht überlappende Striche sind ein Stück (ein Buchstabe), eine große Lücke trennt Wörter, und
-            // ist die ganze Zeile gelesen, auch eine Wortgrenze der Schrifterkennung (dann Wort für Wort sortiert)
+            // Wörter: waagrecht überlappende Striche sind ein Stück (ein Buchstabe), eine große Lücke trennt Wörter. Ist die
+            // ganze Zeile gelesen, entscheidet nur die Schrifterkennung (dann Wort für Wort sortiert): in echter
+            // Tablett-Schrift sind Lücken im Wort oft so groß wie zwischen Wörtern (tests/projects/Scribble Test.mycad)
             const auto wordOf = [&o](size_t i) { return i < o.word.size() ? o.word[i] : -1; };
             const bool read = std::all_of(L.idx.begin(), L.idx.end(), [&](size_t i) { return wordOf(i) >= 0; });
             const auto same = [&](size_t a, size_t b) { return !read || wordOf(a) == wordOf(b); };
@@ -366,7 +370,7 @@ inline std::vector<Stroke> tidy(std::vector<Stroke> S, const Options& o = {})
                 }
             }
             for (const Word& u : units) {
-                if (!L.words.empty() && u.minX - L.words.back().maxX < 0.6 * L.xh && same(u.idx.front(), L.words.back().idx.front())) {
+                if (!L.words.empty() && (read || u.minX - L.words.back().maxX < 0.6 * L.xh) && same(u.idx.front(), L.words.back().idx.front())) {
                     Word& w = L.words.back();
                     w.idx.insert(w.idx.end(), u.idx.begin(), u.idx.end());
                     w.maxX = std::max(w.maxX, u.maxX);
@@ -579,8 +583,10 @@ inline Row row(const std::vector<Stroke>& S, const std::vector<size_t>& idx)
 /// Weiterschreiben nach einer Pause: tidy sieht nur die Striche seit der letzten Pause. Jede Zeile von fresh (eben
 /// aufgeräumt, Blatt-Koordinaten) bekommt die x-Höhe der Zeile aus before (schon da, je Zeile die Nummern ihrer Striche),
 /// an die sie anschließt: rechts daneben auf deren Grundlinie mit deren Wortabstand, oder darunter an deren linken Rand.
-/// So wird, was mit abgesetztem Stift geschrieben ist, so gleich wie in einem Zug.
-inline void follow(std::vector<Stroke>& fresh, std::vector<Stroke> before, std::vector<std::vector<size_t>> beforeLines)
+/// So wird, was mit abgesetztem Stift geschrieben ist, so gleich wie in einem Zug. resize = false: nur anschließen, die
+/// Größe bleibt (Einstellung "Gleiche Größe" aus).
+inline void follow(std::vector<Stroke>& fresh, std::vector<Stroke> before, std::vector<std::vector<size_t>> beforeLines,
+                   bool resize = true)
 {
     std::vector<Row> rows;
     for (const auto& idx : beforeLines) {
@@ -608,7 +614,7 @@ inline void follow(std::vector<Stroke>& fresh, std::vector<Stroke> before, std::
         if (!C || F.xh <= 0) {
             continue;
         }
-        const double f = std::clamp(C->xh / F.xh, 0.7, 1.45);  // wie tidy je Wort
+        const double f = resize ? std::clamp(C->xh / F.xh, 0.7, 1.45) : 1.0;  // wie tidy je Wort
         const double x0 = same ? C->maxX + (C->gap > 0 ? C->gap : C->xh) : C->minX;
         const double y0 = same ? C->base : F.base;
         for (size_t i : idx) {

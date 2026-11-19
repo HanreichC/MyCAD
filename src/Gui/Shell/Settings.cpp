@@ -1656,15 +1656,49 @@ void Gui::Shell::showSettings()
         addRow(padCard, T(label), s);
     }
 
-    // Schönschrift in Scribbles (ScribbleTidy): Schalter und Stärke, gelesen beim Aufräumen
+    // Schönschrift in Scribbles (ScribbleTidy): Schalter und Stärke, gelesen beim Aufräumen. Jeder Schritt einzeln, das
+    // Glätten auch in der Stärke (gemessen an echter Schrift: es kostet am meisten Lesbarkeit, sieht aber ruhiger aus)
     auto penCard = addCard(nav, T("Pen & Handwriting"));
-    toggle(penCard, T("Tidy handwriting after a pause"), myParams()->GetBool("ScribbleTidy", true),
-           [](bool on) { myParams()->SetBool("ScribbleTidy", on); });
+    auto tidyOn = new Switch(myParams()->GetBool("ScribbleTidy", true));
+    addRow(penCard, T("Tidy handwriting after a pause"), tidyOn);
+    std::vector<QWidget*> tidyParts;  // ohne Aufräumen wirkungslos: abgeblendet (MyStyle: 0,4)
     auto strength = slider(0, 100, int(myParams()->GetInt("ScribbleTidyStrength", 100)));
     QObject::connect(strength, &QSlider::valueChanged, [](int v) { myParams()->SetInt("ScribbleTidyStrength", v); });
     addRow(penCard, T("Tidying strength"), strength);
+    tidyParts.push_back(strength);
+    QSlider* smoothing = nullptr;
+    for (const auto& [label, param] : {std::pair {"Smooth lines", "ScribbleTidySmooth"}, std::pair {"Straight lines", "ScribbleTidyStraight"},
+                                       std::pair {"Same size", "ScribbleTidySize"}, std::pair {"Same slant", "ScribbleTidySlant"},
+                                       std::pair {"Even word spacing", "ScribbleTidyGaps"},
+                                       std::pair {"Even line width", "ScribbleTidyWidth"}}) {
+        auto sw = new Switch(myParams()->GetBool(param, true));
+        addRow(penCard, T(label), sw);
+        tidyParts.push_back(sw);
+        if (std::strcmp(param, "ScribbleTidySmooth") == 0) {  // Stärke des Glättens direkt darunter: 1 … 30 % der Strichhöhe
+            smoothing = slider(1, 30, int(myParams()->GetInt("ScribbleTidySmoothing", 10)));
+            QObject::connect(smoothing, &QSlider::valueChanged, [](int v) { myParams()->SetInt("ScribbleTidySmoothing", v); });
+            addRow(penCard, T("Smoothing"), smoothing);
+            tidyParts.push_back(smoothing);
+            QObject::connect(sw, &QAbstractButton::toggled, smoothing, [smoothing, tidyOn](bool on) {
+                smoothing->setEnabled(on && tidyOn->isChecked());
+            });
+        }
+        QObject::connect(sw, &QAbstractButton::toggled, sw, [param = param](bool on) { myParams()->SetBool(param, on); });
+    }
+    const auto enableParts = [tidyParts, smoothing](bool on) {
+        for (QWidget* w : tidyParts) {
+            w->setEnabled(on);
+        }
+        smoothing->setEnabled(on && myParams()->GetBool("ScribbleTidySmooth", true));
+    };
+    enableParts(tidyOn->isChecked());
+    QObject::connect(tidyOn, &QAbstractButton::toggled, tidyOn, [enableParts](bool on) {
+        myParams()->SetBool("ScribbleTidy", on);
+        enableParts(on);
+    });
     nav->addWidget(hint(T("A second after you lift the pen, what you just wrote in a Scribble lines up: straight lines, "
-                          "even size, slant and spacing. Undo brings back the raw handwriting.")));
+                          "even size, slant and spacing. Undo brings back the raw handwriting. Smoother lines look calmer, "
+                          "but MyCAD reads them a little less reliably (search, written sizes).")));
     nav->addStretch();
 
     // --- Seite Tasten als Maustasten (cad.helper) ---

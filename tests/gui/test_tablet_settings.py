@@ -127,7 +127,32 @@ def rotate_with_pen():
     check("lower pen button held over the view rotates it", camera() != before, "%s -> %s" % (before, camera()))
 
 
+def handwriting_switches():
+    """Navigation › Stift & Handschrift: jeder Schritt der Schönschrift einzeln; der Regler fürs Glätten hängt am Schalter"""
+    [b for b in visible(QtWidgets.QPushButton) if b.objectName() == "Segment" and b.text() == "Navigation"][0].click()
+    labels = ["Smooth lines", "Straight lines", "Same size", "Same slant", "Even word spacing", "Even line width"]
+    found = [l.text() for l in dialog().findChildren(QtWidgets.QLabel) if l.text() in labels]
+    check("one switch per tidy step", sorted(found) == sorted(labels), str(found))
+    row = [l for l in dialog().findChildren(QtWidgets.QLabel) if l.text() == "Same size"][0].parentWidget()
+    sw = [b for b in row.findChildren(QtWidgets.QAbstractButton)][0]
+    sw.click()
+    check("Same size off is saved", grp.GetBool("ScribbleTidySize", True) is False)
+    sw.click()
+    smooth_row = [l for l in dialog().findChildren(QtWidgets.QLabel) if l.text() == "Smooth lines"][0].parentWidget()
+    smooth_sw = [b for b in smooth_row.findChildren(QtWidgets.QAbstractButton)][0]
+    # die Zeile in einer Variablen halten: verkettet räumt PySide die Hülle zu früh ab ("already deleted")
+    slider_row = [l for l in dialog().findChildren(QtWidgets.QLabel) if l.text() == "Smoothing"][0].parentWidget()
+    slider = slider_row.findChild(QtWidgets.QSlider)
+    smooth_sw.click()
+    off = not slider.isEnabled()
+    smooth_sw.click()
+    check("smoothing slider follows Smooth lines", off and slider.isEnabled() and grp.GetBool("ScribbleTidySmooth", False),
+          "off=%s on=%s" % (off, slider.isEnabled()))
+
+
 def cleanup():
+    for k in ("ScribbleTidySize", "ScribbleTidySmooth"):
+        grp.SetBool(k, True)
     for k, v in old.items():
         grp.SetString(k, v)
     grp.SetInt("TabletKeysSeen", old_seen)
@@ -145,6 +170,9 @@ in_order([
     ("pen key", press_lower_in_dialog),
     ("other model", other_model), wait,
     ("back", lambda: check("back to the H640P: its 6 rows again", len(rows()) == 8, str(len(rows())))),
+    # noch im ersten Dialog: nach dem Schließen gibt PySide für einen neuen Regler an alter Adresse die tote Hülle heraus
+    ("handwriting", handwriting_switches),
+    ("tablet tab", to_tablet), wait,
     ("close", close), wait,
     ("reopen", open_settings), wait,
     ("tablet again", to_tablet), wait,
