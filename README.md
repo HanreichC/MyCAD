@@ -273,7 +273,7 @@ Want to try something risky? Make a **variant**. Switch between the main design 
 
 ## Download. Run. Done.
 
-The latest version is always on the [**Releases**](https://github.com/HanreichC/MyCAD/releases/latest) page as an AppImage, rebuilt after every commit. There's nothing to install and no container to set up, just one file:
+The latest version is always on the [**Releases**](https://github.com/HanreichC/MyCAD/releases/latest) page as an AppImage, rebuilt every night when something changed. There's nothing to install and no container to set up, just one file:
 
 ```sh
 chmod +x MyCAD-*-x86_64.AppImage
