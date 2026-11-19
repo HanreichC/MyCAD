@@ -1958,14 +1958,8 @@ void Gui::Shell::showSettings()
         status->setText(pad.denied          ? T("Connected, but MyCAD can't read its keys yet.")
                         : pad.name.isEmpty() ? T("No tablet connected")
                                              : T("Connected"));
-        // im Container (install.sh) gibt es kein pkexec und keinen Weg nach /etc: dort legt install.sh die Regel an
-        static const bool contained = QFile::exists(QStringLiteral("/run/.containerenv")) || QFile::exists(QStringLiteral("/.dockerenv"));
-        allow->setVisible(pad.denied && !contained);
-        if (pad.denied && contained) {
-            accessHint->setText(T("MyCAD runs in a container here. Run install.sh once more: it sets up access (asks for your "
-                                  "password once). Then restart MyCAD."));
-        }
-        accessHint->setVisible(pad.denied && (contained || !accessHint->text().isEmpty()));
+        allow->setVisible(pad.denied);
+        accessHint->setVisible(pad.denied && !accessHint->text().isEmpty());  // nur, wenn "Zugriff erlauben" nicht ging
         device->setText(pad.name);
         device->setVisible(!pad.name.isEmpty());
         const std::string chosen = myParams()->GetASCII("TabletModel", "");
@@ -1987,40 +1981,85 @@ void Gui::Shell::showSettings()
     });
     // Zugriff: dieselbe Art Regel wie für Touchpads (uaccess für den angemeldeten Benutzer), nur für die Tasten-Geräte
     // von Tabletts, nie für Tastaturen. pkexec fragt nach dem Passwort; danach öffnet der Reader die Geräte neu.
-    // Gleiche Regel legt install.sh an (MyCAD im Container)
+    // Gleiche Regel legt install.sh an. Im Container (Start über install.sh) gibt es kein pkexec und kein /etc des
+    // Rechners: dort startet MyCAD pkexec auf dem Rechner über die Sitzungs-D-Bus (DesignExport.host_spawn, wie die
+    // Slicer); KDE fragt nach dem Passwort
     QObject::connect(allow, &QPushButton::clicked, allow, [allow, accessHint, &dlg] {
         const QString rule = QStringLiteral(
             R"(ACTION!="remove", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_TABLET_PAD}=="1", TAG+="uaccess")");
-        auto proc = new QProcess(&dlg);
+        const QStringList argv {QStringLiteral("sh"), QStringLiteral("-c"),
+                                QStringLiteral("printf '%s\\n' \"$1\" > /etc/udev/rules.d/70-mycad-tablet.rules"
+                                               " && udevadm control --reload && udevadm trigger --subsystem-match=input"),
+                                QStringLiteral("sh"), rule};
         allow->setEnabled(false);
-        // Abbrechen im Passwort-Dialog (pkexec: 126) ist kein Fehler; sonst nie still scheitern: der Befehl fürs Terminal
-        const auto done = [proc, allow, accessHint, rule](int code) {
-            proc->deleteLater();
+        accessHint->setText(QString());
+        const auto failed = [allow, accessHint, rule] {  // nie still scheitern: der Befehl fürs Terminal
+            allow->setEnabled(true);
+            accessHint->setText(T("Couldn't set up access. In a terminal:") + QStringLiteral("\necho '") + rule
+                                + QStringLiteral("' | sudo tee /etc/udev/rules.d/70-mycad-tablet.rules && sudo udevadm "
+                                                 "control --reload && sudo udevadm trigger --subsystem-match=input"));
+            accessHint->show();
+        };
+        // Abbrechen im Passwort-Dialog (pkexec: 126) ist kein Fehler
+        const auto finished = [allow, accessHint, failed](int code) {
             allow->setEnabled(true);
             if (code == 0) {
                 accessHint->hide();
                 QTimer::singleShot(500, allow, [] { TouchpadReader::install().reconnect(); });  // bis udev die Rechte setzt
             }
             else if (code != 126) {
-                accessHint->setText(T("Couldn't set up access. In a terminal:") + QStringLiteral("\necho '") + rule
-                                    + QStringLiteral("' | sudo tee /etc/udev/rules.d/70-mycad-tablet.rules && sudo udevadm "
-                                                     "control --reload && sudo udevadm trigger --subsystem-match=input"));
-                accessHint->show();
+                failed();
             }
         };
-        QObject::connect(proc, &QProcess::finished, allow, [done](int code, QProcess::ExitStatus st) {
-            done(st == QProcess::NormalExit ? code : -1);
+        static const bool contained = QFile::exists(QStringLiteral("/run/.containerenv")) || QFile::exists(QStringLiteral("/.dockerenv"));
+        if (contained) {
+            // HostCommand wartet nicht: das Kommando auf dem Rechner schreibt den Rückgabewert von pkexec in eine Datei im
+            // Home (Rechner und Container teilen es), MyCAD liest sie
+            const QString result = QDir::homePath() + QStringLiteral("/.cache/mycad-tablet-access");
+            QFile::remove(result);
+            QDir().mkpath(QDir::homePath() + QStringLiteral("/.cache"));
+            const QStringList host = QStringList {QStringLiteral("sh"), QStringLiteral("-c"),
+                                                  QStringLiteral("pkexec \"$@\"; echo $? > \"$0.tmp\" && mv \"$0.tmp\" \"$0\""),
+                                                  result}
+                + argv;
+            try {
+                const QByteArray list = QJsonDocument(QJsonArray::fromStringList(host)).toJson(QJsonDocument::Compact);
+                Base::Interpreter().runString(("import DesignExport\nDesignExport.host_spawn(" + list.toStdString() + ")").c_str());
+            }
+            catch (const Base::Exception&) {
+                failed();
+                return;
+            }
+            auto poll = new QTimer(allow);
+            auto waited = std::make_shared<int>(0);
+            QObject::connect(poll, &QTimer::timeout, allow, [poll, waited, result, finished, allow] {
+                QFile f(result);
+                if (f.open(QIODevice::ReadOnly)) {
+                    poll->deleteLater();
+                    const int code = f.readAll().trimmed().toInt();
+                    f.remove();
+                    finished(code);
+                }
+                else if (++*waited > 600) {  // fünf Minuten ohne Antwort: Knopf wieder frei
+                    poll->deleteLater();
+                    allow->setEnabled(true);
+                }
+            });
+            poll->start(500);
+            return;
+        }
+        auto proc = new QProcess(&dlg);
+        QObject::connect(proc, &QProcess::finished, allow, [proc, finished](int code, QProcess::ExitStatus st) {
+            proc->deleteLater();
+            finished(st == QProcess::NormalExit ? code : -1);
         });
-        QObject::connect(proc, &QProcess::errorOccurred, allow, [done](QProcess::ProcessError e) {
+        QObject::connect(proc, &QProcess::errorOccurred, allow, [proc, finished](QProcess::ProcessError e) {
             if (e == QProcess::FailedToStart) {
-                done(-1);
+                proc->deleteLater();
+                finished(-1);
             }
         });
-        proc->start(QStringLiteral("pkexec"),
-                    {QStringLiteral("sh"), QStringLiteral("-c"),
-                     QStringLiteral("printf '%s\\n' \"$1\" > /etc/udev/rules.d/70-mycad-tablet.rules"
-                                    " && udevadm control --reload && udevadm trigger --subsystem-match=input"),
-                     QStringLiteral("sh"), rule});
+        proc->start(QStringLiteral("pkexec"), argv);
     });
     // eine Taste drücken: ihre Zeile und ihre Taste leuchten kurz auf (die Tasten tun dabei nichts)
     auto flashes = std::make_shared<int>(0);
