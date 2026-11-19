@@ -6,3 +6,6 @@ __pycache__/
 .config/
 build-appimage/
 *.AppImage
+
+# Speicherabbilder nach Abstürzen (Container, Tests)
+/core.[0-9]*
