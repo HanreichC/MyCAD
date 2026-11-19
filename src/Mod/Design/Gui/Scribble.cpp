@@ -87,6 +87,14 @@ using Tool = ViewProviderScribble::Tool;
 namespace
 {
 
+/// Druckkurve des Grafiktabletts: gemessen an echter Schrift (Huion H640P unter KDE, tests/projects) kommt schon
+/// leichtes Schreiben mit 0,8 bis 1,0 an, der Strich sah immer gleich dick aus. Hoch drei macht aus 0,8 etwa 0,5,
+/// voller Druck bleibt voll. ponytail: eine Kurve für alle Tabletts; wenn eins anders liegt, als Regler in die Einstellungen
+double penFeel(double pressure)
+{
+    return std::pow(std::clamp(pressure, 0.0, 1.0), 3.0);
+}
+
 /// Werkzeug: Breite in Bildschirm-Pixeln bei vollem Druck, Anteil bei leichtestem Druck, Deckkraft der Farbe
 struct Nib
 {
@@ -757,14 +765,14 @@ protected:
                     return false;
                 }
                 d->fromTablet = true;
-                d->press(te->position(), te->pressure(), te->pointerType() == QPointingDevice::PointerType::Eraser);
+                d->press(te->position(), penFeel(te->pressure()), te->pointerType() == QPointingDevice::PointerType::Eraser);
                 te->accept();
                 return true;
             }
             case QEvent::TabletMove: {
                 auto te = static_cast<QTabletEvent*>(event);
                 if (d->down && d->fromTablet) {
-                    d->move(te->position(), te->pressure());
+                    d->move(te->position(), penFeel(te->pressure()));
                 }
                 // Seitentaste gedrückt; oder in KDE auf eine Maustaste gelegt: dann kommt der Klick als echte Maus, die
                 // Bewegung aber weiter als schwebender Stift und muss als Maus weiter, sonst hängt das Drehen
