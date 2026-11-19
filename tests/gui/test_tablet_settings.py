@@ -43,6 +43,13 @@ def action(label):
     return row(label).findChild(QtWidgets.QComboBox).currentData()
 
 
+def check_margin():
+    """kleiner Bildschirm: das Fenster rollt, lässt aber oben und unten Luft (space.xxxl, 48)"""
+    avail = mw.screen().availableGeometry().height()
+    check("settings leave room above and below the window", dialog().height() <= avail - 2 * 48,
+          "dialog %d, screen %d" % (dialog().height(), avail))
+
+
 def check_suggestion():
     names = [l.text() for w in rows() for l in w.findChildren(QtWidgets.QLabel) if l.text().startswith(("Key ", "Lower", "Upper"))]
     check("6 keys on the tablet and 2 on the pen", len(rows()) == 8, str(names))
@@ -160,6 +167,7 @@ def cleanup():
 
 in_order([
     ("open", open_settings), wait,
+    ("margin", check_margin),
     ("tablet", to_tablet), wait,
     ("suggestion", check_suggestion),
     ("shot", lambda: snap("tablet")),

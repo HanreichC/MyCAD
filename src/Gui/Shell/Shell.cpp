@@ -121,6 +121,7 @@
 #include <QScreen>
 #include <QStyleHints>
 #include <QTimer>
+#include <QVariantAnimation>
 #include <QThread>
 #include <QToolBar>
 #include <QToolButton>
@@ -5127,7 +5128,51 @@ void rebuildTimeline()
     row->setSpacing(lay->spacing());
     scroll->setWidget(strip);
     strip->setAutoFillBackground(false);  // setWidget schaltet es ein
+    // Pfeile zum Rollen ohne Mausrad (Stift, Trackpad ohne Wischen): nur, wenn nicht alles passt; am Anfang bzw. Ende
+    // abgeblendet. Kleiner Indikator-Pfeil (MyStyle I-1) in labelSecondary, nicht das Symbol von "Schritt zurück"
+    // (I-4: andere Aktion, anderes Symbol); 24 breit = kleinste Trefferfläche (W-6)
+    const auto arrow = [scroll](const char* icon, const QString& tip, int dir) {
+        auto btn = new QToolButton;
+        btn->setObjectName(QStringLiteral("GlassButton"));
+        btn->setIcon(designIcon(QString::fromLatin1(icon), &Theme::labelSecondary));
+        btn->setIconSize(QSize(Token::IconM, Token::IconM));
+        btn->setFixedSize(24, Token::WindowButton);
+        btn->setToolTip(tip);
+        btn->setAccessibleName(tip);
+        QObject::connect(btn, &QToolButton::clicked, scroll, [scroll, dir] {
+            QScrollBar* bar = scroll->horizontalScrollBar();
+            const int to = std::clamp(bar->value() + dir * std::max(bar->singleStep(), bar->pageStep() * 3 / 5), bar->minimum(),
+                                      bar->maximum());
+            auto glide = new QVariantAnimation(bar);
+            glide->setStartValue(bar->value());
+            glide->setEndValue(to);
+            glide->setDuration(theme().duration(280));  // motion.duration.spring, bei Bewegung reduzieren kürzer
+            glide->setEasingCurve(QEasingCurve::OutCubic);
+            QObject::connect(glide, &QVariantAnimation::valueChanged, bar, [bar](const QVariant& v) { bar->setValue(v.toInt()); });
+            glide->start(QAbstractAnimation::DeleteWhenStopped);
+        });
+        return btn;
+    };
+    QToolButton* earlier = arrow("Timeline_ScrollLeft", T("Earlier Steps"), -1);
+    QToolButton* later = arrow("Timeline_ScrollRight", T("Later Steps"), 1);
+    lay->addWidget(earlier);
     lay->addWidget(scroll);
+    lay->addWidget(later);
+    // Pfeile zeigen/abblenden; erscheinen oder verschwinden sie, ändert sich die Breite der Leiste: neu anordnen
+    const auto syncArrows = [scroll, earlier, later] {
+        QScrollBar* bar = scroll->horizontalScrollBar();
+        const bool over = bar->maximum() > bar->minimum();
+        const bool changed = earlier->isHidden() == over;
+        earlier->setVisible(over);
+        later->setVisible(over);
+        earlier->setEnabled(bar->value() > bar->minimum());
+        later->setEnabled(bar->value() < bar->maximum());
+        if (changed) {
+            QTimer::singleShot(0, [] { layout(); });
+        }
+    };
+    QObject::connect(scroll->horizontalScrollBar(), &QScrollBar::rangeChanged, earlier, syncArrows);
+    QObject::connect(scroll->horizontalScrollBar(), &QScrollBar::valueChanged, earlier, syncArrows);
     QWidget* focus = nullptr;  // bleibt nach dem Aufbau sichtbar: Marker, sonst der letzte Schritt
     auto markerLine = [&] {
         auto line = new QFrame;
@@ -5432,6 +5477,8 @@ void rebuildTimeline()
             }
         }
     }
+    earlier->hide();  // erst, wenn die Schritte nicht passen (syncArrows nach dem Anordnen)
+    later->hide();
     // ohne box->adjustSize(): das kappt ein Fenster ohne Eltern auf einen Teil des Bildschirms (1280 × 100), und
     // GlassPanel::setGeometry korrigiert es nicht, solange das Panel gleich groß bleibt
     layout();
@@ -5441,11 +5488,12 @@ void rebuildTimeline()
     const std::tuple<std::string, int, int> now(doc ? doc->getName() : "", total, marker);
     const bool changed = now != last;
     last = now;
-    QTimer::singleShot(0, scroll, [scroll, focus = QPointer<QWidget>(focus), changed] {
+    QTimer::singleShot(0, scroll, [scroll, focus = QPointer<QWidget>(focus), changed, syncArrows] {
         scroll->horizontalScrollBar()->setValue(scrolled);
         if (changed && focus) {
             scroll->ensureWidgetVisible(focus, Token::WindowButton, 0);
         }
+        syncArrows();
     });
 }
 

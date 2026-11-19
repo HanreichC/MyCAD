@@ -59,6 +59,7 @@ constexpr int WindowInset = 12, BarHeight = 44, WindowButton = 36, ControlDeskto
 constexpr int SwitchWidth = 38, SwitchHeight = 22, SwitchKnob = 18, SliderKnob = 21;
 constexpr int IconM = 16, IconWindow = 18, IconL = 20;
 constexpr int ContentMaxWidth = 560;
+constexpr int SpaceXxxl = 48;  ///< space.xxxl
 constexpr int DurationFade = 150;
 constexpr double OpacityDisabledGlyph = 0.35;
 constexpr double OpacityMarkerDark = 0.25;  ///< opacity.markerDark: Textmarker im Dunkelmodus

@@ -40,6 +40,19 @@ def wheel(steps):
     QtWidgets.QApplication.sendEvent(vp, ev)
 
 
+def arrow(name):
+    """Pfeile zum Rollen neben den Schritten (ohne Mausrad)"""
+    found = [b for b in timeline() if b.accessibleName() == name]
+    return found[0] if found else None
+
+
+def arrows_at_end():
+    e, l = arrow("Earlier Steps"), arrow("Later Steps")
+    check("arrows to scroll are there when the steps don't fit; at the newest step only Earlier works",
+          e is not None and l is not None and e.isVisible() and l.isVisible() and e.isEnabled() and not l.isEnabled(),
+          "earlier=%s later=%s" % (e and (e.isVisible(), e.isEnabled()), l and (l.isVisible(), l.isEnabled())))
+
+
 def build():
     for i in range(30):
         b = make_body(rect(i * 20, 0, i * 20 + 10, 10), 0, 5, "B%d" % i)
@@ -63,7 +76,13 @@ run([
     ("play visible", lambda: check("play buttons stay at the left inside the timeline",
                                    all(in_panel(play_button(i)) for i in range(4)))),
     ("newest", lambda: check("the newest step is in view", in_view(steps()[-1]))),
+    ("arrows", arrows_at_end),
     ("shot end", lambda: shot("end")),
+    ("arrow click", lambda: (state.update(before=scroll().horizontalScrollBar().value()), click(arrow("Earlier Steps")))),
+    ("wait", lambda: None),
+    ("arrow scrolled", lambda: check("the Earlier arrow scrolls the steps back, Later works again",
+                                     scroll().horizontalScrollBar().value() < state["before"] and arrow("Later Steps").isEnabled(),
+                                     "%d -> %d" % (state["before"], scroll().horizontalScrollBar().value()))),
     ("wheel", lambda: (state.update(before=scroll().horizontalScrollBar().value()), wheel(5))),
     ("wheeled", lambda: check("the mouse wheel scrolls the steps sideways",
                               scroll().horizontalScrollBar().value() < state["before"],
@@ -72,6 +91,7 @@ run([
     ("start", lambda: click(play_button(0))), ("wait", lambda: None),
     ("at start", lambda: check("rolling back to the start brings the marker into view", scroll().horizontalScrollBar().value() == 0,
                                str(scroll().horizontalScrollBar().value()))),
+    ("arrow at start", lambda: check("at the start the Earlier arrow is dimmed", not arrow("Earlier Steps").isEnabled())),
     ("shot start", lambda: shot("start")),
     ("end", lambda: click(play_button(3))), ("wait", lambda: None),
     ("newest again", lambda: check("going to the end shows the newest step again", in_view(steps()[-1]))),

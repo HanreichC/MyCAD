@@ -2133,9 +2133,10 @@ void Gui::Shell::showSettings()
 
     updateStyle();
     // so hoch wie die längste Seite, höchstens so hoch wie der Bildschirm (dann rollt die Seite); ohne das zeigte Qt
-    // den Dialog in der Mindesthöhe der Rollflächen
+    // den Dialog in der Mindesthöhe der Rollflächen. Auf kleinen Bildschirmen oben und unten Luft (space.xxxl), sonst
+    // klebt das Fenster am Bildschirmrand; der Compositor setzt den Dialog mittig über das Hauptfenster
     dlg.resize(dlg.sizeHint().boundedTo(getMainWindow()->screen()->availableGeometry().size()
-                                        - QSize(0, 2 * Token::WindowInset)));
+                                        - QSize(0, 2 * Token::SpaceXxxl)));
     window->setFocusPolicy(Qt::ClickFocus);  // kein Fokusring beim Öffnen; Tab führt zu den Bedienelementen
     window->setFocus();
     dlg.exec();

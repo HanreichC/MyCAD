@@ -142,6 +142,9 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"acts as", "wirkt als"},
         {"Remove", "Entfernen"},
         {"Add Key…", "Taste hinzufügen…"},
+        // Timeline: Pfeile zum Rollen, wenn nicht alle Schritte passen
+        {"Earlier Steps", "Frühere Schritte"},
+        {"Later Steps", "Spätere Schritte"},
         // Einstellungen › Navigation › Stift & Handschrift: Schritte der Schönschrift
         {"Smooth lines", "Glatte Linien"},
         {"Smoothing", "Stärke des Glättens"},
