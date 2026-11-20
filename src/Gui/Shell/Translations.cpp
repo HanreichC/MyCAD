@@ -704,6 +704,18 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Overhang angle", "Überhang-Winkel"},
         {"Minimum wall", "Kleinste Wand"},
         {"Wall thinner than %1 mm", "Wand dünner als %1 mm"},
+        // 12.9 Fragen ans Modell
+        {"Explain what is red or wrong", "Erklären, was rot oder falsch ist"},
+        {"Show what uses the selection", "Zeigen, was die Auswahl benutzt"},
+        {"Why is this red?", "Warum ist das rot?"},
+        {"What depends on this?", "Was hängt daran?"},
+        {"Red stripes in the Print View are overhangs that need supports. Suggest Orientation or a teardrop hole can avoid them.",
+         "Rote Streifen in der Druckansicht sind Überhänge, die Stützen brauchen. Lage vorschlagen oder eine Tropfenbohrung vermeiden sie."},
+        {"Nothing is red: every step computes.", "Nichts ist rot: jeder Schritt rechnet."},
+        {"Select a sketch, plane, step or body first.", "Wähle erst eine Skizze, Ebene, einen Schritt oder Körper."},
+        {"Nothing uses %1: you can change or delete it freely.", "Nichts benutzt %1: du kannst es frei ändern oder löschen."},
+        {"%1 is used by: %2", "%1 wird benutzt von: %2"},
+        {"This step does not compute", "Dieser Schritt rechnet nicht"},
         // 12.8 druckfertig
         {"Suggest Orientation", "Lage vorschlagen"},
         {"Suggest Orientation: lays the design on the bed with little support and low height, so that it fits the print bed",

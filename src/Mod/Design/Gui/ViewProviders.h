@@ -63,6 +63,10 @@ DesignGuiExport App::DocumentObject* parameters(App::Document* doc, bool create)
 /// Phase 11.10: Bohrungen in die vier Ecken der gewählten Fläche (oder der Oberseite des Körpers), offset vom Rand;
 /// size "M3" (ISO-Durchgangsloch) oder diameter in mm. Öffnet den Bohrungs-Dialog: dort Vorschau, OK übernimmt.
 DesignGuiExport void cornerHoles(const std::string& size, double diameter, double offset);
+/// 12.9 "Warum ist das rot?": was an der Auswahl (sonst im Design) nicht rechnet oder warnt, als Hinweis; markiert es
+DesignGuiExport void explainProblems();
+/// 12.9 "Was hängt daran?": was die Auswahl benutzt, als Hinweis; wählt es aus
+DesignGuiExport void showDependents();
 /// Bohrmuster (11.10): circle = Lochkreis mit pitch Durchmesser um die Mitte der Fläche, sonst Reihe durch die Mitte mit
 /// pitch Abstand (0: gleichmäßig verteilt); count Bohrungen, size "M4" oder diameter
 DesignGuiExport void patternHoles(bool circle, int count, const std::string& size, double diameter, double pitch);

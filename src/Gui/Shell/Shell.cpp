@@ -4625,6 +4625,19 @@ void refreshSearch()
                         },
                         1000});
     }
+    // 12.9 Fragen ans Modell: die Antwort kommt als Hinweis, die Betroffenen werden gewählt
+    if (const auto intent = CommandSearch::intent(query);
+        intent.kind == CommandSearch::Intent::Kind::WhyRed || intent.kind == CommandSearch::Intent::Kind::DependsOn) {
+        const bool why = intent.kind == CommandSearch::Intent::Kind::WhyRed;
+        hits.push_back({"intent", why ? T("Explain what is red or wrong") : T("Show what uses the selection"), T("Enter"),
+                        commandIcon(why ? QStringLiteral("Design_CheckReferences") : QStringLiteral("MyCAD_Search"), QIcon()),
+                        [why] {
+                            Base::PyGILStateLocker lock;
+                            Base::Interpreter().runString(why ? "import DesignGui; DesignGui.explainProblems()"
+                                                              : "import DesignGui; DesignGui.showDependents()");
+                        },
+                        1000});
+    }
     // Beste Treffer zuerst; bei gleicher Güte die zuletzt benutzten
     const auto rank = [&recent](const SearchHit& h) {
         const auto it = std::ranges::find(recent, h.key);

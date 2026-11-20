@@ -194,6 +194,11 @@ struct ReferenceIssue
     bool warning;
 };
 DesignExport std::vector<ReferenceIssue> referenceIssues(App::Document* doc);
+/// 12.9 "Warum ist das rot?": was nicht rechnet (Fehlertext), dann Warnungen und verlorene Bezüge (englisch, übersetzt
+/// in der Oberfläche)
+DesignExport std::vector<std::pair<App::DocumentObject*, std::string>> problems(App::Document* doc);
+/// 12.9 "Was hängt daran?": Schritte, Skizzen und Körper, die obj direkt benutzen
+DesignExport std::vector<App::DocumentObject*> dependents(const App::DocumentObject* obj);
 /// "Was fehlt noch?" (Phase 11.6): Maße, die der Skizze fehlen, nach Absicht ergänzen. Ein Profil mittig um den
 /// Ursprung wird symmetrisch zu ihm, dann Längen, Durchmesser und Radien, dann die Lage (Abstand zum Ursprung in x und
 /// y), sonst Waagrecht/Senkrecht/Winkel. Jedes Maß bleibt nur, wenn es einen Freiheitsgrad nimmt (kein Widerspruch,

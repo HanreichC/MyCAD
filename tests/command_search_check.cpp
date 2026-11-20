@@ -92,6 +92,19 @@ int main()
     assert(intent("Lochkreis").kind == Intent::Kind::None);
     assert(intent("1 Loch M3 in einer Reihe").kind == Intent::Kind::None);  // eins ist kein Muster
 
+    // 12.9 Fragen ans Modell, DE und EN; Befehle bleiben Befehle
+    for (const char* s : {"Warum ist das rot?", "warum rot", "why is this red?", "Was ist falsch?", "what's wrong",
+                          "wieso rechnet das nicht", "why does it fail"}) {
+        assert(intent(s).kind == Intent::Kind::WhyRed);
+    }
+    for (const char* s : {"Was hängt daran?", "was haengt davon ab", "what depends on this?", "wer benutzt die Skizze",
+                          "which steps use this"}) {
+        assert(intent(s).kind == Intent::Kind::DependsOn);
+    }
+    assert(intent("rot").kind == Intent::Kind::None);  // Farbe allein ist keine Frage
+    assert(intent("rotate").kind == Intent::Kind::None);
+    assert(intent("Kanten 2 mm abrunden").kind == Intent::Kind::Fillet);
+
     std::puts("command search ok");
     return 0;
 }

@@ -5636,6 +5636,71 @@ void DesignGui::cornerHoles(const std::string& size, double diameter, double off
     holeOnFace(body, face, Base::Vector3d(), offset, holeSize(size, diameter));
 }
 
+void DesignGui::explainProblems()
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    if (!doc) {
+        return;
+    }
+    // gewählt: nur dessen Probleme (ein Körper auch die seiner Schritte), sonst alle
+    const auto chosen = Gui::Selection().getObjectsOfType(App::DocumentObject::getClassTypeId(), doc->getName());
+    const auto relevant = [&chosen](App::DocumentObject* obj) {
+        if (chosen.empty() || std::ranges::find(chosen, obj) != chosen.end()) {
+            return true;
+        }
+        auto feature = freecad_cast<Design::Feature*>(obj);
+        return feature && std::ranges::any_of(chosen, [feature](App::DocumentObject* c) {
+                   return std::ranges::find(feature->Bodies.getValues(), c) != feature->Bodies.getValues().end();
+               });
+    };
+    QStringList lines;
+    std::vector<App::DocumentObject*> marked;
+    for (const auto& [obj, text] : Design::problems(doc)) {
+        if (relevant(obj) && lines.size() < 3) {
+            lines << QStringLiteral("%1: %2").arg(QString::fromUtf8(obj->Label.getValue()), T(text.c_str()));
+            marked.push_back(obj);
+        }
+    }
+    if (lines.isEmpty()) {
+        // nichts rechnet falsch: rot ist dann der Überhang der Druckansicht
+        lines << (DesignGui::printView() ? T("Red stripes in the Print View are overhangs that need supports. Suggest "
+                                             "Orientation or a teardrop hole can avoid them.")
+                                         : T("Nothing is red: every step computes."));
+    }
+    else {
+        Gui::Selection().clearSelection();
+        for (auto obj : marked) {
+            Gui::Selection().addSelection(doc->getName(), obj->getNameInDocument());
+        }
+    }
+    toolHint(T("Why is this red?"), lines.join(QStringLiteral("\n")));
+}
+
+void DesignGui::showDependents()
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    const auto chosen = doc ? Gui::Selection().getObjectsOfType(App::DocumentObject::getClassTypeId(), doc->getName())
+                            : std::vector<App::DocumentObject*>();
+    if (chosen.empty()) {
+        toolHint(T("What depends on this?"), T("Select a sketch, plane, step or body first."));
+        return;
+    }
+    App::DocumentObject* obj = chosen.front();
+    const auto users = Design::dependents(obj);
+    const QString name = QString::fromUtf8(obj->Label.getValue());
+    if (users.empty()) {
+        toolHint(T("What depends on this?"), T("Nothing uses %1: you can change or delete it freely.").arg(name));
+        return;
+    }
+    QStringList labels;
+    Gui::Selection().clearSelection();
+    for (auto user : users) {
+        labels << QString::fromUtf8(user->Label.getValue());
+        Gui::Selection().addSelection(doc->getName(), user->getNameInDocument());  // im Browser und im Modell markiert
+    }
+    toolHint(T("What depends on this?"), T("%1 is used by: %2").arg(name, labels.join(QStringLiteral(", "))));
+}
+
 /// 12.7: Stückliste der Normteile (Schrauben, Muttern, Lager …) im Design, zum Kopieren in eine Tabelle.
 /// ponytail: zählt je Normteil-Schritt ein Stück; Muster und Spiegeln vervielfachen es nicht in der Liste
 void showPartsList(App::Document* doc)

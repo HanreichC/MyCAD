@@ -74,6 +74,8 @@ public:
                            "deletionImpact(obj): dict along/sketches/broken with the names of what deleting obj affects");
         add_varargs_method("referenceIssues", &Module::referenceIssues,
                            "referenceIssues(doc): [(object name, property, element, text, is warning)] not certainly assigned");
+        add_varargs_method("problems", &Module::problems, "problems(doc): [(object, text)] what does not compute, then warnings");
+        add_varargs_method("dependents", &Module::dependents, "dependents(obj): steps, sketches and bodies that use obj");
         add_varargs_method("completeDimensions", &Module::completeDimensions,
                            "completeDimensions(sketch): (dimensions added, degrees of freedom left)");
         add_varargs_method("quickMeasure", &Module::quickMeasure,
@@ -371,6 +373,22 @@ private:
         for (const auto& i : Design::referenceIssues(doc(args))) {
             out.append(Py::TupleN(Py::String(i.object->getNameInDocument()), Py::String(i.property), Py::String(i.element),
                                   Py::String(i.text), Py::Boolean(i.warning)));
+        }
+        return out;
+    }
+    Py::Object problems(const Py::Tuple& args)
+    {
+        Py::List out;
+        for (const auto& [object, text] : Design::problems(doc(args))) {
+            out.append(Py::TupleN(py(object), Py::String(text)));
+        }
+        return out;
+    }
+    Py::Object dependents(const Py::Tuple& args)
+    {
+        Py::List out;
+        for (App::DocumentObject* o : Design::dependents(obj<App::DocumentObject>(args[0]))) {
+            out.append(py(o));
         }
         return out;
     }

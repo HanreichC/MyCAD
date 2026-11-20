@@ -125,7 +125,7 @@ Closed a note? It's still under **Notes** in the browser, double-click to open i
 
 ## Find anything. Ctrl+K.
 
-Press **Ctrl+K** and type. The search finds commands, bodies and sketches, forgives typos, and understands English, German and the words other CAD programs use: *pocket*, *pad*, *push pull*, *Gewinde*, *Passung*, *slicer*. The ones you used last are at the top. It even takes a sentence: *4 holes M3 in the corners, 5 mm from the edge* shows up as the first hit, and Enter opens exactly that, with a preview. *All edges 1 mm chamfer*, *edges 2 mm fillet*, *6 holes M4 on a 40 mm circle* and *5 holes M3 in a row, 10 mm apart* work too, in English or German.
+Press **Ctrl+K** and type. The search finds commands, bodies and sketches, forgives typos, and understands English, German and the words other CAD programs use: *pocket*, *pad*, *push pull*, *Gewinde*, *Passung*, *slicer*. The ones you used last are at the top. It even takes a sentence: *4 holes M3 in the corners, 5 mm from the edge* shows up as the first hit, and Enter opens exactly that, with a preview. *All edges 1 mm chamfer*, *edges 2 mm fillet*, *6 holes M4 on a 40 mm circle* and *5 holes M3 in a row, 10 mm apart* work too, in English or German. And you can ask: *Why is this red?* names and selects the step that does not compute, *What depends on this?* shows everything that uses the selected sketch or step.
 
 ![Search](src/Gui/Shell/help/images/search.gif)
 

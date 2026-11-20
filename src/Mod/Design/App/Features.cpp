@@ -2360,6 +2360,42 @@ Design::QuickMeasure Design::quickMeasure(const std::vector<TopoDS_Shape>& shape
     return m;
 }
 
+std::vector<std::pair<App::DocumentObject*, std::string>> Design::problems(App::Document* doc)
+{
+    // erst, was nicht rechnet (rot in der Timeline), dann Warnungen und verlorene Bezüge
+    std::vector<std::pair<App::DocumentObject*, std::string>> out;
+    for (App::DocumentObject* obj : doc->getObjects()) {
+        if (obj->isError()) {
+            const char* status = obj->getStatusString();
+            out.emplace_back(obj, status && *status ? status : "This step does not compute");
+        }
+    }
+    for (const auto& issue : referenceIssues(doc)) {
+        if (!issue.object->isError()) {
+            out.emplace_back(issue.object, issue.text);
+        }
+    }
+    return out;
+}
+
+std::vector<App::DocumentObject*> Design::dependents(const App::DocumentObject* obj)
+{
+    // nur, was man in Timeline und Browser sieht: Schritte, Skizzen, Körper; keine Ordner und Komponenten
+    // die verborgenen Profile einer Skizze reichen durch: Extrusionen hängen an ihnen, gemeint ist die Skizze
+    std::vector<App::DocumentObject*> out;
+    for (App::DocumentObject* user : obj->getInList()) {
+        const bool shown = user->isDerivedFrom<Feature>() || user->isDerivedFrom<Body>()
+            || user->getTypeId().isDerivedFrom(Base::Type::fromName("Sketcher::SketchObject"));
+        const auto users = user->isDerivedFrom<Profiles>() ? dependents(user) : std::vector<App::DocumentObject*> {user};
+        for (App::DocumentObject* u : shown || user->isDerivedFrom<Profiles>() ? users : std::vector<App::DocumentObject*>()) {
+            if (u != obj && std::ranges::find(out, u) == out.end()) {
+                out.push_back(u);
+            }
+        }
+    }
+    return out;
+}
+
 std::vector<Design::ReferenceIssue> Design::referenceIssues(App::Document* doc)
 {
     std::vector<ReferenceIssue> issues;

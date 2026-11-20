@@ -146,7 +146,9 @@ struct Intent
         Fillet,
         Chamfer,
         CircleHoles,  ///< Lochkreis: count Bohrungen auf einem Kreis mit pitch Durchmesser um die Mitte der Fläche
-        RowHoles      ///< Reihe: count Bohrungen durch die Mitte der Fläche, pitch Abstand (0: gleichmäßig verteilt)
+        RowHoles,     ///< Reihe: count Bohrungen durch die Mitte der Fläche, pitch Abstand (0: gleichmäßig verteilt)
+        WhyRed,       ///< 12.9 "Warum ist das rot?": was nicht rechnet oder warnt
+        DependsOn     ///< 12.9 "Was hängt daran?": was die Auswahl benutzt
     };
     Kind kind = Kind::None;
     std::string size;     ///< ISO-Gewinde, z. B. "M3"; leer bei Durchmesser
@@ -289,6 +291,24 @@ inline Intent intent(const std::string& query)
         }
     }
     const auto ws = words(f);
+    // 12.9 Fragen ans Modell statt Befehle
+    const auto has = [&ws](std::initializer_list<const char*> stems) {
+        return std::ranges::any_of(ws, [&stems](const std::string& w) {
+            return std::ranges::any_of(stems, [&w](const char* s) { return w.rfind(s, 0) == 0; });
+        });
+    };
+    Intent question;
+    if ((has({"warum", "wieso", "weshalb", "why"}) || (has({"was", "what"}) && has({"falsch", "wrong", "kaputt", "broken"})))
+        && has({"rot", "red", "fehler", "error", "falsch", "wrong", "kaputt", "broken", "warn", "gelb", "yellow", "rechnet",
+                "fail", "geht"})) {
+        question.kind = Intent::Kind::WhyRed;
+        return question;
+    }
+    if (has({"was", "what", "wer", "who", "welche", "which"})
+        && has({"haengt", "depend", "abhaeng", "benutzt", "verwendet", "use", "nutzt"})) {
+        question.kind = Intent::Kind::DependsOn;
+        return question;
+    }
     if (const Intent pattern = patternIntent(ws); pattern.kind != Intent::Kind::None) {
         return pattern;
     }
