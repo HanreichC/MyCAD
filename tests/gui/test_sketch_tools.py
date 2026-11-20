@@ -75,7 +75,7 @@ def offset_result(want_y):
     """Maus auf ganze Pixel gerundet: Abstand nur ungefähr, die Linie aber exakt parallel und gleich lang"""
     g = sketch().Geometry
     ok = len(g) == 2 and isinstance(g[1], Part.LineSegment) and abs(g[1].StartPoint.y - want_y) < 1 \
-        and abs(g[1].EndPoint.y - g[1].StartPoint.y) < 1e-6 and abs(g[1].length() - 60) < 1e-6
+        and abs(g[1].EndPoint.y - g[1].StartPoint.y) < 1e-4 and abs(g[1].length() - 60) < 1e-4  # Solver-Toleranz der Versatz-Bindung
     check("offset of a single line is one copy on the mouse side (y=%g)" % want_y, ok, str([type(x).__name__ + (" %s %s" % (x.StartPoint, x.EndPoint) if hasattr(x, "StartPoint") else "") for x in g]))
 
 
@@ -87,7 +87,7 @@ def chain_setup():
 
 def chain_result():
     g = sketch().Geometry
-    new = g[2:]
+    new = [x for i, x in enumerate(g) if i >= 2 and not sketch().getConstruction(i)]  # ohne Hilfslinien der Versatz-Bindung
     ys = [p.y for x in new for p in (x.StartPoint, x.EndPoint)]
     check("offset of an open chain stays on one side", len(new) == 2 and all(isinstance(x, Part.LineSegment) for x in new) and min(ys) >= 5, str(ys))
 

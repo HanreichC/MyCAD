@@ -153,7 +153,8 @@ def offset_click():
 
 
 def outline():
-    kinds = dict(Counter(g.TypeId.split("::")[1] for g in sk().Geometry))  # dazu der Kreis aus Teil 2
+    # dazu der Kreis aus Teil 2; ohne die Hilfslinien der Versatz-Bindung
+    kinds = dict(Counter(g.TypeId.split("::")[1] for i, g in enumerate(sk().Geometry) if not sk().getConstruction(i)))
     check("offset of one projected edge offsets the whole projected outline", kinds.get("GeomLineSegment") == 4, str(kinds))
 
 
