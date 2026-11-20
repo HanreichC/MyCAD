@@ -826,7 +826,40 @@ A("primitives", "create", "Design_Box", ("Box, Cylinder and more", "Quader, Zyli
            ("Pitch, Turns", "Height per turn and number of turns of a Coil.", "Steigung, Windungen", "Höhe pro Umdrehung und Anzahl der Windungen einer Spirale."),
            ("Position X, Position Y", "Where on the plane the shape sits.", "Position X, Position Y", "Wo auf der Ebene die Form sitzt."),
            OPERATION],
-  commands=["Design_Box", "Design_Cylinder", "Design_Sphere", "Design_Torus", "Design_Coil"], see=["Design_Extrude"])
+  commands=["Design_Box", "Design_Cylinder", "Design_Sphere", "Design_Torus", "Design_Coil"], see=["Design_Extrude", "Design_StandardPart"])
+
+A("Design_StandardPart", "create", "Design_StandardPart", ("Standard Part", "Normteil"),
+  (["standard part", "screw", "bolt", "nut", "washer", "heat-set insert", "bearing", "608", "magnet", "aluminum profile", "2020", "extrusion", "hardware"],
+   ["Normteil", "Schraube", "Mutter", "Unterlegscheibe", "Einschmelzmutter", "Kugellager", "608", "Magnet", "Alu-Profil", "2020", "Strangprofil", "Kleinteile"]),
+  ("Adds a screw, nut, washer, heat-set insert, ball bearing, magnet or aluminum profile as a real body, with the sizes from the standard. Use it to check that parts fit, and to know what to buy.",
+   "Fügt eine Schraube, Mutter, Unterlegscheibe, Einschmelzmutter, ein Kugellager, einen Magneten oder ein Alu-Profil als echten Körper ein, mit den Maßen aus der Norm. So siehst du, ob alles passt, und weißt, was du kaufen musst."),
+  [("Optional: click a plane or a flat face of a body to place the part on it (otherwise it stands on the floor, XY).",
+    "Optional: Klicke eine Ebene oder flache Körperfläche an, um das Teil darauf zu stellen (sonst steht es auf dem Boden, XY)."),
+   tool("CREATE", ("Standard Part", "Normteil")),
+   PANEL,
+   ("Choose the Type and its size, type the position on the plane, then click OK.", "Wähle den Typ und seine Größe, tippe die Position auf der Ebene ein und klicke auf OK.")],
+  options=[("Type", "Socket head screw (ISO 4762), countersunk screw (ISO 10642), button head screw (ISO 7380), hex nut (ISO 4032), washer (ISO 7089), heat-set insert, ball bearing, disc or block magnet, aluminum profile.",
+            "Typ", "Zylinderschraube (ISO 4762), Senkschraube (ISO 10642), Linsenkopfschraube (ISO 7380), Sechskantmutter (ISO 4032), Unterlegscheibe (ISO 7089), Einschmelzmutter, Kugellager, Scheiben- oder Quadermagnet, Alu-Profil."),
+           ("Size", "Thread M2 to M12 for screws, nuts, washers and inserts.", "Größe", "Gewinde M2 bis M12 für Schrauben, Muttern, Scheiben und Einschmelzmuttern."),
+           ("Length", "Screws: length under the head (countersunk: overall). Profile: its length.", "Länge", "Schrauben: Länge unter dem Kopf (Senkschraube: über alles). Profil: seine Länge."),
+           ("Bearing", "623, 624, 625, 626, 608, 6000, 6001, 6200 (608: 8 × 22 × 7 mm, the skateboard bearing).", "Lager", "623, 624, 625, 626, 608, 6000, 6001, 6200 (608: 8 × 22 × 7 mm, das Skateboard-Lager)."),
+           ("Profile", "2020, 2040 and 3030 with B-type slots.", "Profil", "2020, 2040 und 3030 mit Nut Typ B.")],
+  tips=[("Screws are shown without threads, at their nominal diameter. For a printed thread use Thread.",
+         "Schrauben haben kein Gewinde, sondern ihren Nenndurchmesser. Für ein gedrucktes Gewinde nimm Gewinde."),
+        ("Parts List counts every standard part in the design.", "Stückliste zählt jedes Normteil im Design.")],
+  see=["Design_PartsList", "Design_Fastener", "primitives"])
+
+A("Design_PartsList", "utilities", "Design_PartsList", ("Parts List", "Stückliste"),
+  (["parts list", "bill of materials", "bom", "shopping list", "hardware", "screws"],
+   ["Stückliste", "Materialliste", "Einkaufsliste", "Kleinteile", "Schrauben"]),
+  ("Lists every standard part in the design with its quantity, e.g. 4 × ISO 4762 M3 × 12, ready to copy into a spreadsheet or an order.",
+   "Listet jedes Normteil im Design mit seiner Anzahl auf, z. B. 4 × ISO 4762 M3 × 12, zum Kopieren in eine Tabelle oder Bestellung."),
+  [tool("UTILITIES", ("Parts List", "Stückliste")),
+   ("Click Copy: the list goes to the clipboard as a table with the columns Qty and Part.",
+    "Klicke auf Kopieren: Die Liste kommt als Tabelle mit den Spalten Anzahl und Teil in die Zwischenablage.")],
+  tips=[("Each Standard Part step counts once; copies from Pattern or Mirror are not counted yet.",
+         "Jeder Normteil-Schritt zählt einmal; Kopien aus Muster oder Spiegeln werden noch nicht mitgezählt.")],
+  see=["Design_StandardPart"])
 
 A("Design_Hole", "create", "Design_Hole", ("Hole", "Bohrung"),
   (["hole", "drill", "bore", "counterbore", "countersink", "screw", "through", "bolt hole"], ["Bohrung", "bohren", "Loch", "Senkung", "Senkkopf", "Schraube", "durchgehend", "Schraubenloch"]),

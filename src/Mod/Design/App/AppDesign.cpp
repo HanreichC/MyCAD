@@ -78,6 +78,7 @@ public:
         add_varargs_method("quickMeasure", &Module::quickMeasure,
                            "quickMeasure(shape[, shape]): dict of distance, angle, diameter (missing ones absent) and anchor");
         add_varargs_method("printUp", &Module::printUp, "printUp(doc): print direction of the design (up)");
+        add_varargs_method("partName", &Module::partName, "partName(primitive): standard part for the parts list or empty");
         add_varargs_method("setPrintUp", &Module::setPrintUp, "setPrintUp(doc, vector): print direction (up)");
         add_varargs_method("fastenerAt", &Module::fastenerAt,
                            "fastenerAt(body, point, direction): screw from the top body into the next one below");
@@ -390,6 +391,10 @@ private:
         }
         d["anchor"] = Py::asObject(new Base::VectorPy(m.anchor));
         return d;
+    }
+    Py::Object partName(const Py::Tuple& args)
+    {
+        return Py::String(obj<Primitive>(args[0])->partName());
     }
     Py::Object printUp(const Py::Tuple& args)
     {

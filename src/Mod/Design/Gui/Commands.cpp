@@ -120,6 +120,7 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
 
+#include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
@@ -5575,6 +5576,56 @@ void DesignGui::cornerHoles(const std::string& size, double diameter, double off
     holeOnFace(body, face, Base::Vector3d(), offset, holeSize(size, diameter));
 }
 
+/// 12.7: Stückliste der Normteile (Schrauben, Muttern, Lager …) im Design, zum Kopieren in eine Tabelle.
+/// ponytail: zählt je Normteil-Schritt ein Stück; Muster und Spiegeln vervielfachen es nicht in der Liste
+void showPartsList(App::Document* doc)
+{
+    std::map<std::string, int> count;
+    for (auto obj : doc->getObjectsOfType(Design::Primitive::getClassTypeId())) {
+        const std::string name = static_cast<Design::Primitive*>(obj)->partName();
+        if (!name.empty() && !obj->isError()) {
+            ++count[name];
+        }
+    }
+    if (count.empty()) {
+        toolHint(T("Parts List"), T("This design has no standard parts yet. Add some with Standard Part."));
+        return;
+    }
+    QDialog dlg(Gui::getMainWindow());
+    dlg.setWindowTitle(T("Parts List"));
+    dlg.setMinimumWidth(420);
+    auto lay = new QVBoxLayout(&dlg);
+    auto table = new QTableWidget(int(count.size()), 2);
+    table->setHorizontalHeaderLabels({T("Qty"), T("Part")});
+    table->verticalHeader()->hide();
+    table->horizontalHeader()->setStretchLastSection(true);
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setAccessibleName(T("Parts List"));
+    QStringList lines {T("Qty") + QLatin1Char('\t') + T("Part")};
+    int row = 0;
+    for (const auto& [name, n] : count) {
+        // Bezeichnung übersetzen: Normnummern bleiben, Wörter wie "Ball bearing" werden "Kugellager"
+        QString text = QString::fromStdString(name);
+        for (const char* word : {"Heat-set insert", "Ball bearing", "Disc magnet", "Block magnet", "Aluminum profile"}) {
+            text.replace(QLatin1String(word), T(word));
+        }
+        table->setItem(row, 0, new QTableWidgetItem(QString::number(n)));
+        table->setItem(row, 1, new QTableWidgetItem(text));
+        lines << QString::number(n) + QLatin1Char('\t') + text;
+        ++row;
+    }
+    table->resizeColumnToContents(0);
+    lay->addWidget(table);
+    auto buttons = new QDialogButtonBox(QDialogButtonBox::Close);
+    auto copy = buttons->addButton(T("Copy"), QDialogButtonBox::ActionRole);
+    QObject::connect(copy, &QPushButton::clicked, &dlg, [lines] {
+        QGuiApplication::clipboard()->setText(lines.join(QLatin1Char('\n')) + QLatin1Char('\n'));  // Tabulatoren: Spalten
+    });
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    lay->addWidget(buttons);
+    dlg.exec();
+}
+
 /// 12.4: Testteil fürs Druckerprofil (DesignCalibrate) in einem neuen Design, mit einer Notiz, was zu tun ist. Geht
 /// auch ohne offenes Design (von der Startseite und aus den Einstellungen)
 class PrinterTestCommand: public DesignCommand
@@ -5759,6 +5810,14 @@ void CreateDesignCommands()
                                          "Primitive on the selected plane or face (otherwise XY)", "Part_Box", "",
                                          [type](App::Document* doc) { startPrimitive(doc, type); }));
     }
+    // 12.7: Normteile als Grundkörper-Typen ab 5 (Schraube, Mutter, Scheibe, Einschmelzmutter, Lager, Magnet, Profil)
+    mgr.addCommand(new DesignCommand("Design_StandardPart", "Standard Part",
+                                     "Standard Part: screws, nuts, washers, heat-set inserts, bearings, magnets and "
+                                     "aluminum profiles as real bodies, on the selected plane or face",
+                                     "Part_Box", "", [](App::Document* doc) { startPrimitive(doc, 5); }));
+    mgr.addCommand(new DesignCommand("Design_PartsList", "Parts List",
+                                     "Parts List: every standard part in the design with its quantity, to copy into a table",
+                                     "Part_Box", "", showPartsList));
     mgr.addCommand(new DesignCommand("Design_Draft", "Draft", "Draft: select side faces of a body to tilt",
                                      "PartDesign_Draft", "", [](App::Document* doc) {
                                          startDressUp(doc, "Design::Draft", "Draft");

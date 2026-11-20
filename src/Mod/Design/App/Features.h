@@ -628,6 +628,13 @@ public:
     App::PropertyFloatConstraint Turns;
     App::PropertyDistance PositionX;
     App::PropertyDistance PositionY;
+    // Normteile (Plan 12.7): Gewinde für Schrauben, Muttern, Scheiben, Einschmelzmuttern; Lager; Alu-Profil
+    App::PropertyEnumeration Size;
+    App::PropertyEnumeration Bearing;
+    App::PropertyEnumeration Profile;
+
+    /// Normteil: Bezeichnung für die Stückliste ("ISO 4762 M3 × 12"), leer bei Grundkörpern
+    std::string partName() const;
 
     bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;

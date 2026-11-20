@@ -1144,7 +1144,7 @@ const std::vector<const char*>& categoryTools(const QString& key)
          {"Std_New", "Std_Open", "MyCAD_SaveVersion", "Design_Versions", "Design_Import", "Design_Export", "Design_Print"}},
         {QStringLiteral("CREATE"),
          {"Design_CreateSketch", "Design_Extrude", "Design_Revolve", "Design_Sweep", "Design_Loft", "Design_Rib", "Design_Web",
-          "Design_Emboss", "Design_Box", "Design_Cylinder", "Design_Sphere", "Design_Torus", "Design_Coil", "Design_Hole",
+          "Design_Emboss", "Design_Box", "Design_Cylinder", "Design_Sphere", "Design_Torus", "Design_Coil", "Design_StandardPart", "Design_Hole",
           "Design_Fastener", "Design_Thread", "Design_Pattern", "Design_Mirror", "Design_PhotoToSketch"}},
         {QStringLiteral("MODIFY"),
          {"Design_PressPull", "Design_Fillet", "Design_Chamfer", "Design_Shell", "Design_Draft", "Design_Fit", "Design_RemoveFace",
@@ -1157,7 +1157,7 @@ const std::vector<const char*>& categoryTools(const QString& key)
         {QStringLiteral("PRINT"),
          {"Design_PrintView", "Design_PrintDown", "Design_Fit", "Design_PrinterTest", "Design_Export", "Design_Print"}},
         {QStringLiteral("UTILITIES"),
-         {"MyCAD_Search", "Design_Parameters", "Design_Appearance", "Design_Scribble", "Design_RedPen", "Design_Note"}},
+         {"MyCAD_Search", "Design_Parameters", "Design_PartsList", "Design_Appearance", "Design_Scribble", "Design_RedPen", "Design_Note"}},
     };
     static const std::vector<const char*> none;
     auto it = all.find(key);
@@ -6051,7 +6051,7 @@ void Gui::Shell::install()
                  "Std_Undo", "Std_Redo",
                  "#CREATE", "Design_CreateSketch", "Design_Extrude", "Design_Revolve",
                  "Design_Sweep|Design_Loft|Design_Rib|Design_Web|Design_Emboss",
-                 "Design_Box|Design_Cylinder|Design_Sphere|Design_Torus|Design_Coil", "Design_Hole|Design_Fastener|Design_Thread",
+                 "Design_Box|Design_Cylinder|Design_Sphere|Design_Torus|Design_Coil|Design_StandardPart", "Design_Hole|Design_Fastener|Design_Thread",
                  "Design_Pattern", "Design_Mirror",
                  "#MODIFY", "Design_PressPull|Design_Fit|Design_RemoveFace|Design_ReplaceFace|Design_SplitFace", "Design_Fillet", "Design_Chamfer",
                  "Design_Shell", "Design_Draft", "Design_Combine|Design_SplitBody", "Design_Move|Design_Align|Design_Scale",

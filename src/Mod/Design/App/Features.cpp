@@ -125,7 +125,12 @@ const char* XYZEnums[] = {"X", "Y", "Z", nullptr};
 const char* PlaneEnums[] = {"XY", "XZ", "YZ", nullptr};
 const char* PatternEnums[] = {"Rectangular", "Circular", "Path", nullptr};
 const char* HoleEnums[] = {"Simple", "Counterbore", "Countersink", nullptr};
-const char* PrimitiveEnums[] = {"Box", "Cylinder", "Sphere", "Torus", "Coil", nullptr};
+// ab 5: Normteile (Plan 12.7); neue nur hinten anhängen, die Nummer steht in den Dateien
+const char* PrimitiveEnums[] = {"Box", "Cylinder", "Sphere", "Torus", "Coil", "Socket Head Screw", "Countersunk Screw",
+                                "Button Head Screw", "Hex Nut", "Washer", "Heat-Set Insert", "Ball Bearing", "Disc Magnet",
+                                "Block Magnet", "Aluminum Profile", nullptr};
+const char* BearingEnums[] = {"623", "624", "625", "626", "608", "6000", "6001", "6200", nullptr};
+const char* ProfileEnums[] = {"2020", "2040", "3030", nullptr};
 const char* CenterEnums[] = {"Origin", "Body center", nullptr};
 const char* RibEnums[] = {"Rib", "Web", nullptr};
 const char* ChamferEnums[] = {"Equal distance", "Two distances", "Distance and angle", nullptr};
@@ -5794,20 +5799,149 @@ Primitive::Primitive()
     Turns.setConstraints(&turns);
     ADD_PROPERTY_TYPE(PositionX, (0.0), "Parameters", App::Prop_None, "Position on the plane (X)");
     ADD_PROPERTY_TYPE(PositionY, (0.0), "Parameters", App::Prop_None, "Position on the plane (Y)");
+    ADD_PROPERTY_TYPE(Size, (2L), "Parameters", App::Prop_None, "Thread size");
+    Size.setEnums(FastenerSizeEnums);
+    ADD_PROPERTY_TYPE(Bearing, (4L), "Parameters", App::Prop_None, "Ball bearing (inner × outer × width)");
+    Bearing.setEnums(BearingEnums);
+    ADD_PROPERTY_TYPE(Profile, (0L), "Parameters", App::Prop_None, "Aluminum profile (B-type slot)");
+    Profile.setEnums(ProfileEnums);
     onChanged(&Type);
+}
+
+namespace
+{
+enum PrimitiveType : long
+{
+    BoxType, CylinderType, SphereType, TorusType, CoilType, SocketScrew, CountersunkScrew, ButtonScrew, HexNut, Washer,
+    HeatSetInsert, BallBearing, DiscMagnet, BlockMagnet, AluProfile
+};
+
+/// Schraubenkopf je Gewinde: Zylinderkopf ISO 4762 (dk, k), Senkkopf ISO 10642 (dk), Linsenkopf ISO 7380 (dk, k),
+/// Schlüsselweite des Innensechskants je Kopfform. ponytail: Nennmaße ohne Toleranzen; M2/M2.5 bei 10642/7380 sind
+/// nicht genormt, Werte wie bei den Händlern
+struct ScrewHead
+{
+    double socketDk, socketK, socketKey, sinkDk, sinkKey, buttonDk, buttonK, buttonKey;
+};
+const ScrewHead& screwHead(const std::string& size)
+{
+    static const std::map<std::string, ScrewHead> heads = {
+        {"M2", {3.8, 2, 1.5, 4, 1.3, 3.5, 1.3, 1.3}},       {"M2.5", {4.5, 2.5, 2, 5, 1.5, 4.7, 1.5, 1.5}},
+        {"M3", {5.5, 3, 2.5, 6, 2, 5.7, 1.65, 2}},          {"M4", {7, 4, 3, 8, 2.5, 7.6, 2.2, 2.5}},
+        {"M5", {8.5, 5, 4, 10, 3, 9.5, 2.75, 3}},           {"M6", {10, 6, 5, 12, 4, 10.5, 3.3, 4}},
+        {"M8", {13, 8, 6, 16, 5, 14, 4.4, 5}},              {"M10", {16, 10, 8, 20, 6, 17.5, 5.5, 6}},
+        {"M12", {18, 12, 10, 24, 8, 21, 6.6, 8}}};
+    return heads.at(size);
+}
+
+/// Scheibe ISO 7089: (innen, außen, Dicke)
+std::tuple<double, double, double> washerSize(const std::string& size)
+{
+    static const std::map<std::string, std::tuple<double, double, double>> sizes = {
+        {"M2", {2.2, 5, 0.3}},  {"M2.5", {2.7, 6, 0.5}}, {"M3", {3.2, 7, 0.5}},   {"M4", {4.3, 9, 0.8}},  {"M5", {5.3, 10, 1}},
+        {"M6", {6.4, 12, 1.6}}, {"M8", {8.4, 16, 1.6}},  {"M10", {10.5, 20, 2}}, {"M12", {13, 24, 2.5}}};
+    return sizes.at(size);
+}
+
+/// Rillenkugellager: (innen, außen, Breite)
+std::tuple<double, double, double> bearingSize(const std::string& name)
+{
+    static const std::map<std::string, std::tuple<double, double, double>> sizes = {
+        {"623", {3, 10, 4}}, {"624", {4, 13, 5}},    {"625", {5, 16, 5}},    {"626", {6, 19, 6}},
+        {"608", {8, 22, 7}}, {"6000", {10, 26, 8}}, {"6001", {12, 28, 8}}, {"6200", {10, 30, 9}}};
+    return sizes.at(name);
+}
+
+/// Zylinder um Z von z0 bis z1
+TopoDS_Shape zCylinder(double r, double z0, double z1)
+{
+    return BRepPrimAPI_MakeCylinder(gp_Ax2(gp_Pnt(0, 0, z0), gp::DZ()), r, z1 - z0).Shape();
+}
+
+/// Innensechskant von oben in einen Kopf (Oberseite bei z, Tiefe depth)
+TopoDS_Shape withSocket(const TopoDS_Shape& head, double key, double z, double depth)
+{
+    return BRepAlgoAPI_Cut(head, hexPrism(gp_Ax2(gp_Pnt(0, 0, z - depth), gp::DZ()), key, depth + 0.01)).Shape();
+}
+
+/// Querschnitt eines Alu-Profils (Nut Typ B): Außenmaß a × b, Nuten mittig je 20 bzw. 30 mm, Kernbohrung je Raster
+TopoDS_Shape profileSection(const std::string& name, double length)
+{
+    const bool big = name == "3030";
+    const double grid = big ? 30 : 20, slot = big ? 8.2 : 6.2, depth = big ? 9 : 6, bore = big ? 6.8 : 4.2;
+    const double w = grid, h = name == "2040" ? 40 : grid;
+    TopoDS_Shape shape = BRepPrimAPI_MakeBox(gp_Pnt(-w / 2, -h / 2, 0), w, h, length).Shape();
+    std::vector<gp_Pnt> centers;  // Mitte je Rasterfeld
+    for (double y = -h / 2 + grid / 2; y < h / 2; y += grid) {
+        centers.emplace_back(0, y, 0);
+    }
+    for (const gp_Pnt& c : centers) {
+        shape = BRepAlgoAPI_Cut(shape, BRepPrimAPI_MakeCylinder(gp_Ax2(c, gp::DZ()), bore / 2, length).Shape()).Shape();
+        for (int side : {-1, 1}) {  // Nuten links und rechts
+            const double x = side < 0 ? -w / 2 : w / 2 - depth;
+            shape = BRepAlgoAPI_Cut(shape, BRepPrimAPI_MakeBox(gp_Pnt(x, c.Y() - slot / 2, 0), depth, slot, length).Shape()).Shape();
+        }
+    }
+    for (int side : {-1, 1}) {  // Nuten oben und unten
+        const double y = side < 0 ? -h / 2 : h / 2 - depth;
+        shape = BRepAlgoAPI_Cut(shape, BRepPrimAPI_MakeBox(gp_Pnt(-slot / 2, y, 0), slot, depth, length).Shape()).Shape();
+    }
+    return shape;
+}
+
+std::string mm(double v)
+{
+    std::ostringstream out;
+    out << v;
+    return out.str();
+}
+}  // namespace
+
+std::string Primitive::partName() const
+{
+    const std::string size = Size.getValueAsString();
+    switch (Type.getValue()) {
+        case SocketScrew:
+            return "ISO 4762 " + size + " × " + mm(Length.getValue());
+        case CountersunkScrew:
+            return "ISO 10642 " + size + " × " + mm(Length.getValue());
+        case ButtonScrew:
+            return "ISO 7380 " + size + " × " + mm(Length.getValue());
+        case HexNut:
+            return "ISO 4032 " + size;
+        case Washer:
+            return "ISO 7089 " + size;
+        case HeatSetInsert:
+            return "Heat-set insert " + size;
+        case BallBearing:
+            return std::string("Ball bearing ") + Bearing.getValueAsString();
+        case DiscMagnet:
+            return "Disc magnet " + mm(2 * Radius.getValue()) + " × " + mm(Height.getValue());
+        case BlockMagnet:
+            return "Block magnet " + mm(Length.getValue()) + " × " + mm(Width.getValue()) + " × " + mm(Height.getValue());
+        case AluProfile:
+            return std::string("Aluminum profile ") + Profile.getValueAsString() + " × " + mm(Length.getValue());
+        default:
+            return {};
+    }
 }
 
 void Primitive::onChanged(const App::Property* prop)
 {
     if (prop == &Type) {  // nur die Maße der gewählten Form zeigen
         const long t = Type.getValue();
-        Length.setStatus(App::Property::Hidden, t != 0);
-        Width.setStatus(App::Property::Hidden, t != 0);
-        Height.setStatus(App::Property::Hidden, t != 0 && t != 1);
-        Radius.setStatus(App::Property::Hidden, t == 0);
-        TubeRadius.setStatus(App::Property::Hidden, t != 3 && t != 4);
-        Pitch.setStatus(App::Property::Hidden, t != 4);
-        Turns.setStatus(App::Property::Hidden, t != 4);
+        const bool screw = t == SocketScrew || t == CountersunkScrew || t == ButtonScrew;
+        Length.setStatus(App::Property::Hidden, t != BoxType && !screw && t != BlockMagnet && t != AluProfile);
+        Width.setStatus(App::Property::Hidden, t != BoxType && t != BlockMagnet);
+        Height.setStatus(App::Property::Hidden, t != BoxType && t != CylinderType && t != DiscMagnet && t != BlockMagnet);
+        Radius.setStatus(App::Property::Hidden, t != CylinderType && t != SphereType && t != TorusType && t != CoilType
+                                                    && t != DiscMagnet);
+        TubeRadius.setStatus(App::Property::Hidden, t != TorusType && t != CoilType);
+        Pitch.setStatus(App::Property::Hidden, t != CoilType);
+        Turns.setStatus(App::Property::Hidden, t != CoilType);
+        Size.setStatus(App::Property::Hidden, t < SocketScrew || t > HeatSetInsert);
+        Bearing.setStatus(App::Property::Hidden, t != BallBearing);
+        Profile.setStatus(App::Property::Hidden, t != AluProfile);
     }
     Feature::onChanged(prop);
 }
@@ -5840,6 +5974,90 @@ bool Primitive::makeTool(Part::TopoShape& tool, std::string& error) const
                 }
                 shape = BRepPrimAPI_MakeTorus(r, r2).Shape();
                 break;
+            case SocketScrew:
+            case CountersunkScrew:
+            case ButtonScrew: {  // stehend: Spitze auf der Ebene, Kopf oben
+                const std::string size = Size.getValueAsString();
+                const auto* thread = metricThread(size);
+                if (!thread) {
+                    error = "Choose a thread size";
+                    return false;
+                }
+                const double d = thread->diameter;
+                const ScrewHead& head = screwHead(size);
+                if (Type.getValue() == SocketScrew) {
+                    shape = BRepAlgoAPI_Fuse(zCylinder(d / 2, 0, l), zCylinder(head.socketDk / 2, l, l + head.socketK)).Shape();
+                    shape = withSocket(shape, head.socketKey, l + head.socketK, head.socketK * 0.6);
+                }
+                else if (Type.getValue() == CountersunkScrew) {  // Nennlänge über alles, Kopf 90°
+                    const double k = (head.sinkDk - d) / 2;
+                    if (l <= k) {
+                        error = "The screw is shorter than its head";
+                        return false;
+                    }
+                    const TopoDS_Shape cone =
+                        BRepPrimAPI_MakeCone(gp_Ax2(gp_Pnt(0, 0, l - k), gp::DZ()), d / 2, head.sinkDk / 2, k).Shape();
+                    shape = withSocket(BRepAlgoAPI_Fuse(zCylinder(d / 2, 0, l - k), cone).Shape(), head.sinkKey, l, k * 0.7);
+                }
+                else {  // Linsenkopf: Kugelkappe über dem Schaft
+                    const double a = head.buttonDk / 2, k = head.buttonK, rs = (a * a + k * k) / (2 * k);
+                    const TopoDS_Shape cap = BRepAlgoAPI_Common(BRepPrimAPI_MakeSphere(gp_Pnt(0, 0, l + k - rs), rs).Shape(),
+                                                                zCylinder(a, l, l + k))
+                                                 .Shape();
+                    shape = withSocket(BRepAlgoAPI_Fuse(zCylinder(d / 2, 0, l), cap).Shape(), head.buttonKey, l + k, k * 0.7);
+                }
+                break;
+            }
+            case HexNut: {
+                const std::string size = Size.getValueAsString();
+                const auto* thread = metricThread(size);
+                if (!thread) {
+                    error = "Choose a thread size";
+                    return false;
+                }
+                const auto [s, m] = nutSize(size);
+                shape = BRepAlgoAPI_Cut(hexPrism(gp_Ax2(gp::Origin(), gp::DZ()), s, m), zCylinder(thread->diameter / 2, -1, m + 1))
+                            .Shape();
+                break;
+            }
+            case Washer: {
+                const auto [di, da, s] = washerSize(Size.getValueAsString());
+                shape = BRepAlgoAPI_Cut(zCylinder(da / 2, 0, s), zCylinder(di / 2, -1, s + 1)).Shape();
+                break;
+            }
+            case HeatSetInsert: {  // vereinfacht ohne Rändel: außen so groß wie die Bohrung + 0,6 mm
+                double hole = 0, depth = 0;
+                const std::string size = Size.getValueAsString();
+                const auto* thread = metricThread(size);
+                if (!thread || !insertHole(size, hole, depth)) {
+                    error = "There is no heat-set insert for " + size;
+                    return false;
+                }
+                shape = BRepAlgoAPI_Cut(zCylinder(hole / 2 + 0.3, 0, depth), zCylinder(thread->diameter / 2, -1, depth + 1))
+                            .Shape();
+                break;
+            }
+            case BallBearing: {  // Ring mit flacher Mulde zwischen Innen- und Außenring auf beiden Seiten
+                const auto [di, da, b] = bearingSize(Bearing.getValueAsString());
+                const double ring = (da - di) / 4, dip = std::min(0.3, b / 10);
+                shape = BRepAlgoAPI_Cut(zCylinder(da / 2, 0, b), zCylinder(di / 2, -1, b + 1)).Shape();
+                for (double z : {-1.0, b - dip}) {
+                    const TopoDS_Shape groove = BRepAlgoAPI_Cut(zCylinder(da / 2 - ring, z, z + 1 + dip),
+                                                                zCylinder(di / 2 + ring, z - 1, z + 2 + dip))
+                                                    .Shape();
+                    shape = BRepAlgoAPI_Cut(shape, groove).Shape();
+                }
+                break;
+            }
+            case DiscMagnet:
+                shape = BRepPrimAPI_MakeCylinder(r, h).Shape();
+                break;
+            case BlockMagnet:
+                shape = BRepPrimAPI_MakeBox(gp_Pnt(-l / 2, -w / 2, 0), l, w, h).Shape();
+                break;
+            case AluProfile:
+                shape = profileSection(Profile.getValueAsString(), l);
+                break;
             default: {
                 if (r2 >= r) {
                     error = "Tube radius must be smaller than the radius";
@@ -5868,7 +6086,10 @@ bool Primitive::makeTool(Part::TopoShape& tool, std::string& error) const
     place.SetDisplacement(gp_Ax3(gp::XOY()), ax);
     // alle stehen auf der Ebene wie Quader und Zylinder: Kugel um r, Torus und Spirale um den Rohrradius angehoben
     const long type = Type.getValue();
-    offset.SetTranslation(gp_Vec(PositionX.getValue(), PositionY.getValue(), type == 2 ? r : type > 2 ? r2 : 0));
+    offset.SetTranslation(gp_Vec(PositionX.getValue(), PositionY.getValue(),
+                                 type == SphereType                         ? r
+                                     : type == TorusType || type == CoilType ? r2
+                                                                            : 0));
     tool = Part::TopoShape(BRepBuilderAPI_Transform(shape, place * offset, Standard_True).Shape());
     return true;
 }
