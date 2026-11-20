@@ -68,9 +68,12 @@ def steps():
 state = {}
 run([
     ("setup", build), ("wait", lambda: None),
-    ("fits", lambda: check("long timeline stays inside the window, right of the sidebar",
-                           panel_rect().left() >= 12 + 290 and panel_rect().right() <= view().viewport().width(),  # Abstand + BrowserWidth
-                           "%s view=%d" % (panel_rect(), view().viewport().width()))),
+    ("fits", lambda: check("long timeline stays inside the window, right of the sidebar, left of the axis cross",
+                           panel_rect().left() >= 12 + 290  # Abstand + BrowserWidth
+                           # Achsenkreuz: Quadrat unten rechts, Kante 10 % der kürzeren Seite (drawAxisCross)
+                           and panel_rect().right() < view().viewport().width() - 0.1 * min(view().viewport().width(),
+                                                                                          view().viewport().height()),
+                           "%s view=%s" % (panel_rect(), view().viewport().size()))),
     ("overflows", lambda: check("the steps are wider than the timeline and scroll", scroll().horizontalScrollBar().maximum() > 0,
                                 str(scroll().horizontalScrollBar().maximum()))),
     ("play visible", lambda: check("play buttons stay at the left inside the timeline",

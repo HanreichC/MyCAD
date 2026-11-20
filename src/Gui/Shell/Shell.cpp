@@ -3621,8 +3621,12 @@ void layout()
         const bool show = state.timeline->content()->property("count").toInt() > 0;
         state.timeline->setVisible(show);
         // mittig wie die Toolbar; rückt nur zur Seite, statt die Seitenleiste zu überdecken; ist sie breiter als der
-        // Platz daneben, rollen ihre Schritte (TimelineScroll)
-        const qreal lo = browser ? m + BrowserWidth + m : m, hi = r.width() - m;
+        // Platz daneben, rollen ihre Schritte (TimelineScroll). Rechts bleibt das Achsenkreuz frei: ein Quadrat in der
+        // Ecke, Kante CornerCoordSystemSize % der kürzeren Seite (View3DInventorViewer::drawAxisCross)
+        auto view = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+        const qreal axes = view->GetBool("CornerCoordSystem", true)
+            ? view->GetInt("CornerCoordSystemSize", 10) / 100. * std::min(r.width(), r.height()) : 0;
+        const qreal lo = browser ? m + BrowserWidth + m : m, hi = r.width() - std::max(m, axes);
         const qreal tw = std::min<qreal>(ts.width(), hi - lo);
         state.timeline->setGeometry(
             QRectF(std::clamp(r.center().x() - tw / 2, lo, hi - tw), r.height() - m - ts.height(), tw, ts.height())
