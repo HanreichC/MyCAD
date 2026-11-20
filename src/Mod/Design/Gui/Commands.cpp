@@ -1040,6 +1040,46 @@ bool setSweepPath(Design::Feature* feature)
     return false;
 }
 
+/// Skizzen duplizieren: genaue Kopie (Geometrie, Maße, Anhängung) mit eigenem Profil-Begleiter, in Timeline und Ordner
+/// wie eine neue Skizze, sichtbar und gewählt
+void duplicateSketches(App::Document* doc)
+{
+    std::vector<App::DocumentObject*> sketches;
+    for (auto& sel : Gui::Selection().getSelectionEx()) {
+        App::DocumentObject* obj = sel.getObject();
+        if (auto profiles = freecad_cast<Design::Profiles*>(obj)) {
+            obj = profiles->Sketch.getValue();
+        }
+        if (obj && obj->isDerivedFrom<Sketcher::SketchObject>() && std::ranges::find(sketches, obj) == sketches.end()) {
+            sketches.push_back(obj);
+        }
+    }
+    if (sketches.empty()) {
+        toolHint(T("Duplicate"), T("Select one or more sketches first."));
+        return;
+    }
+    doc->openTransaction("Duplicate");
+    Gui::Selection().clearSelection();
+    for (auto sketch : sketches) {
+        const auto copies = doc->copyObject({sketch});  // Bezüge nach außen (Anhängung, Projektionen) bleiben
+        if (copies.empty()) {
+            continue;
+        }
+        App::DocumentObject* copy = copies.front();
+        App::Part* component = Design::componentOf(sketch);
+        Design::folder(component, "Sketches")->addObject(copy);
+        Design::addToTimeline(copy);
+        auto profiles = static_cast<Design::Profiles*>(doc->addObject("Design::Profiles", "Profiles"));
+        component->addObject(profiles);
+        profiles->Sketch.setValue(copy);
+        copy->Label.setValue(T("%1 (copy)").arg(QString::fromUtf8(sketch->Label.getValue())).toStdString());
+        copy->Visibility.setValue(true);
+        Gui::Selection().addSelection(doc->getName(), copy->getNameInDocument());
+    }
+    doc->recompute();
+    doc->commitTransaction();
+}
+
 /// Loft: zwei oder mehr Profile aus verschiedenen Skizzen, in Auswahlreihenfolge
 void startLoft(App::Document* doc)
 {
@@ -5871,6 +5911,8 @@ void CreateDesignCommands()
                                      "PartDesign_Mirrored", "", startMirror));
     mgr.addCommand(new DesignCommand("Design_Delete", "Delete", "Delete: remove features, sketches or bodies with their steps",
                                      "edit-delete", "", deleteSelected));
+    mgr.addCommand(new DesignCommand("Design_Duplicate", "Duplicate", "Duplicate: copy the selected sketches",
+                                     "Design_Duplicate", "", duplicateSketches));
     mgr.addCommand(new DesignCommand("Design_Export", "Export", "Export bodies as 3MF, STL or STEP, or sketches as DXF",
                                      "document-save-as", "", exportBodies));
     mgr.addCommand(new DesignCommand("Design_Import", "Insert",

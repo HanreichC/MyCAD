@@ -161,6 +161,7 @@ ICONS = {
                       '<rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
     "Design_Mirror": '<path d="M12 3v18"' + DASH + '/><path d="M9 6L3 18h6z"/><path d="M15 6l6 12h-6z"/>',
     "Design_Combine": '<circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/>',
+    "Design_Duplicate": '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     "Design_Move": '<path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
     "Design_OffsetPlane": '<path d="M3 20l5-3h13l-5 3z"/><path d="M3 8l5-3h13l-5 3z"/><path d="M12 15.5v-5M10 12.5l2-2 2 2"/>',
     # Skizze: Erstellen

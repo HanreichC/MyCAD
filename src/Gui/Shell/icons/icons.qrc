@@ -2,20 +2,6 @@
     <qresource prefix="/mycad/icons">
         <file>Std_New.svg</file>
         <file>Std_Open.svg</file>
-        <file>Sketcher_ConstrainAngle.svg</file>
-        <file>Sketcher_ConstrainDiameter.svg</file>
-        <file>Sketcher_ConstrainHorVer.svg</file>
-        <file>Sketcher_ConstrainLock.svg</file>
-        <file>Sketcher_ConstrainRadius.svg</file>
-        <file>Sketcher_ViewSketch.svg</file>
-        <file>Std_ViewBottom.svg</file>
-        <file>Std_ViewFront.svg</file>
-        <file>Std_ViewIsometric.svg</file>
-        <file>Std_ViewLeft.svg</file>
-        <file>Std_ViewRear.svg</file>
-        <file>Std_ViewRight.svg</file>
-        <file>Std_ViewTop.svg</file>
-        <file>Sketcher_LeaveSketch.svg</file>
         <file>Std_Save.svg</file>
         <file>Design_Plane.svg</file>
         <file>Design_Midplane.svg</file>
@@ -55,9 +41,6 @@
         <file>Design_ScribbleHexagon.svg</file>
         <file>Design_ScribbleEllipse.svg</file>
         <file>Design_ScribbleFocus.svg</file>
-        <file>Design_ScribbleNextColor.svg</file>
-        <file>Timeline_ScrollLeft.svg</file>
-        <file>Timeline_ScrollRight.svg</file>
         <file>Design_ScribbleDeleteSelection.svg</file>
         <file>Design_ScribbleText.svg</file>
         <file>Design_ScribbleFill.svg</file>
@@ -83,7 +66,6 @@
         <file>Window_Help.svg</file>
         <file>Start_Recent.svg</file>
         <file>Start_Search.svg</file>
-        <file>Start_Template.svg</file>
         <file>MyCAD_Search.svg</file>
         <file>Nav_Rotate.svg</file>
         <file>Nav_Pan.svg</file>
@@ -134,18 +116,7 @@
         <file>MyCAD_SaveVersion.svg</file>
         <file>Design_RedPen.svg</file>
         <file>Design_PrintView.svg</file>
-        <file>Design_CheckReferences.svg</file>
-        <file>Design_PhotoToSketch.svg</file>
         <file>Design_PrintDown.svg</file>
-        <file>Design_PrintSuggest.svg</file>
-        <file>Design_PrintSplit.svg</file>
-        <file>Design_PrinterTest.svg</file>
-        <file>Design_StandardPart.svg</file>
-        <file>Design_Gear.svg</file>
-        <file>Design_Hinge.svg</file>
-        <file>Design_SnapHook.svg</file>
-        <file>Design_PartsList.svg</file>
-        <file>Design_CodeStep.svg</file>
         <file>Design_Print.svg</file>
         <file>Design_Fit.svg</file>
         <file>Design_Fastener.svg</file>
@@ -157,6 +128,7 @@
         <file>Design_Pattern.svg</file>
         <file>Design_Mirror.svg</file>
         <file>Design_Combine.svg</file>
+        <file>Design_Duplicate.svg</file>
         <file>Design_Move.svg</file>
         <file>Design_OffsetPlane.svg</file>
         <file>Sketcher_CreateLine.svg</file>

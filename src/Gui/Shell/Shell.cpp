@@ -3222,6 +3222,7 @@ protected:
                 showCommandMenu({{T("Show / Hide"), "Std_ToggleVisibility"},
                                  {QString(), "@rename"},
                                  {QString(), ""},
+                                 {T("Duplicate"), "Design_Duplicate"},
                                  {T("Move"), "Design_Move"},
                                  {T("Export"), "Design_Export"},
                                  {QString(), ""},
