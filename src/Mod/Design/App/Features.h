@@ -808,6 +808,21 @@ public:
     App::DocumentObjectExecReturn* compute() override;
 };
 
+/// 12.10 Code-Schritt: Python-Code (DesignCode.run) baut eine Form, die wie ein Grundkörper als neuer Körper, Join,
+/// Cut oder Intersect wirkt. Parameter der Notiz heißen im Code p.Name. Der Code läuft nur, wenn er auf diesem Rechner
+/// freigegeben ist (Hash in den Einstellungen, nicht in der Datei): eine fremde Datei führt nichts aus.
+class DesignExport CodeStep: public Feature
+{
+    PROPERTY_HEADER_WITH_OVERRIDE(Design::CodeStep);
+
+public:
+    CodeStep();
+    App::PropertyString Code;
+    App::PropertyLink Parameters;  ///< Parameter-Tabelle: ändert sich ein Wert, rechnet der Schritt neu
+    App::DocumentObjectExecReturn* compute() override;
+    void setupObject() override;
+};
+
 /// Flächen entfernen wie Fusions "Delete Face": die Nachbarflächen wachsen über die Lücke (Defeaturing), z. B. eine
 /// Fase, Rundung, Bohrung oder Tasche verschwindet wieder
 class DesignExport RemoveFace: public DressUp

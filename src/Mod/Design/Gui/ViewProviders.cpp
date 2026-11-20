@@ -53,6 +53,8 @@
 #include <QGuiApplication>
 #include <QPainter>
 #include <QPainterPath>
+#include <QFontDatabase>
+#include <QPlainTextEdit>
 #include <QPointer>
 #include <QStyleHints>
 
@@ -1787,9 +1789,44 @@ public:
             form->addRow(QString(), flip);
             QObject::connect(flip, &QCheckBox::toggled, [this] { apply(); });
         }
+        // 12.10 Code-Schritt: der Code steht im Panel; er läuft erst nach "Run" (gibt diesen Text auf diesem Rechner frei)
+        if (auto step = freecad_cast<Design::CodeStep*>(feature)) {
+            codeEdit = new QPlainTextEdit;
+            codeEdit->setObjectName(QStringLiteral("CodeEdit"));
+            codeEdit->setAccessibleName(T("Code"));
+            codeEdit->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+            codeEdit->setLineWrapMode(QPlainTextEdit::NoWrap);
+            codeEdit->setMinimumSize(360, 220);
+            codeEdit->setPlainText(QString::fromUtf8(step->Code.getValue()));
+            form->addRow(codeEdit);
+            auto note = new QLabel(T("Code from a file never starts by itself: read it, then click Run. Sizes from a note "
+                                     "are p.Name, the code sets result."));
+            note->setWordWrap(true);
+            note->setObjectName(QStringLiteral("Hint"));
+            form->addRow(note);
+            auto run = new QPushButton(T("Run"));
+            run->setObjectName(QStringLiteral("RunCode"));
+            run->setAutoDefault(false);
+            form->addRow(QString(), run);
+            QObject::connect(run, &QPushButton::clicked, [this, step] {
+                const std::string code = codeEdit->toPlainText().toStdString();
+                try {
+                    Base::PyGILStateLocker lock;
+                    Py::Module module(PyImport_ImportModule("DesignCode"), true);
+                    Py::Tuple args(1);
+                    args[0] = Py::String(code);
+                    Py::Callable(module.getAttr("approve")).apply(args);
+                }
+                catch (Py::Exception&) {
+                    Base::PyException().reportException();
+                }
+                step->Code.setValue(code);
+                apply();
+            });
+        }
         // Features, die Körper erzeugen: New Body / Join / Cut / Intersect und Ziel-Body
         if (extrude || revolve || feature->isDerivedFrom<Design::Sweep>() || feature->isDerivedFrom<Design::Loft>()
-            || feature->isDerivedFrom<Design::Primitive>()) {
+            || feature->isDerivedFrom<Design::Primitive>() || feature->isDerivedFrom<Design::CodeStep>()) {
             setupOperation(target);
         }
 
@@ -1846,6 +1883,12 @@ public:
 
     bool accept() override
     {
+        // Code-Schritt: geänderter Text ohne "Run" wird übernommen, läuft aber nicht (die Meldung sagt es)
+        if (auto step = freecad_cast<Design::CodeStep*>(feature); step && codeEdit
+            && codeEdit->toPlainText().toStdString() != step->Code.getValue()) {
+            step->Code.setValue(codeEdit->toPlainText().toStdString());
+            apply();
+        }
         if (feature->isError()) {
             QMessageBox::warning(nullptr, featureTitle(feature), T(feature->getStatusString()));
             return false;
@@ -2746,6 +2789,7 @@ private:
     QComboBox* body = nullptr;
     QLabel* bodyLabel = nullptr;
     QLabel* status = nullptr;
+    QPointer<QPlainTextEdit> codeEdit;
     QWidget* fixBox = nullptr;
     QVBoxLayout* fixLayout = nullptr;
     DragArrow* arrow = nullptr;

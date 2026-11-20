@@ -259,6 +259,8 @@ The start page lists your recent designs and everything in your project folder, 
 
 **Hardware included.** Standard Part adds screws (ISO 4762, 10642, 7380), nuts, washers, heat-set inserts, ball bearings like the 608, magnets and 2020 aluminum profiles as real bodies with their standard sizes. Check that everything fits, then open the **Parts List**: it counts what you need and copies it as a table, ready for your order. **Gear** makes spur gears with real involute teeth: same module, the right distance, and two gears mesh. **Hinge** prints in one piece and moves right off the bed, with the play from your Printer Test. **Snap Hook** checks how far the beam bends and suggests a length that does not break.
 
+**Code when you want it.** A **Code Step** is a step in the timeline made from a few lines of Python: `result = cut(box(p.Width, 30, 5), cylinder(8, 5))`. Sizes come from your notes, so changing a note changes the part. Code is a program, so it never starts by itself: a step from a file someone sent you stays red until you have read it and clicked **Run**.
+
 ![Export](src/Gui/Shell/help/images/Design_Export.gif)
 
 <br>

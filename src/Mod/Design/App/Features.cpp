@@ -26,7 +26,9 @@
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <BRepOffsetAPI_MakeOffset.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
+#include <Base/Interpreter.h>
 #include <Mod/Part/App/Geometry.h>
+#include <Mod/Part/App/TopoShapePy.h>
 #include <Mod/Sketcher/App/SketchObject.h>
 #include <IntCurvesFace_ShapeIntersector.hxx>
 #include <gp_Lin.hxx>
@@ -5900,6 +5902,51 @@ App::DocumentObjectExecReturn* Import::compute()
     }
     setResults(parts);
     return StdReturn;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+PROPERTY_SOURCE(Design::CodeStep, Design::Feature)
+
+CodeStep::CodeStep()
+{
+    ADD_PROPERTY_TYPE(Code, (""), "Code", App::Prop_None, "Python code that sets result to a shape");
+    ADD_PROPERTY_TYPE(Parameters, (nullptr), "Code", App::Prop_Hidden, "Parameter table the code reads as p.Name");
+}
+
+void CodeStep::setupObject()
+{
+    Parameters.setValue(parameterSet(getDocument(), true));
+    Feature::setupObject();
+}
+
+App::DocumentObjectExecReturn* CodeStep::compute()
+{
+    // DesignCode.run prüft die Freigabe selbst und wirft sonst; die Meldung steht dann am Schritt
+    Part::TopoShape tool;
+    try {
+        Base::PyGILStateLocker lock;
+        Py::Module module(PyImport_ImportModule("DesignCode"), true);
+        if (module.isNull()) {
+            throw Py::Exception();
+        }
+        Py::Tuple args(2);
+        args[0] = Py::String(Code.getValue());
+        args[1] = Py::asObject(getDocument()->getPyObject());
+        const Py::Object result = Py::Callable(module.getAttr("run")).apply(args);
+        if (!PyObject_TypeCheck(result.ptr(), &Part::TopoShapePy::Type)) {
+            return new App::DocumentObjectExecReturn("The code must set result to a shape");
+        }
+        tool = *static_cast<Part::TopoShapePy*>(result.ptr())->getTopoShapePtr();
+    }
+    catch (Py::Exception&) {
+        Base::PyException error;  // holt die Python-Meldung und räumt den Fehler ab
+        return new App::DocumentObjectExecReturn(error.getMessage());
+    }
+    if (tool.isNull()) {
+        return new App::DocumentObjectExecReturn("The code must set result to a shape");
+    }
+    return applyTool(tool);
 }
 
 // ---------------------------------------------------------------------------------------------

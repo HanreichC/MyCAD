@@ -704,6 +704,17 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Overhang angle", "Überhang-Winkel"},
         {"Minimum wall", "Kleinste Wand"},
         {"Wall thinner than %1 mm", "Wand dünner als %1 mm"},
+        // 12.10 Code-Schritt
+        {"Code Step", "Code-Schritt"},
+        {"Code Step: a body from Python code, with sizes from your notes; runs only after you read it and click Run",
+         "Code-Schritt: ein Körper aus Python-Code, mit Maßen aus deinen Notizen; läuft erst, wenn du ihn gelesen und Ausführen geklickt hast"},
+        {"Code", "Code"},
+        {"Run", "Ausführen"},
+        {"Code from a file never starts by itself: read it, then click Run. Sizes from a note are p.Name, the code sets result.",
+         "Code aus einer Datei startet nie von selbst: lies ihn, dann klick Ausführen. Maße aus einer Notiz heißen p.Name, der Code setzt result."},
+        {"This code has not run on this computer yet: open the step, read it and click Run",
+         "Dieser Code ist auf diesem Rechner noch nicht gelaufen: Schritt öffnen, lesen und Ausführen klicken"},
+        {"The code must set result to a shape", "Der Code muss result auf eine Form setzen"},
         // 12.11 Vorlagen
         {"New from Template", "Neu aus Vorlage"},
         {"Box with Lid", "Box mit Deckel"},

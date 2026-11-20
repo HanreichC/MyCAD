@@ -543,6 +543,7 @@ PyMOD_INIT_FUNC(Design)
     Design::PressPull::init();
     Design::RemoveFace::init();
     Design::Import::init();
+    Design::CodeStep::init();
     Design::Sweep::init();
     Design::Loft::init();
     Design::Primitive::init();

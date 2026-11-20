@@ -63,3 +63,4 @@ test_mesh_insert.py
 test_standard_parts.py
 test_questions_ui.py
 test_templates_ui.py
+test_code_step_ui.py

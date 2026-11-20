@@ -1118,6 +1118,23 @@ void startPrimitive(App::Document* doc, long type)
     startEditing(feature, true, target);
 }
 
+/// 12.10 Code-Schritt: neuer Körper aus Python-Code, mit einem Beispiel zum Anpassen; läuft erst nach "Run" im Panel
+void startCodeStep(App::Document* doc)
+{
+    doc->openTransaction("Code Step");
+    auto feature = static_cast<Design::CodeStep*>(doc->addObject("Design::CodeStep", "Code"));
+    activeContainer(doc)->addObject(feature);
+    Design::addToTimeline(feature);
+    try {
+        Base::PyGILStateLocker lock;
+        feature->Code.setValue(Base::Interpreter().runStringWithKey("import DesignCode\n_r = DesignCode.EXAMPLE", "_r"));
+    }
+    catch (const Base::Exception& e) {
+        e.reportException();
+    }
+    startEditing(feature, true, nullptr);
+}
+
 /// Fillet, Chamfer: Kanten oder Flächen eines Bodies aus der Auswahl
 /// size > 0: Radius bzw. Fasenabstand vorgeben (11.10, "Kanten 2 mm abrunden"); all: jede Kante des gewählten oder
 /// einzigen sichtbaren Körpers statt der gewählten Kanten
@@ -5940,6 +5957,10 @@ void CreateDesignCommands()
                                      "Standard Part: screws, nuts, washers, heat-set inserts, bearings, magnets and "
                                      "aluminum profiles as real bodies, on the selected plane or face",
                                      "Part_Box", "", [](App::Document* doc) { startPrimitive(doc, 5); }));
+    mgr.addCommand(new DesignCommand("Design_CodeStep", "Code Step",
+                                     "Code Step: a body from Python code, with sizes from your notes; runs only after "
+                                     "you read it and click Run",
+                                     "Part_Box", "", startCodeStep));
     mgr.addCommand(new DesignCommand("Design_Gear", "Gear",
                                      "Gear: spur gear with involute teeth; two gears mesh at a distance of module × "
                                      "(teeth 1 + teeth 2) / 2",

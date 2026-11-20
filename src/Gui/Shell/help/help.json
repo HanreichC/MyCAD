@@ -3629,6 +3629,118 @@
    }
   },
   {
+   "id": "Design_CodeStep",
+   "group": "create",
+   "icon": "Design_CodeStep",
+   "commands": [
+    "Design_CodeStep"
+   ],
+   "title": {
+    "en": "Code Step",
+    "de": "Code-Schritt"
+   },
+   "keywords": {
+    "en": [
+     "code",
+     "python",
+     "script",
+     "program",
+     "build123d",
+     "cadquery",
+     "openscad",
+     "parametric"
+    ],
+    "de": [
+     "Code",
+     "Python",
+     "Skript",
+     "programmieren",
+     "build123d",
+     "CadQuery",
+     "OpenSCAD",
+     "parametrisch"
+    ]
+   },
+   "summary": {
+    "en": "A step in the timeline made from a few lines of Python: shapes like box and cylinder, combined with union and cut. Sizes come from your notes.",
+    "de": "Ein Schritt in der Zeitleiste aus ein paar Zeilen Python: Formen wie box und cylinder, verbunden mit union und cut. Maße kommen aus deinen Notizen."
+   },
+   "steps": {
+    "en": [
+     "In the toolbar at the top, click CREATE ▾ and choose Code Step.",
+     "The panel shows an example: a plate with a hole. Change it; the code must set result to a shape.",
+     "Click Run. Only now does the code run, and from then on it runs on every change of a size. New Body, Join, Cut and Intersect work like for a box.",
+     "Write Width = 40 mm into a note and use p.Width in the code: change the note, the step follows."
+    ],
+    "de": [
+     "Klicke in der Werkzeugleiste oben auf ERSTELLEN ▾ und wähle Code-Schritt.",
+     "Das Panel zeigt ein Beispiel: eine Platte mit Loch. Ändere es; der Code muss result auf eine Form setzen.",
+     "Klicke Ausführen. Erst jetzt läuft der Code, danach bei jeder Änderung eines Maßes von selbst. Neuer Körper, Verbinden, Ausschneiden und Schnittmenge wirken wie bei einem Quader.",
+     "Schreib Breite = 40 mm in eine Notiz und nimm p.Breite im Code: Notiz ändern, der Schritt zieht nach."
+    ]
+   },
+   "see": [
+    "Design_Note",
+    "primitives"
+   ],
+   "options": {
+    "en": [
+     [
+      "box(x, y, z)",
+      "Box, centred in x and y, standing on z = 0"
+     ],
+     [
+      "cylinder(d, h)",
+      "Cylinder with diameter d along z; cone, sphere, torus alike"
+     ],
+     [
+      "at=(x, y, z)",
+      "Every shape takes a position"
+     ],
+     [
+      "move, rotate, mirror",
+      "Move, turn or mirror a shape"
+     ],
+     [
+      "union, cut, common",
+      "Join, subtract, keep the overlap"
+     ]
+    ],
+    "de": [
+     [
+      "box(x, y, z)",
+      "Quader, mittig in x und y, steht auf z = 0"
+     ],
+     [
+      "cylinder(d, h)",
+      "Zylinder mit Durchmesser d entlang z; cone, sphere, torus genauso"
+     ],
+     [
+      "at=(x, y, z)",
+      "Jede Form nimmt eine Lage"
+     ],
+     [
+      "move, rotate, mirror",
+      "Form verschieben, drehen, spiegeln"
+     ],
+     [
+      "union, cut, common",
+      "Verbinden, abziehen, Überlappung behalten"
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "Code is a program. Code from a file someone sent you never runs by itself: the step stays red until you open it, read it and click Run. Your approval is kept on this computer, not in the file.",
+     "Part and App from FreeCAD are there too, for anything the short functions do not cover."
+    ],
+    "de": [
+     "Code ist ein Programm. Code aus einer Datei, die dir jemand schickt, läuft nie von selbst: der Schritt bleibt rot, bis du ihn öffnest, liest und Ausführen klickst. Deine Freigabe bleibt auf diesem Rechner, nicht in der Datei.",
+     "Part und App aus FreeCAD sind auch da, für alles, was die kurzen Funktionen nicht abdecken."
+    ]
+   }
+  },
+  {
    "id": "Design_SnapHook",
    "group": "create",
    "icon": "Design_SnapHook",
