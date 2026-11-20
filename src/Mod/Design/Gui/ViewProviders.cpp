@@ -2048,7 +2048,11 @@ private:
         bodyLabel = new QLabel(T("Body"));
         form->addRow(bodyLabel, body);
 
-        for (auto obj : feature->getDocument()->getObjectsOfType(Design::Body::getClassTypeId())) {
+        // Sichtbare Körper zuerst: der erste ist beim Umschalten auf Verbinden vorgewählt. Stand dort ein ausgeblendeter
+        // (PCB in ConceptKey), verschwand das Ergebnis samt Vorschau in ihm, Verbinden "klappte nicht"
+        auto bodies = feature->getDocument()->getObjectsOfType(Design::Body::getClassTypeId());
+        std::ranges::stable_partition(bodies, [](App::DocumentObject* b) { return b->Visibility.getValue(); });
+        for (auto obj : bodies) {
             if (create || std::ranges::find(feature->Bodies.getValues(), obj) != feature->Bodies.getValues().end()) {
                 body->addItem(QString::fromUtf8(obj->Label.getValue()), QString::fromLatin1(obj->getNameInDocument()));
             }

@@ -54,12 +54,16 @@ def hidden_setup():
 
 def hidden_extrude():
     body("Hidden").Visibility = False
+    body("Floating").Visibility = False  # erster Körper ausgeblendet, wie PCB in ConceptKey
     prof = [o for o in S["top"].InList if o.TypeId == "Design::Profiles"][0]
     Gui.Selection.clearSelection(); Gui.Selection.addSelection(prof, "Face1"); click(button("Design_Extrude"))
 
 
 def join_hidden():
     choose("Join", 1)
+    cb = [c for c in visible(QtWidgets.QComboBox) if c.findText("Hidden") >= 0][0]
+    S["preselected"] = cb.currentText()
+    S["hidden_last"] = {cb.itemText(i) for i in range(cb.count() - 2, cb.count())} == {"Floating", "Hidden"}
     cb = [c for c in visible(QtWidgets.QComboBox) if c.findText("Hidden") >= 0][0]
     cb.setCurrentIndex(cb.findText("Hidden"))
 
@@ -79,7 +83,9 @@ run([("activate", activate), ("gap", gap_setup), W,
      ("cut 2", lambda: expect("Cut", "start offset 5 mm into the plate")), ("ok 2", ok), W,
      ("hidden", hidden_setup), W, W, ("circle 2", lambda: circle_leave(220, 2)), W, ("extrude 2", hidden_extrude), W,
      ("new 2", lambda: expect("New Body", "sketch on a hidden body does not join into it")),
-     ("join", join_hidden), W, ("join op", lambda: expect("Join", "join chosen by hand")), ("ok 3", ok), W,
+     ("join", join_hidden), W, ("join op", lambda: expect("Join", "join chosen by hand")),
+     ("preselect", lambda: check("switching to Join preselects a visible body, hidden ones come last",
+                                 S["preselected"] not in ("Floating", "Hidden") and S["hidden_last"], S["preselected"])), ("ok 3", ok), W,
      ("shown", lambda: check("a hidden body joined by hand is shown after OK", body("Hidden").Visibility
                              and abs(body("Hidden").Shape.Volume - (40 * 20 * 2 + math.pi * 9 * 10)) < 0.1,
                              "visible=%s volume=%.2f" % (body("Hidden").Visibility, body("Hidden").Shape.Volume)))])
