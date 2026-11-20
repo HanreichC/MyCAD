@@ -23,9 +23,20 @@ struct Correction;
 namespace Part
 {
 class TopoShape;
+class Geometry;
 }
 
 class SoNodeSensor;
+namespace Sketcher
+{
+class Constraint;
+}
+namespace Base
+{
+template<class T>
+class Vector3;
+using Vector3d = Vector3<double>;
+}
 namespace Gui
 {
 class View3DInventorViewer;
@@ -57,6 +68,12 @@ private:
 /// Handschrift auf dem aktuellen Blatt eines Scribbles lesen (freie Fineliner- und Bleistift-Striche), mit
 /// CAD-Schreibweise; die Strich-Nummern der Zeilen zählen in scribble->strokes(). Leer ohne Handschrift-Modell.
 std::vector<ScribbleRead::Line> readScribble(const Design::Scribble* scribble);
+/// Geometrie eines Strichs (Punkte in Skizzen-Koordinaten, kind wie Design::Scribble::Kind) und die Bedingungen, die
+/// Strich-Geometrie zusammenhalten (waagerecht/senkrecht, Enden koinzident): Scribble -> Skizze, Stift in der Skizze
+void strokeGeometry(int kind, const std::vector<Base::Vector3d>& pts, std::vector<std::unique_ptr<Part::Geometry>>& geos);
+std::vector<std::unique_ptr<Sketcher::Constraint>> strokeConstraints(const std::vector<std::unique_ptr<Part::Geometry>>& geos);
+/// Stift in einer offenen Skizze: Striche werden Skizzengeometrie (an beim Öffnen, aus beim Schließen)
+void sketchPen(Gui::ViewProviderDocumentObject* sketch, bool on);
 
 /// Parameter-Tabelle des Designs (App::VarSet "Parameters" in der Root-Komponente), wie Fusions "Change Parameters"
 DesignGuiExport App::DocumentObject* parameters(App::Document* doc, bool create);

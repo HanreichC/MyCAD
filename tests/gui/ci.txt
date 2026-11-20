@@ -67,3 +67,4 @@ test_code_step_ui.py
 test_timeline_filter.py
 test_duplicate_sketch.py
 test_offset_parallel.py
+test_sketch_pen.py

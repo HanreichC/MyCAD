@@ -21,6 +21,11 @@
 #include <Gui/Inventor/SoFCBoundingBox.h>
 #include <Gui/View3DInventorViewer.h>
 #include <Mod/Design/App/Features.h>
+#include <Mod/Part/App/Geometry.h>
+#include <Mod/Sketcher/App/Constraint.h>
+#include <Mod/Sketcher/App/SketchObject.h>
+#include <Mod/Sketcher/Gui/ViewProviderSketch.h>
+#include <Gui/View3DInventor.h>
 
 #include <Inventor/SbLine.h>
 #include <Inventor/SbViewVolume.h>
@@ -2346,4 +2351,300 @@ bool ViewProviderScribble::find(const QString& text)
     camera->orientation.getValue().multVec(SbVec3f(0, 0, -1), dir);
     camera->position.setValue(sb(d->toWorld * box.GetCenter()) - camera->focalDistance.getValue() * dir);
     return true;
+}
+
+// ---------------------------------------------------------------------------------------------
+
+namespace
+{
+
+/// Stift in einer offenen Skizze: ein Strich wird Skizzengeometrie. Hält der Stift am Ende still, wird er zur erkannten
+/// Form (Linie, Kreis, Rechteck, Bogen, Ellipse, Dreieck), sonst Freihand (gerade Stücke Linien, gebogene Splines),
+/// wie beim Umwandeln eines Scribbles. Enden nahe an Skizzenpunkten rasten dort ein und werden koinzident.
+/// Nur der Stift: die Maus wählt und zieht wie immer, und läuft ein Skizzenwerkzeug, bekommt es den Stift als Maus.
+class SketchPen: public QObject
+{
+public:
+    SketchPen(SketcherGui::ViewProviderSketch* vp, Gui::View3DInventorViewer* viewer)
+        : vp(vp)
+        , viewer(viewer)
+        , viewport(viewer->viewport())
+    {
+        root = new SoSeparator;
+        root->ref();
+        auto annotation = new SoAnnotation;  // über allem, ohne Tiefentest
+        auto ink = inkGroup();
+        auto material = new SoMaterial;
+        const QColor accent = Gui::Shell::theme().accentText;
+        material->diffuseColor.setValue(accent.redF(), accent.greenF(), accent.blueF());
+        auto style = new SoDrawStyle;
+        style->lineWidth = 2;
+        coords = new SoCoordinate3;
+        lines = new SoLineSet;
+        ink->addChild(material);
+        ink->addChild(style);
+        ink->addChild(coords);
+        ink->addChild(lines);
+        annotation->addChild(ink);
+        root->addChild(annotation);
+        if (auto scene = dynamic_cast<SoGroup*>(viewer->getSceneGraph())) {
+            scene->addChild(root);
+        }
+        hold.setSingleShot(true);
+        hold.setInterval(HoldMs);
+        QObject::connect(&hold, &QTimer::timeout, [this] { shapeUp(); });
+        viewport->installEventFilter(this);
+    }
+
+    ~SketchPen() override
+    {
+        if (viewport) {  // sonst ist die Ansicht schon geschlossen, mit ihr der Viewer
+            viewport->removeEventFilter(this);
+            if (auto scene = dynamic_cast<SoGroup*>(viewer->getSceneGraph())) {
+                scene->removeChild(root);
+            }
+        }
+        root->unref();
+    }
+
+protected:
+    bool eventFilter(QObject*, QEvent* event) override
+    {
+        const auto type = event->type();
+        if (type != QEvent::TabletPress && type != QEvent::TabletMove && type != QEvent::TabletRelease) {
+            return false;
+        }
+        auto te = static_cast<QTabletEvent*>(event);
+        if (type == QEvent::TabletPress) {
+            // Seitentaste, Radierer-Ende, über einem Panel oder ein Skizzenwerkzeug läuft: Qt macht daraus die Maus
+            auto view = qobject_cast<QGraphicsView*>(viewport->parentWidget());
+            if (te->button() != Qt::LeftButton || te->buttons() != Qt::LeftButton
+                || te->pointerType() == QPointingDevice::PointerType::Eraser
+                || (view && view->itemAt(te->position().toPoint()))
+                || vp->getSketchMode() != SketcherGui::ViewProviderSketch::STATUS_NONE) {
+                return false;
+            }
+            down = true;
+            shape = {};
+            screen = {te->position()};
+            anchor = te->position();
+            add(te->position());
+            hold.start();
+            te->accept();
+            return true;
+        }
+        if (!down) {
+            return false;
+        }
+        if (type == QEvent::TabletMove) {
+            if (shape.kind == ScribbleShapes::Kind::Free) {
+                add(te->position());
+                screen.push_back(te->position());
+                if (std::hypot(te->position().x() - anchor.x(), te->position().y() - anchor.y()) > 4) {
+                    anchor = te->position();
+                    hold.start();  // bewegt: Halten beginnt von vorn
+                }
+            }
+            te->accept();
+            return true;
+        }
+        down = false;
+        hold.stop();
+        commit();
+        te->accept();
+        return true;
+    }
+
+private:
+    /// Bildschirmpunkt auf der Skizzenebene, in Skizzen-Koordinaten
+    std::optional<Base::Vector3d> onSketch(const QPointF& pos) const
+    {
+        const float aspect = viewer->getSoRenderManager()->getViewportRegion().getViewportAspectRatio();
+        SbLine line;
+        viewer->getSoRenderManager()->getCamera()->getViewVolume(aspect).projectPointToLine(
+            SbVec2f(float(pos.x() / viewport->width()), float(1.0 - pos.y() / viewport->height())), line);
+        const Base::Placement place = sketch()->globalPlacement();
+        const Base::Matrix4D toLocal = place.inverse().toMatrix();
+        const Base::Vector3d origin = toLocal * vec(line.getPosition());
+        const Base::Vector3d dir = toLocal * vec(line.getPosition() + line.getDirection()) - origin;
+        if (std::abs(dir.z) < 1e-9) {
+            return std::nullopt;  // Skizze genau von der Kante gesehen
+        }
+        return origin + dir * (-origin.z / dir.z);
+    }
+
+    Sketcher::SketchObject* sketch() const
+    {
+        return static_cast<Sketcher::SketchObject*>(vp->getObject());
+    }
+
+    void add(const QPointF& pos)
+    {
+        if (auto p = onSketch(pos)) {
+            points.push_back(*p);
+            show(points);
+        }
+    }
+
+    /// Strich oder erkannte Form zeigen (Skizzen-Koordinaten)
+    void show(const std::vector<Base::Vector3d>& local)
+    {
+        const Base::Matrix4D toWorld = sketch()->globalPlacement().toMatrix();
+        coords->point.setNum(int(local.size()));
+        SbVec3f* out = coords->point.startEditing();
+        for (size_t i = 0; i < local.size(); ++i) {
+            out[i] = sb(toWorld * local[i]);
+        }
+        coords->point.finishEditing();
+        lines->numVertices.setValue(int(local.size()));
+    }
+
+    /// Halten: Form erkennen und zeigen; Loslassen übernimmt sie
+    void shapeUp()
+    {
+        if (!down || points.size() < 3) {
+            return;
+        }
+        std::vector<ScribbleShapes::P> flat;
+        for (const auto& p : points) {
+            flat.push_back({p.x, p.y});
+        }
+        shape = ScribbleShapes::recognize(flat);
+        if (shape.kind == ScribbleShapes::Kind::Free) {
+            return;
+        }
+        std::vector<Base::Vector3d> outline;
+        for (const auto& p : shape.points) {
+            outline.emplace_back(p.x, p.y, 0);
+        }
+        show(outline);
+    }
+
+    /// Skizzenpunkt (Geometrie, Lage) nahe p, sonst {-1, none}
+    std::pair<int, Sketcher::PointPos> vertexNear(const Base::Vector3d& p, double radius) const
+    {
+        std::pair<int, Sketcher::PointPos> best {-1, Sketcher::PointPos::none};
+        double bestDist = radius;
+        const auto* s = sketch();
+        for (int i = 0; i < s->Geometry.getSize(); ++i) {
+            for (auto pos : {Sketcher::PointPos::start, Sketcher::PointPos::end, Sketcher::PointPos::mid}) {
+                const Base::Vector3d q = s->getPoint(i, pos);
+                if (const double d = (q - p).Length(); d < bestDist) {
+                    bestDist = d;
+                    best = {i, pos};
+                }
+            }
+        }
+        return best;
+    }
+
+    void commit()
+    {
+        std::vector<Base::Vector3d> pts;
+        int kind = int(shape.kind);
+        for (const auto& p : shape.kind == ScribbleShapes::Kind::Free ? std::vector<ScribbleShapes::P>() : shape.points) {
+            pts.emplace_back(p.x, p.y, 0);
+        }
+        if (shape.kind == ScribbleShapes::Kind::Free) {
+            pts = points;
+        }
+        points.clear();
+        show({});
+        // ein Tupfer ist kein Strich
+        double screenLength = 0;
+        for (size_t i = 1; i < screen.size(); ++i) {
+            screenLength += std::hypot(screen[i].x() - screen[i - 1].x(), screen[i].y() - screen[i - 1].y());
+        }
+        if (pts.size() < 2 || screenLength < 6) {
+            return;
+        }
+        // offene Striche: Enden nahe an Skizzenpunkten rasten ein (10 px)
+        const auto a = onSketch(QPointF(0, 0)), b = onSketch(QPointF(10, 0));
+        const double radius = a && b ? (*b - *a).Length() : 0;
+        const bool open = (pts.front() - pts.back()).Length() > 1e-9;
+        std::vector<std::pair<int, Sketcher::PointPos>> snapped;
+        if (open && radius > 0) {
+            for (Base::Vector3d* end : {&pts.front(), &pts.back()}) {
+                const auto hit = vertexNear(*end, radius);
+                if (hit.first >= 0) {
+                    *end = sketch()->getPoint(hit.first, hit.second);
+                    snapped.push_back(hit);
+                }
+            }
+        }
+        std::vector<std::unique_ptr<Part::Geometry>> geos;
+        DesignGui::strokeGeometry(kind, pts, geos);
+        if (geos.empty()) {
+            return;
+        }
+        auto constraints = DesignGui::strokeConstraints(geos);
+        Sketcher::SketchObject* s = sketch();
+        const int first = s->Geometry.getSize();
+        App::Document* doc = s->getDocument();
+        doc->openTransaction("Sketch Pen");
+        std::vector<Part::Geometry*> geoList;
+        for (const auto& g : geos) {
+            geoList.push_back(g.get());
+        }
+        s->addGeometry(geoList);  // kopiert
+        std::vector<Sketcher::Constraint*> list;
+        for (auto& c : constraints) {
+            c->First += first;
+            if (c->Second != Sketcher::GeoEnum::GeoUndef) {
+                c->Second += first;
+            }
+            list.push_back(c.get());
+        }
+        // eingerastete Enden an ihren Skizzenpunkt binden
+        std::vector<std::unique_ptr<Sketcher::Constraint>> joins;
+        for (const auto& [geo, pos] : snapped) {
+            for (int i = first; i < s->Geometry.getSize(); ++i) {
+                for (auto end : {Sketcher::PointPos::start, Sketcher::PointPos::end}) {
+                    if (i != geo && (s->getPoint(i, end) - s->getPoint(geo, pos)).Length() < 1e-7) {
+                        auto c = std::make_unique<Sketcher::Constraint>();
+                        c->Type = Sketcher::Coincident;
+                        c->First = geo;
+                        c->FirstPos = pos;
+                        c->Second = i;
+                        c->SecondPos = end;
+                        list.push_back(c.get());
+                        joins.push_back(std::move(c));
+                    }
+                }
+            }
+        }
+        if (!list.empty()) {
+            s->addConstraints(list);  // kopiert
+        }
+        doc->recompute();
+        doc->commitTransaction();
+    }
+
+    SketcherGui::ViewProviderSketch* vp;
+    Gui::View3DInventorViewer* viewer;
+    QPointer<QWidget> viewport;
+    SoSeparator* root;
+    SoCoordinate3* coords;
+    SoLineSet* lines;
+    QTimer hold;
+    bool down = false;
+    QPointF anchor;
+    std::vector<QPointF> screen;
+    std::vector<Base::Vector3d> points;  ///< Skizzen-Koordinaten
+    ScribbleShapes::Shape shape;         ///< erkannt beim Halten, sonst Free
+};
+
+std::unique_ptr<SketchPen> sketchPenInstance;
+
+}  // namespace
+
+void DesignGui::sketchPen(Gui::ViewProviderDocumentObject* vp, bool on)
+{
+    sketchPenInstance.reset();
+    auto sketch = dynamic_cast<SketcherGui::ViewProviderSketch*>(vp);
+    auto gdoc = sketch ? Gui::Application::Instance->getDocument(sketch->getObject()->getDocument()) : nullptr;
+    auto view = gdoc ? dynamic_cast<Gui::View3DInventor*>(gdoc->getActiveView()) : nullptr;
+    if (on && view) {
+        sketchPenInstance = std::make_unique<SketchPen>(sketch, view->getViewer());
+    }
 }

@@ -649,6 +649,155 @@ protected:
     }
 };
 
+}  // namespace
+
+/// Geometrie eines Strichs in Skizzen-Koordinaten (z = 0): Linie, Rechteck und Vieleck als Linien, Kreis, Bogen und
+/// Ellipse als solche, Freihand vereinfacht und an Knicken geteilt (gerade Stücke Linien, gebogene Splines).
+/// kind wie Design::Scribble::Kind (= ScribbleShapes::Kind); Scribble -> Skizze und der Stift in der Skizze
+void DesignGui::strokeGeometry(int kind, const std::vector<Base::Vector3d>& pts,
+                               std::vector<std::unique_ptr<Part::Geometry>>& geos)
+{
+    const auto segment = [&geos](const Base::Vector3d& a, const Base::Vector3d& b) {
+        if ((b - a).Length() > 1e-6) {
+            auto line = std::make_unique<Part::GeomLineSegment>();
+            line->setPoints(a, b);
+            geos.push_back(std::move(line));
+        }
+    };
+    if (kind == Design::Scribble::Line || kind == Design::Scribble::Rectangle || kind == Design::Scribble::Polygon
+        || pts.size() == 2) {
+        for (size_t i = 1; i < pts.size(); ++i) {
+            segment(pts[i - 1], pts[i]);
+        }
+    }
+    else if (kind == Design::Scribble::Circle) {
+        Base::Vector3d center;
+        for (size_t i = 0; i + 1 < pts.size(); ++i) {  // der letzte Punkt wiederholt den ersten
+            center += pts[i] / double(pts.size() - 1);
+        }
+        auto circle = std::make_unique<Part::GeomCircle>();
+        circle->setCenter(center);
+        circle->setRadius((pts.front() - center).Length());
+        geos.push_back(std::move(circle));
+    }
+    else if (kind == Design::Scribble::Arc && pts.size() > 2) {
+        // Kreis durch Anfang, Mitte und Ende; die Skizze will Bögen gegen den Uhrzeigersinn
+        const Base::Vector3d a = pts.front(), m = pts[pts.size() / 2], b = pts.back();
+        const double d = 2 * (a.x * (m.y - b.y) + m.x * (b.y - a.y) + b.x * (a.y - m.y));
+        if (std::abs(d) > 1e-9) {
+            const auto sq = [](const Base::Vector3d& p) { return p.x * p.x + p.y * p.y; };
+            const Base::Vector3d c((sq(a) * (m.y - b.y) + sq(m) * (b.y - a.y) + sq(b) * (a.y - m.y)) / d,
+                                   (sq(a) * (b.x - m.x) + sq(m) * (a.x - b.x) + sq(b) * (m.x - a.x)) / d, 0);
+            const auto angle = [&c](const Base::Vector3d& p) { return std::atan2(p.y - c.y, p.x - c.x); };
+            double t0 = angle(a), t1 = angle(b);
+            const auto ccw = [](double from, double to) { return std::fmod(to - from + 4 * M_PI, 2 * M_PI); };
+            if (ccw(t0, angle(m)) > ccw(t0, t1)) {
+                std::swap(t0, t1);  // die Mitte liegt nicht gegen den Uhrzeigersinn zwischen den Enden
+            }
+            auto arc = std::make_unique<Part::GeomArcOfCircle>();
+            arc->setCenter(c);
+            arc->setRadius((a - c).Length());
+            arc->setRange(t0, t0 + ccw(t0, t1), true);
+            geos.push_back(std::move(arc));
+        }
+    }
+    else if (kind == Design::Scribble::Ellipse && pts.size() == 97) {
+        Base::Vector3d center;
+        for (size_t i = 0; i + 1 < pts.size(); ++i) {
+            center += pts[i] / double(pts.size() - 1);
+        }
+        Base::Vector3d major = pts[0] - center, minor = pts[24] - center;  // Halbachsen (Features.h, Kind::Ellipse)
+        if (major.Length() < minor.Length()) {
+            std::swap(major, minor);
+        }
+        if (minor.Length() > 1e-6) {
+            Handle(Geom_Ellipse) e = new Geom_Ellipse(
+                gp_Ax2(gp_Pnt(center.x, center.y, 0), gp_Dir(0, 0, 1), gp_Dir(major.x, major.y, 0)), major.Length(),
+                minor.Length());
+            geos.push_back(std::make_unique<Part::GeomEllipse>(e));
+        }
+    }
+    else {
+        // Freihand: vereinfacht und an Knicken geteilt. Gerade Stücke werden Linien, gebogene ein Spline durch ihre
+        // wenigen Punkte; ein Spline über alle Punkte schösse mit seinen Polen weit über jede Ecke hinaus
+        Base::BoundBox3d box;
+        std::vector<ScribbleShapes::P> flat2d;
+        for (const auto& p : pts) {
+            box.Add(p);
+            flat2d.push_back({p.x, p.y});
+        }
+        for (const auto& piece : ScribbleShapes::pieces(flat2d, std::max(1e-3, 0.01 * box.CalcDiagonalLength()))) {
+            if (piece.size() == 2) {
+                segment(Base::Vector3d(piece[0].x, piece[0].y, 0), Base::Vector3d(piece[1].x, piece[1].y, 0));
+                continue;
+            }
+            std::vector<gp_Pnt> through;
+            for (const auto& q : piece) {
+                through.emplace_back(q.x, q.y, 0);
+            }
+            auto spline = std::make_unique<Part::GeomBSplineCurve>();
+            try {
+                spline->interpolate(through);
+                geos.push_back(std::move(spline));
+            }
+            catch (const Standard_Failure&) {
+            }
+            catch (const Base::Exception&) {
+            }
+        }
+    }
+}
+
+/// Bedingungen für Strich-Geometrie: achsparallele Linien waagerecht/senkrecht, aufeinanderliegende Enden koinzident
+std::vector<std::unique_ptr<Sketcher::Constraint>> DesignGui::strokeConstraints(
+    const std::vector<std::unique_ptr<Part::Geometry>>& geos)
+{
+    std::vector<std::unique_ptr<Sketcher::Constraint>> constraints;
+    struct End
+    {
+        int geo;
+        Sketcher::PointPos pos;
+        Base::Vector3d p;
+    };
+    std::vector<End> ends;
+    for (int i = 0; i < int(geos.size()); ++i) {
+        if (auto curve = dynamic_cast<Part::GeomBoundedCurve*>(geos[i].get())) {
+            ends.push_back({i, Sketcher::PointPos::start, curve->getStartPoint()});
+            ends.push_back({i, Sketcher::PointPos::end, curve->getEndPoint()});
+        }
+        if (auto line = dynamic_cast<Part::GeomLineSegment*>(geos[i].get())) {
+            const Base::Vector3d d = line->getEndPoint() - line->getStartPoint();
+            if (std::abs(d.y) < 1e-7 || std::abs(d.x) < 1e-7) {
+                auto c = std::make_unique<Sketcher::Constraint>();
+                c->Type = std::abs(d.y) < 1e-7 ? Sketcher::Horizontal : Sketcher::Vertical;
+                c->First = i;
+                constraints.push_back(std::move(c));
+            }
+        }
+    }
+    std::vector<bool> joined(ends.size(), false);  // jeder Punkt nur an den ersten, der auf ihm liegt
+    for (size_t a = 0; a < ends.size(); ++a) {
+        for (size_t b = a + 1; b < ends.size(); ++b) {
+            if (joined[b] || ends[a].geo == ends[b].geo || (ends[a].p - ends[b].p).Length() > 1e-4) {
+                continue;
+            }
+            joined[b] = true;
+            auto c = std::make_unique<Sketcher::Constraint>();
+            c->Type = Sketcher::Coincident;
+            c->First = ends[a].geo;
+            c->FirstPos = ends[a].pos;
+            c->Second = ends[b].geo;
+            c->SecondPos = ends[b].pos;
+            constraints.push_back(std::move(c));
+        }
+    }
+
+    return constraints;
+}
+
+namespace
+{
+
 /// Striche auf dem aktuellen Blatt werden eine Skizze: Linien, Rechtecke und Vielecke zu Linien, Kreise zu Kreisen,
 /// Ellipsen zu Ellipsen, Freihand zu B-Splines; Füllflächen bleiben im Scribble. Enden, die aufeinanderliegen (eingerastet), werden koinzident, achsparallele Linien waagerecht/senkrecht.
 /// Danach ist das Scribble ausgeblendet und die Skizze offen, zum Bemaßen.
@@ -659,13 +808,6 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
     const Base::Placement sheet = scribble->Sheet.getValue();
     const Base::Placement toSheet = sheet.inverse();
     std::vector<std::unique_ptr<Part::Geometry>> geos;
-    const auto segment = [&geos](const Base::Vector3d& a, const Base::Vector3d& b) {
-        if ((b - a).Length() > 1e-6) {
-            auto line = std::make_unique<Part::GeomLineSegment>();
-            line->setPoints(a, b);
-            geos.push_back(std::move(line));
-        }
-    };
     const auto strokes = scribble->strokes();
 
     // Maße aus der Handschrift: "Ø12" oder "R5" an einem Kreis, "40" an einer Linie werden Bemaßungen statt Geometrie
@@ -712,88 +854,7 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
         if (!flat || pts.size() < 2) {
             continue;  // liegt auf einem anderen Blatt (3D) oder ist nur ein Tupfer
         }
-        if (s.kind == Design::Scribble::Line || s.kind == Design::Scribble::Rectangle || s.kind == Design::Scribble::Polygon
-            || pts.size() == 2) {
-            for (size_t i = 1; i < pts.size(); ++i) {
-                segment(pts[i - 1], pts[i]);
-            }
-        }
-        else if (s.kind == Design::Scribble::Circle) {
-            Base::Vector3d center;
-            for (size_t i = 0; i + 1 < pts.size(); ++i) {  // der letzte Punkt wiederholt den ersten
-                center += pts[i] / double(pts.size() - 1);
-            }
-            auto circle = std::make_unique<Part::GeomCircle>();
-            circle->setCenter(center);
-            circle->setRadius((pts.front() - center).Length());
-            geos.push_back(std::move(circle));
-        }
-        else if (s.kind == Design::Scribble::Arc && pts.size() > 2) {
-            // Kreis durch Anfang, Mitte und Ende; die Skizze will Bögen gegen den Uhrzeigersinn
-            const Base::Vector3d a = pts.front(), m = pts[pts.size() / 2], b = pts.back();
-            const double d = 2 * (a.x * (m.y - b.y) + m.x * (b.y - a.y) + b.x * (a.y - m.y));
-            if (std::abs(d) > 1e-9) {
-                const auto sq = [](const Base::Vector3d& p) { return p.x * p.x + p.y * p.y; };
-                const Base::Vector3d c((sq(a) * (m.y - b.y) + sq(m) * (b.y - a.y) + sq(b) * (a.y - m.y)) / d,
-                                       (sq(a) * (b.x - m.x) + sq(m) * (a.x - b.x) + sq(b) * (m.x - a.x)) / d, 0);
-                const auto angle = [&c](const Base::Vector3d& p) { return std::atan2(p.y - c.y, p.x - c.x); };
-                double t0 = angle(a), t1 = angle(b);
-                const auto ccw = [](double from, double to) { return std::fmod(to - from + 4 * M_PI, 2 * M_PI); };
-                if (ccw(t0, angle(m)) > ccw(t0, t1)) {
-                    std::swap(t0, t1);  // die Mitte liegt nicht gegen den Uhrzeigersinn zwischen den Enden
-                }
-                auto arc = std::make_unique<Part::GeomArcOfCircle>();
-                arc->setCenter(c);
-                arc->setRadius((a - c).Length());
-                arc->setRange(t0, t0 + ccw(t0, t1), true);
-                geos.push_back(std::move(arc));
-            }
-        }
-        else if (s.kind == Design::Scribble::Ellipse && pts.size() == 97) {
-            Base::Vector3d center;
-            for (size_t i = 0; i + 1 < pts.size(); ++i) {
-                center += pts[i] / double(pts.size() - 1);
-            }
-            Base::Vector3d major = pts[0] - center, minor = pts[24] - center;  // Halbachsen (Features.h, Kind::Ellipse)
-            if (major.Length() < minor.Length()) {
-                std::swap(major, minor);
-            }
-            if (minor.Length() > 1e-6) {
-                Handle(Geom_Ellipse) e = new Geom_Ellipse(
-                    gp_Ax2(gp_Pnt(center.x, center.y, 0), gp_Dir(0, 0, 1), gp_Dir(major.x, major.y, 0)), major.Length(),
-                    minor.Length());
-                geos.push_back(std::make_unique<Part::GeomEllipse>(e));
-            }
-        }
-        else {
-            // Freihand: vereinfacht und an Knicken geteilt. Gerade Stücke werden Linien, gebogene ein Spline durch ihre
-            // wenigen Punkte; ein Spline über alle Punkte schösse mit seinen Polen weit über jede Ecke hinaus
-            Base::BoundBox3d box;
-            std::vector<ScribbleShapes::P> flat2d;
-            for (const auto& p : pts) {
-                box.Add(p);
-                flat2d.push_back({p.x, p.y});
-            }
-            for (const auto& piece : ScribbleShapes::pieces(flat2d, std::max(1e-3, 0.01 * box.CalcDiagonalLength()))) {
-                if (piece.size() == 2) {
-                    segment(Base::Vector3d(piece[0].x, piece[0].y, 0), Base::Vector3d(piece[1].x, piece[1].y, 0));
-                    continue;
-                }
-                std::vector<gp_Pnt> through;
-                for (const auto& q : piece) {
-                    through.emplace_back(q.x, q.y, 0);
-                }
-                auto spline = std::make_unique<Part::GeomBSplineCurve>();
-                try {
-                    spline->interpolate(through);
-                    geos.push_back(std::move(spline));
-                }
-                catch (const Standard_Failure&) {
-                }
-                catch (const Base::Exception&) {
-                }
-            }
-        }
+        DesignGui::strokeGeometry(s.kind, pts, geos);
     }
     if (geos.empty()) {
         toolHint(T("Convert to Sketch"),
@@ -802,29 +863,7 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
         return;
     }
 
-    std::vector<std::unique_ptr<Sketcher::Constraint>> constraints;
-    struct End
-    {
-        int geo;
-        Sketcher::PointPos pos;
-        Base::Vector3d p;
-    };
-    std::vector<End> ends;
-    for (int i = 0; i < int(geos.size()); ++i) {
-        if (auto curve = dynamic_cast<Part::GeomBoundedCurve*>(geos[i].get())) {
-            ends.push_back({i, Sketcher::PointPos::start, curve->getStartPoint()});
-            ends.push_back({i, Sketcher::PointPos::end, curve->getEndPoint()});
-        }
-        if (auto line = dynamic_cast<Part::GeomLineSegment*>(geos[i].get())) {
-            const Base::Vector3d d = line->getEndPoint() - line->getStartPoint();
-            if (std::abs(d.y) < 1e-7 || std::abs(d.x) < 1e-7) {
-                auto c = std::make_unique<Sketcher::Constraint>();
-                c->Type = std::abs(d.y) < 1e-7 ? Sketcher::Horizontal : Sketcher::Vertical;
-                c->First = i;
-                constraints.push_back(std::move(c));
-            }
-        }
-    }
+    std::vector<std::unique_ptr<Sketcher::Constraint>> constraints = DesignGui::strokeConstraints(geos);
     // jedes Maß an die nächste passende Geometrie, jede Geometrie höchstens ein Maß: Ø und R nur an Kreise, eine Zahl
     // allein an einen Kreis (Durchmesser) oder eine Linie (Länge). Text im Kreis zählt als am Kreis.
     std::set<int> dimensioned;
@@ -855,23 +894,6 @@ void scribbleToSketch(DesignGui::ViewProviderScribble* vp)
         c->setValue(dim.value);
         constraints.push_back(std::move(c));
     }
-    std::vector<bool> joined(ends.size(), false);  // jeder Punkt nur an den ersten, der auf ihm liegt
-    for (size_t a = 0; a < ends.size(); ++a) {
-        for (size_t b = a + 1; b < ends.size(); ++b) {
-            if (joined[b] || ends[a].geo == ends[b].geo || (ends[a].p - ends[b].p).Length() > 1e-4) {
-                continue;
-            }
-            joined[b] = true;
-            auto c = std::make_unique<Sketcher::Constraint>();
-            c->Type = Sketcher::Coincident;
-            c->First = ends[a].geo;
-            c->FirstPos = ends[a].pos;
-            c->Second = ends[b].geo;
-            c->SecondPos = ends[b].pos;
-            constraints.push_back(std::move(c));
-        }
-    }
-
     doc->openTransaction("Convert to Sketch");
     Sketcher::SketchObject* sketch = newSketch(Design::componentOf(scribble));
     sketch->Placement.setValue(sheet);

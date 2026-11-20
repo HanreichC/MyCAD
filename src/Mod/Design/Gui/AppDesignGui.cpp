@@ -229,9 +229,11 @@ PyMOD_INIT_FUNC(DesignGui)
     // Profilflächen nicht über die Skizze legen, solange sie bearbeitet wird
     Gui::Application::Instance->signalInEdit.connect([](const Gui::ViewProviderDocumentObject& vp) {
         DesignGui::setProfilesVisible(vp, false);
+        DesignGui::sketchPen(const_cast<Gui::ViewProviderDocumentObject*>(&vp), true);  // Stift zeichnet Geometrie
     });
     Gui::Application::Instance->signalResetEdit.connect([](const Gui::ViewProviderDocumentObject& vp) {
         DesignGui::setProfilesVisible(vp, true);
+        DesignGui::sketchPen(const_cast<Gui::ViewProviderDocumentObject*>(&vp), false);
     });
     // Während der Bearbeitung übersprungene Profile als offen speichern: das übersprungene Neuberechnen gilt als
     // erledigt, ohne das stünden nach einem Absturz in der Skizze Profile in der Datei, die nicht zu ihr passen
