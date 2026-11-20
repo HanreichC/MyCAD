@@ -1577,6 +1577,10 @@ public:
         , hole(freecad_cast<Design::Hole*>(feature))
         , create(create)
     {
+        typingPause.setSingleShot(true);
+        typingPause.setInterval(250);
+        QObject::connect(&typingPause, &QTimer::timeout, [this] { applyNow(); });
+        qApp->installEventFilter(this);  // Tastendrücke erkennen (eventFilter), endet mit dem Dialog
         auto w = new QWidget;
         w->setWindowTitle(featureTitle(feature));
         form = new QFormLayout(w);
@@ -1886,6 +1890,9 @@ public:
 
     bool accept() override
     {
+        if (typingPause.isActive()) {
+            applyNow();  // eben getippter Wert, noch in der Pause
+        }
         // Code-Schritt: geänderter Text ohne "Run" wird übernommen, läuft aber nicht (die Meldung sagt es)
         if (auto step = freecad_cast<Design::CodeStep*>(feature); step && codeEdit
             && codeEdit->toPlainText().toStdString() != step->Code.getValue()) {
@@ -1953,6 +1960,7 @@ public:
 
     bool reject() override
     {
+        typingPause.stop();
         // erst verwerfen: resetEdit schließt die Transaktion ab, danach gäbe es nichts mehr zu verwerfen
         App::Document* doc = feature->getDocument();
         doc->abortTransaction();
@@ -2521,8 +2529,32 @@ private:
         }
     }
 
+    /// Beim Tippen erst nach einer kurzen Pause rechnen: jeder Zwischenstand ("1", "12", "12.") kostete eine ganze
+    /// Vorschau, bei Profilen mit mehreren Flächen fast eine Sekunde je Taste (ConceptKey). Ziehen am Pfeil, Auswahllisten
+    /// und Häkchen rechnen sofort.
     void apply()
     {
+        if (typing) {
+            typingPause.start();
+            return;
+        }
+        applyNow();
+    }
+
+    /// Kommt eine Änderung aus einem Tastendruck? Der Fokus hilft nicht: das Panel liegt in der 3D-Szene, Qt nennt den
+    /// Viewer als Fokus. Die Feldänderung läuft synchron im Tastendruck, danach (nächste Runde) ist es vorbei.
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (event->type() == QEvent::KeyPress && !typing) {
+            typing = true;
+            QTimer::singleShot(0, &typingPause, [this] { typing = false; });
+        }
+        return Gui::TaskView::TaskDialog::eventFilter(watched, event);
+    }
+
+    void applyNow()
+    {
+        typingPause.stop();
         if (extrude) {
             // Negativer Abstand dreht die Richtung um, wie in Fusion
             const double d = distance->value().getValue();
@@ -2770,6 +2802,8 @@ private:
     Design::Pattern* pattern;
     Design::Hole* hole;
     bool create;
+    QTimer typingPause;  ///< Tippen: Vorschau erst nach dieser Pause (apply)
+    bool typing = false;  ///< gerade läuft ein Tastendruck (eventFilter)
     bool operationChosen = false;
     Design::Body* faceBody = nullptr;  ///< Körper, auf dessen Fläche die Skizze liegt (beim Anlegen)  ///< Operation von Hand gewählt: autoJoinCut schaltet nicht mehr um
     Design::Body* newBody = nullptr;

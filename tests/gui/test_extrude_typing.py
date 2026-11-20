@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Abstand eines Extrudes nachträglich von 10 auf 2 mm tippen (Cursor vor die 1, Entf, 2, Entf): dazwischen steht kurz
 "0.00 mm". Die Live-Vorschau zeigt den Fehler im Panel, aber keine Meldung unter dem ViewCube, die stehen bliebe,
-obwohl der Wert gleich wieder stimmt ("Distance must be greater than zero")."""
+obwohl der Wert gleich wieder stimmt ("Distance must be greater than zero"). Schnelles Tippen rechnet nicht je Taste
+(jeder Zwischenstand kostete eine ganze Vorschau, bei mehreren Profilflächen fast eine Sekunde), sondern nach der Pause."""
 from harness import *
 
 S = {}
@@ -38,6 +39,15 @@ def keys(seq):
         state(k)
 
 
+def fast():
+    e = edit(); e.setFocus(); e.selectAll()
+    S["before"] = S["f"].Distance.Value
+    for ch in "12.5":
+        QtTest.QTest.keyClick(e, ch)
+    QtWidgets.QApplication.processEvents()
+    S["while"] = S["f"].Distance.Value
+
+
 in_order([
     ("activate", activate), ("setup", setup),
     ("edit", lambda: Gui.ActiveDocument.setEdit(S["f"])), ("wait", lambda: None),
@@ -46,4 +56,8 @@ in_order([
     ("later", lambda: (state("1s later"), check("typing through 0 mm leaves no error notice, the value is 2 mm",
                                                 abs(S["f"].Distance.Value - 2) < 1e-9 and not [m for m in notes() if "Notify_Error" in m],
                                                 str(notes())))),
+    ("fast", fast), ("wait", lambda: None),
+    ("paused", lambda: check("fast typing computes once after the pause, not on every key",
+                             S["while"] == S["before"] and abs(S["f"].Distance.Value - 12.5) < 1e-9,
+                             "while typing=%s after=%s" % (S["while"], S["f"].Distance))),
 ])

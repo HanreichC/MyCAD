@@ -15,8 +15,11 @@ def setup():
 
 
 def distance(text, want):
-    type_field("Distance", text)
-    QtWidgets.QApplication.processEvents()
+    """Tippen, Prüfen im nächsten Schritt: beim Tippen rechnet die Vorschau erst nach einer kurzen Pause"""
+    return [(text, lambda: type_field("Distance", text)), (text + " applied", lambda: check_distance(text, want))]
+
+
+def check_distance(text, want):
     check("typing %s in the Distance field gives %s mm" % (text, want), abs(S["f"].Distance.Value - want) < 1e-9,
           "Distance=%s" % S["f"].Distance)
 
@@ -38,9 +41,9 @@ def settings_field():
 in_order([
     ("activate", activate), ("setup", setup),
     ("edit", lambda: Gui.ActiveDocument.setEdit(S["f"])), ("wait", lambda: None),
-    ("comma", lambda: distance("2,5", 2.5)),
-    ("dot", lambda: distance("3.5", 3.5)),
-    ("comma with unit", lambda: distance("4,25 mm", 4.25)),
+    *distance("2,5", 2.5),
+    *distance("3.5", 3.5),
+    *distance("4,25 mm", 4.25),
     ("enter", lambda: (type_field("Distance", "5,5"), QtTest.QTest.keyClick(field("Distance").lineEdit(), QtCore.Qt.Key_Return))),
     ("wait", lambda: None),
     ("entered", lambda: check("5,5 and Enter applies 5.5 mm (no 'unknown parameter')", abs(S["f"].Distance.Value - 5.5) < 1e-9
