@@ -82,4 +82,11 @@ in_order([
     ("second", second), ("wait", lambda: None),
     ("list", open_list), ("wait", lambda: None),
     ("check list", check_list),
+    ("gear", lambda: Gui.runCommand("Design_Gear")), ("wait", lambda: None),
+    ("check gear panel", lambda: (check("Gear opens with Module and Teeth", primitives()[-1].Type == "Spur Gear"
+                                        and bool(shown("Module")) and bool(shown("Teeth"))), shot("gear"))),
+    ("gear ok", ok), ("wait", lambda: None),
+    ("check gear", lambda: check("the gear is a body with 20 teeth",
+                                 sum(1 for x in primitives()[-1].Shape.Faces if x.Surface.TypeId == "Part::GeomCylinder"
+                                     and abs(x.Surface.Radius - 11) < 1e-6) == 20)),
 ])

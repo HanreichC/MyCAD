@@ -71,6 +71,36 @@ class StandardParts(DesignTest):
         f, _ = part(self.doc, "Box")
         self.assertEqual(Design.partName(f), "")  # Grundkörper gehören nicht in die Stückliste
 
+    def test_spur_gear_m1_z20(self):
+        """Kopfkreis 22, Fußkreis 17,5; je Zahn ein echter Kreisbogen am Kopf und am Fuß, glatte Flanken"""
+        f, b = part(self.doc, "Spur Gear", Module=1, Teeth=20, Height=6, Bore=5)
+        s = b.Shape
+        self.assertTrue(s.isValid())
+        radii = [round(x.Surface.Radius, 4) for x in s.Faces if x.Surface.TypeId == "Part::GeomCylinder"]
+        self.assertEqual(radii.count(11.0), 20)   # Kopf
+        self.assertEqual(radii.count(8.75), 20)   # Fuß
+        self.assertEqual(radii.count(2.5), 1)     # Bohrung
+        self.assertAlmostEqual(s.BoundBox.ZLength, 6, places=6)
+        self.assertEqual(len(s.Faces), 20 * 6 + 3)  # je Zahn 2 Flanken, Kopf, Fuß, 2 radial; oben, unten, Bohrung
+        self.assertEqual(Design.partName(f), "")  # gedruckt, nicht gekauft: nicht in der Stückliste
+
+    def test_two_gears_mesh_without_overlap(self):
+        """Achsabstand m·(z1+z2)/2; das zweite Rad um einen halben Zahn gedreht, damit Zahn in Lücke greift"""
+        _, a = part(self.doc, "Spur Gear", Module=2, Teeth=20, Height=5, Bore=0)
+        _, b = part(self.doc, "Spur Gear", Module=2, Teeth=31, Height=5, Bore=0, PositionX=2 * (20 + 31) / 2,
+                    Rotation=180 + 180 / 31)
+        overlap = a.Shape.common(b.Shape).Volume
+        self.assertLess(overlap, 0.05, "the gears cut into each other: %.3f mm³" % overlap)
+        closer = b.Shape.copy()
+        closer.translate(V(-0.3, 0, 0))  # 0,3 mm näher: jetzt müssen sie sich berühren und überlappen
+        self.assertGreater(a.Shape.common(closer).Volume, 0.5)
+
+    def test_too_few_teeth_say_so(self):
+        f = feature(self.doc, "Design::Primitive", Type="Spur Gear", Module=1, Teeth=6, PressureAngle=40)
+        new_body(f)
+        self.doc.recompute()
+        self.assertIn("Invalid", f.State)
+
     def test_switching_type_shows_only_its_sizes(self):
         f, _ = part(self.doc, "Ball Bearing")
         self.assertIn("Hidden", f.getPropertyStatus("Size"))

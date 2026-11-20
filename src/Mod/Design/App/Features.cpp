@@ -61,6 +61,9 @@
 #include <gp_Ax2.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
+#include <GC_MakeArcOfCircle.hxx>
+#include <GeomAPI_Interpolate.hxx>
+#include <TColgp_HArray1OfPnt.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepOffsetAPI_MakePipe.hxx>
 #include <BRepOffsetAPI_MakePipeShell.hxx>
@@ -128,7 +131,7 @@ const char* HoleEnums[] = {"Simple", "Counterbore", "Countersink", nullptr};
 // ab 5: Normteile (Plan 12.7); neue nur hinten anhängen, die Nummer steht in den Dateien
 const char* PrimitiveEnums[] = {"Box", "Cylinder", "Sphere", "Torus", "Coil", "Socket Head Screw", "Countersunk Screw",
                                 "Button Head Screw", "Hex Nut", "Washer", "Heat-Set Insert", "Ball Bearing", "Disc Magnet",
-                                "Block Magnet", "Aluminum Profile", nullptr};
+                                "Block Magnet", "Aluminum Profile", "Spur Gear", nullptr};
 const char* BearingEnums[] = {"623", "624", "625", "626", "608", "6000", "6001", "6200", nullptr};
 const char* ProfileEnums[] = {"2020", "2040", "3030", nullptr};
 const char* CenterEnums[] = {"Origin", "Body center", nullptr};
@@ -5805,6 +5808,13 @@ Primitive::Primitive()
     Bearing.setEnums(BearingEnums);
     ADD_PROPERTY_TYPE(Profile, (0L), "Parameters", App::Prop_None, "Aluminum profile (B-type slot)");
     Profile.setEnums(ProfileEnums);
+    static const App::PropertyIntegerConstraint::Constraints teeth = {6, 400, 1};
+    ADD_PROPERTY_TYPE(Module, (1.0), "Parameters", App::Prop_None, "Gear module: pitch diameter = module × teeth");
+    ADD_PROPERTY_TYPE(Teeth, (20L), "Parameters", App::Prop_None, "Number of teeth");
+    Teeth.setConstraints(&teeth);
+    ADD_PROPERTY_TYPE(PressureAngle, (20.0), "Parameters", App::Prop_None, "Pressure angle, usually 20°");
+    ADD_PROPERTY_TYPE(Bore, (5.0), "Parameters", App::Prop_None, "Diameter of the hole in the middle (0: none)");
+    ADD_PROPERTY_TYPE(Rotation, (0.0), "Parameters", App::Prop_None, "Turn about its own axis, e.g. to mesh with another gear");
     onChanged(&Type);
 }
 
@@ -5813,8 +5823,71 @@ namespace
 enum PrimitiveType : long
 {
     BoxType, CylinderType, SphereType, TorusType, CoilType, SocketScrew, CountersunkScrew, ButtonScrew, HexNut, Washer,
-    HeatSetInsert, BallBearing, DiscMagnet, BlockMagnet, AluProfile
+    HeatSetInsert, BallBearing, DiscMagnet, BlockMagnet, AluProfile, SpurGear
 };
+
+/// Stirnrad mit Evolventen-Flanken: Teilkreis m·z/2 um den Ursprung, Kopf m darüber, Fuß 1,25·m darunter, Dicke h
+/// nach +Z. Flanken als Kurve durch Punkte der Evolvente, Kopf und Fuß als Kreisbögen: glatte Flächen statt Facetten.
+/// ponytail: ohne Profilverschiebung, Spiel und Fußrundung; unter 17 Zähnen (20°) schneidet ein echtes Rad unter
+bool spurGear(double m, int z, double alphaDeg, double h, double bore, TopoDS_Shape& shape, std::string& error)
+{
+    const double alpha = alphaDeg * M_PI / 180;
+    if (m <= 0 || h <= 0 || alpha <= 0 || alpha >= M_PI / 4) {
+        error = "Module and height must be greater than zero, the pressure angle between 0 and 45°";
+        return false;
+    }
+    const double r = m * z / 2, rb = r * std::cos(alpha), ra = r + m, rf = r - 1.25 * m, r0 = std::max(rb, rf);
+    const auto inv = [](double a) { return std::tan(a) - a; };
+    const double half = M_PI / (2 * z) + inv(alpha);  // halber Zahnwinkel am Grundkreis
+    const auto psi = [&](double rr) { return half - inv(std::acos(std::min(1.0, rb / rr))); };
+    if (psi(ra) <= 0) {
+        error = "With so few teeth the tips would be pointed; use more teeth";
+        return false;
+    }
+    if (bore >= 2 * rf) {
+        error = "The bore is larger than the gear";
+        return false;
+    }
+    const auto at = [](double rr, double ang) { return gp_Pnt(rr * std::cos(ang), rr * std::sin(ang), 0); };
+    const auto arc = [](const gp_Pnt& a, const gp_Pnt& mid, const gp_Pnt& b) {
+        return BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(a, mid, b).Value()).Edge();
+    };
+    constexpr int n = 12;  // Punkte je Flanke
+    BRepBuilderAPI_MakeWire wire;
+    for (int k = 0; k < z; ++k) {
+        const double c = 2 * M_PI * k / z, next = 2 * M_PI * (k + 1) / z;
+        for (int side : {-1, 1}) {
+            Handle(TColgp_HArray1OfPnt) pts = new TColgp_HArray1OfPnt(1, n);
+            for (int i = 0; i < n; ++i) {
+                const double rr = i == n - 1 ? ra : r0 + (ra - r0) * i / (n - 1);
+                pts->SetValue(i + 1, at(rr, c + side * psi(rr)));
+            }
+            GeomAPI_Interpolate curve(pts, Standard_False, 1e-9);
+            curve.Perform();
+            if (side < 0 && rb > rf) {  // unter dem Grundkreis radial bis zum Fuß
+                wire.Add(BRepBuilderAPI_MakeEdge(at(rf, c - half), at(r0, c - half)).Edge());
+            }
+            wire.Add(BRepBuilderAPI_MakeEdge(curve.Curve()).Edge());
+            if (side < 0) {
+                wire.Add(arc(at(ra, c - psi(ra)), at(ra, c), at(ra, c + psi(ra))));  // Kopf
+            }
+        }
+        if (rb > rf) {
+            wire.Add(BRepBuilderAPI_MakeEdge(at(r0, c + half), at(rf, c + half)).Edge());
+        }
+        const double from = c + psi(r0), to = next - psi(r0);
+        wire.Add(arc(at(rf, from), at(rf, (from + to) / 2), at(rf, to)));  // Fuß bis zum nächsten Zahn
+    }
+    if (!wire.IsDone()) {
+        error = "The gear outline could not be built";
+        return false;
+    }
+    shape = BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(wire.Wire()).Face(), gp_Vec(0, 0, h)).Shape();
+    if (bore > 0) {
+        shape = BRepAlgoAPI_Cut(shape, BRepPrimAPI_MakeCylinder(gp_Ax2(gp_Pnt(0, 0, -1), gp::DZ()), bore / 2, h + 2).Shape()).Shape();
+    }
+    return true;
+}
 
 /// Schraubenkopf je Gewinde: Zylinderkopf ISO 4762 (dk, k), Senkkopf ISO 10642 (dk), Linsenkopf ISO 7380 (dk, k),
 /// Schlüsselweite des Innensechskants je Kopfform. ponytail: Nennmaße ohne Toleranzen; M2/M2.5 bei 10642/7380 sind
@@ -5942,6 +6015,12 @@ void Primitive::onChanged(const App::Property* prop)
         Size.setStatus(App::Property::Hidden, t < SocketScrew || t > HeatSetInsert);
         Bearing.setStatus(App::Property::Hidden, t != BallBearing);
         Profile.setStatus(App::Property::Hidden, t != AluProfile);
+        for (App::Property* p : std::initializer_list<App::Property*> {&Module, &Teeth, &PressureAngle, &Bore, &Rotation}) {
+            p->setStatus(App::Property::Hidden, t != SpurGear);
+        }
+        if (t == SpurGear) {
+            Height.setStatus(App::Property::Hidden, false);  // Dicke des Rads
+        }
     }
     Feature::onChanged(prop);
 }
@@ -6058,6 +6137,12 @@ bool Primitive::makeTool(Part::TopoShape& tool, std::string& error) const
             case AluProfile:
                 shape = profileSection(Profile.getValueAsString(), l);
                 break;
+            case SpurGear:
+                if (!spurGear(Module.getValue(), int(Teeth.getValue()), PressureAngle.getValue(), h, Bore.getValue(), shape,
+                              error)) {
+                    return false;
+                }
+                break;
             default: {
                 if (r2 >= r) {
                     error = "Tube radius must be smaller than the radius";
@@ -6082,15 +6167,16 @@ bool Primitive::makeTool(Part::TopoShape& tool, std::string& error) const
         error = "Check the dimensions: all must be greater than zero";
         return false;
     }
-    gp_Trsf place, offset;
+    gp_Trsf place, offset, turn;
     place.SetDisplacement(gp_Ax3(gp::XOY()), ax);
+    turn.SetRotation(gp::OZ(), Rotation.getValue() * M_PI / 180);  // nur beim Zahnrad sichtbar
     // alle stehen auf der Ebene wie Quader und Zylinder: Kugel um r, Torus und Spirale um den Rohrradius angehoben
     const long type = Type.getValue();
     offset.SetTranslation(gp_Vec(PositionX.getValue(), PositionY.getValue(),
                                  type == SphereType                         ? r
                                      : type == TorusType || type == CoilType ? r2
                                                                             : 0));
-    tool = Part::TopoShape(BRepBuilderAPI_Transform(shape, place * offset, Standard_True).Shape());
+    tool = Part::TopoShape(BRepBuilderAPI_Transform(shape, place * offset * turn, Standard_True).Shape());
     return true;
 }
 

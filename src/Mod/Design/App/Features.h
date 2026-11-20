@@ -632,6 +632,12 @@ public:
     App::PropertyEnumeration Size;
     App::PropertyEnumeration Bearing;
     App::PropertyEnumeration Profile;
+    // Zahnrad (12.7b): Modul, Zähne, Eingriffswinkel, Bohrung; Drehung um die eigene Achse zum Ausrichten der Zähne
+    App::PropertyLength Module;
+    App::PropertyIntegerConstraint Teeth;
+    App::PropertyAngle PressureAngle;
+    App::PropertyLength Bore;
+    App::PropertyAngle Rotation;
 
     /// Normteil: Bezeichnung für die Stückliste ("ISO 4762 M3 × 12"), leer bei Grundkörpern
     std::string partName() const;

@@ -3283,6 +3283,113 @@
    }
   },
   {
+   "id": "Design_Gear",
+   "group": "create",
+   "icon": "Design_Gear",
+   "commands": [],
+   "title": {
+    "en": "Gear",
+    "de": "Zahnrad"
+   },
+   "keywords": {
+    "en": [
+     "gear",
+     "spur gear",
+     "involute",
+     "module",
+     "teeth",
+     "gearbox",
+     "cog"
+    ],
+    "de": [
+     "Zahnrad",
+     "Stirnrad",
+     "Evolvente",
+     "Modul",
+     "Zähne",
+     "Getriebe"
+    ]
+   },
+   "summary": {
+    "en": "Makes a spur gear with real involute teeth, ready to print. Two gears with the same module mesh.",
+    "de": "Erstellt ein Stirnrad mit echten Evolventen-Zähnen, fertig zum Drucken. Zwei Räder mit gleichem Modul greifen ineinander."
+   },
+   "steps": {
+    "en": [
+     "Optional: click a plane or a flat face to place the gear on it (otherwise it lies on the floor, XY).",
+     "In the toolbar at the top, click CREATE ▾ and choose Gear.",
+     "A panel opens on the right; the model shows a live preview of the result.",
+     "Choose Module and Teeth, the Height (thickness) and the Bore, then click OK.",
+     "For a second gear that meshes: same Module, Position X = Module × (Teeth 1 + Teeth 2) / 2, and turn it by half a tooth: Rotation = 180° + 180° / Teeth 2."
+    ],
+    "de": [
+     "Optional: Klicke eine Ebene oder flache Fläche an, um das Zahnrad darauf zu legen (sonst liegt es auf dem Boden, XY).",
+     "Klicke in der Werkzeugleiste oben auf ERSTELLEN ▾ und wähle Zahnrad.",
+     "Rechts öffnet sich ein Panel; das Modell zeigt das Ergebnis gleich als Vorschau.",
+     "Wähle Modul und Zähne, die Höhe (Dicke) und die Bohrung und klicke auf OK.",
+     "Für ein zweites Rad, das eingreift: gleiches Modul, Position X = Modul × (Zähne 1 + Zähne 2) / 2, und um einen halben Zahn drehen: Drehung = 180° + 180° / Zähne 2."
+    ]
+   },
+   "see": [
+    "Design_StandardPart",
+    "primitives"
+   ],
+   "options": {
+    "en": [
+     [
+      "Module",
+      "Size of the teeth; pitch diameter = module × teeth. For 3D printing 1 to 2 mm work well."
+     ],
+     [
+      "Teeth",
+      "Number of teeth; from 17 the teeth are full (with 20°)."
+     ],
+     [
+      "Pressure angle",
+      "Usually 20°; both gears need the same."
+     ],
+     [
+      "Bore",
+      "Hole in the middle for the shaft; 0 for none."
+     ],
+     [
+      "Rotation",
+      "Turns the gear about its axis so a tooth meets a gap."
+     ]
+    ],
+    "de": [
+     [
+      "Modul",
+      "Größe der Zähne; Teilkreis = Modul × Zähne. Für den 3D-Druck passen 1 bis 2 mm gut."
+     ],
+     [
+      "Zähne",
+      "Anzahl der Zähne; ab 17 sind die Zähne voll (bei 20°)."
+     ],
+     [
+      "Eingriffswinkel",
+      "Meist 20°; beide Räder brauchen denselben."
+     ],
+     [
+      "Bohrung",
+      "Loch in der Mitte für die Welle; 0 für keins."
+     ],
+     [
+      "Drehung",
+      "Dreht das Rad um seine Achse, damit ein Zahn in eine Lücke greift."
+     ]
+    ]
+   },
+   "tips": {
+    "en": [
+     "For printed gears give them a little play: place the second gear 0.1 to 0.2 mm farther away."
+    ],
+    "de": [
+     "Gedruckten Rädern gibst du etwas Spiel: Setz das zweite Rad 0,1 bis 0,2 mm weiter weg."
+    ]
+   }
+  },
+  {
    "id": "Design_PartsList",
    "group": "utilities",
    "icon": "Design_PartsList",

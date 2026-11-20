@@ -1100,6 +1100,9 @@ void startPrimitive(App::Document* doc, long type)
     comp->addObject(feature);
     Design::addToTimeline(feature);
     feature->Type.setValue(type);
+    if (type == 15) {
+        feature->Height.setValue(6.0);  // Zahnrad: übliche Dicke statt der 20 mm des Quaders
+    }
     if (plane) {
         feature->Plane.setValue(plane, std::vector<std::string> {element});
     }
@@ -5815,6 +5818,10 @@ void CreateDesignCommands()
                                      "Standard Part: screws, nuts, washers, heat-set inserts, bearings, magnets and "
                                      "aluminum profiles as real bodies, on the selected plane or face",
                                      "Part_Box", "", [](App::Document* doc) { startPrimitive(doc, 5); }));
+    mgr.addCommand(new DesignCommand("Design_Gear", "Gear",
+                                     "Gear: spur gear with involute teeth; two gears mesh at a distance of module × "
+                                     "(teeth 1 + teeth 2) / 2",
+                                     "Part_Box", "", [](App::Document* doc) { startPrimitive(doc, 15); }));
     mgr.addCommand(new DesignCommand("Design_PartsList", "Parts List",
                                      "Parts List: every standard part in the design with its quantity, to copy into a table",
                                      "Part_Box", "", showPartsList));
