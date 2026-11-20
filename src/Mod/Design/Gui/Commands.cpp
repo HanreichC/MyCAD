@@ -990,7 +990,8 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name,
         return;
     }
 
-    // Skizze auf einer Körperfläche: standardmäßig mit diesem Körper vereinen
+    // Skizze auf einer Körperfläche: standardmäßig mit diesem Körper vereinen. Nicht, wenn er ausgeblendet ist: das
+    // Ergebnis verschwände unsichtbar in ihm (Extrude "tat nichts"); wie beim Auto-Cut zählen ausgeblendete Körper nicht
     Design::Body* target = nullptr;
     if (auto sketch = freecad_cast<Part::Part2DObject*>(profiles->Sketch.getValue())) {
         const auto& support = sketch->AttachmentSupport.getValues();
@@ -999,7 +1000,7 @@ void startProfileFeature(App::Document* doc, const char* type, const char* name,
         if (base && !subs.empty()) {
             const TopoDS_Shape face = base->Shape.getShape().getSubShape(subs.front().c_str(), true);
             for (auto obj : base->Bodies.getValues()) {
-                if (!elementName(base->shapeFor(obj).getShape(), face).empty()) {
+                if (obj->Visibility.getValue() && !elementName(base->shapeFor(obj).getShape(), face).empty()) {
                     target = freecad_cast<Design::Body*>(obj);
                 }
             }

@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Extrude wählt Cut von selbst, sobald er durch einen Körper geht (wie Fusion), auch mit Luft zwischen Skizze und Körper
 und mit Startversatz ins Material. Vorher prüfte er nur einen Punkt direkt an der Skizze und blieb bei Join/New Body.
-Ein Cut geht durch alle Körper auf seinem Weg, nicht nur durch den unter der Skizze."""
+Ein Cut geht durch alle Körper auf seinem Weg, nicht nur durch den unter der Skizze. Liegt die Skizze auf einem
+ausgeblendeten Körper, wird er nicht Join-Ziel: das Ergebnis verschwand sonst unsichtbar in ihm (ConceptKey)."""
 import math
 from harness import *
 import Design
@@ -33,14 +34,25 @@ def offset_setup():
     Gui.Selection.clearSelection(); Gui.Selection.addSelection(b, top_face(b)); click(button("Design_CreateSketch"))
 
 
-def circle_leave():
+def circle_leave(x=120, z=10):
     s = Gui.ActiveDocument.getInEdit().Object; S["top"] = s
-    c = s.Placement.inverse().multVec(App.Vector(120, 10, 10))
+    c = s.Placement.inverse().multVec(App.Vector(x, 10, z))
     s.addGeometry(Part.Circle(App.Vector(c.x, c.y, 0), App.Vector(0, 0, 1), 3)); doc().recompute()
     Gui.ActiveDocument.resetEdit()
 
 
 def offset_extrude():
+    prof = [o for o in S["top"].InList if o.TypeId == "Design::Profiles"][0]
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(prof, "Face1"); click(button("Design_Extrude"))
+
+
+def hidden_setup():
+    b = make_body(rect(200, 0, 240, 20), 0, 2, "Hidden")
+    Gui.Selection.clearSelection(); Gui.Selection.addSelection(b, top_face(b)); click(button("Design_CreateSketch"))
+
+
+def hidden_extrude():
+    body("Hidden").Visibility = False
     prof = [o for o in S["top"].InList if o.TypeId == "Design::Profiles"][0]
     Gui.Selection.clearSelection(); Gui.Selection.addSelection(prof, "Face1"); click(button("Design_Extrude"))
 
@@ -57,4 +69,6 @@ run([("activate", activate), ("gap", gap_setup), W,
                                           "%.2f %.2f" % (S["box"].Shape.Volume, S["top"].Shape.Volume))),
      ("plate", offset_setup), W, W, ("circle", circle_leave), W, ("extrude", offset_extrude), W,
      ("offset", lambda: type_field("Start offset", "-5")), W, ("dist", lambda: type_field("Distance", "2")), W,
-     ("cut 2", lambda: expect("Cut", "start offset 5 mm into the plate")), ("ok 2", ok), W])
+     ("cut 2", lambda: expect("Cut", "start offset 5 mm into the plate")), ("ok 2", ok), W,
+     ("hidden", hidden_setup), W, W, ("circle 2", lambda: circle_leave(220, 2)), W, ("extrude 2", hidden_extrude), W,
+     ("new 2", lambda: expect("New Body", "sketch on a hidden body does not join into it")), ("ok 3", ok), W])
