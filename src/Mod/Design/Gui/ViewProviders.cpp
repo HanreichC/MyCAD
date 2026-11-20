@@ -1938,6 +1938,13 @@ public:
                 hideSketch(obj);
             }
         }
+        // Ein ausgeblendeter Körper, den der neue Schritt verändert (Join auf ihn), wird gezeigt: sonst verschwand das
+        // Ergebnis unsichtbar in ihm und "Verbinden bewirkte nichts" (ConceptKey, Monitor Light)
+        if (create) {
+            for (auto body : feature->Bodies.getValues()) {
+                body->Visibility.setValue(true);
+            }
+        }
         App::Document* doc = feature->getDocument();
         doc->commitTransaction();
         Gui::Application::Instance->getDocument(doc)->resetEdit();

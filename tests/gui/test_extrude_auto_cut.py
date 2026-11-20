@@ -2,7 +2,8 @@
 """Extrude wählt Cut von selbst, sobald er durch einen Körper geht (wie Fusion), auch mit Luft zwischen Skizze und Körper
 und mit Startversatz ins Material. Vorher prüfte er nur einen Punkt direkt an der Skizze und blieb bei Join/New Body.
 Ein Cut geht durch alle Körper auf seinem Weg, nicht nur durch den unter der Skizze. Liegt die Skizze auf einem
-ausgeblendeten Körper, wird er nicht Join-Ziel: das Ergebnis verschwand sonst unsichtbar in ihm (ConceptKey)."""
+ausgeblendeten Körper, wird er nicht Join-Ziel: das Ergebnis verschwand sonst unsichtbar in ihm (ConceptKey). Wählt man
+Join auf ihn selbst, wird er nach OK eingeblendet."""
 import math
 from harness import *
 import Design
@@ -57,6 +58,12 @@ def hidden_extrude():
     Gui.Selection.clearSelection(); Gui.Selection.addSelection(prof, "Face1"); click(button("Design_Extrude"))
 
 
+def join_hidden():
+    choose("Join", 1)
+    cb = [c for c in visible(QtWidgets.QComboBox) if c.findText("Hidden") >= 0][0]
+    cb.setCurrentIndex(cb.findText("Hidden"))
+
+
 def ok():
     button("Design_Extrude").setFocus(); QtTest.QTest.keyClick(view(), QtCore.Qt.Key_Return)
 
@@ -71,4 +78,8 @@ run([("activate", activate), ("gap", gap_setup), W,
      ("offset", lambda: type_field("Start offset", "-5")), W, ("dist", lambda: type_field("Distance", "2")), W,
      ("cut 2", lambda: expect("Cut", "start offset 5 mm into the plate")), ("ok 2", ok), W,
      ("hidden", hidden_setup), W, W, ("circle 2", lambda: circle_leave(220, 2)), W, ("extrude 2", hidden_extrude), W,
-     ("new 2", lambda: expect("New Body", "sketch on a hidden body does not join into it")), ("ok 3", ok), W])
+     ("new 2", lambda: expect("New Body", "sketch on a hidden body does not join into it")),
+     ("join", join_hidden), W, ("join op", lambda: expect("Join", "join chosen by hand")), ("ok 3", ok), W,
+     ("shown", lambda: check("a hidden body joined by hand is shown after OK", body("Hidden").Visibility
+                             and abs(body("Hidden").Shape.Volume - (40 * 20 * 2 + math.pi * 9 * 10)) < 0.1,
+                             "visible=%s volume=%.2f" % (body("Hidden").Visibility, body("Hidden").Shape.Volume)))])
