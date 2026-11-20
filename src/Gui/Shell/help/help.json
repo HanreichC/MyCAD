@@ -1487,6 +1487,7 @@
      "A red step has a problem; hold the mouse over it to read why. Where MyCAD knows a value that works (e.g. the largest possible radius), the panel and the right-click menu offer it as a button.",
      "A step with a warning sign found its edges again after a change, but not by name. Right-click: Show Affected Edges, and Looks Right if they are.",
      "Suppress switches a step off without deleting it.",
+     "Hold the mouse over a step and the body it changes lights up in the model. Select a body and the steps of all other bodies fade, so you see at once what belongs to it.",
      "Undo (Ctrl+Z) reverses the last action, also deleting.",
      "Drag a step onto another to move it there. If it needs something that would then come later (its sketch, a face), it stays and MyCAD says why.",
      "Ctrl+click several neighbouring steps, right-click and choose Group Selected Steps. The group button folds them away; right-click it to rename or ungroup."
@@ -1495,6 +1496,7 @@
      "Ein roter Schritt hat ein Problem; halte die Maus darüber, um den Grund zu lesen. Kennt MyCAD einen Wert, der geht (z. B. den größten möglichen Radius), bieten Panel und Rechtsklick-Menü ihn als Knopf an.",
      "Ein Schritt mit Warnzeichen hat seine Kanten nach einer Änderung wiedergefunden, aber nicht über den Namen. Rechtsklick: Betroffene Kanten zeigen, und Stimmt so, wenn sie passen.",
      "Unterdrücken schaltet einen Schritt aus, ohne ihn zu löschen.",
+     "Halte die Maus über einen Schritt, und der Körper, den er ändert, leuchtet im Modell auf. Wähle einen Körper, und die Schritte aller anderen Körper werden blass, so siehst du sofort, was zu ihm gehört.",
      "Rückgängig (Strg+Z) nimmt die letzte Aktion zurück, auch Löschen.",
      "Zieh einen Schritt auf einen anderen, um ihn dorthin zu schieben. Braucht er etwas, das dann später käme (seine Skizze, eine Fläche), bleibt er stehen und MyCAD sagt, warum.",
      "Strg+Klick auf mehrere benachbarte Schritte, Rechtsklick und Gewählte Schritte gruppieren. Der Gruppenknopf klappt sie zusammen; Rechtsklick darauf benennt sie um oder löst sie auf."

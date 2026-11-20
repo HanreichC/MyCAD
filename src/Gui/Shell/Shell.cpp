@@ -5340,6 +5340,77 @@ bool setGroup(App::Document* doc, const std::vector<App::DocumentObject*>& objs,
 }
 
 /// Timeline-Leiste neu aufbauen (nach jeder Änderung am Dokument, gebündelt)
+/// 12.13: Körper (Namen), die ein Timeline-Schritt ändert (Eigenschaft "Bodies"); eine Skizze über die Schritte, die
+/// ihre Profile nutzen
+QStringList touchedBodies(const App::DocumentObject* obj)
+{
+    QStringList out;
+    const auto add = [&out](const App::DocumentObject* o) {
+        auto list = freecad_cast<App::PropertyLinkList*>(o->getPropertyByName("Bodies"));
+        for (auto b : list ? list->getValues() : std::vector<App::DocumentObject*>()) {
+            const QString name = b && b->isAttachedToDocument() ? QString::fromLatin1(b->getNameInDocument()) : QString();
+            if (!name.isEmpty() && !out.contains(name)) {
+                out << name;
+            }
+        }
+        return list != nullptr;
+    };
+    if (!add(obj)) {
+        for (auto user : obj->getInList()) {
+            if (!add(user) && user->getTypeId().getName() == std::string_view("Design::Profiles")) {
+                for (auto step : user->getInList()) {
+                    add(step);
+                }
+            }
+        }
+    }
+    return out;
+}
+
+/// 12.13 Filter nach Körper: ist ein Körper gewählt, treten die Schritte anderer Körper zurück (Deckkraft wie
+/// "deaktiviert"); ohne gewählten Körper zeigt die Timeline alles gleich
+void fadeTimeline()
+{
+    if (!state.timeline) {
+        return;
+    }
+    static const Base::Type bodyType = Base::Type::fromName("Design::Body");
+    QStringList chosen;
+    for (const auto& sel : Selection().getSelection()) {
+        if (sel.pObject && !bodyType.isBad() && sel.pObject->getTypeId().isDerivedFrom(bodyType)) {
+            chosen << QString::fromLatin1(sel.pObject->getNameInDocument());
+        }
+    }
+    for (auto btn : state.timeline->content()->findChildren<QToolButton*>()) {
+        const QStringList bodies = btn->property("bodies").toStringList();
+        const bool faded = !chosen.isEmpty() && !bodies.isEmpty()
+            && std::ranges::none_of(bodies, [&chosen](const QString& b) { return chosen.contains(b); });
+        if (btn->property("faded").toBool() == faded) {
+            continue;
+        }
+        btn->setProperty("faded", faded);
+        if (faded) {
+            auto effect = new QGraphicsOpacityEffect(btn);
+            effect->setOpacity(Token::OpacityDisabled);
+            btn->setGraphicsEffect(effect);
+        }
+        else {
+            btn->setGraphicsEffect(nullptr);
+        }
+    }
+}
+
+class TimelineFilter: public SelectionObserver
+{
+    void onSelectionChanged(const SelectionChanges& msg) override
+    {
+        if (msg.Type == SelectionChanges::AddSelection || msg.Type == SelectionChanges::RmvSelection
+            || msg.Type == SelectionChanges::SetSelection || msg.Type == SelectionChanges::ClrSelection) {
+            QTimer::singleShot(0, fadeTimeline);
+        }
+    }
+};
+
 void rebuildTimeline()
 {
     if (!state.timeline) {
@@ -5540,6 +5611,8 @@ void rebuildTimeline()
             }
         }
         btn->setProperty("timelineObject", QString::fromLatin1(obj->getNameInDocument()));
+        const QStringList bodies = touchedBodies(obj);
+        btn->setProperty("bodies", bodies);
         btn->setToolTip(QString::fromUtf8(obj->Label.getValue())
                         + (obj->isError() ? QStringLiteral("\n") + T(obj->getStatusString()) : QString())
                         + (warning.isEmpty() ? QString()
@@ -5547,7 +5620,19 @@ void rebuildTimeline()
                                                    + T(warning.section(QLatin1String(": "), 1).toStdString().c_str()))
                         + (dependentLabels.isEmpty() ? QString()
                                                      : QStringLiteral("\n") + T("Needed by: %1").arg(dependentLabels.join(QStringLiteral(", ")))));
-        btn->onHover = [box, dependents](bool on) {
+        // 12.13 Vorschau beim Überfahren: der Körper, den der Schritt ändert, leuchtet im Modell auf (wie beim Zeigen im
+        // Browser). ponytail: bei mehreren Körpern nur der erste (Vorauswahl kennt ein Objekt)
+        const std::string hoverDoc = obj->getDocument()->getName();
+        const std::string hoverBody = bodies.isEmpty() ? std::string() : bodies.front().toStdString();
+        btn->onHover = [box, dependents, hoverDoc, hoverBody](bool on) {
+            if (!hoverBody.empty()) {
+                if (on) {
+                    Selection().setPreselect(hoverDoc.c_str(), hoverBody.c_str(), "");
+                }
+                else {
+                    Selection().rmvPreselect();
+                }
+            }
             for (auto other : box->findChildren<QToolButton*>()) {
                 if (dependents.contains(other->property("timelineObject").toString()) && other->property("related").toBool() != on) {
                     other->setProperty("related", on);
@@ -5770,6 +5855,7 @@ void rebuildTimeline()
         }
         syncArrows();
     });
+    fadeTimeline();
 }
 
 void rebuildTimelineLater()
@@ -6362,7 +6448,8 @@ void Gui::Shell::install()
         hideChromeLater();
     });
 
-    // Timeline aktuell halten
+    // Timeline aktuell halten; mit gewähltem Körper treten die Schritte anderer Körper zurück (12.13)
+    static TimelineFilter timelineFilter;
     App::GetApplication().signalNewObject.connect([](const App::DocumentObject&) { rebuildTimelineLater(); });
     App::GetApplication().signalDeletedObject.connect([](const App::DocumentObject&) { rebuildTimelineLater(); });
     App::GetApplication().signalRelabelObject.connect([](const App::DocumentObject&) { rebuildTimelineLater(); });

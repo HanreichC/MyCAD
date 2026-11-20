@@ -281,7 +281,7 @@ MyCAD is young and grows fast. This is what comes next, roughly in this order (d
 |---|---|
 | **Platform** | Linux, developed and tested on CachyOS with KDE Plasma (Wayland); the AppImage needs an Arch-based system for now, Flathub is coming |
 | **Interface** | Liquid Glass with a GPU glass shader, light and dark mode, English or German |
-| **Model** | Parametric, with a global timeline (reorder, groups, roll back), components and joints |
+| **Model** | Parametric, with a global timeline (reorder, groups, roll back, hover shows the body, select a body to fade the rest), components and joints |
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
 | **Solids** | 21 create, 14 modify and 6 construction tools; standard holes, printable threads, Fit (ISO 286 and 3D print), Screw Here, Remove Face, standard parts (screws, nuts, washers, heat-set inserts, bearings, magnets, 2020 profiles) with a parts list, involute spur gears, print-in-place hinges, snap hooks with a strain check |
 | **Dimensions** | Double-click a face to change the dimensions that make it; errors explain themselves and offer a value that works |

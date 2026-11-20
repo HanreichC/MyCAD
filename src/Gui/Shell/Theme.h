@@ -61,6 +61,7 @@ constexpr int IconM = 16, IconWindow = 18, IconL = 20;
 constexpr int ContentMaxWidth = 560;
 constexpr int SpaceXxxl = 48;  ///< space.xxxl
 constexpr int DurationFade = 150;
+constexpr double OpacityDisabled = 0.4;  ///< opacity.disabled
 constexpr double OpacityDisabledGlyph = 0.35;
 constexpr double OpacityMarkerDark = 0.25;  ///< opacity.markerDark: Textmarker im Dunkelmodus
 }  // namespace Token

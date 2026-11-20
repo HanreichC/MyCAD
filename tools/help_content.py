@@ -475,6 +475,8 @@ A("start_timeline", "start", "Design_Parameters", ("Timeline and changes", "Zeit
         ("A step with a warning sign found its edges again after a change, but not by name. Right-click: Show Affected Edges, and Looks Right if they are.",
          "Ein Schritt mit Warnzeichen hat seine Kanten nach einer Änderung wiedergefunden, aber nicht über den Namen. Rechtsklick: Betroffene Kanten zeigen, und Stimmt so, wenn sie passen."),
         ("Suppress switches a step off without deleting it.", "Unterdrücken schaltet einen Schritt aus, ohne ihn zu löschen."),
+        ("Hold the mouse over a step and the body it changes lights up in the model. Select a body and the steps of all other bodies fade, so you see at once what belongs to it.",
+         "Halte die Maus über einen Schritt, und der Körper, den er ändert, leuchtet im Modell auf. Wähle einen Körper, und die Schritte aller anderen Körper werden blass, so siehst du sofort, was zu ihm gehört."),
         ("Undo (Ctrl+Z) reverses the last action, also deleting.", "Rückgängig (Strg+Z) nimmt die letzte Aktion zurück, auch Löschen."),
         ("Drag a step onto another to move it there. If it needs something that would then come later (its sketch, a face), it stays and MyCAD says why.",
          "Zieh einen Schritt auf einen anderen, um ihn dorthin zu schieben. Braucht er etwas, das dann später käme (seine Skizze, eine Fläche), bleibt er stehen und MyCAD sagt, warum."),
