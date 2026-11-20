@@ -2768,6 +2768,17 @@ void choosePrintBottom(App::Document* doc)
     toolHint(T("Choose Bottom Face"), T("Click the flat face that should lie on the print bed."));
 }
 
+/// 12.8: die Lage mit wenig Stützmaterial und geringer Höhe, die aufs Bett passt (Design::suggestPrintUp)
+void suggestPrintBottom(App::Document* doc)
+{
+    const Base::Vector3d up = Design::suggestPrintUp(doc);
+    doc->openTransaction("Print Direction");
+    Design::setPrintUp(doc, up);
+    doc->recompute();  // Tropfenformen und gefaste Unterkanten folgen der Druckrichtung
+    doc->commitTransaction();
+    DesignGui::setPrintView(true);
+}
+
 /// Idee 5: Drucken. Sichtbare (oder gewählte) Körper als 3MF mit Druckrichtung nach oben im Slicer öffnen; welcher
 /// Slicer, merkt sich MyCAD. Ohne Slicer: Export.
 void printBodies(App::Document* doc)
@@ -5867,6 +5878,10 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_PrintDown", "Choose Bottom Face",
                                      "Choose Bottom Face: click the flat face that lies on the print bed",
                                      "Std_ViewBottom", "", choosePrintBottom));
+    mgr.addCommand(new DesignCommand("Design_PrintSuggest", "Suggest Orientation",
+                                     "Suggest Orientation: lays the design on the bed with little support and low height, "
+                                     "so that it fits the print bed",
+                                     "Std_ViewBottom", "", suggestPrintBottom));
     mgr.addCommand(new DesignCommand("Design_Print", "Print",
                                      "Print: opens the design in your slicer (OrcaSlicer, Bambu Studio, PrusaSlicer, Cura)",
                                      "Std_Print", "", printBodies));

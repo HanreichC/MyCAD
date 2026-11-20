@@ -52,6 +52,40 @@ class ThreeMF(DesignTest):
         _, root = read_model(path)
         self.assertEqual(len(root.findall("m:resources/m:basematerials/m:base", NS)), 1)
 
+    def test_each_face_keeps_its_color(self):
+        """12.8: eine farbige Fläche (Appearance je Fläche) kommt als Farbe ihrer Dreiecke an, der Rest in Körperfarbe"""
+        a, _ = self.bodies()
+        top = max(range(len(a.Shape.Faces)), key=lambda i: a.Shape.Faces[i].CenterOfMass.z)
+        look = [(0.5, 0.5, 0.5)] * len(a.Shape.Faces)
+        look[top] = (1, 0, 0)
+        old = DesignExport.face_colors
+        DesignExport.face_colors = lambda body: look if body == a else []
+        try:
+            path = tmp("f.3mf")
+            DesignExport.write_3mf(path, [a])
+        finally:
+            DesignExport.face_colors = old
+        _, root = read_model(path)
+        colors = [m.get("displaycolor") for m in root.findall("m:resources/m:basematerials/m:base", NS)]
+        self.assertEqual(colors, ["#808080", "#FF0000"])
+        obj = root.find("m:resources/m:object", NS)
+        self.assertEqual(obj.get("pindex"), "0")
+        points = [(float(v.get("x")), float(v.get("y")), float(v.get("z"))) for v in obj.findall(".//m:vertex", NS)]
+        red = [t for t in obj.findall(".//m:triangle", NS) if t.get("p1") == "1"]
+        self.assertEqual(len(red), 2)  # die Deckfläche 20 x 10: zwei Dreiecke
+        for t in red:
+            self.assertTrue(all(points[int(t.get(k))][2] == 5 for k in ("v1", "v2", "v3")))
+        self.assertEqual(len(obj.findall(".//m:triangle", NS)), 12)
+
+    def test_triangles_know_their_face(self):
+        sk = sketch(self.doc, circle(0, 0, 10))
+        _, cyl = extrude(self.doc, sk, 10)
+        points, facets, face = DesignExport.triangles(cyl.Shape, "normal")
+        self.assertEqual(sorted(set(face)), list(range(len(cyl.Shape.Faces))))
+        for t, f in zip(facets, face):
+            center = (points[t[0]] + points[t[1]] + points[t[2]]) * (1 / 3)
+            self.assertLess(cyl.Shape.Faces[f].distToShape(Part.Vertex(center))[0], 0.1)
+
     def test_resolution_changes_triangle_count(self):
         sk = sketch(self.doc, circle(0, 0, 20))
         _, cyl = extrude(self.doc, sk, 10)
@@ -66,7 +100,7 @@ class ThreeMF(DesignTest):
 
     def test_mesh_is_closed_and_matches_volume(self):
         a, _ = self.bodies()
-        points, facets = DesignExport.triangles(a.Shape, "normal")
+        points, facets, _ = DesignExport.triangles(a.Shape, "normal")
         import Mesh
         m = Mesh.Mesh((points, facets))
         self.assertTrue(m.isSolid())

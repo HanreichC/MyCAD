@@ -2514,6 +2514,169 @@ Design::PrintCheckResult Design::printCheck(Body* body)
     return printCheck(body->Shape.getShape(), up, params->GetFloat("OverhangAngle", 45), params->GetFloat("MinWall", 0.8));
 }
 
+namespace
+{
+struct PrintTriangle
+{
+    Base::Vector3d a, b, c, n;
+    double area;
+};
+
+std::vector<PrintTriangle> printTriangles(const std::vector<Part::TopoShape>& shapes)
+{
+    std::vector<PrintTriangle> tris;
+    for (const auto& shape : shapes) {
+        std::vector<Base::Vector3d> points;
+        std::vector<Data::ComplexGeoData::Facet> facets;
+        shape.getFaces(points, facets, 0.05);
+        for (const auto& f : facets) {
+            const Base::Vector3d &a = points[f.I1], &b = points[f.I2], &c = points[f.I3];
+            Base::Vector3d n = (b - a) % (c - a);
+            const double area = n.Length() / 2;
+            if (area > 1e-12) {
+                tris.push_back({a, b, c, n.Normalize(), area});
+            }
+        }
+    }
+    return tris;
+}
+
+/// Maße nach dem Drehen von up auf +Z, wie DesignExport.print_rotation es für den Slicer tut
+Base::Vector3d printExtents(const std::vector<PrintTriangle>& tris, const Base::Vector3d& up)
+{
+    const Base::Rotation turn(up, Base::Vector3d(0, 0, 1));
+    Base::BoundBox3d box;
+    for (const auto& t : tris) {
+        for (const auto* p : {&t.a, &t.b, &t.c}) {
+            Base::Vector3d q;
+            turn.multVec(*p, q);
+            box.Add(q);
+        }
+    }
+    return box.IsValid() ? Base::Vector3d(box.LengthX(), box.LengthY(), box.LengthZ()) : Base::Vector3d();
+}
+
+/// passt auf das Bett (x, y, z; 0 = egal); um z drehen darf der Slicer
+bool fitsBed(const Base::Vector3d& size, const Base::Vector3d& bed)
+{
+    if (bed.x <= 0 || bed.y <= 0 || bed.z <= 0) {
+        return true;
+    }
+    const double eps = 1e-6;
+    return size.z <= bed.z + eps
+        && std::max(size.x, size.y) <= std::max(bed.x, bed.y) + eps && std::min(size.x, size.y) <= std::min(bed.x, bed.y) + eps;
+}
+
+std::vector<Part::TopoShape> visiblePrintShapes(App::Document* doc)
+{
+    std::vector<Part::TopoShape> shapes;
+    for (auto obj : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
+        auto body = static_cast<Design::Body*>(obj);
+        if (body->Visibility.getValue() && !body->Shape.getShape().isNull()) {
+            Part::TopoShape s = body->Shape.getShape();
+            s.setPlacement(Design::componentOf(body)->globalPlacement());  // wie printCheck(Body*): Komponente zählt
+            shapes.push_back(s);
+        }
+    }
+    return shapes;
+}
+
+Base::Vector3d bedSize()
+{
+    ParameterGrp::handle params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+    return Base::Vector3d(params->GetFloat("BedWidth", 220), params->GetFloat("BedDepth", 220), params->GetFloat("BedHeight", 250));
+}
+}  // namespace
+
+Base::Vector3d Design::suggestPrintUp(const std::vector<Part::TopoShape>& shapes, double maxAngle, const Base::Vector3d& bed)
+{
+    const std::vector<PrintTriangle> tris = printTriangles(shapes);
+    if (tris.empty()) {
+        return Base::Vector3d(0, 0, 1);
+    }
+    // Kandidaten: +Z zuerst (bei Gleichstand bleibt es, wie gezeichnet), die anderen Achsen, dann jede ebene Fläche
+    // nach unten, die größten zuerst. Ebene Flächen erkennt man an gleichen Dreiecksnormalen.
+    std::vector<Base::Vector3d> candidates;
+    for (const auto& [x, y, z] : {std::tuple {0, 0, 1}, {0, 0, -1}, {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}}) {
+        candidates.emplace_back(x, y, z);
+    }
+    std::map<std::tuple<long, long, long>, std::pair<double, Base::Vector3d>> planes;
+    double volume = 0;
+    Base::BoundBox3d box;
+    for (const auto& t : tris) {
+        auto& [area, n] = planes[{std::lround(t.n.x * 1000), std::lround(t.n.y * 1000), std::lround(t.n.z * 1000)}];
+        area += t.area;
+        n = t.n;
+        volume += t.a * (t.b % t.c) / 6;
+        box.Add(t.a);
+        box.Add(t.b);
+        box.Add(t.c);
+    }
+    std::vector<std::pair<double, Base::Vector3d>> byArea;
+    for (const auto& [key, plane] : planes) {
+        byArea.push_back(plane);
+    }
+    std::sort(byArea.begin(), byArea.end(), [](const auto& l, const auto& r) { return l.first > r.first; });
+    // ponytail: nur die 24 größten Ebenen; Freiformteile ohne Ebenen bekommen nur die Achsen
+    for (size_t i = 0; i < byArea.size() && i < 24; ++i) {
+        const Base::Vector3d up = -byArea[i].second;
+        if (std::none_of(candidates.begin(), candidates.end(), [&](const Base::Vector3d& c) { return c * up > 0.9999; })) {
+            candidates.push_back(up);
+        }
+    }
+    volume = std::max(std::abs(volume), 1e-9);
+    const double diagonal = std::max(box.CalcDiagonalLength(), 1e-9);
+    // Kosten: Stützmaterial (Überhangfläche, waagrecht gemessen, mal Höhe über dem Bett) im Verhältnis zum Teil, dazu
+    // halb so stark die Bauhöhe (Druckzeit, Kippen). Passt es so nicht aufs Bett, kommt es nur, wenn nichts passt.
+    Base::Vector3d best(0, 0, 1);
+    double bestCost = 1e300;
+    for (const Base::Vector3d& up : candidates) {
+        double low = 1e300, high = -1e300;
+        for (const auto& t : tris) {
+            for (const auto* p : {&t.a, &t.b, &t.c}) {
+                low = std::min(low, *p * up);
+                high = std::max(high, *p * up);
+            }
+        }
+        const double u[3] = {up.x, up.y, up.z};
+        double support = 0;
+        for (const auto& t : tris) {
+            const double n[3] = {t.n.x, t.n.y, t.n.z};
+            const double top = std::max({t.a * up, t.b * up, t.c * up}) - low;
+            if (PrintCheck::classify(n, u, maxAngle, top) == PrintCheck::Kind::Overhang) {
+                support += t.area * -(t.n * up) * ((t.a + t.b + t.c) / 3 * up - low);
+            }
+        }
+        double cost = support / volume + 0.5 * (high - low) / diagonal;
+        if (!fitsBed(printExtents(tris, up), bed)) {
+            cost += 100;
+        }
+        if (cost < bestCost - 1e-9) {
+            bestCost = cost;
+            best = up;
+        }
+    }
+    return best;
+}
+
+Base::Vector3d Design::suggestPrintUp(App::Document* doc)
+{
+    const double angle = App::GetApplication()
+                             .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")
+                             ->GetFloat("OverhangAngle", 45);
+    return suggestPrintUp(visiblePrintShapes(doc), angle, bedSize());
+}
+
+Base::Vector3d Design::printSize(App::Document* doc)
+{
+    return printExtents(printTriangles(visiblePrintShapes(doc)), printUp(doc));
+}
+
+bool Design::fitsPrintBed(const Base::Vector3d& size)
+{
+    return fitsBed(size, bedSize());
+}
+
 Base::Vector3d Design::printUp(App::Document* doc)
 {
     App::Part* part = root(doc, false);

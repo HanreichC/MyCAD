@@ -105,13 +105,18 @@ def write_step(path, objects):
 
 def body_color(body):
     """Farbe der Appearance (nur mit Oberfläche bekannt), sonst None"""
+    colors = face_colors(body)
+    return colors[0] if colors else None
+
+
+def face_colors(body):
+    """Farbe je Fläche (Appearance, nur mit Oberfläche bekannt; eine Farbe für alle, wenn nur eine gesetzt ist)"""
     if not App.GuiUp or not getattr(body, "ViewObject", None):
-        return None
+        return []
     try:
-        r, g, b = body.ViewObject.ShapeAppearance[0].DiffuseColor[:3]
-        return (r, g, b)
-    except (AttributeError, IndexError):
-        return None
+        return [tuple(m.DiffuseColor[:3]) for m in body.ViewObject.ShapeAppearance]
+    except AttributeError:
+        return []
 
 
 def hex_color(rgb):
@@ -119,11 +124,17 @@ def hex_color(rgb):
 
 
 def triangles(shape, quality):
+    """(Punkte, Dreiecke, Fläche je Dreieck); die Flächennummer zählt wie shape.Faces"""
     import MeshPart
     deviation, angle = QUALITY.get(quality, QUALITY["normal"])
     mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=deviation, AngularDeflection=angle * 3.14159265 / 180,
-                                  Relative=False)
-    return mesh.Topology
+                                  Relative=False, Segments=True)
+    points, facets = mesh.Topology
+    face = [0] * len(facets)
+    for index in range(mesh.countSegments()):
+        for facet in mesh.getSegment(index):
+            face[facet] = index
+    return points, facets, face
 
 
 def write_3mf(path, bodies, quality="normal", colors=None, rotation=None):
@@ -138,17 +149,26 @@ def write_3mf(path, bodies, quality="normal", colors=None, rotation=None):
             shape.Placement = body.getGlobalPlacement()
         if rotation is not None:
             shape.Placement = App.Placement(App.Vector(), rotation).multiply(shape.Placement)
-        points, facets = triangles(shape, quality)
-        rgb = colors.get(body.Name) or body_color(body) or (0.6, 0.6, 0.62)
-        color = hex_color(rgb)
-        if color not in palette:
-            palette.append(color)
+        points, facets, face = triangles(shape, quality)
+        # 12.8 Farbe je Fläche: jedes Dreieck bekommt die seiner Fläche (Slicer übernehmen sie als Filament-Vorschlag)
+        rgbs = [colors[body.Name]] if body.Name in colors else face_colors(body) or [(0.6, 0.6, 0.62)]
+        if len(rgbs) != len(shape.Faces):
+            rgbs = rgbs[:1]  # Appearance passt nicht (mehr) zu den Flächen: die erste für alle
+        index_of = []
+        for rgb in rgbs:
+            color = hex_color(rgb)
+            if color not in palette:
+                palette.append(color)
+            index_of.append(palette.index(color))
         oid = index + 2  # 1 = Farbtabelle
         vertices = "".join('<vertex x="%.6f" y="%.6f" z="%.6f"/>' % (p.x, p.y, p.z) for p in points)
-        tris = "".join('<triangle v1="%d" v2="%d" v3="%d"/>' % t for t in facets)
+        if len(set(index_of)) > 1:
+            tris = "".join('<triangle v1="%d" v2="%d" v3="%d" p1="%d"/>' % (t + (index_of[f],)) for t, f in zip(facets, face))
+        else:
+            tris = "".join('<triangle v1="%d" v2="%d" v3="%d"/>' % t for t in facets)
         objects.append('  <object id="%d" type="model" name="%s" pid="1" pindex="%d">\n   <mesh><vertices>%s</vertices>'
                        '<triangles>%s</triangles></mesh>\n  </object>\n'
-                       % (oid, escape(body.Label, {'"': "&quot;"}), palette.index(color), vertices, tris))
+                       % (oid, escape(body.Label, {'"': "&quot;"}), index_of[0], vertices, tris))
         build.append('  <item objectid="%d"/>\n' % oid)
     materials = "".join('   <base name="%s" displaycolor="%s"/>\n' % (c, c) for c in palette)
     model = ('<?xml version="1.0" encoding="UTF-8"?>\n'

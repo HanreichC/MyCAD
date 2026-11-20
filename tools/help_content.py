@@ -636,8 +636,8 @@ A("Design_Export", "file", "Design_Export", ("Export", "Exportieren"),
          "DXF schreibt jede Skizze flach in ihrer eigenen Ebene, auf einem Layer mit dem Namen der Skizze. Gut für Laserschneider und CNC."),
         ("You can also right-click bodies in the browser or the design name and choose Export.",
          "Du kannst auch Körper im Browser oder den Designnamen rechts anklicken und Exportieren wählen."),
-        ("3MF keeps each body as its own part with name and colour, so the slicer shows them separately. How finely curves become triangles (STL and 3MF) is set in Settings → General → Export resolution.",
-         "3MF behält jeden Körper als eigenes Teil mit Name und Farbe, der Slicer zeigt sie also getrennt. Wie fein Rundungen zu Dreiecken werden (STL und 3MF), stellst du unter Einstellungen → Allgemein → Export-Auflösung ein."),
+        ("3MF keeps each body as its own part with name and colour, so the slicer shows them separately. Faces you coloured on their own (Appearance with faces selected) keep their colour too, for printing in several colours. How finely curves become triangles (STL and 3MF) is set in Settings → General → Export resolution.",
+         "3MF behält jeden Körper als eigenes Teil mit Name und Farbe, der Slicer zeigt sie also getrennt. Einzeln gefärbte Flächen (Aussehen mit gewählten Flächen) behalten ihre Farbe auch, für den Druck in mehreren Farben. Wie fein Rundungen zu Dreiecken werden (STL und 3MF), stellst du unter Einstellungen → Allgemein → Export-Auflösung ein."),
         ("STEP keeps colours, names and components.", "STEP behält Farben, Namen und Komponenten.")],
   see=["Design_Import"])
 
@@ -1331,6 +1331,10 @@ A("Design_PrintView", "inspect", "Design_PrintView", ("Print View", "Druckansich
     "Rote Streifen: Überhang flacher als 45° – er braucht Stützen. Grüne Punkte: liegt auf dem Bett. Gelbe Kreuzschraffur: Wand dünner als 0,8 mm."),
    ("To print it another way up, click the face that should lie on the bed, then Choose Bottom Face in the legend. The colours then show the new orientation.",
     "Um es anders herum zu drucken, klicke auf die Fläche, die auf dem Bett liegen soll, und dann in der Legende auf Unterseite wählen. Die Farben zeigen dann die neue Lage."),
+   ("Suggest Orientation finds the lay for you: it tries every flat face and each axis as the bottom and takes the one with the least support material and the lowest height that fits your print bed. Ctrl+Z puts it back.",
+    "Lage vorschlagen sucht die Lage für dich: Es probiert jede ebene Fläche und jede Achse als Unterseite und nimmt die mit dem wenigsten Stützmaterial und der geringsten Höhe, die auf dein Druckbett passt. Strg+Z stellt sie zurück."),
+   ("If the design is larger than the print bed in this orientation, the legend says so in red with its size. Set the size of your bed in Settings › 3D Printing.",
+    "Ist das Design in dieser Lage größer als das Druckbett, steht das rot mit seinen Maßen in der Legende. Die Größe deines Betts stellst du in Einstellungen › 3D-Druck ein."),
    ("Under Make printable the legend lists what one setting would fix: a hole across the print direction becomes a teardrop with a 45° tip, a fillet chamfers its bottom edges at 45°, a wall that is too thin grows to the minimum. Apply takes one, Apply All all of them (Ctrl+Z takes them back).",
     "Unter Druckbar machen nennt die Legende, was eine Einstellung beheben würde: eine Bohrung quer zur Druckrichtung bekommt eine Tropfenform mit 45°-Spitze, eine Rundung fast ihre Unterkanten mit 45°, eine zu dünne Wand wächst auf das Minimum. Ausführen übernimmt einen Vorschlag, Alle ausführen alle (Strg+Z nimmt sie zurück)."),
    ("The Print View button stays pressed while it is on. Exit Print View in the legend, or another click on the button, hides it.",
@@ -1341,7 +1345,7 @@ A("Design_PrintView", "inspect", "Design_PrintView", ("Print View", "Druckansich
          "Die gewählte Unterseite wird mit dem Design gespeichert und von Drucken benutzt."),
         ("Overhangs are on the underside: turn the view to look at the part from below.",
          "Überhänge liegen unten: dreh die Ansicht, um das Teil von unten zu sehen.")],
-  commands=["Design_PrintView", "Design_PrintDown"], see=["Design_Print", "Design_Measure", "Design_PrinterTest"])
+  commands=["Design_PrintView", "Design_PrintSuggest", "Design_PrintDown"], see=["Design_Print", "Design_Measure", "Design_PrinterTest"])
 
 A("Design_PrinterTest", "inspect", "Design_PrinterTest", ("Printer Test", "Druckertest"),
   (["printer test", "calibration", "calibrate", "clearance", "tolerance", "test print", "fit test", "overhang test", "printer profile"],

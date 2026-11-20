@@ -52,6 +52,57 @@ class Overhang(DesignTest):
         self.assertAlmostEqual(r["bed"], 100, places=3)
 
 
+class Suggest(DesignTest):
+    """12.8 Druckrichtung vorschlagen: wenig Stützmaterial, geringe Höhe, passt aufs Bett"""
+
+    def setUp(self):
+        super().setUp()
+        self.grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
+        self.old = [self.grp.GetFloat(k, d) for k, d in (("BedWidth", 220), ("BedDepth", 220), ("BedHeight", 250))]
+        for k, v in (("BedWidth", 220), ("BedDepth", 220), ("BedHeight", 250)):
+            self.grp.SetFloat(k, v)
+
+    def tearDown(self):
+        for k, v in zip(("BedWidth", "BedDepth", "BedHeight"), self.old):
+            self.grp.SetFloat(k, v)
+        super().tearDown()
+
+    def test_mushroom_goes_on_its_hat(self):
+        mushroom(self.doc)
+        self.assertEqual(Design.suggestPrintUp(self.doc), V(0, 0, -1))
+
+    def test_a_standing_bar_is_laid_flat(self):
+        box(self.doc, 10, 20, 100)
+        up = Design.suggestPrintUp(self.doc)
+        self.assertAlmostEqual(abs(up.x), 1)  # auf die breite Seite: 10 hoch statt 100 oder 20
+
+    def test_a_lying_pin_stays_lying(self):
+        """Zylinder 5 x 50 quer: liegend etwas Stütze unten, stehend 50 hoch; liegen ist billiger"""
+        sk = sketch(self.doc, circle(0, 0, 2.5), App.Placement(V(), App.Rotation(V(0, 1, 0), 90)))
+        extrude(self.doc, sk, 50)
+        up = Design.suggestPrintUp(self.doc)
+        self.assertAlmostEqual(up.x, 0, places=6)
+
+    def test_too_long_for_the_bed_stands_up(self):
+        box(self.doc, 240, 10, 10)  # 240 > 220: nur stehend (240 hoch, Bett 250) passt es
+        up = Design.suggestPrintUp(self.doc)
+        self.assertAlmostEqual(abs(up.x), 1)
+        Design.setPrintUp(self.doc, up)
+        size = Design.printSize(self.doc)
+        self.assertAlmostEqual(size.z, 240, places=3)
+        self.assertTrue(Design.fitsPrintBed(size))
+        Design.setPrintUp(self.doc, V(0, 0, 1))
+        size = Design.printSize(self.doc)
+        self.assertAlmostEqual(size.z, 10, places=3)
+        self.assertFalse(Design.fitsPrintBed(size))
+
+    def test_bed_rotation_is_allowed(self):
+        self.assertTrue(Design.fitsPrintBed(V(100, 210, 50)))
+        self.grp.SetFloat("BedDepth", 150)
+        self.assertTrue(Design.fitsPrintBed(V(150, 210, 50)))  # der Slicer dreht es um z
+        self.assertFalse(Design.fitsPrintBed(V(160, 210, 50)))
+
+
 class Walls(DesignTest):
     def test_thin_plate_is_marked(self):
         _, b = box(self.doc, 20, 20, 0.5)

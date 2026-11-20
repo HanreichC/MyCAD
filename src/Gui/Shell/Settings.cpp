@@ -1558,13 +1558,16 @@ void Gui::Shell::showSettings()
         addRow(printCard, T(plays[i][1]), box);
         (*fields)[plays[i][0]] = box;
     }
-    // Grenzen der Druckansicht (Design::printCheck): Überhang in Grad, kleinste Wand in mm
+    // Grenzen der Druckansicht (Design::printCheck): Überhang in Grad, kleinste Wand in mm; Druckbett (12.8: zu groß,
+    // Lage vorschlagen)
     for (const auto& [key, label, fallback, suffix, top] :
-         {std::tuple {"OverhangAngle", "Overhang angle", 45.0, "°", 89.0}, std::tuple {"MinWall", "Minimum wall", 0.8, " mm", 10.0}}) {
+         {std::tuple {"OverhangAngle", "Overhang angle", 45.0, "°", 89.0}, std::tuple {"MinWall", "Minimum wall", 0.8, " mm", 10.0},
+          std::tuple {"BedWidth", "Bed width", 220.0, " mm", 2000.0}, std::tuple {"BedDepth", "Bed depth", 220.0, " mm", 2000.0},
+          std::tuple {"BedHeight", "Bed height", 250.0, " mm", 2000.0}}) {
         auto box = new QDoubleSpinBox;
         box->setRange(top > 50 ? 10 : 0.1, top);
         box->setDecimals(top > 50 ? 0 : 2);
-        box->setSingleStep(top > 50 ? 5 : 0.1);
+        box->setSingleStep(top > 100 ? 10 : top > 50 ? 5 : 0.1);
         box->setSuffix(QString::fromUtf8(suffix));
         box->setValue(myParams()->GetFloat(key, fallback));
         QObject::connect(box, &QDoubleSpinBox::valueChanged, box, [key](double v) { myParams()->SetFloat(key, v); });

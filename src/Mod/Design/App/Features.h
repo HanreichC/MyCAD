@@ -147,6 +147,15 @@ struct PrintCheckResult
 DesignExport PrintCheckResult printCheck(Part::TopoShape shape, const Base::Vector3d& up, double maxAngle, double minWall);
 /// Körper mit der Druckrichtung des Designs und den Grenzen aus den Einstellungen (Koordinaten seiner Komponente)
 DesignExport PrintCheckResult printCheck(Body* body);
+/// 12.8 Druckrichtung vorschlagen (global): wenig Stützmaterial, geringe Höhe, passt aufs Bett (Breite, Tiefe, Höhe in mm;
+/// 0 = egal). Geprüft werden die Achsen und jede ebene Fläche als Unterseite.
+DesignExport Base::Vector3d suggestPrintUp(const std::vector<Part::TopoShape>& shapes, double maxAngle, const Base::Vector3d& bed);
+/// für die sichtbaren Körper, mit Überhangwinkel und Bett aus den Einstellungen
+DesignExport Base::Vector3d suggestPrintUp(App::Document* doc);
+/// Maße der sichtbaren Körper in Druckrichtung (x, y auf dem Bett, z Höhe)
+DesignExport Base::Vector3d printSize(App::Document* doc);
+/// passt size (aus printSize) auf das Bett aus den Einstellungen (BedWidth, BedDepth, BedHeight)?
+DesignExport bool fitsPrintBed(const Base::Vector3d& size);
 /// Druckbar machen (Phase 11.3): ein Vorschlag je Schritt, der mit einer Einstellung besser druckt. label ist ein
 /// englischer Text (übersetzt in der Oberfläche, %1 = value), property bekommt value.
 struct PrintFix

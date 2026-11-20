@@ -67,7 +67,7 @@ Every step goes into the **Timeline**. Go back, change a dimension, and the rest
 
 ## Made for makers.
 
-**Print View** shows on the model what your printer will struggle with: overhangs hatched red, faces on the bed dotted green, walls that are too thin cross-hatched yellow. Under **Make printable** it offers the fix, one click each: a sideways hole becomes a teardrop that needs no supports, a fillet chamfers its bottom edges at 45°, a thin wall grows to the minimum. Pick the face that should lie on the bed, then hit **Print**: MyCAD finds **OrcaSlicer**, **Bambu Studio**, **PrusaSlicer** or **UltiMaker Cura**, installed as a program, a **Flatpak** or an AppImage, and opens your design there as a colored 3MF, right side down.
+**Print View** shows on the model what your printer will struggle with: overhangs hatched red, faces on the bed dotted green, walls that are too thin cross-hatched yellow. Under **Make printable** it offers the fix, one click each: a sideways hole becomes a teardrop that needs no supports, a fillet chamfers its bottom edges at 45°, a thin wall grows to the minimum. Pick the face that should lie on the bed, or let **Suggest Orientation** find the lay with the least support and the lowest height that fits your print bed (a part that is too big says so in red), then hit **Print**: MyCAD finds **OrcaSlicer**, **Bambu Studio**, **PrusaSlicer** or **UltiMaker Cura**, installed as a program, a **Flatpak** or an AppImage, and opens your design there as a colored 3MF, right side down. Faces you colored on their own keep their color, ready for a multi-color print.
 
 ![Print View](src/Gui/Shell/help/images/Design_PrintView.gif)
 
@@ -285,12 +285,12 @@ MyCAD is young and grows fast. This is what comes next, roughly in this order (d
 | **Dimensions** | Double-click a face to change the dimensions that make it; errors explain themselves and offer a value that works |
 | **Notes** | Saved in the design, lines ending in `=` are calculated, `Name = value` lines are parameters (both ways) |
 | **Red Pen** | Handwritten corrections on the model become features: R, C, ±, M, Ø, H7, 3×, dimensions, remove face |
-| **3D printing** | Print View (overhangs, bed, thin walls), print direction, Printer Test (clearance, overhang, wall), Print to OrcaSlicer, Bambu Studio, PrusaSlicer and Cura (program, Flatpak, AppImage) |
+| **3D printing** | Print View (overhangs, bed, thin walls), print direction (chosen or suggested), bed size check, Printer Test (clearance, overhang, wall), Print to OrcaSlicer, Bambu Studio, PrusaSlicer and Cura (program, Flatpak, AppImage) |
 | **Saving** | Always saved, versions with Time Machine retention, compare as a ghost, restore, variants |
 | **Assembly** | 7 joint types with limits, animate with collisions, chains, closed loops solved with OndselSolver, mass and center of mass |
 | **Search** | Ctrl+K for commands, bodies and sketches, typo-tolerant, English and German |
 | **Scribbles** | Pen tablet with pressure, 7 shapes, fill, text, select and move with a color and delete bar, sheets in 3D, convert to sketch, handwriting tidy-up, offline handwriting recognition (find, CAD notation, written dimensions), Only the Sheet mode |
-| **Export** | STL · 3MF (with colors) · STEP (with colors) · DXF (sketches) |
+| **Export** | STL · 3MF (with colors, per face too) · STEP (with colors) · DXF (sketches) |
 | **Import** | STEP · STL, 3MF, OBJ (flat faces and holes recognized) · DXF · SVG · photos (traced into a sketch) |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |

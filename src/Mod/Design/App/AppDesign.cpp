@@ -80,6 +80,10 @@ public:
         add_varargs_method("printUp", &Module::printUp, "printUp(doc): print direction of the design (up)");
         add_varargs_method("partName", &Module::partName, "partName(primitive): standard part for the parts list or empty");
         add_varargs_method("setPrintUp", &Module::setPrintUp, "setPrintUp(doc, vector): print direction (up)");
+        add_varargs_method("suggestPrintUp", &Module::suggestPrintUp,
+                           "suggestPrintUp(doc): print direction with little support and height that fits the bed");
+        add_varargs_method("printSize", &Module::printSize, "printSize(doc): (width, depth, height) in print direction");
+        add_varargs_method("fitsPrintBed", &Module::fitsPrintBed, "fitsPrintBed(size): fits on the print bed of the settings");
         add_varargs_method("fastenerAt", &Module::fastenerAt,
                            "fastenerAt(body, point, direction): screw from the top body into the next one below");
         add_varargs_method("stableRef", &Module::stableRef,
@@ -404,6 +408,18 @@ private:
     {
         Design::setPrintUp(doc(args), vector(args[1]));
         return Py::None();
+    }
+    Py::Object suggestPrintUp(const Py::Tuple& args)
+    {
+        return Py::asObject(new Base::VectorPy(Design::suggestPrintUp(doc(args))));
+    }
+    Py::Object printSize(const Py::Tuple& args)
+    {
+        return Py::asObject(new Base::VectorPy(Design::printSize(doc(args))));
+    }
+    Py::Object fitsPrintBed(const Py::Tuple& args)
+    {
+        return Py::Boolean(Design::fitsPrintBed(vector(args[0])));
     }
     Py::Object fastenerAt(const Py::Tuple& args)
     {

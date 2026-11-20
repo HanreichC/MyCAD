@@ -260,13 +260,19 @@ public:
     /// Phase 11.3 Druckbar machen: je Schritt, der mit einer Einstellung besser druckt, eine Zeile mit Übernehmen
     void refreshFixes()
     {
-        if (!fixBox) {
+        if (!fixBox || !bedText) {
             return;
         }
         for (QWidget* w : fixBox->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
             delete w;
         }
         App::Document* doc = App::GetApplication().getActiveDocument();
+        // 12.8: passt es so nicht aufs Bett, steht es hier (Lage vorschlagen dreht es, wenn es anders passt)
+        const Base::Vector3d size = doc ? Design::printSize(doc) : Base::Vector3d();
+        const bool tooBig = size.Length() > 0 && !Design::fitsPrintBed(size);
+        const auto mm = [](double v) { return QString::number(v, 'f', 0); };
+        bedText->setText(T("Larger than the print bed: %1 × %2 × %3 mm").arg(mm(size.x), mm(size.y), mm(size.z)));
+        bedText->setVisible(tooBig);
         const auto fixes = doc ? Design::printFixes(doc) : std::vector<Design::PrintFix>();
         fixBox->setVisible(!fixes.empty());
         auto lay = static_cast<QVBoxLayout*>(fixBox->layout());
@@ -361,13 +367,20 @@ private:
             line->addWidget(texts[i], 1);
             lay->addLayout(line);
         }
+        bedText = new QLabel;
+        bedText->setObjectName(QStringLiteral("PrintBedSize"));
+        bedText->setWordWrap(true);
+        bedText->setStyleSheet(QStringLiteral("color: %1;").arg(theme.red.name()));
+        bedText->hide();
+        lay->addWidget(bedText);
         fixBox = new QWidget;
         auto fixLayout = new QVBoxLayout(fixBox);
         fixLayout->setContentsMargins(0, 6, 0, 2);
         fixLayout->setSpacing(6);
         lay->addWidget(fixBox);
         auto buttons = new QHBoxLayout;
-        for (const auto& [text, command] : {std::pair {T("Choose Bottom Face"), "Design_PrintDown"},
+        for (const auto& [text, command] : {std::pair {T("Suggest Orientation"), "Design_PrintSuggest"},
+                                            std::pair {T("Choose Bottom Face"), "Design_PrintDown"},
                                             std::pair {T("Print"), "Design_Print"}}) {
             auto button = new QPushButton(text);
             button->setAutoDefault(false);
@@ -405,6 +418,7 @@ private:
     QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs
     QLabel* texts[3] = {};
     QPointer<QWidget> fixBox;
+    QPointer<QLabel> bedText;
     QPointer<Gui::View3DInventorViewer> viewer;
     DesignGui::CameraFollow resized {[this] { place(); }};  // folgt auch der Größe der Ansicht
 };

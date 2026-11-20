@@ -69,6 +69,18 @@ def legend_button(text):
     return [b for b in visible(QtWidgets.QPushButton) if b.text() == text][0]
 
 
+def bed(width):
+    grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
+    for key in ("BedWidth", "BedDepth"):
+        grp.SetFloat(key, width)
+    Gui.runCommand("Design_PrintView")  # aus und wieder an: die Legende rechnet neu
+    Gui.runCommand("Design_PrintView")
+
+
+def bed_warning():
+    return [w for w in visible(QtWidgets.QLabel) if w.objectName() == "PrintBedSize"]
+
+
 def pick_hat_top():
     b = state["body"]
     Gui.Selection.clearSelection()
@@ -88,6 +100,16 @@ in_order([
     ("pick top", pick_hat_top),
     ("bottom", lambda: legend_button("Choose Bottom Face").click()),
     ("turned", lambda: check("the hat top now lies on the bed", Design.printUp(doc()) == App.Vector(0, 0, -1), str(Design.printUp(doc())))),
+    ("upright", lambda: Design.setPrintUp(doc(), App.Vector(0, 0, 1))),
+    ("suggest", lambda: legend_button("Suggest Orientation").click()),
+    ("suggested", lambda: check("Suggest Orientation puts the hat on the bed (no support)",
+                                Design.printUp(doc()) == App.Vector(0, 0, -1), str(Design.printUp(doc())))),
+    ("fits", lambda: check("it fits the bed: no warning", not bed_warning())),
+    ("small bed", lambda: bed(20)),
+    ("too big", lambda: check("on a 20 mm bed the 30 mm hat is too big",
+                              bool(bed_warning()) and "30 × 30 × 12" in bed_warning()[0].text(),
+                              bed_warning()[0].text() if bed_warning() else "no warning")),
+    ("bed back", lambda: bed(220)),
     ("print", lambda: legend_button("Print").click()),
     ("wait", lambda: None),
     ("slicer", lambda: check("print opens the slicer with a 3MF",
