@@ -50,7 +50,7 @@ class Smoke(DesignTest):
         self.assertNoErrors()
 
     def test_delete_body_takes_its_steps(self):
-        """Body B löschen: seine Skizze, Extrude, Rundung und Spiegelkopie gehen mit, Skalieren (A und B) behält A;
+        """Body B löschen: Extrude, Rundung und Spiegelkopie gehen mit, seine Skizze bleibt sichtbar stehen, Skalieren (A und B) behält A;
         ein Undo bringt alles zurück"""
         _, a = box(self.doc, 20, 20, 20)
         _, b = box(self.doc, 20, 20, 10, at=(40, 0))
@@ -71,7 +71,8 @@ class Smoke(DesignTest):
         self.doc.commitTransaction()
         self.assertEqual([o.Label for o in self.doc.Objects if o.TypeId == "Design::Body"], [a.Label])
         self.assertEqual([o.TypeId for o in Design.timeline(self.doc)],
-                         ["Sketcher::SketchObject", "Design::Extrude", "Design::Scale"])
+                         ["Sketcher::SketchObject", "Design::Extrude", "Sketcher::SketchObject", "Design::Scale"])
+        self.assertTrue(Design.timeline(self.doc)[2].Visibility)
         self.assertEqual(scale.Bodies, [a])
         self.assertVolume(a, 20 ** 3 * 1.5 ** 3)
         self.assertNoErrors()

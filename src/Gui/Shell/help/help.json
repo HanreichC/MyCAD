@@ -5603,7 +5603,7 @@
      "Deleting a body also removes the steps that only built it; steps that used several bodies keep the others."
     ],
     "de": [
-     "Hängt noch etwas daran, fragt MyCAD vorher und zählt es auf: Körper, die mitgehen, Skizzen, die ihre Fläche verlieren (sie bleiben an ihrem Platz), und Schritte, denen danach die Eingabe fehlt. Beim Löschen eines ganzen Körpers genauso: Seine eigenen Schritte gehen einfach mit; genannt werden seine Spiegel- oder Musterkopien, ein Kombinieren mit ihm als einzigem Werkzeug und Skizzen oder Schritte anderer Körper, die auf seinen Flächen aufbauen. Hängt nichts daran, wird gleich gelöscht.",
+     "Hängt noch etwas daran, fragt MyCAD vorher und zählt es auf: Körper, die mitgehen, Skizzen, die ihre Fläche verlieren (sie bleiben an ihrem Platz), und Schritte, denen danach die Eingabe fehlt. Beim Löschen eines ganzen Körpers genauso: Seine eigenen Schritte gehen einfach mit, seine Skizzen bleiben und werden wieder eingeblendet; genannt werden seine Spiegel- oder Musterkopien, ein Kombinieren mit ihm als einzigem Werkzeug und Skizzen oder Schritte anderer Körper, die auf seinen Flächen aufbauen. Hängt nichts daran, wird gleich gelöscht.",
      "Rückgängig (Strg+Z) holt es zurück.",
      "Löschst du einen Schritt in der Mitte, bleiben die Schritte danach erhalten und rechnen ohne ihn weiter.",
      "Löschst du einen Körper, gehen die Schritte mit, die nur ihn gebaut haben; Schritte mit mehreren Körpern behalten die anderen."

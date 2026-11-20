@@ -997,7 +997,7 @@ void eraseAt(App::PropertyLinkList& list, size_t i)
 
 /// Body löschen: Schritte nur auf ihm gehen mit, Schritte auf mehreren Bodies verlieren ihn; Bodies, die es nur durch
 /// ihn gibt (Teile seiner Teilung, Spiegel- und Musterkopien), gehen auch. Skizzen, die nur die entfernten Schritte
-/// gebraucht haben oder auf ihm lagen, gehen mit.
+/// gebraucht haben oder auf ihm lagen, bleiben und werden wieder eingeblendet (wie Fusion; man will sie neu benutzen).
 void removeBody(Design::Body* body)
 {
     using namespace Design;
@@ -1117,7 +1117,7 @@ void removeBody(Design::Body* body)
     for (const auto& n : sketches) {
         auto sketch = doc->getObject(n.c_str());
         if (sketch && !used(sketch) && !used(Profiles::forSketch(sketch))) {
-            removeFromTimeline(sketch);
+            sketch->Visibility.setValue(true);
         }
     }
 }

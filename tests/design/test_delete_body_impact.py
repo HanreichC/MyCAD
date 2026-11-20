@@ -14,7 +14,7 @@ class DeleteBody(DesignTest):
     def test_a_lone_body_names_nothing(self):
         _, a = box(self.doc, 20, 20, 10)
         cut = sketch(self.doc, [Part.Circle(V(10, 10, 0), V(0, 0, 1), 3)], support=(a, top_face(a)))
-        extrude(self.doc, cut, -5, op="Cut", bodies=[a])  # eigene Skizze auf eigener Fläche: geht still mit
+        extrude(self.doc, cut, -5, op="Cut", bodies=[a])  # eigene Skizze auf eigener Fläche: bleibt, nicht genannt
         self.assertEqual(Design.deletionImpact(a), {"along": [], "sketches": [], "broken": []})
 
     def test_sketch_of_another_body_on_its_face_loses_it(self):
