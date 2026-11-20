@@ -80,8 +80,20 @@ jobs:
           key: ccache-${{ github.sha }}
           restore-keys: ccache-
 
+      # Das Image ist auf ein Datum gepinnt (Dockerfile), also aus dem Cache nehmen: neu gebaut wird nur, wenn sich das
+      # Dockerfile ändert. Vorher lud jeder Lauf alle Arch-Pakete vom langsamen Archiv-Server und baute OCCT, Coin und
+      # Pivy neu; ein Hänger dort machte den ganzen Lauf rot
+      - name: Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Container bauen
-        run: docker build -t mycad-dev .devcontainer
+        uses: docker/build-push-action@v6
+        with:
+          context: .devcontainer
+          tags: mycad-dev
+          load: true
+          cache-from: type=gha,scope=mycad-dev
+          cache-to: type=gha,scope=mycad-dev,mode=max
 
       - name: MyCAD bauen
         run: |

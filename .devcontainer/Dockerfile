@@ -9,14 +9,19 @@ RUN echo 'Server = https://archive.archlinux.org/repos/2026/11/09/$repo/os/$arch
 # xorg-server-xvfb/xorg-xauth: GUI-Tests ohne Desktop (CI), siehe tests/gui/run.sh
 # heaptrack: Speicher-Profil (PLAN U8: was nach dem Schließen eines Designs liegen bleibt)
 # OCCT, Coin und Pivy kommen nicht aus Arch, sondern unten aus den Quellen (PLAN U20/U21)
-RUN pacman -Syyu --noconfirm --needed \
-        cmake ninja ccache git pkgconf python gtest \
-        boost eigen nlohmann-json microsoft-gsl pybind11 swig rapidjson \
-        qt6-base qt6-declarative qt6-shadertools qt6-svg qt6-tools qt6-wayland onnxruntime-cpu \
-        pyside6 shiboken6 xerces-c yaml-cpp fmt icu freetype2 zlib \
-        python-yaml python-packaging python-matplotlib \
-        mesa glu libglvnd ttf-dejavu inter-font \
-        xorg-server-xvfb xorg-xauth heaptrack \
+# Das Archiv ist manchmal minutenlang zäh ("Operation too slow"): bis zu fünf Versuche statt eines roten CI-Laufs
+RUN for try in 1 2 3 4 5; do \
+        pacman -Syyu --noconfirm --needed \
+            cmake ninja ccache git pkgconf python gtest \
+            boost eigen nlohmann-json microsoft-gsl pybind11 swig rapidjson \
+            qt6-base qt6-declarative qt6-shadertools qt6-svg qt6-tools qt6-wayland onnxruntime-cpu \
+            pyside6 shiboken6 xerces-c yaml-cpp fmt icu freetype2 zlib \
+            python-yaml python-packaging python-matplotlib \
+            mesa glu libglvnd ttf-dejavu inter-font \
+            xorg-server-xvfb xorg-xauth heaptrack \
+        && break; \
+        [ "$try" = 5 ] && exit 1; echo "pacman: Versuch $try gescheitert, neuer Versuch in 60 s"; sleep 60; \
+    done \
     && pacman -Scc --noconfirm
 
 # U20: OCCT 8 (Arch liefert nur 7.9.3). Behebt Abstürze in Rundung/Fase an Ecken nach Booleans und an Ellipsen,
