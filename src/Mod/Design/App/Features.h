@@ -152,10 +152,14 @@ DesignExport PrintCheckResult printCheck(Body* body);
 DesignExport Base::Vector3d suggestPrintUp(const std::vector<Part::TopoShape>& shapes, double maxAngle, const Base::Vector3d& bed);
 /// für die sichtbaren Körper, mit Überhangwinkel und Bett aus den Einstellungen
 DesignExport Base::Vector3d suggestPrintUp(App::Document* doc);
-/// Maße der sichtbaren Körper in Druckrichtung (x, y auf dem Bett, z Höhe)
-DesignExport Base::Vector3d printSize(App::Document* doc);
+/// Maße eines Körpers in der Druckrichtung des Designs (x, y auf dem Bett, z Höhe)
+DesignExport Base::Vector3d printSize(Body* body);
 /// passt size (aus printSize) auf das Bett aus den Einstellungen (BedWidth, BedDepth, BedHeight)?
 DesignExport bool fitsPrintBed(const Base::Vector3d& size);
+/// der erste sichtbare Körper, der in der Druckrichtung nicht aufs Bett passt, sonst nullptr
+DesignExport Body* tooBigToPrint(App::Document* doc);
+/// Schnittebene (global, z = Normale) durch die Mitte von body quer zu der Richtung, die das Bett am weitesten überragt
+DesignExport Base::Placement printSplitPlane(Body* body);
 /// Druckbar machen (Phase 11.3): ein Vorschlag je Schritt, der mit einer Einstellung besser druckt. label ist ein
 /// englischer Text (übersetzt in der Oberfläche, %1 = value), property bekommt value.
 struct PrintFix
@@ -699,7 +703,13 @@ public:
     App::PropertyLinkSub Tool;
     App::PropertyInteger Pieces;  ///< Anzahl der Teile beim letzten Berechnen
     App::PropertyIntegerList Dropped;  ///< gelöschte Teile (Index unter allen Teilen): übersprungen, die übrigen rücken nicht auf
+    /// 12.8 Verbinder über einen ebenen Schnitt: Pins = Zapfen auf der Seite gegen die Ebenennormale, Bohrungen mit
+    /// Clearance (Spiel je Seite) auf der anderen
+    App::PropertyEnumeration Connector;
+    App::PropertyLength Clearance;
+    App::PropertyInteger PinCount;  ///< gesetzte Stifte beim letzten Berechnen
     App::DocumentObjectExecReturn* compute() override;
+    void onChanged(const App::Property* prop) override;
 };
 
 /// Rippe aus Skizzenlinien: füllt mit der Dicke den Bereich zwischen Linie und Körper (wie Fusions Rib)

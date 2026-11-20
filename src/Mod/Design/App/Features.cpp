@@ -73,6 +73,7 @@
 #include <BRepTools.hxx>
 #include <ElSLib.hxx>
 #include <BRepAlgoAPI_Common.hxx>
+#include <BRepClass_FaceClassifier.hxx>
 #include <BRepAlgoAPI_Section.hxx>
 #include <BRepFeat_SplitShape.hxx>
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
@@ -2567,15 +2568,20 @@ bool fitsBed(const Base::Vector3d& size, const Base::Vector3d& bed)
         && std::max(size.x, size.y) <= std::max(bed.x, bed.y) + eps && std::min(size.x, size.y) <= std::min(bed.x, bed.y) + eps;
 }
 
+Part::TopoShape globalPrintShape(Design::Body* body)
+{
+    Part::TopoShape s = body->Shape.getShape();
+    s.setPlacement(Design::componentOf(body)->globalPlacement());  // wie printCheck(Body*): Komponente zählt
+    return s;
+}
+
 std::vector<Part::TopoShape> visiblePrintShapes(App::Document* doc)
 {
     std::vector<Part::TopoShape> shapes;
     for (auto obj : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
         auto body = static_cast<Design::Body*>(obj);
         if (body->Visibility.getValue() && !body->Shape.getShape().isNull()) {
-            Part::TopoShape s = body->Shape.getShape();
-            s.setPlacement(Design::componentOf(body)->globalPlacement());  // wie printCheck(Body*): Komponente zählt
-            shapes.push_back(s);
+            shapes.push_back(globalPrintShape(body));
         }
     }
     return shapes;
@@ -2593,6 +2599,11 @@ Base::Vector3d Design::suggestPrintUp(const std::vector<Part::TopoShape>& shapes
     const std::vector<PrintTriangle> tris = printTriangles(shapes);
     if (tris.empty()) {
         return Base::Vector3d(0, 0, 1);
+    }
+    // jeder Körper muss für sich aufs Bett passen: der Slicer verteilt sie
+    std::vector<std::vector<PrintTriangle>> each;
+    for (const auto& shape : shapes) {
+        each.push_back(printTriangles({shape}));
     }
     // Kandidaten: +Z zuerst (bei Gleichstand bleibt es, wie gezeichnet), die anderen Achsen, dann jede ebene Fläche
     // nach unten, die größten zuerst. Ebene Flächen erkennt man an gleichen Dreiecksnormalen.
@@ -2648,7 +2659,7 @@ Base::Vector3d Design::suggestPrintUp(const std::vector<Part::TopoShape>& shapes
             }
         }
         double cost = support / volume + 0.5 * (high - low) / diagonal;
-        if (!fitsBed(printExtents(tris, up), bed)) {
+        if (std::ranges::any_of(each, [&](const auto& t) { return !fitsBed(printExtents(t, up), bed); })) {
             cost += 100;
         }
         if (cost < bestCost - 1e-9) {
@@ -2667,14 +2678,50 @@ Base::Vector3d Design::suggestPrintUp(App::Document* doc)
     return suggestPrintUp(visiblePrintShapes(doc), angle, bedSize());
 }
 
-Base::Vector3d Design::printSize(App::Document* doc)
+Base::Vector3d Design::printSize(Body* body)
 {
-    return printExtents(printTriangles(visiblePrintShapes(doc)), printUp(doc));
+    return printExtents(printTriangles({globalPrintShape(body)}), printUp(body->getDocument()));
 }
 
 bool Design::fitsPrintBed(const Base::Vector3d& size)
 {
     return fitsBed(size, bedSize());
+}
+
+Design::Body* Design::tooBigToPrint(App::Document* doc)
+{
+    for (auto obj : doc->getObjectsOfType(Body::getClassTypeId())) {
+        auto body = static_cast<Body*>(obj);
+        if (body->Visibility.getValue() && !body->Shape.getShape().isNull() && !fitsPrintBed(printSize(body))) {
+            return body;
+        }
+    }
+    return nullptr;
+}
+
+Base::Placement Design::printSplitPlane(Body* body)
+{
+    // in Drucklage (up nach +Z): die Richtung, die das Bett am weitesten überragt; x und y darf der Slicer tauschen
+    const Base::Rotation turn(printUp(body->getDocument()), Base::Vector3d(0, 0, 1));
+    Base::BoundBox3d box;
+    for (const auto& t : printTriangles({globalPrintShape(body)})) {
+        for (const auto* p : {&t.a, &t.b, &t.c}) {
+            Base::Vector3d q;
+            turn.multVec(*p, q);
+            box.Add(q);
+        }
+    }
+    const Base::Vector3d bed = bedSize();
+    const bool xLonger = box.LengthX() >= box.LengthY();
+    const double over[3] = {box.LengthX() / (xLonger ? std::max(bed.x, bed.y) : std::min(bed.x, bed.y)),
+                            box.LengthY() / (xLonger ? std::min(bed.x, bed.y) : std::max(bed.x, bed.y)),
+                            box.LengthZ() / bed.z};
+    const int k = int(std::max_element(over, over + 3) - over);
+    Base::Vector3d normal(k == 0, k == 1, k == 2), center = box.GetCenter();
+    const Base::Rotation back = turn.inverse();
+    back.multVec(normal, normal);
+    back.multVec(center, center);
+    return Base::Placement(center, Base::Rotation(Base::Vector3d(0, 0, 1), normal));
 }
 
 Base::Vector3d Design::printUp(App::Document* doc)
@@ -6547,12 +6594,164 @@ App::DocumentObjectExecReturn* Scale::compute()
 
 PROPERTY_SOURCE(Design::Split, Design::Feature)
 
+namespace
+{
+const char* ConnectorEnums[] = {"None", "Pins", nullptr};
+
+/// 12.8: Stifte über einen ebenen Schnitt. Auf jeder Schnittfläche der Teile unter der Ebene (gegen die Normale) wächst
+/// ein Zapfen nach oben, das Teil darüber bekommt die Bohrung mit Spiel. Zwei Stifte, wo Platz ist (verdrehsicher),
+/// sonst einer in der Mitte des größten Platzes. Liefert die Zahl der Stifte.
+int addPins(std::vector<Part::TopoShape>& pieces, const gp_Ax3& ax, double clearance)
+{
+    const gp_Pln plane(ax);
+    const gp_Vec n(ax.Direction());
+    std::vector<size_t> below, above;
+    for (size_t i = 0; i < pieces.size(); ++i) {
+        GProp_GProps props;
+        BRepGProp::VolumeProperties(pieces[i].getShape(), props);
+        (gp_Vec(ax.Location(), props.CentreOfMass()).Dot(n) < 0 ? below : above).push_back(i);
+    }
+    std::vector<TopoDS_Shape> holes;
+    int count = 0;
+    for (size_t i : below) {
+        TopTools_ListOfShape pegs;
+        for (TopExp_Explorer it(pieces[i].getShape(), TopAbs_FACE); it.More(); it.Next()) {
+            const TopoDS_Face face = TopoDS::Face(it.Current());
+            BRepAdaptor_Surface surface(face);
+            if (surface.GetType() != GeomAbs_Plane || !surface.Plane().Axis().IsParallel(ax.Axis(), 1e-6)
+                || plane.Distance(surface.Plane().Location()) > 1e-6) {
+                continue;  // keine Schnittfläche
+            }
+            // Raster über die Fläche: je Punkt innen der Abstand zum Rand (ponytail: 17 x 17 Punkte; sehr lange,
+            // schmale Schnitte treffen die Mitte nur ungefähr)
+            Bnd_Box box;
+            BRepBndLib::Add(face, box);
+            double lo[2] = {1e300, 1e300}, hi[2] = {-1e300, -1e300};
+            const gp_Vec axes[2] = {gp_Vec(ax.XDirection()), gp_Vec(ax.YDirection())};
+            for (int corner = 0; corner < 8; ++corner) {
+                const gp_Pnt c = corner & 1 ? box.CornerMax() : box.CornerMin();
+                const gp_Pnt d = corner & 2 ? box.CornerMax() : box.CornerMin();
+                const gp_Pnt e = corner & 4 ? box.CornerMax() : box.CornerMin();
+                const gp_Vec v(ax.Location(), gp_Pnt(c.X(), d.Y(), e.Z()));
+                for (int k = 0; k < 2; ++k) {
+                    lo[k] = std::min(lo[k], v.Dot(axes[k]));
+                    hi[k] = std::max(hi[k], v.Dot(axes[k]));
+                }
+            }
+            TopoDS_Compound rim;
+            BRep_Builder builder;
+            builder.MakeCompound(rim);
+            for (TopExp_Explorer e(face, TopAbs_EDGE); e.More(); e.Next()) {
+                builder.Add(rim, e.Current());
+            }
+            std::vector<std::pair<gp_Pnt, double>> spots;
+            const int steps = 16;
+            for (int a = 0; a <= steps; ++a) {
+                for (int b = 0; b <= steps; ++b) {
+                    const gp_Pnt p = ax.Location().Translated(axes[0] * (lo[0] + (hi[0] - lo[0]) * a / steps)
+                                                              + axes[1] * (lo[1] + (hi[1] - lo[1]) * b / steps));
+                    if (BRepClass_FaceClassifier(face, p, 1e-6).State() != TopAbs_IN) {
+                        continue;
+                    }
+                    BRepExtrema_DistShapeShape dist(BRepBuilderAPI_MakeVertex(p).Vertex(), rim);
+                    if (dist.IsDone()) {
+                        spots.emplace_back(p, dist.Value());
+                    }
+                }
+            }
+            if (spots.empty()) {
+                continue;
+            }
+            const auto roomiest = *std::ranges::max_element(spots, {}, &std::pair<gp_Pnt, double>::second);
+            // Stift ein Drittel des Platzes, 3 bis 8 mm dick; rundum bleibt mindestens ein Radius Wand
+            const double r = std::min(roomiest.second / 3, 4.0);
+            if (r < 1.5) {
+                continue;  // zu schmal für einen Stift
+            }
+            std::vector<gp_Pnt> centers {roomiest.first};
+            double far = 6 * r;
+            for (size_t s = 0; s < spots.size(); ++s) {
+                for (size_t t = s + 1; t < spots.size(); ++t) {
+                    if (spots[s].second >= 2 * r && spots[t].second >= 2 * r && spots[s].first.Distance(spots[t].first) > far) {
+                        far = spots[s].first.Distance(spots[t].first);
+                        centers = {spots[s].first, spots[t].first};
+                    }
+                }
+            }
+            for (const gp_Pnt& c : centers) {
+                const gp_Ax2 axis(c, ax.Direction());
+                // die Bohrung muss ganz im Teil darüber liegen, sonst stünde der Zapfen heraus: 5 r lang (höchstens
+                // 12 mm), in dünnem Material kürzer, aber mindestens 2 r
+                for (double length = std::min(5 * r, 12.0); length >= 2 * r - 1e-9; length *= 0.75) {
+                    TopoDS_Shape hole = BRepPrimAPI_MakeCylinder(axis, r + clearance, length + clearance).Shape();
+                    GProp_GProps whole;
+                    BRepGProp::VolumeProperties(hole, whole);
+                    const bool inside = std::ranges::any_of(above, [&](size_t j) {
+                        GProp_GProps common;
+                        BRepGProp::VolumeProperties(BRepAlgoAPI_Common(pieces[j].getShape(), hole).Shape(), common);
+                        return common.Mass() > whole.Mass() * 0.999;
+                    });
+                    if (inside) {
+                        pegs.Append(BRepPrimAPI_MakeCylinder(axis, r, length).Shape());
+                        holes.push_back(hole);
+                        ++count;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!pegs.IsEmpty()) {
+            TopTools_ListOfShape args;
+            args.Append(pieces[i].getShape());
+            BRepAlgoAPI_Fuse fuse;
+            fuse.SetArguments(args);
+            fuse.SetTools(pegs);
+            fuse.Build();
+            if (fuse.IsDone()) {
+                pieces[i] = Part::TopoShape(fuse.Shape());
+            }
+        }
+    }
+    if (!holes.empty()) {
+        TopTools_ListOfShape tools;
+        for (const auto& h : holes) {
+            tools.Append(h);
+        }
+        for (size_t j : above) {
+            TopTools_ListOfShape args;
+            args.Append(pieces[j].getShape());
+            BRepAlgoAPI_Cut cut;
+            cut.SetArguments(args);
+            cut.SetTools(tools);
+            cut.Build();
+            if (cut.IsDone()) {
+                pieces[j] = Part::TopoShape(cut.Shape());
+            }
+        }
+    }
+    return count;
+}
+}  // namespace
+
 Split::Split()
 {
     ADD_PROPERTY_TYPE(Tool, (nullptr), "Split", App::Prop_None, "Plane or face to split with");
     ADD_PROPERTY_TYPE(Pieces, (0L), "Split", App::PropertyType(App::Prop_Output | App::Prop_Hidden), "Pieces");
     ADD_PROPERTY_TYPE(Dropped, (), "Split", App::Prop_Hidden, "Pieces whose body was deleted (skipped)");
+    ADD_PROPERTY_TYPE(Connector, (0L), "Split", App::Prop_None, "Pins join the pieces again after printing");
+    Connector.setEnums(ConnectorEnums);
+    ADD_PROPERTY_TYPE(Clearance, (printClearance(1)), "Split", App::Prop_None, "Clearance per side around the pins");
+    ADD_PROPERTY_TYPE(PinCount, (0L), "Split", App::PropertyType(App::Prop_Output | App::Prop_Hidden), "Pins");
+    Clearance.setStatus(App::Property::Hidden, true);
     Operation.setStatus(App::Property::Hidden, true);
+}
+
+void Split::onChanged(const App::Property* prop)
+{
+    if (prop == &Connector) {
+        Clearance.setStatus(App::Property::Hidden, Connector.getValue() == 0);
+    }
+    Feature::onChanged(prop);
 }
 
 App::DocumentObjectExecReturn* Split::compute()
@@ -6564,7 +6763,8 @@ App::DocumentObjectExecReturn* Split::compute()
     // Ebene: große Fläche über den ganzen Körper; sonst die gewählte Fläche selbst
     TopoDS_Shape tool;
     gp_Ax3 ax;
-    if (Tool.getValue() && planeAxes(Tool, ax)) {
+    const bool flat = Tool.getValue() && planeAxes(Tool, ax);
+    if (flat) {
         tool = planeFace(gp_Pln(ax), shape.getBoundBox());
     }
     else if (Tool.getValue()) {
@@ -6595,6 +6795,17 @@ App::DocumentObjectExecReturn* Split::compute()
     }
     if (Pieces.getValue() != long(pieces.size())) {
         Pieces.setValue(long(pieces.size()));
+    }
+    const int pins = flat && Connector.getValue() == 1 ? addPins(pieces, ax, Clearance.getValue()) : 0;
+    if (PinCount.getValue() != pins) {
+        PinCount.setValue(pins);
+    }
+    static const std::string narrow = "The cut is too narrow for pins";
+    if (Connector.getValue() == 1 && pins == 0) {
+        Warning.setValue(narrow);
+    }
+    else if (Warning.getValue() == narrow) {
+        Warning.setValue("");
     }
     // gelöschte Teile (Body gelöscht) auslassen: sonst rückten die Teile dahinter in fremde Bodies auf
     const auto& dropped = Dropped.getValues();

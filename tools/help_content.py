@@ -1168,8 +1168,10 @@ A("Design_SplitBody", "modify", "Design_SplitBody", ("Split Body", "Körper teil
    ("The body is split immediately; each piece becomes its own body (Box, Box (2) …).",
     "Der Körper wird sofort geteilt; jedes Stück wird ein eigener Körper (Box, Box (2) …).")],
   tips=[("The plane or face must cut all the way through the body. Create a suitable plane with CONSTRUCT → Offset Plane.",
-         "Die Ebene oder Fläche muss den Körper ganz durchschneiden. Eine passende Ebene legst du mit KONSTRUIEREN → Versetzte Ebene an.")],
-  see=["Design_SplitFace", "Design_Combine"])
+         "Die Ebene oder Fläche muss den Körper ganz durchschneiden. Eine passende Ebene legst du mit KONSTRUIEREN → Versetzte Ebene an."),
+        ("To print a part in pieces, set Connector to Pins: pegs grow on one side of the cut, the other side gets holes with the clearance from Settings › 3D Printing. Split for Printing does all of this in one click.",
+         "Um ein Teil in Stücken zu drucken, stell Verbinder auf Stifte: Auf der einen Seite des Schnitts wachsen Zapfen, die andere Seite bekommt Bohrungen mit dem Spiel aus Einstellungen › 3D-Druck. Zum Drucken teilen macht das alles mit einem Klick.")],
+  see=["Design_SplitFace", "Design_Combine", "Design_PrintView"])
 
 A("Design_Move", "modify", "Design_Move", ("Move", "Verschieben"),
   (["move", "rotate", "translate", "position", "turn body", "shift"], ["verschieben", "drehen", "bewegen", "positionieren", "Körper drehen", "versetzen"]),
@@ -1335,6 +1337,8 @@ A("Design_PrintView", "inspect", "Design_PrintView", ("Print View", "Druckansich
     "Lage vorschlagen sucht die Lage für dich: Es probiert jede ebene Fläche und jede Achse als Unterseite und nimmt die mit dem wenigsten Stützmaterial und der geringsten Höhe, die auf dein Druckbett passt. Strg+Z stellt sie zurück."),
    ("If the design is larger than the print bed in this orientation, the legend says so in red with its size. Set the size of your bed in Settings › 3D Printing.",
     "Ist das Design in dieser Lage größer als das Druckbett, steht das rot mit seinen Maßen in der Legende. Die Größe deines Betts stellst du in Einstellungen › 3D-Druck ein."),
+   ("Split next to it (or Split for Printing under PRINT) cuts the part in the middle of the direction that is too long and adds pins: pegs on one piece, holes with clearance in the other, so the pieces plug together after printing. Still too big? Click Split again.",
+    "Teilen daneben (oder Zum Drucken teilen unter DRUCKEN) schneidet das Teil in der Mitte der Richtung durch, die zu lang ist, und setzt Stifte: Zapfen am einen Stück, Bohrungen mit Spiel im anderen, so stecken die Stücke nach dem Druck zusammen. Immer noch zu groß? Noch einmal Teilen."),
    ("Under Make printable the legend lists what one setting would fix: a hole across the print direction becomes a teardrop with a 45° tip, a fillet chamfers its bottom edges at 45°, a wall that is too thin grows to the minimum. Apply takes one, Apply All all of them (Ctrl+Z takes them back).",
     "Unter Druckbar machen nennt die Legende, was eine Einstellung beheben würde: eine Bohrung quer zur Druckrichtung bekommt eine Tropfenform mit 45°-Spitze, eine Rundung fast ihre Unterkanten mit 45°, eine zu dünne Wand wächst auf das Minimum. Ausführen übernimmt einen Vorschlag, Alle ausführen alle (Strg+Z nimmt sie zurück)."),
    ("The Print View button stays pressed while it is on. Exit Print View in the legend, or another click on the button, hides it.",
@@ -1345,7 +1349,7 @@ A("Design_PrintView", "inspect", "Design_PrintView", ("Print View", "Druckansich
          "Die gewählte Unterseite wird mit dem Design gespeichert und von Drucken benutzt."),
         ("Overhangs are on the underside: turn the view to look at the part from below.",
          "Überhänge liegen unten: dreh die Ansicht, um das Teil von unten zu sehen.")],
-  commands=["Design_PrintView", "Design_PrintSuggest", "Design_PrintDown"], see=["Design_Print", "Design_Measure", "Design_PrinterTest"])
+  commands=["Design_PrintView", "Design_PrintSuggest", "Design_PrintDown", "Design_PrintSplit"], see=["Design_Print", "Design_Measure", "Design_PrinterTest"])
 
 A("Design_PrinterTest", "inspect", "Design_PrinterTest", ("Printer Test", "Druckertest"),
   (["printer test", "calibration", "calibrate", "clearance", "tolerance", "test print", "fit test", "overhang test", "printer profile"],

@@ -1155,7 +1155,7 @@ const std::vector<const char*>& categoryTools(const QString& key)
         {QStringLiteral("INSPECT"), {"Design_Measure", "Design_Section", "Design_CheckReferences", "Std_ViewFitAll"}},
         // alles für den Druck an einer Stelle (heute verteilt auf Prüfen, Datei und Strg+K)
         {QStringLiteral("PRINT"),
-         {"Design_PrintView", "Design_PrintSuggest", "Design_PrintDown", "Design_Fit", "Design_PrinterTest", "Design_Export", "Design_Print"}},
+         {"Design_PrintView", "Design_PrintSuggest", "Design_PrintDown", "Design_PrintSplit", "Design_Fit", "Design_PrinterTest", "Design_Export", "Design_Print"}},
         {QStringLiteral("UTILITIES"),
          {"MyCAD_Search", "Design_Parameters", "Design_PartsList", "Design_Appearance", "Design_Scribble", "Design_RedPen", "Design_Note"}},
     };
@@ -4406,7 +4406,9 @@ const std::map<std::string, std::vector<std::string>>& searchSynonyms()
         {"Design_PrintDown", {"druckrichtung", "auf das bett", "unterseite", "flach hinlegen", "lay flat", "print direction",
                               "orientierung", "orientation"}},
         {"Design_PrintSuggest", {"lage vorschlagen", "druckrichtung", "ausrichten", "orientierung", "orientation", "auto orient",
-                                 "stuetzen sparen", "less support", "passt nicht aufs bett", "bettgroesse", "bed size"}},
+                                 "stuetzen sparen", "less support", "bettgroesse", "bed size"}},
+        {"Design_PrintSplit", {"zu gross", "too big", "passt nicht aufs bett", "teilen", "zerteilen", "stifte", "pins",
+                               "verbinder", "connector", "split for printing", "zusammenstecken"}},
         {"Design_Print", {"drucken", "slicer", "3d-drucker", "orcaslicer", "bambu", "prusaslicer", "cura", "print", "printer"}},
         {"Design_Fit", {"passung", "spiel", "toleranz", "h7", "presspassung", "spielpassung", "clearance", "tolerance",
                         "druckspiel", "press fit"}},

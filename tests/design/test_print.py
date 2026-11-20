@@ -84,15 +84,15 @@ class Suggest(DesignTest):
         self.assertAlmostEqual(up.x, 0, places=6)
 
     def test_too_long_for_the_bed_stands_up(self):
-        box(self.doc, 240, 10, 10)  # 240 > 220: nur stehend (240 hoch, Bett 250) passt es
+        _, b = box(self.doc, 240, 10, 10)  # 240 > 220: nur stehend (240 hoch, Bett 250) passt es
         up = Design.suggestPrintUp(self.doc)
         self.assertAlmostEqual(abs(up.x), 1)
         Design.setPrintUp(self.doc, up)
-        size = Design.printSize(self.doc)
+        size = Design.printSize(b)
         self.assertAlmostEqual(size.z, 240, places=3)
         self.assertTrue(Design.fitsPrintBed(size))
         Design.setPrintUp(self.doc, V(0, 0, 1))
-        size = Design.printSize(self.doc)
+        size = Design.printSize(b)
         self.assertAlmostEqual(size.z, 10, places=3)
         self.assertFalse(Design.fitsPrintBed(size))
 

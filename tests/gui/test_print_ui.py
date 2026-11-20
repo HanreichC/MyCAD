@@ -69,10 +69,10 @@ def legend_button(text):
     return [b for b in visible(QtWidgets.QPushButton) if b.text() == text][0]
 
 
-def bed(width):
+def bed(width, depth=None):
     grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
-    for key in ("BedWidth", "BedDepth"):
-        grp.SetFloat(key, width)
+    grp.SetFloat("BedWidth", width)
+    grp.SetFloat("BedDepth", depth or width)
     Gui.runCommand("Design_PrintView")  # aus und wieder an: die Legende rechnet neu
     Gui.runCommand("Design_PrintView")
 
@@ -109,6 +109,17 @@ in_order([
     ("too big", lambda: check("on a 20 mm bed the 30 mm hat is too big",
                               bool(bed_warning()) and "30 × 30 × 12" in bed_warning()[0].text(),
                               bed_warning()[0].text() if bed_warning() else "no warning")),
+    ("narrow bed", lambda: bed(40, 20)),  # 30 x 30 passt nicht, halbiert (30 x 15) schon
+    ("split", lambda: [b for b in visible(QtWidgets.QPushButton) if b.text() == "Split"][0].click()),
+    ("wait", lambda: None),
+    ("halves", lambda: check("Split cuts the hat in two pieces with pins that fit the bed",
+                             len(doc().findObjects("Design::Body")) == 2 and Design.tooBigToPrint(doc()) is None
+                             and doc().findObjects("Design::Split")[0].PinCount > 0,
+                             "%d bodies, too big: %s" % (len(doc().findObjects("Design::Body")), Design.tooBigToPrint(doc())))),
+    ("no warning", lambda: check("the red line is gone", not bed_warning())),
+    ("undo", lambda: Gui.runCommand("Std_Undo")),
+    ("one again", lambda: check("one undo puts the hat back in one piece",
+                                len(doc().findObjects("Design::Body")) == 1 and not doc().findObjects("Design::Split"))),
     ("bed back", lambda: bed(220)),
     ("print", lambda: legend_button("Print").click()),
     ("wait", lambda: None),

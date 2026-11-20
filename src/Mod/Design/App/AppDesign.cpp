@@ -10,6 +10,7 @@
 #include <Base/Console.h>
 #include <Base/Interpreter.h>
 #include <Base/PyObjectBase.h>
+#include <Base/PlacementPy.h>
 #include <Base/VectorPy.h>
 #include <Mod/Part/App/TopoShapePy.h>
 #include <Mod/Sketcher/App/SketchObject.h>
@@ -82,8 +83,11 @@ public:
         add_varargs_method("setPrintUp", &Module::setPrintUp, "setPrintUp(doc, vector): print direction (up)");
         add_varargs_method("suggestPrintUp", &Module::suggestPrintUp,
                            "suggestPrintUp(doc): print direction with little support and height that fits the bed");
-        add_varargs_method("printSize", &Module::printSize, "printSize(doc): (width, depth, height) in print direction");
+        add_varargs_method("printSize", &Module::printSize, "printSize(body): (width, depth, height) in print direction");
         add_varargs_method("fitsPrintBed", &Module::fitsPrintBed, "fitsPrintBed(size): fits on the print bed of the settings");
+        add_varargs_method("tooBigToPrint", &Module::tooBigToPrint, "tooBigToPrint(doc): first visible body larger than the bed, or None");
+        add_varargs_method("printSplitPlane", &Module::printSplitPlane,
+                           "printSplitPlane(body): placement of the plane that halves the body where it is too big for the bed");
         add_varargs_method("fastenerAt", &Module::fastenerAt,
                            "fastenerAt(body, point, direction): screw from the top body into the next one below");
         add_varargs_method("stableRef", &Module::stableRef,
@@ -415,11 +419,20 @@ private:
     }
     Py::Object printSize(const Py::Tuple& args)
     {
-        return Py::asObject(new Base::VectorPy(Design::printSize(doc(args))));
+        return Py::asObject(new Base::VectorPy(Design::printSize(obj<Body>(args[0]))));
     }
     Py::Object fitsPrintBed(const Py::Tuple& args)
     {
         return Py::Boolean(Design::fitsPrintBed(vector(args[0])));
+    }
+    Py::Object tooBigToPrint(const Py::Tuple& args)
+    {
+        Design::Body* body = Design::tooBigToPrint(doc(args));
+        return body ? py(body) : Py::None();
+    }
+    Py::Object printSplitPlane(const Py::Tuple& args)
+    {
+        return Py::asObject(new Base::PlacementPy(Design::printSplitPlane(obj<Body>(args[0]))));
     }
     Py::Object fastenerAt(const Py::Tuple& args)
     {

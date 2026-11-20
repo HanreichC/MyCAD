@@ -1477,6 +1477,9 @@ void startAlign(App::Document* doc)
 }
 
 /// Split Body: den Body und die Ebene oder Fläche, an der geteilt wird (beliebige Reihenfolge); jedes weitere Teil wird ein Body
+void finishSplit(App::Document* doc, Design::Split* feature, Design::Body* body);
+void styleDatum(App::DocumentObject* datum);
+
 void startSplit(App::Document* doc)
 {
     Design::Body* body = nullptr;
@@ -1505,6 +1508,40 @@ void startSplit(App::Document* doc)
     }
     auto feature = static_cast<Design::Split*>(addFeature(doc, "Design::Split", "Split", body));
     feature->Tool.setValue(tool, std::vector<std::string> {element});
+    finishSplit(doc, feature, body);
+}
+
+/// 12.8: ein Teil, das nicht aufs Druckbett passt (gewählt oder das erste zu große), in der Mitte seiner längsten zu
+/// großen Richtung teilen, mit Stiften. ponytail: ein Schnitt je Klick; was danach noch zu groß ist, meldet die Legende
+void splitForPrinting(App::Document* doc)
+{
+    Design::Body* body = nullptr;
+    for (auto obj : selectedBodies()) {
+        body = obj;
+        break;
+    }
+    if (!body) {
+        body = Design::tooBigToPrint(doc);
+    }
+    if (!body) {
+        toolHint(T("Split for Printing"), T("Every body fits the print bed."));
+        return;
+    }
+    auto feature = static_cast<Design::Split*>(addFeature(doc, "Design::Split", "Split", body));
+    App::DocumentObject* plane = doc->addObject("PartDesign::Plane", "Plane");
+    App::Part* component = Design::componentOf(body);
+    Design::folder(component, "Construction")->addObject(plane);
+    static_cast<App::PropertyPlacement*>(plane->getPropertyByName("Placement"))
+        ->setValue(component->globalPlacement().inverse() * Design::printSplitPlane(body));
+    styleDatum(plane);
+    plane->Visibility.setValue(false);
+    feature->Tool.setValue(plane);
+    feature->Connector.setValue(1L);
+    finishSplit(doc, feature, body);
+}
+
+void finishSplit(App::Document* doc, Design::Split* feature, Design::Body* body)
+{
     modifyBodies(feature, {body});
     doc->recompute();
     // je weiteres Teil ein neuer Body
@@ -5882,6 +5919,10 @@ void CreateDesignCommands()
                                      "Suggest Orientation: lays the design on the bed with little support and low height, "
                                      "so that it fits the print bed",
                                      "Std_ViewBottom", "", suggestPrintBottom));
+    mgr.addCommand(new DesignCommand("Design_PrintSplit", "Split for Printing",
+                                     "Split for Printing: cuts a part that is too big for the print bed in the middle, "
+                                     "with pins to join the pieces",
+                                     "Part_Slice", "", splitForPrinting));
     mgr.addCommand(new DesignCommand("Design_Print", "Print",
                                      "Print: opens the design in your slicer (OrcaSlicer, Bambu Studio, PrusaSlicer, Cura)",
                                      "Std_Print", "", printBodies));
