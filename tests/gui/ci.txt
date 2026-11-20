@@ -66,3 +66,4 @@ test_templates_ui.py
 test_code_step_ui.py
 test_timeline_filter.py
 test_duplicate_sketch.py
+test_offset_parallel.py

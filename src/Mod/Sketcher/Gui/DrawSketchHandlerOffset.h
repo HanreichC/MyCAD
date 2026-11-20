@@ -130,7 +130,7 @@ public:
         , listOfGeoIds(listOfGeoIds)
         , deleteOriginal(false)
         , offsetLengthSet(false)
-        , offsetConstraint(false)
+        , offsetConstraint(true)  // MyCAD: wie Fusion parallel + Abstandsmaß, sonst drehte der Solver die Seiten schief
         , onlySingleLines(true)
         , offsetLength(1.)
     {}
@@ -1244,6 +1244,7 @@ void DSHOffsetController::configureToolWidget()
             WCheckbox::SecondBox,
             QApplication::translate("TaskSketcherTool_c2_offset", "Add offset constraint (J)")
         );
+        toolWidget->setCheckboxChecked(WCheckbox::SecondBox, handler->offsetConstraint);  // MyCAD: standardmäßig an
         toolWidget->setCheckboxToolTip(
             WCheckbox::FirstBox,
             QApplication::translate(
