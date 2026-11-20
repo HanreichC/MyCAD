@@ -138,31 +138,40 @@ und Pivy schon. Dort abschauen spart Fehlersuche (Optionen, Patches).
 
 ```sh
 # einmalig
-flatpak install flathub org.flatpak.Builder org.kde.Sdk//6.x org.kde.Platform//6.x
-# bauen und installieren (dauert beim ersten Mal wegen OCCT lange)
-flatpak run org.flatpak.Builder --user --install --force-clean --install-deps-from=flathub \
-    build-dir data/flatpak/io.github.HanreichC.MyCAD.yml
+flatpak install flathub org.flatpak.Builder org.kde.Sdk//6.11 org.kde.Platform//6.11
+# bauen und installieren aus dem Arbeitsstand (dauert beim ersten Mal wegen OCCT und PySide Stunden)
+flatpak run org.flatpak.Builder --user --install --force-clean --ccache --install-deps-from=flathub \
+    --repo=repo build-dir flatpak/io.github.HanreichC.MyCAD.yml
 flatpak run io.github.HanreichC.MyCAD
 # prüfen, wie Flathub es prüft
-flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest data/flatpak/io.github.HanreichC.MyCAD.yml
-flatpak run --command=flatpak-builder-lint org.flatpak.Builder appstream data/flatpak/io.github.HanreichC.MyCAD.metainfo.xml
-flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo repo   # nach --repo=repo
+flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo repo
 ```
+
+Dasselbe macht die Action **Flatpak** (`.github/workflows/flatpak.yml`), von Hand gestartet oder bei Tags. Sie legt
+`MyCAD.flatpak` als Artefakt ab.
 
 Von Hand testen, bevor eingereicht wird: Design anlegen (landet in `~/Documents/MyCAD`), anderen Projektordner wählen,
 STEP importieren, 3MF exportieren, **Drucken** (Dialog „Öffnen mit“ zeigt den Slicer), Tablett-Seite (Hinweis statt
 Knopf), Hell/Dunkel, Deutsch, Hilfe mit Bildern, Handschrift lesen.
 
-**In die CI:** ein zweiter Job in `release.yml`, der bei Tags das Flatpak mit `flatpak/flatpak-github-actions` baut
-und den Linter laufen lässt. So fällt ein kaputtes Manifest auf, bevor Flathub es baut.
+**In der CI:** die eigene Action `.github/workflows/flatpak.yml` (nicht in `release.yml`, damit ein langer
+Flatpak-Bau das AppImage nicht aufhält). Sie baut mit `flathub-infra/flatpak-github-actions` und lässt den Linter laufen.
+So fällt ein kaputtes Manifest auf, bevor Flathub es baut.
 
 ---
 
 ## 6. Einreichen
 
+Die Einreichung kommt von dir, unter deinem GitHub-Konto. Vorbereitet ist im Repo: das Manifest
+`flatpak/io.github.HanreichC.MyCAD.yml` mit Patches und Python-Modulen und `flatpak/submission.sh`, das daraus die
+Fassung für Flathub schreibt (fester Tag und Commit statt Arbeitsstand).
+
 1. Auf GitHub `flathub/flathub` forken.
-2. Vom Branch **`new-pr`** (nicht `master`) einen Branch abzweigen, z. B. `add-mycad`.
-3. Hineinlegen: `io.github.HanreichC.MyCAD.yml` und alle Dateien, auf die es verweist (Python-Module, Patches).
+2. Klonen, vom Branch **`new-pr`** (nicht `master`) einen Branch abzweigen:
+   `git clone --branch new-pr git@github.com:<du>/flathub.git && cd flathub && git checkout -b add-mycad`
+3. Im MyCAD-Repo `flatpak/submission.sh v1.0.N` (N: das neueste Release, auf dem die Action Flatpak grün war),
+   dann den Inhalt von `~/flathub-submission/` in den Klon kopieren:
+   `cp -r ~/flathub-submission/* . && git add . && git commit -m "Add io.github.HanreichC.MyCAD" && git push -u origin add-mycad`
    Die Metainfo, Desktop-Datei und das Symbol kommen aus dem MyCAD-Repo (über den Git-Tag).
 4. Pull Request gegen **`new-pr`** öffnen, Titel „Add io.github.HanreichC.MyCAD“. Die Checkliste in der
    PR-Vorlage ausfüllen. Bei `--device=input` kurz begründen („reads graphics tablet and touchpad buttons that
@@ -179,7 +188,8 @@ und den Linter laufen lässt. So fällt ein kaputtes Manifest auf, bevor Flathub
 
 ## 7. Stolpersteine
 
-- **onnxruntime aus den Quellen** ist groß und langsam zu bauen (Python, protobuf, abseil). Optionen: aus den Quellen
+- **onnxruntime aus den Quellen** ist groß und langsam zu bauen (Python, protobuf, abseil). **Stand:** Das Manifest baut
+  vorerst ohne; MyCAD baut dann ohne Handschrift-Erkennung (Zeichnen, Aufräumen und Formen gehen). Später: aus den Quellen
   mit minimalen Optionen (nur CPU, ohne Tests), oder die Handschrift-Erkennung als optionale Flatpak-Erweiterung
   (`io.github.HanreichC.MyCAD.Handwriting`), damit die Haupt-App klein bleibt. Ein fertiges Binär-Archiv statt Quellen
   ist auf Flathub nur mit guter Begründung möglich.
@@ -215,8 +225,9 @@ und den Linter laufen lässt. So fällt ein kaputtes Manifest auf, bevor Flathub
 2. **Erledigt 2026-11-20:** Code für die Sandbox: Standard-Projektordner war schon `~/Documents/MyCAD`; Drucken schreibt im
    Flatpak (`/.flatpak-info`) nur das 3MF und öffnet es über das OpenURI-Portal; „Zugriff erlauben“ zeigt im Flatpak den
    Terminal-Befehl für die udev-Regel.
-3. Manifest schreiben, lokal bauen, Linter grün, von Hand testen (Liste in 5.).
-4. CI-Job für das Flatpak bei Tags.
+3. **Vorbereitet 2026-11-20:** Manifest `flatpak/io.github.HanreichC.MyCAD.yml` (Module und Patches wie FreeCAD auf
+   Flathub, OCCT 8.0.1, Inter; ohne onnxruntime), `flatpak/submission.sh`. Offen: erster Bau grün, von Hand testen.
+4. **Angelegt 2026-11-20:** Action `.github/workflows/flatpak.yml` (von Hand und bei Tags), mit Linter.
 5. Bei Flathub einreichen, Review begleiten, verifizieren.
 6. README: „Install from Flathub“ ganz oben im Download-Abschnitt.
 

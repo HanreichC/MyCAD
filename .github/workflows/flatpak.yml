@@ -1,0 +1,43 @@
+name: Flatpak
+
+# MyCAD als Flatpak bauen und wie Flathub prüfen (Plan 12.6, docs/FLATHUB.md). Startet von Hand
+# (Actions › Flatpak › Run workflow) und bei Tags v*. Der erste Lauf baut OCCT, PySide, Boost und Co. aus den
+# Quellen und dauert Stunden; danach hilft der Cache. Ergebnis: MyCAD.flatpak als Artefakt zum Ausprobieren
+# (flatpak install --user MyCAD.flatpak).
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: flatpak
+  cancel-in-progress: true
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container:
+      # Werkzeug-Image von Flathub; die KDE-Runtime 6.11 aus dem Manifest lädt flatpak-builder selbst
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.9
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true  # src/3rdParty/OndselSolver (Gelenk-Solver)
+
+      - name: Flatpak bauen
+        uses: flathub-infra/flatpak-github-actions/flatpak-builder@933e9e8ca36e85046ebca8e211f0785c6becac40
+        with:
+          bundle: MyCAD.flatpak
+          manifest-path: flatpak/io.github.HanreichC.MyCAD.yml
+          cache-key: flatpak-builder-${{ hashFiles('flatpak/**') }}
+
+      - name: Prüfen wie Flathub (flatpak-builder-lint)
+        run: |
+          flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.flatpak.Builder
+          # Das Manifest baut hier aus dem Arbeitsstand (Quelle "dir"); das bemängelt der Linter, Flathub bekommt
+          # die Fassung aus flatpak/submission.sh. Deshalb zählt nur das Ergebnis (repo) als Fehler
+          flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest flatpak/io.github.HanreichC.MyCAD.yml || true
+          flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo repo

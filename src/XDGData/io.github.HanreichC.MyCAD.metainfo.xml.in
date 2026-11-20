@@ -6,7 +6,7 @@
   <summary>Fusion-style CAD for 3D printing</summary>
   <summary xml:lang="de">CAD wie Fusion für den 3D-Druck</summary>
   <developer id="io.github.hanreichc">
-    <name>HanreichC</name>
+    <name>Christopher Hanreich</name>
   </developer>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>LGPL-2.1-or-later</project_license>

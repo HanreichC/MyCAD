@@ -1,0 +1,204 @@
+# MyCAD als Flatpak (Plan 12.6, docs/FLATHUB.md). Diese Datei baut die CI (.github/workflows/flatpak.yml) aus dem
+# Arbeitsstand (Quelle "dir" unten). Für Flathub schreibt flatpak/submission.sh daraus eine Fassung mit festem Tag und
+# Commit. Module, die FreeCAD auch braucht, samt Prüfsummen und Patches aus flathub/org.freecad.FreeCAD übernommen.
+id: io.github.HanreichC.MyCAD
+runtime: org.kde.Platform
+runtime-version: '6.11'
+sdk: org.kde.Sdk
+command: FreeCAD
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  - --device=input                          # Tasten von Grafiktablett und Touchpad selbst lesen (libinput)
+  - --filesystem=xdg-documents/MyCAD:create # Projektordner; andere Ordner über den Datei-Dialog (Portal)
+cleanup:
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+  - /share/aclocal
+  - /share/cmake
+  - /share/doc
+  - /share/man
+  - /share/pkgconfig
+  - '*.a'
+  - '*.la'
+modules:
+
+  - name: glu
+    buildsystem: meson
+    cleanup: [/include, /lib/*.a, /lib/*.la, /lib/pkgconfig]
+    sources:
+      - type: archive
+        url: https://archive.mesa3d.org/glu/glu-9.0.3.tar.xz
+        sha256: bd43fe12f374b1192eb15fe20e45ff456b9bc26ab57f0eee919f96ca0f8a330f
+
+  - name: swig  # nur zum Bauen von Pivy
+    config-opts: [--without-pcre]
+    cleanup: ['*']
+    sources:
+      - type: archive
+        url: http://downloads.sourceforge.net/swig/swig-4.3.1.tar.gz
+        sha256: 44fc829f70f1e17d635a2b4d69acab38896699ecc24aa023e516e0eabbec61b8
+
+  - name: eigen
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts: [-DEIGEN_BUILD_BLAS=OFF, -DEIGEN_BUILD_LAPACK=OFF, -DBUILD_TESTING=OFF, -DCMAKE_POLICY_VERSION_MINIMUM=3.5]
+    cleanup: ['*']
+    sources:
+      - type: archive
+        url: https://gitlab.com/libeigen/eigen/-/archive/3.4.1/eigen-3.4.1.tar.bz2
+        sha256: 8bb7280b7551bf06418d11a9671fdf998cb927830cf21589b394382d26779821
+
+  - name: xerces-c
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts: [-DCMAKE_BUILD_TYPE=Release]
+    cleanup: [/bin, /share/doc]
+    sources:
+      - type: archive
+        url: https://downloads.apache.org/xerces/c/3/sources/xerces-c-3.3.0.tar.gz
+        sha256: 9555f1d06f82987fbb4658862705515740414fd34b4db6ad2ed76a2dc08d3bde
+      - type: patch
+        path: patches/xerces-c-cxx17.patch
+
+  - name: boost  # nur, was MyCAD braucht (cMake/FreeCAD_Helpers/SetupBoost.cmake)
+    buildsystem: simple
+    build-commands:
+      - ./bootstrap.sh --prefix=/app --with-libraries=program_options,regex,thread,date_time,system,filesystem,chrono,atomic
+      - ./b2 install -j $FLATPAK_BUILDER_N_JOBS
+    sources:
+      - type: archive
+        url: https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.bz2
+        sha256: af57be25cb4c4f4b413ed692fe378affb4352ea50fbe294a11ef548f4d527d89
+
+  - name: yaml-cpp
+    buildsystem: cmake-ninja
+    build-options:
+      cxxflags: -include cstdint
+    config-opts: [-DBUILD_SHARED_LIBS=ON, -DYAML_CPP_BUILD_TOOLS=OFF]
+    sources:
+      - type: git
+        url: https://github.com/jbeder/yaml-cpp
+        commit: 56e3bb550c91fd7005566f19c079cb7a503223cf  # yaml-cpp-0.9.0
+
+  - name: opencascade  # 8.0.1 wie im Dev-Container: ohne Draw, Tk, VTK, FreeImage
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DINSTALL_DIR_LAYOUT=Unix
+      - -DBUILD_MODULE_Draw=OFF
+      - -DBUILD_DOC_Overview=OFF
+      - -DBUILD_SAMPLES_QT=OFF
+      - -DUSE_FREETYPE=ON
+      - -DUSE_RAPIDJSON=OFF
+      - -DUSE_TK=OFF
+      - -DUSE_TCL=OFF
+      - -DUSE_TBB=OFF
+      - -DUSE_FREEIMAGE=OFF
+      - -DUSE_VTK=OFF
+    cleanup: [/bin]
+    sources:
+      - type: git
+        url: https://github.com/Open-Cascade-SAS/OCCT.git
+        tag: V8.0.1
+        commit: b8f597c677811d1f9f4d8a97f5ae2825c0353a42
+
+  - name: coin
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts: [-DCMAKE_BUILD_TYPE=Release, -DZLIB_RUNTIME_LINKING=OFF, -DCOIN_BUILD_TESTS=OFF, -DCOIN_BUILD_DOCUMENTATION=OFF]
+    cleanup: [/bin]
+    sources:
+      - type: archive
+        url: https://github.com/coin3d/coin/releases/download/v4.0.10/coin-4.0.10-src.tar.gz
+        sha256: 13fe68831292e7e725e7db1c6909d2b4fe5802080474c229fcac14ddf6445188
+
+  # zum Bauen von pybind11 (scikit-build-core u. a.)
+  - python3-build-dependencies.yaml
+
+  - name: pybind11
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts: [-DCMAKE_BUILD_TYPE=Release]
+    sources:
+      - type: archive
+        url: https://github.com/pybind/pybind11/archive/refs/tags/v3.0.2.tar.gz
+        sha256: 2f20a0af0b921815e0e169ea7fec63909869323581b89d7de1553468553f6a2d
+      - type: shell
+        commands:
+          - pip3 install . --verbose --exists-action=i --no-index --prefix=${FLATPAK_DEST} --no-build-isolation
+
+  - name: python3-pyyaml  # Materialien (src/Mod/Material)
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "pyyaml" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/05/8e/961c0007c59b8dd7729d542c61a4d537767a59645b82a0b521206e1e25c2/pyyaml-6.0.3.tar.gz
+        sha256: d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f
+
+  - name: pyside
+    buildsystem: cmake-ninja
+    builddir: true
+    build-options:
+      env:
+        PYTHONPATH: /run/build/pyside/_flatpak_build/sources
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTS=OFF
+      - -DFORCE_LIMITED_API=OFF
+      - -DSHIBOKEN_FORCE_PROCESS_SYSTEM_INCLUDE_PATHS=/usr/include
+    cleanup:
+      - /bin
+      - /lib/plugins/designer
+      - /PySide6
+      - /share/PySide6/glue
+      - /share/PySide6/doc
+    sources:
+      - type: archive
+        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.3-src/pyside-setup-everywhere-src-6.11.3.tar.xz
+        sha256: 050819cb05e14d6689f42b56e4fa9c8ff63be2bb339e0c094c45b990b7cabde1
+      - type: patch
+        paths:
+          - patches/pyside-fix-header-installation-path.patch
+          - patches/pyside-fix-header-packaging.patch
+
+  - name: pivy
+    buildsystem: cmake-ninja
+    config-opts: [-DPIVY_USE_QT6=ON, -DCMAKE_POLICY_VERSION_MINIMUM=3.5]
+    sources:
+      - type: archive
+        url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.11.tar.gz
+        sha256: 78f79bd7d1ce7e8140ceba4b1220136ea1f14b4403b1e463c59fa892feed961e
+      - type: shell
+        commands:
+          - |
+            sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
+            sed -i "s|\${Python_SITEARCH}|$sitepackagesDir|" {*/,./}CMakeLists.txt
+
+  - name: inter  # Schrift der Oberfläche (MyStyle); MyCAD lädt <Installation>/share/fonts/Inter.ttc
+    buildsystem: simple
+    build-commands:
+      - install -Dm644 Inter.ttc /app/share/fonts/Inter.ttc
+      - install -Dm644 LICENSE.txt /app/share/licenses/inter/LICENSE.txt
+    sources:
+      - type: archive
+        url: https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip
+        sha256: 9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e
+        strip-components: 0
+
+  - name: mycad
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_PREFIX_PATH=/app
+      - -DFC_FLATPAK=ON
+      - -DBUILD_DESIGNER_PLUGIN=OFF
+    sources:
+      - type: dir  # submission.sh ersetzt das durch Tag und Commit von github.com/HanreichC/MyCAD
+        path: ..
