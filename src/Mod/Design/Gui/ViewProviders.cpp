@@ -1196,6 +1196,9 @@ Gui::View3DInventorViewer* activeViewer(App::Document* doc)
 
 QString featureTitle(const Design::Feature* f)
 {
+    if (f->isDerivedFrom<Design::CodeStep>()) {
+        return T("Code Step");
+    }
     if (f->isDerivedFrom<Design::Revolve>()) {
         return T("Revolve");
     }
@@ -1796,7 +1799,7 @@ public:
             codeEdit->setAccessibleName(T("Code"));
             codeEdit->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
             codeEdit->setLineWrapMode(QPlainTextEdit::NoWrap);
-            codeEdit->setMinimumSize(360, 220);
+            codeEdit->setMinimumHeight(220);  // so breit wie das Panel; lange Zeilen rollen waagerecht
             codeEdit->setPlainText(QString::fromUtf8(step->Code.getValue()));
             form->addRow(codeEdit);
             auto note = new QLabel(T("Code from a file never starts by itself: read it, then click Run. Sizes from a note "

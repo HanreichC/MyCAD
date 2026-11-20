@@ -12,10 +12,11 @@ import Part
 
 GROUP = "User parameter:BaseApp/Preferences/MyCAD/ApprovedCode"
 
-EXAMPLE = """# A plate with a hole. Sizes from the note: p.Width (write "Width = 40 mm" into a note)
-width = getattr(p, "Width", 40)
-plate = box(width, 30, 5)
-result = cut(plate, cylinder(8, 5, at=(0, 0, 0)))
+EXAMPLE = """# Plate with a hole. Its width from a
+# note: write "Width = 40 mm" into one.
+w = getattr(p, "Width", 40)
+plate = box(w, 30, 5)
+result = cut(plate, cylinder(8, 5))
 """
 
 
