@@ -131,7 +131,7 @@ const char* HoleEnums[] = {"Simple", "Counterbore", "Countersink", nullptr};
 // ab 5: Normteile (Plan 12.7); neue nur hinten anhängen, die Nummer steht in den Dateien
 const char* PrimitiveEnums[] = {"Box", "Cylinder", "Sphere", "Torus", "Coil", "Socket Head Screw", "Countersunk Screw",
                                 "Button Head Screw", "Hex Nut", "Washer", "Heat-Set Insert", "Ball Bearing", "Disc Magnet",
-                                "Block Magnet", "Aluminum Profile", "Spur Gear", nullptr};
+                                "Block Magnet", "Aluminum Profile", "Spur Gear", "Print-in-Place Hinge", "Snap Hook", nullptr};
 const char* BearingEnums[] = {"623", "624", "625", "626", "608", "6000", "6001", "6200", nullptr};
 const char* ProfileEnums[] = {"2020", "2040", "3030", nullptr};
 const char* CenterEnums[] = {"Origin", "Body center", nullptr};
@@ -5815,6 +5815,13 @@ Primitive::Primitive()
     ADD_PROPERTY_TYPE(PressureAngle, (20.0), "Parameters", App::Prop_None, "Pressure angle, usually 20°");
     ADD_PROPERTY_TYPE(Bore, (5.0), "Parameters", App::Prop_None, "Diameter of the hole in the middle (0: none)");
     ADD_PROPERTY_TYPE(Rotation, (0.0), "Parameters", App::Prop_None, "Turn about its own axis, e.g. to mesh with another gear");
+    static const App::PropertyIntegerConstraint::Constraints knuckles = {3, 21, 1};
+    ADD_PROPERTY_TYPE(Knuckles, (5L), "Parameters", App::Prop_None, "Number of knuckles along the hinge");
+    Knuckles.setConstraints(&knuckles);
+    // Spiel aus dem Druckerprofil (12.4, "locker"); im Design gespeichert, damit es auf jedem Rechner gleich baut
+    ADD_PROPERTY_TYPE(Clearance, (printClearance(2)), "Parameters", App::Prop_None, "Gap between the moving parts");
+    ADD_PROPERTY_TYPE(Thickness, (1.5), "Parameters", App::Prop_None, "Thickness of the flexing beam");
+    ADD_PROPERTY_TYPE(Undercut, (1.0), "Parameters", App::Prop_None, "How far the hook reaches over the edge it holds");
     onChanged(&Type);
 }
 
@@ -5823,8 +5830,67 @@ namespace
 enum PrimitiveType : long
 {
     BoxType, CylinderType, SphereType, TorusType, CoilType, SocketScrew, CountersunkScrew, ButtonScrew, HexNut, Washer,
-    HeatSetInsert, BallBearing, DiscMagnet, BlockMagnet, AluProfile, SpurGear
+    HeatSetInsert, BallBearing, DiscMagnet, BlockMagnet, AluProfile, SpurGear, Hinge, SnapHook
 };
+
+/// Scharnier zum Drucken in einem Stück, flach auf dem Bett: Achse entlang X auf Höhe r, Blatt A nach -Y, Blatt B nach
+/// +Y, je Blatt w breit und 2r dick. Knöchel abwechselnd A, B, A …; der Stift (halber Knöchelradius) gehört zu A und
+/// läuft durch die Bohrungen von B. Zwischen allem, was sich bewegt, liegt das Spiel c. Ergebnis: zwei Volumenkörper
+/// in einem Bündel. ponytail: Bohrung quer zum Bett ohne Tropfenform; bei kleinem c und schlechtem Drucker verklebt es
+bool hinge(double length, double w, double r, int n, double c, TopoDS_Shape& shape, std::string& error)
+{
+    const double gap = c, segment = (length - (n - 1) * gap) / n, pin = r / 2;
+    if (segment < 2 * c + 1 || w <= r || c <= 0 || pin <= c) {
+        error = "The hinge is too small for this many knuckles and this clearance";
+        return false;
+    }
+    const auto along = [&](double x0, double x1, double radius) {  // Zylinder auf der Achse von x0 bis x1
+        return BRepPrimAPI_MakeCylinder(gp_Ax2(gp_Pnt(x0, 0, r), gp::DX()), radius, x1 - x0).Shape();
+    };
+    TopoDS_Shape a = BRepPrimAPI_MakeBox(gp_Pnt(0, -w, 0), length, w, 2 * r).Shape();
+    TopoDS_Shape b = BRepPrimAPI_MakeBox(gp_Pnt(0, 0, 0), length, w, 2 * r).Shape();
+    for (int k = 0; k < n; ++k) {
+        const double x0 = k * (segment + gap), x1 = x0 + segment;
+        TopoDS_Shape& own = k % 2 == 0 ? a : b;
+        TopoDS_Shape& other = k % 2 == 0 ? b : a;
+        own = BRepAlgoAPI_Fuse(own, along(x0, x1, r)).Shape();
+        // das andere Blatt macht dem Knöchel Platz, auch in den Fugen daneben
+        other = BRepAlgoAPI_Cut(other, along(std::max(0.0, x0 - gap), std::min(length, x1 + gap), r + c)).Shape();
+    }
+    b = BRepAlgoAPI_Cut(b, along(-1, length + 1, pin + c)).Shape();  // Bohrung für den Stift
+    a = BRepAlgoAPI_Fuse(a, along(0, length, pin)).Shape();
+    TopoDS_Compound both;
+    BRep_Builder builder;
+    builder.MakeCompound(both);
+    for (const TopoDS_Shape& half : {a, b}) {
+        for (TopExp_Explorer solid(half, TopAbs_SOLID); solid.More(); solid.Next()) {
+            builder.Add(both, solid.Current());
+        }
+    }
+    shape = both;
+    return true;
+}
+
+/// Schnapphaken: Biegebalken (Dicke t, Länge l) steht auf der Ebene, oben die Rastnase y weit nach +X mit 30°
+/// Einführschräge und waagerechter Haltekante; w breit entlang Y
+TopoDS_Shape snapHook(double l, double t, double y, double w)
+{
+    const double lead = y / std::tan(30 * M_PI / 180);  // Höhe der Schräge
+    BRepBuilderAPI_MakePolygon poly;
+    for (const gp_Pnt& p : {gp_Pnt(0, 0, 0), gp_Pnt(t, 0, 0), gp_Pnt(t, 0, l - lead), gp_Pnt(t + y, 0, l - lead),
+                            gp_Pnt(t, 0, l), gp_Pnt(0, 0, l)}) {
+        poly.Add(p);
+    }
+    poly.Close();
+    return BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(poly.Wire()).Face(), gp_Vec(0, w, 0)).Shape();
+}
+
+/// größte Dehnung am Fuß eines Biegebalkens mit Rechteckquerschnitt, wenn sich die Spitze um y biegt
+double hookStrain(double l, double t, double y)
+{
+    return 1.5 * t * y / (l * l);
+}
+constexpr double HookStrainLimit = 0.025;  // PLA und PETG halten wiederholt etwa 2,5 % (PLA bricht ab rund 4 %)
 
 /// Stirnrad mit Evolventen-Flanken: Teilkreis m·z/2 um den Ursprung, Kopf m darüber, Fuß 1,25·m darunter, Dicke h
 /// nach +Z. Flanken als Kurve durch Punkte der Evolvente, Kopf und Fuß als Kreisbögen: glatte Flächen statt Facetten.
@@ -6021,6 +6087,15 @@ void Primitive::onChanged(const App::Property* prop)
         if (t == SpurGear) {
             Height.setStatus(App::Property::Hidden, false);  // Dicke des Rads
         }
+        Knuckles.setStatus(App::Property::Hidden, t != Hinge);
+        Clearance.setStatus(App::Property::Hidden, t != Hinge);
+        Thickness.setStatus(App::Property::Hidden, t != SnapHook);
+        Undercut.setStatus(App::Property::Hidden, t != SnapHook);
+        if (t == Hinge || t == SnapHook) {  // Länge entlang der Achse bzw. des Balkens, Breite des Blatts bzw. Hakens
+            Length.setStatus(App::Property::Hidden, false);
+            Width.setStatus(App::Property::Hidden, false);
+        }
+        Radius.setStatus(App::Property::Hidden, Radius.testStatus(App::Property::Hidden) && t != Hinge);  // Knöchel
     }
     Feature::onChanged(prop);
 }
@@ -6143,6 +6218,18 @@ bool Primitive::makeTool(Part::TopoShape& tool, std::string& error) const
                     return false;
                 }
                 break;
+            case Hinge:
+                if (!hinge(l, w, r, int(Knuckles.getValue()), Clearance.getValue(), shape, error)) {
+                    return false;
+                }
+                break;
+            case SnapHook:
+                if (Thickness.getValue() <= 0 || Undercut.getValue() <= 0 || l <= Undercut.getValue() * 2) {
+                    error = "Length, thickness and undercut must be greater than zero, the beam longer than the hook";
+                    return false;
+                }
+                shape = snapHook(l, Thickness.getValue(), Undercut.getValue(), w);
+                break;
             default: {
                 if (r2 >= r) {
                     error = "Tube radius must be smaller than the radius";
@@ -6186,6 +6273,19 @@ App::DocumentObjectExecReturn* Primitive::compute()
     std::string error;
     if (!makeTool(tool, error)) {
         return new App::DocumentObjectExecReturn(error);
+    }
+    // Schnapphaken: zu kurzer Balken bricht beim Einrasten. Bauen, aber warnen und die Länge vorschlagen, die hält
+    // (Dehnung am Fuß 1,5·t·y/l², HookStrainLimit). Fester Satz, damit er übersetzt wird; die Zahl steht im Vorschlag
+    static const std::string tooStiff = "The hook bends too much and may break; make the beam longer or the catch smaller";
+    const bool bends = Type.getValue() == SnapHook
+        && hookStrain(Length.getValue(), Thickness.getValue(), Undercut.getValue()) > HookStrainLimit;
+    if (bends) {
+        const double longer = std::ceil(std::sqrt(1.5 * Thickness.getValue() * Undercut.getValue() / HookStrainLimit));
+        suggest("Use length " + mm(longer) + " mm", "Length", longer);
+        Warning.setValue(tooStiff);
+    }
+    else if (Warning.getValue() == tooStiff) {
+        Warning.setValue("");
     }
     return applyTool(tool);
 }

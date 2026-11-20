@@ -257,7 +257,7 @@ The start page lists your recent designs and everything in your project folder, 
 
 **Remix an STL.** Insert an STL, 3MF or OBJ from Printables or Thingiverse and it becomes a body you can work with, not a cloud of triangles. Flat areas become one face each, round holes become real holes with a centre and a diameter, so you can measure them, sketch on a face, add a fit or a screw, cut and combine. A plate with 24 holes and 100 000 triangles turns into a clean body in under a second. Bosses, fillets and free-form shapes stay made of triangles.
 
-**Hardware included.** Standard Part adds screws (ISO 4762, 10642, 7380), nuts, washers, heat-set inserts, ball bearings like the 608, magnets and 2020 aluminum profiles as real bodies with their standard sizes. Check that everything fits, then open the **Parts List**: it counts what you need and copies it as a table, ready for your order. **Gear** makes spur gears with real involute teeth: same module, the right distance, and two gears mesh.
+**Hardware included.** Standard Part adds screws (ISO 4762, 10642, 7380), nuts, washers, heat-set inserts, ball bearings like the 608, magnets and 2020 aluminum profiles as real bodies with their standard sizes. Check that everything fits, then open the **Parts List**: it counts what you need and copies it as a table, ready for your order. **Gear** makes spur gears with real involute teeth: same module, the right distance, and two gears mesh. **Hinge** prints in one piece and moves right off the bed, with the play from your Printer Test. **Snap Hook** checks how far the beam bends and suggests a length that does not break.
 
 ![Export](src/Gui/Shell/help/images/Design_Export.gif)
 
@@ -269,7 +269,7 @@ MyCAD is young and grows fast. This is what comes next, roughly in this order (d
 
 - **Workshop sheet.** One click makes a PDF with views, a table of holes, threads and fits, and the main dimensions, ready for whoever machines the part.
 - **Flathub**, so MyCAD installs on any Linux.
-- Screw Here that also places the screw, hinges and snap fits, multi-color painting for AMS and MMU printers, splitting parts that are too big for the bed, and a local assistant that turns a sentence into steps, offline.
+- Screw Here that also places the screw, multi-color painting for AMS and MMU printers, splitting parts that are too big for the bed, and a local assistant that turns a sentence into steps, offline.
 
 <br>
 
@@ -281,7 +281,7 @@ MyCAD is young and grows fast. This is what comes next, roughly in this order (d
 | **Interface** | Liquid Glass with a GPU glass shader, light and dark mode, English or German |
 | **Model** | Parametric, with a global timeline (reorder, groups, roll back), components and joints |
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
-| **Solids** | 19 create, 14 modify and 6 construction tools; standard holes, printable threads, Fit (ISO 286 and 3D print), Screw Here, Remove Face, standard parts (screws, nuts, washers, heat-set inserts, bearings, magnets, 2020 profiles) with a parts list, involute spur gears |
+| **Solids** | 21 create, 14 modify and 6 construction tools; standard holes, printable threads, Fit (ISO 286 and 3D print), Screw Here, Remove Face, standard parts (screws, nuts, washers, heat-set inserts, bearings, magnets, 2020 profiles) with a parts list, involute spur gears, print-in-place hinges, snap hooks with a strain check |
 | **Dimensions** | Double-click a face to change the dimensions that make it; errors explain themselves and offer a value that works |
 | **Notes** | Saved in the design, lines ending in `=` are calculated, `Name = value` lines are parameters (both ways) |
 | **Red Pen** | Handwritten corrections on the model become features: R, C, ±, M, Ø, H7, 3×, dimensions, remove face |

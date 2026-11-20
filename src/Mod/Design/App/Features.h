@@ -638,6 +638,11 @@ public:
     App::PropertyAngle PressureAngle;
     App::PropertyLength Bore;
     App::PropertyAngle Rotation;
+    // Scharnier zum Drucken in einem Stück und Schnapphaken (12.7c)
+    App::PropertyIntegerConstraint Knuckles;
+    App::PropertyLength Clearance;
+    App::PropertyLength Thickness;
+    App::PropertyLength Undercut;
 
     /// Normteil: Bezeichnung für die Stückliste ("ISO 4762 M3 × 12"), leer bei Grundkörpern
     std::string partName() const;

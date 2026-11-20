@@ -1103,6 +1103,15 @@ void startPrimitive(App::Document* doc, long type)
     if (type == 15) {
         feature->Height.setValue(6.0);  // Zahnrad: übliche Dicke statt der 20 mm des Quaders
     }
+    else if (type == 16) {  // Scharnier: 40 mm lang, Blätter 15 breit, 6 dick
+        feature->Length.setValue(40.0);
+        feature->Width.setValue(15.0);
+        feature->Radius.setValue(3.0);
+    }
+    else if (type == 17) {  // Schnapphaken: 12 mm Balken, 8 breit
+        feature->Length.setValue(12.0);
+        feature->Width.setValue(8.0);
+    }
     if (plane) {
         feature->Plane.setValue(plane, std::vector<std::string> {element});
     }
@@ -5822,6 +5831,13 @@ void CreateDesignCommands()
                                      "Gear: spur gear with involute teeth; two gears mesh at a distance of module × "
                                      "(teeth 1 + teeth 2) / 2",
                                      "Part_Box", "", [](App::Document* doc) { startPrimitive(doc, 15); }));
+    mgr.addCommand(new DesignCommand("Design_Hinge", "Hinge",
+                                     "Hinge: prints in one piece and moves right off the bed, with the play from your "
+                                     "printer profile",
+                                     "Part_Box", "", [](App::Document* doc) { startPrimitive(doc, 16); }));
+    mgr.addCommand(new DesignCommand("Design_SnapHook", "Snap Hook",
+                                     "Snap Hook: a flexing beam with a catch; MyCAD checks that it bends without breaking",
+                                     "Part_Box", "", [](App::Document* doc) { startPrimitive(doc, 17); }));
     mgr.addCommand(new DesignCommand("Design_PartsList", "Parts List",
                                      "Parts List: every standard part in the design with its quantity, to copy into a table",
                                      "Part_Box", "", showPartsList));

@@ -498,6 +498,9 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Use radius %1 mm", "Radius %1 mm nehmen"},
         {"Use distance %1 mm", "Abstand %1 mm nehmen"},
         {"Use thickness %1 mm", "Dicke %1 mm nehmen"},
+        {"Use length %1 mm", "Länge %1 mm nehmen"},
+        {"The hook bends too much and may break; make the beam longer or the catch smaller",
+         "Der Haken biegt sich zu stark und kann brechen; mach den Balken länger oder die Rastnase flacher"},
         {"Use axis %1", "Achse %1 nehmen"},
         {"Show Affected Edges", "Betroffene Kanten zeigen"},
         {"Looks Right", "Stimmt so"},
@@ -813,6 +816,24 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Aluminum profile (B-type slot)", "Alu-Profil (Nut Typ B)"},
         {"Choose a thread size", "Wähle eine Gewindegröße"},
         {"The screw is shorter than its head", "Die Schraube ist kürzer als ihr Kopf"},
+        // 12.7c Scharnier und Schnapphaken
+        {"Hinge", "Scharnier"},
+        {"Hinge: prints in one piece and moves right off the bed, with the play from your printer profile",
+         "Scharnier: in einem Stück gedruckt und gleich beweglich, mit dem Spiel aus deinem Druckerprofil"},
+        {"Snap Hook", "Schnapphaken"},
+        {"Snap Hook: a flexing beam with a catch; MyCAD checks that it bends without breaking",
+         "Schnapphaken: ein federnder Balken mit Rastnase; MyCAD prüft, dass er sich biegt, ohne zu brechen"},
+        {"Print-in-Place Hinge", "Scharnier (in einem Stück)"},
+        {"Knuckles", "Knöchel"},
+        {"Undercut", "Hinterschnitt"},
+        {"Number of knuckles along the hinge", "Anzahl der Knöchel entlang des Scharniers"},
+        {"Gap between the moving parts", "Abstand zwischen den beweglichen Teilen"},
+        {"Thickness of the flexing beam", "Dicke des federnden Balkens"},
+        {"How far the hook reaches over the edge it holds", "Wie weit der Haken über die Kante greift, die er hält"},
+        {"The hinge is too small for this many knuckles and this clearance",
+         "Das Scharnier ist für so viele Knöchel und dieses Spiel zu klein"},
+        {"Length, thickness and undercut must be greater than zero, the beam longer than the hook",
+         "Länge, Dicke und Hinterschnitt müssen größer als null sein, der Balken länger als der Haken"},
         // 12.7b Zahnrad
         {"Gear", "Zahnrad"},
         {"Gear: spur gear with involute teeth; two gears mesh at a distance of module × (teeth 1 + teeth 2) / 2",
@@ -1423,7 +1444,7 @@ void Gui::Shell::installTranslations()
 
 QString Gui::Shell::fixText(const QString& label)
 {
-    static const QRegularExpression number(QStringLiteral("^Use (radius|distance|thickness) ([0-9.]+) mm$"));
+    static const QRegularExpression number(QStringLiteral("^Use (radius|distance|thickness|length) ([0-9.]+) mm$"));
     static const QRegularExpression axis(QStringLiteral("^Use axis (.+)$"));
     if (const auto m = number.match(label); m.hasMatch()) {
         QString value = m.captured(2);

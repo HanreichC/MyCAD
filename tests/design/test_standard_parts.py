@@ -101,6 +101,42 @@ class StandardParts(DesignTest):
         self.doc.recompute()
         self.assertIn("Invalid", f.State)
 
+    def test_hinge_prints_as_two_free_halves(self):
+        """zwei Volumenkörper, die sich nirgends berühren (sonst verklebt der Druck), mindestens Spiel c auseinander"""
+        f, b = part(self.doc, "Print-in-Place Hinge", Length=40, Width=15, Radius=3, Knuckles=5, Clearance=0.3)
+        s = b.Shape
+        self.assertTrue(s.isValid())
+        self.assertEqual(len(s.Solids), 2)
+        a, other = s.Solids
+        self.assertLess(a.common(other).Volume, 1e-6)
+        self.assertGreater(a.distToShape(other)[0], 0.29)  # Spiel aus dem Druckerprofil
+        bb = s.BoundBox
+        self.assertEqual((round(bb.XLength, 6), round(bb.YLength, 6), round(bb.ZLength, 6)), (40, 30, 6))
+        self.assertAlmostEqual(bb.ZMin, 0, places=6)  # flach auf dem Bett
+
+    def test_hinge_clearance_defaults_to_the_printer_profile(self):
+        grp = App.ParamGet("User parameter:BaseApp/Preferences/MyCAD")
+        old = grp.GetFloat("PrintFitLoose", 0.3)
+        try:
+            grp.SetFloat("PrintFitLoose", 0.45)
+            f = feature(self.doc, "Design::Primitive", Type="Print-in-Place Hinge")
+            self.assertAlmostEqual(f.Clearance.Value, 0.45)
+        finally:
+            grp.SetFloat("PrintFitLoose", old)
+
+    def test_snap_hook_warns_and_suggests_a_longer_beam(self):
+        f, b = part(self.doc, "Snap Hook", Length=12, Width=8, Thickness=1.5, Undercut=1)
+        self.assertTrue(b.Shape.isValid())
+        self.assertEqual(f.Warning, "")  # 1,5 · 1,5 · 1 / 144 = 1,6 %: hält
+        f.Length = 6  # 6,3 %: bricht
+        self.doc.recompute()
+        self.assertIn("may break", f.Warning)
+        self.assertTrue(b.Shape.isValid())  # trotzdem gebaut
+        self.assertTrue(any("Length\t10" in fix for fix in f.Fixes), f.Fixes)  # √(1,5·1,5·1/0,025) = 9,5 → 10
+        f.Length = 10
+        self.doc.recompute()
+        self.assertEqual(f.Warning, "")
+
     def test_switching_type_shows_only_its_sizes(self):
         f, _ = part(self.doc, "Ball Bearing")
         self.assertIn("Hidden", f.getPropertyStatus("Size"))
