@@ -13,6 +13,11 @@ finish-args:
   - --device=dri
   - --device=input                          # Tasten von Grafiktablett und Touchpad selbst lesen (libinput)
   - --filesystem=xdg-documents/MyCAD:create # Projektordner; andere Ordner über den Datei-Dialog (Portal)
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.llvm21    # libclang für Shiboken (PySide), nur beim Bauen
+build-options:
+  append-path: /usr/lib/sdk/llvm21/bin
+  append-ld-library-path: /usr/lib/sdk/llvm21/lib
 cleanup:
   - /include
   - /lib/cmake
