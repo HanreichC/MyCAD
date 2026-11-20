@@ -2024,6 +2024,24 @@ public:
             return b;
         };
         QObject::connect(row("Std_Open", T("Open…")), &QToolButton::clicked, this, [this] { runAndHide("Std_Open"); });
+        // 12.11 Vorlagen: ein fertiges Design, dessen Maße als Parameter in einer Notiz stehen (DesignTemplates.py)
+        auto templates = row("Start_Template", T("New from Template"));
+        templates->setObjectName(QStringLiteral("TemplateButton"));
+        QObject::connect(templates, &QToolButton::clicked, this, [this, templates] {
+            QMenu menu;
+            static const std::pair<const char*, const char*> list[] = {{"box_lid", "Box with Lid"},
+                                                                       {"wall_bracket", "Wall Bracket"},
+                                                                       {"pcb_case", "PCB Enclosure"},
+                                                                       {"spacer", "Spacer"},
+                                                                       {"cable_clip", "Cable Clip"}};
+            for (const auto& [key, name] : list) {
+                menu.addAction(T(name))->setData(QString::fromLatin1(key));
+            }
+            QAction* chosen = menu.exec(templates->mapToGlobal(QPoint(0, templates->height())));
+            if (chosen) {
+                newFromTemplate(chosen->data().toString().toStdString());
+            }
+        });
         sideLay->addSpacing(12);
         auto library = sectionLabel(T("LIBRARY"));
         library->setContentsMargins(10, 0, 0, 4);
@@ -2149,6 +2167,24 @@ private:
         const int top = int(m + Token::BarHeight + m);
         side->place(QRectF(m, m, BrowserWidth, height() - 2 * m));
         scroll->setGeometry(int(left) - StartTile::Pad, top, int(width() - left - m + StartTile::Pad), height() - top);
+    }
+
+    /// neues Design aus einer Vorlage (DesignTemplates.build), Namen in der Sprache der Oberfläche
+    void newFromTemplate(const std::string& key)
+    {
+        runAndHide("Std_New");
+        if (!App::GetApplication().getActiveDocument()) {
+            return;
+        }
+        try {
+            Base::PyGILStateLocker lock;
+            Base::Interpreter().runString(
+                ("import DesignTemplates, FreeCAD\nDesignTemplates.build(FreeCAD.ActiveDocument, '" + key + "')").c_str());
+        }
+        catch (const Base::Exception& e) {
+            e.reportException();
+        }
+        Command::doCommand(Command::Gui, "Gui.SendMsgToActiveView('ViewFit')");
     }
 
     void runAndHide(const char* command)

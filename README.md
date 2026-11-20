@@ -245,7 +245,7 @@ Switch to **Deutsch** in the settings and MyCAD is in German, from the toolbar d
 
 </div>
 
-The start page lists your recent designs and everything in your project folder, each with a large preview. Type a few letters into the search box to find a part, then click it to pick up where you left off. Right-click a design to rename it (its project folder and versions follow) or move it to the trash. **Home** at the top right brings you back here at any time, and the back arrow next to it returns you to your design.
+The start page lists your recent designs and everything in your project folder, each with a large preview. Type a few letters into the search box to find a part, then click it to pick up where you left off. Right-click a design to rename it (its project folder and versions follow) or move it to the trash. **Home** at the top right brings you back here at any time, and the back arrow next to it returns you to your design. **New from Template** starts with a finished design instead: a box with lid, a wall bracket, a PCB enclosure, a spacer or a cable clip. Their sizes stand in a note, one per line; change a number, press Enter, and the design follows. Coming from Fusion? The help has a page that maps its terms and keys.
 
 ![Start page](src/Gui/Shell/help/images/file_start_page.gif)
 

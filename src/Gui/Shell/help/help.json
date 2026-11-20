@@ -1015,6 +1015,140 @@
    ]
   },
   {
+   "id": "start_templates",
+   "group": "start",
+   "icon": "Start_Template",
+   "commands": [],
+   "title": {
+    "en": "Templates",
+    "de": "Vorlagen"
+   },
+   "keywords": {
+    "en": [
+     "template",
+     "example",
+     "box with lid",
+     "enclosure",
+     "wall bracket",
+     "spacer",
+     "cable clip",
+     "start quickly"
+    ],
+    "de": [
+     "Vorlage",
+     "Beispiel",
+     "Box mit Deckel",
+     "Gehäuse",
+     "Platinengehäuse",
+     "Wandhalter",
+     "Distanzhülse",
+     "Kabelclip",
+     "schnell anfangen"
+    ]
+   },
+   "summary": {
+    "en": "Start from a finished design and change its sizes: box with lid, wall bracket, PCB enclosure, spacer or cable clip.",
+    "de": "Fang mit einem fertigen Design an und ändere seine Maße: Box mit Deckel, Wandhalter, Platinengehäuse, Distanzhülse oder Kabelclip."
+   },
+   "steps": {
+    "en": [
+     "On the start page click New from Template in the left panel and choose a template.",
+     "The design opens with a note that lists its sizes, one per line, e.g. Width = 60 mm.",
+     "Change a number in the note and press Enter: the design follows. The box keeps its wall, the lid still fits with its clearance."
+    ],
+    "de": [
+     "Klicke auf der Startseite im linken Panel auf Neu aus Vorlage und wähle eine Vorlage.",
+     "Das Design öffnet sich mit einer Notiz, die seine Maße auflistet, eins pro Zeile, z. B. Breite = 60 mm.",
+     "Ändere eine Zahl in der Notiz und drücke Enter: das Design zieht nach. Die Box behält ihre Wand, der Deckel passt weiter mit seinem Spiel."
+    ]
+   },
+   "see": [
+    "Design_Note",
+    "start_first",
+    "Design_PrintView"
+   ],
+   "tips": {
+    "en": [
+     "Every step of a template is a normal step in the timeline: add holes, fillets or text like in any design.",
+     "The lid of the box prints with its rim facing up; turn it over to put it on."
+    ],
+    "de": [
+     "Jeder Schritt einer Vorlage ist ein normaler Schritt in der Zeitleiste: Bohrungen, Rundungen oder Text kommen dazu wie in jedem Design.",
+     "Der Deckel der Box druckt mit dem Rand nach oben; zum Aufsetzen umdrehen."
+    ]
+   }
+  },
+  {
+   "id": "start_from_fusion",
+   "group": "start",
+   "icon": "Window_Help",
+   "commands": [],
+   "title": {
+    "en": "Switching from Fusion",
+    "de": "Von Fusion umsteigen"
+   },
+   "keywords": {
+    "en": [
+     "fusion",
+     "fusion 360",
+     "autodesk",
+     "switch",
+     "coming from",
+     "differences",
+     "terms",
+     "shortcut box"
+    ],
+    "de": [
+     "Fusion",
+     "Fusion 360",
+     "Autodesk",
+     "umsteigen",
+     "wechseln",
+     "Unterschiede",
+     "Begriffe",
+     "Kürzel"
+    ]
+   },
+   "summary": {
+    "en": "MyCAD works like Fusion: sketch, extrude, timeline, components and joints. Here is what is called the same, what is different and which keys you already know.",
+    "de": "MyCAD arbeitet wie Fusion: Skizze, Extrudieren, Zeitleiste, Komponenten und Gelenke. Hier steht, was gleich heißt, was anders ist und welche Tasten du schon kennst."
+   },
+   "steps": {
+    "en": [
+     "Same names: Sketch, Extrude, Revolve, Sweep, Loft, Press Pull, Fillet, Chamfer, Shell, Combine, Hole, Thread, Offset Plane, Component, Joint, Timeline, Sketch Palette.",
+     "Keys you know: E Extrude, H Hole, Q Press Pull, F Fillet, M Move, J Joint, I Measure, A Appearance.",
+     "Different: S starts a sketch. The search that Fusion opens with S is Ctrl+K here, and it also understands sentences like 4 holes M3 in the corners.",
+     "Different: no cloud. MyCAD saves every step on your computer in your projects folder; Ctrl+S names the current state as a version.",
+     "Different: Change Parameters is a note. Write Width = 60 mm into a note and use Width in any size field.",
+     "Different: 3D printing is built in. Print View shows overhangs and thin walls, Print opens your slicer, Printer Test measures the clearance your printer needs."
+    ],
+    "de": [
+     "Gleiche Namen (auf Deutsch übersetzt): Skizze, Extrudieren, Drehen, Sweep, Erhebung (Loft), Drücken/Ziehen (Press Pull), Abrunden, Fase, Wandstärke (Shell), Kombinieren, Bohrung, Gewinde, Versetzte Ebene, Komponente, Gelenk, Zeitleiste, Skizzenpalette.",
+     "Tasten, die du kennst: E Extrudieren, H Bohrung, Q Drücken/Ziehen, F Abrunden, M Verschieben, J Gelenk, I Messen, A Darstellung.",
+     "Anders: S startet eine Skizze. Die Suche, die Fusion mit S öffnet, ist hier Strg+K, und sie versteht auch Sätze wie 4 Löcher M3 in die Ecken.",
+     "Anders: keine Cloud. MyCAD speichert jeden Schritt auf deinem Rechner im Projektordner; Strg+S gibt dem jetzigen Stand als Version einen Namen.",
+     "Anders: Parameter ändern ist eine Notiz. Schreib Breite = 60 mm in eine Notiz und nimm Breite in jedem Maßfeld.",
+     "Anders: 3D-Druck ist eingebaut. Die Druckansicht zeigt Überhänge und dünne Wände, Drucken öffnet deinen Slicer, der Druckertest misst das Spiel, das dein Drucker braucht."
+    ]
+   },
+   "see": [
+    "start_shortcuts",
+    "MyCAD_Search",
+    "Design_Note",
+    "Design_PrintView"
+   ],
+   "tips": {
+    "en": [
+     "Unsure where a Fusion tool is? Type its Fusion name into Ctrl+K: the search knows the words of other CAD programs too.",
+     "STEP files from Fusion open with Insert, with colours, names and components."
+    ],
+    "de": [
+     "Unsicher, wo ein Fusion-Werkzeug ist? Tipp seinen Fusion-Namen in Strg+K: die Suche kennt auch die Wörter anderer CAD-Programme.",
+     "STEP-Dateien aus Fusion öffnest du mit Einfügen, mit Farben, Namen und Komponenten."
+    ]
+   }
+  },
+  {
    "id": "start_navigation",
    "group": "start",
    "icon": "Nav_Rotate",

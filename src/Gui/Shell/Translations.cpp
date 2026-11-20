@@ -704,6 +704,13 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Overhang angle", "Überhang-Winkel"},
         {"Minimum wall", "Kleinste Wand"},
         {"Wall thinner than %1 mm", "Wand dünner als %1 mm"},
+        // 12.11 Vorlagen
+        {"New from Template", "Neu aus Vorlage"},
+        {"Box with Lid", "Box mit Deckel"},
+        {"Wall Bracket", "Wandhalter"},
+        {"PCB Enclosure", "Platinengehäuse"},
+        {"Spacer", "Distanzhülse"},
+        {"Cable Clip", "Kabelclip"},
         // 12.9 Fragen ans Modell
         {"Explain what is red or wrong", "Erklären, was rot oder falsch ist"},
         {"Show what uses the selection", "Zeigen, was die Auswahl benutzt"},
