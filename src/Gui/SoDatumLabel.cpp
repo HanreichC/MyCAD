@@ -1314,8 +1314,12 @@ float SoDatumLabel::getScaleFactor(SoState* state) const
     // MyCAD: in der Perspektive am Ort des Maßes messen, nicht auf der Fokusebene. Drehen um den Punkt unter der Maus
     // verschiebt die Fokusdistanz; lag er weit hinter der Skizze, wurden alle Maße riesig, bis man die Skizze neu
     // öffnete. Am eigenen Ort bleibt die Schrift gleich viele Pixel groß, auch beim Verschieben.
+    // Nur die Tiefe des Maßes, gemessen auf der Blickachse: getWorldToScreenScale rechnet abseits der Achse falsch,
+    // Maße wurden zum Bildrand hin bis zu 2,5-mal kleiner bzw. größer (ConceptKey, gleiche Tiefe, x 0…400 mm).
     if (vv.getProjectionType() == SbViewVolume::PERSPECTIVE && pnts.getNum() > 0) {
-        SoModelMatrixElement::get(state).multVecMatrix(pnts[0], center);
+        SbVec3f at;
+        SoModelMatrixElement::get(state).multVecMatrix(pnts[0], at);
+        center = vv.getSightPoint((at - vv.getProjectionPoint()).dot(vv.getProjectionDirection()));
     }
     float scale = vv.getWorldToScreenScale(center, 1.F);
     const SbViewportRegion& vp = SoViewportRegionElement::get(state);
