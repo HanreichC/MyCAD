@@ -2086,13 +2086,21 @@ void Gui::Shell::showSettings()
                                 QStringLiteral("sh"), rule};
         allow->setEnabled(false);
         accessHint->setText(QString());
+        // Flatpak (12.6): kein pkexec und kein Weg zum Rechner; die Regel legt nur der Benutzer an
+        static const bool flatpak = QFile::exists(QStringLiteral("/.flatpak-info"));
         const auto failed = [allow, accessHint, rule] {  // nie still scheitern: der Befehl fürs Terminal
             allow->setEnabled(true);
-            accessHint->setText(T("Couldn't set up access. In a terminal:") + QStringLiteral("\necho '") + rule
+            accessHint->setText(T(flatpak ? "MyCAD from Flathub can't set up access itself. In a terminal:"
+                                          : "Couldn't set up access. In a terminal:")
+                                + QStringLiteral("\necho '") + rule
                                 + QStringLiteral("' | sudo tee /etc/udev/rules.d/70-mycad-tablet.rules && sudo udevadm "
                                                  "control --reload && sudo udevadm trigger --subsystem-match=input"));
             accessHint->show();
         };
+        if (flatpak) {
+            failed();
+            return;
+        }
         // Abbrechen im Passwort-Dialog (pkexec: 126) ist kein Fehler
         const auto finished = [allow, accessHint, failed](int code) {
             allow->setEnabled(true);

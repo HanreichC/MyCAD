@@ -2052,11 +2052,11 @@
    ],
    "tips": {
     "en": [
-     "MyCAD finds OrcaSlicer, Bambu Studio, PrusaSlicer and UltiMaker Cura as programs, as Flatpak and as AppImage in ~/Applications. Without a slicer, Print tells you and opens Export with 3MF preselected.",
+     "MyCAD finds OrcaSlicer, Bambu Studio, PrusaSlicer and UltiMaker Cura as programs, as Flatpak and as AppImage in ~/Applications. Without a slicer, Print tells you and opens Export with 3MF preselected. In MyCAD from Flathub, Print hands the 3MF to your system, which asks once which program opens it.",
      "Curves are as fine as the Export resolution in Settings."
     ],
     "de": [
-     "MyCAD findet OrcaSlicer, Bambu Studio, PrusaSlicer und UltiMaker Cura als Programm, als Flatpak und als AppImage in ~/Applications. Ohne Slicer sagt Drucken das und öffnet Exportieren mit 3MF vorgewählt.",
+     "MyCAD findet OrcaSlicer, Bambu Studio, PrusaSlicer und UltiMaker Cura als Programm, als Flatpak und als AppImage in ~/Applications. Ohne Slicer sagt Drucken das und öffnet Exportieren mit 3MF vorgewählt. In MyCAD von Flathub gibt Drucken das 3MF an dein System, das einmal fragt, welches Programm es öffnet.",
      "Rundungen sind so fein wie die Export-Auflösung in den Einstellungen."
     ]
    },
@@ -6663,7 +6663,7 @@
      "View: Camera, Rotate, Rotate around and Animate view changes.",
      "Speed & Zoom: Rotation speed, Zoom & scroll speed, Zoom towards the cursor, Invert zoom (mouse wheel). Trackpad: Two fingers pan (off: two-finger scrolling zooms like the scroll wheel), Invert zoom (pinch direction) and the speeds Rotate (3 fingers), Pan (2 fingers) and Zoom (pinch). Pen & Handwriting: Tidy handwriting after a pause, Tidying strength, and each step on its own: Smooth lines (with Smoothing: smoother looks calmer but reads a little less reliably), Straight lines, Same size, Same slant, Even word spacing and Even line width.",
      "Keys tab: Add Key… turns a key into a mouse button, e.g. Shift as the middle button; choose the button and whether to Hold, Click, Double-click or Toggle.",
-     "Tablet tab: choose your graphics tablet (MyCAD recognizes it when it's plugged in) and what each button on the tablet and the pen does: eraser, select, pencil, fineliner, marker, next color, undo, redo, Only the Sheet, Look At, or rotate and pan the view while held. Pressing a button lights up its row. Restore Suggestion goes back to the preset."
+     "Tablet tab: choose your graphics tablet (MyCAD recognizes it when it's plugged in) and what each button on the tablet and the pen does: eraser, select, pencil, fineliner, marker, next color, undo, redo, Only the Sheet, Look At, or rotate and pan the view while held. Pressing a button lights up its row. Restore Suggestion goes back to the preset. If the tablet is connected but its keys stay dark, Allow Access sets it up (it asks for your password); in MyCAD from Flathub it shows the command for a terminal instead."
     ],
     "de": [
      "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen, Werkzeugleiste (Kompakt: die häufigsten Werkzeuge, der Rest hinter den Überschriften; Alle Werkzeuge: alle auf einmal), Werkzeuge an der Auswahl (die passenden Werkzeuge schweben über dem, was du angeklickt hast) und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
@@ -6674,7 +6674,7 @@
      "Ansicht: Kamera, Drehen, Drehen um und Ansichtswechsel animieren.",
      "Tempo & Zoom: Drehgeschwindigkeit, Zoom- & Scrollgeschwindigkeit, Zum Cursor hin zoomen, Zoom umkehren (Mausrad). Trackpad: Zwei Finger schieben (aus: Scrollen mit zwei Fingern zoomt wie das Mausrad), Zoom umkehren (Richtung beim Spreizen) und die Tempi Drehen (3 Finger), Schieben (2 Finger) und Zoomen (Spreizen). Stift & Handschrift: Handschrift nach einer Pause aufräumen, Stärke des Aufräumens und jeder Schritt einzeln: Glatte Linien (mit Stärke des Glättens: glatter wirkt ruhiger, liest sich aber etwas unsicherer), Gerade Zeilen, Gleiche Größe, Gleiche Schräge, Gleiche Wortabstände und Gleichmäßige Strichstärke.",
      "Reiter Tasten: Taste hinzufügen… macht eine Taste zur Maustaste, z. B. Umschalt als mittlere Taste; wähle die Maustaste und ob Halten, Klicken, Doppelklick oder Umschalten.",
-     "Reiter Tablett: Wähle dein Grafiktablett (MyCAD erkennt es, wenn es angeschlossen ist) und was jede Taste am Tablett und am Stift tut: Radierer, Auswählen, Bleistift, Fineliner, Marker, Nächste Farbe, Rückgängig, Wiederholen, Nur das Blatt, Senkrecht ansehen oder die Ansicht drehen und verschieben, solange sie gedrückt ist. Eine gedrückte Taste lässt ihre Zeile aufleuchten. Vorschlag wiederherstellen kehrt zur Vorbelegung zurück."
+     "Reiter Tablett: Wähle dein Grafiktablett (MyCAD erkennt es, wenn es angeschlossen ist) und was jede Taste am Tablett und am Stift tut: Radierer, Auswählen, Bleistift, Fineliner, Marker, Nächste Farbe, Rückgängig, Wiederholen, Nur das Blatt, Senkrecht ansehen oder die Ansicht drehen und verschieben, solange sie gedrückt ist. Eine gedrückte Taste lässt ihre Zeile aufleuchten. Vorschlag wiederherstellen kehrt zur Vorbelegung zurück. Ist das Tablett angeschlossen, bleiben seine Tasten aber dunkel, richtet Zugriff erlauben das ein (es fragt nach deinem Passwort); in MyCAD von Flathub zeigt es stattdessen den Befehl fürs Terminal."
     ]
    },
    "see": [

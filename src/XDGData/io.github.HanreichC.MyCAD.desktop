@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=MyCAD
+GenericName=CAD for 3D Printing
+GenericName[de]=CAD für den 3D-Druck
+Comment=Fusion-style parametric CAD, local and without a subscription
+Comment[de]=Parametrisches CAD wie Fusion, lokal und ohne Abo
+Exec=FreeCAD %F
+Icon=io.github.HanreichC.MyCAD
+Terminal=false
+StartupNotify=true
+StartupWMClass=mycad
+Categories=Graphics;Engineering;3DGraphics;
+Keywords=CAD;3D;printing;STEP;STL;3MF;sketch;parametric;Fusion;
+Keywords[de]=CAD;3D;Druck;STEP;STL;3MF;Skizze;parametrisch;Fusion;
+MimeType=application/x-mycad;

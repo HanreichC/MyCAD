@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dateityp .mycad: eigenes Symbol, Doppelklick öffnet MyCAD (Inhalt wie FreeCADs .FCStd, ein ZIP) -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-mycad">
+    <comment>MyCAD design</comment>
+    <comment xml:lang="de">MyCAD-Design</comment>
+    <sub-class-of type="application/zip"/>
+    <icon name="io.github.HanreichC.MyCAD"/>
+    <glob pattern="*.mycad"/>
+  </mime-type>
+</mime-info>

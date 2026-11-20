@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Flathub und Software-Center (Plan 12.6, docs/FLATHUB.md). Version und Datum setzt CMake aus dem letzten Tag -->
+<component type="desktop-application">
+  <id>io.github.HanreichC.MyCAD</id>
+  <name>MyCAD</name>
+  <summary>Fusion-style CAD for 3D printing</summary>
+  <summary xml:lang="de">CAD wie Fusion für den 3D-Druck</summary>
+  <developer id="io.github.hanreichc">
+    <name>HanreichC</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LGPL-2.1-or-later</project_license>
+  <launchable type="desktop-id">io.github.HanreichC.MyCAD.desktop</launchable>
+  <description>
+    <p>
+      MyCAD is parametric CAD that works like Fusion 360, made for Linux and for 3D printing. Sketch, extrude,
+      fillet and drill the way you know it, with a timeline you can roll back, components and joints. Your designs
+      stay in a folder on your disk: no cloud, no account, no subscription.
+    </p>
+    <p xml:lang="de">
+      MyCAD ist parametrisches CAD, das wie Fusion 360 funktioniert, gemacht für Linux und den 3D-Druck. Skizzieren,
+      extrudieren, abrunden und bohren wie gewohnt, mit einer Zeitleiste zum Zurückrollen, Komponenten und Gelenken.
+      Deine Designs bleiben in einem Ordner auf deinem Rechner: keine Cloud, kein Konto, kein Abo.
+    </p>
+    <p>Highlights:</p>
+    <p xml:lang="de">Das Wichtigste:</p>
+    <ul>
+      <li>Print View shows overhangs and thin walls and fixes them in a click; Print opens your slicer</li>
+      <li xml:lang="de">Die Druckansicht zeigt Überhänge und dünne Wände und behebt sie mit einem Klick; Drucken öffnet deinen Slicer</li>
+      <li>Fits, printable threads and screw holes that know the play of your printer (Printer Test)</li>
+      <li xml:lang="de">Passungen, druckbare Gewinde und Schraubenlöcher, die das Spiel deines Druckers kennen (Druckertest)</li>
+      <li>Insert STL, 3MF or OBJ and get a body with real flat faces and holes to remix</li>
+      <li xml:lang="de">STL, 3MF oder OBJ einfügen und einen Körper mit echten Ebenen und Bohrungen zum Weiterbauen bekommen</li>
+      <li>Always saved, with versions you can compare and restore</li>
+      <li xml:lang="de">Immer gespeichert, mit Versionen zum Vergleichen und Zurückholen</li>
+      <li>Pen tablets, handwriting and touchpad gestures, native on Wayland</li>
+      <li xml:lang="de">Grafiktabletts, Handschrift und Touchpad-Gesten, nativ unter Wayland</li>
+      <li>In English and German, with the terms you know from Fusion 360</li>
+      <li xml:lang="de">Auf Englisch und Deutsch, mit den Begriffen, die du aus Fusion 360 kennst</li>
+    </ul>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/HanreichC/MyCAD/v@MYCAD_RELEASE@/docs/images/workspace.png</image>
+      <caption>Sketch, extrude and fillet with the timeline below</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/HanreichC/MyCAD/v@MYCAD_RELEASE@/docs/images/notes.png</image>
+      <caption>A note with parameters drives the part</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/HanreichC/MyCAD/v@MYCAD_RELEASE@/docs/images/scribble.png</image>
+      <caption>Sketch by hand with a pen tablet</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/HanreichC/MyCAD/v@MYCAD_RELEASE@/docs/images/materials.png</image>
+      <caption>Realistic materials and appearances</caption>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://github.com/HanreichC/MyCAD</url>
+  <url type="bugtracker">https://github.com/HanreichC/MyCAD/issues</url>
+  <url type="help">https://github.com/HanreichC/MyCAD/wiki</url>
+  <url type="vcs-browser">https://github.com/HanreichC/MyCAD</url>
+  <branding>
+    <color type="primary" scheme_preference="light">#0088FF</color>
+    <color type="primary" scheme_preference="dark">#0091FF</color>
+  </branding>
+  <provides>
+    <mediatype>application/x-mycad</mediatype>
+    <binary>FreeCAD</binary>
+  </provides>
+  <requires>
+    <display_length compare="ge">1280</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>tablet</control>
+  </supports>
+  <categories>
+    <category>Graphics</category>
+    <category>Engineering</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="@MYCAD_RELEASE@" date="@APPDATA_RELEASE_DATE@"/>
+  </releases>
+</component>

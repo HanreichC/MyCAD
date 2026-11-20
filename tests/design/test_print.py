@@ -139,6 +139,14 @@ class Slicer(DesignTest):
         with tempfile.TemporaryDirectory() as home:
             self.assertEqual(DesignExport.find_slicers({"PATH": ""}, home), [])
 
+    def test_flatpak_only_writes_the_3mf(self):
+        """im Flatpak startet MyCAD keinen Slicer: es schreibt das 3MF, die Oberfläche öffnet es über das Portal"""
+        _, b = box(self.doc, 30, 10, 5)
+        with tempfile.TemporaryDirectory() as folder:
+            path = DesignExport.open_in_slicer([b], folder, None, up=V(0, 0, 1))
+            self.assertTrue(path.endswith(".3mf") and os.path.getsize(path) > 0)
+            self.assertEqual(sorted(os.listdir(folder)), [os.path.basename(path)])
+
     def test_opens_the_3mf_in_the_slicer_with_print_direction_up(self):
         _, b = box(self.doc, 30, 10, 5)
         with tempfile.TemporaryDirectory() as folder:

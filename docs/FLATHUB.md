@@ -209,9 +209,12 @@ und den Linter laufen lässt. So fällt ein kaputtes Manifest auf, bevor Flathub
 
 ## 9. Reihenfolge der Arbeit (für Plan 12.6)
 
-1. Desktop-Datei, Symbol, Metainfo, MIME ins Repo, per CMake installieren; `install.sh` nutzt dieselben Dateien.
-2. Code für die Sandbox: Standard-Projektordner in Dokumente, Slicer über OpenURI im Flatpak, Tablett-Hinweis im
-   Flatpak.
+1. **Erledigt 2026-11-20:** Desktop-Datei, Symbol, Metainfo, MIME in `src/XDGData/` unter der App-ID, per CMake installiert;
+   `install.sh` und `tools/appimage.sh` nehmen dieselben Dateien, die Wayland-App-ID ist `io.github.HanreichC.MyCAD`.
+   `desktop-file-validate` und `appstreamcli validate` sind grün (Prüfung im Wegwerf-Container, Ubuntu 24.04).
+2. **Erledigt 2026-11-20:** Code für die Sandbox: Standard-Projektordner war schon `~/Documents/MyCAD`; Drucken schreibt im
+   Flatpak (`/.flatpak-info`) nur das 3MF und öffnet es über das OpenURI-Portal; „Zugriff erlauben“ zeigt im Flatpak den
+   Terminal-Befehl für die udev-Regel.
 3. Manifest schreiben, lokal bauen, Linter grün, von Hand testen (Liste in 5.).
 4. CI-Job für das Flatpak bei Tags.
 5. Bei Flathub einreichen, Review begleiten, verifizieren.

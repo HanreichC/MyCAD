@@ -780,6 +780,9 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
          "STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;Photo to Sketch (*.png *.jpg *.jpeg *.bmp *.webp)",
          "CAD-Dateien, Meshes und Fotos (*.step *.stp *.stl *.3mf *.obj *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;"
          "STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;Foto zu Skizze (*.png *.jpg *.jpeg *.bmp *.webp)"},
+        // 12.6 Flathub
+        {"MyCAD from Flathub can't set up access itself. In a terminal:",
+         "MyCAD von Flathub kann den Zugriff nicht selbst einrichten. Im Terminal:"},
         // 12.1 Mesh-Brücke
         {"Inserted %1", "Eingefügt: %1"},
         {"The file contains no triangles.", "Die Datei enthält keine Dreiecke."},

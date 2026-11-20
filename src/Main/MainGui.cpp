@@ -259,7 +259,7 @@ int main(int argc, char** argv)
     App::Application::Config()["SplashWarningColor"] = "#CA333B";
     App::Application::Config()["SplashInfoColor"] = "#212529";
     App::Application::Config()["SplashInfoPosition"] = "6,75";
-    App::Application::Config()["DesktopFileName"] = "mycad";
+    App::Application::Config()["DesktopFileName"] = "io.github.HanreichC.MyCAD";  // App-ID (Flathub, Plan 12.6)
 
     try {
         // Init phase ===========================================================
@@ -283,7 +283,7 @@ int main(int argc, char** argv)
 #if defined(FC_OS_LINUX)
         chooseGpu();  // braucht die Einstellungen, also nach init; OpenGL lädt erst die QApplication
 #endif
-        // Wayland: die App-ID sucht der Compositor des Rechners in dessen mycad.desktop. Immer setzen, nicht nur
+        // Wayland: die App-ID sucht der Compositor des Rechners in io.github.HanreichC.MyCAD.desktop. Immer setzen, nicht nur
         // wenn die Datei im eigenen Home liegt: im Container und in Tests (eigenes Home) fehlt sie dort, dann hieß
         // die App-ID "FreeCAD" und KDE zeigte das Logo eines installierten FreeCAD
         QGuiApplication::setDesktopFileName(

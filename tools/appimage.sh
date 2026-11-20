@@ -35,19 +35,10 @@ done
 echo "==> Schrift, Icon, Starter"
 mkdir -p "$APPDIR/usr/share/fonts"
 cp /usr/share/fonts/inter/Inter.ttc "$APPDIR/usr/share/fonts/"  # Familie "Inter" (die variable Datei heißt anders)
-cp "$ROOT/src/Gui/Icons/mycad.svg" "$WORK/mycad.svg"
-cat > "$WORK/mycad.desktop" <<EOF
-[Desktop Entry]
-Type=Application
-Name=MyCAD
-Comment=Parametric CAD
-Exec=FreeCAD %F
-Icon=mycad
-Terminal=false
-Categories=Graphics;Engineering;
-StartupWMClass=mycad
-X-AppImage-Version=$VERSION
-EOF
+# Menüeintrag und Symbol unter der App-ID wie Flatpak und install.sh (src/XDGData, Plan 12.6)
+APP_ID=io.github.HanreichC.MyCAD
+cp "$ROOT/src/Gui/Icons/mycad.svg" "$WORK/$APP_ID.svg"
+{ cat "$ROOT/src/XDGData/$APP_ID.desktop"; echo "X-AppImage-Version=$VERSION"; } > "$WORK/$APP_ID.desktop"
 cat > "$WORK/AppRun" <<EOF
 #!/bin/sh
 HERE="\$(dirname "\$(readlink -f "\$0")")"
@@ -89,7 +80,7 @@ done
 cd "$WORK"
 # 1. Bibliotheken bündeln; dafür müssen MyCADs eigene Bibliotheken gefunden werden (setzt dabei relative RPATHs)
 LD_LIBRARY_PATH="$APPDIR/usr/lib" linuxdeploy-x86_64.AppImage --appdir "$APPDIR" -e "$APPDIR/usr/bin/FreeCAD" \
-    -d mycad.desktop -i mycad.svg "${deps[@]}"
+    -d "$APP_ID.desktop" -i "$APP_ID.svg" "${deps[@]}"
 # 2. Qt-Plugins, ohne den Pfad: qmake ist relokierbar und meldete sonst Pfade im AppDir
 linuxdeploy-x86_64.AppImage --appdir "$APPDIR" --plugin qt --custom-apprun AppRun
 # MyCAD ist immer hell: kein Desktop-Portal-Theme (das meldet ein dunkles KDE an FreeCADs Ersteinrichtung)
@@ -98,13 +89,13 @@ rm -rf "$APPDIR/usr/plugins/platformthemes"
 [ -s "$WORK/tools/runtime-x86_64" ] || curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 -o "$WORK/tools/runtime-x86_64" \
     https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64
 export LDAI_RUNTIME_FILE="$WORK/tools/runtime-x86_64"
-# .DirIcon muss ein PNG sein (Icon=mycad): appimagetool baut es aus mycad.png im AppDir
+# .DirIcon muss ein PNG sein: appimagetool baut es aus <Icon>.png im AppDir
 QT_QPA_PLATFORM=offscreen python3 -c '
 import sys
 from PySide6.QtGui import QGuiApplication, QImage, QPainter, Qt
 from PySide6.QtSvg import QSvgRenderer
 app = QGuiApplication([]); img = QImage(256, 256, QImage.Format_ARGB32); img.fill(Qt.transparent)
 p = QPainter(img); QSvgRenderer(sys.argv[1]).render(p); p.end(); sys.exit(not img.save(sys.argv[2]))
-' mycad.svg "$APPDIR/mycad.png"
+' "$APP_ID.svg" "$APPDIR/$APP_ID.png"
 linuxdeploy-x86_64.AppImage --appdir "$APPDIR" --custom-apprun AppRun --output appimage
 echo "==> Fertig: $LDAI_OUTPUT"

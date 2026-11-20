@@ -87,7 +87,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/workspace" -w /workspace -e CCACHE_DIR=/workspace/.ccache \
             -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
-            mycad-dev sh -c "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -Wno-dev && cmake --build build -j$(nproc)"
+            mycad-dev sh -c "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DMYCAD_RELEASE=${{ steps.version.outputs.version }} -Wno-dev && cmake --build build -j$(nproc)"
 
       - name: Tests (rot = kein Release)
         run: |

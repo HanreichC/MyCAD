@@ -286,6 +286,8 @@ def open_in_slicer(bodies, folder, command, up=None, quality="normal"):
     name = re.sub(r"[^\w.-]+", "_", bodies[0].Document.Label if bodies else "design") or "design"
     path = os.path.join(folder, name + ".3mf")
     write_3mf(path, bodies, quality, rotation=print_rotation(up) if up is not None else None)
+    if command is None:  # Flatpak: die Oberfläche öffnet die Datei über das Portal, das System fragt nach dem Slicer
+        return path
     if os.environ.get(HOST_ROOT):
         host_spawn(slicer_arguments(command, path))  # liegt in ~, das der Rechner unter demselben Pfad sieht
     else:

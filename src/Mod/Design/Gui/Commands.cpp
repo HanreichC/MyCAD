@@ -120,6 +120,7 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
 
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -2772,17 +2773,20 @@ void printBodies(App::Document* doc)
         return;
     }
     ParameterGrp::handle params = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD");
+    // Flatpak (12.6): Programme des Rechners starten ginge nur am Sandkasten vorbei. Stattdessen öffnet das System das
+    // 3MF über das Portal und fragt einmal, mit welchem Slicer (auch Flatpak-Slicer)
+    const bool sandboxed = QFile::exists(QStringLiteral("/.flatpak-info"));
     QStringList names;
     try {
         Base::PyGILStateLocker lock;
-        const std::string found = Base::Interpreter().runStringWithKey(
+        const std::string found = sandboxed ? std::string() : Base::Interpreter().runStringWithKey(
             "import DesignExport\n_r = '\\n'.join(n for n, c in DesignExport.find_slicers())", "_r");
         names = QString::fromStdString(found).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
     }
     catch (const Base::Exception& e) {
         Base::Console().error("Print: %s\n", e.what());
     }
-    if (names.isEmpty()) {
+    if (names.isEmpty() && !sandboxed) {
         toolHint(T("Print"),
                                  T("No slicer found (OrcaSlicer, Bambu Studio, PrusaSlicer or Cura). Save a 3MF file and open it "
                                    "in your slicer."));
@@ -2790,7 +2794,7 @@ void printBodies(App::Document* doc)
         return;
     }
     QString slicer = QString::fromStdString(params->GetASCII("Slicer", ""));
-    if (!names.contains(slicer)) {
+    if (!sandboxed && !names.contains(slicer)) {
         bool ok = names.size() == 1;
         slicer = ok ? names.front()
                     : QInputDialog::getItem(Gui::getMainWindow(), T("Print"), T("Open in which slicer?"), names, 0, false, &ok);
@@ -2813,11 +2817,16 @@ void printBodies(App::Document* doc)
     objs += "]";
     try {
         Base::PyGILStateLocker lock;
-        Base::Interpreter().runString(
-            ("import DesignExport, Design, FreeCAD as App\nDesignExport.open_in_slicer(" + objs + ", '" + folder.toStdString()
-             + "', dict(DesignExport.find_slicers())['" + name.toStdString() + "'], up=Design.printUp(App.getDocument('"
-             + doc->getName() + "')), quality='" + qualities[quality] + "')")
-                .c_str());
+        const std::string command = sandboxed ? "None" : "dict(DesignExport.find_slicers())['" + name.toStdString() + "']";
+        const std::string path = Base::Interpreter().runStringWithKey(
+            ("import DesignExport, Design, FreeCAD as App\n_r = DesignExport.open_in_slicer(" + objs + ", '"
+             + folder.toStdString() + "', " + command + ", up=Design.printUp(App.getDocument('" + doc->getName()
+             + "')), quality='" + qualities[quality] + "')")
+                .c_str(),
+            "_r");
+        if (sandboxed) {
+            QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path)));
+        }
     }
     catch (const Base::Exception& e) {
         QMessageBox::warning(Gui::getMainWindow(), T("Print"), T("The slicer could not be started: %1").arg(QString::fromUtf8(e.what())));

@@ -9,7 +9,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JOBS="${JOBS:-8}"
 IMAGE=mycad-dev
 BIN="$HOME/.local/bin/mycad"
-DESKTOP="$HOME/.local/share/applications/mycad.desktop"
+APP_ID=io.github.HanreichC.MyCAD  # wie Flatpak und AppImage: Dateien aus src/XDGData (Plan 12.6)
+DESKTOP="$HOME/.local/share/applications/$APP_ID.desktop"
 ENGINE="${ENGINE:-$(command -v podman >/dev/null && echo podman || echo docker)}"
 command -v "$ENGINE" >/dev/null || { echo "Weder Podman noch Docker gefunden: eins davon installieren." >&2; exit 1; }
 # Dateien im Repo und im Home gehören dem Benutzer, nicht root: Podman bildet ihn ab (keep-id), Docker läuft als er,
@@ -93,38 +94,17 @@ chmod +x "$BIN"
 
 ICON_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
 mkdir -p "$ICON_DIR"
-cp "$ROOT/src/Gui/Icons/mycad.svg" "$ICON_DIR/mycad.svg"
-
-cat > "$DESKTOP" <<EOF
-[Desktop Entry]
-Type=Application
-Name=MyCAD
-StartupWMClass=mycad
-Comment=Parametric CAD
-Exec=$BIN %F
-Icon=mycad
-Terminal=false
-Categories=Graphics;Engineering;3DGraphics;
-MimeType=application/x-mycad;
-EOF
-
-# Dateityp .mycad: eigenes Symbol, Doppelklick öffnet MyCAD (Inhalt wie FreeCADs .FCStd)
+cp "$ROOT/src/Gui/Icons/mycad.svg" "$ICON_DIR/$APP_ID.svg"
+# Menüeintrag und Dateityp .mycad aus dem Repo; nur der Starter ist hier ein anderer
+sed "s|^Exec=.*|Exec=$BIN %F|" "$ROOT/src/XDGData/$APP_ID.desktop" > "$DESKTOP"
 MIME="$HOME/.local/share/mime"
 mkdir -p "$MIME/packages"
-cat > "$MIME/packages/mycad.xml" <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
-  <mime-type type="application/x-mycad">
-    <comment>MyCAD design</comment>
-    <comment xml:lang="de">MyCAD-Design</comment>
-    <icon name="mycad"/>
-    <glob pattern="*.mycad"/>
-  </mime-type>
-</mime-info>
-EOF
+cp "$ROOT/src/XDGData/$APP_ID.xml" "$MIME/packages/$APP_ID.xml"
+# frühere Namen (vor Plan 12.6) weg, sonst stünde MyCAD zweimal im Menü
+rm -f "$HOME/.local/share/applications/mycad.desktop" "$ICON_DIR/mycad.svg" "$MIME/packages/mycad.xml"
 command -v update-mime-database >/dev/null && update-mime-database "$MIME" || true
 command -v update-desktop-database >/dev/null && update-desktop-database "$(dirname "$DESKTOP")" || true
-command -v xdg-mime >/dev/null && xdg-mime default mycad.desktop application/x-mycad || true
+command -v xdg-mime >/dev/null && xdg-mime default "$APP_ID.desktop" application/x-mycad || true
 
 # KDE-Cache der Menüeinträge/Icons auffrischen, sonst zeigt die Taskleiste noch das alte Icon
 command -v kbuildsycoca6 >/dev/null && kbuildsycoca6 >/dev/null 2>&1 || true
