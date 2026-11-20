@@ -776,8 +776,21 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Photo to Sketch: trace a part photographed on plain paper into a sketch to scale",
          "Foto zu Skizze: ein Teil, auf hellem Papier fotografiert, maßstäblich als Skizze nachzeichnen"},
         {"Images (*.png *.jpg *.jpeg *.bmp *.webp)", "Bilder (*.png *.jpg *.jpeg *.bmp *.webp)"},
-        {"CAD files and photos (*.step *.stp *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;STEP (*.step *.stp);;DXF (*.dxf);;SVG (*.svg);;Photo to Sketch (*.png *.jpg *.jpeg *.bmp *.webp)",
-         "CAD-Dateien und Fotos (*.step *.stp *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;STEP (*.step *.stp);;DXF (*.dxf);;SVG (*.svg);;Foto zu Skizze (*.png *.jpg *.jpeg *.bmp *.webp)"},
+        {"CAD files, meshes and photos (*.step *.stp *.stl *.3mf *.obj *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;"
+         "STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;Photo to Sketch (*.png *.jpg *.jpeg *.bmp *.webp)",
+         "CAD-Dateien, Meshes und Fotos (*.step *.stp *.stl *.3mf *.obj *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;"
+         "STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;Foto zu Skizze (*.png *.jpg *.jpeg *.bmp *.webp)"},
+        // 12.1 Mesh-Brücke
+        {"Inserted %1", "Eingefügt: %1"},
+        {"The file contains no triangles.", "Die Datei enthält keine Dreiecke."},
+        {"The mesh has %1 triangles; MyCAD turns meshes of up to %2 into bodies. Reduce it in your slicer or mesh tool first.",
+         "Das Mesh hat %1 Dreiecke; MyCAD macht Meshes mit bis zu %2 zu Körpern. Verringere sie vorher in deinem Slicer oder Mesh-Programm."},
+        {"The mesh is not closed, so it cannot become a body. Repair it in your slicer or mesh tool.",
+         "Das Mesh ist nicht geschlossen und kann deshalb kein Körper werden. Repariere es in deinem Slicer oder Mesh-Programm."},
+        {"The mesh could not be turned into a body.", "Aus dem Mesh ließ sich kein Körper machen."},
+        {"The mesh is mostly free-form (%1 single triangles); MyCAD turns meshes with up to %2 into bodies. Reduce it in your slicer or mesh tool first.",
+         "Das Mesh ist überwiegend Freiform (%1 einzelne Dreiecke); MyCAD macht Meshes mit bis zu %2 zu Körpern. Verringere sie vorher in deinem Slicer oder Mesh-Programm."},
+        {"The file could not be read: %1", "Die Datei ließ sich nicht lesen: %1"},
         {"How wide is the part, left to right in the photo (mm)?", "Wie breit ist das Teil, von links nach rechts im Foto (mm)?"},
         {"The photo could not be opened.", "Das Foto ließ sich nicht öffnen."},
         {"Grid paper found. How big is one square (mm)?", "Rasterpapier erkannt. Wie groß ist ein Kästchen (mm)?"},

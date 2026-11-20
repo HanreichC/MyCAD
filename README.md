@@ -255,6 +255,8 @@ The start page lists your recent designs and everything in your project folder, 
 
 **Export** to STL or 3MF for your 3D printer, or to STEP for any other CAD program. Sketches export as DXF, for example for laser cutters or CNC mills. **Import** STEP models, and bring DXF and SVG drawings straight into a sketch.
 
+**Remix an STL.** Insert an STL, 3MF or OBJ from Printables or Thingiverse and it becomes a body you can work with, not a cloud of triangles. Flat areas become one face each, round holes become real holes with a centre and a diameter, so you can measure them, sketch on a face, add a fit or a screw, cut and combine. A plate with 24 holes and 100 000 triangles turns into a clean body in under a second. Bosses, fillets and free-form shapes stay made of triangles.
+
 ![Export](src/Gui/Shell/help/images/Design_Export.gif)
 
 <br>
@@ -263,7 +265,6 @@ The start page lists your recent designs and everything in your project folder, 
 
 MyCAD is young and grows fast. This is what comes next, roughly in this order (details in the [roadmap](docs/PLAN.md)):
 
-- **Open STL, 3MF and OBJ** as a reference you can snap to and measure, with holes and flat faces recognized as real features. For remixing and spare parts.
 - **Workshop sheet.** One click makes a PDF with views, a table of holes, threads and fits, and the main dimensions, ready for whoever machines the part.
 - **Flathub**, so MyCAD installs on any Linux.
 - Standard parts as real bodies (screws, nuts, bearings, magnets), gears and hinges, multi-color painting for AMS and MMU printers, splitting parts that are too big for the bed, and a local assistant that turns a sentence into steps, offline.
@@ -288,7 +289,7 @@ MyCAD is young and grows fast. This is what comes next, roughly in this order (d
 | **Search** | Ctrl+K for commands, bodies and sketches, typo-tolerant, English and German |
 | **Scribbles** | Pen tablet with pressure, 7 shapes, fill, text, select and move with a color and delete bar, sheets in 3D, convert to sketch, handwriting tidy-up, offline handwriting recognition (find, CAD notation, written dimensions), Only the Sheet mode |
 | **Export** | STL · 3MF (with colors) · STEP (with colors) · DXF (sketches) |
-| **Import** | STEP · DXF · SVG · photos (traced into a sketch) |
+| **Import** | STEP · STL, 3MF, OBJ (flat faces and holes recognized) · DXF · SVG · photos (traced into a sketch) |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
 | **Pen tablet** | Pressure and hover on Wayland, every tablet and pen button assignable in Settings (H640P preset, other models learn their buttons), KDE shortcuts on the same buttons ignored |

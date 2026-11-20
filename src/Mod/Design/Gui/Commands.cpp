@@ -2376,6 +2376,46 @@ void askAndTrace(const QString& file)
     }
 }
 
+/// 12.1: STL, 3MF oder OBJ als Körper (DesignMesh: Ebenen als eine Fläche, Bohrungen als echte Zylinder). Fehler als
+/// übersetzter Satz; der Weg über eine BREP-Datei spart die Python-Bindung von Part hier
+Part::TopoShape meshBody(const QString& file)
+{
+    const auto py = [](const QString& s) { return "bytes.fromhex('" + QString::fromLatin1(s.toUtf8().toHex()).toStdString() + "').decode()"; };
+    const QString brep = QDir::temp().filePath(QStringLiteral("mycad-mesh-%1.brep").arg(QCoreApplication::applicationPid()));
+    std::string error;
+    {
+        struct Busy  // Warte-Cursor, auch wenn Python eine Ausnahme wirft
+        {
+            Busy()
+            {
+                QApplication::setOverrideCursor(Qt::WaitCursor);
+            }
+            ~Busy()
+            {
+                QApplication::restoreOverrideCursor();
+            }
+        } busy;
+        Base::PyGILStateLocker lock;
+        error = Base::Interpreter().runStringWithKey(("import DesignMesh\n_r = ''\ntry:\n    DesignMesh.solid(DesignMesh.read("
+                                                      + py(file) + ")).exportBrep(" + py(brep)
+                                                      + ")\nexcept DesignMesh.MeshError as e:\n    _r = e.key()\n")
+                                                         .c_str(),
+                                                     "_r");
+    }
+    if (!error.empty()) {
+        const QStringList parts = QString::fromStdString(error).split(QChar(0x1f));
+        QString text = T(parts.first().toUtf8().constData());
+        for (int i = 1; i < parts.size(); ++i) {
+            text = text.arg(parts[i]);
+        }
+        throw Base::RuntimeError(text.toStdString());
+    }
+    Part::TopoShape shape;
+    shape.read(brep.toUtf8().constData());
+    QFile::remove(brep);
+    return shape;
+}
+
 void importFile(App::Document* doc)
 {
     // startet im zuletzt benutzten Ordner, sonst im Projektordner wie Öffnen und Speichern
@@ -2383,8 +2423,8 @@ void importFile(App::Document* doc)
     const QString file = QFileDialog::getOpenFileName(
         Gui::getMainWindow(), T("Insert"),
         QString::fromStdString(params->GetASCII("InsertFolder", Gui::Shell::projectsFolder().toStdString().c_str())),
-        T("CAD files and photos (*.step *.stp *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;STEP (*.step *.stp);;DXF (*.dxf);;"
-          "SVG (*.svg);;Photo to Sketch (*.png *.jpg *.jpeg *.bmp *.webp)")
+        T("CAD files, meshes and photos (*.step *.stp *.stl *.3mf *.obj *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;"
+          "STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;Photo to Sketch (*.png *.jpg *.jpeg *.bmp *.webp)")
     );
     if (file.isEmpty()) {
         return;
@@ -2402,16 +2442,23 @@ void importFile(App::Document* doc)
     App::Part* comp = activeContainer(doc);
     std::string error;
     try {
-        if (suffix == QLatin1String("step") || suffix == QLatin1String("stp")) {
+        const bool mesh = QStringList {QStringLiteral("stl"), QStringLiteral("3mf"), QStringLiteral("obj")}.contains(suffix);
+        if (suffix == QLatin1String("step") || suffix == QLatin1String("stp") || mesh) {
             Part::TopoShape shape;
-            shape.read(file.toUtf8().constData());
+            if (mesh) {
+                shape = meshBody(file);
+            }
+            else {
+                shape.read(file.toUtf8().constData());
+            }
             const auto pieces = Design::Import::pieces(shape);
             if (pieces.empty()) {
                 throw Base::RuntimeError("The STEP file contains no geometry.");
             }
             doc->openTransaction("Insert");
             auto feature = static_cast<Design::Import*>(doc->addObject("Design::Import", "Import"));
-            feature->Label.setValue(stem.toStdString());
+            // der Körper trägt den Dateinamen; gleiche Namen machte FreeCAD zu "Teil001"
+            feature->Label.setValue(T("Inserted %1").arg(stem).toStdString());
             feature->SourceFile.setValue(file.toStdString());
             feature->Imported.setValue(shape);
             comp->addObject(feature);
