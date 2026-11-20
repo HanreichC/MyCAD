@@ -55,6 +55,7 @@
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <BRepAdaptor_Curve2d.hxx>
 #include <BRepGProp_Face.hxx>
+#include <cctype>
 #include <set>
 #include <thread>
 #include <future>
@@ -172,10 +173,12 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
         if (!known[i].empty() && match != signatures.end() && std::ranges::count(signatures, known[i]) == 1) {
             name = "Face" + std::to_string(match - signatures.begin() + 1);
         }
-        else if (known[i].starts_with("g") && match == signatures.end()) {
-            // Signatur aus festen Geometrie-IDs, aber kein exakter Treffer: das Profil mit den meisten gemeinsamen
-            // Kanten ist dasselbe, nur verändert (Kreis hinein = Ring). Teilt keines eine Kante, ist es weg; dann nicht
-            // auf die alte Nummer zurückfallen, die jetzt ein fremdes Profil trägt.
+        else if ((known[i].starts_with("g") || known[i].starts_with("x")) && match == signatures.end()) {
+            // Signatur aus festen IDs, aber kein exakter Treffer: das ähnlichste Profil ist dasselbe, nur verändert
+            // (Kreis hinein = Ring). Ähnlich heißt: viele gemeinsame Kanten im Verhältnis zu allen (Jaccard). Nur die
+            // Anzahl zu zählen zog jede Lasche auf die große Innenfläche, die mehr ihrer Kanten berührt (ConceptKey).
+            // Teilt keines eine Kante, ist es weg; dann nicht auf die alte Nummer zurückfallen, die jetzt ein fremdes
+            // Profil trägt.
             const auto tokens = [](const std::string& sig) {
                 std::set<std::string> out;
                 std::stringstream in(sig);
@@ -185,14 +188,30 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
                 return out;
             };
             const auto mine = tokens(known[i]);
-            size_t best = 0, bestIdx = 0, ties = 0;
+            double best = 0;
+            size_t bestIdx = 0, ties = 0;
+            // Hauchdünne Bereiche (Spalt zwischen fast deckungsgleichen Linien) sind Zeichenungenauigkeiten, nie gemeint:
+            // keine Kandidaten. Sonst gewann ein Splitter mit denselben Linien gegen die Lasche daneben (ConceptKey).
+            // Maß ist die mittlere Breite (2 Fläche / Umfang) gegen die Größe der Skizze; ein schmaler Rahmen bleibt
+            const double size = all.getBoundBox().CalcDiagonalLength();
+            const auto sliver = [&all, size](size_t k) {
+                const TopoDS_Shape face = all.getSubShape(("Face" + std::to_string(k + 1)).c_str(), true);
+                GProp_GProps area, rim;
+                BRepGProp::SurfaceProperties(face, area);
+                BRepGProp::LinearProperties(face, rim);
+                return rim.Mass() > 0 && 2 * area.Mass() / rim.Mass() < 1e-4 * size;
+            };
             for (size_t k = 0; k < signatures.size(); ++k) {
+                if (sliver(k)) {
+                    continue;
+                }
                 const auto theirs = tokens(signatures[k]);
                 const size_t shared = std::ranges::count_if(mine, [&](const std::string& t) { return theirs.contains(t); });
-                if (shared > best) {
-                    best = shared, bestIdx = k, ties = 1;
+                const double similar = double(shared) / double(mine.size() + theirs.size() - shared);
+                if (similar > best + 1e-12) {
+                    best = similar, bestIdx = k, ties = 1;
                 }
-                else if (shared == best && shared > 0) {
+                else if (shared > 0 && std::abs(similar - best) <= 1e-12) {
                     ++ties;
                 }
             }
@@ -3604,7 +3623,11 @@ App::DocumentObjectExecReturn* Profiles::execute()
                 Data::IndexedName::fromConst("Edge", std::atoi(t.c_str()) + 1));
             std::string id = mapped ? mapped.toString() : std::string();
             id = id.substr(0, id.find(';'));
-            ids += (ids.empty() ? "" : ",") + (id.starts_with("g") ? id : "e" + t);
+            // Projizierte Geometrie ("e5;SKT") hat ebenfalls eine feste Nummer: als "x5". Vorher fiel sie auf die laufende
+            // Kantennummer zurück, die sich mit jeder neuen Linie verschiebt; nach einer Skizzenänderung fand ein Schritt
+            // seine Profile nicht mehr und wurde leer (ConceptKey). "e<Kante>" bleibt nur für Kanten ohne Namen.
+            const bool external = id.size() > 1 && id[0] == 'e' && std::isdigit(static_cast<unsigned char>(id[1]));
+            ids += (ids.empty() ? "" : ",") + (id.starts_with("g") ? id : external ? "x" + id.substr(1) : "e" + t);
         }
         signature = ids;
     }
