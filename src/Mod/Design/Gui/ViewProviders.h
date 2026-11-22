@@ -27,6 +27,7 @@ class Geometry;
 }
 
 class SoNodeSensor;
+class SoPolygonOffset;
 namespace Sketcher
 {
 class Constraint;
@@ -129,7 +130,9 @@ public:
     void refreshPrintOverlay();
 
 private:
+    void updateTransparentOffset();
     class SoSwitch* printSwitch = nullptr;
+    SoPolygonOffset* transparentOffset = nullptr;  ///< durchsichtig: Flächen weiter nach hinten (attach)
 };
 
 /// Geschlossene Skizzen-Regionen: hellblau, halbtransparent, anklickbar, nicht im Browser.

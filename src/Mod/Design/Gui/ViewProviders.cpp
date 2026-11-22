@@ -68,6 +68,8 @@
 #include <Inventor/nodes/SoMaterial.h>
 #include <Inventor/nodes/SoPickStyle.h>
 #include <Inventor/nodes/SoPolygonOffset.h>
+#include <Inventor/actions/SoSearchAction.h>
+#include <Inventor/SoPath.h>
 #include <Inventor/nodes/SoSeparator.h>
 #include <Inventor/nodes/SoShaderParameter.h>
 #include <Inventor/nodes/SoShaderProgram.h>
@@ -948,6 +950,29 @@ void ViewProviderBody::attach(App::DocumentObject* obj)
     printSwitch = new SoSwitch;
     printSwitch->whichChild = SO_SWITCH_NONE;
     pcRoot->addChild(printSwitch);
+    // Eigener Tiefenversatz direkt vor den Flächen (ersetzt FreeCADs 1/1 davor): durchsichtige Körper weiter nach hinten.
+    // Liegen zwei Körper aufeinander (Acrylplatte unter dem Gehäuse, ConceptKey), sieht man die Berührfläche durch das
+    // Acryl; mit gleichem Versatz kämpften beide Flächen dort um die Tiefe: Streifen und Dreiecke. So gewinnt die feste.
+    SoSearchAction search;
+    search.setNode(faceset);
+    search.setSearchingAll(true);  // die Darstellungsart ist beim Anhängen noch nicht gewählt (Schalter aus)
+    search.apply(pcRoot);
+    if (SoPath* path = search.getPath(); path && path->getLength() > 1) {
+        if (auto parent = dynamic_cast<SoGroup*>(path->getNodeFromTail(1))) {
+            transparentOffset = new SoPolygonOffset;
+            parent->insertChild(transparentOffset, parent->findChild(faceset));
+            updateTransparentOffset();
+        }
+    }
+}
+
+void ViewProviderBody::updateTransparentOffset()
+{
+    if (transparentOffset) {
+        const bool clear = Transparency.getValue() > 0;
+        transparentOffset->factor = clear ? 2.0F : 1.0F;
+        transparentOffset->units = clear ? 4.0F : 1.0F;
+    }
 }
 
 void ViewProviderBody::updateData(const App::Property* prop)
@@ -973,6 +998,9 @@ void ViewProviderBody::updateData(const App::Property* prop)
 void ViewProviderBody::onChanged(const App::Property* prop)
 {
     PartGui::ViewProviderPartExt::onChanged(prop);
+    if (prop == &Transparency || prop == &ShapeAppearance) {
+        updateTransparentOffset();
+    }
     if (printViewOn && prop == &Visibility) {
         refreshPrintOverlay();
     }
