@@ -252,6 +252,8 @@ public:
     bool skipped = false;
 
     App::DocumentObjectExecReturn* execute() override;
+    /// Ältere Dateien: Signaturen mit laufenden Nummern projizierter Kanten werden beim nächsten Neuberechnen umgestellt
+    void onDocumentRestored() override;
     const char* getViewProviderName() const override
     {
         return "DesignGui::ViewProviderProfiles";
@@ -274,6 +276,8 @@ public:
     static Regions computeRegions(const TopoDS_Shape& localSketchShape);
 
 private:
+    /// Signaturen aus festen IDs übernehmen; bei denselben Bereichen die Schlüssel der Schritte übersetzen
+    void adopt(Regions& regions, const Part::TopoShape& sketchShape);
     std::shared_future<Regions> background;
     TopoDS_Shape backgroundInput;  ///< Skizzenform, für die background rechnet
 };

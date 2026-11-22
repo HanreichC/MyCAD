@@ -3586,6 +3586,81 @@ Profiles* Profiles::forSketch(App::DocumentObject* sketch)
     return nullptr;
 }
 
+/// Gleiche Bereiche in gleicher Reihenfolge (Schwerpunkt und Fläche)? before liegt auf der Skizze (place), now in
+/// Skizzen-Koordinaten
+static bool sameRegions(const Part::TopoShape& before, const Base::Placement& place, const Part::TopoShape& now)
+{
+    const auto a = before.getSubTopoShapes(TopAbs_FACE), b = now.getSubTopoShapes(TopAbs_FACE);
+    if (a.empty() || a.size() != b.size()) {
+        return false;
+    }
+    const Base::Matrix4D toLocal = place.inverse().toMatrix();
+    for (size_t i = 0; i < a.size(); ++i) {
+        GProp_GProps pa, pb;
+        BRepGProp::SurfaceProperties(a[i].getShape(), pa);
+        BRepGProp::SurfaceProperties(b[i].getShape(), pb);
+        const gp_Pnt c = pa.CentreOfMass();
+        const Base::Vector3d local = toLocal * Base::Vector3d(c.X(), c.Y(), c.Z());
+        const gp_Pnt d = pb.CentreOfMass();
+        if (std::abs(pa.Mass() - pb.Mass()) > 1e-6 * (1 + pa.Mass())
+            || (local - Base::Vector3d(d.X(), d.Y(), d.Z())).Length() > 1e-6 * (1 + std::sqrt(pa.Mass()))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/// Signaturen der Bereiche aus festen IDs bilden und übernehmen; waren es dieselben Bereiche, die Schlüssel der Schritte
+/// mit übersetzen
+void Profiles::adopt(Regions& regions, const Part::TopoShape& sketchShape)
+{
+    // Signaturen aus den festen Geometrie-IDs der Skizze ("g12") statt laufender Kantennummern: löscht man andere
+    // Geometrie, rutschen die Nummern, und ein Schritt fand still ein fremdes Profil (gleiche Nummern, andere Kanten)
+    for (std::string& signature : regions.signatures) {
+        std::string ids;
+        std::stringstream in(signature);
+        for (std::string t; std::getline(in, t, ',');) {
+            const Data::MappedName mapped = sketchShape.getMappedName(
+                Data::IndexedName::fromConst("Edge", std::atoi(t.c_str()) + 1));
+            std::string id = mapped ? mapped.toString() : std::string();
+            id = id.substr(0, id.find(';'));
+            // Projizierte Geometrie ("e5;SKT") hat ebenfalls eine feste Nummer: als "x5". Vorher fiel sie auf die laufende
+            // Kantennummer zurück, die sich mit jeder neuen Linie verschiebt; nach einer Skizzenänderung fand ein Schritt
+            // seine Profile nicht mehr und wurde leer (ConceptKey). "e<Kante>" bleibt nur für Kanten ohne Namen.
+            const bool external = id.size() > 1 && id[0] == 'e' && std::isdigit(static_cast<unsigned char>(id[1]));
+            ids += (ids.empty() ? "" : ",") + (id.starts_with("g") ? id : external ? "x" + id.substr(1) : "e" + t);
+        }
+        signature = ids;
+    }
+    // Dieselben Bereiche wie vorher, aber andere Signaturen (ältere Datei: projizierte Kanten mit laufender Nummer): die
+    // gespeicherten Schlüssel der Schritte gleich mit übersetzen, solange die Zuordnung über die Lage noch eindeutig ist.
+    // Sonst fände ein Schritt nach der nächsten Skizzenänderung über die alte Nummer ein fremdes Profil.
+    const auto& old = Signatures.getValues();
+    if (old.size() == regions.signatures.size() && old != regions.signatures && sameRegions(Shape.getShape(), Placement.getValue(), regions.shape)) {
+        std::map<std::string, std::string> renamed;
+        for (size_t k = 0; k < old.size(); ++k) {
+            if (std::ranges::count(old, old[k]) == 1) {
+                renamed[old[k]] = regions.signatures[k];
+            }
+        }
+        for (App::DocumentObject* user : getInList()) {
+            auto keys = dynamic_cast<App::PropertyStringList*>(user->getPropertyByName("ProfileKeys"));
+            auto link = dynamic_cast<App::PropertyLinkSub*>(user->getPropertyByName("Profile"));
+            if (!keys || !link || link->getValue() != this) {
+                continue;
+            }
+            auto values = keys->getValues();
+            for (auto& key : values) {
+                if (auto it = renamed.find(key); it != renamed.end()) {
+                    key = it->second;
+                }
+            }
+            keys->setValues(values);
+        }
+    }
+    Signatures.setValues(regions.signatures);
+}
+
 App::DocumentObjectExecReturn* Profiles::execute()
 {
     auto sketch = freecad_cast<Part::Feature*>(Sketch.getValue());
@@ -3612,30 +3687,41 @@ App::DocumentObjectExecReturn* Profiles::execute()
     if (!regions.error.empty()) {
         return new App::DocumentObjectExecReturn(regions.error);
     }
-    // Signaturen aus den festen Geometrie-IDs der Skizze ("g12") statt laufender Kantennummern: löscht man andere
-    // Geometrie, rutschen die Nummern, und ein Schritt fand still ein fremdes Profil (gleiche Nummern, andere Kanten)
-    const Part::TopoShape sketchShape = sketch->Shape.getShape();
-    for (std::string& signature : regions.signatures) {
-        std::string ids;
-        std::stringstream in(signature);
-        for (std::string t; std::getline(in, t, ',');) {
-            const Data::MappedName mapped = sketchShape.getMappedName(
-                Data::IndexedName::fromConst("Edge", std::atoi(t.c_str()) + 1));
-            std::string id = mapped ? mapped.toString() : std::string();
-            id = id.substr(0, id.find(';'));
-            // Projizierte Geometrie ("e5;SKT") hat ebenfalls eine feste Nummer: als "x5". Vorher fiel sie auf die laufende
-            // Kantennummer zurück, die sich mit jeder neuen Linie verschiebt; nach einer Skizzenänderung fand ein Schritt
-            // seine Profile nicht mehr und wurde leer (ConceptKey). "e<Kante>" bleibt nur für Kanten ohne Namen.
-            const bool external = id.size() > 1 && id[0] == 'e' && std::isdigit(static_cast<unsigned char>(id[1]));
-            ids += (ids.empty() ? "" : ",") + (id.starts_with("g") ? id : external ? "x" + id.substr(1) : "e" + t);
-        }
-        signature = ids;
-    }
-    Signatures.setValues(regions.signatures);
+    adopt(regions, sketch->Shape.getShape());
     // Lage über die Placement-Eigenschaft: Part::Feature überschreibt beim Recompute die Shape-Lage damit
     Placement.setValue(sketch->Placement.getValue());
     Shape.setValue(regions.shape);
     return StdReturn;
+}
+
+void Profiles::onDocumentRestored()
+{
+    Part::Feature::onDocumentRestored();
+    // "e12" in einer Signatur war früher auch eine projizierte Kante mit ihrer laufenden Nummer; heute heißt sie "x3".
+    // Dann die Signaturen neu bilden; adopt übersetzt dabei die Schlüssel der Schritte (gleiche Bereiche, neue Namen)
+    auto sketch = freecad_cast<Part::Feature*>(Sketch.getValue());
+    if (!sketch) {
+        return;
+    }
+    const Part::TopoShape shape = sketch->Shape.getShape();
+    for (const auto& signature : Signatures.getValues()) {
+        std::stringstream in(signature);
+        for (std::string t; std::getline(in, t, ',');) {
+            if (t.size() < 2 || t[0] != 'e' || !std::isdigit(static_cast<unsigned char>(t[1]))) {
+                continue;
+            }
+            const Data::MappedName mapped = shape.getMappedName(Data::IndexedName::fromConst("Edge", std::atoi(t.c_str() + 1) + 1));
+            const std::string name = mapped ? mapped.toString() : std::string();
+            if (name.size() > 1 && name[0] == 'e' && std::isdigit(static_cast<unsigned char>(name[1]))) {
+                // gleich hier umstellen: was beim Laden zum Neuberechnen markiert wird, verwirft FreeCAD danach
+                Regions regions = computeRegions(shape.getShape().Located(TopLoc_Location()));
+                if (regions.error.empty()) {
+                    adopt(regions, shape);
+                }
+                return;
+            }
+        }
+    }
 }
 
 void Profiles::computeInBackground()
