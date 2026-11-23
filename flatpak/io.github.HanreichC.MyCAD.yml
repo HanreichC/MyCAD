@@ -97,6 +97,19 @@ modules:
         url: https://github.com/jbeder/yaml-cpp
         commit: 56e3bb550c91fd7005566f19c079cb7a503223cf  # yaml-cpp-0.9.0
 
+  - name: rapidjson  # nur Header; OCCT 8 baut die glTF-Bibliothek (TKDEGLTF, Import-Modul) nur damit
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DRAPIDJSON_BUILD_DOC=OFF
+      - -DRAPIDJSON_BUILD_EXAMPLES=OFF
+      - -DRAPIDJSON_BUILD_TESTS=OFF
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    cleanup: ['*']
+    sources:
+      - type: git
+        url: https://github.com/Tencent/rapidjson.git
+        commit: 297637bc0a0f00dc504dbc1a47ebdaa577f8ae19
+
   - name: opencascade  # 8.0.1 wie im Dev-Container: ohne Draw, Tk, VTK, FreeImage
     buildsystem: cmake-ninja
     builddir: true
@@ -107,7 +120,7 @@ modules:
       - -DBUILD_DOC_Overview=OFF
       - -DBUILD_SAMPLES_QT=OFF
       - -DUSE_FREETYPE=ON
-      - -DUSE_RAPIDJSON=OFF
+      - -DUSE_RAPIDJSON=ON  # sonst fehlt TKDEGLTF (glTF), gegen die MyCAD linkt
       - -DUSE_TK=OFF
       - -DUSE_TCL=OFF
       - -DUSE_TBB=OFF
