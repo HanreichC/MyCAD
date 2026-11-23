@@ -5316,11 +5316,11 @@
    "tips": {
     "en": [
      "The plane or face must cut all the way through the body. Create a suitable plane with CONSTRUCT → Offset Plane.",
-     "To print a part in pieces, set Connector to Pins: pegs grow on one side of the cut, the other side gets holes with the clearance from Settings › 3D Printing. Split for Printing does all of this in one click."
+     "To print a part in pieces, set Connector to Pins: pegs grow on one side of the cut, the other side gets holes with the clearance from Settings › 3D Printing. Dovetail instead makes a tongue across the cut that slides into a groove from the side and cannot pull apart. Split for Printing does all of this in one click."
     ],
     "de": [
      "Die Ebene oder Fläche muss den Körper ganz durchschneiden. Eine passende Ebene legst du mit KONSTRUIEREN → Versetzte Ebene an.",
-     "Um ein Teil in Stücken zu drucken, stell Verbinder auf Stifte: Auf der einen Seite des Schnitts wachsen Zapfen, die andere Seite bekommt Bohrungen mit dem Spiel aus Einstellungen › 3D-Druck. Zum Drucken teilen macht das alles mit einem Klick."
+     "Um ein Teil in Stücken zu drucken, stell Verbinder auf Stifte: Auf der einen Seite des Schnitts wachsen Zapfen, die andere Seite bekommt Bohrungen mit dem Spiel aus Einstellungen › 3D-Druck. Schwalbenschwanz macht stattdessen eine Feder über den Schnitt, die seitlich in eine Nut gleitet und sich nicht auseinanderziehen lässt. Zum Drucken teilen macht das alles mit einem Klick."
     ]
    },
    "images": [

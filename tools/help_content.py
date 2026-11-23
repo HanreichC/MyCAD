@@ -1246,8 +1246,8 @@ A("Design_SplitBody", "modify", "Design_SplitBody", ("Split Body", "Körper teil
     "Der Körper wird sofort geteilt; jedes Stück wird ein eigener Körper (Box, Box (2) …).")],
   tips=[("The plane or face must cut all the way through the body. Create a suitable plane with CONSTRUCT → Offset Plane.",
          "Die Ebene oder Fläche muss den Körper ganz durchschneiden. Eine passende Ebene legst du mit KONSTRUIEREN → Versetzte Ebene an."),
-        ("To print a part in pieces, set Connector to Pins: pegs grow on one side of the cut, the other side gets holes with the clearance from Settings › 3D Printing. Split for Printing does all of this in one click.",
-         "Um ein Teil in Stücken zu drucken, stell Verbinder auf Stifte: Auf der einen Seite des Schnitts wachsen Zapfen, die andere Seite bekommt Bohrungen mit dem Spiel aus Einstellungen › 3D-Druck. Zum Drucken teilen macht das alles mit einem Klick.")],
+        ("To print a part in pieces, set Connector to Pins: pegs grow on one side of the cut, the other side gets holes with the clearance from Settings › 3D Printing. Dovetail instead makes a tongue across the cut that slides into a groove from the side and cannot pull apart. Split for Printing does all of this in one click.",
+         "Um ein Teil in Stücken zu drucken, stell Verbinder auf Stifte: Auf der einen Seite des Schnitts wachsen Zapfen, die andere Seite bekommt Bohrungen mit dem Spiel aus Einstellungen › 3D-Druck. Schwalbenschwanz macht stattdessen eine Feder über den Schnitt, die seitlich in eine Nut gleitet und sich nicht auseinanderziehen lässt. Zum Drucken teilen macht das alles mit einem Klick.")],
   see=["Design_SplitFace", "Design_Combine", "Design_PrintView"])
 
 A("Design_Move", "modify", "Design_Move", ("Move", "Verschieben"),

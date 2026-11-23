@@ -7026,7 +7026,7 @@ PROPERTY_SOURCE(Design::Split, Design::Feature)
 
 namespace
 {
-const char* ConnectorEnums[] = {"None", "Pins", nullptr};
+const char* ConnectorEnums[] = {"None", "Pins", "Dovetail", nullptr};
 
 /// 12.8: Stifte über einen ebenen Schnitt. Auf jeder Schnittfläche der Teile unter der Ebene (gegen die Normale) wächst
 /// ein Zapfen nach oben, das Teil darüber bekommt die Bohrung mit Spiel. Zwei Stifte, wo Platz ist (verdrehsicher),
@@ -7161,6 +7161,98 @@ int addPins(std::vector<Part::TopoShape>& pieces, const gp_Ax3& ax, double clear
     }
     return count;
 }
+
+/// 12.8 Schwalbenschwanz über einen ebenen Schnitt: auf jeder Schnittfläche unter der Ebene eine Feder, die über die
+/// ganze kürzere Richtung der Fläche läuft (dort schiebt man die Stücke zusammen), im Querschnitt ein Trapez, das sich
+/// mit 15° vom Schnitt weg verbreitert; das Stück darüber bekommt die Nut mit Spiel. Die Feder bleibt im Material des
+/// oberen Stücks (sie ragt nirgends heraus). Liefert die Zahl der Federn.
+int addDovetails(std::vector<Part::TopoShape>& pieces, const gp_Ax3& ax, double clearance)
+{
+    const gp_Pln plane(ax);
+    const gp_Vec n(ax.Direction());
+    std::vector<size_t> below, above;
+    for (size_t i = 0; i < pieces.size(); ++i) {
+        GProp_GProps props;
+        BRepGProp::VolumeProperties(pieces[i].getShape(), props);
+        (gp_Vec(ax.Location(), props.CentreOfMass()).Dot(n) < 0 ? below : above).push_back(i);
+    }
+    const auto volume = [](const TopoDS_Shape& s) {
+        GProp_GProps props;
+        BRepGProp::VolumeProperties(s, props);
+        return props.Mass();
+    };
+    int count = 0;
+    for (size_t i : below) {
+        for (TopExp_Explorer it(pieces[i].getShape(), TopAbs_FACE); it.More(); it.Next()) {
+            const TopoDS_Face face = TopoDS::Face(it.Current());
+            BRepAdaptor_Surface surface(face);
+            if (surface.GetType() != GeomAbs_Plane || !surface.Plane().Axis().IsParallel(ax.Axis(), 1e-6)
+                || plane.Distance(surface.Plane().Location()) > 1e-6) {
+                continue;  // keine Schnittfläche
+            }
+            // Ausdehnung der Fläche in der Ebene; geschoben wird entlang der kürzeren Richtung
+            Bnd_Box box;
+            BRepBndLib::Add(face, box);
+            const gp_Vec axes[2] = {gp_Vec(ax.XDirection()), gp_Vec(ax.YDirection())};
+            double lo[2] = {1e300, 1e300}, hi[2] = {-1e300, -1e300};
+            for (int corner = 0; corner < 8; ++corner) {
+                const gp_Pnt c((corner & 1 ? box.CornerMax() : box.CornerMin()).X(),
+                               (corner & 2 ? box.CornerMax() : box.CornerMin()).Y(),
+                               (corner & 4 ? box.CornerMax() : box.CornerMin()).Z());
+                for (int k = 0; k < 2; ++k) {
+                    const double v = gp_Vec(ax.Location(), c).Dot(axes[k]);
+                    lo[k] = std::min(lo[k], v);
+                    hi[k] = std::max(hi[k], v);
+                }
+            }
+            const int slide = hi[0] - lo[0] <= hi[1] - lo[1] ? 0 : 1, across = 1 - slide;
+            const double span = hi[across] - lo[across];
+            const double narrow = std::clamp(0.3 * span, 3.0, 15.0);       // Breite am Schnitt
+            const double depth = std::clamp(0.6 * narrow, 2.0, 8.0);       // so tief geht sie in das obere Stück
+            const double flare = depth * std::tan(15 * M_PI / 180);        // je Seite breiter am Ende
+            const double mid = (lo[across] + hi[across]) / 2;
+            const auto prism = [&](double grow) {  // Trapez quer zur Schieberichtung, über die ganze Fläche gezogen
+                const auto at = [&](double w, double d) {
+                    return ax.Location().Translated(axes[across] * w + axes[slide] * (lo[slide] - 1) + n * d);
+                };
+                BRepBuilderAPI_MakePolygon poly;
+                poly.Add(at(mid - narrow / 2 - grow, 0));
+                poly.Add(at(mid + narrow / 2 + grow, 0));
+                poly.Add(at(mid + narrow / 2 + flare + grow, depth + grow));
+                poly.Add(at(mid - narrow / 2 - flare - grow, depth + grow));
+                poly.Close();
+                return BRepPrimAPI_MakePrism(BRepBuilderAPI_MakeFace(poly.Wire()).Face(),
+                                             axes[slide] * (hi[slide] - lo[slide] + 2))
+                    .Shape();
+            };
+            const TopoDS_Shape tongue = prism(0), slot = prism(clearance);
+            // das obere Stück, in dem die Feder liegt; nur im Material (ragt nirgends heraus)
+            size_t best = pieces.size();
+            double most = 0;
+            for (size_t j : above) {
+                const double v = volume(BRepAlgoAPI_Common(pieces[j].getShape(), tongue).Shape());
+                if (v > most) {
+                    most = v;
+                    best = j;
+                }
+            }
+            if (best == pieces.size() || most < 0.5 * volume(tongue)) {
+                continue;  // Querschnitt zu unregelmäßig oder zu dünn
+            }
+            const TopoDS_Shape inside = BRepAlgoAPI_Common(pieces[best].getShape(), tongue).Shape();
+            const TopoDS_Shape grown = BRepAlgoAPI_Fuse(pieces[i].getShape(), inside).Shape();
+            const TopoDS_Shape cut = BRepAlgoAPI_Cut(pieces[best].getShape(), slot).Shape();
+            if (grown.IsNull() || cut.IsNull()) {
+                continue;
+            }
+            pieces[i] = Part::TopoShape(grown);
+            pieces[best] = Part::TopoShape(cut);
+            ++count;
+            break;  // eine Feder je Stück (ein weiteres Durchlaufen der Flächen sähe das neue Stück)
+        }
+    }
+    return count;
+}
 }  // namespace
 
 Split::Split()
@@ -7168,9 +7260,11 @@ Split::Split()
     ADD_PROPERTY_TYPE(Tool, (nullptr), "Split", App::Prop_None, "Plane or face to split with");
     ADD_PROPERTY_TYPE(Pieces, (0L), "Split", App::PropertyType(App::Prop_Output | App::Prop_Hidden), "Pieces");
     ADD_PROPERTY_TYPE(Dropped, (), "Split", App::Prop_Hidden, "Pieces whose body was deleted (skipped)");
-    ADD_PROPERTY_TYPE(Connector, (0L), "Split", App::Prop_None, "Pins join the pieces again after printing");
+    ADD_PROPERTY_TYPE(Connector, (0L), "Split", App::Prop_None,
+                      "Pins or a dovetail join the pieces again after printing");
     Connector.setEnums(ConnectorEnums);
-    ADD_PROPERTY_TYPE(Clearance, (printClearance(1)), "Split", App::Prop_None, "Clearance per side around the pins");
+    ADD_PROPERTY_TYPE(Clearance, (printClearance(1)), "Split", App::Prop_None,
+                      "Clearance per side around the pins or the dovetail");
     ADD_PROPERTY_TYPE(PinCount, (0L), "Split", App::PropertyType(App::Prop_Output | App::Prop_Hidden), "Pins");
     Clearance.setStatus(App::Property::Hidden, true);
     Operation.setStatus(App::Property::Hidden, true);
@@ -7226,15 +7320,20 @@ App::DocumentObjectExecReturn* Split::compute()
     if (Pieces.getValue() != long(pieces.size())) {
         Pieces.setValue(long(pieces.size()));
     }
-    const int pins = flat && Connector.getValue() == 1 ? addPins(pieces, ax, Clearance.getValue()) : 0;
+    const long kind = Connector.getValue();
+    const int pins = !flat ? 0
+        : kind == 1        ? addPins(pieces, ax, Clearance.getValue())
+        : kind == 2        ? addDovetails(pieces, ax, Clearance.getValue())
+                           : 0;
     if (PinCount.getValue() != pins) {
         PinCount.setValue(pins);
     }
     static const std::string narrow = "The cut is too narrow for pins";
-    if (Connector.getValue() == 1 && pins == 0) {
-        Warning.setValue(narrow);
+    static const std::string noDovetail = "The cut is too small or too thin for a dovetail";
+    if (kind != 0 && pins == 0) {
+        Warning.setValue(kind == 1 ? narrow : noDovetail);
     }
-    else if (Warning.getValue() == narrow) {
+    else if (Warning.getValue() == narrow || Warning.getValue() == noDovetail) {
         Warning.setValue("");
     }
     // gelöschte Teile (Body gelöscht) auslassen: sonst rückten die Teile dahinter in fremde Bodies auf

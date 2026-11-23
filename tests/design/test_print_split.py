@@ -95,6 +95,30 @@ class PrintSplit(DesignTest):
         self.assertEqual(len(rest), 1)
         self.assertAlmostEqual(Design.printSplitPlane(rest[0]).Base.x, 500 / 3 + (500 * 2 / 3) / 2, places=3)
 
+    def test_dovetail_locks_and_slides(self):
+        """Schwalbenschwanz: eine Feder über die kürzere Richtung (10 mm hoch), Nut mit Spiel; auseinanderziehen geht
+        nicht (die breite Seite steckt hinter der schmalen Öffnung), entlang der Feder schieben schon"""
+        _, b = box(self.doc, 300, 20, 10)
+        at = Design.printSplitPlane(b)
+        s, pieces = split(self.doc, b, at, Connector="Dovetail")
+        self.assertEqual(s.PinCount, 1)
+        self.assertEqual(s.Warning, "")
+        for p in pieces:
+            self.assertTrue(p.Shape.isValid() and len(p.Shape.Solids) == 1, p.Label)
+        tongue, groove = sorted(pieces, key=lambda p: p.Shape.Volume, reverse=True)
+        self.assertGreater(tongue.Shape.Volume, 30000)
+        self.assertLess(groove.Shape.Volume, 30000)
+        self.assertLess(tongue.Shape.common(groove.Shape).Volume, 1e-6)
+        n = at.Rotation.multVec(V(0, 0, 1))
+        if tongue.Shape.BoundBox.Center.dot(n) > groove.Shape.BoundBox.Center.dot(n):
+            n = n * -1  # n zeigt vom Federstück zum Nutstück
+        pulled = tongue.Shape.copy()
+        pulled.translate(n * -1)  # 1 mm auseinander: die Feder hängt in der Nut
+        self.assertGreater(pulled.common(groove.Shape).Volume, 0.1)
+        slid = tongue.Shape.copy()
+        slid.translate(V(0, 0, 1))  # entlang der Feder (z, die kürzere Richtung): frei
+        self.assertLess(slid.common(groove.Shape).Volume, 1e-6)
+
     def test_too_tall_is_cut_across_the_height(self):
         _, b = box(self.doc, 40, 40, 300)
         at = Design.printSplitPlane(b)
