@@ -2878,7 +2878,11 @@ Base::Placement Design::printSplitPlane(Body* body)
                             box.LengthY() / (xLonger ? std::min(bed.x, bed.y) : std::max(bed.x, bed.y)),
                             box.LengthZ() / bed.z};
     const int k = int(std::max_element(over, over + 3) - over);
+    // so viele gleich lange Stücke, wie nötig sind; der Schnitt trennt das erste ab (der Rest wird weiter geteilt)
+    const int pieces = std::max(2, int(std::ceil(over[k] - 1e-9)));
     Base::Vector3d normal(k == 0, k == 1, k == 2), center = box.GetCenter();
+    const double low[3] = {box.MinX, box.MinY, box.MinZ}, size[3] = {box.LengthX(), box.LengthY(), box.LengthZ()};
+    (k == 0 ? center.x : k == 1 ? center.y : center.z) = low[k] + size[k] / pieces;
     const Base::Rotation back = turn.inverse();
     back.multVec(normal, normal);
     back.multVec(center, center);

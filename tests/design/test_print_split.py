@@ -84,6 +84,17 @@ class PrintSplit(DesignTest):
         thin = min(p.Shape.Volume for p in pieces)
         self.assertAlmostEqual(thin, 500 - math.pi * (r + c) ** 2 * (length + c), delta=0.01)
 
+    def test_three_bed_lengths_cut_off_a_third(self):
+        """500 mm bei 220 mm Bett: drei gleiche Stücke nötig, der erste Schnitt trennt ein Drittel ab; der Rest
+        (333 mm) wird mit dem nächsten Schnitt halbiert"""
+        _, b = box(self.doc, 500, 20, 10)
+        at = Design.printSplitPlane(b)
+        self.assertAlmostEqual(at.Base.x, 500 / 3, places=6)
+        s, pieces = split(self.doc, b, at, Connector="Pins")
+        rest = [p for p in pieces if not Design.fitsPrintBed(Design.printSize(p))]
+        self.assertEqual(len(rest), 1)
+        self.assertAlmostEqual(Design.printSplitPlane(rest[0]).Base.x, 500 / 3 + (500 * 2 / 3) / 2, places=3)
+
     def test_too_tall_is_cut_across_the_height(self):
         _, b = box(self.doc, 40, 40, 300)
         at = Design.printSplitPlane(b)

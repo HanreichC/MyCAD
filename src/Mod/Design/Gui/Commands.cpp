@@ -1557,7 +1557,7 @@ void startAlign(App::Document* doc)
 }
 
 /// Split Body: den Body und die Ebene oder Fläche, an der geteilt wird (beliebige Reihenfolge); jedes weitere Teil wird ein Body
-void finishSplit(App::Document* doc, Design::Split* feature, Design::Body* body);
+bool finishSplit(App::Document* doc, Design::Split* feature, Design::Body* body);
 void styleDatum(App::DocumentObject* datum);
 
 void startSplit(App::Document* doc)
@@ -1591,8 +1591,9 @@ void startSplit(App::Document* doc)
     finishSplit(doc, feature, body);
 }
 
-/// 12.8: ein Teil, das nicht aufs Druckbett passt (gewählt oder das erste zu große), in der Mitte seiner längsten zu
-/// großen Richtung teilen, mit Stiften. ponytail: ein Schnitt je Klick; was danach noch zu groß ist, meldet die Legende
+/// 12.8: ein Teil, das nicht aufs Druckbett passt (gewählt oder das erste zu große), quer zu seiner am weitesten zu
+/// großen Richtung in so viele gleich lange Stücke teilen, wie nötig sind, mit Stiften. Je Schnitt ein Schritt (Strg+Z
+/// nimmt einen zurück); geschnitten wird, bis jedes Stück passt (höchstens 12 Schnitte)
 void splitForPrinting(App::Document* doc)
 {
     Design::Body* body = nullptr;
@@ -1607,20 +1608,31 @@ void splitForPrinting(App::Document* doc)
         toolHint(T("Split for Printing"), T("Every body fits the print bed."));
         return;
     }
-    auto feature = static_cast<Design::Split*>(addFeature(doc, "Design::Split", "Split", body));
-    App::DocumentObject* plane = doc->addObject("PartDesign::Plane", "Plane");
-    App::Part* component = Design::componentOf(body);
-    Design::folder(component, "Construction")->addObject(plane);
-    static_cast<App::PropertyPlacement*>(plane->getPropertyByName("Placement"))
-        ->setValue(component->globalPlacement().inverse() * Design::printSplitPlane(body));
-    styleDatum(plane);
-    plane->Visibility.setValue(false);
-    feature->Tool.setValue(plane);
-    feature->Connector.setValue(1L);
-    finishSplit(doc, feature, body);
+    for (int cut = 0; body && cut < 12; ++cut) {
+        auto feature = static_cast<Design::Split*>(addFeature(doc, "Design::Split", "Split", body));
+        App::DocumentObject* plane = doc->addObject("PartDesign::Plane", "Plane");
+        App::Part* component = Design::componentOf(body);
+        Design::folder(component, "Construction")->addObject(plane);
+        static_cast<App::PropertyPlacement*>(plane->getPropertyByName("Placement"))
+            ->setValue(component->globalPlacement().inverse() * Design::printSplitPlane(body));
+        styleDatum(plane);
+        plane->Visibility.setValue(false);
+        feature->Tool.setValue(plane);
+        feature->Connector.setValue(1L);
+        if (!finishSplit(doc, feature, body)) {
+            return;
+        }
+        body = nullptr;  // ein Stück dieses Schnitts, das noch nicht passt, kommt als nächstes dran
+        for (auto piece : feature->Bodies.getValues()) {
+            if (!Design::fitsPrintBed(Design::printSize(static_cast<Design::Body*>(piece)))) {
+                body = static_cast<Design::Body*>(piece);
+                break;
+            }
+        }
+    }
 }
 
-void finishSplit(App::Document* doc, Design::Split* feature, Design::Body* body)
+bool finishSplit(App::Document* doc, Design::Split* feature, Design::Body* body)
 {
     modifyBodies(feature, {body});
     doc->recompute();
@@ -1640,10 +1652,11 @@ void finishSplit(App::Document* doc, Design::Split* feature, Design::Body* body)
                              T(feature->getStatusString()));
         doc->abortTransaction();
         doc->recompute();
-        return;
+        return false;
     }
     doc->commitTransaction();
     Gui::Selection().clearSelection();
+    return true;
 }
 
 /// Rib: einen Body und Skizzenlinien wählen
