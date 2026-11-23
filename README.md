@@ -19,7 +19,7 @@ Sketch, extrude, print: the workflow you know from Fusion 360, with the look of 
 
 ## Why MyCAD.
 
-- **Runs on Linux, for real.** Not in a virtual machine, not in a browser tab. Wayland, your GPU, pen tablets and touchpad gestures, all native.
+- **Runs on Linux, for real.** Not in a virtual machine, not in a browser tab. Wayland, your GPU, pen tablets, touchpad gestures and the SpaceMouse (via spacenavd), all native.
 - **Your files stay yours.** Designs live in a folder on your disk. MyCAD saves after every step and keeps versions the way Time Machine keeps backups. No cloud, no account, no subscription, and no limit on how many designs you can edit.
 - **Made for 3D printing.** Print View shows overhangs and thin walls and fixes them in a click. Fits know the play a printed part needs, threads print, **Screw Here** adds the holes for screws and heat-set inserts, and **Print** hands the part to your slicer.
 - **It helps instead of blaming.** A fillet too big? MyCAD offers the largest one that works. About to delete something other steps need? It tells you first. Double-click a face to change the number behind it.

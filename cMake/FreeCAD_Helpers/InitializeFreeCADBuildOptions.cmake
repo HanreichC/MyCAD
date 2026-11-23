@@ -158,7 +158,8 @@ macro(InitializeFreeCADBuildOptions)
         set(FREECAD_3DCONNEXION_SUPPORT "NavLib" CACHE STRING "Select version of the 3Dconnexion device integration")
         set_property(CACHE FREECAD_3DCONNEXION_SUPPORT PROPERTY STRINGS "None" "NavLib" "Legacy" "Both")
     else(MSVC OR APPLE)
-        option(FREECAD_USE_3DCONNEXION_LEGACY "Enable support for 3Dconnexion devices." OFF)
+        # MyCAD 12.14: SpaceMouse über spacenavd (libspnav, Socket, auch unter Wayland); ohne libspnav bleibt es aus
+        option(FREECAD_USE_3DCONNEXION_LEGACY "Enable support for 3Dconnexion devices." ON)
     endif(MSVC OR APPLE)
 
     if(FREECAD_3DCONNEXION_SUPPORT STREQUAL "NavLib")

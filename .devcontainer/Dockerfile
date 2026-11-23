@@ -58,3 +58,7 @@ RUN printf '%s\n' '#pragma once' \
         -DCMAKE_CXX_FLAGS="-include /tmp/py2compat.h" \
     && cmake --build /tmp/pivy/build && cmake --install /tmp/pivy/build \
     && rm -rf /tmp/pivy /tmp/py2compat.h
+# SpaceMouse (12.14): libspnav für spacenavd; eigene Schicht am Ende, damit OCCT/Coin/Pivy aus dem Cache bleiben
+RUN for try in 1 2 3 4 5; do pacman -S --noconfirm --needed libspnav && break; \
+        [ "$try" = 5 ] && exit 1; sleep 60; \
+    done && pacman -Scc --noconfirm

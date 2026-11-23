@@ -13,6 +13,8 @@ finish-args:
   - --device=dri
   - --device=input                          # Tasten von Grafiktablett und Touchpad selbst lesen (libinput)
   - --filesystem=xdg-documents/MyCAD:create # Projektordner; andere Ordner über den Datei-Dialog (Portal)
+  - --filesystem=/run/spnav.sock:ro         # SpaceMouse: Socket von spacenavd (wie FreeCAD)
+  - --env=SPNAV_SOCKET=/run/spnav.sock
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.llvm21    # libclang für Shiboken (PySide), nur beim Bauen
 build-options:
@@ -38,6 +40,12 @@ modules:
       - type: archive
         url: https://archive.mesa3d.org/glu/glu-9.0.3.tar.xz
         sha256: bd43fe12f374b1192eb15fe20e45ff456b9bc26ab57f0eee919f96ca0f8a330f
+
+  - name: libspnav  # SpaceMouse (spacenavd), wie bei FreeCAD
+    sources:
+      - type: archive
+        url: https://github.com/FreeSpacenav/libspnav/releases/download/v1.2/libspnav-1.2.tar.gz
+        sha256: 093747e7e03b232e08ff77f1ad7f48552c06ac5236316a5012db4269951c39db
 
   - name: swig  # nur zum Bauen von Pivy
     config-opts: [--without-pcre]
