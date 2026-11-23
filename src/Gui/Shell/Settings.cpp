@@ -69,8 +69,10 @@
 #include <cstring>
 #include <cerrno>
 #include <fcntl.h>
+#ifdef MYCAD_LIBINPUT
 #include <libinput.h>
 #include <libudev.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 #include <QPointer>
@@ -348,6 +350,7 @@ void tabletKey(const std::string& key, bool down, bool pad);
 /// hier Wischen ankommt.
 /// Ebenso liest er die Tasten am Grafiktablett (Qt meldet sie unter Wayland nicht) für Einstellungen › Tablett; lesbar
 /// macht sie die udev-Regel, die die Seite mit "Zugriff erlauben" anlegt.
+#ifdef MYCAD_LIBINPUT
 class TouchpadReader: public QObject
 {
 public:
@@ -478,6 +481,21 @@ private:
     libinput* li = nullptr;
     QPointer<QWidget> viewport;
 };
+#else
+/// ohne libinput beim Bauen (Flatpak: nicht im SDK, und die Sandbox hat keine udev-Datenbank): nichts selbst lesen;
+/// Wischen kommt dann nur, wenn der Compositor es weitergibt, die Tablett-Seite zeigt kein Tablett
+class TouchpadReader
+{
+public:
+    static TouchpadReader& install()
+    {
+        static TouchpadReader reader;
+        return reader;
+    }
+    void reconnect()
+    {}
+};
+#endif
 
 /// Tippt der Benutzer gerade Text? Dann bleiben Tasten Tasten.
 /// Schreibt der Benutzer gerade Text (Umbenennen, Namen …)? Dann bleiben alle Tasten Tasten, auch Shift.

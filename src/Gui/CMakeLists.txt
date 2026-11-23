@@ -167,9 +167,18 @@ list(APPEND FreeCADGui_LIBS
     ${QtSvgWidgets_LIBRARIES}
     ${QtNetwork_LIBRARIES}
     ${QtUiTools_LIBRARIES}
-    input  # Shell/Settings.cpp: 3-Finger-Wischen selbst lesen (KWin gibt es nicht weiter)
-    udev
 )
+# Shell/Settings.cpp: 3-Finger-Wischen und Tablett-Tasten selbst lesen (KWin gibt sie nicht weiter). Optional: im
+# Flatpak-SDK gibt es libinput nicht (und die Sandbox keine udev-Datenbank)
+find_path(LIBINPUT_INCLUDE_DIR libinput.h)
+find_library(LIBINPUT_LIBRARY input)
+find_library(UDEV_LIBRARY udev)
+if(LIBINPUT_INCLUDE_DIR AND LIBINPUT_LIBRARY AND UDEV_LIBRARY)
+    list(APPEND FreeCADGui_LIBS ${LIBINPUT_LIBRARY} ${UDEV_LIBRARY})
+    add_definitions(-DMYCAD_LIBINPUT)
+else()
+    message(STATUS "libinput fehlt: Touchpad-Wischen und Tablett-Tasten nur über den Compositor")
+endif()
 
 link_directories(${YAML_CPP_LIBRARY_DIR})
 
