@@ -1179,7 +1179,8 @@ A("Design_Fillet", "modify", "Design_Fillet", ("Fillet", "Abrunden"),
   options=[("Radius", "Size of the rounding. Edges that run on tangentially are rounded with it.", "Radius", "Größe der Rundung. Kanten, die tangential weiterlaufen, werden mitgerundet."),
            ("Variable radius, Radius end", "The radius changes evenly from Radius at the start of the edge to Radius end.",
             "Variabler Radius, Endradius", "Der Radius ändert sich gleichmäßig von Radius am Anfang der Kante bis Endradius.")],
-  tips=[("If it fails, try a smaller radius or round fewer edges in one step.", "Schlägt es fehl, nimm einen kleineren Radius oder runde weniger Kanten in einem Schritt."), EDIT_LATER],
+  tips=[("If the radius is too large for some edges, MyCAD rounds the others and marks the step with a warning; the edges it left out are shown, and the panel offers the largest radius that works for all of them. If no edge works, try a smaller radius.",
+         "Ist der Radius für einige Kanten zu groß, rundet MyCAD die übrigen und markiert den Schritt mit einer Warnung; die ausgelassenen Kanten werden gezeigt, und das Panel bietet den größten Radius an, der für alle geht. Geht keine Kante, nimm einen kleineren Radius."), EDIT_LATER],
   see=["Design_Chamfer", "sketch_fillet"])
 
 A("Design_Chamfer", "modify", "Design_Chamfer", ("Chamfer", "Fase"),

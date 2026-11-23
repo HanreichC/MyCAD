@@ -98,6 +98,44 @@ class Chamfers(DesignTest):
         self.assertNotIn("Hidden", f.getPropertyStatus("FlipSide"))
 
 
+class Partial(DesignTest):
+    """12.14: geht es mit allen Kanten nicht, werden die gerundet, die gehen; die anderen sind markiert (Warnung)"""
+
+    def plate(self):
+        _, b = box(self.doc, 20, 20, 1)  # 1 mm dick: R2 geht an der senkrechten Ecke, nicht an der oberen Kante
+        corner = edge_where(b, lambda p: abs(p.x) < 1e-6 and abs(p.y) < 1e-6 and 0 < p.z < 1)
+        top = front_top_edge(b)
+        return b, corner, top
+
+    def test_fillet_rounds_what_it_can(self):
+        b, corner, top = self.plate()
+        f = dress(self.doc, "Design::Fillet", b, [corner, top], Size=2)
+        self.doc.recompute()
+        self.assertNotIn("Invalid", f.State)
+        self.assertIn("could not be rounded", f.Warning)
+        self.assertEqual(list(f.ErrorElements), [top])
+        self.assertAlmostEqual(b.Shape.Volume, 400 - (4 - math.pi) * 1, places=3)  # nur die Ecke rund
+        self.assertTrue(any(fix.startswith("Use radius") for fix in f.Fixes), f.Fixes)  # Vorschlag für alle Kanten
+        f.Size = 0.4  # jetzt gehen beide: Warnung weg
+        self.doc.recompute()
+        self.assertEqual(f.Warning, "")
+        self.assertEqual(list(f.ErrorElements), [])
+
+    def test_chamfer_too(self):
+        b, corner, top = self.plate()
+        f = dress(self.doc, "Design::Chamfer", b, [corner, top], Size=2)
+        self.doc.recompute()
+        self.assertNotIn("Invalid", f.State)
+        self.assertIn("could not be chamfered", f.Warning)
+        self.assertAlmostEqual(b.Shape.Volume, 400 - 2 * 2 / 2 * 1, places=3)
+
+    def test_nothing_works_stays_an_error(self):
+        b, _, top = self.plate()
+        f = dress(self.doc, "Design::Fillet", b, [top], Size=2)
+        self.doc.recompute()
+        self.assertIn("Invalid", f.State)
+
+
 class Persistence(DesignTest):
     def test_chamfer_type_survives_save(self):
         _, b = box(self.doc, 40, 10, 10)

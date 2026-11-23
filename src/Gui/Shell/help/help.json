@@ -4897,11 +4897,11 @@
    },
    "tips": {
     "en": [
-     "If it fails, try a smaller radius or round fewer edges in one step.",
+     "If the radius is too large for some edges, MyCAD rounds the others and marks the step with a warning; the edges it left out are shown, and the panel offers the largest radius that works for all of them. If no edge works, try a smaller radius.",
      "Everything you create appears as a step in the timeline at the bottom of the window. Double-click the step to open the same panel again and change the values later."
     ],
     "de": [
-     "Schlägt es fehl, nimm einen kleineren Radius oder runde weniger Kanten in einem Schritt.",
+     "Ist der Radius für einige Kanten zu groß, rundet MyCAD die übrigen und markiert den Schritt mit einer Warnung; die ausgelassenen Kanten werden gezeigt, und das Panel bietet den größten Radius an, der für alle geht. Geht keine Kante, nimm einen kleineren Radius.",
      "Alles, was du erstellst, erscheint als Schritt in der Zeitleiste unten im Fenster. Doppelklick auf den Schritt öffnet dasselbe Panel wieder, dort änderst du die Werte später."
     ]
    },

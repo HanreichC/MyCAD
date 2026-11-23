@@ -704,6 +704,9 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Overhang angle", "Überhang-Winkel"},
         {"Minimum wall", "Kleinste Wand"},
         {"Wall thinner than %1 mm", "Wand dünner als %1 mm"},
+        // 12.14 Rundung/Fase mit Teilergebnis
+        {"Some edges could not be rounded; the others are", "Einige Kanten ließen sich nicht runden; die anderen sind es"},
+        {"Some edges could not be chamfered; the others are", "Einige Kanten ließen sich nicht fasen; die anderen sind es"},
         // 12.10 Code-Schritt
         {"Code Step", "Code-Schritt"},
         {"Code Step: a body from Python code, with sizes from your notes; runs only after you read it and click Run",

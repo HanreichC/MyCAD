@@ -4616,6 +4616,62 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
     catch (const Standard_Failure&) {
         res = Part::TopoShape();
     }
+    // 12.14 Teilergebnis: geht es mit allen Kanten nicht, werden die gerundet bzw. gefast, die einzeln gehen; die
+    // anderen sind markiert (Warnung statt Fehler), der Vorschlag unten gilt weiter für alle
+    static const std::string someFailed[2] = {"Some edges could not be chamfered; the others are",
+                                              "Some edges could not be rounded; the others are"};
+    std::vector<std::string> bad;
+    if ((res.isNull() || !res.isValid()) && edges.size() > 1
+        && !(fillet && static_cast<Fillet*>(this)->PrintChamfer.getValue())) {
+        const auto attempt = [&](const std::vector<Part::TopoShape>& list) {
+            Part::TopoShape out(0, getDocument()->getStringHasher());
+            try {
+                if (fillet) {
+                    auto f = static_cast<Fillet*>(this);
+                    out.makeElementFillet(shape, list, size, f->Variable.getValue() ? f->RadiusEnd.getValue() : size);
+                }
+                else {
+                    auto c = static_cast<Chamfer*>(this);
+                    const long type = c->Type.getValue();
+                    const double second = type == 1 ? c->Distance2.getValue() : type == 2 ? c->ChamferAngle.getValue() : size;
+                    out.makeElementChamfer(shape, list, static_cast<Part::ChamferType>(type), size, second, nullptr,
+                                           c->FlipSide.getValue() ? Part::Flip::flip : Part::Flip::none);
+                }
+            }
+            catch (const Standard_Failure&) {
+                return Part::TopoShape();
+            }
+            return out.isNull() || !out.isValid() ? Part::TopoShape() : out;
+        };
+        std::vector<Part::TopoShape> good;
+        for (const auto& e : edges) {
+            if (attempt({e}).isNull()) {
+                bad.push_back(elementName(shape.getShape(), e.getShape()));
+            }
+            else {
+                good.push_back(e);
+            }
+        }
+        if (!good.empty() && !bad.empty()) {
+            res = attempt(good);
+        }
+    }
+    // gleicher Wert (Radius bzw. Abstand) an allen Kanten: geht er? (für den Vorschlag des größten, der geht)
+    const auto works = [&](double s) {
+        try {
+            Part::TopoShape probe(0, getDocument()->getStringHasher());
+            if (fillet) {
+                probe.makeElementFillet(shape, edges, s, s);
+            }
+            else {
+                probe.makeElementChamfer(shape, edges, Part::ChamferType::equalDistance, s, s);
+            }
+            return !probe.isNull() && probe.isValid();
+        }
+        catch (const Standard_Failure&) {
+            return false;
+        }
+    };
     if (res.isNull() || !res.isValid()) {
         ErrorElements.setValues(Edges.getValues());
         // Kante zwischen tangential anschließenden Flächen (Deckfläche eines schon gerundeten Quaders): dort ist nichts
@@ -4643,27 +4699,27 @@ App::DocumentObjectExecReturn* DressUp::run(bool fillet)
             }
         }
         // Vorschlag: der größte Wert, der für diese Kanten noch geht (konstanter Radius bzw. gleicher Abstand)
-        const double best = largestWorking([&](double s) {
-            try {
-                Part::TopoShape probe(0, getDocument()->getStringHasher());
-                if (fillet) {
-                    probe.makeElementFillet(shape, edges, s, s);
-                }
-                else {
-                    probe.makeElementChamfer(shape, edges, Part::ChamferType::equalDistance, s, s);
-                }
-                return !probe.isNull() && probe.isValid();
-            }
-            catch (const Standard_Failure&) {
-                return false;
-            }
-        });
+        const double best = largestWorking(works);
         if (best > 0) {
             std::ostringstream label;
             label << (fillet ? "Use radius " : "Use distance ") << best << " mm";
             suggest(label.str(), "Size", best);
         }
         return new App::DocumentObjectExecReturn(failed);
+    }
+    if (!bad.empty()) {
+        ErrorElements.setValues(bad);
+        Warning.setValue(someFailed[fillet]);
+        const double best = largestWorking(works);
+        if (best > 0) {
+            std::ostringstream label;
+            label << (fillet ? "Use radius " : "Use distance ") << best << " mm";
+            suggest(label.str(), "Size", best);
+        }
+    }
+    else if (Warning.getValue() == someFailed[0] || Warning.getValue() == someFailed[1]) {
+        Warning.setValue("");
+        ErrorElements.setValues(std::vector<std::string>());
     }
     setResults({res});
     return StdReturn;
