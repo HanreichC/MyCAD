@@ -424,6 +424,8 @@ A("sketch_basics", "start", "Design_CreateSketch", ("Sketching basics", "Skizzen
     "Zeichne Formen; Enden und Ecken rasten an vorhandenen Punkten und Linien ein, Linien außerdem an vollen Grad und gängigen Winkeln. Halte Umschalt, um ganz frei zu zeichnen. Viele Werkzeuge zeigen kleine Eingabefelder neben dem Cursor – Wert eintippen, mit Tab zum nächsten Feld, Enter bestätigt."),
    ("With a graphics tablet, draw straight into the open sketch with the pen: hold the pen still at the end of a stroke and it becomes a line, circle or rectangle, otherwise lines and curves along your stroke. Ends near a point of the sketch snap onto it. The mouse keeps selecting as usual.",
     "Mit einem Grafiktablett zeichnest du mit dem Stift direkt in die offene Skizze: Hältst du den Stift am Ende eines Strichs still, wird er zur Linie, zum Kreis oder Rechteck, sonst zu Linien und Kurven entlang deines Strichs. Enden nahe an einem Skizzenpunkt rasten dort ein. Die Maus wählt wie gewohnt aus."),
+   ("Two gestures with the pen: scratch back and forth over lines to delete them, and draw a tick (short down, long up to the right) to finish the sketch. Ctrl+Z brings deleted lines back.",
+    "Zwei Gesten mit dem Stift: Kritzle über Linien hin und her, um sie zu löschen, und zeichne ein Häkchen (kurz nach unten, lang nach rechts oben), um die Skizze fertig zu stellen. Strg+Z holt gelöschte Linien zurück."),
    ("Add sizes with Dimension and rules with the constraint tools until all lines turn black (fully defined).",
     "Lege Maße mit Bemaßung und Regeln mit den Abhängigkeiten fest, bis alle Linien schwarz sind (voll bestimmt)."),
    ("Esc puts the current tool away; the blue Finish Sketch button leaves the sketch.",

@@ -69,3 +69,4 @@ test_duplicate_sketch.py
 test_offset_parallel.py
 test_sketch_pen.py
 test_transparent_contact.py
+test_sketch_gestures.py

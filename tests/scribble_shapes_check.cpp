@@ -183,6 +183,21 @@ int main()
     assert(swept < 2 * M_PI + 0.5);
     assert(lasso({{0, 0}, {1, 1}}, 0.5).size() == 2);
 
+    // 12.12 Gesten (Bildschirm, y nach unten): Häkchen und Durchkritzeln, nicht verwechselbar mit Formen
+    const std::vector<P> tick = {{0, 0}, {5, 6}, {10, 12}, {16, 4}, {22, -4}, {28, -12}, {34, -20}};
+    assert(isTick(tick));
+    assert(!isTick({{0, 0}, {10, 20}, {20, 0}}));            // "V" mit gleichen Schenkeln
+    assert(!isTick({{0, 0}, {-5, 6}, {-10, 12}, {-25, -10}}));  // Haken nach links oben
+    assert(!isTick({{0, 0}, {30, 0}}));                      // Linie
+    std::vector<P> scratch;
+    for (int i = 0; i < 6; ++i) {
+        scratch.push_back({i % 2 ? 40.0 : 0.0, i * 3.0});
+    }
+    assert(isScratch(scratch));
+    assert(!isScratch(ellipse({0, 0}, 20, 20, 0, 4 * M_PI)));  // zweimal herum: dreht nie scharf
+    assert(!isScratch(tick));
+    assert(!isTick(scratch));
+
     std::puts("scribble shapes: ok");
     return 0;
 }

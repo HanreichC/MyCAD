@@ -2558,6 +2558,25 @@ private:
         if (pts.size() < 2 || screenLength < 6) {
             return;
         }
+        // 12.12 Gesten, nur freie (nicht gehaltene) Striche: Häkchen schließt die Skizze, Durchkritzeln löscht, was
+        // darunter liegt
+        if (shape.kind == ScribbleShapes::Kind::Free) {
+            std::vector<ScribbleShapes::P> flat;
+            for (const QPointF& q : screen) {
+                flat.push_back({q.x(), q.y()});
+            }
+            if (ScribbleShapes::isTick(flat)) {
+                // nicht mitten im Tablett-Ereignis: Schließen räumt diesen Stift ab
+                QTimer::singleShot(0, [] {
+                    Gui::Application::Instance->commandManager().runCommandByName("Sketcher_LeaveSketch");
+                });
+                return;
+            }
+            if (ScribbleShapes::isScratch(flat)) {
+                eraseUnder(pts);
+                return;
+            }
+        }
         // offene Striche: Enden nahe an Skizzenpunkten rasten ein (10 px)
         const auto a = onSketch(QPointF(0, 0)), b = onSketch(QPointF(10, 0));
         const double radius = a && b ? (*b - *a).Length() : 0;
@@ -2616,6 +2635,42 @@ private:
         if (!list.empty()) {
             s->addConstraints(list);  // kopiert
         }
+        doc->recompute();
+        doc->commitTransaction();
+    }
+
+    /// Durchkritzeln: Skizzengeometrie, die durch das Rechteck um den Strich läuft, kommt weg (eine Transaktion)
+    void eraseUnder(const std::vector<Base::Vector3d>& pts)
+    {
+        Base::BoundBox3d box;
+        for (const auto& p : pts) {
+            box.Add(Base::Vector3d(p.x, p.y, 0));
+        }
+        Sketcher::SketchObject* s = sketch();
+        std::vector<int> hit;
+        for (int i = 0; i <= s->getHighestCurveIndex(); ++i) {
+            const Part::Geometry* g = s->getGeometry(i);
+            bool inside = false;
+            if (auto curve = dynamic_cast<const Part::GeomCurve*>(g)) {
+                const double a = curve->getFirstParameter(), b = curve->getLastParameter();
+                for (int k = 0; k <= 24 && !inside; ++k) {
+                    const Base::Vector3d q = curve->pointAtParameter(a + (b - a) * k / 24);
+                    inside = box.IsInBox(Base::Vector3d(q.x, q.y, 0));
+                }
+            }
+            else if (auto point = dynamic_cast<const Part::GeomPoint*>(g)) {
+                inside = box.IsInBox(Base::Vector3d(point->getPoint().x, point->getPoint().y, 0));
+            }
+            if (inside) {
+                hit.push_back(i);
+            }
+        }
+        if (hit.empty()) {
+            return;
+        }
+        App::Document* doc = s->getDocument();
+        doc->openTransaction("Delete");
+        s->delGeometries(hit);
         doc->recompute();
         doc->commitTransaction();
     }

@@ -33,6 +33,8 @@ Pick a plane and start drawing: line, polyline, rectangle, circle, arc, slot, po
 
 Fillet, trim, extend, split, offset, mirror, pattern, move and scale are all one click away. A single dimension tool works out from your selection what you want to measure. Place the dimension and type the value right on it, no window in the way; **Tab** applies it and jumps to the next dimension, so you size a whole sketch without touching the mouse. The Sketch Palette tells you how many dimensions are still missing, and one click adds them the way you most likely mean: symmetric when the shape sits centered on the origin, then the sizes, then where it sits. The available constraints are coincident, horizontal, vertical, parallel, perpendicular, tangent, equal, symmetric and fix.
 
+Got a pen tablet? Draw straight into the sketch. Hold the pen still at the end and the stroke becomes a clean line, circle or rectangle; otherwise it follows your hand. Scratch over lines to delete them, and a tick finishes the sketch.
+
 **Esc** puts the active tool away, and **Finish Sketch** takes you back to your model.
 
 ![Sketching basics](src/Gui/Shell/help/images/sketch_basics.gif)

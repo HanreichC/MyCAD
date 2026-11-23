@@ -200,6 +200,50 @@ inline std::vector<P> simplify(const std::vector<P>& p, double tol);
 /// (Abstand zur Ellipse im umschließenden Rechteck klein) oder Dreieck (drei Ecken bleiben beim Vereinfachen). Alles
 /// andere bleibt frei.
 /// ponytail: die Toleranzen sind Erfahrungswerte für Hand-Striche
+/// 12.12 Geste Häkchen (Bildschirm, y nach unten): ein kurzer, fast gerader Strich nach unten, dann ein mindestens
+/// 1,3-mal so langer nach rechts oben. Ein "V" mit gleich langen Schenkeln oder ein Haken nach links ist keins.
+inline bool isTick(const std::vector<P>& raw)
+{
+    if (raw.size() < 3) {
+        return false;
+    }
+    const std::vector<P> p = resample(raw, 32);
+    size_t low = 0;  // tiefster Punkt: größtes y
+    for (size_t i = 1; i < p.size(); ++i) {
+        low = p[i].y > p[low].y ? i : low;
+    }
+    if (low == 0 || low + 1 == p.size()) {
+        return false;
+    }
+    const P a = p.front(), m = p[low], b = p.back();
+    const double first = dist(a, m), second = dist(m, b);
+    const std::vector<P> down(p.begin(), p.begin() + long(low) + 1), up(p.begin() + long(low), p.end());
+    return first > 0 && length(down) < 1.25 * first && length(up) < 1.25 * second  // beide Schenkel fast gerade
+        && second > 1.3 * first && second < 8 * first                              // der zweite deutlich länger
+        && m.y - a.y > 0.4 * first && m.x > a.x - 0.3 * first                      // erst nach unten (rechts)
+        && b.x - m.x > 0.25 * second && m.y - b.y > 0.5 * second;                  // dann steil nach rechts oben
+}
+
+/// 12.12 Geste Durchkritzeln: hin und her mit mindestens drei scharfen Umkehrungen (über 120°). Ein Kreis, auch
+/// mehrmals gezogen, dreht nie scharf um und ist keins.
+inline bool isScratch(const std::vector<P>& raw)
+{
+    if (raw.size() < 4) {
+        return false;
+    }
+    const std::vector<P> p = resample(raw, 64);
+    int turns = 0;
+    for (size_t i = 2; i + 2 < p.size(); ++i) {
+        const double ax = p[i].x - p[i - 2].x, ay = p[i].y - p[i - 2].y, bx = p[i + 2].x - p[i].x, by = p[i + 2].y - p[i].y;
+        const double la = std::hypot(ax, ay), lb = std::hypot(bx, by);
+        if (la > 0 && lb > 0 && (ax * bx + ay * by) / (la * lb) < -0.5) {
+            ++turns;
+            i += 2;  // dieselbe Umkehr nicht doppelt zählen
+        }
+    }
+    return turns >= 3;
+}
+
 inline Shape recognize(const std::vector<P>& raw)
 {
     if (raw.size() < 3) {
