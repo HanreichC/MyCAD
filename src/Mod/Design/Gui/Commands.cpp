@@ -1232,6 +1232,10 @@ void startPrimitive(App::Document* doc, long type, const std::function<void(Desi
     feature->Type.setValue(type);
     if (type == 15) {
         feature->Height.setValue(6.0);  // Zahnrad: übliche Dicke statt der 20 mm des Quaders
+        // gedruckte Zahnräder brauchen Spiel zwischen den Zähnen: das normale Spiel aus dem Druckerprofil
+        feature->Backlash.setValue(App::GetApplication()
+                                       .GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")
+                                       ->GetFloat("PrintFitNormal", 0.2));
     }
     else if (type == 16) {  // Scharnier: 40 mm lang, Blätter 15 breit, 6 dick
         feature->Length.setValue(40.0);

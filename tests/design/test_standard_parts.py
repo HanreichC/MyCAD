@@ -95,6 +95,28 @@ class StandardParts(DesignTest):
         closer.translate(V(-0.3, 0, 0))  # 0,3 mm näher: jetzt müssen sie sich berühren und überlappen
         self.assertGreater(a.Shape.common(closer).Volume, 0.5)
 
+    def test_backlash_lets_gears_sit_closer(self):
+        """mit 0,3 mm Spiel je Rad: 0,3 mm näher (ohne Spiel schnitten sie sich) berühren sie sich noch nicht"""
+        _, a = part(self.doc, "Spur Gear", Module=2, Teeth=20, Height=5, Bore=0, Backlash=0.3)
+        _, b = part(self.doc, "Spur Gear", Module=2, Teeth=31, Height=5, Bore=0, Backlash=0.3,
+                    PositionX=2 * (20 + 31) / 2, Rotation=180 + 180 / 31)
+        self.assertLess(a.Shape.common(b.Shape).Volume, 0.05)
+        closer = b.Shape.copy()
+        closer.translate(V(-0.3, 0, 0))
+        self.assertLess(a.Shape.common(closer).Volume, 0.05)
+        _, plain = part(self.doc, "Spur Gear", Module=2, Teeth=20, Height=5, Bore=0)
+        self.assertLess(a.Shape.Volume, plain.Shape.Volume)  # die Zähne sind dünner
+
+    def test_profile_shift_moves_tip_and_root_out(self):
+        """x = 0,5 bei m = 1, z = 20: Kopf 11,5 statt 11, Fuß 9,25 statt 8,75"""
+        f, b = part(self.doc, "Spur Gear", Module=1, Teeth=20, Height=6, Bore=5, ProfileShift=0.5)
+        self.assertNotIn("Invalid", f.State)
+        radii = [round(x.Surface.Radius, 4) for x in b.Shape.Faces if x.Surface.TypeId == "Part::GeomCylinder"]
+        self.assertEqual(radii.count(11.5), 20)
+        self.assertEqual(radii.count(9.25), 20)
+        f2, _ = part(self.doc, "Spur Gear", Module=1, Teeth=8, Height=6, Bore=0, ProfileShift=0.5)
+        self.assertNotIn("Invalid", f2.State)  # wenige Zähne gehen mit Verschiebung
+
     def test_too_few_teeth_say_so(self):
         f = feature(self.doc, "Design::Primitive", Type="Spur Gear", Module=1, Teeth=6, PressureAngle=40)
         new_body(f)

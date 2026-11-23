@@ -662,6 +662,8 @@ public:
     App::PropertyAngle PressureAngle;
     App::PropertyLength Bore;
     App::PropertyAngle Rotation;
+    App::PropertyFloat ProfileShift;  ///< Zahnrad: Profilverschiebungsfaktor x
+    App::PropertyLength Backlash;     ///< Zahnrad: Spiel am Teilkreis
     // Scharnier zum Drucken in einem Stück und Schnapphaken (12.7c)
     App::PropertyIntegerConstraint Knuckles;
     App::PropertyLength Clearance;

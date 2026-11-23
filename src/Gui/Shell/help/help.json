@@ -3524,10 +3524,12 @@
    },
    "tips": {
     "en": [
-     "For printed gears give them a little play: place the second gear 0.1 to 0.2 mm farther away."
+     "Printed gears need play: Backlash makes the teeth thinner on the pitch circle. A new gear takes the normal clearance from Settings › 3D Printing, so two gears at the right distance turn freely.",
+     "Profile shift moves the teeth outwards by x times the module: small gears (under 17 teeth) get stronger teeth without undercut. Give the mating gear the opposite shift to keep the distance."
     ],
     "de": [
-     "Gedruckten Rädern gibst du etwas Spiel: Setz das zweite Rad 0,1 bis 0,2 mm weiter weg."
+     "Gedruckte Räder brauchen Spiel: Flankenspiel macht die Zähne am Teilkreis dünner. Ein neues Rad nimmt das normale Spiel aus Einstellungen › 3D-Druck, so drehen zwei Räder im richtigen Abstand frei.",
+     "Profilverschiebung schiebt die Zähne um x mal Modul nach außen: kleine Räder (unter 17 Zähnen) bekommen kräftigere Zähne ohne Unterschnitt. Gib dem Gegenrad die entgegengesetzte Verschiebung, dann bleibt der Abstand."
     ]
    }
   },

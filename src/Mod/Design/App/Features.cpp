@@ -6440,6 +6440,10 @@ Primitive::Primitive()
     ADD_PROPERTY_TYPE(PressureAngle, (20.0), "Parameters", App::Prop_None, "Pressure angle, usually 20°");
     ADD_PROPERTY_TYPE(Bore, (5.0), "Parameters", App::Prop_None, "Diameter of the hole in the middle (0: none)");
     ADD_PROPERTY_TYPE(Rotation, (0.0), "Parameters", App::Prop_None, "Turn about its own axis, e.g. to mesh with another gear");
+    ADD_PROPERTY_TYPE(ProfileShift, (0.0), "Parameters", App::Prop_None,
+                      "Profile shift coefficient x: teeth move out by x times the module (fewer teeth without undercut)");
+    ADD_PROPERTY_TYPE(Backlash, (0.0), "Parameters", App::Prop_None,
+                      "Play between the teeth, measured on the pitch circle (3D printed gears: about 0.2 mm)");
     static const App::PropertyIntegerConstraint::Constraints knuckles = {3, 21, 1};
     ADD_PROPERTY_TYPE(Knuckles, (5L), "Parameters", App::Prop_None, "Number of knuckles along the hinge");
     Knuckles.setConstraints(&knuckles);
@@ -6519,17 +6523,26 @@ constexpr double HookStrainLimit = 0.025;  // PLA und PETG halten wiederholt etw
 
 /// Stirnrad mit Evolventen-Flanken: Teilkreis m·z/2 um den Ursprung, Kopf m darüber, Fuß 1,25·m darunter, Dicke h
 /// nach +Z. Flanken als Kurve durch Punkte der Evolvente, Kopf und Fuß als Kreisbögen: glatte Flächen statt Facetten.
-/// ponytail: ohne Profilverschiebung, Spiel und Fußrundung; unter 17 Zähnen (20°) schneidet ein echtes Rad unter
-bool spurGear(double m, int z, double alphaDeg, double h, double bore, TopoDS_Shape& shape, std::string& error)
+/// Profilverschiebung shift (x · m nach außen: Kopf m(1 + x), Fuß m(1,25 − x), Zahn am Teilkreis um 2x·m·tan α dicker)
+/// und Spiel backlash (Zahn am Teilkreis so viel dünner, in mm Bogen). ponytail: ohne Fußrundung; unter 17 Zähnen (20°)
+/// ohne Verschiebung schneidet ein echtes Rad unter
+bool spurGear(double m, int z, double alphaDeg, double h, double bore, double shift, double backlash, TopoDS_Shape& shape,
+              std::string& error)
 {
     const double alpha = alphaDeg * M_PI / 180;
     if (m <= 0 || h <= 0 || alpha <= 0 || alpha >= M_PI / 4) {
         error = "Module and height must be greater than zero, the pressure angle between 0 and 45°";
         return false;
     }
-    const double r = m * z / 2, rb = r * std::cos(alpha), ra = r + m, rf = r - 1.25 * m, r0 = std::max(rb, rf);
+    const double r = m * z / 2, rb = r * std::cos(alpha), ra = r + m * (1 + shift), rf = r - m * (1.25 - shift);
+    const double r0 = std::max(rb, rf);
+    if (rf <= 0 || backlash < 0) {
+        error = "The profile shift is too small for this many teeth, or the backlash is negative";
+        return false;
+    }
     const auto inv = [](double a) { return std::tan(a) - a; };
-    const double half = M_PI / (2 * z) + inv(alpha);  // halber Zahnwinkel am Grundkreis
+    // halber Zahnwinkel am Grundkreis: Zahndicke am Teilkreis m(π/2 + 2x tan α) − Spiel, geteilt durch den Durchmesser
+    const double half = (M_PI / 2 + 2 * shift * std::tan(alpha)) / z - backlash / (m * z) + inv(alpha);
     const auto psi = [&](double rr) { return half - inv(std::acos(std::min(1.0, rb / rr))); };
     if (psi(ra) <= 0) {
         error = "With so few teeth the tips would be pointed; use more teeth";
@@ -6736,7 +6749,8 @@ void Primitive::onChanged(const App::Property* prop)
         Size.setStatus(App::Property::Hidden, t < SocketScrew || t > HeatSetInsert);
         Bearing.setStatus(App::Property::Hidden, t != BallBearing);
         Profile.setStatus(App::Property::Hidden, t != AluProfile);
-        for (App::Property* p : std::initializer_list<App::Property*> {&Module, &Teeth, &PressureAngle, &Bore, &Rotation}) {
+        for (App::Property* p :
+             std::initializer_list<App::Property*> {&Module, &Teeth, &PressureAngle, &Bore, &Rotation, &ProfileShift, &Backlash}) {
             p->setStatus(App::Property::Hidden, t != SpurGear);
         }
         if (t == SpurGear) {
@@ -6842,7 +6856,8 @@ bool Primitive::makeTool(Part::TopoShape& tool, std::string& error) const
                 shape = profileSection(Profile.getValueAsString(), l);
                 break;
             case SpurGear:
-                if (!spurGear(Module.getValue(), int(Teeth.getValue()), PressureAngle.getValue(), h, Bore.getValue(), shape,
+                if (!spurGear(Module.getValue(), int(Teeth.getValue()), PressureAngle.getValue(), h, Bore.getValue(),
+                               ProfileShift.getValue(), Backlash.getValue(), shape,
                               error)) {
                     return false;
                 }

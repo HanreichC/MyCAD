@@ -916,8 +916,10 @@ A("Design_Gear", "create", "Design_Gear", ("Gear", "Zahnrad"),
            ("Pressure angle", "Usually 20°; both gears need the same.", "Eingriffswinkel", "Meist 20°; beide Räder brauchen denselben."),
            ("Bore", "Hole in the middle for the shaft; 0 for none.", "Bohrung", "Loch in der Mitte für die Welle; 0 für keins."),
            ("Rotation", "Turns the gear about its axis so a tooth meets a gap.", "Drehung", "Dreht das Rad um seine Achse, damit ein Zahn in eine Lücke greift.")],
-  tips=[("For printed gears give them a little play: place the second gear 0.1 to 0.2 mm farther away.",
-         "Gedruckten Rädern gibst du etwas Spiel: Setz das zweite Rad 0,1 bis 0,2 mm weiter weg.")],
+  tips=[("Printed gears need play: Backlash makes the teeth thinner on the pitch circle. A new gear takes the normal clearance from Settings › 3D Printing, so two gears at the right distance turn freely.",
+         "Gedruckte Räder brauchen Spiel: Flankenspiel macht die Zähne am Teilkreis dünner. Ein neues Rad nimmt das normale Spiel aus Einstellungen › 3D-Druck, so drehen zwei Räder im richtigen Abstand frei."),
+        ("Profile shift moves the teeth outwards by x times the module: small gears (under 17 teeth) get stronger teeth without undercut. Give the mating gear the opposite shift to keep the distance.",
+         "Profilverschiebung schiebt die Zähne um x mal Modul nach außen: kleine Räder (unter 17 Zähnen) bekommen kräftigere Zähne ohne Unterschnitt. Gib dem Gegenrad die entgegengesetzte Verschiebung, dann bleibt der Abstand.")],
   see=["Design_StandardPart", "primitives"])
 
 A("Design_Hinge", "create", "Design_Hinge", ("Hinge", "Scharnier"),
