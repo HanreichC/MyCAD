@@ -105,6 +105,30 @@ int main()
     assert(intent("rotate").kind == Intent::Kind::None);
     assert(intent("Kanten 2 mm abrunden").kind == Intent::Kind::Fillet);
 
+    // 12.9 Grundkörper und Wand, DE und EN
+    for (const char* s : {"Quader 40 x 30 x 10", "box 40x30x10", "Quader 40 \xC3\x97 30 \xC3\x97 10 mm", "block 40mm 30mm 10mm"}) {
+        i = intent(s);
+        assert(i.kind == Intent::Kind::Box && i.dims[0] == 40 && i.dims[1] == 30 && i.dims[2] == 10);
+    }
+    i = intent("Würfel 20");
+    assert(i.kind == Intent::Kind::Box && i.dims[0] == 20 && i.dims[1] == 20 && i.dims[2] == 20);
+    for (const char* s : {"Zylinder \xC3\x98" "20 x 30", "cylinder d20 h30", "Zylinder Durchmesser 20, 30 hoch", "cylinder r10 h30",
+                          "Zylinder 20 x 30"}) {
+        i = intent(s);
+        assert(i.kind == Intent::Kind::Cylinder && i.dims[0] == 20 && i.dims[1] == 30);
+    }
+    i = intent("Scheibe \xC3\x98" "40 x 3");
+    assert(i.kind == Intent::Kind::Cylinder && i.dims[0] == 40 && i.dims[1] == 3);
+    for (const char* s : {"Wand 2 mm", "aushöhlen 2", "shell 2 mm", "hollow 2mm"}) {
+        i = intent(s);
+        assert(i.kind == Intent::Kind::Shell && i.value == 2);
+    }
+    assert(intent("Wand 1,5 mm").value == 1.5);
+    assert(intent("Quader").kind == Intent::Kind::None);         // ohne Maße: der Befehl, kein Satz
+    assert(intent("Quader 40 x 30").kind == Intent::Kind::None);  // ein Maß fehlt
+    assert(intent("Wandhalter").kind == Intent::Kind::None);
+    assert(intent("6 Löcher M4 auf Lochkreis 40").kind == Intent::Kind::CircleHoles);  // Bohrmuster bleiben
+
     std::puts("command search ok");
     return 0;
 }

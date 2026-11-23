@@ -148,7 +148,10 @@ struct Intent
         CircleHoles,  ///< Lochkreis: count Bohrungen auf einem Kreis mit pitch Durchmesser um die Mitte der Fläche
         RowHoles,     ///< Reihe: count Bohrungen durch die Mitte der Fläche, pitch Abstand (0: gleichmäßig verteilt)
         WhyRed,       ///< 12.9 "Warum ist das rot?": was nicht rechnet oder warnt
-        DependsOn     ///< 12.9 "Was hängt daran?": was die Auswahl benutzt
+        DependsOn,    ///< 12.9 "Was hängt daran?": was die Auswahl benutzt
+        Box,          ///< 12.9 "Quader 40 x 30 x 10": dims = Länge, Breite, Höhe
+        Cylinder,     ///< 12.9 "Zylinder Ø20 x 30": dims = Durchmesser, Höhe
+        Shell         ///< 12.9 "Wand 2 mm": aushöhlen, value = Wanddicke
     };
     Kind kind = Kind::None;
     std::string size;     ///< ISO-Gewinde, z. B. "M3"; leer bei Durchmesser
@@ -158,7 +161,90 @@ struct Intent
     bool all = false;     ///< "alle Kanten": jede Kante des Körpers statt der gewählten
     int count = 0;        ///< Muster: Anzahl der Bohrungen
     double pitch = 0;     ///< Lochkreis: Durchmesser; Reihe: Abstand (mm)
+    double dims[3] = {};  ///< Grundkörper: Quader l, b, h; Zylinder Ø, h
 };
+
+/// 12.9 Grundkörper und Wand aus den Wörtern (gefaltet, "×" schon als " x "): "Quader 40 x 30 x 10", "Würfel 20",
+/// "box 40x30x10", "Zylinder Ø20 x 30", "cylinder d20 h30", "Wand 2 mm", "aushöhlen 1,5", "shell 2 mm"
+inline Intent bodyIntent(const std::vector<std::string>& ws)
+{
+    const auto starts = [](const std::string& w, std::initializer_list<const char*> stems) {
+        return std::ranges::any_of(stems, [&w](const char* s) { return w.rfind(s, 0) == 0; });
+    };
+    enum { None, Box, Cube, Cylinder, Shell } what = None;
+    // Zahlen mit Vorzeichen-Buchstaben (d20, h30, r10) und Maße wie 40x30x10 auseinandernehmen
+    std::vector<std::pair<char, double>> nums;  // (Kennbuchstabe oder 0, Wert)
+    char pending = 0;                           // "Ø 20", "Durchmesser 20": die nächste Zahl ist ein Durchmesser
+    for (const std::string& w : ws) {
+        if (starts(w, {"quader", "box", "block"})) {
+            what = Box;
+        }
+        else if (starts(w, {"wuerfel", "cube"})) {
+            what = Cube;
+        }
+        else if (starts(w, {"zylinder", "cylinder", "rundstab", "scheibe", "disc", "disk"})) {
+            what = Cylinder;
+        }
+        else if (starts(w, {"wand", "aushoehl", "hohl", "shell", "hollow"})) {
+            what = Shell;
+        }
+        else if (w == "dia" || starts(w, {"durchmesser", "diameter"})) {
+            pending = 'd';
+        }
+        else {
+            for (size_t at = 0; at < w.size();) {
+                size_t end = w.find('x', at);
+                std::string part = w.substr(at, end == std::string::npos ? std::string::npos : end - at);
+                at = end == std::string::npos ? w.size() : end + 1;
+                char tag = pending;
+                if (!part.empty() && (part[0] == 'd' || part[0] == 'h' || part[0] == 'r' || part[0] == 'l')
+                    && part.size() > 1 && std::isdigit(static_cast<unsigned char>(part[1]))) {
+                    tag = part[0];
+                    part = part.substr(1);
+                }
+                char* stop = nullptr;
+                const double v = std::strtod(part.c_str(), &stop);
+                if (stop != part.c_str() && v > 0) {
+                    nums.emplace_back(tag, v);
+                    pending = 0;
+                }
+            }
+        }
+    }
+    Intent out;
+    if (what == Shell && !nums.empty()) {
+        out.kind = Intent::Kind::Shell;
+        out.value = nums.front().second;
+    }
+    else if ((what == Box && nums.size() >= 3) || (what == Cube && !nums.empty())) {
+        out.kind = Intent::Kind::Box;
+        for (int i = 0; i < 3; ++i) {
+            out.dims[i] = nums[what == Cube ? 0 : i].second;
+        }
+    }
+    else if (what == Cylinder && nums.size() >= 2) {
+        out.kind = Intent::Kind::Cylinder;
+        double d = 0, h = 0;
+        for (const auto& [tag, v] : nums) {  // gekennzeichnet zuerst: d/Ø, r, h/l
+            d = tag == 'd' ? v : tag == 'r' ? 2 * v : d;
+            h = tag == 'h' || tag == 'l' ? v : h;
+        }
+        for (const auto& [tag, v] : nums) {  // sonst der Reihe nach: erst Durchmesser, dann Höhe
+            if (tag == 0 && d <= 0) {
+                d = v;
+            }
+            else if (tag == 0 && h <= 0) {
+                h = v;
+            }
+        }
+        out.dims[0] = d;
+        out.dims[1] = h;
+        if (d <= 0 || h <= 0) {
+            return {};
+        }
+    }
+    return out;
+}
 
 /// Bohrmuster aus den Wörtern (gefaltet): "6 Löcher M4 auf Lochkreis 40", "six holes M4 on a 40 mm circle",
 /// "5 Löcher M3 in einer Reihe, 10 mm Abstand", "5 holes M3 in a row 10 mm apart". Kind::None, wenn es keins ist.
@@ -290,6 +376,9 @@ inline Intent intent(const std::string& query)
             f.replace(at, std::string(mark).size(), " dia ");
         }
     }
+    for (size_t at = f.find("\xC3\x97"); at != std::string::npos; at = f.find("\xC3\x97")) {  // ×
+        f.replace(at, 2, " x ");
+    }
     const auto ws = words(f);
     // 12.9 Fragen ans Modell statt Befehle
     const auto has = [&ws](std::initializer_list<const char*> stems) {
@@ -308,6 +397,9 @@ inline Intent intent(const std::string& query)
         && has({"haengt", "depend", "abhaeng", "benutzt", "verwendet", "use", "nutzt"})) {
         question.kind = Intent::Kind::DependsOn;
         return question;
+    }
+    if (const Intent body = bodyIntent(ws); body.kind != Intent::Kind::None) {
+        return body;
     }
     if (const Intent pattern = patternIntent(ws); pattern.kind != Intent::Kind::None) {
         return pattern;

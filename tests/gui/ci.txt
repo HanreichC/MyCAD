@@ -71,3 +71,4 @@ test_sketch_pen.py
 test_transparent_contact.py
 test_sketch_gestures.py
 test_print_split_ui.py
+test_intent_bodies.py

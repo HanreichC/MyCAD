@@ -1661,6 +1661,8 @@ A("search", "utilities", "MyCAD_Search", ("Search", "Suchen"),
          "Auch Bohrmuster: 6 Löcher M4 auf Lochkreis 40 (um die Mitte der Fläche) oder 5 Löcher M3 in einer Reihe, 10 mm Abstand (durch die Mitte entlang der langen Seite; ohne Abstand gleichmäßig verteilt). Englisch geht genauso: 6 holes M4 on a 40 mm circle."),
         ("Edges work the same way: Edges 2 mm round (or fillet R2) rounds the selected edges, all edges 1 mm chamfer every edge of the body.",
          "Kanten genauso: Kanten 2 mm abrunden (oder Rundung R2) rundet die gewählten Kanten, alle Kanten 1 mm fasen jede Kante des Körpers."),
+        ("Bodies by sentence too: Box 40 x 30 x 10, Cylinder Ø20 x 30 (or d20 h30), Cube 20, and Shell 2 mm hollows the selected or only body (open where you selected faces, closed otherwise). Enter opens the tool with the sizes, OK keeps it.",
+         "Auch Körper per Satz: Quader 40 x 30 x 10, Zylinder Ø20 x 30 (oder d20 h30), Würfel 20, und Wand 2 mm höhlt den gewählten oder einzigen Körper aus (offen, wo du Flächen gewählt hast, sonst geschlossen). Enter öffnet das Werkzeug mit den Maßen, OK übernimmt."),
         ("Ask the model: Why is this red? names the step that does not compute (or the warning) and selects it; with a body selected only its steps. What depends on this? lists and selects everything that uses the selected sketch, plane or step, so you know what changes when you change it.",
          "Frag das Modell: Warum ist das rot? nennt den Schritt, der nicht rechnet (oder die Warnung), und wählt ihn; mit gewähltem Körper nur dessen Schritte. Was hängt daran? nennt und wählt alles, was die gewählte Skizze, Ebene oder den Schritt benutzt, damit du weißt, was sich mitändert.")],
   commands=["MyCAD_Search"], see=["settings"])

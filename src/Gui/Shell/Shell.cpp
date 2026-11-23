@@ -4663,6 +4663,35 @@ void refreshSearch()
                         },
                         1000});
     }
+    // 12.9 Grundkörper und Wand per Satz: Enter öffnet das Werkzeug mit den Maßen (Vorschau, OK übernimmt)
+    if (const auto intent = CommandSearch::intent(query); intent.kind == CommandSearch::Intent::Kind::Box
+        || intent.kind == CommandSearch::Intent::Kind::Cylinder || intent.kind == CommandSearch::Intent::Kind::Shell) {
+        const auto n = [](double v) { return QString::number(v, 'g', 6); };
+        const auto& d = intent.dims;
+        QString text, icon;
+        std::string code;
+        if (intent.kind == CommandSearch::Intent::Kind::Box) {
+            text = T("Box %1 × %2 × %3 mm").arg(n(d[0]), n(d[1]), n(d[2]));
+            icon = QStringLiteral("Design_Box");
+            code = "DesignGui.primitive(0, " + std::to_string(d[0]) + ", " + std::to_string(d[1]) + ", " + std::to_string(d[2]) + ")";
+        }
+        else if (intent.kind == CommandSearch::Intent::Kind::Cylinder) {
+            text = T("Cylinder ⌀ %1 mm, %2 mm high").arg(n(d[0]), n(d[1]));
+            icon = QStringLiteral("Design_Cylinder");
+            code = "DesignGui.primitive(1, " + std::to_string(d[0]) + ", " + std::to_string(d[1]) + ", 0)";
+        }
+        else {
+            text = T("Shell with %1 mm walls").arg(n(intent.value));
+            icon = QStringLiteral("Design_Shell");
+            code = "DesignGui.dressUp('Shell', " + std::to_string(intent.value) + ", False)";
+        }
+        hits.push_back({"intent", text, T("Enter"), commandIcon(icon, QIcon()),
+                        [code] {
+                            Base::PyGILStateLocker lock;
+                            Base::Interpreter().runString(("import DesignGui; " + code).c_str());
+                        },
+                        1000});
+    }
     // 12.9 Fragen ans Modell: die Antwort kommt als Hinweis, die Betroffenen werden gewählt
     if (const auto intent = CommandSearch::intent(query);
         intent.kind == CommandSearch::Intent::Kind::WhyRed || intent.kind == CommandSearch::Intent::Kind::DependsOn) {

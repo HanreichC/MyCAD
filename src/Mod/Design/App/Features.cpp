@@ -4947,8 +4947,22 @@ App::DocumentObjectExecReturn* Shell::compute()
     const auto hollow = [&](double thickness) {  // ohne geöffnete Fläche entsteht ein geschlossener Hohlkörper
         Part::TopoShape r(0, getDocument()->getStringHasher());
         try {
-            r.makeElementThickSolid(shape, faces, Outside.getValue() ? thickness : -thickness, 1e-6, true, false, 0,
-                                    Part::JoinType::intersection);
+            if (faces.empty()) {
+                // ganz geschlossen: ThickSolid braucht eine offene Fläche. Stattdessen den Körper um die Wand versetzen
+                // und den Unterschied nehmen (innen: Hohlraum im Körper, außen: Hülle um ihn)
+                Part::TopoShape other(0, getDocument()->getStringHasher());
+                other.makeElementOffset(shape, Outside.getValue() ? thickness : -thickness, 1e-6, true, false, 0,
+                                        Part::JoinType::intersection);
+                r.makeElementCut(Outside.getValue() ? std::vector<Part::TopoShape> {other, shape}
+                                                    : std::vector<Part::TopoShape> {shape, other});
+            }
+            else {
+                r.makeElementThickSolid(shape, faces, Outside.getValue() ? thickness : -thickness, 1e-6, true, false, 0,
+                                        Part::JoinType::intersection);
+            }
+        }
+        catch (const Base::Exception&) {
+            return Part::TopoShape();
         }
         catch (const Standard_Failure&) {
             return Part::TopoShape();
@@ -4961,7 +4975,9 @@ App::DocumentObjectExecReturn* Shell::compute()
         GProp_GProps before, after;
         BRepGProp::VolumeProperties(shape.getShape(), before);
         BRepGProp::VolumeProperties(r.getShape(), after);
-        const bool sensible = Outside.getValue() ? after.Mass() > before.Mass() : after.Mass() > 0 && after.Mass() < before.Mass();
+        // geschlossene Hülle außen: der alte Körper wird zum Hohlraum, sie wiegt also weniger als er
+        const bool sensible = Outside.getValue() ? after.Mass() > (faces.empty() ? 0 : before.Mass())
+                                                 : after.Mass() > 0 && after.Mass() < before.Mass();
         return sensible ? r : Part::TopoShape();
     };
     const Part::TopoShape res = hollow(t);

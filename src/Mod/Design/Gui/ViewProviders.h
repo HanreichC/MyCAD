@@ -83,6 +83,9 @@ DesignGuiExport App::DocumentObject* parameters(App::Document* doc, bool create)
 DesignGuiExport void cornerHoles(const std::string& size, double diameter, double offset);
 /// 12.9 "Warum ist das rot?": was an der Auswahl (sonst im Design) nicht rechnet oder warnt, als Hinweis; markiert es
 DesignGuiExport void explainProblems();
+/// 12.9 Grundkörper per Satz: type 0 Quader (a, b, c = Länge, Breite, Höhe), 1 Zylinder (a = Durchmesser, b = Höhe);
+/// öffnet das Werkzeug mit diesen Maßen (Vorschau, OK übernimmt)
+DesignGuiExport void primitive(long type, double a, double b, double c);
 /// 12.9 "Was hängt daran?": was die Auswahl benutzt, als Hinweis; wählt es aus
 DesignGuiExport void showDependents();
 /// Bohrmuster (11.10): circle = Lochkreis mit pitch Durchmesser um die Mitte der Fläche, sonst Reihe durch die Mitte mit

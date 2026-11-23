@@ -1139,7 +1139,8 @@ void startLoft(App::Document* doc)
 }
 
 /// Grundkörper auf der gewählten Ebene oder Fläche (sonst XY); auf einer Körperfläche standardmäßig Join
-void startPrimitive(App::Document* doc, long type)
+/// setup (12.9, Grundkörper per Satz): Maße setzen, bevor das Panel aufgeht
+void startPrimitive(App::Document* doc, long type, const std::function<void(Design::Primitive*)>& setup = {})
 {
     App::DocumentObject* plane = nullptr;
     std::string element;
@@ -1177,6 +1178,9 @@ void startPrimitive(App::Document* doc, long type)
     }
     if (plane) {
         feature->Plane.setValue(plane, std::vector<std::string> {element});
+    }
+    if (setup) {
+        setup(feature);
     }
     startEditing(feature, true, target);
 }
@@ -1219,6 +1223,8 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
             }
         }
     }
+    // mit Wert (Satz in Strg+K): ohne Auswahl der einzige sichtbare Körper; Rundung/Fase dann an allen Kanten, Wand
+    // (bodyAlone) ohne offene Fläche, also hohl
     if (all || (size > 0 && edges.empty())) {
         if (!body) {  // nichts gewählt: der einzige sichtbare Körper
             std::vector<Design::Body*> shown;
@@ -1230,7 +1236,7 @@ void startDressUp(App::Document* doc, const char* type, const char* name, bool b
             body = shown.size() == 1 ? shown.front() : nullptr;
         }
         edges.clear();
-        const int count = body ? body->Shape.getShape().countSubShapes(TopAbs_EDGE) : 0;
+        const int count = body && !bodyAlone ? body->Shape.getShape().countSubShapes(TopAbs_EDGE) : 0;
         for (int i = 1; i <= count; ++i) {
             edges.push_back("Edge" + std::to_string(i));
         }
@@ -5591,9 +5597,31 @@ void DesignGui::dressUp(const std::string& kind, double size, bool all)
     if (kind == "Chamfer") {
         startDressUp(doc, "Design::Chamfer", "Chamfer", false, size, all);
     }
+    else if (kind == "Shell") {  // gewählte Flächen offen, sonst ganz hohl
+        startDressUp(doc, "Design::Shell", "Shell", true, size);
+    }
     else {
         startDressUp(doc, "Design::Fillet", "Fillet", false, size, all);
     }
+}
+
+void DesignGui::primitive(long type, double a, double b, double c)
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    if (!doc || Gui::Control().activeDialog() || a <= 0 || b <= 0) {
+        return;
+    }
+    startPrimitive(doc, type, [type, a, b, c](Design::Primitive* f) {
+        if (type == 1) {
+            f->Radius.setValue(a / 2);
+            f->Height.setValue(b);
+        }
+        else {
+            f->Length.setValue(a);
+            f->Width.setValue(b);
+            f->Height.setValue(c);
+        }
+    });
 }
 
 namespace

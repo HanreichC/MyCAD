@@ -40,6 +40,7 @@ public:
                            "patternHoles(circle, count, size, diameter, pitch): bolt circle or row of holes");
         add_varargs_method("cornerHoles", &Module::cornerHoles,
                            "cornerHoles(size, diameter, offset): holes in the four corners of the selected face");
+        add_varargs_method("primitive", &Module::primitive, "primitive(type, a, b, c): box (0) or cylinder (1) with sizes, panel open");
         add_varargs_method("explainProblems", &Module::explainProblems, "explainProblems(): why is this red? as a hint");
         add_varargs_method("showDependents", &Module::showDependents, "showDependents(): what uses the selection, selected");
         add_varargs_method("showCorrections", &Module::showCorrections,
@@ -76,6 +77,11 @@ private:
     Py::Object cornerHoles(const Py::Tuple& args)
     {
         DesignGui::cornerHoles(Py::String(args[0]).as_std_string(), Py::Float(args[1]), Py::Float(args[2]));
+        return Py::None();
+    }
+    Py::Object primitive(const Py::Tuple& args)
+    {
+        DesignGui::primitive(long(Py::Long(args[0])), Py::Float(args[1]), Py::Float(args[2]), Py::Float(args[3]));
         return Py::None();
     }
     Py::Object explainProblems(const Py::Tuple&)
