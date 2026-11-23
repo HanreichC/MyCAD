@@ -5729,6 +5729,31 @@ void DesignGui::dressUp(const std::string& kind, double size, bool all)
     }
 }
 
+void DesignGui::moveBy(double x, double y, double z)
+{
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    if (!doc || Gui::Control().activeDialog()) {
+        return;
+    }
+    auto bodies = selectedBodies();
+    if (bodies.empty()) {  // nichts gewählt: der einzige sichtbare Körper
+        for (auto obj : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
+            if (obj->Visibility.getValue()) {
+                bodies.push_back(static_cast<Design::Body*>(obj));
+            }
+        }
+        if (bodies.size() != 1) {
+            toolHint(T("Move"), T("Select one or more bodies or a component first."));
+            return;
+        }
+    }
+    auto feature = static_cast<Design::Move*>(addFeature(doc, "Design::Move", "Move", bodies.front()));
+    feature->Translation.setValue(Base::Vector3d(x, y, z));
+    modifyBodies(feature, bodies);
+    doc->recompute();
+    startEditing(feature, false, nullptr);
+}
+
 void DesignGui::primitive(long type, double a, double b, double c)
 {
     App::Document* doc = App::GetApplication().getActiveDocument();

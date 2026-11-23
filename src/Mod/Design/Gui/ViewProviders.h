@@ -86,6 +86,8 @@ DesignGuiExport void explainProblems();
 /// 12.9 Grundkörper per Satz: type 0 Quader (a, b, c = Länge, Breite, Höhe), 1 Zylinder (a = Durchmesser, b = Höhe);
 /// öffnet das Werkzeug mit diesen Maßen (Vorschau, OK übernimmt)
 DesignGuiExport void primitive(long type, double a, double b, double c);
+/// 12.9 Verschieben per Satz: gewählte (sonst den einzigen sichtbaren) Körper um x, y, z; Panel offen, OK übernimmt
+DesignGuiExport void moveBy(double x, double y, double z);
 /// 12.9 "Was hängt daran?": was die Auswahl benutzt, als Hinweis; wählt es aus
 DesignGuiExport void showDependents();
 /// Bohrmuster (11.10): circle = Lochkreis mit pitch Durchmesser um die Mitte der Fläche, sonst Reihe durch die Mitte mit

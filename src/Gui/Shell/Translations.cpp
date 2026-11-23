@@ -729,6 +729,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Box %1 × %2 × %3 mm", "Quader %1 × %2 × %3 mm"},
         {"Cylinder ⌀ %1 mm, %2 mm high", "Zylinder ⌀ %1 mm, %2 mm hoch"},
         {"Shell with %1 mm walls", "Aushöhlen mit %1 mm Wand"},
+        {"Move by %1, %2, %3 mm", "Verschieben um %1, %2, %3 mm"},
         // 12.9 Fragen ans Modell
         {"Explain what is red or wrong", "Erklären, was rot oder falsch ist"},
         {"Show what uses the selection", "Zeigen, was die Auswahl benutzt"},

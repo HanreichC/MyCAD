@@ -151,7 +151,8 @@ struct Intent
         DependsOn,    ///< 12.9 "Was hängt daran?": was die Auswahl benutzt
         Box,          ///< 12.9 "Quader 40 x 30 x 10": dims = Länge, Breite, Höhe
         Cylinder,     ///< 12.9 "Zylinder Ø20 x 30": dims = Durchmesser, Höhe
-        Shell         ///< 12.9 "Wand 2 mm": aushöhlen, value = Wanddicke
+        Shell,        ///< 12.9 "Wand 2 mm": aushöhlen, value = Wanddicke
+        Move          ///< 12.9 "10 mm nach oben": dims = Verschiebung x, y, z
     };
     Kind kind = Kind::None;
     std::string size;     ///< ISO-Gewinde, z. B. "M3"; leer bei Durchmesser
@@ -363,6 +364,78 @@ inline Intent patternIntent(const std::vector<std::string>& ws)
     return out;
 }
 
+/// 12.9 Verschieben: "10 mm nach oben", "um 5 nach links verschieben", "move 20 mm right", "verschieben x 10 y -5".
+/// Richtungen wie in der Ansicht von vorn: oben +z, rechts +x, hinten +y. Ohne Richtung kein Satz (zu ungenau);
+/// mit Richtungswort geht es auch ohne Verb ("10 mm nach oben").
+inline Intent moveIntent(const std::vector<std::string>& ws)
+{
+    const auto starts = [](const std::string& w, std::initializer_list<const char*> stems) {
+        return std::ranges::any_of(stems, [&w](const char* s) { return w.rfind(s, 0) == 0; });
+    };
+    bool move = false, directed = false, worded = false;  // worded: oben/links/... genannt
+    double dir[3] = {}, along[3] = {};
+    bool axisSet[3] = {};
+    int axis = -1;     // "x 10": die nächste Zahl gilt für diese Achse
+    double first = 0;  // erste Zahl ohne Achse: der Abstand
+    bool haveFirst = false;
+    for (const std::string& w : ws) {
+        if (starts(w, {"verschieb", "schieb", "versetz", "move", "shift", "beweg"})) {
+            move = true;
+            continue;
+        }
+        const struct
+        {
+            std::initializer_list<const char*> words;
+            int a;
+            double s;
+        } directions[] = {{{"oben", "hoch", "up", "rauf", "nachoben"}, 2, 1},  {{"unten", "runter", "down"}, 2, -1},
+                          {{"rechts", "right"}, 0, 1},                         {{"links", "left"}, 0, -1},
+                          {{"hinten", "back", "nachhinten"}, 1, 1},            {{"vorne", "vorn", "front", "forward"}, 1, -1}};
+        bool matched = false;
+        for (const auto& d : directions) {
+            if (std::ranges::any_of(d.words, [&w](const char* s) { return w == s; })) {
+                dir[d.a] = d.s;
+                directed = worded = matched = true;
+            }
+        }
+        if (matched) {
+            continue;
+        }
+        if (w == "x" || w == "y" || w == "z") {
+            axis = w[0] - 'x';
+            continue;
+        }
+        char* end = nullptr;
+        const bool negative = !w.empty() && w[0] == '~';
+        const double v = (negative ? -1 : 1) * std::strtod(w.c_str() + negative, &end);
+        if (end == w.c_str() + negative) {
+            continue;
+        }
+        if (axis >= 0) {
+            along[axis] = v;
+            axisSet[axis] = directed = true;
+            axis = -1;
+        }
+        else if (!haveFirst) {
+            first = v;
+            haveFirst = true;
+        }
+    }
+    Intent out;
+    // "10 mm nach oben" reicht; reine Achsangaben ("x 10") nur mit Verb, sonst verschöbe jede Suche nach "x"
+    if (!directed || (!move && !worded)) {
+        return {};
+    }
+    for (int k = 0; k < 3; ++k) {
+        out.dims[k] = axisSet[k] ? along[k] : dir[k] * first;
+    }
+    if (out.dims[0] == 0 && out.dims[1] == 0 && out.dims[2] == 0) {
+        return {};
+    }
+    out.kind = Intent::Kind::Move;
+    return out;
+}
+
 inline Intent intent(const std::string& query)
 {
     std::string f = fold(query);
@@ -378,6 +451,11 @@ inline Intent intent(const std::string& query)
     }
     for (size_t at = f.find("\xC3\x97"); at != std::string::npos; at = f.find("\xC3\x97")) {  // ×
         f.replace(at, 2, " x ");
+    }
+    for (size_t i = 0; i + 1 < f.size(); ++i) {  // "-5": Vorzeichen, kein Bindestrich (words() trennt an "-")
+        if (f[i] == '-' && std::isdigit(static_cast<unsigned char>(f[i + 1])) && (i == 0 || f[i - 1] == ' ')) {
+            f[i] = '~';
+        }
     }
     const auto ws = words(f);
     // 12.9 Fragen ans Modell statt Befehle
@@ -400,6 +478,9 @@ inline Intent intent(const std::string& query)
     }
     if (const Intent body = bodyIntent(ws); body.kind != Intent::Kind::None) {
         return body;
+    }
+    if (const Intent moved = moveIntent(ws); moved.kind != Intent::Kind::None) {
+        return moved;
     }
     if (const Intent pattern = patternIntent(ws); pattern.kind != Intent::Kind::None) {
         return pattern;

@@ -129,6 +129,22 @@ int main()
     assert(intent("Wandhalter").kind == Intent::Kind::None);
     assert(intent("6 Löcher M4 auf Lochkreis 40").kind == Intent::Kind::CircleHoles);  // Bohrmuster bleiben
 
+    // 12.9 Verschieben, DE und EN; ohne Richtung kein Satz
+    i = intent("10 mm nach oben verschieben");
+    assert(i.kind == Intent::Kind::Move && i.dims[0] == 0 && i.dims[1] == 0 && i.dims[2] == 10);
+    i = intent("move 20 mm left");
+    assert(i.kind == Intent::Kind::Move && i.dims[0] == -20 && i.dims[2] == 0);
+    i = intent("um 5 nach vorne schieben");
+    assert(i.kind == Intent::Kind::Move && i.dims[1] == -5);
+    i = intent("verschieben x 10 y -5");
+    assert(i.kind == Intent::Kind::Move && i.dims[0] == 10 && i.dims[1] == -5 && i.dims[2] == 0);
+    assert(intent("verschieben 10").kind == Intent::Kind::None);  // wohin?
+    i = intent("10 mm nach oben");  // ohne Verb: das Richtungswort sagt es
+    assert(i.kind == Intent::Kind::Move && i.dims[2] == 10);
+    assert(intent("x 10").kind == Intent::Kind::None);  // Achse ohne Verb: keine Verschiebung
+    assert(intent("Verschieben").kind == Intent::Kind::None);
+    assert(intent("Quader 40 x 30 x 10").kind == Intent::Kind::Box);  // x als Mal-Zeichen bleibt beim Quader
+
     std::puts("command search ok");
     return 0;
 }
