@@ -113,6 +113,7 @@
 #include "ViewProviders.h"
 
 #include <BRepAdaptor_Surface.hxx>
+#include <BRepAlgoAPI_Common.hxx>
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>
 #include <TopExp.hxx>
@@ -1139,6 +1140,71 @@ void startLoft(App::Document* doc)
 }
 
 /// Grundkörper auf der gewählten Ebene oder Fläche (sonst XY); auf einer Körperfläche standardmäßig Join
+/// 12.7: zum gewählten Schnapphaken (oder seinem Körper) das passende Fenster ins Gegenstück schneiden, das über der
+/// Rastnase liegt. Maße und Lage hängen per Ausdruck am Haken: ändert er sich, zieht das Fenster nach.
+void startSnapRecess(App::Document* doc)
+{
+    Design::Primitive* hook = nullptr;
+    for (auto obj : Gui::Selection().getObjectsOfType(App::DocumentObject::getClassTypeId(), doc->getName())) {
+        for (auto p : doc->getObjectsOfType(Design::Primitive::getClassTypeId())) {
+            auto prim = static_cast<Design::Primitive*>(p);
+            const auto& bodies = prim->Bodies.getValues();
+            if (std::string(prim->Type.getValueAsString()) == "Snap Hook"
+                && (prim == obj || std::ranges::find(bodies, obj) != bodies.end())) {
+                hook = prim;
+            }
+        }
+    }
+    if (!hook) {
+        toolHint(T("Snap Recess"), T("Select a snap hook first."));
+        return;
+    }
+    doc->openTransaction("Snap Recess");
+    auto f = static_cast<Design::Primitive*>(doc->addObject("Design::Primitive", "Primitive"));
+    Design::componentOf(hook)->addObject(f);
+    Design::addToTimeline(f);
+    f->Type.setValue("Snap Hook Recess");
+    f->Plane.setValue(hook->Plane.getValue(), hook->Plane.getSubValues());
+    for (const char* name : {"Length", "Width", "Thickness", "Undercut", "PositionX", "PositionY", "Rotation"}) {
+        App::Property* from = hook->getPropertyByName(name);
+        App::Property* to = f->getPropertyByName(name);
+        to->Paste(*from);  // gleich richtig liegen, der Ausdruck hält es dann so
+        f->setExpression(App::ObjectIdentifier(*to), std::shared_ptr<App::Expression>(App::Expression::parse(
+                                                         f, std::string(hook->getNameInDocument()) + "." + name).release()));
+    }
+    // Gegenstück: ein anderer sichtbarer Körper, in den das Fenster ragt
+    Part::TopoShape window;
+    std::string error;
+    Design::Body* target = nullptr;
+    const auto& own = hook->Bodies.getValues();
+    if (f->makeTool(window, error)) {
+        for (auto obj : doc->getObjectsOfType(Design::Body::getClassTypeId())) {
+            auto body = static_cast<Design::Body*>(obj);
+            if (body->Visibility.getValue() && std::ranges::find(own, obj) == own.end()
+                && Design::componentOf(body) == Design::componentOf(hook) && !body->Shape.getShape().isNull()) {
+                GProp_GProps props;
+                BRepGProp::VolumeProperties(BRepAlgoAPI_Common(body->Shape.getShape().getShape(), window.getShape()).Shape(), props);
+                if (props.Mass() > 1e-6) {
+                    target = body;
+                    break;
+                }
+            }
+        }
+    }
+    if (target) {
+        f->Operation.setValue(2L);  // Cut
+        Design::attachToBodies(f, {target});
+    }
+    else {
+        Design::newBody(f);  // kein Gegenstück an der Stelle: das Fenster als eigener Körper, Operation später wählbar
+    }
+    doc->recompute();
+    doc->commitTransaction();
+    if (!target) {
+        toolHint(T("Snap Recess"), T("No part over the hook yet: the recess is its own body. Set it to Cut on the mating part."));
+    }
+}
+
 /// setup (12.9, Grundkörper per Satz): Maße setzen, bevor das Panel aufgeht
 void startPrimitive(App::Document* doc, long type, const std::function<void(Design::Primitive*)>& setup = {})
 {
@@ -6062,6 +6128,10 @@ void CreateDesignCommands()
                                      "Code Step: a body from Python code, with sizes from your notes; runs only after "
                                      "you read it and click Run",
                                      "Part_Box", "", startCodeStep));
+    mgr.addCommand(new DesignCommand("Design_SnapRecess", "Snap Recess",
+                                     "Snap Recess: select a snap hook; cuts the matching window into the part over its "
+                                     "catch, with clearance, and follows the hook",
+                                     "Part_Box", "", startSnapRecess));
     mgr.addCommand(new DesignCommand("Design_Gear", "Gear",
                                      "Gear: spur gear with involute teeth; two gears mesh at a distance of module × "
                                      "(teeth 1 + teeth 2) / 2",

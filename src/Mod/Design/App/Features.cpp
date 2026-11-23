@@ -143,7 +143,8 @@ const char* HoleEnums[] = {"Simple", "Counterbore", "Countersink", nullptr};
 // ab 5: Normteile (Plan 12.7); neue nur hinten anhängen, die Nummer steht in den Dateien
 const char* PrimitiveEnums[] = {"Box", "Cylinder", "Sphere", "Torus", "Coil", "Socket Head Screw", "Countersunk Screw",
                                 "Button Head Screw", "Hex Nut", "Washer", "Heat-Set Insert", "Ball Bearing", "Disc Magnet",
-                                "Block Magnet", "Aluminum Profile", "Spur Gear", "Print-in-Place Hinge", "Snap Hook", nullptr};
+                                "Block Magnet", "Aluminum Profile", "Spur Gear", "Print-in-Place Hinge", "Snap Hook",
+                                "Snap Hook Recess", nullptr};
 const char* BearingEnums[] = {"623", "624", "625", "626", "608", "6000", "6001", "6200", nullptr};
 const char* ProfileEnums[] = {"2020", "2040", "3030", nullptr};
 const char* CenterEnums[] = {"Origin", "Body center", nullptr};
@@ -6454,7 +6455,7 @@ namespace
 enum PrimitiveType : long
 {
     BoxType, CylinderType, SphereType, TorusType, CoilType, SocketScrew, CountersunkScrew, ButtonScrew, HexNut, Washer,
-    HeatSetInsert, BallBearing, DiscMagnet, BlockMagnet, AluProfile, SpurGear, Hinge, SnapHook
+    HeatSetInsert, BallBearing, DiscMagnet, BlockMagnet, AluProfile, SpurGear, Hinge, SnapHook, SnapRecess
 };
 
 /// Scharnier zum Drucken in einem Stück, flach auf dem Bett: Achse entlang X auf Höhe r, Blatt A nach -Y, Blatt B nach
@@ -6742,10 +6743,10 @@ void Primitive::onChanged(const App::Property* prop)
             Height.setStatus(App::Property::Hidden, false);  // Dicke des Rads
         }
         Knuckles.setStatus(App::Property::Hidden, t != Hinge);
-        Clearance.setStatus(App::Property::Hidden, t != Hinge);
-        Thickness.setStatus(App::Property::Hidden, t != SnapHook);
-        Undercut.setStatus(App::Property::Hidden, t != SnapHook);
-        if (t == Hinge || t == SnapHook) {  // Länge entlang der Achse bzw. des Balkens, Breite des Blatts bzw. Hakens
+        Clearance.setStatus(App::Property::Hidden, t != Hinge && t != SnapRecess);
+        Thickness.setStatus(App::Property::Hidden, t != SnapHook && t != SnapRecess);
+        Undercut.setStatus(App::Property::Hidden, t != SnapHook && t != SnapRecess);
+        if (t == Hinge || t == SnapHook || t == SnapRecess) {  // Länge entlang der Achse bzw. des Balkens, Breite des Blatts bzw. Hakens
             Length.setStatus(App::Property::Hidden, false);
             Width.setStatus(App::Property::Hidden, false);
         }
@@ -6858,6 +6859,17 @@ bool Primitive::makeTool(Part::TopoShape& tool, std::string& error) const
                 }
                 shape = snapHook(l, Thickness.getValue(), Undercut.getValue(), w);
                 break;
+            case SnapRecess: {  // 12.7: Fenster für die Rastnase eines Hakens mit denselben Maßen und derselben Lage;
+                // die Unterkante liegt an der Halteseite der Nase (dort rastet sie ein), sonst rundum das Spiel
+                const double t = Thickness.getValue(), y = Undercut.getValue(), c = Clearance.getValue();
+                if (t <= 0 || y <= 0 || l <= y * 2) {
+                    error = "Length, thickness and undercut must be greater than zero, the beam longer than the hook";
+                    return false;
+                }
+                const double lead = y / std::tan(30 * M_PI / 180);
+                shape = BRepPrimAPI_MakeBox(gp_Pnt(t - c, -c, l - lead), y + 2 * c, w + 2 * c, lead + c).Shape();
+                break;
+            }
             default: {
                 if (r2 >= r) {
                     error = "Tube radius must be smaller than the radius";

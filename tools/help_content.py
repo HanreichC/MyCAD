@@ -982,8 +982,10 @@ A("Design_SnapHook", "create", "Design_SnapHook", ("Snap Hook", "Schnapphaken"),
            ("Thickness", "Thickness of the beam: thinner bends more easily.", "Dicke", "Dicke des Balkens: dünner biegt sich leichter."),
            ("Undercut", "How far the catch reaches over the edge.", "Hinterschnitt", "Wie weit die Rastnase über die Kante greift.")],
   tips=[("Print the beam lying down, so the layers run along it; standing up, it breaks between the layers.",
-         "Druck den Balken liegend, damit die Schichten entlang laufen; stehend bricht er zwischen den Schichten.")],
-  see=["Design_Hinge", "Design_Fit"])
+         "Druck den Balken liegend, damit die Schichten entlang laufen; stehend bricht er zwischen den Schichten."),
+        ("Snap Recess (CREATE) cuts the matching window into the part over the catch: select the hook, click it. The window has the play from your printer profile and follows the hook when you change it.",
+         "Rastfenster (ERSTELLEN) schneidet das passende Fenster in das Teil über der Rastnase: Haken wählen, klicken. Das Fenster hat das Spiel aus deinem Druckerprofil und folgt dem Haken, wenn du ihn änderst.")],
+  commands=["Design_SnapHook", "Design_SnapRecess"], see=["Design_Hinge", "Design_Fit"])
 
 A("Design_PartsList", "utilities", "Design_PartsList", ("Parts List", "Stückliste"),
   (["parts list", "bill of materials", "bom", "shopping list", "hardware", "screws"],

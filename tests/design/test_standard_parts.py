@@ -165,6 +165,23 @@ class StandardParts(DesignTest):
         copies("Design::Mirror", [screw, row], Plane="YZ")
         self.assertEqual(Design.partsList(self.doc), {"ISO 4762 M3 × 12": 8})
 
+    def test_snap_recess_fits_the_catch(self):
+        """das Fenster umschließt die Rastnase mit Spiel; seine Unterkante liegt an ihrer Halteseite"""
+        dims = dict(Length=12, Width=8, Thickness=1.5, Undercut=1)
+        _, hook = part(self.doc, "Snap Hook", **dims)
+        f, window = part(self.doc, "Snap Hook Recess", Clearance=0.3, **dims)
+        self.assertNotIn("Invalid", f.State)
+        self.assertEqual(Design.partName(f), "")
+        lead = 1 / math.tan(math.radians(30))
+        bb = window.Shape.BoundBox
+        self.assertAlmostEqual(bb.XMin, 1.5 - 0.3, places=6)
+        self.assertAlmostEqual(bb.XMax, 1.5 + 1 + 0.3, places=6)
+        self.assertAlmostEqual(bb.ZMin, 12 - lead, places=6)  # Halteseite der Nase
+        self.assertAlmostEqual(bb.ZMax, 12 + 0.3, places=6)
+        self.assertAlmostEqual(bb.YLength, 8 + 0.6, places=6)
+        catch = hook.Shape.common(Part.makeBox(10, 20, 20, V(1.5, -5, 0)))  # die Nase allein
+        self.assertAlmostEqual(catch.common(window.Shape).Volume, catch.Volume, places=6)  # ganz im Fenster
+
     def test_switching_type_shows_only_its_sizes(self):
         f, _ = part(self.doc, "Ball Bearing")
         self.assertIn("Hidden", f.getPropertyStatus("Size"))

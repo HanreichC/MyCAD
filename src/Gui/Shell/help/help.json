@@ -3752,7 +3752,10 @@
    "id": "Design_SnapHook",
    "group": "create",
    "icon": "Design_SnapHook",
-   "commands": [],
+   "commands": [
+    "Design_SnapHook",
+    "Design_SnapRecess"
+   ],
    "title": {
     "en": "Snap Hook",
     "de": "Schnapphaken"
@@ -3839,10 +3842,12 @@
    },
    "tips": {
     "en": [
-     "Print the beam lying down, so the layers run along it; standing up, it breaks between the layers."
+     "Print the beam lying down, so the layers run along it; standing up, it breaks between the layers.",
+     "Snap Recess (CREATE) cuts the matching window into the part over the catch: select the hook, click it. The window has the play from your printer profile and follows the hook when you change it."
     ],
     "de": [
-     "Druck den Balken liegend, damit die Schichten entlang laufen; stehend bricht er zwischen den Schichten."
+     "Druck den Balken liegend, damit die Schichten entlang laufen; stehend bricht er zwischen den Schichten.",
+     "Rastfenster (ERSTELLEN) schneidet das passende Fenster in das Teil über der Rastnase: Haken wählen, klicken. Das Fenster hat das Spiel aus deinem Druckerprofil und folgt dem Haken, wenn du ihn änderst."
     ]
    }
   },
