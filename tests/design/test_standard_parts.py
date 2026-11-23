@@ -137,6 +137,34 @@ class StandardParts(DesignTest):
         self.doc.recompute()
         self.assertEqual(f.Warning, "")
 
+    def test_parts_list_counts_patterns_and_mirrors(self):
+        """eine Schraube, 4× im Muster (3 Kopien), dann Original und Muster gespiegelt: 8 Stück"""
+        f, screw = part(self.doc, "Socket Head Screw", Size="M3", Length=12)
+        self.assertEqual(Design.partsList(self.doc), {"ISO 4762 M3 × 12": 1})
+
+        def copies(type_id, bodies, **props):
+            c = feature(self.doc, type_id, Design.componentOf(bodies[0]))
+            made = []
+            for b in bodies:
+                body = self.doc.addObject("Design::Body", "Body")
+                self.doc.getObject("Bodies").addObject(body)
+                body.Tip = c
+                made.append(body)
+            c.SourceBodies = bodies
+            c.SourceFeatures = [b.Tip for b in bodies]
+            c.Bodies = made
+            c.Operation = "New Body"
+            for k, v in props.items():
+                setattr(c, k, v)
+            self.doc.recompute()
+            self.assertNotIn("Invalid", c.State)
+            return made
+
+        (row,) = copies("Design::Pattern", [screw], Count1=4, Spacing1=10)
+        self.assertEqual(Design.partsList(self.doc), {"ISO 4762 M3 × 12": 4})
+        copies("Design::Mirror", [screw, row], Plane="YZ")
+        self.assertEqual(Design.partsList(self.doc), {"ISO 4762 M3 × 12": 8})
+
     def test_switching_type_shows_only_its_sizes(self):
         f, _ = part(self.doc, "Ball Bearing")
         self.assertIn("Hidden", f.getPropertyStatus("Size"))

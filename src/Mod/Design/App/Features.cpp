@@ -2381,6 +2381,47 @@ Design::QuickMeasure Design::quickMeasure(const std::vector<TopoDS_Shape>& shape
     return m;
 }
 
+std::map<std::string, int> Design::partsList(App::Document* doc)
+{
+    // Stück je Körper: ein Normteil-Körper 1, eine Muster-Kopie so viele, wie sie Volumen hat, eine Spiegel-Kopie 1;
+    // dazu alle späteren Kopien dieses Körpers (Muster eines Musters, Spiegeln eines Musters ...)
+    std::vector<Feature*> copiers;
+    for (App::DocumentObject* obj : timeline(doc)) {
+        auto f = freecad_cast<Feature*>(obj);
+        if (f && !f->Suppressed.getValue() && !f->isError() && !isRolledBack(f)
+            && (f->isDerivedFrom<Pattern>() || f->isDerivedFrom<Mirror>())) {
+            copiers.push_back(f);
+        }
+    }
+    std::function<int(const App::DocumentObject*, int)> total = [&](const App::DocumentObject* body, int own) {
+        int n = own;
+        for (Feature* f : copiers) {
+            const auto& sources = f->isDerivedFrom<Pattern>() ? static_cast<Pattern*>(f)->SourceBodies.getValues()
+                                                              : static_cast<Mirror*>(f)->SourceBodies.getValues();
+            const auto& copies = f->Bodies.getValues();
+            for (size_t i = 0; i < sources.size() && i < copies.size(); ++i) {
+                if (sources[i] == body && copies[i] != body) {
+                    const int solids = int(f->shapeFor(copies[i]).countSubShapes(TopAbs_SOLID));
+                    n += total(copies[i], std::max(solids, 1));
+                }
+            }
+        }
+        return n;
+    };
+    std::map<std::string, int> count;
+    for (auto obj : doc->getObjectsOfType(Primitive::getClassTypeId())) {
+        auto part = static_cast<Primitive*>(obj);
+        const std::string name = part->partName();
+        if (name.empty() || part->isError() || part->Suppressed.getValue() || isRolledBack(part)) {
+            continue;
+        }
+        // neuer Körper: er und seine Kopien; eingefügt in einen anderen Körper: ein Stück
+        const auto& bodies = part->Bodies.getValues();
+        count[name] += part->Operation.getValue() == 0 && !bodies.empty() ? total(bodies.front(), 1) : 1;
+    }
+    return count;
+}
+
 std::vector<std::pair<App::DocumentObject*, std::string>> Design::problems(App::Document* doc)
 {
     // erst, was nicht rechnet (rot in der Timeline), dann Warnungen und verlorene Bezüge
@@ -2514,6 +2555,69 @@ int Design::completeDimensions(Sketcher::SketchObject* sketch, int& dof)
         if (Base::Vector3d(box.GetCenter().x, box.GetCenter().y, 0).Length() < 0.02 * size) {
             tryAdd(Sketcher::Symmetric, low.first, low.second, high.first, high.second, 0, Sketcher::GeoEnum::RtPnt,
                    PointPos::start);
+        }
+    }
+    // 1b. Absicht "ganze Form" (12.14): geschlossene Züge aus Linien. Fast rechte Winkel werden rechtwinklig, fast
+    // parallele Gegenseiten eines Vierecks parallel, fast gleich lange Seiten gleich (Rechteck, Quadrat, Raute,
+    // gleichseitiges Dreieck, regelmäßiges Vieleck). Was schon gilt (waagrecht/senkrecht), nimmt tryAdd nicht doppelt.
+    {
+        std::vector<int> lines;
+        for (int i = 0; i < count; ++i) {
+            if (dynamic_cast<const Part::GeomLineSegment*>(drawn(i))) {
+                lines.push_back(i);
+            }
+        }
+        const auto end = [sketch](int geo, bool start) {
+            auto line = static_cast<const Part::GeomLineSegment*>(sketch->getGeometry(geo));
+            return start ? line->getStartPoint() : line->getEndPoint();
+        };
+        // Nachbarlinie an einem Punkt: genau eine andere Linie beginnt oder endet dort
+        const auto next = [&](int geo, const Base::Vector3d& p) {
+            int found = -1, hits = 0;
+            for (int other : lines) {
+                if (other != geo && ((end(other, true) - p).Length() < 1e-6 || (end(other, false) - p).Length() < 1e-6)) {
+                    found = other;
+                    ++hits;
+                }
+            }
+            return hits == 1 ? found : -1;
+        };
+        std::set<int> seen;
+        for (int first : lines) {
+            if (seen.contains(first)) {
+                continue;
+            }
+            std::vector<int> loop {first};
+            Base::Vector3d at = end(first, false);
+            for (int geo = next(first, at); geo >= 0 && geo != first && loop.size() <= 8; geo = next(geo, at)) {
+                loop.push_back(geo);
+                at = (end(geo, true) - at).Length() < 1e-6 ? end(geo, false) : end(geo, true);
+            }
+            seen.insert(loop.begin(), loop.end());
+            if (loop.size() < 3 || loop.size() > 8 || (at - end(first, true)).Length() > 1e-6) {
+                continue;  // nicht geschlossen
+            }
+            const auto dir = [&](int geo) { return (end(geo, false) - end(geo, true)).Normalize(); };
+            const auto len = [&](int geo) { return (end(geo, false) - end(geo, true)).Length(); };
+            const double tight = std::sin(M_PI / 180);  // 1°
+            for (size_t k = 0; k < loop.size(); ++k) {
+                const int a = loop[k], b = loop[(k + 1) % loop.size()];
+                if (std::abs(dir(a) * dir(b)) < tight) {
+                    tryAdd(Sketcher::Perpendicular, a, PointPos::none, b, PointPos::none, 0);
+                }
+            }
+            if (loop.size() == 4) {
+                for (size_t k = 0; k < 2; ++k) {
+                    if ((dir(loop[k]) % dir(loop[k + 2])).Length() < tight) {
+                        tryAdd(Sketcher::Parallel, loop[k], PointPos::none, loop[k + 2], PointPos::none, 0);
+                    }
+                }
+            }
+            for (size_t k = 1; k < loop.size(); ++k) {
+                if (std::abs(len(loop[k]) - len(loop[0])) < 0.01 * len(loop[0])) {
+                    tryAdd(Sketcher::Equal, loop[0], PointPos::none, loop[k], PointPos::none, 0);
+                }
+            }
         }
     }
     // 2. Größen: Längen, Durchmesser, Radien

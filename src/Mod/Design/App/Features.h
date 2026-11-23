@@ -197,6 +197,8 @@ DesignExport std::vector<ReferenceIssue> referenceIssues(App::Document* doc);
 /// 12.9 "Warum ist das rot?": was nicht rechnet (Fehlertext), dann Warnungen und verlorene Bezüge (englisch, übersetzt
 /// in der Oberfläche)
 DesignExport std::vector<std::pair<App::DocumentObject*, std::string>> problems(App::Document* doc);
+/// 12.7 Stückliste: Stück je Normteil-Bezeichnung (Design::Primitive::partName), Kopien aus Muster und Spiegeln mitgezählt
+DesignExport std::map<std::string, int> partsList(App::Document* doc);
 /// 12.9 "Was hängt daran?": Schritte, Skizzen und Körper, die obj direkt benutzen
 DesignExport std::vector<App::DocumentObject*> dependents(const App::DocumentObject* obj);
 /// "Was fehlt noch?" (Phase 11.6): Maße, die der Skizze fehlen, nach Absicht ergänzen. Ein Profil mittig um den

@@ -74,6 +74,7 @@ public:
                            "deletionImpact(obj): dict along/sketches/broken with the names of what deleting obj affects");
         add_varargs_method("referenceIssues", &Module::referenceIssues,
                            "referenceIssues(doc): [(object name, property, element, text, is warning)] not certainly assigned");
+        add_varargs_method("partsList", &Module::partsList, "partsList(doc): {part name: count}, patterned and mirrored copies included");
         add_varargs_method("problems", &Module::problems, "problems(doc): [(object, text)] what does not compute, then warnings");
         add_varargs_method("dependents", &Module::dependents, "dependents(obj): steps, sketches and bodies that use obj");
         add_varargs_method("completeDimensions", &Module::completeDimensions,
@@ -373,6 +374,14 @@ private:
         for (const auto& i : Design::referenceIssues(doc(args))) {
             out.append(Py::TupleN(Py::String(i.object->getNameInDocument()), Py::String(i.property), Py::String(i.element),
                                   Py::String(i.text), Py::Boolean(i.warning)));
+        }
+        return out;
+    }
+    Py::Object partsList(const Py::Tuple& args)
+    {
+        Py::Dict out;
+        for (const auto& [name, n] : Design::partsList(doc(args))) {
+            out[name] = Py::Long(n);
         }
         return out;
     }

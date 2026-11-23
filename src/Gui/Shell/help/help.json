@@ -3891,10 +3891,10 @@
    ],
    "tips": {
     "en": [
-     "Each Standard Part step counts once; copies from Pattern or Mirror are not counted yet."
+     "Copies from Pattern or Mirror count too: four screws in a pattern, mirrored, are eight screws."
     ],
     "de": [
-     "Jeder Normteil-Schritt zählt einmal; Kopien aus Muster oder Spiegeln werden noch nicht mitgezählt."
+     "Kopien aus Muster oder Spiegeln zählen mit: vier Schrauben im Muster, gespiegelt, sind acht Schrauben."
     ]
    }
   },
@@ -8858,7 +8858,7 @@
      "Grid shows or hides the grid of the sketch.",
      "Snap switches snapping on or off: ends and corners catching on points and lines, lines on whole degrees.",
      "Construction switches between drawing normal and construction geometry; with lines selected it converts them.",
-     "What's missing: a row tells you how many dimensions the sketch still needs (e.g. 4 dimensions missing), or Fully defined. Click it and MyCAD adds them the way you most likely mean: symmetric to the origin if the shape sits centered on it, then the sizes, then the distance to the origin.",
+     "What's missing: a row tells you how many dimensions the sketch still needs (e.g. 4 dimensions missing), or Fully defined. Click it and MyCAD adds them the way you most likely mean: symmetric to the origin if the shape sits centered on it, then the whole shape (a tilted rectangle gets right angles, a square or triangle equal sides), then the sizes, then the distance to the origin.",
      "Show What Can Move selects everything that is not fully defined yet, so you see where a dimension is missing.",
      "Finish Sketch, the blue button at the bottom, leaves the sketch."
     ],
@@ -8869,7 +8869,7 @@
      "Raster blendet das Raster der Skizze ein oder aus.",
      "Fangen schaltet das Einrasten an oder aus: Enden und Ecken rasten an Punkten und Linien ein, Linien an vollen Grad.",
      "Konstruktion schaltet zwischen normaler Geometrie und Konstruktion um; mit gewählten Linien wandelt es diese um.",
-     "Was fehlt: Eine Zeile sagt, wie viele Maße der Skizze noch fehlen (z. B. 4 Maße fehlen), oder Voll bestimmt. Ein Klick darauf ergänzt sie so, wie du es am wahrscheinlichsten meinst: symmetrisch zum Ursprung, wenn die Form mittig darauf liegt, dann die Größen, dann der Abstand zum Ursprung.",
+     "Was fehlt: Eine Zeile sagt, wie viele Maße der Skizze noch fehlen (z. B. 4 Maße fehlen), oder Voll bestimmt. Ein Klick darauf ergänzt sie so, wie du es am wahrscheinlichsten meinst: symmetrisch zum Ursprung, wenn die Form mittig darauf liegt, dann die ganze Form (ein schräges Rechteck bekommt rechte Winkel, ein Quadrat oder Dreieck gleiche Seiten), dann die Größen, dann der Abstand zum Ursprung.",
      "Zeigen, was sich bewegen kann wählt alles, was noch nicht voll bestimmt ist; so siehst du, wo ein Maß fehlt.",
      "Skizze fertig stellen, der blaue Knopf unten, verlässt die Skizze."
     ]

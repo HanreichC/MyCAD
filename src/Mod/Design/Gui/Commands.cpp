@@ -5782,16 +5782,11 @@ void DesignGui::showDependents()
 }
 
 /// 12.7: Stückliste der Normteile (Schrauben, Muttern, Lager …) im Design, zum Kopieren in eine Tabelle.
-/// ponytail: zählt je Normteil-Schritt ein Stück; Muster und Spiegeln vervielfachen es nicht in der Liste
+/// Muster und Spiegeln von Körpern zählen mit (Design::partsList). ponytail: ein Feature-Muster eines eingefügten
+/// Normteils (Join) zählt als ein Stück
 void showPartsList(App::Document* doc)
 {
-    std::map<std::string, int> count;
-    for (auto obj : doc->getObjectsOfType(Design::Primitive::getClassTypeId())) {
-        const std::string name = static_cast<Design::Primitive*>(obj)->partName();
-        if (!name.empty() && !obj->isError()) {
-            ++count[name];
-        }
-    }
+    const std::map<std::string, int> count = Design::partsList(doc);
     if (count.empty()) {
         toolHint(T("Parts List"), T("This design has no standard parts yet. Add some with Standard Part."));
         return;
