@@ -60,6 +60,8 @@ public:
         add_varargs_method("parameterSet", &Module::parameterSet, "parameterSet(doc[, create=True]): the Parameters VarSet");
         add_varargs_method("readCorrection", &Module::readCorrection,
                            "readCorrection(doc, text, at, view): dict with kind, body, element, alternatives, text, error");
+        add_varargs_method("applyArrow", &Module::applyArrow,
+                           "applyArrow(doc, tail, tip, view): press-pull the face under tail by the arrow length (12.12)");
         add_varargs_method("applyCorrection", &Module::applyCorrection,
                            "applyCorrection(doc, text, at, view[, element]): new feature (ValueError if not possible)");
         add_varargs_method("printCheck", &Module::printCheck,
@@ -297,6 +299,16 @@ private:
         d["text"] = Py::String(Design::describeCorrection(c));
         d["error"] = Py::String(c.error);
         return d;
+    }
+    Py::Object applyArrow(const Py::Tuple& args)
+    {
+        std::string error;
+        App::DocumentObject* result =
+            Design::applyCorrection(Design::readArrow(doc(args), vector(args[1]), vector(args[2]), vector(args[3])), error);
+        if (!result) {
+            throw Py::ValueError(error);
+        }
+        return py(result);
     }
     Py::Object applyCorrection(const Py::Tuple& args)
     {

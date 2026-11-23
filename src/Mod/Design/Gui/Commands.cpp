@@ -602,7 +602,38 @@ void readCorrections(DesignGui::ViewProviderScribble* vp)
             lines.push_back(strike);
         }
     }
+    // 12.12 Pfeil von einer Fläche (gezeichnet oder mit dem Pfeil-Werkzeug): Press Pull um die Pfeillänge. Was die
+    // Handschrift aus so einem Strich liest, zählt nicht
     std::vector<Design::Correction> corrections;
+    std::set<size_t> arrows;
+    for (size_t i = 0; i < strokes.size(); ++i) {
+        const auto& s = strokes[i];
+        if (written.count(i) || s.points.size() < 2) {
+            continue;
+        }
+        int tip = -1;  // Freihand oder das Pfeil-Werkzeug (offenes Vieleck: Schaft, Spitze, Widerhaken)
+        if (s.kind == Design::Scribble::Free || s.kind == Design::Scribble::Polygon) {
+            std::vector<ScribbleShapes::P> flat;
+            for (const auto& p : s.points) {
+                const Base::Vector3d q = toSheet * p;
+                flat.push_back({q.x, q.y});
+            }
+            tip = ScribbleShapes::arrowTip(flat);
+        }
+        if (tip > 0 && size_t(tip) < s.points.size()) {
+            const Design::Correction c = Design::readArrow(doc, s.points.front(), s.points[size_t(tip)], -s.normal);
+            if (c.command.kind == RedPen::Kind::Offset && !c.body) {
+                continue;
+            }
+            if (c.command.kind != RedPen::Kind::None) {
+                corrections.push_back(c);
+                arrows.insert(i);
+            }
+        }
+    }
+    std::erase_if(lines, [&](const ScribbleRead::Line& line) {
+        return std::ranges::any_of(line.strokes, [&](size_t i) { return arrows.count(i) > 0; });
+    });
     for (ScribbleRead::Line& line : lines) {
         if (line.text != QLatin1String("weg") || line.strokes.size() != 1 || !straightAcross(line.strokes.front())) {
             ScribbleRead::correct(line);

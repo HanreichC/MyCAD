@@ -132,6 +132,10 @@ DesignExport double modelDepth(App::Document* doc, const Base::Vector3d& at, con
 /// view: Blickrichtung (in die Szene); die Tinte zielt entlang dieser Richtung auf das Modell
 DesignExport Correction readCorrection(App::Document* doc, const std::string& text, const Base::Vector3d& at,
                                        const Base::Vector3d& view);
+/// 12.12 Pfeil von einer Fläche (Rotstift): Press Pull der Fläche unter tail um die Pfeillänge; zeigt der Pfeil im Bild
+/// (senkrecht zu view) aus der Fläche heraus, wird gezogen, sonst gedrückt
+DesignExport Correction readArrow(App::Document* doc, const Base::Vector3d& tail, const Base::Vector3d& tip,
+                                  const Base::Vector3d& view);
 /// Feature anlegen (Timeline); nullptr und error, wenn es nicht geht. Ohne Transaktion.
 DesignExport App::DocumentObject* applyCorrection(const Correction& correction, std::string& error);
 /// Kurzbeschreibung für die Karte, englisch: "Fillet R2 on 1 edge"

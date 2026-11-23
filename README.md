@@ -185,7 +185,7 @@ Happy with an idea? **Convert to Sketch** turns your lines, circles, ellipses an
 
 Mark up your model the way you'd mark up a drawing. Pick the **Red Pen**, write `R2` next to an edge, `M5` on a face, `+5` on a face you want thicker, or cross out a face to get rid of it. **Apply Corrections** reads what you wrote and turns each line into a card: `R2 → Fillet R2 on 1 edge`. Point at a card to see its target, **Show** to try it on the model, **Apply** to keep it. If two edges are equally close, the card asks which one instead of guessing.
 
-The red pen knows fillets (`R2`), chamfers (`C2`, `2×45°`), press-pull (`+5`, `−5`), tapped holes and threads (`M5`), holes and diameters (`Ø8`), fits (`H7`, `print`), patterns (`3×`), plain dimensions (`12`) and removing a face (`remove`, or a line through it). German works too: `Druck`, `weg`. Every correction becomes a normal step in the timeline.
+The red pen knows arrows (draw one from a face and it is pulled by the arrow's length), fillets (`R2`), chamfers (`C2`, `2×45°`), press-pull (`+5`, `−5`), tapped holes and threads (`M5`), holes and diameters (`Ø8`), fits (`H7`, `print`), patterns (`3×`), plain dimensions (`12`) and removing a face (`remove`, or a line through it). German works too: `Druck`, `weg`. Every correction becomes a normal step in the timeline.
 
 ![Red Pen](src/Gui/Shell/help/images/Design_RedPen.gif)
 

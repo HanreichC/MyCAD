@@ -1897,6 +1897,37 @@ double Design::modelDepth(App::Document* doc, const Base::Vector3d& at, const Ba
     return best ? std::max(0.0, best->second) : 0.0;
 }
 
+Design::Correction Design::readArrow(App::Document* doc, const Base::Vector3d& tail, const Base::Vector3d& tip,
+                                     const Base::Vector3d& view)
+{
+    // Länge auf ganze mm (von Hand gezogen); zeigt der Pfeil im Bild aus der Fläche heraus: ziehen, sonst drücken
+    const long length = std::max(1L, std::lround((tip - tail).Length()));
+    Correction c = readCorrection(doc, "+" + std::to_string(length), tail, view);
+    if (c.command.kind != RedPen::Kind::Offset || !c.body) {
+        return c;
+    }
+    Part::TopoShape shape = c.body->Shape.getShape();
+    shape.setPlacement(Base::Placement());
+    const TopoDS_Shape element = shape.getSubShape(c.element.c_str(), true);
+    if (element.IsNull() || element.ShapeType() != TopAbs_FACE) {
+        return c;
+    }
+    BRepAdaptor_Surface surface(TopoDS::Face(element));
+    gp_Dir out = surface.Plane().Axis().Direction();
+    if (element.Orientation() == TopAbs_REVERSED) {
+        out.Reverse();
+    }
+    Base::Vector3d n(out.X(), out.Y(), out.Z()), v = view;
+    componentOf(c.body)->globalPlacement().getRotation().multVec(n, n);
+    v.Normalize();
+    const Base::Vector3d inImage = n - v * (n * v), arrow = (tip - tail) - v * ((tip - tail) * v);
+    if (inImage * arrow < 0) {
+        c.command.value = -double(length);
+        c.text = "-" + std::to_string(length);
+    }
+    return c;
+}
+
 Design::Correction Design::readCorrection(App::Document* doc, const std::string& text, const Base::Vector3d& at,
                                           const Base::Vector3d& viewIn)
 {

@@ -198,6 +198,20 @@ int main()
     assert(!isScratch(tick));
     assert(!isTick(scratch));
 
+    // 12.12 Pfeil in einem Strich: Schaft, dann ein Haken schräg zurück
+    std::vector<P> arrow;
+    for (int i = 0; i <= 20; ++i) {
+        arrow.push_back({i * 5.0, 0});
+    }
+    arrow.push_back({93, 4});
+    arrow.push_back({86, 8});
+    assert(arrowTip(arrow) == 20);
+    arrow.resize(21);
+    assert(arrowTip(arrow) == -1);  // ohne Haken: eine Linie
+    assert(arrowTip(tick) == -1);
+    assert(arrowTip(scratch) == -1);
+    assert(arrowTip(dragged(Drag::Arrow, {0, 0}, {100, 0}, 12)) == 1);  // das Pfeil-Werkzeug: Spitze ist Punkt 1
+
     std::puts("scribble shapes: ok");
     return 0;
 }

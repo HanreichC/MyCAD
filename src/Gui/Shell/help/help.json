@@ -6992,10 +6992,12 @@
    },
    "tips": {
     "en": [
+     "Draw an arrow from a face (one stroke with a hook at the end, or the Arrow tool): the face is pulled by the arrow's length, or pushed when the arrow points into the part. Change the value on the card if needed.",
      "If two edges are equally close, the card asks which one instead of guessing.",
      "The ink stays in the scribble Corrections, so you can see later what was changed and why."
     ],
     "de": [
+     "Zeichne einen Pfeil von einer Fläche (ein Strich mit Haken am Ende, oder das Pfeil-Werkzeug): Die Fläche wird um die Pfeillänge gezogen, oder gedrückt, wenn der Pfeil ins Teil zeigt. Den Wert kannst du auf der Karte noch ändern.",
      "Sind zwei Kanten gleich nah, fragt die Karte, welche gemeint ist, statt zu raten.",
      "Die Tinte bleibt im Scribble Korrekturen; so siehst du später, was geändert wurde und warum."
     ]

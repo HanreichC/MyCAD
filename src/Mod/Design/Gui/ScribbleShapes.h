@@ -200,6 +200,39 @@ inline std::vector<P> simplify(const std::vector<P>& p, double tol);
 /// (Abstand zur Ellipse im umschließenden Rechteck klein) oder Dreieck (drei Ecken bleiben beim Vereinfachen). Alles
 /// andere bleibt frei.
 /// ponytail: die Toleranzen sind Erfahrungswerte für Hand-Striche
+/// 12.12 Geste Pfeil in einem Strich: ein gerader Schaft vom Anfang zur Spitze (dem weitesten Punkt), danach ein Haken
+/// zurück (10 bis 60 % des Schafts, schräg nach hinten). Liefert den Index der Spitze in raw, sonst -1. Ein Strich ohne
+/// Haken ist eine Linie, kein Pfeil.
+inline int arrowTip(const std::vector<P>& raw)
+{
+    if (raw.size() < 4) {
+        return -1;
+    }
+    size_t tip = 0;
+    for (size_t i = 1; i < raw.size(); ++i) {
+        tip = dist(raw[0], raw[i]) > dist(raw[0], raw[tip]) ? i : tip;
+    }
+    const double shaft = dist(raw[0], raw[tip]);
+    if (tip == 0 || tip + 1 >= raw.size() || shaft <= 0) {
+        return -1;
+    }
+    const std::vector<P> along(raw.begin(), raw.begin() + long(tip) + 1);
+    if (length(along) > 1.12 * shaft) {
+        return -1;  // Schaft krumm
+    }
+    const P u {(raw[tip].x - raw[0].x) / shaft, (raw[tip].y - raw[0].y) / shaft};
+    // Haken: der Punkt nach der Spitze, der am weitesten von ihr weg ist (das Pfeil-Werkzeug kehrt zur Spitze zurück)
+    P end = raw.back();
+    for (size_t i = tip + 1; i < raw.size(); ++i) {
+        end = dist(raw[tip], raw[i]) > dist(raw[tip], end) ? raw[i] : end;
+    }
+    const double barb = dist(raw[tip], end);
+    const double back = ((raw[tip].x - end.x) * u.x + (raw[tip].y - end.y) * u.y) / std::max(barb, 1e-12);  // cos zu rückwärts
+    return barb > 0.1 * shaft && barb < 0.6 * shaft && back > std::cos(75 * M_PI / 180) && back < std::cos(15 * M_PI / 180)
+        ? int(tip)
+        : -1;
+}
+
 /// 12.12 Geste Häkchen (Bildschirm, y nach unten): ein kurzer, fast gerader Strich nach unten, dann ein mindestens
 /// 1,3-mal so langer nach rechts oben. Ein "V" mit gleich langen Schenkeln oder ein Haken nach links ist keins.
 inline bool isTick(const std::vector<P>& raw)

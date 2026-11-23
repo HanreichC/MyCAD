@@ -90,6 +90,29 @@ class Target(DesignTest):
             apply(self.doc, "Hallo", V(10, 10, 30))
 
 
+class Arrow(DesignTest):
+    """12.12 Pfeil von einer Fläche: Press Pull um die Pfeillänge; zeigt er im Bild aus der Fläche heraus, wird gezogen,
+    sonst gedrückt. Schräg von vorn oben geschaut, damit die Deckfläche im Bild eine Richtung hat"""
+
+    def setUp(self):
+        super().setUp()
+        self.f, self.b = box(self.doc, 20, 20, 10)
+        self.view = V(0, 1, -1).normalize()   # Blick nach hinten unten
+        self.up = V(0, 1, 1).normalize()      # "oben" im Bild, senkrecht zum Blick
+
+    def test_arrow_up_from_the_top_pulls(self):
+        tail = V(10, 10, 10) - self.view * 30  # vor der Deckfläche, auf dem Blatt
+        Design.applyArrow(self.doc, tail, tail + self.up * 6, self.view)
+        self.doc.recompute()
+        self.assertAlmostEqual(self.b.Shape.BoundBox.ZMax, 16, places=6)
+
+    def test_arrow_down_pushes(self):
+        tail = V(10, 10, 10) - self.view * 30
+        Design.applyArrow(self.doc, tail, tail - self.up * 4, self.view)
+        self.doc.recompute()
+        self.assertAlmostEqual(self.b.Shape.BoundBox.ZMax, 6, places=6)
+
+
 class Round(DesignTest):
     def bored(self):
         _, b = box(self.doc, 30, 30, 10, at=(-15, -15))
