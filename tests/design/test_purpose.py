@@ -133,7 +133,7 @@ class Fastener(DesignTest):
         up, low = plates(self.doc)
         f = m4(up)
         self.assertNoErrors()
-        self.assertEqual(list(f.Bodies), [up, low])
+        self.assertEqual(list(f.Bodies)[:2], [up, low])  # dazu die Schraube (12.7)
         self.assertEqual(radii(up), [2.25, 4.0])  # ISO 273 mittel 4,5; Senkung ISO 4762 Ø8
         self.assertEqual(radii(low), [1.65])      # Kernloch M4: 3,3
         # Senkung 4,4 tief, darunter 0,6 Klemmlänge; 1,5 × d Gewinde → 6,6 → Normlänge 8
@@ -143,6 +143,26 @@ class Fastener(DesignTest):
         tip = 15 - 4.4 - 8
         self.assertFalse(solid_at(low, 0, 0, tip - 0.9))   # Kernloch reicht 1 mm über die Spitze
         self.assertTrue(solid_at(low, 0, 0, tip - 1.1))
+
+    def test_the_screw_comes_along(self):
+        """12.7: die Schraube ist ein eigener Körper in der Bohrung: Kopf auf dem Grund der Senkung, Spitze unten, das obere
+        Teil schneidet sie nicht (Durchgang); ändert sich die Größe, zieht sie mit; die Stückliste zählt sie"""
+        up, low = plates(self.doc)
+        f = m4(up)
+        screw = f.Bodies[2]
+        bb = screw.Shape.BoundBox
+        self.assertTrue(screw.Shape.isValid() and len(screw.Shape.Solids) == 1)
+        self.assertAlmostEqual(bb.ZMax, 15 - 4.4 + 4, places=3)  # Kopf (4 hoch) sitzt auf dem Grund der Senkung (4,4)
+        self.assertAlmostEqual(bb.ZMin, 15 - 4.4 - 8, places=3)  # Spitze: Senkung + Länge 8
+        self.assertAlmostEqual(bb.XLength, 7, places=3)          # Kopf ISO 4762 M4: Ø7
+        self.assertLess(screw.Shape.common(up.Shape).Volume, 1e-6)
+        self.assertEqual(Design.partsList(self.doc), {"ISO 4762 M4 × 8": 1})
+        f.Size = "M3"
+        f.Bottom = "Heat-set insert"
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertAlmostEqual(screw.Shape.BoundBox.XLength, 5.5, places=3)
+        self.assertIn("Heat-set insert M3", Design.partsList(self.doc))
 
     def test_countersunk_head_sits_flush(self):
         up, low = plates(self.doc)
@@ -191,7 +211,7 @@ class Fastener(DesignTest):
         _, up = extrude(self.doc, sk, 5)
         f = m4(up)
         self.assertNoErrors()
-        self.assertEqual(list(f.Bodies), [up, low])
+        self.assertEqual(list(f.Bodies)[:2], [up, low])  # dazu die Schraube (12.7)
         self.assertEqual(radii(low), [1.65])
         self.assertEqual(radii(up), [2.25, 4.0])  # die obere Form liegt lokal bei z = 0 … 5, Achse dieselbe
 

@@ -73,7 +73,7 @@ Every step goes into the **Timeline**. Go back, change a dimension, and the rest
 
 ![Print View](src/Gui/Shell/help/images/Design_PrintView.gif)
 
-**Fit** makes a hole and its pin fit: with a little play for printing (tight, normal, loose) or exactly to ISO 286 (H7/g6, H7/h6, H7/k6, H7/p6, H8/f7), with the resulting play shown in microns. **Screw Here** joins two parts in one click: a clearance hole with counterbore or countersink in the top part, and a tapped hole, a hole for a heat-set insert or a nut trap in the bottom part, with the screw length picked from the standard. Threads have a 3D print setting that adds the play and warns when the pitch is too fine for a 0.4 mm nozzle.
+**Fit** makes a hole and its pin fit: with a little play for printing (tight, normal, loose) or exactly to ISO 286 (H7/g6, H7/h6, H7/k6, H7/p6, H8/f7), with the resulting play shown in microns. **Screw Here** joins two parts in one click: a clearance hole with counterbore or countersink in the top part, and a tapped hole, a hole for a heat-set insert or a nut trap in the bottom part, with the screw length picked from the standard. The screw itself sits in the hole as a body and lands in the Parts List. Threads have a 3D print setting that adds the play and warns when the pitch is too fine for a 0.4 mm nozzle.
 
 How much play is right depends on your printer, so measure it once. **Printer Test** opens a fit plate with eight holes, each a little looser than the last, a pin, and a plate with overhangs from 30 to 70° and walls from 0.4 to 1.2 mm. Print it, push the pin in, look at the overhangs, then click in Settings › 3D Printing what fit. From then on every fit, printable thread and the Print View use your printer's numbers.
 

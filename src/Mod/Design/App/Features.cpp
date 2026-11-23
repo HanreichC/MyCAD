@@ -124,6 +124,14 @@ using namespace Design;
 
 namespace
 {
+std::string mm(double v);
+/// Schraube (0 Zylinderkopf ISO 4762, 1 Senkkopf ISO 10642, 2 Linsenkopf ISO 7380), stehend: Spitze auf z = 0, Kopf
+/// oben; l unter dem Kopf (Senkkopf: über alles). Leer mit error, wenn es sie so nicht gibt
+TopoDS_Shape screwSolid(int kind, const std::string& size, double l, std::string& error);
+}  // namespace
+
+namespace
+{
 const char* OpEnums[] = {"New Body", "Join", "Cut", "Intersect", nullptr};
 const char* ExtentEnums[] = {"One Side", "Symmetric", "Two Sides", "To Object", "All", nullptr};
 const char* ThinEnums[] = {"Inside", "Outside", "Center", nullptr};
@@ -2418,6 +2426,20 @@ std::map<std::string, int> Design::partsList(App::Document* doc)
         // neuer Körper: er und seine Kopien; eingefügt in einen anderen Körper: ein Stück
         const auto& bodies = part->Bodies.getValues();
         count[name] += part->Operation.getValue() == 0 && !bodies.empty() ? total(bodies.front(), 1) : 1;
+    }
+    for (auto obj : doc->getObjectsOfType(Fastener::getClassTypeId())) {
+        auto f = static_cast<Fastener*>(obj);
+        if (f->isError() || f->Suppressed.getValue() || isRolledBack(f)) {
+            continue;
+        }
+        const std::string size = f->Size.getValueAsString();
+        count[std::string(f->Screw.getValueAsString()) + " " + size + " × " + mm(f->Length.getValue())] += 1;
+        if (f->Bottom.getValue() == 1) {
+            count["Heat-set insert " + size] += 1;
+        }
+        else if (f->Bottom.getValue() == 2) {
+            count["ISO 4032 " + size] += 1;
+        }
     }
     return count;
 }
@@ -6011,7 +6033,8 @@ void Fastener::onChanged(const App::Property* prop)
 
 App::DocumentObjectExecReturn* Fastener::compute()
 {
-    if (Bodies.getSize() != 2 || BaseFeatures.getSize() != 2) {
+    // zwei Teile, die gebohrt werden; ein dritter Körper (12.7, neue Befestigungen) ist die Schraube selbst
+    if ((Bodies.getSize() != 2 && Bodies.getSize() != 3) || BaseFeatures.getSize() != 2) {
         return new App::DocumentObjectExecReturn("Click the top face of a part that lies on another part");
     }
     const std::string size = Size.getValueAsString();
@@ -6119,6 +6142,17 @@ App::DocumentObjectExecReturn* Fastener::compute()
         }
         results.push_back(res);
     }
+    if (Bodies.getSize() == 3) {
+        // Schraube in der Bohrung: Spitze bei tip, Kopf zum Eintrittspunkt (im Teil oben versenkt bzw. gesenkt)
+        std::string error;
+        TopoDS_Shape solid = screwSolid(int(Screw.getValue()), size, length, error);
+        if (solid.IsNull()) {
+            return new App::DocumentObjectExecReturn(error);
+        }
+        gp_Trsf place;
+        place.SetDisplacement(gp_Ax3(), gp_Ax3(at(0, tip).Location(), -axes[0].Direction()));
+        results.emplace_back(BRepBuilderAPI_Transform(solid, place, true).Shape());
+    }
     setResults(results);
     return StdReturn;
 }
@@ -6158,6 +6192,14 @@ Fastener* Design::makeFastener(Body* top, const Base::Vector3d& point, const Bas
     fastener->Position.setValue(point);
     fastener->Direction.setValue(dir);
     attachToBodies(fastener, {top, lower});
+    // 12.7: die Schraube kommt als eigener Körper mit (folgt Größe, Länge und Lage der Bohrung)
+    auto screw = static_cast<Body*>(doc->addObject("Design::Body", "Body"));
+    folder(componentOf(top), "Bodies")->addObject(screw);
+    screw->Label.setValue("Screw");
+    screw->Tip.setValue(fastener);
+    auto bodies = fastener->Bodies.getValues();
+    bodies.push_back(screw);
+    fastener->Bodies.setValues(bodies);
     doc->recompute();
     return fastener;
 }
@@ -6616,6 +6658,36 @@ std::string mm(double v)
     out << v;
     return out.str();
 }
+
+TopoDS_Shape screwSolid(int kind, const std::string& size, double l, std::string& error)
+{
+    const auto* thread = metricThread(size);
+    if (!thread) {
+        error = "Choose a thread size";
+        return {};
+    }
+    const double d = thread->diameter;
+    const ScrewHead& head = screwHead(size);
+    if (kind == 0) {
+        const TopoDS_Shape shape =
+            BRepAlgoAPI_Fuse(zCylinder(d / 2, 0, l), zCylinder(head.socketDk / 2, l, l + head.socketK)).Shape();
+        return withSocket(shape, head.socketKey, l + head.socketK, head.socketK * 0.6);
+    }
+    if (kind == 1) {  // Nennlänge über alles, Kopf 90°
+        const double k = (head.sinkDk - d) / 2;
+        if (l <= k) {
+            error = "The screw is shorter than its head";
+            return {};
+        }
+        const TopoDS_Shape cone = BRepPrimAPI_MakeCone(gp_Ax2(gp_Pnt(0, 0, l - k), gp::DZ()), d / 2, head.sinkDk / 2, k).Shape();
+        return withSocket(BRepAlgoAPI_Fuse(zCylinder(d / 2, 0, l - k), cone).Shape(), head.sinkKey, l, k * 0.7);
+    }
+    // Linsenkopf: Kugelkappe über dem Schaft
+    const double a = head.buttonDk / 2, k = head.buttonK, rs = (a * a + k * k) / (2 * k);
+    const TopoDS_Shape cap =
+        BRepAlgoAPI_Common(BRepPrimAPI_MakeSphere(gp_Pnt(0, 0, l + k - rs), rs).Shape(), zCylinder(a, l, l + k)).Shape();
+    return withSocket(BRepAlgoAPI_Fuse(zCylinder(d / 2, 0, l), cap).Shape(), head.buttonKey, l + k, k * 0.7);
+}
 }  // namespace
 
 std::string Primitive::partName() const
@@ -6712,38 +6784,12 @@ bool Primitive::makeTool(Part::TopoShape& tool, std::string& error) const
                 break;
             case SocketScrew:
             case CountersunkScrew:
-            case ButtonScrew: {  // stehend: Spitze auf der Ebene, Kopf oben
-                const std::string size = Size.getValueAsString();
-                const auto* thread = metricThread(size);
-                if (!thread) {
-                    error = "Choose a thread size";
+            case ButtonScrew:  // stehend: Spitze auf der Ebene, Kopf oben
+                shape = screwSolid(int(Type.getValue() - SocketScrew), Size.getValueAsString(), l, error);
+                if (shape.IsNull()) {
                     return false;
                 }
-                const double d = thread->diameter;
-                const ScrewHead& head = screwHead(size);
-                if (Type.getValue() == SocketScrew) {
-                    shape = BRepAlgoAPI_Fuse(zCylinder(d / 2, 0, l), zCylinder(head.socketDk / 2, l, l + head.socketK)).Shape();
-                    shape = withSocket(shape, head.socketKey, l + head.socketK, head.socketK * 0.6);
-                }
-                else if (Type.getValue() == CountersunkScrew) {  // Nennlänge über alles, Kopf 90°
-                    const double k = (head.sinkDk - d) / 2;
-                    if (l <= k) {
-                        error = "The screw is shorter than its head";
-                        return false;
-                    }
-                    const TopoDS_Shape cone =
-                        BRepPrimAPI_MakeCone(gp_Ax2(gp_Pnt(0, 0, l - k), gp::DZ()), d / 2, head.sinkDk / 2, k).Shape();
-                    shape = withSocket(BRepAlgoAPI_Fuse(zCylinder(d / 2, 0, l - k), cone).Shape(), head.sinkKey, l, k * 0.7);
-                }
-                else {  // Linsenkopf: Kugelkappe über dem Schaft
-                    const double a = head.buttonDk / 2, k = head.buttonK, rs = (a * a + k * k) / (2 * k);
-                    const TopoDS_Shape cap = BRepAlgoAPI_Common(BRepPrimAPI_MakeSphere(gp_Pnt(0, 0, l + k - rs), rs).Shape(),
-                                                                zCylinder(a, l, l + k))
-                                                 .Shape();
-                    shape = withSocket(BRepAlgoAPI_Fuse(zCylinder(d / 2, 0, l), cap).Shape(), head.buttonKey, l + k, k * 0.7);
-                }
                 break;
-            }
             case HexNut: {
                 const std::string size = Size.getValueAsString();
                 const auto* thread = metricThread(size);

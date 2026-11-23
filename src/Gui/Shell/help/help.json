@@ -4165,10 +4165,12 @@
    },
    "tips": {
     "en": [
+     "The screw itself comes along as its own body (Screw), sitting in the hole; it follows when you change size, type or length, and the Parts List counts it, with its nut or heat-set insert.",
      "The lower part is the next body behind the point; it may sit in another component.",
      "Heat-set insert holes follow common brass inserts (e.g. M3: Ø4 mm, 5.7 mm long). For other inserts use Hole with your own diameter."
     ],
     "de": [
+     "Die Schraube selbst kommt als eigener Körper mit (Screw) und sitzt in der Bohrung; sie zieht mit, wenn du Größe, Art oder Länge änderst, und die Stückliste zählt sie samt Mutter oder Einschmelzmutter.",
      "Das untere Teil ist der nächste Körper hinter dem Punkt; es darf in einer anderen Komponente liegen.",
      "Die Löcher für Einschmelzmuttern folgen gängigen Messingeinsätzen (z. B. M3: Ø4 mm, 5,7 mm lang). Für andere Einsätze nimm Bohrung mit eigenem Durchmesser."
     ]
