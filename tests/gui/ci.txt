@@ -73,3 +73,4 @@ test_sketch_gestures.py
 test_print_split_ui.py
 test_intent_bodies.py
 test_snap_recess.py
+test_part_library.py

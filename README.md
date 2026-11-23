@@ -255,7 +255,7 @@ The start page lists your recent designs and everything in your project folder, 
 
 ## Speaks STEP. And STL. And DXF.
 
-**Export** to STL or 3MF for your 3D printer, or to STEP for any other CAD program. Sketches export as DXF, for example for laser cutters or CNC mills. **Import** STEP models, and bring DXF and SVG drawings straight into a sketch.
+**Export** to STL or 3MF for your 3D printer, or to STEP for any other CAD program. Sketches export as DXF, for example for laser cutters or CNC mills. **Import** parts from your earlier designs (your own parts library), STEP models, and bring DXF and SVG drawings straight into a sketch.
 
 **Remix an STL.** Insert an STL, 3MF or OBJ from Printables or Thingiverse and it becomes a body you can work with, not a cloud of triangles. Flat areas become one face each, round holes become real holes with a centre and a diameter, so you can measure them, sketch on a face, add a fit or a screw, cut and combine. A plate with 24 holes and 100 000 triangles turns into a clean body in under a second. Bosses, fillets and free-form shapes stay made of triangles.
 

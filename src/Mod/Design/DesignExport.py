@@ -183,6 +183,46 @@ def write_3mf(path, bodies, quality="normal", colors=None, rotation=None):
     return len(bodies)
 
 
+# --- Teile-Bibliothek (12.7): Körper aus einem anderen Design ------------------------------------------------------
+
+def design_bodies(path):
+    """[(Name, Form)] der sichtbaren Körper eines gespeicherten Designs (.mycad/.FCStd), in Weltkoordinaten. Das Design
+    wird dafür unsichtbar geöffnet und wieder geschlossen; war es schon offen, bleibt es so."""
+    import os
+    before = {d.FileName: d for d in App.listDocuments().values()}
+    target = os.path.abspath(path)
+    doc = next((d for f, d in before.items() if f and os.path.abspath(f) == target), None)
+    opened = doc is None
+    active = App.ActiveDocument  # Öffnen macht das andere Design aktiv, Schließen ließe keins zurück
+    if opened:
+        doc = App.openDocument(path, hidden=True)
+    try:  # nicht neu rechnen: die gespeicherten Formen gelten (ein fremder Code-Schritt liefe sonst nicht an)
+        found = []
+        for body in doc.Objects:
+            if body.TypeId == "Design::Body" and body.Visibility and not body.Shape.isNull():
+                shape = body.Shape.copy()
+                if hasattr(body, "getGlobalPlacement"):
+                    shape.Placement = body.getGlobalPlacement()
+                found.append((body.Label, shape))
+        return found
+    finally:
+        if opened:
+            App.closeDocument(doc.Name)
+        if active is not None:
+            App.setActiveDocument(active.Name)
+
+
+def design_bodies_to_brep(path, folder):
+    """wie design_bodies, je Körper eine BREP-Datei in folder; liefert "Name\tDatei" je Zeile (für die Oberfläche)"""
+    import os
+    lines = []
+    for i, (label, shape) in enumerate(design_bodies(path)):
+        brep = os.path.join(folder, "mycad-part-%d-%d.brep" % (os.getpid(), i))
+        shape.exportBrep(brep)
+        lines.append(label.replace("\t", " ").replace("\n", " ") + "\t" + brep)
+    return "\n".join(lines)
+
+
 # --- Drucken: Slicer finden und mit dem 3MF öffnen (Idee 5) -----------------------------------------------------
 
 # (Name, Programmnamen im PATH, Flatpak-ID, Anfänge des AppImage-Namens, Windows-Pfad unter Programme)

@@ -2117,10 +2117,12 @@
    ],
    "tips": {
     "en": [
+     "Your own designs are a parts library: insert an earlier .mycad file and its visible bodies come in as parts with their names, without opening it.",
      "A mesh must be closed (watertight). If MyCAD says it is not, repair it in your slicer first, e.g. with Fix model in OrcaSlicer or Bambu Studio.",
      "Click a closed area of an inserted drawing and use Extrude to make a part from it."
     ],
     "de": [
+     "Deine eigenen Designs sind eine Teile-Bibliothek: Füg eine frühere .mycad-Datei ein, und ihre sichtbaren Körper kommen mit ihren Namen als Teile herein, ohne dass du sie öffnest.",
      "Ein Mesh muss geschlossen (wasserdicht) sein. Meldet MyCAD, dass es das nicht ist, reparier es zuerst in deinem Slicer, z. B. mit Modell reparieren in OrcaSlicer oder Bambu Studio.",
      "Klicke eine geschlossene Fläche einer eingefügten Zeichnung an und mache mit Extrudieren ein Teil daraus."
     ]

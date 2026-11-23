@@ -2643,8 +2643,9 @@ void importFile(App::Document* doc)
     const QString file = QFileDialog::getOpenFileName(
         Gui::getMainWindow(), T("Insert"),
         QString::fromStdString(params->GetASCII("InsertFolder", Gui::Shell::projectsFolder().toStdString().c_str())),
-        T("CAD files, meshes and photos (*.step *.stp *.stl *.3mf *.obj *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;"
-          "STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;Photo to Sketch (*.png *.jpg *.jpeg *.bmp *.webp)")
+        T("CAD files, meshes and photos (*.mycad *.FCStd *.step *.stp *.stl *.3mf *.obj *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;"
+          "MyCAD design (*.mycad *.FCStd);;STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;"
+          "Photo to Sketch (*.png *.jpg *.jpeg *.bmp *.webp)")
     );
     if (file.isEmpty()) {
         return;
@@ -2661,6 +2662,59 @@ void importFile(App::Document* doc)
     }
     App::Part* comp = activeContainer(doc);
     std::string error;
+    // 12.7 Teile-Bibliothek: ein früheres Design liefert seine sichtbaren Körper als Teile (je Körper ein Schritt)
+    if (suffix == QLatin1String("mycad") || suffix == QLatin1String("fcstd")) {
+        if (QFileInfo(file) == QFileInfo(QString::fromUtf8(doc->FileName.getValue()))) {
+            QMessageBox::warning(Gui::getMainWindow(), T("Insert"), T("This is the design you are working on."));
+            return;
+        }
+        QString listing;
+        try {
+            Base::PyGILStateLocker lock;
+            const auto hex = [](const QString& s) { return QString::fromLatin1(s.toUtf8().toHex()).toStdString(); };
+            listing = QString::fromStdString(Base::Interpreter().runStringWithKey(
+                ("import DesignExport\n_r = DesignExport.design_bodies_to_brep(bytes.fromhex('" + hex(file)
+                 + "').decode(), bytes.fromhex('" + hex(QDir::tempPath()) + "').decode())")
+                    .c_str(),
+                "_r"));
+        }
+        catch (const Base::Exception& e) {
+            QMessageBox::warning(Gui::getMainWindow(), T("Insert"), QString::fromUtf8(e.what()));
+            return;
+        }
+        if (listing.isEmpty()) {
+            QMessageBox::warning(Gui::getMainWindow(), T("Insert"), T("This design has no visible body."));
+            return;
+        }
+        doc->openTransaction("Insert");
+        for (const QString& line : listing.split(QLatin1Char('\n'))) {
+            const QString name = line.section(QLatin1Char('\t'), 0, 0), brep = line.section(QLatin1Char('\t'), 1);
+            Part::TopoShape shape;
+            shape.read(brep.toUtf8().constData());
+            QFile::remove(brep);
+            auto feature = static_cast<Design::Import*>(doc->addObject("Design::Import", "Import"));
+            feature->Label.setValue(T("Inserted %1").arg(name).toStdString());
+            feature->SourceFile.setValue(file.toStdString());
+            feature->Imported.setValue(shape);
+            comp->addObject(feature);
+            Design::addToTimeline(feature);
+            // je Volumen ein Körper (ein Scharnier sind zwei), wie beim STEP
+            const auto pieces = Design::Import::pieces(shape);
+            std::vector<App::DocumentObject*> bodies;
+            for (size_t i = 0; i < pieces.size(); ++i) {
+                auto body = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
+                body->Label.setValue(pieces.size() == 1 ? name.toStdString() : name.toStdString() + " " + std::to_string(i + 1));
+                Design::folder(comp, "Bodies")->addObject(body);
+                body->Tip.setValue(feature);
+                bodies.push_back(body);
+            }
+            feature->Bodies.setValues(bodies);
+        }
+        doc->recompute();
+        doc->commitTransaction();
+        Gui::Application::Instance->commandManager().runCommandByName("Std_ViewFitAll");
+        return;
+    }
     try {
         const bool mesh = QStringList {QStringLiteral("stl"), QStringLiteral("3mf"), QStringLiteral("obj")}.contains(suffix);
         if (suffix == QLatin1String("step") || suffix == QLatin1String("stp") || mesh) {

@@ -835,10 +835,14 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Photo to Sketch: trace a part photographed on plain paper into a sketch to scale",
          "Foto zu Skizze: ein Teil, auf hellem Papier fotografiert, maßstäblich als Skizze nachzeichnen"},
         {"Images (*.png *.jpg *.jpeg *.bmp *.webp)", "Bilder (*.png *.jpg *.jpeg *.bmp *.webp)"},
-        {"CAD files, meshes and photos (*.step *.stp *.stl *.3mf *.obj *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;"
-         "STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;Photo to Sketch (*.png *.jpg *.jpeg *.bmp *.webp)",
-         "CAD-Dateien, Meshes und Fotos (*.step *.stp *.stl *.3mf *.obj *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;"
-         "STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;Foto zu Skizze (*.png *.jpg *.jpeg *.bmp *.webp)"},
+        {"CAD files, meshes and photos (*.mycad *.FCStd *.step *.stp *.stl *.3mf *.obj *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;"
+         "MyCAD design (*.mycad *.FCStd);;STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;"
+         "Photo to Sketch (*.png *.jpg *.jpeg *.bmp *.webp)",
+         "CAD-Dateien, Meshes und Fotos (*.mycad *.FCStd *.step *.stp *.stl *.3mf *.obj *.dxf *.svg *.png *.jpg *.jpeg *.bmp *.webp);;"
+         "MyCAD-Design (*.mycad *.FCStd);;STEP (*.step *.stp);;Mesh (*.stl *.3mf *.obj);;DXF (*.dxf);;SVG (*.svg);;"
+         "Foto zu Skizze (*.png *.jpg *.jpeg *.bmp *.webp)"},
+        {"This is the design you are working on.", "Das ist das Design, an dem du gerade arbeitest."},
+        {"This design has no visible body.", "Dieses Design hat keinen sichtbaren Körper."},
         // 12.7 Normteile
         {"Standard Part", "Normteil"},
         {"Standard Part: screws, nuts, washers, heat-set inserts, bearings, magnets and aluminum profiles as real bodies, on the selected plane or face",
