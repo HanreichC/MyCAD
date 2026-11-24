@@ -858,6 +858,13 @@ public:
     /// Prismen der ebenen Flächen um Distance (für das Mitschneiden weiterer Körper)
     bool makeTool(Part::TopoShape& tool, std::string& error) const override;
     App::DocumentObjectExecReturn* compute() override;
+    short mustExecute() const override;
+
+protected:
+    void onDocumentRestored() override;
+
+private:
+    bool invalidOnRestore = false;  ///< gespeichertes Ergebnis ungültig (vor dem Mini-Kanten-Fix): neu rechnen
 };
 
 /// Idee 4: Passung. Runde Flächen auf das Mittelmaß einer ISO-286-Passung (H7/g6 …: Bohrung und Welle, auch in

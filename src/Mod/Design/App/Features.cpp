@@ -37,6 +37,7 @@
 
 #include <BRepAlgoAPI_Splitter.hxx>
 #include <BRepAdaptor_Surface.hxx>
+#include <ShapeFix_Wireframe.hxx>
 #include <gp_Pln.hxx>
 #include <BRep_Builder.hxx>
 #include <TopoDS_Compound.hxx>
@@ -5874,7 +5875,17 @@ bool PressPull::makeTool(Part::TopoShape& tool, std::string& error) const
         if (face.getShape().Orientation() == TopAbs_REVERSED) {
             n.Reverse();
         }
-        prisms.push_back(Part::TopoShape(0, getDocument()->getStringHasher()).makeElementPrism(face, gp_Vec(n) * d));
+        // Flächen eines Körpers tragen Reste früherer Boolescher Schritte: Kanten kürzer als die Toleranz ihrer Ecken
+        // (ConceptKey: 0,000002 mm bei 0,0007). Ihr Prisma schneidet sich selbst, Herausziehen wurde ungültig und das
+        // nächste Hineindrücken ließ den ganzen Körper verschwinden. Solche Kanten vorher entfernen.
+        Part::TopoShape prismFace = face;
+        ShapeFix_Wireframe fix(face.getShape());
+        fix.SetPrecision(std::max(BRep_Tool::MaxTolerance(face.getShape(), TopAbs_VERTEX), Precision::Confusion()));
+        fix.ModeDropSmallEdges() = Standard_True;
+        if (fix.FixSmallEdges()) {
+            prismFace = Part::TopoShape(fix.Shape());
+        }
+        prisms.push_back(Part::TopoShape(0, getDocument()->getStringHasher()).makeElementPrism(prismFace, gp_Vec(n) * d));
     }
     if (prisms.empty()) {
         error = "Select one or more faces";
@@ -5884,8 +5895,22 @@ bool PressPull::makeTool(Part::TopoShape& tool, std::string& error) const
     return true;
 }
 
+void PressPull::onDocumentRestored()
+{
+    DressUp::onDocumentRestored();
+    // Vor dem Mini-Kanten-Fix (makeTool) gespeichert: das ungültige Ergebnis beim nächsten Rechnen ersetzen. touch()
+    // hilft hier nicht, das Laden setzt es danach zurück; einmal prüfen statt bei jedem mustExecute
+    invalidOnRestore = !Shape.getShape().isNull() && !Shape.getShape().isValid();
+}
+
+short PressPull::mustExecute() const
+{
+    return invalidOnRestore ? 1 : DressUp::mustExecute();
+}
+
 App::DocumentObjectExecReturn* PressPull::compute()
 {
+    invalidOnRestore = false;
     // Bodies[0] trägt die Flächen; weitere Bodies schneidet das Hineindrücken mit (wie Extrude-Cut durch alles)
     if (Bodies.getSize() < 1 || BaseFeatures.getSize() != Bodies.getSize()) {
         return new App::DocumentObjectExecReturn("Select faces of one body");

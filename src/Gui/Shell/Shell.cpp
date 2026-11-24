@@ -6611,6 +6611,16 @@ void Gui::Shell::install()
             QTimer::singleShot(0, [] { startPage->hide(); });
         }
     });
+    // Geöffnetes Design mit veraltetem Ergebnis (z. B. ein ungültiges Drücken/Ziehen von vor einem Fix): gleich neu
+    // rechnen, bevor man Flächen darauf anklickt; die Flächen-Nummern ändern sich dabei (ConceptKey)
+    App::GetApplication().signalFinishRestoreDocument.connect([](const App::Document& doc) {
+        QTimer::singleShot(0, [name = std::string(doc.getName())] {
+            App::Document* d = App::GetApplication().getDocument(name.c_str());
+            if (d && d->mustExecute()) {
+                d->recompute();
+            }
+        });
+    });
     App::GetApplication().signalDeletedDocument.connect([] {
         QTimer::singleShot(0, [] {
             if (!anyDesignOpen() && getMainWindow()->isVisible()) {
