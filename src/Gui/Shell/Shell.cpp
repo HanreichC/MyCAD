@@ -130,6 +130,7 @@
 #include <set>
 #include <QFontMetrics>
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QLocale>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -6160,6 +6161,104 @@ void Gui::Shell::prepareWindow()
     }
 }
 
+/// 13.1 Ruckel-Protokoll: kommt der Takt des Hauptthreads 150 ms zu spät, hing die Oberfläche so lange. Dann eine
+/// Zeile in slow.log (Benutzerdaten von MyCAD): Zeit, Dauer, zuletzt ausgeführter Befehl, offenes Werkzeug bzw. was
+/// bearbeitet wird, und eine Neuberechnung in dieser Zeit mit ihrem langsamsten Schritt. Einstellungen › Allgemein:
+/// "Log stutters" (MyCAD/SlowLog, an), "Open Log". Über 1 MB wird die Datei zu slow.log.1.
+QString Gui::Shell::slowLogPath()
+{
+    return QString::fromStdString(App::Application::getUserAppDataDir()) + QStringLiteral("slow.log");
+}
+
+namespace
+{
+struct SlowWatch
+{
+    QElapsedTimer clock;
+    qint64 tick = 0;
+    qint64 recomputeStart = 0, recomputeEnd = -1, recomputeMs = 0, objectStart = 0, slowestMs = 0;
+    QString slowest;
+    std::set<std::string> watchedDocs;
+};
+
+SlowWatch& slowWatch()
+{
+    static SlowWatch w;
+    return w;
+}
+
+void writeSlowLine(qint64 ms)
+{
+    auto& w = slowWatch();
+    QStringList parts {QDateTime::currentDateTime().toString(Qt::ISODate), QStringLiteral("%1 ms").arg(ms)};
+    if (Command::lastInvoked) {
+        parts << QStringLiteral("last command %1").arg(QLatin1String(Command::lastInvoked));
+    }
+    if (Gui::Document* gd = Application::Instance->activeDocument()) {
+        if (auto vp = freecad_cast<ViewProviderDocumentObject*>(gd->getInEdit())) {
+            parts << QStringLiteral("editing %1").arg(QString::fromUtf8(vp->getObject()->Label.getValue()));
+        }
+    }
+    if (TaskView::TaskDialog* dlg = Control().activeDialog()) {
+        parts << QStringLiteral("tool %1").arg(QLatin1String(dlg->metaObject()->className()));
+    }
+    if (w.recomputeEnd >= w.clock.elapsed() - ms - 100) {  // Neuberechnung während des Hängens
+        parts << QStringLiteral("recompute %1 ms, slowest %2 %3 ms").arg(w.recomputeMs).arg(w.slowest).arg(w.slowestMs);
+    }
+    const QString path = Gui::Shell::slowLogPath();
+    if (QFileInfo(path).size() > 1024 * 1024) {
+        QFile::remove(path + QStringLiteral(".1"));
+        QFile::rename(path, path + QStringLiteral(".1"));
+    }
+    QFile file(path);
+    if (file.open(QIODevice::Append | QIODevice::Text)) {
+        file.write((parts.join(QStringLiteral(" | ")) + QLatin1Char('\n')).toUtf8());
+    }
+}
+
+void startSlowLog()
+{
+    auto& w = slowWatch();
+    w.clock.start();
+    App::GetApplication().signalBeforeRecomputeDocument.connect([](const App::Document& doc) {
+        auto& w = slowWatch();
+        w.recomputeStart = w.objectStart = w.clock.elapsed();
+        w.slowestMs = 0;
+        w.slowest.clear();
+        if (w.watchedDocs.insert(doc.getName()).second) {  // je Dokument einmal: Dauer jedes Schritts
+            const_cast<App::Document&>(doc).signalRecomputedObject.connect([](const App::DocumentObject& obj) {
+                auto& w = slowWatch();
+                const qint64 now = w.clock.elapsed();
+                if (now - w.objectStart > w.slowestMs) {
+                    w.slowestMs = now - w.objectStart;
+                    w.slowest = QString::fromUtf8(obj.Label.getValue());
+                }
+                w.objectStart = now;
+            });
+        }
+    });
+    App::GetApplication().signalRecomputed.connect([](const App::Document&) {
+        auto& w = slowWatch();
+        w.recomputeEnd = w.clock.elapsed();
+        w.recomputeMs = w.recomputeEnd - w.recomputeStart;
+    });
+    auto timer = new QTimer(qApp);
+    timer->setInterval(50);
+    QObject::connect(timer, &QTimer::timeout, qApp, [] {
+        auto& w = slowWatch();
+        const qint64 now = w.clock.elapsed();
+        const qint64 late = now - w.tick - 50;
+        w.tick = now;
+        // die ersten Sekunden lädt MyCAD (Module, Startseite): kein Ruckeln bei der Arbeit
+        if (late >= 150 && now > 5000
+            && App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/MyCAD")->GetBool("SlowLog", true)) {
+            writeSlowLine(late);
+        }
+    });
+    timer->start();
+}
+}  // namespace
+
 void Gui::Shell::install()
 {
     installTranslations();  // vor dem Aufbau der Oberfläche, damit alle Beschriftungen gleich deutsch sind
@@ -6191,6 +6290,7 @@ void Gui::Shell::install()
     Application::Instance->commandManager().addCommand(new CmdSaveVersion);
     startAlwaysSave();
     reportLastCrash();
+    startSlowLog();
 
     // kompakt (12.3): eine ruhige Zeile mit den häufigsten Werkzeugen, alles andere hinter den Kategorien
     state.modelBar =

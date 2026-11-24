@@ -418,6 +418,8 @@ public:
      * @param trigger: indicate the command triggering source, see TriggerSource.
      */
     void invoke(int index, TriggerSource trigger = TriggerNone);
+    /// MyCAD: Name des zuletzt ausgeführten Befehls (für das Ruckel-Protokoll), nullptr vor dem ersten
+    static const char* lastInvoked;
     /// adds this command to arbitrary widgets
     void addTo(QWidget*);
     void addToGroup(ActionGroup*, bool checkable);

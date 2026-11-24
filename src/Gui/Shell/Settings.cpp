@@ -59,7 +59,9 @@
 #include <QPainter>
 #include <QPlainTextEdit>
 #include <QMouseEvent>
+#include <QDesktopServices>
 #include <QFile>
+#include <QUrl>
 #include <QButtonGroup>
 #include <QAbstractButton>
 #include <QElapsedTimer>
@@ -1486,6 +1488,20 @@ void Gui::Shell::showSettings()
     auto version = new QLabel(Gui::Shell::version());
     version->setTextInteractionFlags(Qt::TextSelectableByMouse);  // zum Kopieren in Fehlerberichte
     addRow(generalCard, T("Version"), version);
+    // 13.1: hängt die Oberfläche spürbar (über 150 ms), steht in slow.log wann und wobei
+    myToggle(generalCard, T("Log stutters"), "SlowLog", myParams()->GetBool("SlowLog", true));
+    auto openLog = new QPushButton(T("Open Log"));
+    openLog->setAutoDefault(false);
+    openLog->setToolTip(T("When MyCAD hangs for a moment, it notes when and during what; this helps find the cause"));
+    QObject::connect(openLog, &QPushButton::clicked, openLog, [openLog] {
+        const QString path = Gui::Shell::slowLogPath();
+        if (!QFile::exists(path)) {
+            QMessageBox::information(openLog->window(), T("Log stutters"), T("No stutters noted so far."));
+            return;
+        }
+        QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+    });
+    addRow(generalCard, T("Stutter log"), openLog);
 
     // --- 3D-Druck (12.4): Testteil einmal drucken, anklicken, was gepasst hat (DesignCalibrate); daraus Spiel,
     // Überhanggrenze und kleinste Wand, die Passung, Gewinde und Druckansicht lesen. Darunter die Werte zum Feinstellen

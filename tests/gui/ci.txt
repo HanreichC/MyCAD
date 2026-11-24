@@ -79,3 +79,4 @@ test_scenario_holder.py
 test_scenario_housing.py
 test_scenario_sketch.py
 test_scenario_change.py
+test_slow_log.py

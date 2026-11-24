@@ -7422,7 +7422,7 @@
     "en": [
      "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Show tool names, Toolbar (Compact: the tools you need most, the rest behind the headings; All Tools: every tool at once), Tools at the selection (the tools that fit float above what you clicked) and Show grid (the grid on the ground plane under the bodies).",
      "Materials and Light: Body material for new bodies (Steel unless you choose another), Lighting (Studio or Room), and switches for Realistic materials, Reflections, and Relief and end grain.",
-     "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart), Projects folder and Version.",
+     "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart), Projects folder, Version, Log stutters and Stutter log (Open Log: when MyCAD hangs for a moment, it notes when and during what).",
      "3D Printing: Make Test Piece opens the Printer Test; then click the hole the pin slides into, the last clean overhang and the thinnest full wall. Below: Clearance tight, normal and loose (for Fit and printable threads), Overhang angle and Minimum wall (for the Print View), Export resolution (how fine curves become in STL and 3MF) and the Slicer.",
      "Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
      "View: Camera, Rotate, Rotate around and Animate view changes.",
@@ -7433,7 +7433,7 @@
     "de": [
      "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen, Werkzeugleiste (Kompakt: die häufigsten Werkzeuge, der Rest hinter den Überschriften; Alle Werkzeuge: alle auf einmal), Werkzeuge an der Auswahl (die passenden Werkzeuge schweben über dem, was du angeklickt hast) und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
      "Materialien und Licht: Körpermaterial für neue Körper (Stahl, solange du nichts anderes wählst), Licht (Studio oder Raum) und Schalter für Realistische Materialien, Spiegelungen sowie Relief und Hirnholz.",
-     "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart), Projektordner und Version.",
+     "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart), Projektordner, Version, Ruckeln protokollieren und Ruckel-Protokoll (Protokoll öffnen: hängt MyCAD kurz, steht dort wann und wobei).",
      "3D-Druck: Testteil anlegen öffnet den Druckertest; danach klickst du das Loch an, in das der Stift gleitet, den letzten sauberen Überhang und die dünnste ganze Wand. Darunter: Spiel eng, normal und locker (für Passung und druckbare Gewinde), Überhang-Winkel und kleinste Wand (für die Druckansicht), Export-Auflösung (wie fein Rundungen in STL und 3MF werden) und der Slicer.",
      "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen.",
      "Ansicht: Kamera, Drehen, Drehen um und Ansichtswechsel animieren.",

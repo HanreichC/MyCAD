@@ -88,6 +88,8 @@ QString renameDesignFile(const QString& file, const QString& name, QString& erro
 void labelEdited(App::Document* doc);
 /// Stand dieses Builds aus Commit-Datum und -Hash, z. B. "2026.10.21 · b9d3cde" (Startseite, Einstellungen)
 QString version();
+/// 13.1: Datei des Ruckel-Protokolls (slow.log in den Benutzerdaten von MyCAD)
+QString slowLogPath();
 
 /// Sichtbarer Text in der eingestellten Sprache (englischer Originaltext ist der Schlüssel, siehe Translations.cpp)
 inline QString T(const char* english)

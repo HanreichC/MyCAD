@@ -377,6 +377,7 @@ App::DocumentObject* Command::getObject(const char* Name) const
 }
 
 int Command::_busy;
+const char* Command::lastInvoked = nullptr;
 
 class PendingLine
 {
@@ -459,6 +460,7 @@ void Command::setupCheckable(int iMsg)
 void Command::invoke(int i, TriggerSource trigger)
 {
     CommandTrigger cmdTrigger(_trigger, trigger);
+    lastInvoked = sName;  // Befehle leben bis zum Ende: der Zeiger bleibt gültig
     if (displayText.empty()) {
         displayText = getMenuText() ? getMenuText() : "";
         boost::replace_all(displayText, "&", "");
