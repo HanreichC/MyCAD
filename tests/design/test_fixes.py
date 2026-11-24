@@ -79,13 +79,30 @@ class LostReference(DesignTest):
         self.doc.recompute()
         self.assertNoErrors()
         self.assertAlmostEqual(b.Shape.Volume, good, delta=1e-6)
+        # 13.5: die Kante liegt unverändert da, wo sie war: dieselbe Kante, ohne Warnung (sonst warnte jedes Löschen eines
+        # früheren Schritts, dessen Schnitt im Namen steckte)
+        self.assertEqual(list(f.ErrorElements), [])
+        self.assertEqual(f.Warning, "")
+
+    def test_moved_edge_is_guessed_and_warns(self):
+        _, b = box(self.doc, 20, 10, 5)
+        right = front_top(b)
+        f = dress(self.doc, "Design::Fillet", b, [right], Size=1)
+        x, y, z, size = (float(v) for v in f.ElementHints[0].split())
+        f.ElementMaps = ["lost"]
+        f.ElementHints = ["%g %g %g %g" % (x + 0.5, y, z, size)]  # das Modell hat sich darunter verändert
+        f.touch()
+        self.doc.recompute()
+        self.assertNoErrors()
         self.assertEqual(list(f.ErrorElements), [right])
         self.assertIn("check", f.Warning)
 
     def test_warning_stays_until_confirmed(self):
         _, b = box(self.doc, 20, 10, 5)
         f = dress(self.doc, "Design::Fillet", b, [front_top(b)], Size=1)
+        x, y, z, size = (float(v) for v in f.ElementHints[0].split())
         f.ElementMaps = ["lost"]
+        f.ElementHints = ["%g %g %g %g" % (x + 0.5, y, z, size)]
         f.touch()
         self.doc.recompute()
         self.assertTrue(f.Warning)

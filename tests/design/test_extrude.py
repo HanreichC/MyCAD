@@ -24,6 +24,23 @@ def frustum(a, b, h):
     return h / 3 * (a * a + b * b + a * b)
 
 
+class CutMisses(DesignTest):
+    def test_a_cut_that_no_longer_touches_warns(self):
+        """13.5: die Bohrung liegt nach einer Änderung neben der Platte: der Schritt warnt (statt still nichts zu tun)
+        und hört damit auf, sobald er wieder trifft"""
+        _, b = box(self.doc, 80, 50, 10)
+        hole = sketch(self.doc, circle(65, 25, 4))
+        cut, _ = extrude(self.doc, hole, 10, op="Cut", bodies=[b])
+        self.assertEqual(cut.Warning, "")
+        hole.moveGeometry(0, 3, V(120, 25, 0))  # Mittelpunkt ziehen, wie in der Skizze
+        self.doc.recompute()
+        self.assertIn("no longer touches", cut.Warning)
+        self.assertAlmostEqual(b.Shape.Volume, 80 * 50 * 10, places=3)
+        hole.moveGeometry(0, 3, V(65, 25, 0))
+        self.doc.recompute()
+        self.assertEqual(cut.Warning, "")
+
+
 class Extents(DesignTest):
     def test_symmetric(self):
         sk = sketch(self.doc, rect(0, 0, 10, 10))

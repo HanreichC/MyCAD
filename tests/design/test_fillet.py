@@ -30,6 +30,21 @@ class Chain(DesignTest):
         self.assertEqual(len(b.Shape.Faces), before_faces + 8)  # alle 8 Kanten der Kette gerundet
 
 
+class LaterChanges(DesignTest):
+    def test_deleting_an_earlier_step_keeps_the_edge_without_warning(self):
+        """13.5: die Bohrung vor der Rundung gelöscht: die Kante der Rundung heißt anders (ihr Name trug den Schnitt),
+        liegt aber unverändert da; keine Warnung "The model changed" mehr"""
+        _, b = box(self.doc, 80, 50, 10)
+        hole, _ = extrude(self.doc, sketch(self.doc, circle(65, 25, 4)), 10, op="Cut", bodies=[b])
+        corner = edge_where(b, lambda p: abs(p.x) < 1e-6 and abs(p.y) < 1e-6 and abs(p.z - 5) < 1e-6)
+        f = dress(self.doc, "Design::Fillet", b, [corner], Size=6)
+        Design.removeFromTimeline(hole)
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertEqual(f.Warning, "")
+        self.assertAlmostEqual(b.Shape.Volume, 80 * 50 * 10 - (36 - math.pi * 9) * 10, places=2)
+
+
 class Fillets(DesignTest):
     def test_variable_radius_between_constant_ones(self):
         volumes = []

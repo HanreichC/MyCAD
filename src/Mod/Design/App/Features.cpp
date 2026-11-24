@@ -156,6 +156,8 @@ const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
 constexpr const char* LostProfile =
     "Profile gone: the sketch changed and the profile of this step no longer exists; edit the step and pick a profile";
+constexpr const char* CutMisses = "This cut no longer touches the body and removes nothing; check the sketch or the "
+                                  "distance";
 
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Profile werden über ihre Signatur
@@ -4095,6 +4097,13 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& toolIn)
         if (bodies.empty() || bases.size() != bodies.size()) {
             return new App::DocumentObjectExecReturn("Select a body to join, cut or intersect");
         }
+        // 13.5: ein Schnitt, der (nach einer späteren Änderung davor) nichts mehr trifft, lief still ins Leere
+        bool missesAll = op() == Op::Cut;
+        const auto volume = [](const Part::TopoShape& s) {
+            GProp_GProps props;
+            BRepGProp::VolumeProperties(s.getShape(), props);
+            return props.Mass();
+        };
         for (size_t i = 0; i < bodies.size(); ++i) {
             auto base = freecad_cast<Feature*>(bases[i]);
             if (!base) {
@@ -4109,6 +4118,8 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& toolIn)
                     break;
                 case Op::Cut:
                     res.makeElementCut({baseShape, tool});
+                    missesAll = missesAll && !res.isNull()
+                        && std::abs(volume(res) - volume(baseShape)) < Precision::Confusion();
                     break;
                 default:
                     res.makeElementBoolean(Part::OpCodes::Common, {baseShape, tool});
@@ -4118,6 +4129,12 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& toolIn)
                 return new App::DocumentObjectExecReturn("Result would be empty");
             }
             results.push_back(solidOf(res.makeElementRefine(nullptr, Part::RefineFail::shapeUntouched)));
+        }
+        if (missesAll) {
+            Warning.setValue(CutMisses);
+        }
+        else if (std::string(Warning.getValue()) == CutMisses) {
+            Warning.setValue("");  // trifft wieder
         }
     }
 
@@ -4543,10 +4560,14 @@ std::string elementHint(const TopoDS_Shape& s)
     return out.str();
 }
 
-/// Element gleicher Art, das am besten zu hint passt (Lage und Größe); leer, wenn keins da ist. among: nur unter diesen
+/// Element gleicher Art, das am besten zu hint passt (Lage und Größe); leer, wenn keins da ist. among: nur unter diesen.
+/// exact: genau eins liegt dort und ist gleich groß (bis auf die Rundung des Hinweises), es ist dasselbe Element
 std::string closestElement(const Part::TopoShape& shape, const std::string& name, const std::string& hint,
-                           const std::vector<std::string>& among = {})
+                           const std::vector<std::string>& among = {}, bool* exact = nullptr)
 {
+    if (exact) {
+        *exact = false;
+    }
     std::istringstream in(hint);
     double x = 0, y = 0, z = 0, size = 0;
     if (!(in >> x >> y >> z >> size)) {
@@ -4561,15 +4582,21 @@ std::string closestElement(const Part::TopoShape& shape, const std::string& name
     for (int i = 1; i <= count; ++i) {
         candidates.push_back((face ? "Face" : "Edge") + std::to_string(i));
     }
+    constexpr double same = 1e-3;  // der Hinweis steht mit 6 Stellen in der Datei
+    int matches = 0;
     for (const std::string& candidate : candidates) {
         std::istringstream h(elementHint(shape.getSubShape(candidate.c_str())));
         double cx = 0, cy = 0, cz = 0, cs = 0;
         h >> cx >> cy >> cz >> cs;
         const double score = std::hypot(cx - x, cy - y, cz - z) + std::abs(cs - size) / std::max(1.0, size) * 10;
+        matches += score < same ? 1 : 0;
         if (score < bestScore) {
             bestScore = score;
             best = candidate;
         }
+    }
+    if (exact) {
+        *exact = matches == 1;
     }
     return best;
 }
@@ -4617,13 +4644,18 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
                 }
             }
             // Name verloren: nicht still die alte Nummer nehmen, sondern das Element, das nach Lage und Größe am
-            // besten passt, und warnen (Idee 6, "War es diese Kante?")
+            // besten passt, und warnen (Idee 6, "War es diese Kante?"). Liegt genau ein Element unverändert an der alten
+            // Stelle, ist es dieselbe Kante (ein früherer Schritt wurde gelöscht und ihr Name trägt ihn nicht mehr):
+            // keine Warnung
             if (!found) {
-                const std::string guess = closestElement(shape, names[i], hints[i]);
+                bool exact = false;
+                const std::string guess = closestElement(shape, names[i], hints[i], {}, &exact);
                 if (!guess.empty()) {
                     names[i] = guess;
                 }
-                uncertain.push_back(names[i]);
+                if (!exact) {
+                    uncertain.push_back(names[i]);
+                }
             }
         }
         const Data::MappedName mapped = shape.getMappedName(Data::IndexedName(names[i].c_str()));
