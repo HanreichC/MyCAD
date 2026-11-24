@@ -2,7 +2,7 @@
 """Körper-Materialien (Gui/Shell/BodyShading.cpp) und die Schalter unter Einstellungen → Materialien und Licht: eine
 spiegelnde Chromkugel zeigt den Raum, darin eine scharfe Linie, wo Wand und Boden aufeinandertreffen; ohne Spiegelungen
 oder ohne realistische Materialien (Phong, wie früher) nur weiche Verläufe. Fotoscans: Maßstab aus dem Bild, Hirnholz an
-der Stirnseite (Relief und Hirnholz), Kontaktschatten. Zum Schluss ein Bild aller Effekte.
+der Stirnseite (Relief und Hirnholz). Zum Schluss ein Bild aller Effekte.
 Fehler stehen als FAIL im Protokoll."""
 from harness import *
 import Part
@@ -71,45 +71,6 @@ def scale():
     check("Photo scan: tile size from the image (oak 600 mm)", any(abs(f - 200 / 600) < 1e-3 for f in factors), str(factors))
 
 
-def ground(key):
-    """Boden direkt vor dem Holzklotz (2 mm) und weiter weg (25 mm), von oben: Verhältnis der Helligkeit"""
-    v = Gui.ActiveDocument.ActiveView
-    img = view().viewport().grab().toImage()
-    def at(y):
-        px, py = v.getPointOnViewport(App.Vector(30, y, 0))
-        x, y = int(px), int(img.height() - py)
-        values = [lum(img, x + dx, y + dy) for dx in range(-6, 7, 2) for dy in range(-1, 2)]  # Rasterlinien mitteln
-        return sum(values) / len(values)
-    saved[key] = at(-2) / max(at(-25), 1e-3)
-
-
-def scribble():
-    """dicker Marker-Strich flach auf dem Boden neben dem Holzklotz: ein Scribble wirft keinen Schatten"""
-    s = doc().addObject("Design::Scribble", "Scribble")
-    s.Sheet = App.Placement(App.Vector(0, 0, 0.5), App.Rotation())
-    s.Points = [App.Vector(x, -60, 0.5) for x in (80, 120, 160)]; s.Widths = [15.0] * 3
-    s.Tools = [2]; s.Kinds = [0]; s.Colors = [(0.2, 0.2, 0.2, 0.35)]; s.Normals = [App.Vector(0, 0, 1)]
-    s.Counts = [3]
-    doc().recompute()
-
-
-def beside_scribble():
-    v = Gui.ActiveDocument.ActiveView
-    img = view().viewport().grab().toImage()
-    def at(y):
-        px, py = v.getPointOnViewport(App.Vector(120, y, 0))
-        x, y = int(px), int(img.height() - py)
-        values = [lum(img, x + dx, y + dy) for dx in range(-6, 7, 2) for dy in range(-1, 2)]
-        return sum(values) / len(values)
-    saved["scribble"] = at(-72) / max(at(-95), 1e-3)  # 4,5 mm neben dem Strich gegen weit weg
-
-
-def top():
-    fit("viewTop")
-    cam = Gui.ActiveDocument.ActiveView.getCameraNode()
-    cam.height.setValue(cam.height.getValue() * 2)  # Boden rund um den Klotz sichtbar
-
-
 def tones(key):
     """Kiste im Vorgabe-Material (Stahl), Iso-Ansicht: Helligkeit in der Mitte von Deckel, Vorder- und rechter Seite"""
     v = Gui.ActiveDocument.ActiveView
@@ -147,7 +108,7 @@ def showcase():
 
 
 in_order([
-    ("all on", lambda: [P.SetBool(k, True) for k in ("RealisticMaterials", "Reflections", "SurfaceDetail", "ContactShadow")]),
+    ("all on", lambda: [P.SetBool(k, True) for k in ("RealisticMaterials", "Reflections", "SurfaceDetail")]),
     # Studio (Vorgabe): jede Fläche ihr eigener Tonwert, sonst wirken Körper flach (im Raum waren Deckel und Vorderseite gleich)
     ("tone box", tone_box), ("wait", lambda: None), ("studio tones", lambda: tones("studio")), ("shot tones", lambda: shot("tones")),
     ("three tones", lambda: check("Studio light: the default material shows three distinct shades, top > front > right",
@@ -188,14 +149,5 @@ in_order([
                                 saved["x high"] / saved["y high"] < 0.95 * saved["x bal"] / saved["y bal"],
                                 "x/y high %.3f, balanced %.3f" % (saved["x high"] / saved["y high"], saved["x bal"] / saved["y bal"]))),
     ("back 2", lambda: P.SetBool("SurfaceDetail", True)),
-    ("top", top), ("wait", lambda: None), ("shadow high", lambda: ground("shadow high")), ("shot shadow", lambda: shot("shadow")),
-    ("balanced 2", lambda: P.SetBool("ContactShadow", False)), ("wait", lambda: None), ("shadow bal", lambda: ground("shadow bal")),
-    ("shadow", lambda: check("Contact shadow darkens the ground next to the body, switched off none",
-                             saved["shadow high"] < 0.93 and saved["shadow bal"] > 0.97,
-                             "near/far high %.3f, balanced %.3f" % (saved["shadow high"], saved["shadow bal"]))),
-    ("back 3", lambda: P.SetBool("ContactShadow", True)),
-    ("scribble", scribble), ("top 2", top), ("wait", lambda: None), ("wait", lambda: None),
-    ("beside scribble", beside_scribble), ("shot scribble", lambda: shot("scribble")),
-    ("scribble check", lambda: check("A scribble casts no shadow", saved["scribble"] > 0.97, "near/far %.3f" % saved["scribble"])),
     ("showcase", showcase), ("wait", lambda: None), ("shot showcase", lambda: shot("showcase")),
 ])

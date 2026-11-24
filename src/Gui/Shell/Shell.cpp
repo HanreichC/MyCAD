@@ -34,7 +34,6 @@
 #include <Gui/View3DInventorViewer.h>
 #include <Gui/Inventor/SoFCBoundingBox.h>
 #include <Inventor/actions/SoGLRenderAction.h>
-#include <Inventor/actions/SoSearchAction.h>
 #include <Inventor/nodes/SoCallback.h>
 #include <Inventor/nodes/SoComplexity.h>
 #include <Inventor/nodes/SoDirectionalLight.h>
@@ -6045,30 +6044,6 @@ void attach(View3DInventor* view)
     }
     auto root = static_cast<SoSeparator*>(view->getViewer()->getSceneGraph());
     if (root->findChild(groundGrid().node) < 0) {
-        SoSearchAction search;  // Körper der Ansicht für den Kontaktschatten (View3DInventorViewer::objectGroup)
-        search.setName(SbName("ObjectGroup"));
-        search.apply(root);
-        if (SoPath* path = search.getPath()) {
-            // Schatten werfen nur Körper (wie beim Material-Shader in ViewProviderExt): Skizzen, Profile, Scribbles,
-            // Ebenen, Achsen und Punkte (Part::Datum ist auch ein Part::Feature) nicht
-            QPointer<View3DInventor> owner(view);
-            auto others = [owner] {
-                std::vector<SoSwitch*> list;
-                Gui::Document* doc = owner ? owner->getGuiDocument() : nullptr;
-                for (App::DocumentObject* obj : doc ? doc->getDocument()->getObjects() : std::vector<App::DocumentObject*>()) {
-                    const bool solid = obj->isDerivedFrom(Base::Type::fromName("Part::Feature"))
-                        && !obj->isDerivedFrom(Base::Type::fromName("Part::Part2DObject"))
-                        && !obj->isDerivedFrom(Base::Type::fromName("Part::Datum"))
-                        && std::string_view(obj->getTypeId().getName()) != "Design::Profiles";
-                    Gui::ViewProvider* vp = doc->getViewProvider(obj);
-                    if (!solid && vp && vp->getModeSwitch() && !vp->getChildRoot()) {  // Gruppen (Komponenten) enthalten die Körper
-                        list.push_back(vp->getModeSwitch());
-                    }
-                }
-                return list;
-            };
-            root->addChild(Gui::Shell::contactShadow(path->getTail(), others, view));  // vor dem Raster: Linien über dem Schatten
-        }
         root->addChild(groundGrid().node);
     }
     updateGroundGrid();

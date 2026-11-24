@@ -4,13 +4,9 @@
 
 #include <FCGlobal.h>
 
-#include <functional>
 #include <string>
-#include <vector>
 
-class QObject;
 class SoNode;
-class SoSwitch;
 
 namespace Gui::Shell
 {
@@ -29,15 +25,9 @@ GuiExport SoNode* bodyShading();
 /// Rauheit aus <name>_s.jpg auf Stufe 1. Geteilt von allen Körpern; nullptr für fremde Pfade oder fehlende Bilder.
 GuiExport SoNode* bodyTexture(const std::string& path);
 
-/// Kontaktschatten unter den Körpern einer Ansicht (Einstellung "Kontaktschatten"): ihr Grundriss nah am Boden, von unten gesehen,
-/// weich und halbdurchsichtig auf dem Boden. objects = alles in der Ansicht (ObjectGroup des Viewers); others liefert die
-/// Anzeige-Schalter von allem, was keinen Schatten werfen soll (Skizzen, Scribbles …): beim Rendern der Maske aus.
-/// Endet owner (die Ansicht), gibt der Schatten alles frei, auch die Szene, die er festhält.
-GuiExport SoNode* contactShadow(SoNode* objects, std::function<std::vector<SoSwitch*>()> others, QObject* owner);
-
 /// Einstellungen "Materialien und Licht" neu lesen und anwenden (MyCAD/Lighting: 0 Studio mit drei klaren Tonwerten je
 /// Ansicht, 1 Raum wie three.js/model-viewer; RealisticMaterials: aus = Phong wie früher,
-/// Reflections: aus = nur weicher Glanz, SurfaceDetail: Relief und Hirnholz, ContactShadow; alle an als Vorgabe)
+/// Reflections: aus = nur weicher Glanz, SurfaceDetail: Relief und Hirnholz; alle an als Vorgabe)
 GuiExport void applyRenderQuality();
 
 /// Solange eine Skizze offen ist, treten Körper zur Hintergrundfarbe hin zurück (halb), damit dünne Skizzenlinien und

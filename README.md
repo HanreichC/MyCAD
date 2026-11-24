@@ -227,7 +227,7 @@ Bodies stand in a photo studio: a large light from the top left, a softer one fr
 
 **Appearance** has 119 materials: raw and polished metals, anodized aluminum in nine colors, powder coat, lacquer and metallic paint, matte, satin and glossy plastics, PLA that shows its print layers up close, rubber and silicone, glass and acrylic, woods raw, oiled or lacquered, stone and ceramics, leather, felt and carbon. Each one is a small sphere drawn the same way as your model, with its colors and finishes as dots underneath. Search by name, right-click to keep a favorite, and see at the top what this design already uses. Click a sphere to apply it to the selected bodies, or drag it straight onto a body. With single faces selected, only those faces change color.
 
-The woods, stone, leather, cork, fabric, carbon and brushed metals are real photo scans with their relief, and a wooden part shows end grain where it's cut. A soft shadow grounds every body on the grid. Under **Materials and Light** in the settings you choose the lighting and can switch each of these off on its own: realistic materials, reflections, relief and end grain, and the contact shadow. Turn off what gets in your way, or what your graphics card can't keep up with.
+The woods, stone, leather, cork, fabric, carbon and brushed metals are real photo scans with their relief, and a wooden part shows end grain where it's cut. Under **Materials and Light** in the settings you choose the lighting and can switch each of these off on its own: realistic materials, reflections, and relief and end grain. Turn off what gets in your way, or what your graphics card can't keep up with.
 
 ![Appearance](src/Gui/Shell/help/images/Design_Appearance.gif)
 
@@ -299,7 +299,7 @@ MyCAD is young and grows fast. This is what comes next, roughly in this order (d
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
 | **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
 | **Pen tablet** | Pressure and hover on Wayland, every tablet and pen button assignable in Settings (H640P preset, other models learn their buttons), KDE shortcuts on the same buttons ignored |
-| **Materials** | 119 in 12 groups (metal, anodized, coatings, plastic, 3D print, rubber, glass, wood, stone, fabric and leather, composites, Apple colors), 19 CC0 photo scans with relief, studio or room lighting, clear coat, end grain, contact shadow |
+| **Materials** | 119 in 12 groups (metal, anodized, coatings, plastic, 3D print, rubber, glass, wood, stone, fabric and leather, composites, Apple colors), 19 CC0 photo scans with relief, studio or room lighting, clear coat, end grain |
 | **Core** | FreeCAD with OpenCascade 8.0 and Coin 4.0.10 (built in the container) |
 | **License** | LGPL-2.1-or-later |
 
@@ -335,7 +335,7 @@ The build runs inside a Podman container (`.devcontainer/`), or Docker if there 
 
 ## For developers.
 
-The core of the interface lives in [`src/Gui/Shell/`](src/Gui/Shell) and the Fusion-style tools in [`src/Mod/Design/`](src/Mod/Design). [`tools/make_icons.py`](tools/make_icons.py) generates the icons. [`tools/fetch_textures.py`](tools/fetch_textures.py) downloads the photo scans for the materials, and [`tools/make_environment.py`](tools/make_environment.py) renders the studio and the room that light the bodies. [`tests/gui/test_materials.py`](tests/gui/test_materials.py) checks the three shades of a box, reflections, end grain and the contact shadow.
+The core of the interface lives in [`src/Gui/Shell/`](src/Gui/Shell) and the Fusion-style tools in [`src/Mod/Design/`](src/Mod/Design). [`tools/make_icons.py`](tools/make_icons.py) generates the icons. [`tools/fetch_textures.py`](tools/fetch_textures.py) downloads the photo scans for the materials, and [`tools/make_environment.py`](tools/make_environment.py) renders the studio and the room that light the bodies. [`tests/gui/test_materials.py`](tests/gui/test_materials.py) checks the three shades of a box, reflections and end grain.
 
 The GUI tests click through the app like a person would, with real mouse and keyboard events:
 

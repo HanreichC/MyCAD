@@ -1256,7 +1256,6 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Lighting", "Licht"},
         {"Studio", "Studio"},
         {"Room", "Raum"},
-        {"Contact shadow", "Kontaktschatten"},
         {"Drag a material onto a body, or select bodies first.", "Material auf einen Körper ziehen oder zuerst Körper wählen."},
         {"Search materials", "Materialien suchen"},
         {"In this design", "In diesem Design"},

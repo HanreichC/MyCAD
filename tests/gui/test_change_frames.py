@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """H3: Wie oft zeichnet eine Änderung die 3D-Ansicht neu? Gemessen an 20 Körpern mit Rundungen: Maß ändern, mit
 "Immer gespeichert", bis MyCAD ruht. Vor H2/H5 waren es 7 Bilder, jetzt 4 bis 6, und jedes zeigt etwas Neues: die Form
-(sofort), Timeline und Kontaktschatten (der rechnet 400 ms nach der Änderung neu), Speichern samt "Gesichert"
-(nach 2 s Ruhe). Mehr wäre ein Rückschritt. Fehler stehen als FAIL im Protokoll."""
+(sofort), Timeline, Speichern samt "Gesichert" (nach 2 s Ruhe). Den Kontaktschatten (400 ms nach jeder Änderung neu)
+gibt es nicht mehr. Mehr wäre ein Rückschritt. Fehler stehen als FAIL im Protokoll."""
 import os
 import shutil
 from harness import *
@@ -15,7 +15,7 @@ shutil.rmtree(FOLDER, ignore_errors=True)
 os.makedirs(FOLDER)
 grp.SetString("ProjectsFolder", FOLDER)
 state = {"frames": 0}
-LIMIT = 7  # vorher 7 fest; nach H2/H5 4-6, je nachdem, wie Speichern, Timeline und Schatten zusammenfallen
+LIMIT = 7  # vorher 7 fest; nach H2/H5 4-6, je nachdem, wie Speichern und Timeline zusammenfallen
 
 
 class Frames(QtCore.QObject):

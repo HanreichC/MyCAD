@@ -189,7 +189,7 @@
      [
       "Look and feel",
       [
-       "Liquid Glass interface, light and dark, English or German; 119 materials with photo scans, reflections and contact shadow.",
+       "Liquid Glass interface, light and dark, English or German; 119 materials with photo scans and reflections.",
        "12 navigation styles, keys as mouse buttons, pen tablets with pressure; export STL, 3MF, STEP and DXF, import STEP, DXF and SVG.",
        "New bodies are steel; the Studio light gives every face of a body its own shade (Settings → General → Materials and Light, or Room for a soft preview)."
       ],
@@ -256,7 +256,7 @@
      [
       "Aussehen und Bedienung",
       [
-       "Liquid-Glass-Oberfläche, hell und dunkel, Deutsch oder Englisch; 119 Materialien mit Fotoscans, Spiegelungen und Kontaktschatten.",
+       "Liquid-Glass-Oberfläche, hell und dunkel, Deutsch oder Englisch; 119 Materialien mit Fotoscans und Spiegelungen.",
        "12 Navigationsstile, Tasten als Maustasten, Grafiktabletts mit Druck; Export als STL, 3MF, STEP und DXF, Import von STEP, DXF und SVG.",
        "Neue Körper sind aus Stahl; das Licht Studio gibt jeder Fläche eines Körpers ihren eigenen Ton (Einstellungen → Allgemein → Materialien und Licht, oder Raum für eine weiche Vorschau)."
       ],
@@ -7263,7 +7263,7 @@
      "Right-click a sphere to add it to Favorites. In this design shows the materials you already use.",
      "Single faces only take the colour of a material. Textures, gloss and lacquer apply to whole bodies.",
      "Settings → General → Materials and Light: Lighting Studio (light from the top left, every face of a body gets its own shade – best for modelling) or Room (soft all round, like a product preview in the browser).",
-     "Settings → General → Materials and Light switches each effect on or off: Realistic materials, Reflections, Relief and end grain, Contact shadow. Turn off whatever distracts you while you work.",
+     "Settings → General → Materials and Light switches each effect on or off: Realistic materials, Reflections, Relief and end grain. Turn off whatever distracts you while you work.",
      "The default look of new bodies is set in Settings → General → Body material. Changing it recolours bodies that still have the standard look; a look you picked yourself stays, even if it is the same material."
     ],
     "de": [
@@ -7272,7 +7272,7 @@
      "Ein Rechtsklick auf eine Kugel legt sie unter Favoriten ab. In diesem Design zeigt die Materialien, die du schon verwendest.",
      "Einzelne Flächen übernehmen nur die Farbe eines Materials. Texturen, Glanz und Lack gibt es für ganze Körper.",
      "Einstellungen → Allgemein → Materialien und Licht: Licht Studio (Licht von links oben, jede Fläche eines Körpers hat ihren eigenen Ton – am besten zum Konstruieren) oder Raum (weich von überall, wie eine Produktvorschau im Browser).",
-     "Einstellungen → Allgemein → Materialien und Licht schaltet jeden Effekt einzeln an oder aus: Realistische Materialien, Spiegelungen, Relief und Hirnholz, Kontaktschatten. Schalte ab, was dich beim Arbeiten stört.",
+     "Einstellungen → Allgemein → Materialien und Licht schaltet jeden Effekt einzeln an oder aus: Realistische Materialien, Spiegelungen, Relief und Hirnholz. Schalte ab, was dich beim Arbeiten stört.",
      "Das Standard-Aussehen neuer Körper stellst du in Einstellungen → Allgemein → Körpermaterial ein. Eine Änderung färbt Körper mit Standard-Aussehen um; ein selbst gewähltes Aussehen bleibt, auch wenn es dasselbe Material ist."
     ]
    },
@@ -7421,7 +7421,7 @@
    "steps": {
     "en": [
      "General tab – Display: Color scheme (Automatic, Light or Dark), Liquid Glass (slide from Ultra Clear over Default to Tinted), Show tool names, Toolbar (Compact: the tools you need most, the rest behind the headings; All Tools: every tool at once), Tools at the selection (the tools that fit float above what you clicked) and Show grid (the grid on the ground plane under the bodies).",
-     "Materials and Light: Body material for new bodies (Steel unless you choose another), Lighting (Studio or Room), and switches for Realistic materials, Reflections, Relief and end grain and Contact shadow.",
+     "Materials and Light: Body material for new bodies (Steel unless you choose another), Lighting (Studio or Room), and switches for Realistic materials, Reflections, and Relief and end grain.",
      "Accessibility: Increase contrast, Reduce transparency and Reduce motion. General: Language, Graphics card (on computers with two graphics cards; takes effect after a restart), Projects folder and Version.",
      "3D Printing: Make Test Piece opens the Printer Test; then click the hole the pin slides into, the last clean overhang and the thinnest full wall. Below: Clearance tight, normal and loose (for Fit and printable threads), Overhang angle and Minimum wall (for the Print View), Export resolution (how fine curves become in STL and 3MF) and the Slicer.",
      "Navigation tab – Mouse & Trackpad: choose the Style; the box below shows which buttons Rotate, Pan, Zoom and Select.",
@@ -7432,7 +7432,7 @@
     ],
     "de": [
      "Reiter Allgemein – Darstellung: Farbschema (Automatisch, Hell oder Dunkel), Liquid Glass (von Ultra klar über Standard bis Getönt schieben), Werkzeugnamen anzeigen, Werkzeugleiste (Kompakt: die häufigsten Werkzeuge, der Rest hinter den Überschriften; Alle Werkzeuge: alle auf einmal), Werkzeuge an der Auswahl (die passenden Werkzeuge schweben über dem, was du angeklickt hast) und Raster anzeigen (das Raster auf der Bodenebene unter den Körpern).",
-     "Materialien und Licht: Körpermaterial für neue Körper (Stahl, solange du nichts anderes wählst), Licht (Studio oder Raum) und Schalter für Realistische Materialien, Spiegelungen, Relief und Hirnholz und Kontaktschatten.",
+     "Materialien und Licht: Körpermaterial für neue Körper (Stahl, solange du nichts anderes wählst), Licht (Studio oder Raum) und Schalter für Realistische Materialien, Spiegelungen sowie Relief und Hirnholz.",
      "Bedienungshilfen: Kontrast erhöhen, Transparenz reduzieren und Bewegung reduzieren. Allgemein: Sprache, Grafikkarte (auf Rechnern mit zwei Grafikkarten; wirkt nach einem Neustart), Projektordner und Version.",
      "3D-Druck: Testteil anlegen öffnet den Druckertest; danach klickst du das Loch an, in das der Stift gleitet, den letzten sauberen Überhang und die dünnste ganze Wand. Darunter: Spiel eng, normal und locker (für Passung und druckbare Gewinde), Überhang-Winkel und kleinste Wand (für die Druckansicht), Export-Auflösung (wie fein Rundungen in STL und 3MF werden) und der Slicer.",
      "Reiter Navigation – Maus & Trackpad: Wähle den Stil; der Kasten darunter zeigt, welche Tasten Drehen, Verschieben, Zoomen und Auswählen.",

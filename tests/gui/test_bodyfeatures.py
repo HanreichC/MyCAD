@@ -52,26 +52,6 @@ def cut_off():
     return bad
 
 
-def shadow_points():
-    """Ecken des Kontaktschattens (0: keiner): Viereck mit Maske (SoTexture2) und Shader in einem Separator"""
-    from pivy import coin
-    search = coin.SoSearchAction(); search.setType(coin.SoTexture2.getClassTypeId()); search.setInterest(coin.SoSearchAction.ALL)
-    search.apply(Gui.ActiveDocument.ActiveView.getSceneGraph())
-    for path in search.getPaths():
-        sep = path.getNodeFromTail(1)
-        kids = [sep.getChild(i) for i in range(sep.getNumChildren())]
-        coords = [k for k in kids if k.isOfType(coin.SoCoordinate3.getClassTypeId())]
-        if coords and any(k.isOfType(coin.SoShaderProgram.getClassTypeId()) for k in kids):
-            return coords[0].point.getNum()
-    return None
-
-
-def reshape():
-    """Form wechseln; der alte Schatten wird beim Zeichnen ausgelassen (BodyShading shadowBegin), danach kommt der neue"""
-    state["before"] = shadow_points()
-    choose("Torus", 1)
-
-
 def dialog_ok():
     QtCore.QTimer.singleShot(400, ok)
 
@@ -83,9 +63,7 @@ run([
     ("box", lambda: Gui.runCommand("Design_Box")),
     ("torus", lambda: choose("Torus", 3)),
     ("title", lambda: check("the panel title follows the type", header() == ["Torus"], str(header()))),
-    ("cylinder", reshape),
-    ("shadow back", lambda: check("after a new shape the new shadow comes", state["before"] == 4 and shadow_points() == 4,
-                                  "%s -> %s" % (state["before"], shadow_points()))),
+    ("cylinder", lambda: choose("Torus", 1)),
     ("back to box", lambda: choose("Torus", 0)), ("ok", ok),
     ("box?", lambda: vol("box", 8000)),
     ("cylinder", lambda: Gui.runCommand("Design_Cylinder")), ("ok", ok),

@@ -90,20 +90,6 @@ def clipped():
     return Gui.ActiveDocument.ActiveView.hasClippingPlane()
 
 
-def shadow_points():
-    """Ecken des Kontaktschattens (0: kein Schatten): Viereck mit Maske (SoTexture2) und Shader in einem Separator"""
-    from pivy import coin
-    search = coin.SoSearchAction(); search.setType(coin.SoTexture2.getClassTypeId()); search.setInterest(coin.SoSearchAction.ALL)
-    search.apply(Gui.ActiveDocument.ActiveView.getSceneGraph())
-    for path in search.getPaths():
-        sep = path.getNodeFromTail(1)
-        kids = [sep.getChild(i) for i in range(sep.getNumChildren())]
-        coords = [k for k in kids if k.isOfType(coin.SoCoordinate3.getClassTypeId())]
-        if coords and any(k.isOfType(coin.SoShaderProgram.getClassTypeId()) for k in kids):
-            return coords[0].point.getNum()
-    return None
-
-
 run([
     ("setup", lambda: make_body(rect(0, 0, 60, 40), 0, 15, "Box")),
     ("3 points", lambda: select(vertices(15)[:3])), ("plane", lambda: click(button("Design_OffsetPlane|Design_Midplane|Design_Plane|Design_Axis|Design_Point")) if False else Gui.runCommand("Design_Plane")),
@@ -150,5 +136,4 @@ run([
                     check("body size without tolerance, material by its display name", "60.00 mm × 40.00 mm × 15.00 mm" in str(measured()) and "Steel-Generic" not in str(measured()), measured()))),
     ("errors", lambda: L("errors=%s" % errors())),
     ("only datums", lambda: (Gui.Control.closeDialog(), [setattr(o, "Visibility", False) for o in doc().Objects if o.TypeId == "Design::Body"])), ("wait", lambda: None),
-    ("no datum shadow", lambda: check("planes, axes and points cast no contact shadow", shadow_points() == 0, str(shadow_points()))),
 ])

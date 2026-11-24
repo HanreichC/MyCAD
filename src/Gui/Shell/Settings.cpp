@@ -1418,9 +1418,6 @@ void Gui::Shell::showSettings()
             sw->setEnabled(on);
         }
     });
-    auto shadow = new Switch(myParams()->GetBool("ContactShadow", true));
-    QObject::connect(shadow, &QAbstractButton::toggled, shadow, [](bool on) { myParams()->SetBool("ContactShadow", on); });
-    addRow(materialCard, T("Contact shadow"), shadow);
     auto names = new Switch(myParams()->GetBool("ToolNames", false));
     QObject::connect(names, &QAbstractButton::toggled, [](bool on) { Gui::Shell::setToolNames(on); });
     addRow(lookCard, T("Show tool names"), names);

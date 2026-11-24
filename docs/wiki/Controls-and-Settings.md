@@ -75,7 +75,7 @@ searchable in English and German.
 - **Materials and Light:** body material for new bodies (Steel unless you pick another; switching recolours bodies with
   the standard look, looks you picked stay); Lighting Studio (every face
   its own shade, best for modelling) or Room (soft, like a browser preview); Realistic materials, Reflections, Relief
-  and end grain, Contact shadow
+  and end grain
 - Accessibility: Increase contrast, Reduce transparency, Reduce motion
 - **Projects folder** (where new designs go)
 - **3D printing:** Export resolution (coarse / normal / fine), 3D print clearance (tight / normal / loose, for Fit),
