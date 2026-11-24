@@ -8257,7 +8257,8 @@ App::DocumentObjectExecReturn* Joint::execute()
             move.z = offset;
             turn = Base::Rotation();
             break;
-        case Revolute:
+        case Revolute:  // wie Fusion: Versatz entlang der Achse (Arm auf statt in der Platte, 13.6)
+            move.z = offset;
             break;
         case PinSlot:  // drehen um die Achse und im Schlitz (X) schieben
             move.x = offset;
@@ -8305,7 +8306,7 @@ Base::Placement Joint::motion() const
     Base::Rotation turn(Base::Vector3d(0, 0, 1), angle);
     switch (Type.getValue()) {
         case Slider: move.z = offset; turn = Base::Rotation(); break;
-        case Revolute: break;
+        case Revolute: move.z = offset; break;
         case PinSlot: move.x = offset; break;
         case Planar: move = Base::Vector3d(offset, Offset2.getValue(), 0); break;
         case Ball: turn.setYawPitchRoll(Angle.getValue(), Angle2.getValue(), Angle3.getValue()); break;

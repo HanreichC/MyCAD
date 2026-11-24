@@ -68,6 +68,19 @@ class Joints(DesignTest):
         self.assertTrue(b_comp.Placement.isSame(before, 1e-9), "%s -> %s" % (before, b_comp.Placement))
         self.assertEqual([o.Name for o in self.doc.Objects if "Touched" in o.State], [])
 
+    def test_revolute_offset_moves_along_the_axis(self):
+        """13.6: wie in Fusion hat auch ein Drehgelenk einen Versatz entlang der Achse (vorher ignoriert: der Arm blieb
+        in der Platte stecken)"""
+        a, b_comp, b = self.base()
+        joint(self.doc, b_comp, b, face(b, lambda c: abs(c.z) < 1e-6), a, face(a, lambda c: abs(c.z - 10) < 1e-6),
+              Type="Revolute")
+        before = center(b)
+        j = [o for o in self.doc.Objects if o.TypeId == "Design::Joint"][0]
+        j.Offset = 3
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertAlmostEqual(abs(center(b).z - before.z), 3, places=6)
+
     def test_chain_follows(self):
         a, b_comp, b = self.base()
         c_comp, c = component_with_box(self.doc, 2, 2, 2, "C")

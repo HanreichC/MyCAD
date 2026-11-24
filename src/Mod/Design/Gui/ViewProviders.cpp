@@ -3032,6 +3032,7 @@ public:
         collide = new QCheckBox(T("Show collisions"));
         form->addRow(QString(), animate);
         form->addRow(QString(), collide);
+        QObject::connect(collide, &QCheckBox::toggled, [this] { recompute(); });  // gleich prüfen, nicht erst beim Bewegen
         timer = new QTimer(w);
         timer->setInterval(40);
         QObject::connect(timer, &QTimer::timeout, [this] { step(); });
@@ -3091,7 +3092,7 @@ private:
                 show = turns || rigid;  // Rigid: beide Werte als feste Lage
             }
             else if (prop == &joint->Offset) {
-                show = slides || rigid;
+                show = slides || rigid || joint->Type.getValue() == Design::Joint::Revolute;  // Versatz entlang der Achse
             }
             showRow(box, show);
         }
