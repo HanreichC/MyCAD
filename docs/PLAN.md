@@ -629,6 +629,32 @@ Rest läuft), dann 13.2 und 13.7 zusammen (Christophers Ruckeln: Skizze auf Kör
 
 ---
 
+### 4.8 Phase 14: flüssig auch auf schwacher Hardware, Chaos-Tests (24.11.2026)
+
+Anspruch (Christopher): MyCAD läuft auch auf schwacher Hardware und in WSL mit Software-OpenGL flüssig, die Optik
+bleibt schön; dazu MyCAD „falsch“ benutzen wie Menschen, um Fehler zu finden.
+
+**Gemessen** (Software-OpenGL 1600 x 1000, `test_perf_session`, `test_perf_frame_ab`): Drehen/Verschieben flüssig,
+ein Bild ~25 ms, davon ~7 ms CPU im Hauptthread, der Rest Pixelarbeit des Rasterisierers und Übergabe an X11.
+Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger kamen von Einmal-Arbeit.
+
+**Behoben:**
+- Python ohne vorkompilierte Dateien: AppImage, Flatpak und Container übersetzten bei jedem Start neu (pivy allein
+  0,25 s beim ersten Skizze-Öffnen). Jetzt compileall beim Bauen; erstes Skizze-Öffnen 407 -> 191 ms Blockade.
+- Skizze öffnen/schließen wechselte die Werkbank: FreeCADs Leisten samt Icons entstanden und wurden gleich versteckt.
+- Achsenkreuz lud seine Buchstaben bei jedem Bild als Textur hoch.
+- Strg+Z rechnete nicht nach: nach Rückgängig fehlte eine Bohrung, bis irgendetwas anderes neu rechnete.
+- Absturz: Enter, Fehlermeldung, Enter in einem Werkzeug (TaskView griff über einen ungültigen Iterator zu).
+- Chaos-Tests `test_chaos_ui`, `test_chaos2_ui`, `test_chaos3_ui` in der CI.
+
+**Offen:**
+- „Alles einpassen“ animiert blockierend (eigene Ereignisschleife, Eingaben ≥ 200 ms gesperrt), auch beim
+  Skizze-Öffnen. Umbau auf eine nicht blockierende Animation; Tests lesen die Kamera direkt danach.
+- „Transparenz reduzieren“ zeichnet das Glas mit QPainter und ist langsamer als das GL-Glas.
+- Eine Linie quer durch ein schon extrudiertes Profil: das Profil gilt als verloren (wie Fusion), alles darauf
+  wird rot. Besser: die Teilflächen, die das alte Profil genau füllen, weiter nehmen.
+- Erstes Extrude-Panel der Sitzung ~0,2 s.
+
 ### 4.3 Frühere Phasen (Archiv)
 
 Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9) stehen in L6, Versionen und Data Panel in 10.7.
