@@ -604,7 +604,24 @@ Reihenfolge eines Menschen, spätere Änderungen) blieb ungeprüft.
 | 13.7 | Leistung: Skizze auf Körper und Extrude | gemessen in A/B/D und gezielt: Skizze auf einer Fläche eines Körpers mit 20/50/100 Schritten bzw. 500 Flächen (gemusterte Bohrungen) erstellen, Profil wählen, Extrude-Vorschau beim Tippen und beim Ziehen am Pfeil, OK; Verdacht: Projektion des Flächenrands, Profile-Neuaufbau, Neuberechnung aller Schritte, Tessellierung; profilieren und die Ursachen beheben | gemessen 24.11. (test_perf_sketch_on_body, test_perf_heavy mit 44 Schritten): Skizze öffnen/schließen, Extrude-Vorschau meist < 100 ms Blockade; teuer nur das erste Skizze-Öffnen der Sitzung (~0,5 s), das erste Extrude-Panel (~0,25 s), Maß ändern mit 44 Schritten (~0,6 s). Kontaktschatten entfernt (neuer GL-Kontext + ganze Szene nach jeder Änderung). Offen: läuft MyCAD bei Christopher wirklich auf der GPU? |
 | 13.8 | Leistung: übrige Alltagswege | Vorauswahl/Hover auf großen Körpern, Timeline-Neuaufbau, Browser, Startseite mit vielen Designs, automatisches Speichern, Wechsel zwischen Designs | gemessen 24.11. (test_perf_heavy): Vorauswahl ~20 ms je Mausbewegung, automatisches Speichern 68 ms + Version 6 ms; kein Handlungsbedarf ohne Daten aus slow.log |
 | 13.9 | Zufallsabläufe | eine Runde zufälliger, gültiger Bedienfolgen (Werkzeug, Klick, Wert, OK/Esc, Rückgängig) mit festem Startwert: findet Abstürze und Zustände, die kein Szenario trifft; jede gefundene Folge wird ein fester Test | erledigt 24.11. (test_fuzz_ui, CI): 3 Startwerte × 30 Schritte, keine Funde; OK ohne Auswahl lehnt das Panel mit Meldung ab (Fusion graut OK aus, gleiches Ergebnis) |
-| 13.10 | Abschluss | Bericht (Funde, Messwerte vorher/nachher, offene Punkte), README/Hilfe wo nötig; Regel für die Zukunft in 6. Arbeitsweise: jede neue Funktion bekommt einen Ablauf-Test über die Oberfläche | offen |
+| 13.10 | Abschluss | Bericht (Funde, Messwerte vorher/nachher, offene Punkte), README/Hilfe wo nötig; Regel für die Zukunft in 6. Arbeitsweise: jede neue Funktion bekommt einen Ablauf-Test über die Oberfläche | erledigt 24.11.: Bericht unten, Regel in 6. |
+
+**Bericht 24.11.2026.** Fünf Szenarien über die Oberfläche (A Halter, B Gehäuse, C Skizze, D später ändern,
+E Baugruppe) und Zufallsabläufe laufen jetzt in der CI. Gefunden und behoben, je mit Test:
+- Screw Here: Spitze stand unten aus dem Gehäuse, die Kernbohrung ging durch den Boden; auf dünnem Deckel fiel der
+  Kopf durch ein Loch in Kopfgröße.
+- Gelenk: eine spätere Bohrung in der Gelenkfläche verschob die Komponente (und rechnete doppelt); jetzt bezieht sich
+  das Gelenk auf die Fläche von damals. Drehgelenk ohne Versatz; „Kollisionen zeigen“ prüfte erst beim Bewegen.
+- Skizze: Ecke abrunden mit getipptem Radius streckte die ganze Skizze (Auto-Skalierung, Löser); ein gespiegelter
+  Halbkreis machte sie rot (überzählige Bedingung).
+- Später ändern: ein Schnitt, der nichts mehr trifft, war still; das Löschen eines früheren Schritts ließ spätere
+  Rundungen falsch warnen.
+- Leistung: Kontaktschatten entfernt (neuer GL-Kontext und die ganze Szene nach jeder Änderung). Gemessen (Software-GL,
+  Teil mit 44 Schritten): Skizze öffnen/schließen und Extrude-Vorschau meist < 100 ms Blockade; spürbar nur das erste
+  Skizze-Öffnen der Sitzung (~0,5 s), das erste Extrude-Panel (~0,25 s) und eine frühe Maßänderung (~0,65 s, OCCT).
+  Echtes Ruckeln auf Christophers Rechner (ThinkPad P1 Gen 3, T2000) sammelt jetzt slow.log (13.1).
+- Flatpak baut wieder (lokal mit flatpak-builder geprüft): nlohmann-Header, freecad-Paket unter /app/Ext.
+Offen: slow.log von der echten Arbeit auswerten; danach gezielt die dort langsamsten Schritte.
 
 **Reihenfolge:** 13.0 und 13.1 zuerst (ohne Messung kein Leistungsurteil; das Protokoll sammelt schon, während der
 Rest läuft), dann 13.2 und 13.7 zusammen (Christophers Ruckeln: Skizze auf Körper, Extrude), dann 13.3–13.6, 13.8,
@@ -637,6 +654,9 @@ Die ursprünglichen Phasen 0–9 sind durch 4.1 und 4.2 ersetzt. Joints (Phase 9
 - Etappen in der Reihenfolge aus 4.2, Pakete abhaken in dieser Datei
 - Je Paket: Tests zuerst schreiben, umsetzen, alle Tests grün, Commit auf `main`
 - Entscheidungen, die Verhalten für Nutzer grundlegend ändern (Speichern in 10.7, Solver in L6), stimmen wir vorher ab
+- Seit Phase 13: jede neue Funktion bekommt einen Ablauf-Test über die Oberfläche (echte Klicks mit `click_at`, Werte
+  tippen, OK/Esc, danach später ändern und rückgängig), nicht nur einen Skript-Test des Ergebnisses; Handlungen, die
+  ruckeln könnten, mit `timed()` messen (Kamerafahrten nie im gemessenen Schritt)
 
 ## Nach der GIF-/Bug-Runde vom 12.11.2026 · geprüft am echten Bildschirm (2026-11-13), nichts offen
 
