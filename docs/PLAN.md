@@ -650,8 +650,8 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
 - Chaos-Tests `test_chaos_ui`, `test_chaos2_ui`, `test_chaos3_ui` in der CI.
 
 **Offen:**
-- „Alles einpassen“ animiert blockierend (eigene Ereignisschleife, Eingaben ≥ 200 ms gesperrt), auch beim
-  Skizze-Öffnen. Umbau auf eine nicht blockierende Animation; Tests lesen die Kamera direkt danach.
+- „Alles einpassen“ animiert noch in eigener Ereignisschleife (jetzt fest 0,2 s statt bis 0,5 s, eine Fahrt statt
+  zwei). Ganz ohne Sperre ginge es nur mit einer nicht blockierenden Animation; Tests lesen die Kamera direkt danach.
 - „Transparenz reduzieren“ zeichnet das Glas mit QPainter und ist langsamer als das GL-Glas.
 - Erstes Extrude-Panel der Sitzung ~0,2 s.
 
