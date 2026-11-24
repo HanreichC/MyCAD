@@ -97,6 +97,23 @@ class LostReference(DesignTest):
         self.assertEqual(list(f.ErrorElements), [right])
         self.assertIn("check", f.Warning)
 
+    def test_warning_clears_when_the_model_is_back(self):
+        """Phase 14: nach einer drastischen Änderung musste geraten werden (Warnung); Rückgängig bringt das Modell genau
+        zurück: die Kante liegt wieder dort, wo sie gewählt wurde, die Warnung geht von selbst"""
+        _, b = box(self.doc, 20, 10, 5)
+        f = dress(self.doc, "Design::Fillet", b, [front_top(b)], Size=1)
+        good = list(f.ElementHints)
+        x, y, z, size = (float(v) for v in good[0].split())
+        f.ElementMaps = ["lost"]
+        f.ElementHints = ["%g %g %g %g" % (x + 0.5, y, z, size)]
+        f.touch()
+        self.doc.recompute()
+        self.assertIn("check", f.Warning)
+        f.WarnedHints = good  # wie vor dem Raten: dort hatte der Mensch gewählt
+        f.touch()
+        self.doc.recompute()
+        self.assertEqual(f.Warning, "")
+
     def test_warning_stays_until_confirmed(self):
         _, b = box(self.doc, 20, 10, 5)
         f = dress(self.doc, "Design::Fillet", b, [front_top(b)], Size=1)

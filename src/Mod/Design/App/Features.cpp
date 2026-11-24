@@ -156,6 +156,8 @@ const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
 constexpr const char* LostProfile =
     "Profile gone: the sketch changed and the profile of this step no longer exists; edit the step and pick a profile";
+constexpr const char* ModelChanged =
+    "The model changed under this step; check that it still uses the right edges or faces: ";
 constexpr const char* CutMisses = "This cut no longer touches the body and removes nothing; check the sketch or the "
                                   "distance";
 
@@ -4575,6 +4577,8 @@ DressUp::DressUp()
                       "Traceable names of the selected elements");
     ADD_PROPERTY_TYPE(ElementHints, (), "DressUp", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
                       "Position and size of the selected elements");
+    ADD_PROPERTY_TYPE(WarnedHints, (), "DressUp", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Where the selected elements were when they last had to be guessed");
     ADD_PROPERTY_TYPE(ElementBodies, (), "DressUp", App::Prop_Hidden, "Index in Bodies of each selected element");
     Operation.setStatus(App::Property::Hidden, true);  // verändert immer den eigenen Body
 }
@@ -4660,6 +4664,10 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
     std::vector<std::string> hints = ElementHints.getValues();
     maps.resize(names.size());
     hints.resize(names.size());
+    const std::vector<std::string> before = hints;  // Lage vor diesem Durchgang (für WarnedHints)
+    if (!std::string(Warning.getValue()).starts_with(ModelChanged)) {
+        WarnedHints.setValues(std::vector<std::string>());  // bestätigt ("Sieht richtig aus") oder nie gewarnt
+    }
     std::vector<std::string> uncertain;
     App::DocumentObject* base = BaseFeatures.getSize() > int(body) ? BaseFeatures.getValues()[body] : nullptr;
     for (size_t i = 0; i < names.size(); ++i) {
@@ -4720,8 +4728,31 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
         for (const auto& n : uncertain) {
             list += (list.empty() ? "" : ", ") + n;
         }
-        Warning.setValue("The model changed under this step; check that it still uses the right edges or faces: " + list);
+        Warning.setValue(ModelChanged + list);
         ErrorElements.setValues(uncertain);
+        if (WarnedHints.getSize() == 0) {
+            WarnedHints.setValues(before);  // wo der Mensch die Elemente gewählt hatte
+        }
+    }
+    else if (WarnedHints.getSize() == int(hints.size())) {
+        // Phase 14: alle Elemente ohne Raten wieder genau dort, wo sie vor dem Raten lagen (Rückgängig nach einer
+        // drastischen Änderung): es gibt nichts mehr zu prüfen. Sonst blieb die Warnung veraltet stehen; sie entstand
+        // beim Neuberechnen außerhalb der Transaktion, das Rückgängig nicht zurückholt
+        const auto near = [](const std::string& a, const std::string& b) {
+            std::istringstream ia(a), ib(b);
+            double x0, y0, z0, s0, x1, y1, z1, s1;
+            return (ia >> x0 >> y0 >> z0 >> s0) && (ib >> x1 >> y1 >> z1 >> s1)
+                && std::hypot(x0 - x1, y0 - y1, z0 - z1) + std::abs(s0 - s1) / std::max(1.0, s0) * 10 < 1e-3;
+        };
+        const auto& warned = WarnedHints.getValues();
+        bool back = true;
+        for (size_t i = 0; i < hints.size(); ++i) {
+            back = back && (!mine(i) || near(hints[i], warned[i]));
+        }
+        if (back) {
+            Warning.setValue("");
+            WarnedHints.setValues(std::vector<std::string>());
+        }
     }
 
     std::vector<Part::TopoShape> result;
