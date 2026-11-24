@@ -35,8 +35,7 @@ def peek():
 
 def look():
     S["areas"] = areas()
-    Gui.ActiveDocument.setEdit(S["sketch"].Name)
-    QtCore.QTimer.singleShot(600, frame)
+    Gui.ActiveDocument.setEdit(S["sketch"].Name)  # die Kamera danach eigener Schritt (frame): erst wenn alles ruhig ist
 
 
 def same(got, want):
@@ -215,14 +214,14 @@ def reopened():
 
 run([("activate", activate),
      timed("sketch on XY opens", start, 500), W, ("remember", lambda: S.update(sketch=sk())), ("frame", frame), W,
-     *POLYLINE, W, ("peek closed", peek), W, W, ("look closed", look), W, W, ("closed", closed),
-     *ARC, W, ("peek arc ok", peek), W, W, ("look arc ok", look), W, W, ("arc ok", arc_ok),
-     *ROUND_CORNER, W, ("peek fillet ok", peek), W, W, ("look fillet ok", look), W, W, ("fillet ok", fillet_ok),
-     *CROSS, W, ("peek crossed", peek), W, W, ("look crossed", look), W, W, ("crossed", crossed),
-     *TRIM, W, ("peek trimmed", peek), W, W, ("look trimmed", look), W, W, ("trimmed", trimmed),
-     *MIRROR, W, ("peek mirrored", peek), W, W, ("look mirrored", look), W, W, ("mirrored", mirrored),
-     timed("what's missing", complete, 800), W, ("peek completed", peek), W, W, ("look completed", look), W, W, ("completed", completed),
-     *DELETE, W, ("peek deleted", peek), W, W, ("look deleted", look), W, W, ("deleted", deleted),
+     *POLYLINE, W, ("peek closed", peek), W, W, ("look closed", look), W, W, ("frame closed", frame), W, ("closed", closed),
+     *ARC, W, ("peek arc ok", peek), W, W, ("look arc ok", look), W, W, ("frame arc ok", frame), W, ("arc ok", arc_ok),
+     *ROUND_CORNER, W, ("peek fillet ok", peek), W, W, ("look fillet ok", look), W, W, ("frame fillet ok", frame), W, ("fillet ok", fillet_ok),
+     *CROSS, W, ("peek crossed", peek), W, W, ("look crossed", look), W, W, ("frame crossed", frame), W, ("crossed", crossed),
+     *TRIM, W, ("peek trimmed", peek), W, W, ("look trimmed", look), W, W, ("frame trimmed", frame), W, ("trimmed", trimmed),
+     *MIRROR, W, ("peek mirrored", peek), W, W, ("look mirrored", look), W, W, ("frame mirrored", frame), W, ("mirrored", mirrored),
+     timed("what's missing", complete, 800), W, ("peek completed", peek), W, W, ("look completed", look), W, W, ("frame completed", frame), W, ("completed", completed),
+     *DELETE, W, ("peek deleted", peek), W, W, ("look deleted", look), W, W, ("frame deleted", frame), W, ("deleted", deleted),
      timed("leave sketch", leave, 500), W,
      timed("open sketch again", reopen, 500), W, ("reopened", reopened),
      ("errors", lambda: check("no errors", not errors(), str(errors()))),
