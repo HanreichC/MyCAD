@@ -646,7 +646,12 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
 - Strg+Z rechnete nicht nach: nach Rückgängig fehlte eine Bohrung, bis irgendetwas anderes neu rechnete.
 - Absturz: Enter, Fehlermeldung, Enter in einem Werkzeug (TaskView griff über einen ungültigen Iterator zu).
 - Linie quer durch ein schon extrudiertes Profil: galt als verloren, alles darauf wurde rot. Jetzt nimmt der Schritt
-  die Teile, die das alte Profil genau füllen (nur bei Gleichstand; eine Kerbe macht weiter ein L).
+  die Teile, die das alte Profil genau füllen.
+- Drücken/Ziehen auf Flächen mit Mini-Kanten (Reste früherer Boolescher Schritte) wurde ungültig, das nächste
+  Hineindrücken ließ den Körper verschwinden (ConceptKey, Rand von Basis).
+- Neuer Kreis um ein vorhandenes Loch (oder über den Profilrand) veränderte den extrudierten Körper und schrieb die
+  Schlüssel dauerhaft um (ConceptKey: Löcher 2,6 -> 3,8 mm). Jetzt über die Lage: die Teile im alten Profil, die es
+  genau füllen; ein freier neuer Kreis bleibt ein Loch, eine Kerbe lässt das Rechteck ganz.
 - „Alles einpassen“ lief zweimal hintereinander und dauerte auf langsamer Grafik bis 0,5 s: jetzt eine Fahrt, fest
   0,2 s (Software-OpenGL: 535 -> 212 ms Blockade).
 - Nach einer drastischen Änderung und Rückgängig blieb „Das Modell hat sich geändert“ an der Rundung stehen; jetzt geht
@@ -659,6 +664,11 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
 - „Alles einpassen“ animiert noch in eigener Ereignisschleife (jetzt fest 0,2 s statt bis 0,5 s, eine Fahrt statt
   zwei). Ganz ohne Sperre ginge es nur mit einer nicht blockierenden Animation; Tests lesen die Kamera direkt danach.
 - Erstes Extrude-Panel der Sitzung ~0,2 s.
+- [ ] Härtetest `tests/design/stress_profiles.py` (ConceptKey, Zufallslinien/-kreise) findet noch: Skizzen auf einer
+  Körperfläche oder mit projizierten Körperkanten verlieren ihren Halt, wenn ein Profil darunter geteilt wird (die
+  Flächen des Körpers heißen danach anders): „subshape not found …Face29“, „Sketch has no closed profile“, ein Schnitt
+  trifft nicht mehr; einmal (Seed 1, Linie in PCB001) auch nach dem Zurücksetzen der Skizze noch kaputt. Die
+  Profil-Zuordnung selbst hält in diesen Fällen. Ziel: alle Seeds 1–10 mit je 40 Versuchen grün.
 
 ### 4.3 Frühere Phasen (Archiv)
 
