@@ -6294,14 +6294,22 @@ void Gui::Shell::install()
     // Rückgängig/Wiederholen stellen nur zurück, was in der Transaktion stand. Was danach außerhalb gerechnet wurde
     // (Profile im Hintergrund nach dem Verlassen der Skizze), blieb veraltet stehen: die Bohrung fehlte nach Strg+Z,
     // bis irgendetwas anderes neu rechnete. Ohne Knopf "Neu berechnen" rechnet MyCAD dann selbst (test_undo_profile)
+    // Erst nach der Serie (200 ms Ruhe): dazwischen gerechnet störte es die Kette, "alles rückgängig" blieb in der CI
+    // vor dem Anfang stehen
+    static auto settle = new QTimer(qApp);
+    static std::string lastUndone;
+    settle->setSingleShot(true);
+    settle->setInterval(200);
+    QObject::connect(settle, &QTimer::timeout, [] {
+        App::Document* d = App::GetApplication().getDocument(lastUndone.c_str());
+        if (d && d->isTouched() && !d->isPerformingTransaction() && !d->hasPendingTransaction()) {
+            d->recompute();
+        }
+    });
     for (auto* signal : {&App::GetApplication().signalUndoDocument, &App::GetApplication().signalRedoDocument}) {
         signal->connect([](const App::Document& doc) {
-            QTimer::singleShot(0, [name = std::string(doc.getName())] {
-                App::Document* d = App::GetApplication().getDocument(name.c_str());
-                if (d && d->isTouched() && !d->isPerformingTransaction()) {
-                    d->recompute();
-                }
-            });
+            lastUndone = doc.getName();
+            settle->start();
         });
     }
 

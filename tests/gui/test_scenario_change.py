@@ -90,7 +90,9 @@ def width(value):
     def f():
         s = S["base"]
         i = [k for k, c in enumerate(s.Constraints) if c.Type == "DistanceX"][0]
+        doc().openTransaction("Modify sketch constraints")  # wie das Maßfeld: eine Transaktion
         s.setDatum(i, App.Units.Quantity("%g mm" % value))
+        doc().commitTransaction()
         Gui.ActiveDocument.resetEdit()  # "Fertig": rechnet alles neu
     return f
 
