@@ -84,3 +84,4 @@ test_scenario_assembly.py
 test_fuzz_ui.py
 test_undo_profile.py
 test_chaos_ui.py
+test_chaos2_ui.py
