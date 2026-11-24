@@ -226,6 +226,7 @@ modules:
       - -DFC_FLATPAK=ON
       - -DENABLE_DEVELOPER_TESTS=OFF  # Unit-Tests brauchen GTest, das im SDK fehlt (wie bei FreeCAD auf Flathub)
       - -DBUILD_DESIGNER_PLUGIN=OFF
+      - -DINSTALL_TO_SITEPACKAGES=OFF  # sonst nach /usr/lib/python3.x (schreibgeschützt); so unter /app/Ext
     sources:
       - type: dir  # submission.sh ersetzt das durch Tag und Commit von github.com/HanreichC/MyCAD
         path: ..
