@@ -227,6 +227,9 @@ modules:
       - -DENABLE_DEVELOPER_TESTS=OFF  # Unit-Tests brauchen GTest, das im SDK fehlt (wie bei FreeCAD auf Flathub)
       - -DBUILD_DESIGNER_PLUGIN=OFF
       - -DINSTALL_TO_SITEPACKAGES=OFF  # sonst nach /usr/lib/python3.x (schreibgeschützt); so unter /app/Ext
+    # /app ist schreibgeschützt: ohne .pyc kompilierte MyCAD bei jedem Start alles aus dem Quelltext (pivy allein 0,25 s)
+    post-install:
+      - python3 -m compileall -q -j0 --invalidation-mode unchecked-hash /app
     sources:
       - type: dir  # submission.sh ersetzt das durch Tag und Commit von github.com/HanreichC/MyCAD
         path: ..

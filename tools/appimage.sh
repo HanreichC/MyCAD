@@ -97,5 +97,9 @@ from PySide6.QtSvg import QSvgRenderer
 app = QGuiApplication([]); img = QImage(256, 256, QImage.Format_ARGB32); img.fill(Qt.transparent)
 p = QPainter(img); QSvgRenderer(sys.argv[1]).render(p); p.end(); sys.exit(not img.save(sys.argv[2]))
 ' "$APP_ID.svg" "$APPDIR/$APP_ID.png"
+# Python vorkompilieren: das AppImage ist schreibgeschützt, ohne .pyc kompilierte MyCAD bei jedem Start alles, was es
+# importiert, aus dem Quelltext neu (pivy allein 0,25 s beim ersten Skizze-Öffnen). unchecked-hash: gilt unabhängig
+# von Zeitstempeln
+python3 -m compileall -q -j0 --invalidation-mode unchecked-hash "$APPDIR/usr" >/dev/null || true
 linuxdeploy-x86_64.AppImage --appdir "$APPDIR" --custom-apprun AppRun --output appimage
 echo "==> Fertig: $LDAI_OUTPUT"

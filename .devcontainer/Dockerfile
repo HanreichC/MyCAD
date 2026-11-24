@@ -62,6 +62,9 @@ RUN printf '%s\n' '#pragma once' \
 RUN for try in 1 2 3 4 5; do pacman -S --noconfirm --needed libspnav && break; \
         [ "$try" = 5 ] && exit 1; sleep 60; \
     done && pacman -Scc --noconfirm
+# Phase 14: pivy (aus den Quellen, cmake install) ohne .pyc; /usr ist für den Nutzer schreibgeschützt, also kompilierte
+# jeder Start pivy neu (0,25 s beim ersten Skizze-Öffnen). Vorkompilieren, unabhängig von Zeitstempeln
+RUN python -m compileall -q -j0 --invalidation-mode unchecked-hash /usr/lib/python3*/site-packages/pivy
 # Phase 13: Leistung messen statt schätzen (perf record/report im Container, mit --privileged gestartet)
 RUN for try in 1 2 3 4 5; do pacman -S --noconfirm --needed perf && break; \
         [ "$try" = 5 ] && exit 1; sleep 60; \
