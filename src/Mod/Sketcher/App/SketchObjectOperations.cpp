@@ -1811,6 +1811,30 @@ int SketchObject::addSymmetric(
                 createEqualityConstr(geoId1, geoId2);
                 createSymConstr(geoId1, geoId2, PointPos::mid, PointPos::mid);
             }
+            else if (geo->is<Part::GeomArcOfCircle>() && [geo] {
+                         // Halbkreis: die Sehne ist der Durchmesser
+                         auto* arc = static_cast<const Part::GeomArcOfCircle*>(geo);
+                         const double chord = (arc->getEndPoint() - arc->getStartPoint()).Length();
+                         return std::abs(chord - 2 * arc->getRadius()) < 1e-6 * arc->getRadius();
+                     }()) {
+                // MyCAD: beim Halbkreis folgt der gleiche Radius schon aus den gespiegelten Enden. Equal war dann ganz
+                // überzählig und die Skizze rot (die Störung oben hilft nicht: die Lösung selbst ist entartet). Statt
+                // des Radius der Mittelpunkt: die eine abhängige Gleichung steckt in einer Symmetrie (zwei Gleichungen)
+                // und gilt nur als teilweise überzählig, eine Warnung
+                createSymConstr(geoId1, geoId2, PointPos::mid, PointPos::mid);
+                createSymConstr(
+                    geoId1,
+                    geoId2,
+                    PointPos::start,
+                    isStartEndInverted[geoId1] ? PointPos::end : PointPos::start
+                );
+                createSymConstr(
+                    geoId1,
+                    geoId2,
+                    PointPos::end,
+                    isStartEndInverted[geoId1] ? PointPos::start : PointPos::end
+                );
+            }
             else if (
                 geo->is<Part::GeomArcOfCircle>()        //
                 || geo->is<Part::GeomArcOfEllipse>()    //
