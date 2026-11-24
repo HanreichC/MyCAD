@@ -3816,6 +3816,11 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override
     {
         const auto type = event->type();
+        // Umbenennen in einer Liste (Browser): ein Klick setzt den Cursor, damit man den Namen ändern kann, statt ihn
+        // neu zu schreiben (der Name ist beim Öffnen ohnehin ganz ausgewählt)
+        if (obj->parent() && qobject_cast<QAbstractItemView*>(obj->parent()->parent())) {
+            return false;
+        }
         if (type == QEvent::MouseButtonRelease) {
             // Feld, das den Fokus von selbst bekam (Hauptmaß beim Öffnen eines Dialogs): der erste Klick hinein wählt
             // trotzdem alles, statt nur den Cursor zu setzen (Tippen hängte sonst an den alten Wert an: "5.00 mm25")

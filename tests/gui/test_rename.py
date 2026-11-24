@@ -18,6 +18,29 @@ def open_editor():
     t.editItem(t.findItems("Box", QtCore.Qt.MatchRecursive)[0])
 
 
+def old_name_hidden():
+    """unter dem halbdurchsichtigen Feld darf weder der alte Name noch die Akzent-Auswahl liegen (sonst stand
+    "Box" weiß auf Blau hinter dem neuen Text): Feld kurz ausblenden, die Fläche darunter ist einfarbig"""
+    t = tree()
+    ed = t.indexWidget(t.indexFromItem(t.findItems("Box", QtCore.Qt.MatchRecursive)[0]))
+    ed.hide(); img = t.viewport().grab(ed.geometry()).toImage(); ed.show()
+    img.save(os.environ["OUT"] + ".under-field.png")
+    colors = {img.pixel(x, y) for x in range(img.width()) for y in range(img.height())}
+    check("nothing painted under the rename field", len(colors) <= 2, "%d colors" % len(colors))
+
+
+def field_usable():
+    """Feld zeigt den ganzen Namen schon beim Öffnen, ein Klick setzt den Cursor statt alles auszuwählen: man kann
+    den Namen ändern, statt ihn neu zu schreiben (vorher 34 px schmal, "ox" sichtbar, Klick wählte alles)"""
+    t = tree()
+    ed = t.indexWidget(t.indexFromItem(t.findItems("Box", QtCore.Qt.MatchRecursive)[0]))
+    check("rename field fits the name when it opens",
+          ed.width() >= ed.fontMetrics().horizontalAdvance(ed.text()) + 20, "%d px" % ed.width())
+    QtTest.QTest.mouseClick(ed, QtCore.Qt.LeftButton, QtCore.Qt.NoModifier, QtCore.QPoint(ed.width() - 6, ed.height() // 2))
+    check("a click in the rename field places the cursor", ed.selectedText() == "", repr(ed.selectedText()))
+    ed.selectAll()  # wie beim Öffnen, für den Schritt "type"
+
+
 def type_name():
     win = mw.windowHandle()
     vp = view().viewport(); QtTest.QTest.mouseMove(vp, vp.rect().center())  # Zeiger über dem 3D-Fenster
@@ -32,7 +55,8 @@ def type_name():
 run([
     ("setup", lambda: make_body(rect(0, 0, 60, 40), 0, 15, "Box")),
     ("shift = middle", lambda: grp.SetString("MouseKeys", '[{"key":%d,"button":"middle","mode":"hold"}]' % int(QtCore.Qt.Key_Shift))),
-    ("activate", activate), ("rename", open_editor), ("wait", lambda: None),
+    ("activate", activate), ("select", lambda: Gui.Selection.addSelection(doc().getObjectsByLabel("Box")[0])),
+    ("rename", open_editor), ("wait", lambda: None), ("under field", old_name_hidden), ("shot", lambda: shot("editing")), ("click", field_usable),
     ("type", type_name),
     ("enter", lambda: QtTest.QTest.keyClick(mw.windowHandle(), QtCore.Qt.Key_Return)),
     ("result", lambda: check("capitals typed with shift (= middle mouse button) rename the body",

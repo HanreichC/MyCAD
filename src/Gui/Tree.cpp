@@ -442,11 +442,16 @@ void TreeWidgetItemDelegate::paint(
     const QModelIndex& index
 ) const
 {
-    QStyleOptionViewItem opt = option;
-    initStyleOption(&opt, index);
-
     auto tree = static_cast<TreeWidget*>(parent());
     auto style = tree->style();
+    // MyCAD: unter dem Umbenennen-Feld (Design, Körper, …) weder Name noch Auswahl, sonst scheinen der alte Name
+    // und die Akzent-Auswahl durch das halbdurchsichtige Feld
+    const bool renaming = tree->indexWidget(index);
+    QStyleOptionViewItem opt = option;
+    if (renaming) {
+        opt.state &= ~QStyle::State_Selected;  // vor initStyleOption: das färbt Symbole auf der Auswahl weiß
+    }
+    initStyleOption(&opt, index);
 
     // If only the first column is shown, we'll trim the color background when
     // rendering as transparent overlay.
@@ -467,9 +472,7 @@ void TreeWidgetItemDelegate::paint(
             }
         }
     }
-    // MyCAD: beim Umbenennen des Designs nur das Feld, sonst scheint der alte Name durch das halbdurchsichtige Feld
-    if (index.column() == 0 && tree->state() == QAbstractItemView::EditingState && tree->itemFromIndex(index)
-        && tree->itemFromIndex(index)->type() == TreeWidget::DocumentType) {
+    if (renaming) {
         opt.text.clear();
     }
     style->drawControl(QStyle::CE_ItemViewItem, &opt, painter, artificial);
@@ -548,25 +551,22 @@ class DynamicQLineEdit: public ExpLineEdit
 public:
     DynamicQLineEdit(QWidget* parent = nullptr)
         : ExpLineEdit(parent)
-    {}
+    {
+        // MyCAD: schon beim Öffnen so breit wie der Name (setEditorData setzt den Text), nicht erst nach der ersten
+        // Taste: sonst war das Feld 34 px schmal und zeigte vom Namen nur das Ende
+        connect(this, &QLineEdit::textChanged, this, [this] { setMinimumWidth(sizeHint().width()); });
+    }
 
     QSize sizeHint() const override
     {
         QSize size = QLineEdit::sizeHint();
         QFontMetrics fm(font());
         int availableWidth = parentWidget()->width() - geometry().x();  // Calculate available width
-        int margin = 2 * (style()->pixelMetric(QStyle::PM_FocusFrameHMargin) + 1)
-            + 2 * style()->pixelMetric(QStyle::PM_LayoutHorizontalSpacing)
-            + TreeParams::getItemBackgroundPadding();
+        // MyCAD: Rand und Innenabstand des Felds (MyStyle 9.3 im Stylesheet) aus Qts sizeHint, der 17 'x' breit
+        // rechnet; FreeCADs feste Ränder galten für ein randloses Feld, mit Innenabstand war der Name abgeschnitten
+        int margin = size.width() - 17 * fm.horizontalAdvance(QLatin1Char('x')) + fm.averageCharWidth();
         size.setWidth(std::min(fm.horizontalAdvance(text()) + margin, availableWidth));
         return size;
-    }
-
-    // resize on key presses
-    void keyPressEvent(QKeyEvent* event) override
-    {
-        ExpLineEdit::keyPressEvent(event);
-        setMinimumWidth(sizeHint().width());
     }
 };
 
