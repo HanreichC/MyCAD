@@ -439,12 +439,36 @@ void GlassPanel::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidg
 
     painter->setRenderHint(QPainter::Antialiasing);
     if (!drawn) {  // ohne Blur-fähiges GL oder mit "Transparenz reduzieren"
-        paintGlass(*painter, local, r, textSurface);
-        if (surface) {
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(theme().*surface);
-            painter->drawRoundedRect(local, r, r);
+        // Phase 14: hängt nicht vom Bild dahinter ab; einmal zeichnen und je Bild nur kopieren. Die ~20 weichen
+        // Schattenringe je Panel und Bild machten "Transparenz reduzieren" langsamer als das echte Glas
+        const Theme& t = theme();
+        const qreal dpr = painter->device() ? painter->device()->devicePixelRatioF() : 1.0;
+        const qreal margin = ShadowMargin;  // so weit reicht der Schatten (paintGlass), wie boundingRect
+        const QString key = QStringLiteral("%1 %2 %3 %4 %5 %6 %7 %8 %9")
+                                .arg(size.width())
+                                .arg(size.height())
+                                .arg(r)
+                                .arg(dpr)
+                                .arg(textSurface)
+                                .arg(surface ? (t.*surface).rgba() : 0)
+                                .arg(qApp->applicationState() == Qt::ApplicationActive)
+                                .arg(t.reduceTransparency * 2 + t.increaseContrast + t.dark * 4)
+                                .arg(t.glassOpaqueTop.rgba() ^ t.glassTint.rgba() ^ t.shadow.rgba());
+        if (key != fallbackKey) {
+            fallback = QPixmap((QSizeF(size.width() + 2 * margin, size.height() + 2 * margin) * dpr).toSize());
+            fallback.setDevicePixelRatio(dpr);
+            fallback.fill(Qt::transparent);
+            QPainter p(&fallback);
+            p.translate(margin, margin);
+            paintGlass(p, local, r, textSurface);
+            if (surface) {
+                p.setPen(Qt::NoPen);
+                p.setBrush(t.*surface);
+                p.drawRoundedRect(local, r, r);
+            }
+            fallbackKey = key;
         }
+        painter->drawPixmap(QPointF(-margin, -margin), fallback);
     }
     else if (theme().increaseContrast) {  // Kontrast erhöhen: sichtbarer Rand um die Linse
         painter->setPen(QPen(theme().glassBorder, 1));

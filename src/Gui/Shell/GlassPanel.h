@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <QPixmap>
 #include <QColor>
 #include <QGraphicsObject>
 
@@ -43,6 +44,8 @@ private:
     qreal radius;
     bool textSurface;
     QColor Theme::*surface = nullptr;
+    QPixmap fallback;     ///< Glas ohne GL-Blur ("Transparenz reduzieren"): einmal gezeichnet, je Bild nur kopiert
+    QString fallbackKey;  ///< wofür fallback gezeichnet ist (Größe, Theme, aktiv)
     QGraphicsProxyWidget* proxy;
 };
 
