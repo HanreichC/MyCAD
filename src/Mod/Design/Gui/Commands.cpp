@@ -1920,6 +1920,11 @@ void startJoint(App::Document* doc)
         toolHint(T("Joint"), problem);
         return;
     }
+    // Bezug auf den Körper im Zustand von jetzt (wie Skizzen): sonst verschob eine spätere Bohrung in der Fläche deren
+    // Mitte und damit die Komponente, und die Bohrung wanderte mit (Schraube durch Deckel und Gehäuse, 13.3)
+    for (auto& [obj, element] : refs) {
+        Design::stableRef(obj, element);
+    }
     doc->openTransaction("Joint");
     auto joint = static_cast<Design::Joint*>(doc->addObject("Design::Joint", "Joint"));
     Design::folder(root, "Joints")->addObject(joint);

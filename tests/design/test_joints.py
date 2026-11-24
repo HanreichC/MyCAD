@@ -51,6 +51,23 @@ class Joints(DesignTest):
         self.assertNoErrors()
         self.assertEqual(r(center(b)), (5, 5, 11))
 
+    def test_screw_through_the_lid_does_not_move_it(self):
+        """13.3: Deckel per Gelenk auf dem Rand, dann eine Schraube außermittig durch Deckel und Unterteil. Die Bohrung
+        verschiebt die Mitte der Deckel-Unterseite; das Gelenk bezieht sich (wie im Befehl, stableRef) auf die Fläche
+        von damals: der Deckel bleibt stehen, nichts bleibt zum Neuberechnen übrig"""
+        _, a = box(self.doc, 40, 40, 10)
+        b_comp, b = component_with_box(self.doc, 40, 40, 2, "Lid")
+        o1 = Design.stableRef(b, face(b, lambda c: abs(c.z) < 1e-6))
+        o2 = Design.stableRef(a, face(a, lambda c: abs(c.z - 10) < 1e-6))
+        joint(self.doc, b_comp, o1[0], o1[1], o2[0], o2[1], Type="Rigid")
+        self.assertEqual(r(center(b)), (20, 20, 11))
+        before = b_comp.Placement
+        Design.fastenerAt(b, App.Vector(6, 6, 12), App.Vector(0, 0, -1))
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertTrue(b_comp.Placement.isSame(before, 1e-9), "%s -> %s" % (before, b_comp.Placement))
+        self.assertEqual([o.Name for o in self.doc.Objects if "Touched" in o.State], [])
+
     def test_chain_follows(self):
         a, b_comp, b = self.base()
         c_comp, c = component_with_box(self.doc, 2, 2, 2, "C")
