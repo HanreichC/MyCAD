@@ -86,3 +86,4 @@ test_undo_profile.py
 test_chaos_ui.py
 test_chaos2_ui.py
 test_chaos3_ui.py
+test_chaos4_ui.py
