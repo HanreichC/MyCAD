@@ -72,6 +72,8 @@ public:
     {
         at = global;
     }
+    /// Kein Skalieren der ganzen Skizze, auch wenn es ihr erstes Maß ist (Radius beim Abrunden: kein Maßstab)
+    bool autoScale = true;
 
 private:
     QPoint at {-1, -1};

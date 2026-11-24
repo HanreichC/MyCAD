@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include <Gui/Notifications.h>
 #include <Gui/Selection/SelectionFilter.h>
 #include <Gui/Command.h>
@@ -213,25 +215,27 @@ private:
 
                 int filletGeoId = getHighestCurveIndex() + (isChamfer ? 2 : 1);
                 const int before = getHighestCurveIndex();
-                // create fillet at point
-                try {
-                    openCommand(QT_TRANSLATE_NOOP("Command", "Create fillet"));
+                const auto makeFillet = [=, this](double r) {
                     Gui::cmdAppObjectArgs(
                         obj,
                         "fillet(%d,%d,%f,%s,%s,%s)",
                         GeoId,
                         static_cast<int>(PosId),
-                        radius,
+                        r,
                         "True",
                         preserveCorner ? "True" : "False",
                         isChamfer ? "True" : "False"
                     );
-
                     if (construction) {
                         Gui::cmdAppObjectArgs(obj, "toggleConstruction(%d) ", filletGeoId);
                     }
+                };
+                // create fillet at point
+                try {
+                    openCommand(QT_TRANSLATE_NOOP("Command", "Create fillet"));
+                    makeFillet(radius);
 
-                    if (isChamfer || !askFilletRadius(before)) {
+                    if (isChamfer || !askFilletRadius(before, makeFillet)) {
                         commitCommand();
                     }
                 }
@@ -274,9 +278,7 @@ private:
             int filletGeoId = getHighestCurveIndex() + (isChamfer ? 2 : 1);
             const int before = getHighestCurveIndex();
 
-            // create fillet between lines
-            try {
-                openCommand(QT_TRANSLATE_NOOP("Command", "Create fillet"));
+            const auto makeFillet = [=, this](double r) {
                 Gui::cmdAppObjectArgs(
                     obj,
                     "fillet(%d,%d,App.Vector(%f,%f,0),App.Vector(%f,%f,0),%f,%s,%s,%s)",
@@ -286,12 +288,17 @@ private:
                     firstPos.y,
                     secondPos.x,
                     secondPos.y,
-                    radius,
+                    r,
                     "True",
                     preserveCorner ? "True" : "False",
                     isChamfer ? "True" : "False"
                 );
-                if (isChamfer || !askFilletRadius(before)) {
+            };
+            // create fillet between lines
+            try {
+                openCommand(QT_TRANSLATE_NOOP("Command", "Create fillet"));
+                makeFillet(radius);
+                if (isChamfer || !askFilletRadius(before, makeFillet)) {
                     commitCommand();
                 }
             }
@@ -323,23 +330,57 @@ private:
         }
     }
 
-    /// MyCAD: Radius wie in Fusion gleich eintippen. Maß auf den neuen Bogen, dann dasselbe Feld wie bei der Bemaßung;
-    /// Enter übernimmt (und schließt die Transaktion), Esc nimmt das ganze Abrunden zurück. false: kein Bogen gefunden.
-    bool askFilletRadius(int highestBefore)
+    /// MyCAD: Radius wie in Fusion gleich eintippen. Maß auf den neuen Bogen, dann dasselbe Feld wie bei der Bemaßung
+    /// (Vorschau beim Tippen); Esc nimmt das ganze Abrunden zurück. false: kein Bogen gefunden.
+    /// Enter: das Abrunden mit dem Schätzwert verwerfen und mit genau dem getippten Radius neu (makeFillet). Über das Maß
+    /// erreichte der Löser den Radius, indem er Linien und Nachbarn verschob (als erstes Maß ohne autoScale sogar die
+    /// ganze Skizze gestreckt: R 4,2 -> 5, alles 18 % größer); so ändert sich nur die Ecke.
+    bool askFilletRadius(int highestBefore, const std::function<void(double)>& makeFillet)
     {
         SketchObject* obj = sketchgui->getSketchObject();
-        for (int geoId = highestBefore + 1; geoId <= getHighestCurveIndex(); ++geoId) {
-            if (auto arc = dynamic_cast<const Part::GeomArcOfCircle*>(obj->getGeometry(geoId))) {
-                Gui::cmdAppObjectArgs(obj, "addConstraint(Sketcher.Constraint('Radius',%d,%f))", geoId, arc->getRadius());
-                EditDatumDialog dialog(currentTransactionID, sketchgui, obj->Constraints.getSize() - 1);
-                dialog.exec();
-                if (dialog.isSuccess()) {
-                    removeConsumedEdges(geoId);
+        const auto newArc = [&]() -> int {
+            for (int geoId = highestBefore + 1; geoId <= getHighestCurveIndex(); ++geoId) {
+                if (dynamic_cast<const Part::GeomArcOfCircle*>(obj->getGeometry(geoId))) {
+                    return geoId;
                 }
-                return true;
             }
+            return GeoEnum::GeoUndef;
+        };
+        int arcId = newArc();
+        if (arcId == GeoEnum::GeoUndef) {
+            return false;
         }
-        return false;
+        const double guess = static_cast<const Part::GeomArcOfCircle*>(obj->getGeometry(arcId))->getRadius();
+        Gui::cmdAppObjectArgs(obj, "addConstraint(Sketcher.Constraint('Radius',%d,%f))", arcId, guess);
+        const int radiusConstraint = obj->Constraints.getSize() - 1;
+        EditDatumDialog dialog(App::NullTransaction, sketchgui, radiusConstraint);  // die Transaktion bleibt hier
+        dialog.autoScale = false;
+        dialog.exec();
+        if (!dialog.isSuccess()) {
+            abortCommand();
+            return true;
+        }
+        const double typed = obj->Constraints[radiusConstraint]->getValue();
+        abortCommand();
+        openCommand(QT_TRANSLATE_NOOP("Command", "Create fillet"));
+        try {
+            makeFillet(typed);
+            arcId = newArc();
+            if (arcId != GeoEnum::GeoUndef) {
+                Gui::cmdAppObjectArgs(obj, "addConstraint(Sketcher.Constraint('Radius',%d,%f))", arcId, typed);
+            }
+            commitCommand();
+        }
+        catch (const Base::Exception& e) {
+            Gui::NotifyUserError(obj, QT_TRANSLATE_NOOP("Notifications", "Failed to create fillet"), e.what());
+            abortCommand();
+            return true;
+        }
+        tryAutoRecomputeIfNotSolve(obj);
+        if (arcId != GeoEnum::GeoUndef) {
+            removeConsumedEdges(arcId);
+        }
+        return true;
     }
 
     /// Füllt der Radius eine gerade Kante ganz aus (R5 an beiden Ecken einer 10 mm Seite), bleibt dazwischen eine

@@ -668,6 +668,9 @@ bool hasVisualFeature(App::DocumentObject* obj, App::DocumentObject* rootObj, Gu
 
 void EditDatumDialog::performAutoScale(double newDatum)
 {
+    if (!autoScale) {
+        return;
+    }
     const std::vector<Sketcher::Constraint*>& constraints = sketch->Constraints.getValues();
     for (auto* constr : constraints) {
         if (constr->Type == Sketcher::Group || constr->Type == Sketcher::Text) {
