@@ -647,7 +647,11 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
 - Absturz: Enter, Fehlermeldung, Enter in einem Werkzeug (TaskView griff über einen ungültigen Iterator zu).
 - Linie quer durch ein schon extrudiertes Profil: galt als verloren, alles darauf wurde rot. Jetzt nimmt der Schritt
   die Teile, die das alte Profil genau füllen (nur bei Gleichstand; eine Kerbe macht weiter ein L).
-- Chaos-Tests `test_chaos_ui`, `test_chaos2_ui`, `test_chaos3_ui` in der CI.
+- „Alles einpassen“ lief zweimal hintereinander und dauerte auf langsamer Grafik bis 0,5 s: jetzt eine Fahrt, fest
+  0,2 s (Software-OpenGL: 535 -> 212 ms Blockade).
+- Nach einer drastischen Änderung und Rückgängig blieb „Das Modell hat sich geändert“ an der Rundung stehen; jetzt geht
+  die Warnung, sobald alle Elemente wieder genau dort liegen, wo sie gewählt wurden.
+- Chaos-Tests `test_chaos_ui` bis `test_chaos4_ui` in der CI.
 
 **Offen:**
 - „Alles einpassen“ animiert noch in eigener Ereignisschleife (jetzt fest 0,2 s statt bis 0,5 s, eine Fahrt statt
