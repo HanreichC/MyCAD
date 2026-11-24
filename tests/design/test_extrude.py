@@ -41,7 +41,33 @@ class CutMisses(DesignTest):
         self.assertEqual(cut.Warning, "")
 
 
-class Extents(DesignTest):
+class SplitProfile(DesignTest):
+    def test_a_line_across_an_extruded_profile_keeps_the_part(self):
+        """Phase 14: eine Linie quer durch das schon extrudierte Profil teilt es in zwei. Die beiden Teile füllen das
+        alte Profil genau: der Schritt nimmt beide (vorher "Profil verloren", die Bohrung darauf wurde rot)"""
+        base = sketch(self.doc, rect(0, 0, 80, 50))
+        ext, b = extrude(self.doc, base, 10)
+        hole = sketch(self.doc, circle(60, 25, 5), support=(b, top_face(b)))
+        extrude(self.doc, hole, 10, op="Cut", bodies=[b], Reversed=True)
+        full = b.Shape.Volume
+        base.addGeometry(Part.LineSegment(V(40, -10, 0), V(40, 60, 0)))
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertEqual(ext.Warning, "")
+        self.assertAlmostEqual(b.Shape.Volume, full, places=3)
+        self.assertEqual(len(b.Shape.Solids), 1)
+
+    def test_a_circle_inside_still_makes_a_ring(self):
+        """Gegenprobe: ein Kreis im Profil ist keine Teilung, das Profil wird zum Ring (wie bisher)"""
+        base = sketch(self.doc, rect(0, 0, 80, 50))
+        ext, b = extrude(self.doc, base, 10)
+        base.addGeometry(Part.Circle(V(20, 25, 0), V(0, 0, 1), 5))
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertAlmostEqual(b.Shape.Volume, (80 * 50 - math.pi * 25) * 10, places=2)
+
+
+class Extents(DesignTest):
     def test_symmetric(self):
         sk = sketch(self.doc, rect(0, 0, 10, 10))
         f, body = extrude(self.doc, sk, 10, Extent="Symmetric")

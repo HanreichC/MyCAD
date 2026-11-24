@@ -227,6 +227,52 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
                 }
             }
             if (best == 0 || ties > 1) {
+                // Phase 14, Gleichstand, weil geteilt (Linie quer durch das Profil): Teilflächen, die nur über neue Kanten
+                // aneinanderstoßen und deren Außenrand zusammen genau die alten Kanten sind, füllen das alte Profil: alle
+                // nehmen, wie zwei gewählte Profile. Kandidaten mit einer neuen Kante, die keine andere teilt, grenzen
+                // nach außen und fallen weg (Ring, Nachbarprofil). Sonst galt es als verloren und alles darauf wurde rot.
+                // Gibt es einen klar besten Teil (eine Kerbe macht aus dem Rechteck ein L), bleibt es bei dem.
+                {
+                    std::vector<std::pair<size_t, std::set<std::string>>> parts;
+                    for (size_t k = 0; k < signatures.size(); ++k) {
+                        auto theirs = tokens(signatures[k]);
+                        if (std::ranges::any_of(theirs, [&](const std::string& t) { return mine.contains(t); })) {
+                            parts.emplace_back(k, std::move(theirs));
+                        }
+                    }
+                    for (bool changed = true; changed;) {
+                        changed = false;
+                        std::map<std::string, int> extraUse;
+                        for (const auto& [k, theirs] : parts) {
+                            for (const auto& t : theirs) {
+                                extraUse[t] += mine.contains(t) ? 0 : 1;
+                            }
+                        }
+                        const auto outward = std::ranges::find_if(parts, [&](const auto& part) {
+                            return std::ranges::any_of(part.second, [&](const std::string& t) {
+                                return !mine.contains(t) && extraUse[t] < 2;
+                            });
+                        });
+                        if (outward != parts.end()) {
+                            parts.erase(outward);
+                            changed = true;
+                        }
+                    }
+                    std::set<std::string> outer;
+                    for (const auto& [k, theirs] : parts) {
+                        for (const auto& t : theirs) {
+                            if (mine.contains(t)) {
+                                outer.insert(t);
+                            }
+                        }
+                    }
+                    if (parts.size() >= 2 && outer == mine) {
+                        for (const auto& [k, theirs] : parts) {
+                            faces.push_back(all.getSubTopoShape(("Face" + std::to_string(k + 1)).c_str(), true));
+                        }
+                        continue;  // Signatur bleibt die alte: beim nächsten Neuberechnen wieder so
+                    }
+                }
                 faces.emplace_back();
                 continue;
             }
