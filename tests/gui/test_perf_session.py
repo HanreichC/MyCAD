@@ -162,7 +162,7 @@ def fps_report():
 
 run([("activate", activate), ("build", build), W, W,
      timed("orbit 1 s", orbit, 1200), W, timed("pan 1 s", pan, 1200), W, timed("zoom 12 steps", zoom, 1000), W,
-     ("fit", lambda: Gui.SendMsgToActiveView("ViewFit")), W,
+     timed("fit all (animated)", lambda: Gui.SendMsgToActiveView("ViewFit"), 300), W,
      timed("hover 40 moves", hover, 900), W,
      timed("sketch on top face opens", sketch_on_top, 500), W, timed("rectangle, 2 clicks", rectangle, 1200), W,
      timed("finish sketch", leave, 300), W,

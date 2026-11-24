@@ -4479,8 +4479,17 @@ void View3DInventorViewer::animatedViewAll(const SbBox3f& box, int steps, int ms
     timer.setSingleShot(true);
     QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
 
+    // MyCAD: feste Dauer statt fester Schrittzahl. Jeder Schritt zeichnet ein Bild; auf langsamer Grafik (Software-
+    // OpenGL, alte GPU) dauerten 10 Schritte nicht 200 ms, sondern über eine halbe Sekunde, in der MyCAD keine Eingaben
+    // annimmt. Jetzt gleich lang, dort mit weniger Zwischenbildern
+    const qint64 total = qint64(steps) * ms;
+    QElapsedTimer clock;
+    clock.start();
     for (int i = 0; i < steps; i++) {
-        float par = float(i) / float(steps);
+        const float par = std::min(1.0F, float(clock.elapsed()) / float(std::max<qint64>(total, 1)));
+        if (par >= 1.0F) {
+            break;
+        }
 
         if (isOrthographic) {
             float camHeight = height + diff * par;
@@ -4558,10 +4567,8 @@ void View3DInventorViewer::viewAll()
         static_cast<SoPerspectiveCamera*>(cam)->heightAngle = (float)(M_PI / 4.0);
     }
 
-    if (isAnimationEnabled()) {
-        animatedViewAll(box, 10, 20);
-    }
-
+    // MyCAD: viewBoundBox animiert selbst (auf den freien Teil der Ansicht); hier noch einmal animiert lief
+    // "Alles einpassen" zweimal hintereinander, zuerst auf ein leicht anderes Ziel
     viewBoundBox(box);
 }
 
