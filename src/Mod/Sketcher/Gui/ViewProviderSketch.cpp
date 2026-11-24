@@ -4336,8 +4336,9 @@ bool ViewProviderSketch::setEdit(int ModNum)
                     "ActiveSketch = App.getDocument('%1').getObject('%2')\n"
                     "tv = Show.TempoVis(App.ActiveDocument, tag= ActiveSketch.ViewObject.TypeId)\n"
                     "ActiveSketch.ViewObject.TempoVis = tv\n"
-                    "if ActiveSketch.ViewObject.EditingWorkbench:\n"
-                    "  tv.activateWorkbench(ActiveSketch.ViewObject.EditingWorkbench)\n"
+                    // MyCAD: kein Werkbank-Wechsel (EditingWorkbench). Die eigene Oberfläche zeigt die Skizzen-Leiste
+                    // selbst; der Wechsel baute bei jedem Öffnen und Schließen FreeCADs Leisten und Menüs samt Icons
+                    // auf, die sofort wieder versteckt wurden (beim ersten Öffnen ~10 % der Blockade)
                     "if ActiveSketch.ViewObject.HideDependent:\n"
                     "  tv.hide(tv.get_all_dependent(%3, '%4'))\n"
                     "if ActiveSketch.ViewObject.ShowSupport:\n"

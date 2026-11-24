@@ -720,6 +720,10 @@ struct OverlayAxisCrossState
         lettersRoot->addChild(yLetter.root);
         lettersRoot->addChild(zLetter.root);
     }
+
+    /// MyCAD: Buchstaben-Bilder gesetzt (drawAxisCross setzt sie nur, wenn nicht; setAxisLetterColor löscht das). Je
+    /// Bild neu gesetzt luden sie jedes Mal neu als Textur hoch: ein Drittel jedes Bildes unter Software-OpenGL
+    bool lettersSet = false;
 };
 
 OverlayAxisCrossState& overlayAxisCrossState()
@@ -5217,6 +5221,7 @@ void View3DInventorViewer::setAxisLetterColor(const SbColor& color)
     recolor(XPM_PIXEL_MASK, XPM_pixel_data, XPM_WIDTH, XPM_HEIGHT, XPM_BYTES_PER_PIXEL);
     recolor(YPM_PIXEL_MASK, YPM_pixel_data, YPM_WIDTH, YPM_HEIGHT, YPM_BYTES_PER_PIXEL);
     recolor(ZPM_PIXEL_MASK, ZPM_pixel_data, ZPM_WIDTH, ZPM_HEIGHT, ZPM_BYTES_PER_PIXEL);
+    overlayAxisCrossState().lettersSet = false;  // MyCAD: die Texturen beim nächsten Bild neu
 }
 
 void View3DInventorViewer::updateColors()
@@ -5316,9 +5321,16 @@ void View3DInventorViewer::drawAxisCross()
     }
     overlay.axisTransform->rotation.setValue(inv);
     overlay.axisTransform->translation.setValue(0.0f, 0.0f, -3.5f);
-    overlay.xMaterial->diffuseColor.setValue(m_xColor.r, m_xColor.g, m_xColor.b);
-    overlay.yMaterial->diffuseColor.setValue(m_yColor.r, m_yColor.g, m_yColor.b);
-    overlay.zMaterial->diffuseColor.setValue(m_zColor.r, m_zColor.g, m_zColor.b);
+    // MyCAD: Felder nur bei Änderung setzen; jedes Setzen verwirft Coins Zwischenspeicher dieser Szene
+    auto setColor = [](SoMaterial* m, const auto& c) {
+        const SbColor color(c.r, c.g, c.b);
+        if (m->diffuseColor.getNum() != 1 || m->diffuseColor[0] != color) {
+            m->diffuseColor.setValue(color);
+        }
+    };
+    setColor(overlay.xMaterial, m_xColor);
+    setColor(overlay.yMaterial, m_yColor);
+    setColor(overlay.zMaterial, m_zColor);
 
     std::array<std::pair<float, SoNode*>, 3> axes = {
         std::pair<float, SoNode*> {xTipProjected[2], overlay.xAxis},
@@ -5328,9 +5340,13 @@ void View3DInventorViewer::drawAxisCross()
     std::sort(axes.begin(), axes.end(), [](const auto& a, const auto& b) {
         return a.first > b.first;
     });
-    overlay.axisGroup->removeAllChildren();
-    for (const auto& axis : axes) {
-        overlay.axisGroup->addChild(axis.second);
+    // hinten zuerst; die Gruppe nur umbauen, wenn sich die Reihenfolge ändert
+    if (overlay.axisGroup->getNumChildren() != 3 || overlay.axisGroup->getChild(0) != axes[0].second
+        || overlay.axisGroup->getChild(1) != axes[1].second || overlay.axisGroup->getChild(2) != axes[2].second) {
+        overlay.axisGroup->removeAllChildren();
+        for (const auto& axis : axes) {
+            overlay.axisGroup->addChild(axis.second);
+        }
     }
 
     const float miniViewportSize = static_cast<float>(pixelarea);
@@ -5385,9 +5401,12 @@ void View3DInventorViewer::drawAxisCross()
     placeLetter(overlay.yLetter, yLetterProjected);
     placeLetter(overlay.zLetter, zLetterProjected);
 
-    overlay.xLetter.texture->image.setValue(SbVec2s(XPM_WIDTH, XPM_HEIGHT), 4, XPM_pixel_data);
-    overlay.yLetter.texture->image.setValue(SbVec2s(YPM_WIDTH, YPM_HEIGHT), 4, YPM_pixel_data);
-    overlay.zLetter.texture->image.setValue(SbVec2s(ZPM_WIDTH, ZPM_HEIGHT), 4, ZPM_pixel_data);
+    if (!overlay.lettersSet) {
+        overlay.xLetter.texture->image.setValue(SbVec2s(XPM_WIDTH, XPM_HEIGHT), 4, XPM_pixel_data);
+        overlay.yLetter.texture->image.setValue(SbVec2s(YPM_WIDTH, YPM_HEIGHT), 4, YPM_pixel_data);
+        overlay.zLetter.texture->image.setValue(SbVec2s(ZPM_WIDTH, ZPM_HEIGHT), 4, ZPM_pixel_data);
+        overlay.lettersSet = true;
+    }
 
     SbViewportRegion vp = this->getSoRenderManager()->getViewportRegion();
     vp.setViewportPixels(origin[0], origin[1], pixelarea, pixelarea);
