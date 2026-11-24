@@ -60,8 +60,13 @@ def shelled():
           "%.1f want %.1f picked %s errors %s" % (housing().Shape.Volume, want, S["picked"], errors()))
 
 
-def floor_sketch():
+def look_down():
+    """Blick von oben ins Gehäuse (wie mit dem Ansichtswürfel); eigener Schritt: die Kamerafahrt zählt nicht zum
+    Skizze-Öffnen"""
     Gui.ActiveDocument.ActiveView.viewTop(); Gui.SendMsgToActiveView("ViewFit")
+
+
+def floor_sketch():
     Gui.Selection.clearSelection()
     click_at(V(30, 20, 2))  # von oben durch die Öffnung auf den Boden innen
     S["picked"] = [(s.ObjectName, s.SubElementNames) for s in Gui.Selection.getSelectionEx()]
@@ -217,6 +222,7 @@ run([("activate", activate), ("housing", make_housing), W,
      timed("shell opens (click top face)", shell, 300), W,
      timed("shell: type 2, preview", lambda: type_field("Thickness", "2"), 500), W,
      timed("shell OK", ok, 500), W, ("shelled", shelled),
+     ("look down", look_down), W, W,
      timed("sketch on inner floor opens", floor_sketch, 500), W, ("circle", boss_circle),
      timed("finish floor sketch", leave, 300), W,
      timed("extrude boss opens", extrude_boss, 300), W,

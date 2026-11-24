@@ -77,3 +77,4 @@ test_part_library.py
 test_intent_move.py
 test_scenario_holder.py
 test_scenario_housing.py
+test_scenario_sketch.py
