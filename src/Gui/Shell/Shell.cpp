@@ -6291,6 +6291,19 @@ void Gui::Shell::install()
     startAlwaysSave();
     reportLastCrash();
     startSlowLog();
+    // Rückgängig/Wiederholen stellen nur zurück, was in der Transaktion stand. Was danach außerhalb gerechnet wurde
+    // (Profile im Hintergrund nach dem Verlassen der Skizze), blieb veraltet stehen: die Bohrung fehlte nach Strg+Z,
+    // bis irgendetwas anderes neu rechnete. Ohne Knopf "Neu berechnen" rechnet MyCAD dann selbst (test_undo_profile)
+    for (auto* signal : {&App::GetApplication().signalUndoDocument, &App::GetApplication().signalRedoDocument}) {
+        signal->connect([](const App::Document& doc) {
+            QTimer::singleShot(0, [name = std::string(doc.getName())] {
+                App::Document* d = App::GetApplication().getDocument(name.c_str());
+                if (d && d->isTouched() && !d->isPerformingTransaction()) {
+                    d->recompute();
+                }
+            });
+        });
+    }
 
     // kompakt (12.3): eine ruhige Zeile mit den häufigsten Werkzeugen, alles andere hinter den Kategorien
     state.modelBar =
