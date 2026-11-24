@@ -982,10 +982,20 @@ void TaskView::accept(App::Document* doc)
 
     // Make sure that if 'accept' calls 'closeDialog' the deletion is postponed until
     // the dialog leaves the 'accept' method
-    foundTaskInfo->ActiveDialog->setProperty("taskview_accept_or_reject", true);
-    bool success = foundTaskInfo->ActiveDialog->accept();
-    foundTaskInfo->ActiveDialog->setProperty("taskview_accept_or_reject", QVariant());
-    if (success || foundTaskInfo->ActiveDialog->property("taskview_remove_dialog").isValid()) {
+    QPointer<TaskDialog> dialog = foundTaskInfo->ActiveDialog;
+    dialog->setProperty("taskview_accept_or_reject", true);
+    bool success = dialog->accept();
+    // MyCAD: accept() kann eine Meldung zeigen (eigene Ereignisschleife); was darin geschieht, ändert taskInfos und kann
+    // den Dialog schließen. Der alte Iterator zeigte dann ins Leere: Absturz bei Enter, Meldung, Enter (Chaos 2)
+    if (!dialog) {
+        return;
+    }
+    dialog->setProperty("taskview_accept_or_reject", QVariant());
+    auto again = std::ranges::find(taskInfos, doc, &TaskInfo::Document);
+    if (again == taskInfos.end() || again->ActiveDialog != dialog) {
+        return;
+    }
+    if (success || dialog->property("taskview_remove_dialog").isValid()) {
         removeDialog(doc);
     }
 }
@@ -1003,10 +1013,20 @@ void TaskView::reject(App::Document* doc)
 
     // Make sure that if 'reject' calls 'closeDialog' the deletion is postponed until
     // the dialog leaves the 'reject' method
-    foundTaskInfo->ActiveDialog->setProperty("taskview_accept_or_reject", true);
-    bool success = foundTaskInfo->ActiveDialog->reject();
-    foundTaskInfo->ActiveDialog->setProperty("taskview_accept_or_reject", QVariant());
-    if (success || foundTaskInfo->ActiveDialog->property("taskview_remove_dialog").isValid()) {
+    QPointer<TaskDialog> dialog = foundTaskInfo->ActiveDialog;
+    dialog->setProperty("taskview_accept_or_reject", true);
+    bool success = dialog->reject();
+    // MyCAD: reject() kann eine Meldung zeigen (eigene Ereignisschleife); was darin geschieht, ändert taskInfos und kann
+    // den Dialog schließen. Der alte Iterator zeigte dann ins Leere: Absturz bei Enter, Meldung, Enter (Chaos 2)
+    if (!dialog) {
+        return;
+    }
+    dialog->setProperty("taskview_accept_or_reject", QVariant());
+    auto again = std::ranges::find(taskInfos, doc, &TaskInfo::Document);
+    if (again == taskInfos.end() || again->ActiveDialog != dialog) {
+        return;
+    }
+    if (success || dialog->property("taskview_remove_dialog").isValid()) {
         removeDialog(doc);
     }
 }
