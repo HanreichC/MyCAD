@@ -645,14 +645,14 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
 - Achsenkreuz lud seine Buchstaben bei jedem Bild als Textur hoch.
 - Strg+Z rechnete nicht nach: nach Rückgängig fehlte eine Bohrung, bis irgendetwas anderes neu rechnete.
 - Absturz: Enter, Fehlermeldung, Enter in einem Werkzeug (TaskView griff über einen ungültigen Iterator zu).
+- Linie quer durch ein schon extrudiertes Profil: galt als verloren, alles darauf wurde rot. Jetzt nimmt der Schritt
+  die Teile, die das alte Profil genau füllen (nur bei Gleichstand; eine Kerbe macht weiter ein L).
 - Chaos-Tests `test_chaos_ui`, `test_chaos2_ui`, `test_chaos3_ui` in der CI.
 
 **Offen:**
 - „Alles einpassen“ animiert blockierend (eigene Ereignisschleife, Eingaben ≥ 200 ms gesperrt), auch beim
   Skizze-Öffnen. Umbau auf eine nicht blockierende Animation; Tests lesen die Kamera direkt danach.
 - „Transparenz reduzieren“ zeichnet das Glas mit QPainter und ist langsamer als das GL-Glas.
-- Eine Linie quer durch ein schon extrudiertes Profil: das Profil gilt als verloren (wie Fusion), alles darauf
-  wird rot. Besser: die Teilflächen, die das alte Profil genau füllen, weiter nehmen.
 - Erstes Extrude-Panel der Sitzung ~0,2 s.
 
 ### 4.3 Frühere Phasen (Archiv)
