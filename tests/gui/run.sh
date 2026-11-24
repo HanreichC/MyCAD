@@ -5,7 +5,8 @@
 #   MYCAD_HOME=/tmp/home tests/gui/run.sh …               → anderes Home (z. B. frisch für Sprachtests)
 #   MYCAD_TIMEOUT=900 tests/gui/run.sh …                  → länger laufen lassen (Standard 180 s)
 # Auf dem Desktop startet es den Dev-Container mit Wayland. Schon im Container (CI, Dev Container) läuft MyCAD direkt,
-# ohne WAYLAND_DISPLAY unter Xvfb.
+# ohne WAYLAND_DISPLAY unter Xvfb, mit Software-OpenGL. Leistung mit echter GPU messen (WSL2, Container mit
+# --device /dev/dxg -v /usr/lib/wsl:/usr/lib/wsl -e LD_LIBRARY_PATH=/usr/lib/wsl/lib): GALLIUM_DRIVER=d3d12 LIBGL_ALWAYS_SOFTWARE=
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 APPHOME="${MYCAD_HOME:-$ROOT/build/testhome}"
@@ -28,7 +29,7 @@ if [ -e /run/.containerenv ] || [ -e /.dockerenv ]; then
         env "${ENV[@]}" QT_QPA_PLATFORM=wayland timeout "${MYCAD_TIMEOUT:-180}" \
             "$ROOT/build/bin/FreeCAD" "$SCRIPT" > "$OUT.log" 2>&1 || true
     else
-        env "${ENV[@]}" QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE=1 timeout "${MYCAD_TIMEOUT:-180}" \
+        env "${ENV[@]}" QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE="${LIBGL_ALWAYS_SOFTWARE-1}" timeout "${MYCAD_TIMEOUT:-180}" \
             xvfb-run -n $((100 + $$)) -s "-screen 0 1600x1000x24" "$ROOT/build/bin/FreeCAD" "$SCRIPT" > "$OUT.log" 2>&1 || true
     fi
 else

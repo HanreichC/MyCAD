@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 add_library(Design SHARED AppDesign.cpp Features.cpp Features.h AssemblySolver.cpp AssemblySolver.h)
+# nlohmann/json: PartDesign/App/FeatureHole.h braucht es; mitgeliefert (3rdParty), im Flatpak-SDK gibt es keine Systemkopie
+target_include_directories(Design SYSTEM PRIVATE ${nlohmann_json_INCLUDE_DIRS})
 target_include_directories(Design PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/src ${CMAKE_SOURCE_DIR}/src
                            ${CMAKE_SOURCE_DIR}/src/3rdParty/OndselSolver)
 # PartDesign: Normtabellen für Bohrung und Gewinde; OndselSolver: geschlossene Gelenkketten (AssemblySolver.cpp)

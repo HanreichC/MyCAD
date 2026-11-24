@@ -62,3 +62,7 @@ RUN printf '%s\n' '#pragma once' \
 RUN for try in 1 2 3 4 5; do pacman -S --noconfirm --needed libspnav && break; \
         [ "$try" = 5 ] && exit 1; sleep 60; \
     done && pacman -Scc --noconfirm
+# Phase 13: Leistung messen statt schätzen (perf record/report im Container, mit --privileged gestartet)
+RUN for try in 1 2 3 4 5; do pacman -S --noconfirm --needed perf && break; \
+        [ "$try" = 5 ] && exit 1; sleep 60; \
+    done && pacman -Scc --noconfirm

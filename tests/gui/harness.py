@@ -460,6 +460,99 @@ def check(name, ok, detail=""):
     L("%s %s %s" % ("ok  " if ok else "FAIL", name, detail))
 
 
+# --- 13.0 Alltagstest: Punkte im Modell treffen und Handlungen messen ------------------------------------------------
+
+def screen_of(p):
+    """Punkt im Modell (global) -> Pixel im Viewport der 3D-Ansicht"""
+    vp = view().viewport(); dpr = vp.devicePixelRatioF()
+    x, y = Gui.ActiveDocument.ActiveView.getPointOnViewport(p)
+    return QtCore.QPoint(int(x / dpr), int(vp.height() - y / dpr))
+
+
+def click_at(p, modifier=QtCore.Qt.NoModifier):
+    """echter Mausklick auf einen Punkt im Modell, vorher die Maus dorthin bewegen (Vorauswahl wie bei einem Menschen)"""
+    vp = view().viewport(); q = screen_of(p)
+    for r in (q - QtCore.QPoint(2, 2), q):
+        QtWidgets.QApplication.sendEvent(vp, QtGui.QMouseEvent(QtCore.QEvent.MouseMove, QtCore.QPointF(r),
+                                                               QtCore.QPointF(vp.mapToGlobal(r)), QtCore.Qt.NoButton,
+                                                               QtCore.Qt.NoButton, modifier))
+    QtTest.QTest.mouseClick(vp, QtCore.Qt.LeftButton, modifier, q)
+
+
+def face_point(body, name):
+    """ein Punkt mitten auf der Fläche (global), für click_at"""
+    f = body.Shape.getElement(name)
+    u0, u1, v0, v1 = f.ParameterRange
+    return f.valueAt((u0 + u1) / 2, (v0 + v1) / 2)
+
+
+def face_where(body, pred):
+    """Name der ersten Fläche, deren Mitte pred erfüllt"""
+    for i, f in enumerate(body.Shape.Faces, 1):
+        if pred(f.CenterOfMass):
+            return "Face%d" % i
+    raise AssertionError("no matching face")
+
+
+_perf = []
+
+
+class _Paints(QtCore.QObject):
+    count = 0
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Paint:
+            _Paints.count += 1
+        return False
+
+
+_paints = _Paints()
+
+
+def timed(name, fn, budget_ms):
+    """Schritt, der eine Handlung misst: Zeit von fn bis MyCAD wieder ruhig ist (Rechnen, Zeichnen, Nacharbeit über
+    Timer), die längste Blockade am Stück (das gefühlte Ruckeln) und wie oft die 3D-Ansicht dabei neu gezeichnet wird.
+    Ergebnis im Protokoll ("perf …") und als Tabelle in $OUT.perf.txt. Budget in ms gilt für den Desktop mit Grafikkarte; unter Xvfb (Software-OpenGL) und Last wird es mit
+    slowness() und für Software-Zeichnen ×3 gestreckt. FAIL nur über dem Doppelten: grobe Ausreißer, keine Feinheiten."""
+    import time
+
+    def step():
+        vp = view().viewport()
+        vp.installEventFilter(_paints)
+        _Paints.count = 0
+        start = time.monotonic()
+        try:
+            fn()
+        except Exception as e:
+            L("  exc in %s: %s: %s" % (name, type(e).__name__, e))
+        state = {"busy": time.monotonic(), "last": time.monotonic()}
+        state["worst"] = state["last"] - start
+
+        def tick():
+            now = time.monotonic()
+            if now - state["last"] > 0.03:  # Timer kam zu spät: es lief Arbeit
+                state["busy"] = now
+                state["worst"] = max(state["worst"], now - state["last"] - 0.01)
+            state["last"] = now
+            if now - state["busy"] < 0.3 and now - start < 20:
+                QtCore.QTimer.singleShot(10, tick)
+                return
+            ms = (state["busy"] - start) * 1000
+            factor = slowness() * (3 if os.environ.get("LIBGL_ALWAYS_SOFTWARE") else 1)
+            limit = budget_ms * factor
+            worst = state["worst"] * 1000
+            _perf.append((name, ms, worst, _Paints.count, budget_ms))
+            with open(os.environ["OUT"] + ".perf.txt", "w") as out:
+                out.write("%-40s %9s %9s %7s %9s\n" % ("Handlung", "ms", "Blockade", "Bilder", "Budget"))
+                for n, t, w, f, b in _perf:
+                    out.write("%-40s %9.0f %9.0f %7d %9d\n" % (n, t, w, f, b))
+            check("perf %s: %.0f ms, longest block %.0f ms, %d paints (budget %d ms, here x%.1f)"
+                  % (name, ms, worst, _Paints.count, budget_ms, factor),
+                  ms <= 2 * limit)
+        QtCore.QTimer.singleShot(10, tick)
+    return (name, step)
+
+
 def activate():
     """Das Testfenster ist auf dem Desktop oft nicht aktiv; dann vergibt Qt keinen Tastaturfokus"""
     QtWidgets.QApplication.setActiveWindow(mw)
