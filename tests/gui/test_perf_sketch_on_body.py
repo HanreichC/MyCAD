@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Phase 13.7 Leistung: Skizze auf einem Körper mit vielen Flächen (Platte 120 x 80 x 10 mit 48 Bohrungen, ~150 Flächen)
-öffnen, schließen und ein Extrude öffnen und verwerfen, je dreimal gemessen (timed). Das war beim echten Arbeiten
+öffnen, schließen und ein Extrude öffnen und verwerfen, je dreimal gemessen (timed). Dazu Szenario B: Skizze auf dem
+Boden innen eines Gehäuses mit Wandstärke, von oben (dort blockierte MyCAD 1,4 s am Stück). Das war beim echten Arbeiten
 ruckelig. Messwerte in $OUT.perf.txt; mit tests/gui/profile.sh unter perf."""
 from harness import *
 import Design
@@ -67,6 +68,26 @@ def open_extrude():
     click(button("Design_Extrude"))
 
 
+def housing():
+    """Gehäuse 60 x 40 x 30 neben der Platte, Wandstärke 2, oben offen; Blick von oben"""
+    h = make_body(rect(200, 0, 260, 40), 0, 30, "Housing")
+    top = face_where(h, lambda c: abs(c.z - 30) < 1e-6)
+    root = [o for o in doc().Objects if o.TypeId == "App::Part"][0]
+    f = doc().addObject("Design::Shell", "Shell"); root.addObject(f); Design.addToTimeline(f)
+    f.Edges = [top]; f.Size = 2
+    Design.attachToBodies(f, [h])
+    doc().recompute()
+    S["housing"] = h
+    Gui.ActiveDocument.ActiveView.viewTop(); Gui.SendMsgToActiveView("ViewFit")
+
+
+def open_floor_sketch():
+    Gui.Selection.clearSelection()
+    click_at(V(230, 20, 2))
+    click(button("Design_CreateSketch"))
+    S["sketch"] = Gui.ActiveDocument.getInEdit().Object if Gui.ActiveDocument.getInEdit() else None
+
+
 def cancel():
     click([b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "Cancel"][0])
 
@@ -80,5 +101,10 @@ for k in range(3):
     steps += [timed("extrude on body opens #%d" % (k + 1), open_extrude, 200), W,
               timed("extrude: type 5, preview #%d" % (k + 1), lambda: type_field("Distance", "5"), 300), W,
               timed("extrude cancel #%d" % (k + 1), cancel, 300), W]
+steps += [("housing", housing), W]
+for k in range(2):
+    steps += [timed("sketch on housing floor opens #%d" % (k + 1), open_floor_sketch, 500), W,
+              timed("sketch on housing floor closes #%d" % (k + 1), close_sketch, 300), W,
+              ("remove floor %d" % k, remove_sketch), W]
 steps += [("errors", lambda: check("no errors", not errors(), str(errors())))]
 run(steps)
