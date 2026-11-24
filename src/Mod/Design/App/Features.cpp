@@ -6083,8 +6083,6 @@ App::DocumentObjectExecReturn* Fastener::compute()
     if (!head) {
         return new App::DocumentObjectExecReturn(screw + " has no size " + size);
     }
-    const double recess = countersink ? 0 : head->second;  // Kopf versenkt: Länge zählt ab dem Grund der Senkung
-
     // Lage je Body in den Koordinaten seiner Komponente; die Parameter entlang der Achse sind überall gleich
     std::vector<Part::TopoShape> shapes {baseShape(0), baseShape(1)};
     std::vector<gp_Ax2> axes;
@@ -6101,6 +6099,9 @@ App::DocumentObjectExecReturn* Fastener::compute()
         return new App::DocumentObjectExecReturn("The point is not on the top part");
     }
     const double t1 = *exitTop;
+    // Kopf versenkt: Länge zählt ab dem Grund der Senkung. Ist das obere Teil dafür zu dünn (Deckel 2 mm, Senkung M3
+    // 3,4 mm), sitzt der Kopf obendrauf; sonst bliebe ein Loch in Kopfgröße und die Schraube hielte nichts
+    const double recess = countersink || head->second > t1 - 0.5 ? 0 : head->second;
     const auto lower = crossings(shapes[1].getShape(), axes[1].Location(), axes[1].Direction());
     const auto entry = std::ranges::find_if(lower, [t1](double v) { return v > t1 - 1e-4; });
     if (entry == lower.end() || entry + 1 == lower.end()) {
@@ -6125,6 +6126,15 @@ App::DocumentObjectExecReturn* Fastener::compute()
     if (AutoLength.getValue()) {
         const auto fits = std::ranges::find_if(ScrewLengths, [needed](double l) { return l >= needed - 1e-6; });
         length = fits == std::end(ScrewLengths) ? ScrewLengths[std::size(ScrewLengths) - 1] : *fits;
+        // Sackloch: Spitze samt Bohrung (1 mm weiter) bleibt im unteren Teil, sonst stünde sie unten heraus (kurzer
+        // Sockel im Gehäuse). Dann die längste Normlänge, die noch hält; reicht keine, geht die Bohrung eben durch
+        if (bottom != 2 && recess + length + 1.5 > t3) {
+            for (double l : ScrewLengths) {
+                if (recess + l + 1.5 <= t3 && recess + l >= t2 + nominal) {
+                    length = l;  // aufsteigend: die letzte passende ist die längste
+                }
+            }
+        }
         if (std::abs(Length.getValue() - length) > 1e-9) {
             Length.setValue(length);
             Length.purgeTouched();
@@ -6143,9 +6153,10 @@ App::DocumentObjectExecReturn* Fastener::compute()
     const auto at = [&](int i, double t) {
         return gp_Ax2(axes[i].Location().Translated(gp_Vec(axes[i].Direction()) * t), axes[i].Direction());
     };
-    // oben: Durchgang (ISO 273 mittel) mit Senkung
+    // oben: Durchgang (ISO 273 mittel) mit Senkung (Zylinderkopf auf dünnem Teil: ohne)
     const double clearance = clearanceDiameter(1, *t, 1);
-    const Part::TopoShape upper = fuseAll(holeShape(at(0, -lead), clearance / 2, t1 + 2 * lead, countersink ? 2 : 1,
+    const long sink = countersink ? 2 : recess > 0 ? 1 : 0;
+    const Part::TopoShape upper = fuseAll(holeShape(at(0, -lead), clearance / 2, t1 + 2 * lead, sink,
                                                     head->first / 2, recess, angle, lead),
                                           getDocument()->getStringHasher());
     // unten: Kernloch, Einschmelzmutter oder Durchgang mit Mutterfalle an der Unterseite

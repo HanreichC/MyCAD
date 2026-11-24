@@ -164,6 +164,25 @@ class Fastener(DesignTest):
         self.assertAlmostEqual(screw.Shape.BoundBox.XLength, 5.5, places=3)
         self.assertIn("Heat-set insert M3", Design.partsList(self.doc))
 
+    def test_thin_lid_head_sits_on_top(self):
+        """13.3: Deckel 2 mm, Senkung M3 wäre 3,4 tief: kein Loch in Kopfgröße, der Kopf liegt oben auf und klemmt"""
+        up, low = plates(self.doc, top=2)
+        f = Design.fastenerAt(up, V(0, 0, 12), V(0, 0, -1))
+        self.assertNoErrors()
+        self.assertEqual(radii(up), [1.7])  # nur der Durchgang Ø3,4
+        self.assertAlmostEqual(f.Bodies[2].Shape.BoundBox.ZMax, 12 + 3, places=3)  # Kopf M3 (3 hoch) auf der Oberfläche
+
+    def test_auto_length_stays_inside_the_lower_part(self):
+        """13.3: kurzer Sockel unter dem Deckel: die Normlänge nach 1,5 × d stünde unten heraus und die Bohrung ginge durch
+        den Boden. Stattdessen die längste, die noch hält"""
+        up, low = plates(self.doc, bottom=5, top=5)
+        f = Design.fastenerAt(up, V(0, 0, 10), V(0, 0, -1))
+        self.assertNoErrors()
+        self.assertTrue(solid_at(low, 0, 0, 0.3))  # Boden zu
+        self.assertGreaterEqual(f.Bodies[2].Shape.BoundBox.ZMin, 0)
+        self.assertLessEqual(f.Bodies[2].Shape.BoundBox.ZMin, 5 - 3)  # hält: mindestens 1 × d im unteren Teil
+        self.assertNotIn("Touched", f.State)
+
     def test_countersunk_head_sits_flush(self):
         up, low = plates(self.doc)
         f = m4(up)
@@ -214,6 +233,8 @@ class Fastener(DesignTest):
         self.assertEqual(list(f.Bodies)[:2], [up, low])  # dazu die Schraube (12.7)
         self.assertEqual(radii(low), [1.65])
         self.assertEqual(radii(up), [2.25, 4.0])  # die obere Form liegt lokal bei z = 0 … 5, Achse dieselbe
+        # 13.3: danach nichts mehr zu tun (vorher blieb die Schraube "touched": jede Neuberechnung rechnete sie neu)
+        self.assertEqual([o.Name for o in self.doc.Objects if "Touched" in o.State], [])
 
     def test_nothing_below(self):
         _, b = box(self.doc, 20, 20, 10, at=(-10, -10))
