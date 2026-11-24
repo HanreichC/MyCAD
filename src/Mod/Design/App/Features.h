@@ -281,6 +281,11 @@ public:
     };
     static Regions computeRegions(const TopoDS_Shape& localSketchShape);
 
+    /// Profile vor der letzten Skizzenänderung (nur im Speicher): ein Schritt, dessen Profil geteilt wurde, nimmt die
+    /// neuen Flächen, die genau darin liegen
+    Part::TopoShape previousShape;
+    std::vector<std::string> previousSignatures;
+
 private:
     /// Signaturen aus festen IDs übernehmen; bei denselben Bereichen die Schlüssel der Schritte übersetzen
     void adopt(Regions& regions, const Part::TopoShape& sketchShape);

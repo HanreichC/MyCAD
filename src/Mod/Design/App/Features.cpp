@@ -181,13 +181,94 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
     std::vector<std::string> known = keys.getValues();
     known.resize(subs.size());
     std::vector<Part::TopoShape> faces;
+    const auto faceOf = [](const Part::TopoShape& shape, size_t k) {
+        return shape.getSubTopoShape(("Face" + std::to_string(k + 1)).c_str(), true);
+    };
+    const auto area = [](const TopoDS_Shape& shape) {
+        GProp_GProps props;
+        BRepGProp::SurfaceProperties(shape, props);
+        return props.Mass();
+    };
     for (size_t i = 0; i < subs.size(); ++i) {
         std::string name = subs[i];
+        // Geteiltes Profil: "alt|Teil|Teil". Gibt es das alte wieder (Skizze zurückgeändert), gilt es; sonst die Teile
+        std::vector<std::string> split;
+        {
+            std::stringstream in(known[i]);
+            for (std::string t; std::getline(in, t, '|');) {
+                split.push_back(t);
+            }
+        }
+        const std::string original = split.empty() ? known[i] : split.front();
+        if (split.size() > 1 && std::ranges::find(signatures, original) == signatures.end()) {
+            std::vector<std::string> wanted(split.begin() + 1, split.end()), have;
+            std::vector<size_t> found;
+            for (size_t k = 0; k < signatures.size(); ++k) {
+                if (std::ranges::find(wanted, signatures[k]) != wanted.end()) {
+                    found.push_back(k);
+                    have.push_back(signatures[k]);
+                }
+            }
+            std::ranges::sort(wanted);
+            std::ranges::sort(have);
+            if (have == wanted) {
+                for (size_t k : found) {
+                    faces.push_back(faceOf(all, k));
+                }
+                continue;
+            }
+        }
+        known[i] = original;
         const auto match = std::ranges::find(signatures, known[i]);
         if (!known[i].empty() && match != signatures.end() && std::ranges::count(signatures, known[i]) == 1) {
             name = "Face" + std::to_string(match - signatures.begin() + 1);
         }
         else if ((known[i].starts_with("g") || known[i].starts_with("x")) && match == signatures.end()) {
+            // Geteilt (Linie quer, Kreis um ein Loch oder über den Rand): die neuen Flächen, die im alten Profil liegen
+            // und es zusammen genau füllen. Über die Lage, nicht über die Kanten: ein Kreis über den Rand grenzt außen an
+            // dieselben Kanten wie innen und wurde sonst mitgenommen (Härtetest ConceptKey). Die Teile in den Schlüssel,
+            // damit es nach dem nächsten Rechnen und nach dem Laden genauso bleibt.
+            const auto& before = profiles->previousSignatures;
+            if (std::ranges::count(before, known[i]) == 1 && !profiles->previousShape.isNull()) {
+                const TopoDS_Shape old =
+                    faceOf(profiles->previousShape, std::ranges::find(before, known[i]) - before.begin()).getShape();
+                const double oldArea = area(old);
+                std::vector<size_t> inside;
+                double sum = 0;
+                const auto mineTokens = [&](const std::string& sig) {
+                    std::stringstream in(sig), own(known[i]);
+                    std::set<std::string> ownSet;
+                    for (std::string t; std::getline(own, t, ',');) {
+                        ownSet.insert(t);
+                    }
+                    for (std::string t; std::getline(in, t, ',');) {
+                        if (ownSet.contains(t)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                for (size_t k = 0; k < signatures.size(); ++k) {
+                    if (!mineTokens(signatures[k])) {
+                        continue;  // nur neue Kanten: eine neue Insel, der Kreis hinein bleibt ein Loch (wie Fusion)
+                    }
+                    const TopoDS_Shape face = faceOf(all, k).getShape();
+                    const double a = area(face);
+                    if (a > 0 && area(BRepAlgoAPI_Common(face, old).Shape()) > 0.999 * a) {
+                        inside.push_back(k);
+                        sum += a;
+                    }
+                }
+                if (!inside.empty() && std::abs(sum - oldArea) <= 1e-6 * (1 + oldArea)) {
+                    std::string key = known[i];
+                    for (size_t k : inside) {
+                        faces.push_back(faceOf(all, k));
+                        key += "|" + signatures[k];
+                    }
+                    known[i] = inside.size() == 1 ? signatures[inside.front()] : key;
+                    continue;
+                }
+            }
             // Signatur aus festen IDs, aber kein exakter Treffer: das ähnlichste Profil ist dasselbe, nur verändert
             // (Kreis hinein = Ring). Ähnlich heißt: viele gemeinsame Kanten im Verhältnis zu allen (Jaccard). Nur die
             // Anzahl zu zählen zog jede Lasche auf die große Innenfläche, die mehr ihrer Kanten berührt (ConceptKey).
@@ -202,6 +283,54 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
                 return out;
             };
             const auto mine = tokens(known[i]);
+            // Phase 14, geteilt (Linie quer durch das Profil, Kreis um ein vorhandenes Loch): Teilflächen, die nur über
+            // neue Kanten aneinanderstoßen und deren Außenrand zusammen genau die alten Kanten sind, füllen das alte
+            // Profil: alle nehmen, wie zwei gewählte Profile. Jedes Teil hat eine alte und eine neue Kante; nur alte =
+            // ein anderes Profil (das Loch selbst), nur neue = eine neue Insel (Kreis hinein bleibt ein Ring).
+            // Kandidaten mit einer neuen Kante, die keine andere teilt, grenzen nach außen und fallen weg. Vorher nur bei
+            // Gleichstand: ein 3,8-mm-Kreis um ein 2,6-mm-Loch nahm das Quadrat ohne den Ring, das Loch wuchs (ConceptKey).
+            {
+                std::vector<std::pair<size_t, std::set<std::string>>> parts;
+                for (size_t k = 0; k < signatures.size(); ++k) {
+                    auto theirs = tokens(signatures[k]);
+                    if (std::ranges::any_of(theirs, [&](const std::string& t) { return mine.contains(t); })
+                        && std::ranges::any_of(theirs, [&](const std::string& t) { return !mine.contains(t); })) {
+                        parts.emplace_back(k, std::move(theirs));
+                    }
+                }
+                for (bool changed = true; changed;) {
+                    changed = false;
+                    std::map<std::string, int> extraUse;
+                    for (const auto& [k, theirs] : parts) {
+                        for (const auto& t : theirs) {
+                            extraUse[t] += mine.contains(t) ? 0 : 1;
+                        }
+                    }
+                    const auto outward = std::ranges::find_if(parts, [&](const auto& part) {
+                        return std::ranges::any_of(part.second, [&](const std::string& t) {
+                            return !mine.contains(t) && extraUse[t] < 2;
+                        });
+                    });
+                    if (outward != parts.end()) {
+                        parts.erase(outward);
+                        changed = true;
+                    }
+                }
+                std::set<std::string> outer;
+                for (const auto& [k, theirs] : parts) {
+                    for (const auto& t : theirs) {
+                        if (mine.contains(t)) {
+                            outer.insert(t);
+                        }
+                    }
+                }
+                if (parts.size() >= 2 && outer == mine) {
+                    for (const auto& [k, theirs] : parts) {
+                        faces.push_back(all.getSubTopoShape(("Face" + std::to_string(k + 1)).c_str(), true));
+                    }
+                    continue;  // Signatur bleibt die alte: beim nächsten Neuberechnen wieder so
+                }
+            }
             double best = 0;
             size_t bestIdx = 0, ties = 0;
             // Hauchdünne Bereiche (Spalt zwischen fast deckungsgleichen Linien) sind Zeichenungenauigkeiten, nie gemeint:
@@ -230,52 +359,6 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
                 }
             }
             if (best == 0 || ties > 1) {
-                // Phase 14, Gleichstand, weil geteilt (Linie quer durch das Profil): Teilflächen, die nur über neue Kanten
-                // aneinanderstoßen und deren Außenrand zusammen genau die alten Kanten sind, füllen das alte Profil: alle
-                // nehmen, wie zwei gewählte Profile. Kandidaten mit einer neuen Kante, die keine andere teilt, grenzen
-                // nach außen und fallen weg (Ring, Nachbarprofil). Sonst galt es als verloren und alles darauf wurde rot.
-                // Gibt es einen klar besten Teil (eine Kerbe macht aus dem Rechteck ein L), bleibt es bei dem.
-                {
-                    std::vector<std::pair<size_t, std::set<std::string>>> parts;
-                    for (size_t k = 0; k < signatures.size(); ++k) {
-                        auto theirs = tokens(signatures[k]);
-                        if (std::ranges::any_of(theirs, [&](const std::string& t) { return mine.contains(t); })) {
-                            parts.emplace_back(k, std::move(theirs));
-                        }
-                    }
-                    for (bool changed = true; changed;) {
-                        changed = false;
-                        std::map<std::string, int> extraUse;
-                        for (const auto& [k, theirs] : parts) {
-                            for (const auto& t : theirs) {
-                                extraUse[t] += mine.contains(t) ? 0 : 1;
-                            }
-                        }
-                        const auto outward = std::ranges::find_if(parts, [&](const auto& part) {
-                            return std::ranges::any_of(part.second, [&](const std::string& t) {
-                                return !mine.contains(t) && extraUse[t] < 2;
-                            });
-                        });
-                        if (outward != parts.end()) {
-                            parts.erase(outward);
-                            changed = true;
-                        }
-                    }
-                    std::set<std::string> outer;
-                    for (const auto& [k, theirs] : parts) {
-                        for (const auto& t : theirs) {
-                            if (mine.contains(t)) {
-                                outer.insert(t);
-                            }
-                        }
-                    }
-                    if (parts.size() >= 2 && outer == mine) {
-                        for (const auto& [k, theirs] : parts) {
-                            faces.push_back(all.getSubTopoShape(("Face" + std::to_string(k + 1)).c_str(), true));
-                        }
-                        continue;  // Signatur bleibt die alte: beim nächsten Neuberechnen wieder so
-                    }
-                }
                 faces.emplace_back();
                 continue;
             }
@@ -3870,6 +3953,10 @@ void Profiles::adopt(Regions& regions, const Part::TopoShape& sketchShape)
             }
             keys->setValues(values);
         }
+    }
+    if (old != regions.signatures) {
+        previousShape = Shape.getShape();
+        previousSignatures = old;
     }
     Signatures.setValues(regions.signatures);
 }

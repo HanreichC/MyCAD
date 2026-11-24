@@ -57,6 +57,24 @@ class SplitProfile(DesignTest):
         self.assertAlmostEqual(b.Shape.Volume, full, places=3)
         self.assertEqual(len(b.Shape.Solids), 1)
 
+    def test_a_circle_around_a_hole_keeps_the_hole(self):
+        """Ein größerer Kreis um ein vorhandenes Loch teilt das Profil in Platte mit großem Loch und Ring: der Schritt
+        nimmt beide, das Loch bleibt so groß (vorher nahm er nur die Platte, das Loch wuchs auf den neuen Kreis; ConceptKey)"""
+        base = sketch(self.doc, rect(0, 0, 80, 50) + [Part.Circle(V(20, 25, 0), V(0, 0, 1), 1.31)])
+        ext, b = extrude(self.doc, base, 10, faces=[self.plate(base)])
+        full = b.Shape.Volume
+        self.assertAlmostEqual(full, (80 * 50 - math.pi * 1.31 ** 2) * 10, places=2)
+        base.addGeometry(Part.Circle(V(20, 25, 0), V(0, 0, 1), 1.9))
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertEqual(ext.Warning, "")
+        self.assertAlmostEqual(b.Shape.Volume, full, places=3)
+
+    @staticmethod
+    def plate(sk):
+        prof = profiles(sk)
+        return "Face%d" % (1 + max(range(len(prof.Shape.Faces)), key=lambda i: prof.Shape.Faces[i].Area))
+
     def test_a_circle_inside_still_makes_a_ring(self):
         """Gegenprobe: ein Kreis im Profil ist keine Teilung, das Profil wird zum Ring (wie bisher)"""
         base = sketch(self.doc, rect(0, 0, 80, 50))
@@ -67,7 +85,8 @@ class SplitProfile(DesignTest):
         self.assertAlmostEqual(b.Shape.Volume, (80 * 50 - math.pi * 25) * 10, places=2)
 
 
-class Extents(DesignTest):
+class Extents(DesignTest):
+
     def test_symmetric(self):
         sk = sketch(self.doc, rect(0, 0, 10, 10))
         f, body = extrude(self.doc, sk, 10, Extent="Symmetric")
