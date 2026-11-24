@@ -5,6 +5,7 @@ auf der Deckfläche öffnen und schließen, Extrude-Vorschau beim Tippen, das Gr
 10x Rückgängig. Messwerte in $OUT.perf.txt."""
 import os
 import sys
+from PySide6 import QtGui
 from harness import *
 sys.path.insert(0, os.path.join(os.path.dirname(os.environ["SCRIPT"]), "..", "design"))
 import design as D
@@ -101,6 +102,31 @@ def wider():
     doc().recompute(); doc().commitTransaction()
 
 
+def save_first():
+    doc().saveAs(os.environ["OUT"] + ".heavy.mycad")
+
+
+def save_like_always():
+    """was "Immer gespeichert" nach jeder Änderung tut (saveQuietly): speichern und eine Version anlegen"""
+    import time
+    import DesignVersions
+    t = time.monotonic(); doc().save(); t1 = time.monotonic(); DesignVersions.snapshot(doc(), "")
+    L("  save %.0f ms, version snapshot %.0f ms, file %.0f kB" % ((t1 - t) * 1000, (time.monotonic() - t1) * 1000,
+                                                                 os.path.getsize(doc().FileName) / 1024))
+
+
+def hover():
+    """Maus über das Teil fahren (ohne Taste): Vorauswahl folgt"""
+    b = S["body"].Shape.BoundBox
+    for i in range(20):
+        p = V(b.XMin + (b.XMax - b.XMin) * i / 19, b.YMin + (b.YMax - b.YMin) * i / 19, b.ZMax)
+        vp = view().viewport(); q = screen_of(p)
+        QtWidgets.QApplication.sendEvent(vp, QtGui.QMouseEvent(QtCore.QEvent.MouseMove, QtCore.QPointF(q),
+                                                               QtCore.QPointF(vp.mapToGlobal(q)), QtCore.Qt.NoButton,
+                                                               QtCore.Qt.NoButton, QtCore.Qt.NoModifier))
+        QtWidgets.QApplication.processEvents()
+
+
 def undo10():
     for _ in range(10):
         Gui.runCommand("Std_Undo")
@@ -115,7 +141,9 @@ for k in range(2):
     steps += [timed("heavy: extrude opens #%d" % (k + 1), open_extrude, 300), W,
               timed("heavy: extrude type 5, preview #%d" % (k + 1), lambda: type_field("Distance", "5"), 500), W,
               timed("heavy: extrude cancel #%d" % (k + 1), cancel, 300), W]
-steps += [timed("heavy: base 160 -> 170, all recompute", wider, 1500), W,
+steps += [timed("heavy: hover across the part, 20 moves", hover, 500), W,
+          ("save first", save_first), W, timed("heavy: always-save (save + version)", save_like_always, 300), W,
+          timed("heavy: base 160 -> 170, all recompute", wider, 1500), W,
           ("follows", lambda: check("the wider base recomputes without errors, the sketch on the top face stays on it", not errors()
                                     and abs(S["body"].Shape.BoundBox.XLength - 170) < 1e-6,
                                     "%s %s" % (S["body"].Shape.BoundBox, errors()))),
