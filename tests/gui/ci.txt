@@ -82,3 +82,5 @@ test_scenario_change.py
 test_slow_log.py
 test_scenario_assembly.py
 test_fuzz_ui.py
+test_undo_profile.py
+test_chaos_ui.py
