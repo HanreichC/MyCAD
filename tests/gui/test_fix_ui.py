@@ -38,7 +38,11 @@ def entry(obj):
 
 
 def lose_reference():
-    f = fillet(); f.ElementMaps = ["lost"]; f.touch(); doc().recompute()
+    """Name verloren und die Kante liegt nicht mehr genau dort (sonst ist es dieselbe Kante, ohne Warnung)"""
+    f = fillet()
+    x, y, z, size = (float(v) for v in f.ElementHints[0].split())
+    f.ElementMaps = ["lost"]; f.ElementHints = ["%g %g %g %g" % (x + 0.5, y, z, size)]
+    f.touch(); doc().recompute()
 
 
 run([

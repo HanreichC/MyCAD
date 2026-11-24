@@ -73,68 +73,73 @@ def start():
     click(button("Design_CreateSketch"))
 
 
-def polyline():
-    click(button("Sketcher_CreatePolyline"))
-    for i, p in enumerate([(0, 0), (50, 0), (50, 30), (0, 30), (0, 0)]):
-        later(300 + 250 * i, lambda p=p: click_at(V(p[0], p[1], 0)))
-    later(1800, lambda: key(QtCore.Qt.Key_Escape))
+def clicks(name, points):
+    """jeder Klick ein eigener Schritt: der Harness wartet dazwischen, bis MyCAD ruhig ist (unter Last in der CI kamen
+    Klicks und Esc nach festen Zeiten durcheinander)"""
+    return [("%s %d" % (name, k), lambda p=p: click_at(V(p[0], p[1], 0))) for k, p in enumerate(points)]
+
+
+def esc():
+    return ("esc", lambda: key(QtCore.Qt.Key_Escape))
+
+
+POLYLINE = [timed("polyline tool", lambda: click(button("Sketcher_CreatePolyline")), 500)] + \
+    clicks("polyline", [(0, 0), (50, 0), (50, 30), (0, 30), (0, 0)]) + [esc()]
 
 
 def closed():
     check("polyline 50 x 30, clicked closed: one profile", same(S["areas"], [1500]), str(S["areas"]))
 
 
-def arc():
-    """Bogen Mitte, Anfang, Ende: Halbkreis über der Oberkante, die Enden liegen auf ihr (nicht an ihren Ecken)"""
-    click(button("Sketcher_CompCreateArc"))
-    later(300, lambda: click_at(V(25, 30, 0)))
-    later(550, lambda: click_at(V(35, 30, 0)))
-    # wie ein Mensch über die Oberkante zum Ende: die Richtung des Bogens folgt dem Weg der Maus
-    for i, a in enumerate(range(10, 180, 10)):
-        later(700 + 30 * i, lambda a=a: move_at(V(25 + 10 * math.cos(math.radians(a)), 30 + 10 * math.sin(math.radians(a)), 0)))
-    later(1400, lambda: click_at(V(15, 30, 0)))
-    later(1800, lambda: key(QtCore.Qt.Key_Escape))
+def arc_end():
+    """wie ein Mensch über die Oberkante zum Ende: die Richtung des Bogens folgt dem Weg der Maus"""
+    for a in range(10, 180, 10):
+        move_at(V(25 + 10 * math.cos(math.radians(a)), 30 + 10 * math.sin(math.radians(a)), 0))
+        QtWidgets.QApplication.processEvents()
+    click_at(V(15, 30, 0))
+
+
+# Bogen Mitte, Anfang, Ende: Halbkreis über der Oberkante, die Enden liegen auf ihr (nicht an ihren Ecken)
+ARC = [timed("arc tool", lambda: click(button("Sketcher_CompCreateArc")), 500)] + clicks("arc", [(25, 30), (35, 30)]) + \
+    [("arc end", arc_end), esc()]
 
 
 def arc_ok():
     check("an arc with its ends on the top edge adds a second profile (half disc)", same(S["areas"], [1500, HALF]), str(S["areas"]))
 
 
-def fillet():
-    click(button("Sketcher_CompCreateFillets"))
-    later(400, lambda: click_at(V(50, 0, 0)))
-
-    def radius():
+def radius():
+    """das Feld erscheint modal nach dem Klick auf die Ecke: abwarten, 5 tippen, Enter"""
+    import time
+    end = time.monotonic() + 15
+    m = QtWidgets.QApplication.activeModalWidget()
+    while (m is None or m.findChild(QtWidgets.QAbstractSpinBox) is None) and time.monotonic() < end:
+        QtWidgets.QApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
         m = QtWidgets.QApplication.activeModalWidget()
-        if m is None:
-            L("  no radius field"); return
-        box = m.findChild(QtWidgets.QAbstractSpinBox)
-        box.lineEdit().selectAll(); QtTest.QTest.keyClicks(box.lineEdit(), "5")
-        QtTest.QTest.keyClick(box.lineEdit(), QtCore.Qt.Key_Return)
-    later(1400, radius)
-    later(1900, lambda: key(QtCore.Qt.Key_Escape))
+    if m is None:
+        L("  no radius field"); return
+    box = m.findChild(QtWidgets.QAbstractSpinBox)
+    box.lineEdit().selectAll(); QtTest.QTest.keyClicks(box.lineEdit(), "5")
+    QtTest.QTest.keyClick(box.lineEdit(), QtCore.Qt.Key_Return)
+
+
+ROUND_CORNER = [timed("fillet tool", lambda: click(button("Sketcher_CompCreateFillets")), 500),
+          ("corner", lambda: later(0, lambda: click_at(V(50, 0, 0)))),  # der Klick öffnet ein modales Feld
+          ("radius 5", radius), W, esc()]
 
 
 def fillet_ok():
     check("corner rounded with r = 5 (typed)", same(S["areas"], [1500 - FILLET, HALF]), str(S["areas"]))
 
 
-def cross():
-    click(button("Sketcher_CreateLine"))
-    later(300, lambda: click_at(V(-10, 15, 0)))
-    later(600, lambda: click_at(V(60, 15, 0)))
-    later(1000, lambda: key(QtCore.Qt.Key_Escape))
+CROSS = [timed("line tool", lambda: click(button("Sketcher_CreateLine")), 500)] + clicks("line", [(-10, 15), (60, 15)]) + [esc()]
 
 
 def crossed():
     check("a line across splits the rectangle in two", same(S["areas"], [750, 750 - FILLET, HALF]), str(S["areas"]))
 
 
-def trim():
-    Gui.runCommand("Sketcher_Trimming")
-    later(300, lambda: click_at(V(-5, 15, 0)))
-    later(700, lambda: click_at(V(55, 15, 0)))
-    later(1100, lambda: key(QtCore.Qt.Key_Escape))
+TRIM = [timed("trim tool", lambda: Gui.runCommand("Sketcher_Trimming"), 500)] + clicks("trim", [(-5, 15), (55, 15)]) + [esc()]
 
 
 def trimmed():
@@ -145,16 +150,17 @@ def trimmed():
           "%s %s" % (outside, S["areas"]))
 
 
-def mirror():
+def pick_arc():
     s = sk()
     a = [i for i, g in enumerate(s.Geometry, 1) if g.TypeId == "Part::GeomArcOfCircle" and abs(g.Center.y - 30) < 0.5]
     S["geo before mirror"] = len(s.Geometry)
     Gui.Selection.clearSelection()
     Gui.Selection.addSelection(doc().Name, s.Name, "Edge%d" % a[0])
-    # der Knopf wird erst kurz nach der Auswahl aktiv
-    later(500, lambda: click(button("Sketcher_Symmetry")))
-    later(1000, lambda: click_at(V(40, 15, 0)))  # an der Querlinie: landet unten an der Kante
-    later(1500, lambda: key(QtCore.Qt.Key_Escape))
+
+
+# der Knopf wird erst kurz nach der Auswahl aktiv; an der Querlinie gespiegelt landet der Bogen unten an der Kante
+MIRROR = [("pick arc", pick_arc), W, timed("mirror tool", lambda: click(button("Sketcher_Symmetry")), 500)] + \
+    clicks("mirror line", [(40, 15)]) + [esc()]
 
 
 def mirrored():
@@ -176,11 +182,13 @@ def completed():
           "solve %s full %s %s" % (s.solve(), s.FullyConstrained, S["areas"]))
 
 
-def delete_mirror():
+def pick_mirrored():
     Gui.Selection.clearSelection()
     click_at(V(25, -10, 0))  # unterster Punkt des gespiegelten Bogens
     S["picked"] = [(x.ObjectName, x.SubElementNames) for x in Gui.Selection.getSelectionEx()]
-    later(300, lambda: key(QtCore.Qt.Key_Delete))
+
+
+DELETE = [("pick mirrored", pick_mirrored), W, ("Del", lambda: key(QtCore.Qt.Key_Delete))]
 
 
 def deleted():
@@ -207,14 +215,14 @@ def reopened():
 
 run([("activate", activate),
      timed("sketch on XY opens", start, 500), W, ("remember", lambda: S.update(sketch=sk())), ("frame", frame), W,
-     timed("polyline, 5 clicks", polyline, 3000), W, ("peek closed", peek), W, W, ("look closed", look), W, W, ("closed", closed),
-     timed("arc, 3 clicks", arc, 2500), W, ("peek arc ok", peek), W, W, ("look arc ok", look), W, W, ("arc ok", arc_ok),
-     timed("fillet a corner, type 5", fillet, 3000), W, ("peek fillet ok", peek), W, W, ("look fillet ok", look), W, W, ("fillet ok", fillet_ok),
-     timed("line across", cross, 2000), W, ("peek crossed", peek), W, W, ("look crossed", look), W, W, ("crossed", crossed),
-     timed("trim two overhangs", trim, 2000), W, ("peek trimmed", peek), W, W, ("look trimmed", look), W, W, ("trimmed", trimmed),
-     timed("mirror the arc", mirror, 2000), W, ("peek mirrored", peek), W, W, ("look mirrored", look), W, W, ("mirrored", mirrored),
+     *POLYLINE, W, ("peek closed", peek), W, W, ("look closed", look), W, W, ("closed", closed),
+     *ARC, W, ("peek arc ok", peek), W, W, ("look arc ok", look), W, W, ("arc ok", arc_ok),
+     *ROUND_CORNER, W, ("peek fillet ok", peek), W, W, ("look fillet ok", look), W, W, ("fillet ok", fillet_ok),
+     *CROSS, W, ("peek crossed", peek), W, W, ("look crossed", look), W, W, ("crossed", crossed),
+     *TRIM, W, ("peek trimmed", peek), W, W, ("look trimmed", look), W, W, ("trimmed", trimmed),
+     *MIRROR, W, ("peek mirrored", peek), W, W, ("look mirrored", look), W, W, ("mirrored", mirrored),
      timed("what's missing", complete, 800), W, ("peek completed", peek), W, W, ("look completed", look), W, W, ("completed", completed),
-     timed("click and delete", delete_mirror, 1000), W, ("peek deleted", peek), W, W, ("look deleted", look), W, W, ("deleted", deleted),
+     *DELETE, W, ("peek deleted", peek), W, W, ("look deleted", look), W, W, ("deleted", deleted),
      timed("leave sketch", leave, 500), W,
      timed("open sketch again", reopen, 500), W, ("reopened", reopened),
      ("errors", lambda: check("no errors", not errors(), str(errors()))),
