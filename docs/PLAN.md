@@ -651,12 +651,13 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
   0,2 s (Software-OpenGL: 535 -> 212 ms Blockade).
 - Nach einer drastischen Änderung und Rückgängig blieb „Das Modell hat sich geändert“ an der Rundung stehen; jetzt geht
   die Warnung, sobald alle Elemente wieder genau dort liegen, wo sie gewählt wurden.
+- „Transparenz reduzieren“ war langsamer als das echte Glas (Schattenringe je Bild): jetzt einmal gezeichnet, 27,9 ->
+  19,8 ms je Bild, der sparsamste Modus. Das GL-Glas kostet ~7 ms je Bild in Software.
 - Chaos-Tests `test_chaos_ui` bis `test_chaos4_ui` in der CI.
 
 **Offen:**
 - „Alles einpassen“ animiert noch in eigener Ereignisschleife (jetzt fest 0,2 s statt bis 0,5 s, eine Fahrt statt
   zwei). Ganz ohne Sperre ginge es nur mit einer nicht blockierenden Animation; Tests lesen die Kamera direkt danach.
-- „Transparenz reduzieren“ zeichnet das Glas mit QPainter und ist langsamer als das GL-Glas.
 - Erstes Extrude-Panel der Sitzung ~0,2 s.
 
 ### 4.3 Frühere Phasen (Archiv)
