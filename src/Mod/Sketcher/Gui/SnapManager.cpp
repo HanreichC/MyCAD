@@ -364,6 +364,12 @@ bool SnapManager::snapToGrid(Base::Vector2d inputPos, Base::Vector2d& snapPos)
     return snapped;
 }
 
+/// MyCAD: Fangweite für Mittelpunkte, etwa 10 Pixel in Skizzen-Millimetern (getScaleFactor misst rund 50 Pixel)
+double SnapManager::middleTolerance() const
+{
+    return viewProvider.getScaleFactor() * 0.2;
+}
+
 bool SnapManager::snapToLineMiddle(Base::Vector3d& pointToOverride, const Part::GeomLineSegment* line)
 {
     Base::Vector3d startPoint = line->getStartPoint();
@@ -371,7 +377,9 @@ bool SnapManager::snapToLineMiddle(Base::Vector3d& pointToOverride, const Part::
     Base::Vector3d midPoint = (startPoint + endPoint) / 2;
 
     // Check if we are at middle of the line and if so snap to it.
-    if ((pointToOverride - midPoint).Length() < (endPoint - startPoint).Length() * 0.05) {
+    // MyCAD: höchstens ein paar Pixel weit (wie die anderen Fangpunkte), nicht 5 % der Länge: bei einer 40-cm-Linie fing
+    // die Mitte schon aus 20 mm und man kam nicht mehr daneben
+    if ((pointToOverride - midPoint).Length() < std::min((endPoint - startPoint).Length() * 0.05, middleTolerance())) {
         pointToOverride = midPoint;
         return true;
     }
@@ -410,7 +418,8 @@ bool SnapManager::snapToArcMiddle(Base::Vector3d& pointToOverride, const Part::G
      * (mouse cursor - center) to the angle of the middle of the arc. If it's less than 10% of the
      * arc angle, then we snap.
      */
-    if (fabs(pVec.Angle() - (revert * mVec).Angle()) < 0.10 * angle) {
+    if (fabs(pVec.Angle() - (revert * mVec).Angle()) < 0.10 * angle
+        && (pointToOverride - (centerPoint + middleVec * revert)).Length() < middleTolerance()) {
         pointToOverride = centerPoint + middleVec * revert;
         return true;
     }

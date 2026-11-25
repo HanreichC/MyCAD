@@ -599,7 +599,8 @@ bool DrawSketchHandler::isLineCenterAutoConstraint(int GeoId, const Base::Vector
         Base::Vector2d midPoint = (startPoint + endPoint) / 2;
 
         // Check if we are at middle of the line
-        if ((Pos - midPoint).Length() < (endPoint - startPoint).Length() * 0.05) {
+        // MyCAD: dieselbe Fangweite wie SnapManager::middleTolerance (etwa 10 Pixel), nicht 5 % der Länge
+        if ((Pos - midPoint).Length() < std::min((endPoint - startPoint).Length() * 0.05, 0.2 * sketchgui->getScaleFactor())) {
             return true;
         }
     }

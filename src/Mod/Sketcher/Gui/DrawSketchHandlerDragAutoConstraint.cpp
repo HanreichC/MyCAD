@@ -369,7 +369,9 @@ void DrawSketchHandlerDragAutoConstraint::updateSuggestions()
                 const Base::Vector2d projection = a + ab * t;
                 const double distance = (actualPos - projection).Length();
                 const Base::Vector2d midpoint = (a + b) / 2.0;
-                const bool lineCenter = (actualPos - midpoint).Length() < ab.Length() * 0.05;
+                // MyCAD: dieselbe Fangweite wie SnapManager::middleTolerance (etwa 10 Pixel)
+                const bool lineCenter = (actualPos - midpoint).Length()
+                    < std::min(ab.Length() * 0.05, 0.2 * double(sketchgui->getScaleFactor()));
                 considerCurve(geoId, distance, lineCenter);
             }
             else if (geo->isDerivedFrom<Part::GeomCurve>()) {

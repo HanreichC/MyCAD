@@ -118,6 +118,7 @@ public:
     bool snapToObject(Base::Vector2d inputPos, Base::Vector2d& snapPos, SnapType mask);
     bool snapToGrid(Base::Vector2d inputPos, Base::Vector2d& snapPos);
 
+    double middleTolerance() const;
     bool snapToLineMiddle(Base::Vector3d& pointToOverride, const Part::GeomLineSegment* line);
     bool snapToArcMiddle(Base::Vector3d& pointToOverride, const Part::GeomArcOfCircle* arc);
 

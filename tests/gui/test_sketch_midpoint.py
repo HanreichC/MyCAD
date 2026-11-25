@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Linie zeichnen, Maus nahe an die Mitte einer anderen Linie: der Punkt fängt dort, ein Dreieck markiert die Mitte
-(wie Fusion), der Klick setzt die Mitte-Bedingung. Weiter weg von der Mitte verschwindet das Dreieck."""
+(wie Fusion), der Klick setzt die Mitte-Bedingung. Weiter weg von der Mitte verschwindet das Dreieck. Die Fangweite ist
+ein paar Pixel, nicht 5 % der Linie (2026-11-25: an einer 40-cm-Linie fing die Mitte schon aus 20 mm)."""
 from PySide6 import QtGui
 from harness import *
 
@@ -72,10 +73,12 @@ in_order([
     ("start", lambda: press(-10, 25)), wait,
     ("off middle", lambda: hover(25, 10, 0, 3)), wait,
     ("check off", off_middle),
-    ("near middle", lambda: hover(10.8, 10, 0, 3)), wait,
+    ("2 mm off", lambda: hover(12, 10, 0, 3)), wait,  # unter den alten 5 % (3 mm), aber viele Pixel daneben
+    ("check 2 mm", off_middle),
+    ("near middle", lambda: hover(10.25, 10, 0, 3)), wait,
     ("check near", near_middle),
     ("shot", lambda: shot("midpoint")),
-    ("end", lambda: press(10.8, 10, 0, 3)), wait,
+    ("end", lambda: press(10.25, 10, 0, 3)), wait,
     ("esc", lambda: QtTest.QTest.keyClick(view().viewport(), QtCore.Qt.Key_Escape)), wait,
     ("placed", placed),
 ])
