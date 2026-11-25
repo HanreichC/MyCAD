@@ -29,6 +29,8 @@
 #include <BRepBuilderAPI_GTransform.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
 #include <TopExp_Explorer.hxx>
 #include <gp_GTrsf.hxx>
 #include <GCPnts_AbscissaPoint.hxx>
@@ -443,10 +445,24 @@ void SketchObject::refindProjectedFaces()
         if (!named.IsNull() && fits(seen(named), points)) {
             continue;
         }
+        // Unter den passenden Flächen die in der Ebene der Skizze: von ihr aus sehen die linke und die rechte Wand gleich
+        // aus, die gegenüberliegende lag aber 435 mm entfernt (ConceptKey, Härtetest Seed 9)
+        const Base::Placement place = Placement.getValue();
+        Base::Vector3d axis;
+        place.getRotation().multVec(Base::Vector3d(0, 0, 1), axis);
         int index = 0, found = 0;
-        for (TopExp_Explorer it(shape, TopAbs_FACE); it.More() && !found; it.Next()) {
+        double nearest = Precision::Infinite();
+        for (TopExp_Explorer it(shape, TopAbs_FACE); it.More(); it.Next()) {
             ++index;
-            if (fits(seen(it.Current()), points)) {
+            if (!fits(seen(it.Current()), points)) {
+                continue;
+            }
+            GProp_GProps props;
+            BRepGProp::SurfaceProperties(it.Current(), props);
+            const gp_Pnt c = props.CentreOfMass();
+            const double away = std::abs((Base::Vector3d(c.X(), c.Y(), c.Z()) - place.getPosition()) * axis);
+            if (away < nearest - 1e-9) {
+                nearest = away;
                 found = index;
             }
         }
@@ -456,6 +472,7 @@ void SketchObject::refindProjectedFaces()
         }
     }
     if (changed) {
+        updateGeoRef = true;  // die vorhandenen Linien auf den neuen Namen umschreiben, sonst blieben sie verwaist doppelt
         ExternalGeometry.setValues(objs, subs);
         Base::Console().log("{}: projected face found again by its lines\n", getFullName());
     }
