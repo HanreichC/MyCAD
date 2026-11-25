@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Drehpunkt "Mitte des Körpers unter dem Cursor" bei einem geteilten Körper (2026-11-25): über der abgeteilten Hälfte
-dreht die Ansicht um deren Mitte, nicht um die Mitte des ganzen Körpers vor dem Teilen."""
+dreht die Ansicht um deren Mitte, nicht um die Mitte des ganzen Körpers vor dem Teilen. Auch wenn eine durchsichtige
+Platte über allem liegt (Acrylglas in ConceptKey): durch sie hindurch zählt der Körper dahinter."""
 import Design
 from harness import *
 
@@ -31,12 +32,14 @@ def split():
     s.Bodies = [body_, p]; d.recompute()
     S["small"] = min([body_, p], key=lambda b: b.Shape.Volume)
     L("small half %s" % S["small"].Shape.BoundBox)
+    glass = make_body(rect(-5, -5, 105, 25), 12, 2, "Glass")  # durchsichtige Platte über dem ganzen Körper
+    glass.ViewObject.Transparency = 62
 
 
 def orbit():
     c = S["small"].Shape.BoundBox.Center
-    S["c"] = screen(c); S["far"] = screen(App.Vector(0, 10, 5))
-    start = S["c"]
+    S["c"] = screen(c)
+    start = screen(App.Vector(c.x, c.y, 10))  # auf die Oberseite der Hälfte, durch die Platte
     shift, mid = QtCore.Qt.ShiftModifier, QtCore.Qt.MiddleButton
     send(QtCore.QEvent.MouseButtonPress, start, mid, mid, shift)
     for k in range(1, 13):
@@ -46,7 +49,7 @@ def orbit():
 
 def pivot():
     d = screen(S["small"].Shape.BoundBox.Center) - S["c"]
-    check("orbiting over the split-off half turns around its own center", (d.x() ** 2 + d.y() ** 2) ** 0.5 < 4,
+    check("orbiting over the split-off half (through a transparent plate) turns around its own center", (d.x() ** 2 + d.y() ** 2) ** 0.5 < 4,
           "its center moved %.1f px" % ((d.x() ** 2 + d.y() ** 2) ** 0.5))
 
 

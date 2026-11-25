@@ -54,6 +54,7 @@
 #include <App/DocumentObject.h>
 
 #include "Navigation/NavigationStyle.h"
+#include "ViewProviderGeometryObject.h"
 #include "Navigation/NavigationStylePy.h"
 #include "Application.h"
 #include "Camera.h"
@@ -1632,8 +1633,19 @@ void NavigationStyle::saveCursorPosition(const SoEvent* const ev)
         SoRayPickAction rpaction(viewer->getSoRenderManager()->getViewportRegion());
         rpaction.setPoint(this->localPos);
         rpaction.setRadius(viewer->getPickRadius());
+        rpaction.setPickAll(true);
         rpaction.apply(viewer->getSoRenderManager()->getSceneGraph());
-        SoPickedPoint* picked = rpaction.getPickedPoint();
+        // Durch durchsichtige Körper hindurch (Acrylplatte über dem Gehäuse, ConceptKey): sonst drehte die Ansicht um die
+        // Mitte der Platte, die so lang ist wie alles, statt um den Körper, auf den man schaut. Nur wenn keiner dahinter
+        // liegt, zählt der durchsichtige.
+        SoPickedPoint* picked = rpaction.getPickedPoint(0);
+        for (int k = 0; const SoPickedPoint* candidate = rpaction.getPickedPoint(k); ++k) {
+            auto part = dynamic_cast<ViewProviderGeometryObject*>(viewer->getViewProviderByPathFromTail(candidate->getPath()));
+            if (!part || part->Transparency.getValue() < 50) {
+                picked = const_cast<SoPickedPoint*>(candidate);
+                break;
+            }
+        }
         // innerstes Objekt (der Körper), nicht die Komponente, in der er liegt
         ViewProvider* vp = picked ? viewer->getViewProviderByPathFromTail(picked->getPath()) : nullptr;
         const int index = vp ? picked->getPath()->findNode(vp->getRoot()) : -1;
