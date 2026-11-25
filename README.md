@@ -297,7 +297,7 @@ MyCAD is young and grows fast. This is what comes next, roughly in this order (d
 | **Export** | STL · 3MF (with colors, per face too) · STEP (with colors) · DXF (sketches) |
 | **Import** | STEP · STL, 3MF, OBJ (flat faces and holes recognized) · DXF · SVG · photos (traced into a sketch) |
 | **File format** | `.mycad` (ZIP with preview image, same content as FreeCAD's FCStd); `.FCStd` files open too |
-| **Navigation** | 12 styles, keys as mouse buttons, orbit around the body under the cursor |
+| **Navigation** | 12 styles, keys as mouse buttons, orbit around the point under the cursor |
 | **Pen tablet** | Pressure and hover on Wayland, every tablet and pen button assignable in Settings (H640P preset, other models learn their buttons), KDE shortcuts on the same buttons ignored |
 | **Materials** | 119 in 12 groups (metal, anodized, coatings, plastic, 3D print, rubber, glass, wood, stone, fabric and leather, composites, Apple colors), 19 CC0 photo scans with relief, studio or room lighting, clear coat, end grain |
 | **Core** | FreeCAD with OpenCascade 8.0 and Coin 4.0.10 (built in the container) |

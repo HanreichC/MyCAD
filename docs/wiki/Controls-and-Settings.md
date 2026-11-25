@@ -43,7 +43,7 @@ style, Settings shows which key or gesture orbits, pans, zooms and selects.
 
 - Turn a key into a mouse button, e.g. **Shift** as the middle button, and navigate with your touchpad. Shift still works
   as Shift when you type.
-- MyCAD orbits around the body under the cursor.
+- MyCAD orbits around the point under the cursor (Settings → Rotate around offers the other centres).
 - **Show tool names** writes the names under the icons.
 - The **view cube** at the top right turns to standard views; the house below it goes to the home view.
 

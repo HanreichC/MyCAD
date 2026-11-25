@@ -1213,13 +1213,13 @@
     "en": [
      "On a laptop, Settings → Keys can turn a key such as Space into the middle mouse button.",
      "A SpaceMouse (3Dconnexion) works when the spacenavd service is running: install spacenavd from your distribution and start it, then push, pull and twist the cap to move the view.",
-     "The view turns around the body under the cursor (Settings → Rotate around), so the detail you look at stays in place.",
+     "The view turns around the point under the cursor (Settings → Rotate around), so the detail you point at stays in place.",
      "Zoom in the wrong direction? Settings → Speed & Zoom → Invert zoom (mouse wheel), or for pinching Settings → Trackpad → Invert zoom."
     ],
     "de": [
      "Am Laptop machst du unter Einstellungen → Tasten eine Taste wie die Leertaste zur mittleren Maustaste.",
      "Eine SpaceMouse (3Dconnexion) geht, wenn der Dienst spacenavd läuft: spacenavd aus deiner Distribution installieren und starten, dann die Kappe schieben, ziehen und drehen, um die Ansicht zu bewegen.",
-     "Die Ansicht dreht um den Körper unter dem Cursor (Einstellungen → Drehen um), so bleibt das betrachtete Detail an seinem Platz.",
+     "Die Ansicht dreht um den Punkt unter dem Cursor (Einstellungen → Drehen um), so bleibt das Detail, auf das du zeigst, an seinem Platz.",
      "Zoom in die falsche Richtung? Einstellungen → Tempo & Zoom → Zoom umkehren (Mausrad), beim Spreizen Einstellungen → Trackpad → Zoom umkehren."
     ]
    },

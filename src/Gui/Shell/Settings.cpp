@@ -913,10 +913,12 @@ void Gui::Shell::registerSettings()
         viewParams()->SetInt("RotationMode", 1);
         myParams()->SetBool("NavigationDefaultSet", true);
     }
-    // Drehen um die Mitte des Körpers unter dem Cursor als Standard (einmalig, eigene Wahl bleibt danach)
-    if (!myParams()->GetBool("RotationDefaultBody", false)) {
-        viewParams()->SetInt("RotationMode", 3);
-        myParams()->SetBool("RotationDefaultBody", true);
+    // Drehen um den Punkt unter dem Cursor als Standard, wie Fusion und Onshape (25.11., mit Christopher: die Mitte des
+    // Körpers unter dem Cursor drehte bei einer Platine über die ganze Länge um deren Mitte statt um das kleine Teil, auf
+    // das man zeigt). Einmalig, eine eigene Wahl bleibt danach
+    if (!myParams()->GetBool("RotationDefaultPoint", false)) {
+        viewParams()->SetInt("RotationMode", 1);
+        myParams()->SetBool("RotationDefaultPoint", true);
     }
     // Skizzen ohne eigene Innenflächen: sonst fangen sie den Klick ab und statt des gewählten Profils
     // (Design::Profiles) wird die ganze Skizze extrudiert
@@ -1714,7 +1716,7 @@ void Gui::Shell::showSettings()
     auto center = new QComboBox;
     center->addItems({T("Window center"), T("Point under the cursor"),
                       T("Center of all bodies"), T("Center of the body under the cursor")});
-    center->setCurrentIndex(static_cast<int>(view->GetInt("RotationMode", 3)));
+    center->setCurrentIndex(static_cast<int>(view->GetInt("RotationMode", 1)));
     QObject::connect(center, &QComboBox::currentIndexChanged, [view](int i) { view->SetInt("RotationMode", i); });
     addRow(viewCard, T("Rotate around"), center);
     viewToggle(viewCard, T("Animate view changes"), "UseNavigationAnimations", true);

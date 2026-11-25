@@ -665,8 +665,8 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
   nur ins Protokoll; Druckansicht-Panel rechts unter dem ViewCube, Knöpfe untereinander, Verlassen blau; Warte-Hinweis
   bei Druckansicht, Export und Öffnen.
 - Drehpunkt „Mitte des Körpers unter dem Cursor“ schaut durch durchsichtige Körper (Acrylglas über ConceptKey drehte
-  um die Mitte von allem; `test_orbit_split`). Offen: liegt ein großer undurchsichtiger Körper davor (die PCB über die
-  ganze Länge), dreht die Ansicht um dessen Mitte; das ist die Einstellung, aber vielleicht nicht gewünscht (fragen).
+  um die Mitte von allem; `test_orbit_split`). Entschieden 25.11.: Standard ist jetzt der Punkt unter dem
+  Cursor wie Fusion/Onshape (die Mitte der Platine über die ganze Länge war nicht gemeint); die anderen bleiben wählbar.
 - „Alles einpassen“ lief zweimal hintereinander und dauerte auf langsamer Grafik bis 0,5 s: jetzt eine Fahrt, fest
   0,2 s (Software-OpenGL: 535 -> 212 ms Blockade).
 - Nach einer drastischen Änderung und Rückgängig blieb „Das Modell hat sich geändert“ an der Rundung stehen; jetzt geht
@@ -686,7 +686,7 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
   vor jedem Prisma weg; Teile eines geteilten Profils wieder zu einer Fläche (auch Kanten vereinheitlicht).
   `test_stress_profiles` läuft Seed 3 im Kleinen in den Design-Tests mit.
 - [x] Lehre aus ConceptKey 25.11. ((1) erledigt mit c8ce3011, PreviousShape/-Signatures in der Datei; (2) mit 31617a82,
-  Flächen über die Lage; (3) am 26.11. wie Fusion, mit Christopher abgestimmt: roter Schritt reicht durch): (1) Nach dem Laden kennt Profiles die Flächen von vorher nicht (nur im Speicher);
+  Flächen über die Lage; (3) am 25.11. wie Fusion, mit Christopher abgestimmt: roter Schritt reicht durch): (1) Nach dem Laden kennt Profiles die Flächen von vorher nicht (nur im Speicher);
   die erste Skizzenänderung nach dem Öffnen fällt auf die Kanten-Ähnlichkeit zurück, und die nahm still falsche
   Flächen (Grundplatte 86 -> 9 cm³ ohne Warnung). Die Flächen der gewählten Profile mit dem Schritt speichern.
   (2) Skizzen/Ebenen auf Körperflächen über die Lage wiederfinden (Ebene + größte Überdeckung), nicht über die
