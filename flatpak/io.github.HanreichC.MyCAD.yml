@@ -12,7 +12,7 @@ finish-args:
   - --share=ipc
   - --device=dri
   - --device=input                          # Tasten von Grafiktablett und Touchpad selbst lesen (libinput)
-  - --require-version=1.15.6                # ab dieser Flatpak-Version gibt es --device=input (Flathub-Linter)
+  - --require-version=1.16.0                # --device=input: der Flathub-Linter verlangt dafür mindestens 1.16.0
   - --filesystem=xdg-documents/MyCAD:create # Projektordner; andere Ordner über den Datei-Dialog (Portal)
   - --filesystem=/run/spnav.sock:ro         # SpaceMouse: Socket von spacenavd (wie FreeCAD)
   - --env=SPNAV_SOCKET=/run/spnav.sock

@@ -26,6 +26,16 @@ jobs:
         with:
           submodules: true  # src/3rdParty/OndselSolver (Gelenk-Solver)
 
+      # Der Linter will volle Screenshot- und Icon-Adressen (https://dl.flathub.org/media/...); flatpak-builder schreibt
+      # sie ohne --compose-url-policy=full relativ, und die Action reicht keine eigenen Optionen durch.
+      # ponytail: kleiner Umweg über einen Wrapper; fällt weg, sobald die Action die Option kennt
+      - name: flatpak-builder mit vollen AppStream-Adressen (wie Flathub)
+        run: |
+          mv /app/bin/flatpak-builder /app/bin/flatpak-builder.real
+          printf '#!/bin/sh\nexec /app/bin/flatpak-builder.real --compose-url-policy=full "$@"\n' > /app/bin/flatpak-builder
+          chmod +x /app/bin/flatpak-builder
+          flatpak-builder --version
+
       - name: Flatpak bauen
         uses: flathub-infra/flatpak-github-actions/flatpak-builder@933e9e8ca36e85046ebca8e211f0785c6becac40
         with:
