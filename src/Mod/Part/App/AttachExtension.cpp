@@ -465,6 +465,16 @@ bool AttachExtension::refindFace(bool misplaced, bool* turned)
             }
         }
     }
+    // Außennormale wie der Attacher (Orientierung der Fläche und Händigkeit der Ebene): die linke und die rechte Wand
+    // sind parallel, zeigen aber entgegengesetzt. Vorher sprang eine Skizze von der einen an die andere (ConceptKey)
+    const auto outward = [](const TopoDS_Face& face, const gp_Pln& pln) {
+        gp_Dir d = pln.Axis().Direction();
+        if ((face.Orientation() == TopAbs_REVERSED) != !pln.Direct()) {
+            d.Reverse();
+        }
+        return d;
+    };
+    const auto sameWay = [&normal](const gp_Dir& d) { return d.IsEqual(normal, Precision::Angular()); };
     bool changed = false;
     for (size_t i = 0; i < objs.size(); ++i) {
         auto support = dynamic_cast<Part::Feature*>(objs[i]);
@@ -495,7 +505,7 @@ bool AttachExtension::refindFace(bool misplaced, bool* turned)
                 continue;
             }
             const gp_Pln pln = surface.Plane();
-            const bool parallel = pln.Axis().Direction().IsParallel(normal, Precision::Angular());
+            const bool parallel = sameWay(outward(TopoDS::Face(named), pln));
             if (parallel && pln.Distance(origin) <= 1e-6) {
                 continue;
             }
@@ -513,7 +523,7 @@ bool AttachExtension::refindFace(bool misplaced, bool* turned)
                 continue;
             }
             const gp_Pln pln = surface.Plane();
-            if (!pln.Axis().Direction().IsParallel(normal, Precision::Angular()) || pln.Distance(origin) > 1e-6) {
+            if (!sameWay(outward(TopoDS::Face(it.Current()), pln)) || pln.Distance(origin) > 1e-6) {
                 continue;
             }
             BRepExtrema_DistShapeShape dist(BRepBuilderAPI_MakeVertex(near).Vertex(), it.Current());
