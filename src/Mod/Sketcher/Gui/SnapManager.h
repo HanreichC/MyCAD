@@ -114,7 +114,7 @@ public:
     Base::Vector2d snap(Base::Vector2d inputPos, SnapType mask);
     bool snapAtAngle(Base::Vector2d inputPos, Base::Vector2d& snapPos);
     /// Linien ohne Ctrl: rastet an gängigen Winkeln (alle 15°) und sonst an vollen Grad, Länge bleibt
-    bool snapToCommonAngle(Base::Vector2d inputPos, Base::Vector2d& snapPos);
+    bool snapToCommonAngle(Base::Vector2d inputPos, Base::Vector2d& snapPos, bool onlyCommon = false);
     bool snapToObject(Base::Vector2d inputPos, Base::Vector2d& snapPos, SnapType mask);
     bool snapToGrid(Base::Vector2d inputPos, Base::Vector2d& snapPos);
 

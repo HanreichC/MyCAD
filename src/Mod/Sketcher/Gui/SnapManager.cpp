@@ -209,9 +209,11 @@ Base::Vector2d SnapManager::snap(Base::Vector2d inputPos, SnapType mask)
         // if false was returned but snapPos was modified (axis case), continue to grid snap
     }
 
-    // Winkel rasten, solange nichts anderes den Punkt bestimmt (Objekt, Achse, Raster)
-    if (commonAnglesRequested && !snapToGridRequested && (static_cast<int>(mask) & static_cast<int>(SnapType::Angle))
-        && (snapPos - inputPos).Length() < Precision::Confusion() && snapToCommonAngle(inputPos, snapPos)) {
+    // Winkel rasten, solange nichts anderes den Punkt bestimmt (Objekt, Achse). MyCAD: nahe an einem 15°-Schritt auch
+    // mit Raster (vorher sprang das Raster vor, und Winkel rasteten gar nicht); ganze Grad nur ohne Raster
+    if (commonAnglesRequested && (static_cast<int>(mask) & static_cast<int>(SnapType::Angle))
+        && (snapPos - inputPos).Length() < Precision::Confusion()
+        && snapToCommonAngle(inputPos, snapPos, snapToGridRequested)) {
         return snapPos;
     }
 
@@ -247,7 +249,7 @@ bool SnapManager::snapAtAngle(Base::Vector2d inputPos, Base::Vector2d& snapPos)
     return true;
 }
 
-bool SnapManager::snapToCommonAngle(Base::Vector2d inputPos, Base::Vector2d& snapPos)
+bool SnapManager::snapToCommonAngle(Base::Vector2d inputPos, Base::Vector2d& snapPos, bool onlyCommon)
 {
     const Base::Vector2d direction = inputPos - referencePoint;
     const double length = direction.Length();
@@ -257,6 +259,9 @@ bool SnapManager::snapToCommonAngle(Base::Vector2d inputPos, Base::Vector2d& sna
     constexpr double CommonStep = 15., CommonRange = 2.;  // Grad
     const double degrees = Base::toDegrees(direction.Angle());
     const double common = std::round(degrees / CommonStep) * CommonStep;
+    if (onlyCommon && fabs(degrees - common) > CommonRange) {
+        return false;  // das Raster entscheidet
+    }
     const double angle = Base::toRadians(fabs(degrees - common) <= CommonRange ? common : std::round(degrees));
     snapPos = referencePoint + length * Base::Vector2d(cos(angle), sin(angle));
     return true;
