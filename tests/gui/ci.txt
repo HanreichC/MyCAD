@@ -87,3 +87,4 @@ test_chaos_ui.py
 test_chaos2_ui.py
 test_chaos3_ui.py
 test_chaos4_ui.py
+test_chaos5_ui.py
