@@ -26,6 +26,11 @@
 
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
+#include <BRepBuilderAPI_GTransform.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
+#include <TopExp_Explorer.hxx>
+#include <gp_GTrsf.hxx>
 #include <GCPnts_AbscissaPoint.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Shape.hxx>
@@ -352,6 +357,110 @@ GCS::Algorithm getDefaultSolver()
 }
 } // namespace
 
+/// MyCAD: eine projizierte Fläche heißt nach einer Änderung des Körpers anders ("Face5" ist jetzt eine andere Fläche):
+/// die Skizze übernahm deren Kanten, ihr Profil schloss nicht mehr, alles darauf ging verloren (ConceptKey: Skizze002/003).
+/// Die zuletzt projizierten Linien liegen noch in der Skizze: passen sie nicht mehr zur benannten Fläche, die Fläche nehmen,
+/// auf deren Rand sie liegen (von der Skizze aus gesehen). Gibt es keine, bleibt es beim Namen (der Körper wurde nur
+/// größer oder kleiner, die Projektion folgt).
+void SketchObject::refindProjectedFaces()
+{
+    auto objs = ExternalGeometry.getValues();
+    auto subs = ExternalGeometry.getSubValues();
+    if (objs.empty() || objs.size() != subs.size() || externalGeoRef.size() != objs.size()) {
+        return;
+    }
+    // Skizzen-Koordinaten, Tiefe weg: so sieht die Skizze eine Fläche
+    const Base::Matrix4D inv = Placement.getValue().inverse().toMatrix();
+    gp_Trsf toSketch;
+    toSketch.SetValues(inv[0][0], inv[0][1], inv[0][2], inv[0][3], inv[1][0], inv[1][1], inv[1][2], inv[1][3],
+                       inv[2][0], inv[2][1], inv[2][2], inv[2][3]);
+    gp_GTrsf flatten;
+    flatten.SetValue(3, 3, 0.0);
+    const auto seen = [&](const TopoDS_Shape& face) -> TopoDS_Shape {
+        try {
+            BRepBuilderAPI_Transform local(face, toSketch, true);
+            BRepBuilderAPI_GTransform flat(local.Shape(), flatten, true);
+            return flat.Shape();
+        }
+        catch (...) {
+            return {};
+        }
+    };
+    const auto fits = [](const TopoDS_Shape& flat, const std::vector<gp_Pnt>& points) {
+        if (flat.IsNull()) {
+            return false;
+        }
+        for (const auto& p : points) {
+            BRepExtrema_DistShapeShape dist(BRepBuilderAPI_MakeVertex(p).Vertex(), flat);
+            if (!dist.IsDone() || dist.Value() > 1e-4) {
+                return false;
+            }
+        }
+        return true;
+    };
+    bool changed = false;
+    for (size_t i = 0; i < objs.size(); ++i) {
+        auto support = freecad_cast<Part::Feature*>(objs[i]);
+        const std::string& sub = subs[i];
+        const auto dot = sub.rfind('.');
+        const std::string element = dot == std::string::npos ? sub : sub.substr(dot + 1);
+        if (!support || element.find("Face") == std::string::npos) {
+            continue;
+        }
+        // Punkte der zuletzt projizierten Linien dieser Fläche (Anfang, Mitte, Ende), in Skizzen-Koordinaten
+        std::vector<gp_Pnt> points;
+        for (const auto& geo : ExternalGeo.getValues()) {
+            auto egf = ExternalGeometryFacade::getFacade(geo);
+            if (egf->getRef() != externalGeoRef[i] || egf->testFlag(ExternalGeometryExtension::Missing)) {
+                continue;
+            }
+            try {
+                const TopoDS_Shape edge = geo->toShape();
+                if (edge.IsNull() || edge.ShapeType() != TopAbs_EDGE) {
+                    continue;
+                }
+                BRepAdaptor_Curve curve(TopoDS::Edge(edge));
+                for (double t : {0.0, 0.5, 1.0}) {
+                    const gp_Pnt p = curve.Value(curve.FirstParameter() + t * (curve.LastParameter() - curve.FirstParameter()));
+                    points.emplace_back(p.X(), p.Y(), 0);
+                }
+            }
+            catch (...) {
+            }
+        }
+        if (points.empty()) {
+            continue;
+        }
+        const TopoDS_Shape shape = support->Shape.getShape().getShape();
+        TopoDS_Shape named;
+        try {
+            if (element[0] != '?') {
+                named = support->Shape.getShape().getSubShape(element.c_str(), true);
+            }
+        }
+        catch (...) {
+        }
+        if (!named.IsNull() && fits(seen(named), points)) {
+            continue;
+        }
+        int index = 0, found = 0;
+        for (TopExp_Explorer it(shape, TopAbs_FACE); it.More() && !found; it.Next()) {
+            ++index;
+            if (fits(seen(it.Current()), points)) {
+                found = index;
+            }
+        }
+        if (found) {
+            subs[i] = "Face" + std::to_string(found);
+            changed = true;
+        }
+    }
+    if (changed) {
+        ExternalGeometry.setValues(objs, subs);
+        Base::Console().log("{}: projected face found again by its lines\n", getFullName());
+    }
+}
+
 App::DocumentObjectExecReturn* SketchObject::execute()
 {
     try {
@@ -366,6 +475,7 @@ App::DocumentObjectExecReturn* SketchObject::execute()
 
     // setup and diagnose the sketch
     try {
+        refindProjectedFaces();
         rebuildExternalGeometry();
         Constraints.acceptGeometry(getCompleteGeometry());
     }

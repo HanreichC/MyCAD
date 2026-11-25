@@ -35,6 +35,15 @@
 
 #include "AttachExtension.h"
 #include "AttachExtensionPy.h"
+#include "PartFeature.h"
+
+#include <BRepAdaptor_Surface.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
 
 
 using namespace Part;
@@ -425,6 +434,124 @@ short int AttachExtension::extensionMustExecute()
 }
 
 
+/// MyCAD: die Fläche, an der Skizze oder Ebene hingen, ist unter ihrem Namen nicht mehr da (der Körper darunter hat sich
+/// geändert, die Flächen heißen anders). Über die Lage wiederfinden: dieselbe Ebene wie zuletzt (aus Placement und
+/// Versatz), darin die Fläche, die dem Objekt am nächsten liegt. Den Versatz so anpassen, dass es genau an seinem Platz
+/// bleibt. Vorher blieb es mit "Fläche weg" stehen und folgte dem Körper nicht mehr (ConceptKey: Skizze001-004, Ebene).
+bool AttachExtension::refindFace(bool misplaced, bool* turned)
+{
+    auto objs = AttachmentSupport.getValues();
+    auto subs = AttachmentSupport.getSubValues();
+    if (objs.empty() || objs.size() != subs.size()) {
+        return false;
+    }
+    App::DocumentObject* owner = getExtendedObject();
+    const Base::Placement last = getPlacement().getValue();
+    const Base::Placement offset = AttachmentOffset.getValue();
+    const Base::Placement plane = last * offset.inverse();  // Lage der alten Fläche
+    Base::Vector3d n;
+    plane.getRotation().multVec(Base::Vector3d(0, 0, 1), n);
+    const gp_Dir normal(n.x, n.y, n.z);
+    const gp_Pnt origin(plane.getPosition().x, plane.getPosition().y, plane.getPosition().z);
+    // Wo das Objekt liegt: Mitte seiner Form (Skizzenlinien, Ebene), sonst der Ursprung der Ebene
+    gp_Pnt near = origin;
+    if (auto feature = dynamic_cast<Part::Feature*>(owner)) {
+        const TopoDS_Shape own = feature->Shape.getValue();
+        if (!own.IsNull()) {
+            GProp_GProps props;
+            BRepGProp::LinearProperties(own, props);
+            if (props.Mass() > 0) {
+                near = props.CentreOfMass();
+            }
+        }
+    }
+    bool changed = false;
+    for (size_t i = 0; i < objs.size(); ++i) {
+        auto support = dynamic_cast<Part::Feature*>(objs[i]);
+        std::string sub = subs[i];
+        const auto dot = sub.rfind('.');
+        const std::string element = dot == std::string::npos ? sub : sub.substr(dot + 1);
+        if (!support || element.find("Face") == std::string::npos) {
+            continue;
+        }
+        TopoDS_Shape named;
+        try {
+            if (element[0] != '?') {
+                named = support->Shape.getShape().getSubShape(element.c_str(), true);
+            }
+        }
+        catch (...) {
+        }
+        if (!misplaced && !named.IsNull()) {
+            continue;
+        }
+        if (misplaced) {
+            // Die benannte Fläche liegt noch in der alten Ebene: alles gut
+            if (named.IsNull() || named.ShapeType() != TopAbs_FACE) {
+                continue;
+            }
+            BRepAdaptor_Surface surface(TopoDS::Face(named));
+            if (surface.GetType() != GeomAbs_Plane) {
+                continue;
+            }
+            const gp_Pln pln = surface.Plane();
+            const bool parallel = pln.Axis().Direction().IsParallel(normal, Precision::Angular());
+            if (parallel && pln.Distance(origin) <= 1e-6) {
+                continue;
+            }
+            if (!parallel && turned) {
+                *turned = true;  // eine ganz andere Fläche (andere Richtung): nicht dorthin springen
+            }
+        }
+        const TopoDS_Shape shape = support->Shape.getShape().getShape();
+        double best = Precision::Infinite();
+        int bestIndex = 0, index = 0;
+        for (TopExp_Explorer it(shape, TopAbs_FACE); it.More(); it.Next()) {
+            ++index;
+            BRepAdaptor_Surface surface(TopoDS::Face(it.Current()));
+            if (surface.GetType() != GeomAbs_Plane) {
+                continue;
+            }
+            const gp_Pln pln = surface.Plane();
+            if (!pln.Axis().Direction().IsParallel(normal, Precision::Angular()) || pln.Distance(origin) > 1e-6) {
+                continue;
+            }
+            BRepExtrema_DistShapeShape dist(BRepBuilderAPI_MakeVertex(near).Vertex(), it.Current());
+            if (dist.IsDone() && dist.Value() < best - 1e-9) {
+                best = dist.Value();
+                bestIndex = index;
+            }
+        }
+        // Name zeigt auf eine andere Fläche: nur eine Fläche nehmen, auf der das Objekt wirklich liegt (sonst ist der
+        // Körper nur höher/tiefer geworden und das Objekt folgt der benannten Fläche wie bisher)
+        if (!bestIndex || (misplaced && best > 1e-6)) {
+            return false;
+        }
+        subs[i] = "Face" + std::to_string(bestIndex);
+        changed = true;
+    }
+    if (!changed) {
+        return false;
+    }
+    try {
+        AttachmentSupport.setValues(objs, subs);
+        positionBySupport();
+        // An der neuen Fläche genau an den alten Platz: Versatz ausgleichen
+        const Base::Placement now = getPlacement().getValue();
+        AttachmentOffset.setValue(offset * now.inverse() * last);
+        positionBySupport();
+    }
+    catch (...) {
+        return false;
+    }
+    Base::Console().log("{}: face found again by its position\n", owner->getFullName());
+    if (auto warning = dynamic_cast<App::PropertyString*>(owner->getPropertyByName("Warning"));
+        warning && std::string(warning->getValue()).starts_with("Face gone")) {
+        warning->setValue("");
+    }
+    return true;
+}
+
 App::DocumentObjectExecReturn* AttachExtension::extensionExecute()
 {
     // MyCAD: findet eine Skizze oder Ebene ihre Fläche nicht mehr (der Körper darunter hat sich geändert), bleibt sie
@@ -452,18 +579,28 @@ App::DocumentObjectExecReturn* AttachExtension::extensionExecute()
     };
     if (this->isTouched_Mapping()) {
         try {
+            // Nur wenn der Körper darunter sich geändert hat, nicht die Anheftung selbst (neu angeheftet, versetzt)
+            const bool keep = !AttachmentSupport.isTouched() && !AttachmentOffset.isTouched() && !MapMode.isTouched()
+                && !getExtendedObject()->isRestoring();
+            bool turned = false;
+            if (keep && refindFace(true, &turned)) {
+                return App::DocumentObjectExtension::extensionExecute();
+            }
+            if (turned && keepPlace("the face it was attached to now points elsewhere")) {
+                return App::DocumentObjectExtension::extensionExecute();
+            }
             positionBySupport();
             if (warning && std::string(warning->getValue()) == faceLost) {
                 warning->setValue("");  // Fläche wieder da
             }
         }
         catch (Base::Exception& e) {
-            if (!keepPlace(e.what())) {
+            if (!refindFace(false) && !keepPlace(e.what())) {
                 throw;
             }
         }
         catch (Standard_Failure& e) {
-            if (!keepPlace(e.GetMessageString())) {
+            if (!refindFace(false) && !keepPlace(e.GetMessageString())) {
                 throw Base::RuntimeError(e.GetMessageString());
             }
         }

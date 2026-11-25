@@ -4798,7 +4798,22 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
         if (!maps[i].empty()) {
             bool found = false;
             const Data::IndexedName idx = shape.getIndexedName(Data::MappedName(maps[i]));
-            if (idx) {
+            // Ein "Name", der nur die Nummer ist ("Face1": ohne verfolgte Entstehung), zeigt nach einer Änderung weiter vorn
+            // oft auf ein anderes Element. Nur trauen, wenn es noch so aussieht wie gespeichert; sonst unten nach Lage und
+            // Größe (ConceptKey: Drücken/Ziehen zog nach einer Linie in der Grundskizze eine fremde Fläche, Basis halbiert)
+            static const std::regex plain("(Face|Edge|Vertex)[0-9]+");
+            const bool trusted = idx && !std::regex_match(maps[i], plain);
+            const auto looksSame = [&](const std::string& name) {
+                const TopoDS_Shape sub = shape.getSubShape(name.c_str(), true);
+                if (sub.IsNull() || hints[i].empty()) {
+                    return !sub.IsNull();
+                }
+                std::istringstream a(hints[i]), b(elementHint(sub));
+                double x0, y0, z0, s0, x1, y1, z1, s1;
+                return (a >> x0 >> y0 >> z0 >> s0) && (b >> x1 >> y1 >> z1 >> s1)
+                    && std::hypot(x0 - x1, y0 - y1, z0 - z1) + std::abs(s0 - s1) / std::max(1.0, s0) * 10 < 1e-3;
+            };
+            if (idx && (trusted || looksSame(idx.toString()))) {
                 names[i] = idx.toString();
                 found = true;
             }

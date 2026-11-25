@@ -146,6 +146,9 @@ protected:
     ) override;
 
     App::PropertyPlacement& getPlacement() const;
+    /// MyCAD: Fläche über die Lage wiederfinden (dieselbe Ebene, die nächste Fläche); misplaced: der Name zeigt noch auf
+    /// eine Fläche, die aber nicht mehr in der Ebene liegt. true = wieder angeheftet, genau am alten Platz
+    bool refindFace(bool misplaced, bool* turned = nullptr);
     void initBase(bool force);
 
     void handleLegacyTangentPlaneOrientation();

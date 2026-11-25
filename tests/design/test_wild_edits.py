@@ -20,18 +20,41 @@ class WildEdits(DesignTest):
         self.assertAlmostEqual(b.Shape.Volume, full - math.pi * 9 * 10, places=2)
 
     def test_a_sketch_that_loses_its_face_does_not_block(self):
+        """Die Fläche gibt es in ihrer Ebene nicht mehr (Platte höher): Skizze bleibt an ihrem Platz mit Warnung, die
+        Schritte danach rechnen weiter (vorher hielt der Fehler alles an)"""
         base = sketch(self.doc, rect(0, 0, 80, 50))
         ext, b = extrude(self.doc, base, 10)
         hole = sketch(self.doc, circle(20, 25, 5), support=(b, top_face(b)))
         cut, _ = extrude(self.doc, hole, 10, op="Cut", bodies=[b], Reversed=True)
         later = sketch(self.doc, circle(60, 25, 5))
         pin, _ = extrude(self.doc, later, 5, op="Join", bodies=[b])
-        hole.AttachmentSupport = [(hole.AttachmentSupport[0][0], ("Face999",))]  # Fläche gibt es nicht (mehr)
+        hole.AttachmentSupport = [(hole.AttachmentSupport[0][0], ("Face999",))]  # Name weg
+        ext.Distance = 15  # und in der alten Ebene (z = 10) liegt keine Fläche mehr
         pin.Distance = 7
         self.doc.recompute()
         self.assertNotIn("Invalid", hole.State)
         self.assertTrue(hole.Warning.startswith("Face gone"), hole.Warning)
+        self.assertAlmostEqual(hole.Placement.Base.z, 10, places=6)
         self.assertNotIn("Touched", pin.State, "steps after it still compute")
+
+    def test_a_lost_face_is_found_again_by_its_position(self):
+        """Flächenname weg (der Körper darunter hat sich geändert), die Fläche liegt aber noch in derselben Ebene: die
+        Skizze hängt sich wieder an sie, genau an ihrem Platz, ohne Warnung (ConceptKey: Skizze001-004, Ebene)"""
+        base = sketch(self.doc, rect(0, 0, 80, 50))
+        ext, b = extrude(self.doc, base, 10)
+        hole = sketch(self.doc, circle(20, 25, 5), support=(b, top_face(b)))
+        cut, _ = extrude(self.doc, hole, 10, op="Cut", bodies=[b], Reversed=True)
+        place = hole.Placement
+        owner = hole.AttachmentSupport[0][0]
+        hole.AttachmentSupport = [(owner, ("Face999",))]
+        self.doc.recompute()
+        self.assertEqual(hole.Warning if hasattr(hole, "Warning") else "", "")
+        self.assertTrue(hole.Placement.isSame(place, 1e-7), (hole.Placement, place))
+        sub = hole.AttachmentSupport[0][1][0]
+        self.assertAlmostEqual(owner.Shape.getElement(sub).BoundBox.ZMax, 10, places=6)
+        ext.Distance = 12  # folgt der Fläche wieder, wie vorher
+        self.doc.recompute()
+        self.assertAlmostEqual(hole.Placement.Base.z, 12, places=6)
 
     def test_a_join_inside_the_body_says_so(self):
         """Grundskizze liegt im Material (ConceptKey: Versatz 1 mm in "Skizze" unter dem Rand): Verbinden fügt nichts hinzu

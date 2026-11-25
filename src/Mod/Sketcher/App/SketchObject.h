@@ -308,6 +308,8 @@ public:
     // It uses std::optional because this function is actually used to both recompute external
     // geometries but also to add new external geometries. Ideally this should be refactored.
     void rebuildExternalGeometry(std::optional<ExternalToAdd> extToAdd = std::nullopt);
+    /// MyCAD: projizierte Fläche, die nach einer Körperänderung anders heißt, über ihre alten Linien wiederfinden
+    void refindProjectedFaces();
     /// returns the number of external Geometry entities
     int getExternalGeometryCount() const
     {

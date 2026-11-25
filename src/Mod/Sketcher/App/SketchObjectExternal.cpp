@@ -2666,6 +2666,75 @@ void SketchObject::rebuildExternalGeometry(std::optional<ExternalToAdd> extToAdd
     for(auto &geos : newGeos) {
         auto egf = ExternalGeometryFacade::getFacade(geos.front().get());
         auto &refs = externalGeoRefMap[egf->getRef()];
+        // MyCAD: dieselben Linien in anderer Reihenfolge (die Fläche wurde nach einer Änderung weiter vorn anders
+        // aufgezählt): jede wieder auf die Nummer der gleichen Linie von vorher. Sonst hieß "x1" eine andere Linie, die
+        // Profil-Signatur passte nicht mehr und der Schritt darauf verlor sein Profil (ConceptKey: Extrusion017, der
+        // ganze Hauptkörper); Bemaßungen an projizierten Linien hingen ebenso an der falschen.
+        if (refs.size() == geos.size() && geos.size() > 1) {
+            const auto samples = [](const Part::Geometry* geo) {
+                std::array<gp_Pnt, 3> pts {};
+                try {
+                    const TopoDS_Shape edge = geo->toShape();
+                    if (!edge.IsNull() && edge.ShapeType() == TopAbs_EDGE) {
+                        BRepAdaptor_Curve curve(TopoDS::Edge(edge));
+                        const double a = curve.FirstParameter(), b = curve.LastParameter();
+                        pts = {curve.Value(a), curve.Value((a + b) / 2), curve.Value(b)};
+                    }
+                }
+                catch (...) {
+                }
+                return pts;
+            };
+            const auto apart = [](const std::array<gp_Pnt, 3>& p, const std::array<gp_Pnt, 3>& q) {
+                const double same = p[0].Distance(q[0]) + p[1].Distance(q[1]) + p[2].Distance(q[2]);
+                const double flipped = p[0].Distance(q[2]) + p[1].Distance(q[1]) + p[2].Distance(q[0]);
+                return std::min(same, flipped);
+            };
+            std::vector<size_t> order;
+            std::vector<bool> flip(geos.size(), false);  // kommt umgedreht zurück: wieder in die alte Richtung
+            std::vector<bool> used(geos.size(), false);
+            for (size_t k = 0; k < refs.size(); ++k) {
+                auto it = externalGeoMap.find(refs[k]);
+                if (it == externalGeoMap.end() || it->second < 0 || it->second >= ExternalGeo.getSize()) {
+                    break;
+                }
+                const auto before = samples(ExternalGeo[it->second]);
+                size_t best = geos.size();
+                double bestApart = 1e-6;
+                for (size_t j = 0; j < geos.size(); ++j) {
+                    if (!used[j]) {
+                        const auto now = samples(geos[j].get());
+                        const double d = apart(before, now);
+                        if (d < bestApart) {
+                            bestApart = d;
+                            best = j;
+                            flip[j] = before[0].Distance(now[0]) > before[0].Distance(now[2]);
+                        }
+                    }
+                }
+                if (best == geos.size()) {
+                    break;
+                }
+                used[best] = true;
+                order.push_back(best);
+            }
+            if (order.size() == geos.size()) {
+                std::vector<std::unique_ptr<Part::Geometry>> sorted;
+                for (size_t j : order) {
+                    if (flip[j]) {
+                        if (auto line = freecad_cast<Part::GeomLineSegment*>(geos[j].get())) {
+                            const Base::Vector3d a = line->getStartPoint(), b = line->getEndPoint();
+                            line->setPoints(b, a);
+                        }
+                        else if (auto curve = freecad_cast<Part::GeomCurve*>(geos[j].get())) {
+                            curve->reverse();
+                        }
+                    }
+                    sorted.push_back(std::move(geos[j]));
+                }
+                geos = std::move(sorted);
+            }
+        }
         while(refs.size() < geos.size())
             refs.push_back(++geoLastId);
 
