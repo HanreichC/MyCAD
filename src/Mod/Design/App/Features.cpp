@@ -155,6 +155,20 @@ const char* EmbossEnums[] = {"Emboss", "Deboss", nullptr};
 const char* JointEnums[] = {"Rigid", "Revolute", "Slider", "Cylindrical", "Pin-Slot", "Planar", "Ball", nullptr};
 const App::PropertyIntegerConstraint::Constraints CountRange = {1, 1000, 1};
 
+/// Flächen tragen Reste früherer Boolescher Schritte: Kanten kürzer als die Toleranz ihrer Ecken (ConceptKey: 0,000002 mm
+/// bei 0,0007). Ihr Prisma schneidet sich selbst: Drücken/Ziehen wurde ungültig und ließ den Körper verschwinden, ein
+/// geteiltes Profil machte die Wände von Basis zu Müll. Vor jedem Prisma solche Kanten entfernen; sonst die Fläche selbst
+Part::TopoShape withoutTinyEdges(const Part::TopoShape& face)
+{
+    if (face.isNull()) {
+        return face;
+    }
+    ShapeFix_Wireframe fix(face.getShape());
+    fix.SetPrecision(std::max(BRep_Tool::MaxTolerance(face.getShape(), TopAbs_VERTEX), Precision::Confusion()));
+    fix.ModeDropSmallEdges() = Standard_True;
+    return fix.FixSmallEdges() ? Part::TopoShape(fix.Shape()) : face;
+}
+
 constexpr const char* LostProfile =
     "Profile gone: the sketch changed and the profile of this step no longer exists; edit the step and pick a profile";
 constexpr const char* ModelChanged =
@@ -192,6 +206,28 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
         BRepGProp::SurfaceProperties(shape, props);
         return props.Mass();
     };
+    // Teile eines geteilten Profils wieder zu einer Fläche verschmolzen (sonst blieb ihre Naht als Kante im Körper, und
+    // eine Skizze, die die Wand projiziert, bekam andere Linien: Härtetest Seed 3, Extrusion006 −4,7 mm³)
+    const auto addPieces = [&](const std::vector<size_t>& ks) {
+        std::vector<Part::TopoShape> pieces;
+        for (size_t k : ks) {
+            pieces.push_back(faceOf(all, k));
+        }
+        if (pieces.size() > 1) {
+            try {
+                Part::TopoShape fused(0, all.Hasher);
+                fused.makeElementFuse(pieces);
+                const Part::TopoShape merged = fused.makeElementRefine();
+                const auto mergedFaces = merged.getSubTopoShapes(TopAbs_FACE);
+                if (!mergedFaces.empty() && mergedFaces.size() < pieces.size()) {
+                    pieces = mergedFaces;
+                }
+            }
+            catch (...) {
+            }
+        }
+        faces.insert(faces.end(), pieces.begin(), pieces.end());
+    };
     for (size_t i = 0; i < subs.size(); ++i) {
         std::string name = subs[i];
         // Geteiltes Profil: "alt|Teil|Teil". Gibt es das alte wieder (Skizze zurückgeändert), gilt es; sonst die Teile
@@ -215,9 +251,7 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
             std::ranges::sort(wanted);
             std::ranges::sort(have);
             if (have == wanted) {
-                for (size_t k : found) {
-                    faces.push_back(faceOf(all, k));
-                }
+                addPieces(found);
                 continue;
             }
         }
@@ -284,9 +318,9 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
                 if (!inside.empty() && std::abs(sum - oldArea) <= 1e-6 * (1 + oldArea)) {
                     std::string key = known[i];
                     for (size_t k : inside) {
-                        faces.push_back(faceOf(all, k));
                         key += "|" + signatures[k];
                     }
+                    addPieces(inside);
                     known[i] = inside.size() == 1 ? signatures[inside.front()] : key;
                     continue;
                 }
@@ -347,9 +381,11 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
                     }
                 }
                 if (parts.size() >= 2 && outer == mine) {
+                    std::vector<size_t> ks;
                     for (const auto& [k, theirs] : parts) {
-                        faces.push_back(all.getSubTopoShape(("Face" + std::to_string(k + 1)).c_str(), true));
+                        ks.push_back(k);
                     }
+                    addPieces(ks);
                     continue;  // Signatur bleibt die alte: beim nächsten Neuberechnen wieder so
                 }
             }
@@ -4575,7 +4611,7 @@ bool Extrude::makeTool(Part::TopoShape& tool, std::string& error) const
                 base = Part::TopoShape(0, hasher).makeElementTransform(face, mov);
             }
             const Base::Vector3d v = n * (end - start);
-            prisms.push_back(Part::TopoShape(0, hasher).makeElementPrism(base, gp_Vec(v.x, v.y, v.z)));
+            prisms.push_back(Part::TopoShape(0, hasher).makeElementPrism(withoutTinyEdges(base), gp_Vec(v.x, v.y, v.z)));
         }
     }
     tool = fuseAll(prisms, hasher);
@@ -6095,17 +6131,7 @@ bool PressPull::makeTool(Part::TopoShape& tool, std::string& error) const
         if (face.getShape().Orientation() == TopAbs_REVERSED) {
             n.Reverse();
         }
-        // Flächen eines Körpers tragen Reste früherer Boolescher Schritte: Kanten kürzer als die Toleranz ihrer Ecken
-        // (ConceptKey: 0,000002 mm bei 0,0007). Ihr Prisma schneidet sich selbst, Herausziehen wurde ungültig und das
-        // nächste Hineindrücken ließ den ganzen Körper verschwinden. Solche Kanten vorher entfernen.
-        Part::TopoShape prismFace = face;
-        ShapeFix_Wireframe fix(face.getShape());
-        fix.SetPrecision(std::max(BRep_Tool::MaxTolerance(face.getShape(), TopAbs_VERTEX), Precision::Confusion()));
-        fix.ModeDropSmallEdges() = Standard_True;
-        if (fix.FixSmallEdges()) {
-            prismFace = Part::TopoShape(fix.Shape());
-        }
-        prisms.push_back(Part::TopoShape(0, getDocument()->getStringHasher()).makeElementPrism(prismFace, gp_Vec(n) * d));
+        prisms.push_back(Part::TopoShape(0, getDocument()->getStringHasher()).makeElementPrism(withoutTinyEdges(face), gp_Vec(n) * d));
     }
     if (prisms.empty()) {
         error = "Select one or more faces";
