@@ -105,6 +105,7 @@
 #include <Gui/Shell/GlassPanel.h>
 #include <Gui/Shell/Shell.h>
 #include <Gui/Shell/Theme.h>
+#include <Gui/Shell/ViewCube.h>
 
 using Gui::Shell::T;
 
@@ -224,7 +225,7 @@ QRectF freeSpot(const Gui::Shell::GlassPanel* self, QRectF rect, bool down)
     return rect;
 }
 
-/// Legende der Druckansicht unten rechts in der aktiven Ansicht, mit den Knöpfen "Diese Fläche nach unten" und "Drucken"
+/// Legende der Druckansicht rechts unter dem ViewCube in der aktiven Ansicht, mit den Knöpfen "Diese Fläche nach unten" und "Drucken"
 class PrintLegend
 {
 public:
@@ -395,19 +396,21 @@ private:
         fixLayout->setContentsMargins(0, 6, 0, 2);
         fixLayout->setSpacing(6);
         lay->addWidget(fixBox);
-        auto buttons = new QHBoxLayout;
+        // Untereinander wie die Zeilen der Sketch Palette: nebeneinander waren die drei Knöpfe gedrängt (2026-11-25)
+        lay->addSpacing(6);
         for (const auto& [text, command] : {std::pair {T("Suggest Orientation"), "Design_PrintSuggest"},
                                             std::pair {T("Choose Bottom Face"), "Design_PrintDown"},
                                             std::pair {T("Print"), "Design_Print"}}) {
             auto button = new QPushButton(text);
             button->setAutoDefault(false);
+            button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
             QObject::connect(button, &QPushButton::clicked, button, [command] {
                 Gui::Application::Instance->commandManager().runCommandByName(command);
             });
-            buttons->addWidget(button);
+            lay->addWidget(button);
         }
-        lay->addLayout(buttons);
-        // H1: verlassen wie "Finish Sketch" in der Sketch Palette, nicht nur über einen zweiten Klick oben
+        lay->addSpacing(8);
+        // H1: verlassen wie "Finish Sketch" in der Sketch Palette (blau, unten), nicht nur über einen zweiten Klick oben
         auto leave = new QPushButton(T("Exit Print View"));
         leave->setObjectName(QStringLiteral("ExitPrintView"));
         leave->setAutoDefault(false);
@@ -427,9 +430,15 @@ private:
         }
         const QRectF area = panel->scene()->sceneRect();
         const QSizeF size = panel->content()->sizeHint();
-        // unten rechts über der Timeline
-        panel->setGeometry(
-            freeSpot(panel, QRectF(area.right() - size.width() - 24, area.bottom() - size.height() - 96, size.width(), size.height()), false));
+        // Rechts unter dem ViewCube wie die Sketch Palette (vorher unten rechts: anders als jedes andere Modus-Panel)
+        constexpr qreal m = Gui::Shell::Token::WindowInset;
+        qreal top = area.top() + 170;
+        for (QGraphicsItem* item : panel->scene()->items()) {
+            if (auto cube = dynamic_cast<Gui::Shell::ViewCube*>(item); cube && cube->isVisible()) {
+                top = cube->sceneBoundingRect().bottom() + m;
+            }
+        }
+        panel->setGeometry(freeSpot(panel, QRectF(area.right() - size.width() - m, top, size.width(), size.height()), true));
     }
 
     QPointer<Gui::Shell::GlassPanel> panel;  // stirbt mit der Szene eines geschlossenen Designs

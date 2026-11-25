@@ -218,12 +218,12 @@ QLabel#NoteTitle { color: @noteLabel; }
 QPlainTextEdit#NoteText QScrollBar::handle { background: @noteScrollbar; }
 QToolButton#NoteClose:focus { border-color: @focusRing; }
 
-/* Prominent-Button (Akzentfläche): Kapsel 30 hoch, 16 seitlich, Callout SemiBold, Hover 1 px Weiß 35 %, gedrückt 15 % dunkler */
-QToolButton#GlassProminent, QPushButton#Prominent { border: 1px solid transparent; border-radius: 15px; background: @accent; color: @labelOnAccent;
+/* Prominent-Button (Akzentfläche; auch "Druckansicht verlassen" wie "Skizze fertig stellen"): Kapsel 30 hoch, 16 seitlich, Callout SemiBold, Hover 1 px Weiß 35 %, gedrückt 15 % dunkler */
+QToolButton#GlassProminent, QPushButton#Prominent, QPushButton#ExitPrintView { border: 1px solid transparent; border-radius: 15px; background: @accent; color: @labelOnAccent;
     font-weight: 600; padding: 0 15px; min-height: 28px; }
-QToolButton#GlassProminent:hover, QPushButton#Prominent:hover { border-color: @hoverRim; }
-QToolButton#GlassProminent:pressed, QPushButton#Prominent:pressed { background: @accentPressed; }
-QToolButton#GlassProminent:focus, QPushButton#Prominent:focus { border: 2px solid @focusRing; padding: 0 14px; }
+QToolButton#GlassProminent:hover, QPushButton#Prominent:hover, QPushButton#ExitPrintView:hover { border-color: @hoverRim; }
+QToolButton#GlassProminent:pressed, QPushButton#Prominent:pressed, QPushButton#ExitPrintView:pressed { background: @accentPressed; }
+QToolButton#GlassProminent:focus, QPushButton#Prominent:focus, QPushButton#ExitPrintView:focus { border: 2px solid @focusRing; padding: 0 14px; }
 
 QFrame#TimelineMarker { background: @accent; border-radius: 2px; }
 /* Befehlssuche (MyStyle 9.1/9.3): Feld fill.tertiary r 8 mit Fokusring, Treffer wie Seitenleisten-Zeilen */
