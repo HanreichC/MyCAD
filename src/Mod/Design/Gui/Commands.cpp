@@ -6128,7 +6128,7 @@ private:
                                 .toStdString());
         doc->recompute();
         doc->commitTransaction();
-        Gui::Command::doCommand(Gui::Command::Gui, "Gui.SendMsgToActiveView('ViewFit')");
+        Gui::Application::Instance->sendMsgToActiveView("ViewFit");  // die Python-Form ist veraltet und warnte sichtbar
     }
 };
 

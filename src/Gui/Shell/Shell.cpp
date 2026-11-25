@@ -2184,7 +2184,7 @@ private:
         catch (const Base::Exception& e) {
             e.reportException();
         }
-        Command::doCommand(Command::Gui, "Gui.SendMsgToActiveView('ViewFit')");
+        Application::Instance->sendMsgToActiveView("ViewFit");  // die Python-Form ist veraltet und warnte sichtbar
     }
 
     void runAndHide(const char* command)
