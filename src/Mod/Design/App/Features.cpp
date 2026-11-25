@@ -4771,6 +4771,64 @@ std::string closestElement(const Part::TopoShape& shape, const std::string& name
     }
     return best;
 }
+/// Teilstücke einer geteilten ebenen Fläche: face und die Flächen derselben Ebene, die über Kanten zusammenhängen.
+/// Leer, wenn sie zusammen nicht genau die Fläche des Hinweises ergeben (Größe und Schwerpunkt)
+std::vector<TopoDS_Shape> splitPieces(const TopoDS_Shape& shape, const TopoDS_Face& face, const std::string& hint)
+{
+    std::istringstream in(hint);
+    double x = 0, y = 0, z = 0, size = 0;
+    if (!(in >> x >> y >> z >> size) || size <= 0) {
+        return {};
+    }
+    BRepAdaptor_Surface surface(face);
+    if (surface.GetType() != GeomAbs_Plane) {
+        return {};
+    }
+    const gp_Pln plane = surface.Plane();
+    GProp_GProps own;
+    BRepGProp::SurfaceProperties(face, own);
+    if (std::abs(own.Mass() - size) < 1e-3 * std::max(1.0, size)) {
+        return {};  // nicht kleiner geworden: nicht geteilt
+    }
+    TopTools_IndexedDataMapOfShapeListOfShape facesOf;
+    TopExp::MapShapesAndAncestors(shape, TopAbs_EDGE, TopAbs_FACE, facesOf);
+    std::vector<TopoDS_Shape> pieces {face};
+    TopTools_IndexedMapOfShape inside;
+    inside.Add(face);
+    for (size_t k = 0; k < pieces.size(); ++k) {
+        for (TopExp_Explorer e(pieces[k], TopAbs_EDGE); e.More(); e.Next()) {
+            const int at = facesOf.FindIndex(e.Current());
+            if (at == 0) {
+                continue;
+            }
+            for (TopTools_ListIteratorOfListOfShape it(facesOf(at)); it.More(); it.Next()) {
+                const TopoDS_Face next = TopoDS::Face(it.Value());
+                if (inside.Contains(next)) {
+                    continue;
+                }
+                BRepAdaptor_Surface s(next);
+                if (s.GetType() == GeomAbs_Plane && s.Plane().Axis().Direction().IsParallel(plane.Axis().Direction(), 1e-9)
+                    && plane.Distance(s.Plane().Location()) < 1e-6) {
+                    inside.Add(next);
+                    pieces.push_back(next);
+                }
+            }
+        }
+    }
+    double area = 0;
+    gp_XYZ moment;
+    for (const auto& piece : pieces) {
+        GProp_GProps p;
+        BRepGProp::SurfaceProperties(piece, p);
+        area += p.Mass();
+        moment += p.CentreOfMass().XYZ() * p.Mass();
+    }
+    const gp_XYZ centre = area > 0 ? moment / area : gp_XYZ();
+    if (std::abs(area - size) > 1e-3 * std::max(1.0, size) || (centre - gp_XYZ(x, y, z)).Modulus() > 1e-3 * (1 + std::sqrt(size))) {
+        return {};
+    }
+    return pieces;
+}
 }  // namespace
 
 std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type, size_t body)
@@ -4790,6 +4848,7 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
         WarnedHints.setValues(std::vector<std::string>());  // bestätigt ("Sieht richtig aus") oder nie gewarnt
     }
     std::vector<std::string> uncertain;
+    std::vector<std::vector<TopoDS_Shape>> extra(names.size());  ///< weitere Teilstücke einer geteilten Fläche
     App::DocumentObject* base = BaseFeatures.getSize() > int(body) ? BaseFeatures.getValues()[body] : nullptr;
     for (size_t i = 0; i < names.size(); ++i) {
         if (!mine(i)) {
@@ -4829,7 +4888,13 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
                 }
                 if (!among.empty()) {
                     const std::string best = among.size() > 1 ? closestElement(shape, names[i], hints[i], among) : "";
-                    names[i] = best.empty() ? among.front() : best;
+                    const std::string related = best.empty() ? among.front() : best;
+                    // Die Entstehungsgeschichte nannte ein Element, das ganz anders aussieht als gespeichert (ConceptKey:
+                    // statt der Randfläche eine 57-mm²-Fläche weiter unten, still), und genau ein Element liegt unverändert
+                    // an der alten Stelle: das ist es. Sonst gilt die Geschichte (die Fläche hat sich wirklich verändert)
+                    bool exact = false;
+                    const std::string same = looksSame(related) ? "" : closestElement(shape, names[i], hints[i], {}, &exact);
+                    names[i] = exact ? same : related;  // gewachsene Oberseite nach Löschen einer Rundung: die Geschichte
                     found = true;
                 }
             }
@@ -4853,6 +4918,21 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
             maps[i] = mapped.toString();
         }
         const TopoDS_Shape sub = shape.getSubShape(names[i].c_str(), true);
+        // Fläche durch eine Änderung weiter vorn geteilt (Linie quer durch die Grundskizze): der Name trifft nur ein
+        // Teilstück. Ergeben es und seine Nachbarn in derselben Ebene genau die alte Fläche (Größe und Schwerpunkt wie
+        // gespeichert), alle Teile nehmen; der Hinweis bleibt der der ganzen Fläche. Vorher zog Drücken/Ziehen still nur
+        // ein Stück (ConceptKey, Härtetest Seeds 4/9: Basis −10 cm³)
+        if (!sub.IsNull() && sub.ShapeType() == TopAbs_FACE && !hints[i].empty()) {
+            const auto pieces = splitPieces(shape.getShape(), TopoDS::Face(sub), hints[i]);
+            if (pieces.size() > 1) {
+                for (const TopoDS_Shape& piece : pieces) {
+                    if (!piece.IsSame(sub)) {
+                        extra[i].push_back(piece);
+                    }
+                }
+                continue;  // Hinweis der ganzen Fläche behalten
+            }
+        }
         if (!sub.IsNull()) {
             hints[i] = elementHint(sub);
         }
@@ -4901,6 +4981,11 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
         for (const auto& el : sub.isNull() ? std::vector<Part::TopoShape>() : sub.getSubTopoShapes(type)) {
             if (seen.Add(el.getShape()) == seen.Extent()) {
                 result.push_back(el);
+            }
+        }
+        for (const TopoDS_Shape& piece : extra[i]) {
+            if (seen.Add(piece) == seen.Extent()) {
+                result.push_back(shape.getSubTopoShape(TopAbs_FACE, shape.findShape(piece)));
             }
         }
     }

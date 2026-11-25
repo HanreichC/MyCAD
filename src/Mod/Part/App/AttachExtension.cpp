@@ -455,6 +455,7 @@ bool AttachExtension::refindFace(bool misplaced, bool* turned)
     const gp_Pnt origin(plane.getPosition().x, plane.getPosition().y, plane.getPosition().z);
     // Wo das Objekt liegt: Mitte seiner Form (Skizzenlinien, Ebene), sonst der Ursprung der Ebene
     gp_Pnt near = origin;
+    double reach = 1e-6;  // so weit darf das Objekt neben der Fläche liegen (Skizze knapp unter der Kante: 5 % ihrer Größe)
     if (auto feature = dynamic_cast<Part::Feature*>(owner)) {
         const TopoDS_Shape own = feature->Shape.getValue();
         if (!own.IsNull()) {
@@ -462,6 +463,7 @@ bool AttachExtension::refindFace(bool misplaced, bool* turned)
             BRepGProp::LinearProperties(own, props);
             if (props.Mass() > 0) {
                 near = props.CentreOfMass();
+                reach = std::max(reach, 0.05 * feature->Shape.getBoundingBox().CalcDiagonalLength());
             }
         }
     }
@@ -534,7 +536,7 @@ bool AttachExtension::refindFace(bool misplaced, bool* turned)
         }
         // Name zeigt auf eine andere Fläche: nur eine Fläche nehmen, auf der das Objekt wirklich liegt (sonst ist der
         // Körper nur höher/tiefer geworden und das Objekt folgt der benannten Fläche wie bisher)
-        if (!bestIndex || (misplaced && best > 1e-6)) {
+        if (!bestIndex || (misplaced && best > reach)) {
             return false;
         }
         subs[i] = "Face" + std::to_string(bestIndex);
