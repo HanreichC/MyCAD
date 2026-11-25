@@ -281,10 +281,11 @@ public:
     };
     static Regions computeRegions(const TopoDS_Shape& localSketchShape);
 
-    /// Profile vor der letzten Skizzenänderung (nur im Speicher): ein Schritt, dessen Profil geteilt wurde, nimmt die
-    /// neuen Flächen, die genau darin liegen
-    Part::TopoShape previousShape;
-    std::vector<std::string> previousSignatures;
+    /// Profile vor der letzten Skizzenänderung: ein Schritt, dessen Profil geteilt wurde, nimmt die neuen Flächen, die
+    /// genau darin liegen. In der Datei gespeichert: nur im Speicher fiel die erste Änderung nach dem Öffnen auf die
+    /// Kanten-Ähnlichkeit zurück und nahm still falsche Flächen (ConceptKey: Grundplatte 86 -> 9 cm³)
+    Part::PropertyPartShape PreviousShape;
+    App::PropertyStringList PreviousSignatures;
 
 private:
     /// Signaturen aus festen IDs übernehmen; bei denselben Bereichen die Schlüssel der Schritte übersetzen

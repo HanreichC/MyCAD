@@ -233,7 +233,8 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
             // damit es nach dem nächsten Rechnen und nach dem Laden genauso bleibt.
             // Alte Fläche(n): das Profil selbst oder, schon einmal geteilt, seine Teile (mehrmals hintereinander in
             // derselben Skizze gearbeitet: sonst fand die zweite Teilung nur das Original nicht und das Profil war weg)
-            const auto& before = profiles->previousSignatures;
+            const auto& before = profiles->PreviousSignatures.getValues();
+            const Part::TopoShape previous = profiles->PreviousShape.getShape();
             std::vector<std::string> oldSigs(split.begin(), split.end());
             if (oldSigs.empty()) {
                 oldSigs.push_back(known[i]);
@@ -243,10 +244,10 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
             builder.MakeCompound(old);
             double oldArea = 0;
             std::set<std::string> ownTokens;
-            if (!profiles->previousShape.isNull()) {
+            if (!previous.isNull()) {
                 for (size_t k = 0; k < before.size(); ++k) {
                     if (std::ranges::find(oldSigs, before[k]) != oldSigs.end()) {
-                        const TopoDS_Shape face = faceOf(profiles->previousShape, k).getShape();
+                        const TopoDS_Shape face = faceOf(previous, k).getShape();
                         builder.Add(old, face);
                         oldArea += area(face);
                         std::stringstream in(before[k]);
@@ -3891,6 +3892,10 @@ Profiles::Profiles()
     ADD_PROPERTY_TYPE(Sketch, (nullptr), "Design", App::Prop_None, "Sketch whose closed regions are offered");
     ADD_PROPERTY_TYPE(Signatures, (), "Design", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
                       "Bounding sketch edges of each profile");
+    ADD_PROPERTY_TYPE(PreviousShape, (TopoDS_Shape()), "Design", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Profiles before the last sketch change");
+    ADD_PROPERTY_TYPE(PreviousSignatures, (), "Design", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Signatures of the profiles before the last sketch change");
 }
 
 Profiles* Profiles::forSketch(App::DocumentObject* sketch)
@@ -3977,8 +3982,8 @@ void Profiles::adopt(Regions& regions, const Part::TopoShape& sketchShape)
         }
     }
     if (old != regions.signatures) {
-        previousShape = Shape.getShape();
-        previousSignatures = old;
+        PreviousShape.setValue(Shape.getShape());
+        PreviousSignatures.setValues(old);
     }
     Signatures.setValues(regions.signatures);
 }

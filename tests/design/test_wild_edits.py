@@ -44,3 +44,22 @@ class WildEdits(DesignTest):
         self.doc.recompute()
         self.assertEqual(join.Warning, "")
         self.assertAlmostEqual(b.Shape.Volume, 40 * 20 * 10 + 30 * 1 * 3, places=3)
+
+    def test_after_reopening_the_old_profile_is_still_known(self):
+        """Die Flächen von vorher stehen in der Datei: nach dem Öffnen nimmt ein Kreis über den Profilrand nicht still das
+        Stück außerhalb mit (ConceptKey: die erste Änderung nach dem Öffnen ließ die Grundplatte schrumpfen)"""
+        import os, tempfile
+        base = sketch(self.doc, rect(0, 0, 80, 50))
+        base.addGeometry(Part.LineSegment(V(40, -10, 0), V(40, 60, 0)))  # einmal geteilt: die Flächen von vorher entstehen
+        ext, b = extrude(self.doc, base, 10)
+        self.doc.recompute()
+        full = b.Shape.Volume
+        path = os.path.join(tempfile.mkdtemp(), "reopen.FCStd")
+        self.doc.saveAs(path)
+        names = base.Name, b.Name
+        App.closeDocument(self.doc.Name)
+        self.doc = App.openDocument(path)
+        base, b = (self.doc.getObject(n) for n in names)
+        base.addGeometry(Part.Circle(V(80, 50, 0), V(0, 0, 1), 6))  # um die Ecke, ragt nach außen
+        self.doc.recompute()
+        self.assertAlmostEqual(b.Shape.Volume, full, places=3)
