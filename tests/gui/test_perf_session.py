@@ -129,11 +129,12 @@ def enter():
 
 
 def fillet_open():
+    """hintere obere Kante der Platte (gut sichtbar in der Iso-Ansicht) wählen, Rundung öffnen"""
     b = S["body"]
     for i, e in enumerate(b.Shape.Edges, 1):
         m = e.valueAt((e.FirstParameter + e.LastParameter) / 2)
-        if abs(m.z - 22) < 1e-6 and abs(m.y - 30) < 1e-3 and abs(m.x - 100) < 1e-3:
-            Gui.Selection.clearSelection(); click_at(m); break
+        if abs(m.z - 12) < 1e-6 and abs(m.y - 80) < 1e-3:
+            Gui.Selection.clearSelection(); Gui.Selection.addSelection(doc().Name, b.Name, "Edge%d" % i); break
     click(button("Design_Fillet"))
 
 
