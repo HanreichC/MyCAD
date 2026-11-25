@@ -685,8 +685,8 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
   behalten Nummer und Richtung; Rundung/Drücken/Ziehen nehmen keine fremde Fläche, geteilte Flächen ganz; Mini-Kanten
   vor jedem Prisma weg; Teile eines geteilten Profils wieder zu einer Fläche (auch Kanten vereinheitlicht).
   `test_stress_profiles` läuft Seed 3 im Kleinen in den Design-Tests mit.
-- [ ] Lehre aus ConceptKey 25.11. ((1) erledigt mit c8ce3011, PreviousShape/-Signatures in der Datei; (2) mit 31617a82,
-  Flächen über die Lage; offen nur (3)): (1) Nach dem Laden kennt Profiles die Flächen von vorher nicht (nur im Speicher);
+- [x] Lehre aus ConceptKey 25.11. ((1) erledigt mit c8ce3011, PreviousShape/-Signatures in der Datei; (2) mit 31617a82,
+  Flächen über die Lage; (3) am 26.11. wie Fusion, mit Christopher abgestimmt: roter Schritt reicht durch): (1) Nach dem Laden kennt Profiles die Flächen von vorher nicht (nur im Speicher);
   die erste Skizzenänderung nach dem Öffnen fällt auf die Kanten-Ähnlichkeit zurück, und die nahm still falsche
   Flächen (Grundplatte 86 -> 9 cm³ ohne Warnung). Die Flächen der gewählten Profile mit dem Schritt speichern.
   (2) Skizzen/Ebenen auf Körperflächen über die Lage wiederfinden (Ebene + größte Überdeckung), nicht über die

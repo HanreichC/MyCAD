@@ -8,7 +8,7 @@ from test_hole import hole
 
 
 def survives(test, f, body, before):
-    """kein Absturz (wir sind noch hier); fehlgeschlagen = rot und der Körper hat sein altes Volumen"""
+    """kein Absturz (wir sind noch hier); fehlgeschlagen = rot und der Körper geht ohne den Schritt weiter (before)"""
     test.doc.recompute()
     if not f.isValid():
         test.assertTrue(f.getStatusString(), f.Name)
@@ -36,14 +36,12 @@ class Impossible(DesignTest):
     def test_fillet_grows_until_impossible(self):
         b, v = self.block()
         f = dress(self.doc, "Design::Fillet", b, ["Edge1", "Edge2"], Size=1)
-        good = b.Shape.Volume
         for size in (3, 5, 9, 14, 30):
             f.Size = size
             self.doc.recompute()
-            if f.isValid():
-                good = b.Shape.Volume
-            # gescheitert: der Körper behält die letzte gelungene Rundung
-            survives(self, f, b, good)
+            # gescheitert: wie Fusion geht der Körper ohne die rote Rundung weiter (Phase 14; früher blieb die letzte
+            # gelungene stehen, und alles danach hielt an)
+            survives(self, f, b, v)
 
     def test_chamfer_next_to_fillet(self):
         b, v = self.block()

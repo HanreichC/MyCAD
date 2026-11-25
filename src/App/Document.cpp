@@ -2969,6 +2969,18 @@ int Document::recompute(const std::vector<DocumentObject*>& objs,
                             passes = 2;
                             break;
                         }
+                        // MyCAD (Phase 14, wie Fusion): ein Design-Schritt ist rot, reicht aber seinen Vorzustand
+                        // durch (Design::Feature::execute); die Abhängigen rechnen damit weiter statt anzuhalten.
+                        // ponytail: am Typnamen erkannt, damit DocumentObject.h (überall eingebunden) gleich bleibt;
+                        // bei mehr solchen Typen eine virtuelle Methode in DocumentObject
+                        static const Base::Type designFeature = Base::Type::fromName("Design::Feature");
+                        if (!designFeature.isBad() && obj->isDerivedFrom(designFeature)) {
+                            filter.insert(obj);
+                            for (auto inObj : obj->getInList()) {
+                                inObj->enforceRecompute();
+                            }
+                            continue;
+                        }
                         // if something happened filter all object in its
                         // inListRecursive from the queue then proceed
                         obj->getInListEx(filter, true);

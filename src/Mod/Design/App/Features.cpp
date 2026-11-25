@@ -4262,6 +4262,15 @@ App::DocumentObjectExecReturn* Feature::execute()
     if (result == StdReturn && std::string(Warning.getValue()) == LostProfile) {
         Warning.setValue("");  // wieder ein Profil gewählt
     }
+    if (result && result != StdReturn) {
+        // Phase 14, wie Fusion: rot (der Fehler bleibt), aber der Körper geht ohne diesen Schritt weiter; die späteren
+        // Schritte rechnen damit (recomputeDependentsOnError), statt alle anzuhalten
+        std::vector<Part::TopoShape> results;
+        for (int i = 0; i < Bodies.getSize(); ++i) {
+            results.push_back(baseShape(i));
+        }
+        setResults(results);
+    }
     return result;
 }
 

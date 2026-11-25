@@ -330,6 +330,8 @@ public:
     /// Ergebnis dieses Features für einen der betroffenen Bodies
     Part::TopoShape shapeFor(const App::DocumentObject* body) const;
 
+    /// Phase 14, wie Fusion: ein scheiternder Schritt ist rot, reicht den Körper aber durch; die späteren rechnen weiter
+    /// (App::Document::recompute erkennt Design::Feature dafür)
     App::DocumentObjectExecReturn* execute() override;
 
     /// Werkzeugkörper (Extrude, Revolve, Hole), z. B. für Pattern
