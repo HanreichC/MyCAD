@@ -427,18 +427,45 @@ short int AttachExtension::extensionMustExecute()
 
 App::DocumentObjectExecReturn* AttachExtension::extensionExecute()
 {
+    // MyCAD: findet eine Skizze oder Ebene ihre Fläche nicht mehr (der Körper darunter hat sich geändert), bleibt sie
+    // an ihrem Platz und warnt (Timeline, Hinweis oben rechts), statt als Fehler alles danach zu blockieren: sonst
+    // rechnete nichts mehr, eine neue Skizze erschien erst nach einem Neustart und mit alten Linien (ConceptKey).
+    // Wie Extrude bei verlorenem Profil.
+    static constexpr const char* faceLost =
+        "Face gone: the face this was drawn on no longer exists; it stays where it was";
+    App::DocumentObject* owner = getExtendedObject();
+    auto warning = dynamic_cast<App::PropertyString*>(owner->getPropertyByName("Warning"));
+    const auto keepPlace = [&](const char* why) {
+        if (AttachmentSupport.getValues().empty()) {
+            return false;
+        }
+        Base::Console().warning("{}: {}\n", owner->getFullName(), why);
+        if (!warning) {
+            warning = static_cast<App::PropertyString*>(owner->addDynamicProperty(
+                "App::PropertyString", "Warning", "Design", "Hint without an error (stays until confirmed)",
+                App::Prop_Hidden));
+        }
+        if (std::string(warning->getValue()) != faceLost) {
+            warning->setValue(faceLost);
+        }
+        return true;
+    };
     if (this->isTouched_Mapping()) {
         try {
             positionBySupport();
-            // we let all Base::Exceptions thru, so that App:DocumentObject can take appropriate
-            // action
-            /*} catch (Base::Exception &e) {
-                return new App::DocumentObjectExecReturn(e.what());*/
-            // Convert OCC exceptions to Base::Exception
+            if (warning && std::string(warning->getValue()) == faceLost) {
+                warning->setValue("");  // Fläche wieder da
+            }
+        }
+        catch (Base::Exception& e) {
+            if (!keepPlace(e.what())) {
+                throw;
+            }
         }
         catch (Standard_Failure& e) {
-            throw Base::RuntimeError(e.GetMessageString());
-            //            return new App::DocumentObjectExecReturn(e.GetMessageString());
+            if (!keepPlace(e.GetMessageString())) {
+                throw Base::RuntimeError(e.GetMessageString());
+            }
         }
     }
     return App::DocumentObjectExtension::extensionExecute();

@@ -652,6 +652,11 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
 - Neuer Kreis um ein vorhandenes Loch (oder über den Profilrand) veränderte den extrudierten Körper und schrieb die
   Schlüssel dauerhaft um (ConceptKey: Löcher 2,6 -> 3,8 mm). Jetzt über die Lage: die Teile im alten Profil, die es
   genau füllen; ein freier neuer Kreis bleibt ein Loch, eine Kerbe lässt das Rechteck ganz.
+- ConceptKey 25.11. (chaotisch in alten Skizzen weitergearbeitet): ein zweites Teilen desselben Profils, neue Inseln
+  (Versätze) darin und eine Skizze, die ihre Fläche verlor, ließen das ganze Modell stehen (neue Skizzen erschienen
+  erst nach Neustart, mit alten Linien). Jetzt: Teile dürfen weiter geteilt werden, Inseln zählen zur Fläche, Skizzen
+  und Ebenen ohne Fläche bleiben an ihrem Platz mit Warnung, „Sketch has no closed profile“ eines Schritts mit Profil
+  und Flächen teilen ohne Treffer sind Warnungen (`test_wild_edits`).
 - „Alles einpassen“ lief zweimal hintereinander und dauerte auf langsamer Grafik bis 0,5 s: jetzt eine Fahrt, fest
   0,2 s (Software-OpenGL: 535 -> 212 ms Blockade).
 - Nach einer drastischen Änderung und Rückgängig blieb „Das Modell hat sich geändert“ an der Rundung stehen; jetzt geht
@@ -669,6 +674,12 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
   Flächen des Körpers heißen danach anders): „subshape not found …Face29“, „Sketch has no closed profile“, ein Schnitt
   trifft nicht mehr; einmal (Seed 1, Linie in PCB001) auch nach dem Zurücksetzen der Skizze noch kaputt. Die
   Profil-Zuordnung selbst hält in diesen Fällen. Ziel: alle Seeds 1–10 mit je 40 Versuchen grün.
+- [ ] Lehre aus ConceptKey 25.11.: (1) Nach dem Laden kennt Profiles die Flächen von vorher nicht (nur im Speicher);
+  die erste Skizzenänderung nach dem Öffnen fällt auf die Kanten-Ähnlichkeit zurück, und die nahm still falsche
+  Flächen (Grundplatte 86 -> 9 cm³ ohne Warnung). Die Flächen der gewählten Profile mit dem Schritt speichern.
+  (2) Skizzen/Ebenen auf Körperflächen über die Lage wiederfinden (Ebene + größte Überdeckung), nicht über die
+  Flächennummer; die Reparatur am 25.11. hat das per Skript getan (Skizze001–004, Ebene). (3) Überlegen: wie Fusion
+  jeden scheiternden Schritt überspringen (Warnung, Körper durchreichen), statt dass ein Fehler alles danach anhält.
 
 ### 4.3 Frühere Phasen (Archiv)
 

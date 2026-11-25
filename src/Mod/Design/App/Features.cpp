@@ -228,35 +228,53 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
             // und es zusammen genau füllen. Über die Lage, nicht über die Kanten: ein Kreis über den Rand grenzt außen an
             // dieselben Kanten wie innen und wurde sonst mitgenommen (Härtetest ConceptKey). Die Teile in den Schlüssel,
             // damit es nach dem nächsten Rechnen und nach dem Laden genauso bleibt.
+            // Alte Fläche(n): das Profil selbst oder, schon einmal geteilt, seine Teile (mehrmals hintereinander in
+            // derselben Skizze gearbeitet: sonst fand die zweite Teilung nur das Original nicht und das Profil war weg)
             const auto& before = profiles->previousSignatures;
-            if (std::ranges::count(before, known[i]) == 1 && !profiles->previousShape.isNull()) {
-                const TopoDS_Shape old =
-                    faceOf(profiles->previousShape, std::ranges::find(before, known[i]) - before.begin()).getShape();
-                const double oldArea = area(old);
-                std::vector<size_t> inside;
-                double sum = 0;
-                const auto mineTokens = [&](const std::string& sig) {
-                    std::stringstream in(sig), own(known[i]);
-                    std::set<std::string> ownSet;
-                    for (std::string t; std::getline(own, t, ',');) {
-                        ownSet.insert(t);
+            std::vector<std::string> oldSigs(split.begin(), split.end());
+            if (oldSigs.empty()) {
+                oldSigs.push_back(known[i]);
+            }
+            TopoDS_Compound old;
+            BRep_Builder builder;
+            builder.MakeCompound(old);
+            double oldArea = 0;
+            std::set<std::string> ownTokens;
+            if (!profiles->previousShape.isNull()) {
+                for (size_t k = 0; k < before.size(); ++k) {
+                    if (std::ranges::find(oldSigs, before[k]) != oldSigs.end()) {
+                        const TopoDS_Shape face = faceOf(profiles->previousShape, k).getShape();
+                        builder.Add(old, face);
+                        oldArea += area(face);
+                        std::stringstream in(before[k]);
+                        for (std::string t; std::getline(in, t, ',');) {
+                            ownTokens.insert(t);
+                        }
                     }
+                }
+            }
+            if (oldArea > 0) {
+                std::vector<size_t> inside;
+                double sum = 0;  // Teile und neue Inseln zusammen füllen das alte Profil
+                const auto mineTokens = [&](const std::string& sig) {
+                    std::stringstream in(sig);
                     for (std::string t; std::getline(in, t, ',');) {
-                        if (ownSet.contains(t)) {
+                        if (ownTokens.contains(t)) {
                             return true;
                         }
                     }
                     return false;
                 };
                 for (size_t k = 0; k < signatures.size(); ++k) {
-                    if (!mineTokens(signatures[k])) {
-                        continue;  // nur neue Kanten: eine neue Insel, der Kreis hinein bleibt ein Loch (wie Fusion)
-                    }
                     const TopoDS_Shape face = faceOf(all, k).getShape();
                     const double a = area(face);
                     if (a > 0 && area(BRepAlgoAPI_Common(face, old).Shape()) > 0.999 * a) {
-                        inside.push_back(k);
                         sum += a;
+                        // nur neue Kanten: eine neue Insel (Kreis, Versatz hinein), bleibt ein Loch (wie Fusion); sie
+                        // zählt aber zur Fläche, sonst galt das ganze Profil als verloren (ConceptKey)
+                        if (mineTokens(signatures[k])) {
+                            inside.push_back(k);
+                        }
                     }
                 }
                 if (!inside.empty() && std::abs(sum - oldArea) <= 1e-6 * (1 + oldArea)) {
@@ -376,8 +394,9 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
     if (faces.empty()) {
         // Gewählte Profile gibt es nach einer Änderung der Skizze nicht mehr: eigener Text, Feature::execute macht
         // daraus eine Warnung und reicht den Körper durch (sonst blockierte der Fehler alle Schritte danach)
-        error = subs.empty() || all.isNull() || all.countSubShapes(TopAbs_FACE) == 0 ? "Sketch has no closed profile"
-                                                                                       : LostProfile;
+        // Hatte der Schritt ein Profil, ist es verloren (Warnung, der Körper geht durch), auch wenn die Skizze gerade
+        // gar keins mehr schließt (projizierte Kanten weg): als Fehler blockierte es alles danach (ConceptKey)
+        error = subs.empty() ? "Sketch has no closed profile" : LostProfile;
     }
     return faces;
 }
@@ -8126,8 +8145,16 @@ App::DocumentObjectExecReturn* SplitFace::compute()
             ++added;
         }
     }
+    // Wie ein Schnitt, der nichts mehr trifft: nach einer Änderung weiter vorn Warnung und Körper durchreichen. Ein
+    // Fehler hielt alles danach an (Teilung, neue Skizzen darauf erschienen nicht; ConceptKey)
+    static constexpr const char* misses = "The tool no longer crosses the selected faces; nothing is split";
     if (!added) {
-        return new App::DocumentObjectExecReturn("The tool does not cross the selected faces");
+        setResults({shape});
+        Warning.setValue(misses);
+        return StdReturn;
+    }
+    if (std::string(Warning.getValue()) == misses) {
+        Warning.setValue("");
     }
     try {
         split.Build();

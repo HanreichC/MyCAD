@@ -999,6 +999,8 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Loses the face it lies on and stays where it is: %1", "Verliert die Fläche, auf der sie liegt, und bleibt an ihrem Platz: %1"},
         {"Loses its input and shows an error: %1", "Verliert seine Eingabe und zeigt einen Fehler: %1"},
         {"Face gone: ", "Fläche weg: "},
+        {"The tool no longer crosses the selected faces; nothing is split", "Das Werkzeug schneidet die gewählten Flächen nicht mehr; nichts wird geteilt"},
+        {"the face this was drawn on no longer exists; it stays where it was", "die Fläche, auf der das lag, gibt es nicht mehr; es bleibt an seinem Platz"},
         {"the step this sketch was drawn on was deleted; it stays where it was", "der Schritt, auf dessen Fläche diese Skizze lag, wurde gelöscht; sie bleibt an ihrem Platz"},
         {"the sketch changed and the profile of this step no longer exists; edit the step and pick a profile", "die Skizze hat sich geändert und das Profil dieses Schritts gibt es nicht mehr; Schritt bearbeiten und ein Profil wählen"},
         {"Click the face or plane to extrude to", "Klicke auf die Fläche oder Ebene, bis zu der extrudiert wird"},
