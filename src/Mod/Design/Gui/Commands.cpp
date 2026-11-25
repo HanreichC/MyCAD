@@ -3268,7 +3268,10 @@ void exportBodies(App::Document* doc)
         code = "import Mesh\nMesh.export(" + objs + ", " + target + ", tolerance=" + std::to_string(tolerances[quality]) + ")";
     }
     try {
-        Base::Interpreter().runString(("import FreeCAD as App\n" + code).c_str());
+        {
+            Gui::Shell::BusyScope busy(T("Exporting …"));  // STEP/3MF großer Modelle: Sekunden
+            Base::Interpreter().runString(("import FreeCAD as App\n" + code).c_str());
+        }
         // als Hinweis unter dem ViewCube (Benachrichtigung): die Statusleiste ist in MyCAD ausgeblendet
         const QString done = objects.size() == 1
             ? (dxf ? T("Exported 1 sketch to %1") : T("Exported 1 body to %1")).arg(file)

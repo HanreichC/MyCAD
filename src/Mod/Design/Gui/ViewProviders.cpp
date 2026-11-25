@@ -916,6 +916,11 @@ void DesignGui::showCorrections(App::Document* doc, const std::vector<Design::Co
 
 void DesignGui::setPrintView(bool on)
 {
+    // Rechnet Überhänge und dünne Wände für alle Körper: bei großen Modellen Sekunden, also zeigen, dass etwas passiert
+    std::optional<Gui::Shell::BusyScope> busy;
+    if (on) {
+        busy.emplace(T("Preparing the print view …"));
+    }
     printViewOn = on;
     refreshPrintView();
     legend().show(on);

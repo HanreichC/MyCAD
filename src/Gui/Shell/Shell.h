@@ -73,6 +73,15 @@ void setBodyMaterial(int index);
 QString projectsFolder();
 /// Idee 7: immer gespeichert (Einstellung MyCAD/AlwaysSave, an als Vorgabe)
 bool alwaysSave();
+/// Lange Aktion: "text …" mit dünnem Balken unter der Werkzeugleiste und Warte-Cursor, solange das Objekt lebt
+class BusyScope
+{
+public:
+    explicit BusyScope(const QString& text);
+    ~BusyScope();
+    BusyScope(const BusyScope&) = delete;
+    BusyScope& operator=(const BusyScope&) = delete;
+};
 /// Design ohne Rückfrage speichern; ein neues bekommt einen eigenen Ordner im Projektordner (<Name>/<Name>.mycad).
 /// Danach eine Version (DesignVersions.snapshot), mit title benannt. false, wenn das Speichern scheiterte.
 bool saveQuietly(App::Document* doc, const QString& title = QString());

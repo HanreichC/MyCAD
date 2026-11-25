@@ -2239,7 +2239,10 @@ private:
         };
         auto openFile = [this](const QString& file) {
             return [this, file] {
-                Application::Instance->open(file.toUtf8().constData(), "FreeCAD");
+                {
+                    BusyScope busy(T("Opening …"));
+                    Application::Instance->open(file.toUtf8().constData(), "FreeCAD");
+                }
                 if (anyDesignOpen()) {
                     hide();  // auch wenn die Datei schon offen war (dann gibt es kein neues Dokument)
                 }
@@ -3501,6 +3504,7 @@ struct State
     GlassPanel* collapsedBar = nullptr;  ///< Name und Seitenleisten-Knopf, solange die Seitenleiste eingeklappt ist (W-1)
     WindowControls* windowControls = nullptr;
     GlassPanel* windowPanel = nullptr;  ///< Kapsel der Fensterknöpfe
+    GlassPanel* busy = nullptr;         ///< "Wird berechnet …" unter der Werkzeugleiste (BusyScope)
     QGraphicsRectItem* titleGrip = nullptr;  ///< freie Fläche der Titelzeile verschiebt das Fenster; nur rahmenlos
     GlassPanel* browser = nullptr;
     GlassPanel* inspector = nullptr;
@@ -3535,7 +3539,8 @@ std::vector<GlassPanel*> panels()
     std::vector<GlassPanel*> all;
     // auch die Suche: sie lag sonst noch in der Szene eines geschlossenen Designs und starb mit ihr (Absturz danach)
     for (auto p : {state.header, state.browser, state.inspector, state.timeline, state.palette, state.scribblePalette,
-                   state.scribblePill, state.scribbleActions, state.collapsedBar, state.windowPanel, searchPanel, categoryPanel}) {
+                   state.scribblePill, state.scribbleActions, state.collapsedBar, state.windowPanel, state.busy, searchPanel,
+                   categoryPanel}) {
         if (p) {
             all.push_back(p);
         }
@@ -6970,3 +6975,61 @@ void Gui::Shell::setFullToolbar(bool on)
     hideCategory();
     layout();
 }
+
+namespace
+{
+int busyDepth = 0;
+QLabel* busyText = nullptr;
+}  // namespace
+
+/// Lange Aktion (Druckansicht, Export, Öffnen): Hinweis unter der Werkzeugleiste mit dünnem Akzentbalken (MyStyle
+/// "Fortschritt, unbestimmt") und Warte-Cursor, gezeichnet bevor die Arbeit den Ablauf anhält. Vorher sah man nur eine
+/// eingefrorene Oberfläche und wusste nicht, ob etwas passiert (2026-11-25). Verschachtelt: der äußere zählt.
+Gui::Shell::BusyScope::BusyScope(const QString& text)
+{
+    if (busyDepth++ > 0) {
+        return;
+    }
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    if (!state.header || !state.header->scene()) {
+        return;
+    }
+    if (!state.busy) {
+        auto content = new QWidget;
+        auto lay = new QVBoxLayout(content);
+        lay->setContentsMargins(16, 10, 16, 12);
+        lay->setSpacing(8);
+        busyText = new QLabel;
+        Gui::Shell::setTextStyle(busyText, Gui::Shell::Text::Callout);
+        lay->addWidget(busyText);
+        auto bar = new QFrame;
+        bar->setObjectName(QStringLiteral("BusyBar"));
+        bar->setFixedHeight(3);
+        bar->setStyleSheet(QStringLiteral("QFrame#BusyBar { background: %1; border-radius: 1px; }").arg(Gui::Shell::theme().accent.name()));
+        lay->addWidget(bar);
+        state.busy = new Gui::Shell::GlassPanel(content, Gui::Shell::Token::RadiusPanel);
+        state.busy->setZValue(20);
+        state.header->scene()->addItem(state.busy);
+    }
+    busyText->setText(text);
+    const QSizeF size = QSizeF(state.busy->content()->sizeHint().expandedTo(QSize(220, 0)));
+    const QRectF header = state.header->sceneBoundingRect();
+    state.busy->setGeometry(QRectF(header.center().x() - size.width() / 2, header.bottom() + Gui::Shell::Token::WindowInset, size.width(),
+                                   size.height()));
+    state.busy->setVisible(true);
+    for (int i = 0; i < 3; ++i) {  // zeichnen, bevor die Arbeit beginnt
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    }
+}
+
+Gui::Shell::BusyScope::~BusyScope()
+{
+    if (--busyDepth > 0) {
+        return;
+    }
+    if (state.busy) {
+        state.busy->setVisible(false);
+    }
+    QApplication::restoreOverrideCursor();
+}
+
