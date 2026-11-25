@@ -1541,15 +1541,21 @@ void startCombine(App::Document* doc)
 }
 
 /// Komponente verschieben/drehen: ändert direkt ihre Lage (wie das Verschieben von Komponenten in Fusion)
+/// Komponente oder Skizze verschieben/drehen. Eine Skizze bewegt sich in ihrer Ebene (X/Y der Skizze, Z entlang der
+/// Normalen, Drehung um die Normale); hängt sie an einer Fläche, ändert sich nur der Versatz dazu, sie bleibt daran.
+/// Was auf der Skizze aufbaut, geht mit. Vorher tat "Verschieben" an einer Skizze nichts (nur ein Hinweis).
 class TaskPlaceComponent: public Gui::TaskView::TaskDialog
 {
 public:
-    explicit TaskPlaceComponent(App::Part* part)
-        : part(part)
-        , start(part->Placement.getValue())
+    explicit TaskPlaceComponent(App::GeoFeature* object)
+        : object(object)
+        , attach(object->getExtensionByType<Part::AttachExtension>(true))
+        , local(freecad_cast<Part::Part2DObject*>(object) != nullptr)
     {
+        attached = attach && !attach->AttachmentSupport.getValues().empty();
+        start = attached ? attach->AttachmentOffset.getValue() : object->Placement.getValue();
         auto w = new QWidget;
-        w->setWindowTitle(T("Move Component"));
+        w->setWindowTitle(local ? T("Move Sketch") : T("Move Component"));
         auto form = new QFormLayout(w);
         auto box = [](const Base::Unit& unit) {
             auto b = new Gui::QuantitySpinBox;
@@ -1564,8 +1570,8 @@ public:
         angle = box(Base::Unit::Angle);
         form->addRow(T("X distance"), x);
         form->addRow(T("Y distance"), y);
-        form->addRow(T("Z distance"), z);
-        form->addRow(T("Rotate around Z"), angle);
+        form->addRow(local ? T("Distance from plane") : T("Z distance"), z);
+        form->addRow(local ? T("Rotate in plane") : T("Rotate around Z"), angle);
         addTaskBox(w, false);
         for (auto b : {x, y, z, angle}) {
             QObject::connect(b, qOverload<double>(&Gui::QuantitySpinBox::valueChanged), [this] { apply(); });
@@ -1577,12 +1583,12 @@ public:
     }
     bool accept() override
     {
-        part->getDocument()->commitTransaction();
+        object->getDocument()->commitTransaction();
         return true;
     }
     bool reject() override
     {
-        App::Document* doc = part->getDocument();
+        App::Document* doc = object->getDocument();
         doc->abortTransaction();
         doc->recompute();
         return true;
@@ -1595,10 +1601,20 @@ private:
             Base::Vector3d(x->value().getValue(), y->value().getValue(), z->value().getValue()),
             Base::Rotation(Base::Vector3d(0, 0, 1), angle->value().getValue() * M_PI / 180.0)
         );
-        part->Placement.setValue(move * start);
-        part->getDocument()->recompute();
+        // Skizze: in ihren eigenen Koordinaten (rechts multipliziert), Komponente: im Raum (links)
+        const Base::Placement moved = local ? start * move : move * start;
+        if (attached) {
+            attach->AttachmentOffset.setValue(moved);
+        }
+        else {
+            object->Placement.setValue(moved);
+        }
+        object->getDocument()->recompute();
     }
-    App::Part* part;
+    App::GeoFeature* object;
+    Part::AttachExtension* attach;
+    bool local;
+    bool attached = false;
     Base::Placement start;
     Gui::QuantitySpinBox *x, *y, *z, *angle;
 };
@@ -1975,8 +1991,15 @@ void startMove(App::Document* doc)
     }
     const auto bodies = selectedBodies();
     if (bodies.empty()) {
+        // Skizze gewählt (Browser, Timeline): in ihrer Ebene verschieben
+        for (auto obj : Gui::Selection().getObjectsOfType(Sketcher::SketchObject::getClassTypeId())) {
+            Gui::Selection().clearSelection();
+            doc->openTransaction("Move Sketch");
+            Gui::Control().showDialog(new TaskPlaceComponent(static_cast<App::GeoFeature*>(obj)));
+            return;
+        }
         toolHint(T("Move"),
-                                 T("Select one or more bodies or a component first."));
+                                 T("Select one or more bodies, a sketch or a component first."));
         return;
     }
     auto feature = addFeature(doc, "Design::Move", "Move", bodies.front());
