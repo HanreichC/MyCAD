@@ -38,6 +38,7 @@
 #include <BRepAlgoAPI_Splitter.hxx>
 #include <BRepAdaptor_Surface.hxx>
 #include <ShapeFix_Wireframe.hxx>
+#include <ShapeUpgrade_UnifySameDomain.hxx>
 #include <gp_Pln.hxx>
 #include <BRep_Builder.hxx>
 #include <TopoDS_Compound.hxx>
@@ -217,7 +218,11 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
             try {
                 Part::TopoShape fused(0, all.Hasher);
                 fused.makeElementFuse(pieces);
-                const Part::TopoShape merged = fused.makeElementRefine();
+                // Flächen und Kanten vereinheitlichen: eine Linie durch ein Loch ließ seinen Rand sonst in Bögen zerlegt
+                // (Projektion mit 15 statt 13 Linien, Bedingungen am Kreis widersprachen sich; Härtetest Seed 10)
+                ShapeUpgrade_UnifySameDomain unify(fused.getShape(), true, true, false);
+                unify.Build();
+                const Part::TopoShape merged(unify.Shape());
                 const auto mergedFaces = merged.getSubTopoShapes(TopAbs_FACE);
                 if (!mergedFaces.empty() && mergedFaces.size() < pieces.size()) {
                     pieces = mergedFaces;

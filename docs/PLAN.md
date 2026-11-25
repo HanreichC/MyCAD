@@ -664,8 +664,9 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
   ein paar Pixel statt 5 % der Linie; Winkel-Snap auch mit Raster; Sketcher-Info „Autoconstraints cause redundancy“
   nur ins Protokoll; Druckansicht-Panel rechts unter dem ViewCube, Knöpfe untereinander, Verlassen blau; Warte-Hinweis
   bei Druckansicht, Export und Öffnen.
-- [ ] Offen aus derselben Liste: Drehpunkt einer abgeteilten Körperhälfte (in Tests und ConceptKey richtig, Situation
-  beim Benutzer erfragen, `test_orbit_split`); Verbinden über mehrere Körper (ein Profil über Basis links/mitte/rechts).
+- Drehpunkt „Mitte des Körpers unter dem Cursor“ schaut durch durchsichtige Körper (Acrylglas über ConceptKey drehte
+  um die Mitte von allem; `test_orbit_split`). Offen: liegt ein großer undurchsichtiger Körper davor (die PCB über die
+  ganze Länge), dreht die Ansicht um dessen Mitte; das ist die Einstellung, aber vielleicht nicht gewünscht (fragen).
 - „Alles einpassen“ lief zweimal hintereinander und dauerte auf langsamer Grafik bis 0,5 s: jetzt eine Fahrt, fest
   0,2 s (Software-OpenGL: 535 -> 212 ms Blockade).
 - Nach einer drastischen Änderung und Rückgängig blieb „Das Modell hat sich geändert“ an der Rundung stehen; jetzt geht
@@ -678,17 +679,12 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
 - „Alles einpassen“ animiert noch in eigener Ereignisschleife (jetzt fest 0,2 s statt bis 0,5 s, eine Fahrt statt
   zwei). Ganz ohne Sperre ginge es nur mit einer nicht blockierenden Animation; Tests lesen die Kamera direkt danach.
 - Erstes Extrude-Panel der Sitzung ~0,2 s.
-- [ ] Härtetest `tests/design/stress_profiles.py` (ConceptKey, je 40 Zufallsänderungen). Stand 25.11. abends nach
-  „Flächen über ihre Lage wiederfinden“: Seed 5 grün, die übrigen scheitern erst nach vielen Versuchen. Offen, nach
-  Schwere:
-  1. Seed 9 (still!): Kreis an der Außenecke von „Skizze“ teilt die Randfläche; Drücken/Ziehen zieht nur das größere
-     Teil und findet nach Rückgängig nicht zur ganzen Fläche zurück (Basis −10 cm³, keine Warnung). Der verfolgte Name
-     (ElementMaps) wird beim Teilen auf das Teilstück umgeschrieben; die Hinweise (Lage/Größe) auch.
-  2. Seed 3: Kreis bei (−22,4|−78,4) in „Skizze“: Skizze001 findet Face29 nicht, Basis fällt auf 9 cm³ (Dominoeffekt).
-  3. Seeds 2/4/6/7/8: Kreis am inneren Rand (y = 13,6 bzw. −11,4): Extrusion010 (Schnitt) trifft nicht mehr, Basis
-     +15 cm³; nach Rückgängig nur „Lost reference: Face3“ an Skizze002/003.
-  4. Seeds 1/10: nur eine Warnung „Fläche weg“ an Skizze002, kein Schaden; verschwindet beim Rückgängig.
-  Ziel bleibt: Seeds 1–10 grün.
+- [x] Härtetest `tests/design/stress_profiles.py` (ConceptKey, je 40 Zufallsänderungen): Seeds 1–15 grün (25.11.).
+  Nötig waren: Anheftung bei FreeCADs automatischer Umbenennung prüfen statt sofort springen; Außennormale (linke und
+  rechte Wand); Projektion in der Ebene der Skizze wiederfinden und vorhandene Linien umschreiben; projizierte Linien
+  behalten Nummer und Richtung; Rundung/Drücken/Ziehen nehmen keine fremde Fläche, geteilte Flächen ganz; Mini-Kanten
+  vor jedem Prisma weg; Teile eines geteilten Profils wieder zu einer Fläche (auch Kanten vereinheitlicht).
+  `test_stress_profiles` läuft Seed 3 im Kleinen in den Design-Tests mit.
 - [ ] Lehre aus ConceptKey 25.11.: (1) Nach dem Laden kennt Profiles die Flächen von vorher nicht (nur im Speicher);
   die erste Skizzenänderung nach dem Öffnen fällt auf die Kanten-Ähnlichkeit zurück, und die nahm still falsche
   Flächen (Grundplatte 86 -> 9 cm³ ohne Warnung). Die Flächen der gewählten Profile mit dem Schritt speichern.

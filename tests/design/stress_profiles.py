@@ -4,8 +4,7 @@ quer, Kreis um einen Eckpunkt) und prüft: kein Körper ändert sich, keine Warn
 ist alles wie vorher. Hält beim ersten Fehler an.
   podman run --rm -v "$PWD:/workspace" -w /workspace -e FILE="tests/projects/ConceptKey press pull.mycad" -e SEED=1 \
       -e N=40 mycad-dev build/bin/FreeCADCmd tests/design/stress_profiles.py
-Stand 2026-11-24: findet noch Skizzen auf Körperflächen, die ihren Halt verlieren, wenn ein Profil darunter geteilt
-wird (Flächen-Namen ändern sich), siehe docs/PLAN.md."""
+Stand 2026-11-25: Seeds 1–15 je 40 Versuche grün (test_stress_profiles läuft Seed 3 im Kleinen mit)."""
 import FreeCAD as App, Part, Design, random, os, sys, math
 V = App.Vector
 SEED = int(os.environ.get("SEED", "1")); N = int(os.environ.get("N", "40"))
