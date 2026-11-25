@@ -657,6 +657,15 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
   erst nach Neustart, mit alten Linien). Jetzt: Teile dürfen weiter geteilt werden, Inseln zählen zur Fläche, Skizzen
   und Ebenen ohne Fläche bleiben an ihrem Platz mit Warnung, „Sketch has no closed profile“ eines Schritts mit Profil
   und Flächen teilen ohne Treffer sind Warnungen (`test_wild_edits`).
+- Bug-Liste 25.11. abends: CI `test_workflow_sketch` (Kerbe lässt das Rechteck ganz, Test auf echtes L umgestellt);
+  Verbinden ganz im Körper warnt („Fügt nichts hinzu“, ConceptKey 1-mm-Versatz unter dem Rand); Verschieben einer
+  Skizze; Profile von vorher in der Datei (keine still falschen Flächen nach dem Öffnen); Flächen über ihre Lage
+  wiederfinden (Anheftung, Projektion samt Reihenfolge/Richtung der Linien, Rundung/Drücken/Ziehen); Mittelpunkt-Fang
+  ein paar Pixel statt 5 % der Linie; Winkel-Snap auch mit Raster; Sketcher-Info „Autoconstraints cause redundancy“
+  nur ins Protokoll; Druckansicht-Panel rechts unter dem ViewCube, Knöpfe untereinander, Verlassen blau; Warte-Hinweis
+  bei Druckansicht, Export und Öffnen.
+- [ ] Offen aus derselben Liste: Drehpunkt einer abgeteilten Körperhälfte (in Tests und ConceptKey richtig, Situation
+  beim Benutzer erfragen, `test_orbit_split`); Verbinden über mehrere Körper (ein Profil über Basis links/mitte/rechts).
 - „Alles einpassen“ lief zweimal hintereinander und dauerte auf langsamer Grafik bis 0,5 s: jetzt eine Fahrt, fest
   0,2 s (Software-OpenGL: 535 -> 212 ms Blockade).
 - Nach einer drastischen Änderung und Rückgängig blieb „Das Modell hat sich geändert“ an der Rundung stehen; jetzt geht
