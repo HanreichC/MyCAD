@@ -45,13 +45,15 @@ Got a pen tablet? Draw straight into the sketch. Hold the pen still at the end a
 
 Every closed region in a sketch is its own profile. Draw two circles inside each other, click the ring between them, and **Extrude** turns it into a tube, the same way it works in Fusion.
 
-**Create:** Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil · Hole · Screw Here · Thread · Pattern · Mirror
+**Create:** Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil · Standard Part · Gear · Hinge · Snap Hook · Snap Recess · Hole · Screw Here · Thread · Pattern · Mirror · Photo to Sketch · Code Step
 
 **Modify:** Press Pull · Fit · Remove Face · Replace Face · Split Face · Fillet · Chamfer · Shell · Draft · Combine · Split Body · Move · Align · Scale
 
 **Construct:** Offset Plane · Plane at Angle · Midplane · Plane · Axis · Point
 
-**Inspect:** Measure · Section Analysis · Print View
+**Inspect:** Measure · Section Analysis · Check References
+
+**Print:** Print View · Suggest Orientation · Choose Bottom Face · Split for Printing · Fit · Printer Test · Export · Print
 
 The toolbar is one calm row with the tools you use most: Sketch, Extrude, Hole, Press Pull, Fillet, Measure. Click a heading such as **CREATE ▾** and every tool of the group opens in a glass grid with its name. **PRINT** gathers everything for the printer: Print View, the bottom face, fits, export and your slicer. Prefer every tool at once? Settings › Toolbar › All Tools.
 
@@ -101,7 +103,7 @@ Double-click any face with no tool active and the dimensions that make it appear
 
 ## Errors that explain themselves.
 
-A fillet too big for its edge? The step turns red in the timeline, the panel says what went wrong in plain words, and it offers the largest radius that still works. One click sets it. The same goes for shells, threads, revolve axes and screws that are too short. When the model changes under a step and an edge might no longer be the one you meant, MyCAD picks the closest match, marks the step, and lets you check it.
+A fillet too big for its edge? The step turns red in the timeline, the panel says what went wrong in plain words, and it offers the largest radius that still works. One click sets it. The same goes for shells, threads, revolve axes and screws that are too short. When the model changes under a step and an edge might no longer be the one you meant, MyCAD picks the closest match, marks the step, and lets you check it. And like in Fusion, a red step never stops the rest: the body goes on without it and every later step computes as usual, so you can keep working and fix it when you are ready.
 
 <br>
 
@@ -195,7 +197,7 @@ The red pen knows arrows (draw one from a face and it is pulled by the arrow's l
 
 Choose from twelve navigation styles, including **Fusion 360**, **SolidWorks**, **Blender**, **Siemens NX** and **Touchpad**. MyCAD shows you which key or gesture orbits, pans, zooms and selects in the style you picked.
 
-You can map a key to a mouse button, for example **Shift** as the middle button, and then navigate with your touchpad. Shift still works as Shift when you type. MyCAD orbits around the body under your cursor. If you'd rather see names than icons, turn on **Show tool names**.
+You can map a key to a mouse button, for example **Shift** as the middle button, and then navigate with your touchpad. Shift still works as Shift when you type. MyCAD orbits around the point under your cursor, like Fusion and Onshape. If you'd rather see names than icons, turn on **Show tool names**.
 
 Pen tablets work on Wayland with pressure and hover. **Tablet** in Settings gives every button its job: pick your model (MyCAD recognizes it when it's plugged in), press a button and its row lights up, then choose what it does. Undo, eraser, select, pencil, fineliner, marker, next color, Only the Sheet, look at the sheet, or orbit and pan while you hold it. The Huion Inspiroy H640P comes set up for its six buttons and two on the pen. Models MyCAD doesn't know yet learn their buttons as you press them. Reading the tablet's buttons needs permission once: **Allow Access…** asks for your password and lets MyCAD read tablet buttons (never keyboards). If KDE still has shortcuts on the same buttons, MyCAD ignores them, so nothing happens twice.
 
@@ -261,6 +263,8 @@ The start page lists your recent designs and everything in your project folder, 
 
 **Hardware included.** Standard Part adds screws (ISO 4762, 10642, 7380), nuts, washers, heat-set inserts, ball bearings like the 608, magnets and 2020 aluminum profiles as real bodies with their standard sizes. Check that everything fits, then open the **Parts List**: it counts what you need and copies it as a table, ready for your order. **Gear** makes spur gears with real involute teeth: same module, the right distance, and two gears mesh, with the play your printer needs and profile shift for small gears. **Hinge** prints in one piece and moves right off the bed, with the play from your Printer Test. **Snap Hook** checks how far the beam bends and suggests a length that does not break, and **Snap Recess** cuts the matching window into the part it clicks into.
 
+![Standard parts](src/Gui/Shell/help/images/Design_StandardPart.gif)
+
 **Code when you want it.** A **Code Step** is a step in the timeline made from a few lines of Python: `result = cut(box(p.Width, 30, 5), cylinder(8, 5))`. Sizes come from your notes, so changing a note changes the part. Code is a program, so it never starts by itself: a step from a file someone sent you stays red until you have read it and clicked **Run**.
 
 ![Export](src/Gui/Shell/help/images/Design_Export.gif)
@@ -273,7 +277,6 @@ MyCAD is young and grows fast. This is what comes next, roughly in this order (d
 
 - **Workshop sheet.** One click makes a PDF with views, a table of holes, threads and fits, and the main dimensions, ready for whoever machines the part.
 - **Flathub**, so MyCAD installs on any Linux.
-- Screw Here that also places the screw, multi-color painting for AMS and MMU printers, splitting parts that are too big for the bed, and a local assistant that turns a sentence into steps, offline.
 
 <br>
 
@@ -285,14 +288,14 @@ MyCAD is young and grows fast. This is what comes next, roughly in this order (d
 | **Interface** | Liquid Glass with a GPU glass shader, light and dark mode, English or German |
 | **Model** | Parametric, with a global timeline (reorder, groups, roll back, hover shows the body, select a body to fade the rest), components and joints |
 | **Sketch** | 12 drawing tools, 7 modify tools, 9 constraints, one dimension tool |
-| **Solids** | 21 create, 14 modify and 6 construction tools; standard holes, printable threads, Fit (ISO 286 and 3D print), Screw Here, Remove Face, standard parts (screws, nuts, washers, heat-set inserts, bearings, magnets, 2020 profiles) with a parts list, involute spur gears, print-in-place hinges, snap hooks with a strain check |
+| **Solids** | 24 create, 14 modify and 6 construction tools; standard holes, printable threads, Fit (ISO 286 and 3D print), Screw Here, Remove Face, standard parts (screws, nuts, washers, heat-set inserts, bearings, magnets, 2020 profiles) with a parts list, involute spur gears, print-in-place hinges, snap hooks with a strain check |
 | **Dimensions** | Double-click a face to change the dimensions that make it; errors explain themselves and offer a value that works |
 | **Notes** | Saved in the design, lines ending in `=` are calculated, `Name = value` lines are parameters (both ways) |
 | **Red Pen** | Handwritten corrections on the model become features: R, C, ±, M, Ø, H7, 3×, dimensions, remove face |
 | **3D printing** | Print View (overhangs, bed, thin walls), print direction (chosen or suggested), bed size check, Printer Test (clearance, overhang, wall), Print to OrcaSlicer, Bambu Studio, PrusaSlicer and Cura (program, Flatpak, AppImage) |
 | **Saving** | Always saved, versions with Time Machine retention, compare as a ghost, restore, variants |
 | **Assembly** | 7 joint types with limits, animate with collisions, chains, closed loops solved with OndselSolver, mass and center of mass |
-| **Search** | Ctrl+K for commands, bodies and sketches, typo-tolerant, English and German |
+| **Search** | Ctrl+K for commands, bodies and sketches, typo-tolerant, English and German; sentences (*4 holes M3 in the corners*) and questions (*Why is this red?*) |
 | **Scribbles** | Pen tablet with pressure, 7 shapes, fill, text, select and move with a color and delete bar, sheets in 3D, convert to sketch, handwriting tidy-up, offline handwriting recognition (find, CAD notation, written dimensions), Only the Sheet mode |
 | **Export** | STL · 3MF (with colors, per face too) · STEP (with colors) · DXF (sketches) |
 | **Import** | STEP · STL, 3MF, OBJ (flat faces and holes recognized) · DXF · SVG · photos (traced into a sketch) |

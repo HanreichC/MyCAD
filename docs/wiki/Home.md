@@ -15,6 +15,8 @@ depending on the language you picked. This wiki is the overview for everyone els
 |---|---|
 | see everything MyCAD can do | **[Features](Features)**, all on one page |
 | get going right away | **[Tutorial: a bracket for 3D printing](Tutorial-3D-Printed-Bracket)** (about 20 minutes) |
+| start from a finished design | **New from Template** on the start page: box with lid, wall bracket, PCB enclosure, spacer, cable clip ([Features](Features#interface)) |
+| switch from Fusion 360 | the help page **Switching from Fusion** (Getting Started): same names, the keys you know, what is different |
 | connect parts that move | **[Tutorial: an assembly with joints](Tutorial-Assembly)** |
 | look something up | the topic pages below |
 
@@ -23,7 +25,8 @@ depending on the language you picked. This wiki is the overview for everyone els
 - [Modeling](Modeling): sketches, every tool, the timeline, sizes on the model, errors that explain themselves
 - [Notes and Parameters](Notes-and-Parameters): calculate in a note and define parameters right there
 - [Red Pen and Scribble](Red-Pen-and-Scribble): sketch ideas, handwriting, write corrections on the model
-- [3D Printing](3D-Printing): Print View, printing to your slicer, fits, Screw Here, print threads
+- [3D Printing](3D-Printing): Print View, orientation and splitting, your slicer, Printer Test, fits, Screw Here,
+  hinges and snap hooks, print threads
 - [Versions and Variants](Versions-and-Variants): always saved, nothing gets lost
 - [Assemblies](Assemblies): components, joints, closed loops
 - [Controls and Settings](Controls-and-Settings): navigation, shortcuts, pen tablets, language, materials
@@ -40,4 +43,6 @@ depending on the language you picked. This wiki is the overview for everyone els
 - **Tools for a purpose.** Screw Here joins two parts in one step; Fit makes a hole and its pin fit, to ISO or for
   your printer.
 - **Printing in the viewport.** Overhangs, bed faces and thin walls on the model; Print opens your slicer.
-- **Ctrl+K** finds every command, body and sketch, typos included.
+- **Ctrl+K** finds every command, body and sketch, typos included, takes sentences like *4 holes M3 in the corners*
+  and answers *Why is this red?*
+- **Hardware included.** Screws, nuts, bearings and gears as real bodies, a parts list to order from.

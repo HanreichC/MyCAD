@@ -18,6 +18,14 @@ or search for it with Ctrl+K).
 
   ![Start page](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/file_start_page.gif)
 
+- **New from Template** on the start page: box with lid, wall bracket, PCB enclosure, spacer, cable clip. The sizes
+  stand in a note, one per line; change a number, press Enter, and the design follows.
+
+  ![Templates](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_templates.gif)
+
+- **Compact toolbar** with the tools you use most; a heading such as **CREATE ▾** opens the whole group as a grid with
+  names. **Tools at the selection:** click a face, an edge or a profile and the tools that fit float right above it.
+
 - **Browser** with eye icons to show and hide, rename in place (F2), the design name renames the file too, and
   **Saved** at the bottom when everything is on disk.
 
@@ -28,14 +36,22 @@ or search for it with Ctrl+K).
 - **Intent instead of a command:** Ctrl+K understands *4 holes M3 in the corners, 5 mm from the edge* (also in German,
   or with Ø3.4); the first hit says what it understood, Enter opens the holes with their preview. Also *edges 2 mm
   fillet* (selected edges), *all edges 1 mm chamfer*, *6 holes M4 on a 40 mm circle* (bolt circle) and *5 holes M3 in
-  a row, 10 mm apart*; every sentence works in English and German (*6 Löcher M4 auf Lochkreis 40*).
+  a row, 10 mm apart*; every sentence works in English and German (*6 Löcher M4 auf Lochkreis 40*). Bodies and moves
+  by sentence too: *Box 40 x 30 x 10*, *Cylinder Ø20 x 30*, *Shell 2 mm*, *10 mm up*.
+- **Ask the model** in Ctrl+K: *Why is this red?* names and selects the step that does not compute, *What depends on
+  this?* selects everything that uses the selected sketch or step.
 
   ![Search](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/search.gif)
 
-- **Built-in help** with 95 articles, a clip for each, search, an overview and two tutorials; **F1** opens the article
+- **Built-in help** with 106 articles, a clip for each, search, an overview and two tutorials; **F1** opens the article
   for the tool under the mouse.
 
   ![Help and F1](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/help.gif)
+
+- **Coming from Fusion?** A help page maps its terms and keys; Ctrl+K knows Fusion's words (*offset face*, *change
+  parameters*).
+
+  ![Switching from Fusion](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_from_fusion.gif)
 
 ## Sketching
 
@@ -55,21 +71,27 @@ or search for it with Ctrl+K).
 
   ![Sketch Palette](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_palette.gif)
 
+- **Pen in the sketch:** with a pen tablet, strokes become sketch lines, circles and rectangles; scratch over lines to
+  delete them, a tick finishes the sketch.
 - Every closed region is its own profile: two circles inside each other, click the ring, extrude, and you have a tube.
 
   ![Sketching basics](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_basics.gif)
 
 ## Solids
 
-**Create:** Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil · Hole ·
-**Screw Here** · Thread · Pattern · Mirror
+**Create:** Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil ·
+**Standard Part** · **Gear** · **Hinge** · **Snap Hook** · **Snap Recess** · Hole · **Screw Here** · Thread · Pattern ·
+Mirror · **Photo to Sketch** · **Code Step**
 
 **Modify:** Press Pull · **Fit** · **Remove Face** · Replace Face · Split Face · Fillet · Chamfer · Shell · Draft ·
 Combine · Split Body · Move · Align · Scale
 
 **Construct:** Offset Plane · Plane at Angle · Midplane · Plane · Axis · Point
 
-**Inspect:** Measure · Section Analysis · **Print View**
+**Inspect:** Measure · Section Analysis · **Check References**
+
+**Print:** **Print View** · Suggest Orientation · Choose Bottom Face · Split for Printing · Fit · **Printer Test** ·
+Export · Print
 
 Worth knowing:
 
@@ -115,17 +137,48 @@ Worth knowing:
 
   ![Move](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Move.gif)
 
+- **Standard Part:** screws (ISO 4762, 10642, 7380), hex nuts, washers, heat-set inserts, ball bearings (608 and more),
+  magnets and aluminum profiles (2020, 2040, 3030) as real bodies with their standard sizes.
+
+  ![Standard Part](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_StandardPart.gif)
+
+- **Parts List** counts every standard part (copies from Pattern and Mirror too) and copies it as a table.
+
+  ![Parts List](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_PartsList.gif)
+
+- **Gear:** spur gears with real involute teeth; same module and the right distance, and two gears mesh. Backlash from
+  your printer profile, profile shift for small gears.
+
+  ![Gear](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Gear.gif)
+
+- **Hinge:** prints in one piece, flat on the bed, and moves right away; the play comes from your Printer Test.
+
+  ![Hinge](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Hinge.gif)
+
+- **Snap Hook** with a strain check (a warning with a beam length that holds), and **Snap Recess** cuts the matching
+  window into the part it clicks into, with play, following the hook.
+
+  ![Snap Hook](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_SnapHook.gif)
+
+- **Code Step:** a timeline step from a few lines of Python (`box`, `cylinder`, `union`, `cut` …), sizes from your notes.
+  Code never runs by itself: you read it and click **Run**.
+
+  ![Code Step](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_CodeStep.gif)
+
 ## Timeline
 
 - Every step goes into the **timeline** at the bottom. Roll back, change a step, everything after it follows.
 
   ![Timeline and changes](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_timeline.gif)
 
+- Hover a step and the body it changes lights up; select a body and the steps of all other bodies fade.
 - **Reorder** steps by dragging (MyCAD tells you when a step needs another one).
 - **Group** steps (Ctrl+click, Group Selected Steps); fold groups away, rename them.
 - **Errors explain themselves**: a red badge on the step, plain words about what's wrong, and a **suggestion that
   works** ("radius 2.4 mm still fits"), applied with one click. Edges that may no longer be the ones you picked after a
   change are marked orange: **Show Affected Edges** or **Looks Right**.
+- **A red step never stops the rest** (like Fusion): the body goes on without it, and the steps after it compute
+  normally. Fix it or delete it when you are ready.
 
 ## Sizes and parameters
 
@@ -189,8 +242,17 @@ Worth knowing:
 
   ![Screw Here](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Fastener.gif)
 
+- **Suggest Orientation** finds the lay with the least support and the lowest height; your **bed size** is checked,
+  and a part that is too big says so in red.
+- **Split for Printing** cuts a part that is too big into as many equal pieces as needed, with pins or a dovetail that
+  join them again, with the play your printer needs.
+- **Printer Test:** a fit plate with eight holes, a pin, overhangs from 30 to 70° and walls from 0.4 to 1.2 mm. Print
+  it once, click in Settings what fit; fits, printable threads, hinges and the Print View use your numbers from then on.
+
+  ![Printer Test](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_PrinterTest.gif)
+
 - **Threads for printing:** the play is added automatically, with a warning when the pitch is too fine.
-- **Export** as 3MF (colors, names), STL, STEP (with colors), DXF (sketches); resolution coarse/normal/fine.
+- **Export** as 3MF (colors, per face too, names), STL, STEP (with colors), DXF (sketches); resolution coarse/normal/fine.
 
   ![Export](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Export.gif)
 
@@ -245,11 +307,12 @@ Worth knowing:
 
 ## Controls
 
-- 12 navigation styles (Fusion 360, SolidWorks, Blender, Touchpad and more); keys as mouse buttons.
+- 12 navigation styles (Fusion 360, SolidWorks, Blender, Touchpad and more); keys as mouse buttons. The view orbits
+  around the point under the cursor, like Fusion and Onshape.
 
   ![Moving around](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_navigation.gif)
 
-- Pen tablets with pressure and hover on Wayland; the side buttons navigate.
+- Pen tablets with pressure and hover on Wayland; the side buttons navigate. **SpaceMouse** via spacenavd.
 - Shortcuts: see [Controls and Settings](Controls-and-Settings).
 
   ![Keyboard shortcuts](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_shortcuts.gif)
@@ -257,6 +320,9 @@ Worth knowing:
 ## Files
 
 - Own format `.mycad` (a ZIP with a preview image, the same content as FreeCAD's `.FCStd`); `.FCStd` opens too.
-- Import: STEP (one body per solid), DXF and SVG into a sketch.
+- Import: STEP (one body per solid), DXF and SVG into a sketch, and your earlier designs as parts (your own parts
+  library).
+- **Remix an STL:** STL, 3MF and OBJ become bodies with real flat faces and round holes you can measure, sketch on,
+  fit and cut.
 
   ![Insert](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Import.gif)

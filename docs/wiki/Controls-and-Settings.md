@@ -44,7 +44,10 @@ style, Settings shows which key or gesture orbits, pans, zooms and selects.
 - Turn a key into a mouse button, e.g. **Shift** as the middle button, and navigate with your touchpad. Shift still works
   as Shift when you type.
 - MyCAD orbits around the point under the cursor (Settings → Rotate around offers the other centres).
-- **Show tool names** writes the names under the icons.
+- **Show tool names** writes the names under the icons. **Toolbar › All Tools** shows every tool instead of the compact
+  row with its CREATE ▾ headings; **Tools at the selection** switches off the tools that float above a selected face,
+  edge or profile.
+- A **SpaceMouse** (3Dconnexion) works when the spacenavd service runs: push, pull and twist the cap.
 - The **view cube** at the top right turns to standard views; the house below it goes to the home view.
 
   ![Moving around](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/start_navigation.gif)
@@ -56,6 +59,9 @@ style, Settings shows which key or gesture orbits, pans, zooms and selects.
 On Wayland, with pressure and hover. The side buttons orbit and pan, even while the tip is down. In KDE's **Drawing
 Tablet** settings you can give the tablet's buttons keys: **E** eraser, **V** select, **L** look at the sheet, **Ctrl+Z**
 undo.
+
+In a sketch the pen draws sketch geometry: hold still at the end for a clean line, circle or rectangle, scratch over
+lines to delete them, and a tick finishes the sketch.
 
 ## Settings
 
@@ -78,8 +84,9 @@ searchable in English and German.
   and end grain
 - Accessibility: Increase contrast, Reduce transparency, Reduce motion
 - **Projects folder** (where new designs go)
-- **3D printing:** Export resolution (coarse / normal / fine), 3D print clearance (tight / normal / loose, for Fit),
-  Overhang angle and Minimum wall (for Print View)
+- **3D printing:** Export resolution (coarse / normal / fine), 3D print clearance (tight / normal / loose, for Fit,
+  gears, hinges and snap recesses), Overhang angle and Minimum wall (for Print View), Print bed size, and the results
+  of the **Printer Test** (Make Test Piece, then click the hole, overhang and wall that printed well)
 
 **Navigation:** style, view options, rotation and zoom speed, trackpad gestures
 

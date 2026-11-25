@@ -42,6 +42,10 @@ A design is made of **bodies** in **components**. The root component is the desi
 
   ![Sketch Palette](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/sketch_palette.gif)
 
+- **Duplicate:** right-click a sketch in the browser → **Duplicate** copies it, on the same plane, as a new step.
+- **Pen in the sketch:** with a pen tablet, draw straight into the sketch. Hold still at the end and the stroke becomes a
+  clean line, circle or rectangle; scratch over lines to delete them; a tick finishes the sketch.
+
 The other sketch tools:
 
 **Draw**
@@ -77,15 +81,20 @@ The other sketch tools:
 
 | Section | Tools |
 |---|---|
-| CREATE | Sketch · Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil · Hole · Screw Here · Thread · Pattern · Mirror |
-| MODIFY | Press Pull · Fit · Remove Face · Replace Face · Split Face · Fillet · Chamfer · Shell · Draft · Combine · Split Body · Move · Align · Scale |
+| CREATE | Sketch · Extrude · Revolve · Sweep · Loft · Rib · Web · Emboss · Box · Cylinder · Sphere · Torus · Coil · Standard Part · Gear · Hinge · Snap Hook · Snap Recess · Hole · Screw Here · Thread · Pattern · Mirror · Photo to Sketch · Code Step |
+| MODIFY | Press Pull · Fillet · Chamfer · Shell · Draft · Fit · Remove Face · Replace Face · Split Face · Combine · Split Body · Move · Align · Scale |
 | CONSTRUCT | Offset Plane · Plane at Angle · Midplane · Plane · Axis · Point |
+| ASSEMBLE | New Component · Joint |
+| INSPECT | Measure · Section Analysis · Check References · Fit All |
+| PRINT | Print View · Suggest Orientation · Choose Bottom Face · Split for Printing · Fit · Printer Test · Export · Print |
+| UTILITIES | Search · Change Parameters · Parts List · Appearance · Scribble · Red Pen · Note |
 
 Align and Midplane stay true to what you picked: an aligned body follows its target when that moves or grows, a midplane
 stays in the middle when one of its two faces moves.
-| ASSEMBLE | New Component · Joint |
-| INSPECT | Measure · Section Analysis · Print View · Fit All |
-| UTILITIES | Search · Change Parameters · Appearance · Scribble / Red Pen · Note |
+
+The toolbar shows the tools you use most; click a heading such as **CREATE ▾** and the whole group opens as a grid with
+names (Settings › Toolbar › All Tools shows every tool at once). Click a face, an edge or a profile and the tools that
+fit float right above it.
 
 Buttons with a small arrow ▾ hold more tools (for example Hole ▾ Screw Here, Thread).
 
@@ -98,7 +107,9 @@ The other tools in short clips; the ones with more to say have their own section
 | **Revolve**<br>![Revolve](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Revolve.gif) | **Sweep**<br>![Sweep](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Sweep.gif) |
 | **Loft**<br>![Loft](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Loft.gif) | **Rib**<br>![Rib](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Rib.gif) |
 | **Web**<br>![Web](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Web.gif) | **Emboss**<br>![Emboss](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Emboss.gif) |
-| **Box, Cylinder and more**<br>![Box, Cylinder and more](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/primitives.gif) |   |
+| **Box, Cylinder and more**<br>![Box, Cylinder and more](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/primitives.gif) | **Standard Part**<br>![Standard Part](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_StandardPart.gif) |
+| **Gear**<br>![Gear](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Gear.gif) | **Hinge**<br>![Hinge](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_Hinge.gif) |
+| **Snap Hook and Snap Recess**<br>![Snap Hook and Snap Recess](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_SnapHook.gif) | **Code Step**<br>![Code Step](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/Design_CodeStep.gif) |
 
 **MODIFY**
 
@@ -195,6 +206,7 @@ again, which is handy for imported STEP parts that have no history.
 
 - At the bottom center, one entry per step; double-click to open it again.
 - **What depends on it:** hold the mouse over a step and the steps that depend on it light up; the tooltip names them.
+  The body it changes lights up in the model; select a body and the steps of all other bodies fade.
 - **Delete with a preview:** if something else depends on what you delete, MyCAD asks first and lists it: bodies that
   go along, sketches that lose their face (they stay in place, with a warning), steps that lose their input. For a
   whole body its own steps go along quietly; named are its mirror/pattern copies, a Combine that used it as the only
@@ -221,6 +233,9 @@ works out a **suggestion** and shows it as a button:
 If the model changes so that a selected edge may no longer be the same one, MyCAD takes the closest match and marks the
 step orange: **Show Affected Edges** or **Looks Right**.
 
+A red step never stops the rest, like in Fusion: the body goes on without it, and the steps after it compute normally.
+Fix it or delete it when you are ready; Ctrl+K → *Why is this red?* finds it.
+
 ## Change sizes on the model
 
 With no tool active, double-click a face (a single click only selects it): a glass card next to it shows the sizes
@@ -244,5 +259,9 @@ values, so write `2 * (1.5 + 1)` with a point there.
 **Ctrl+K** opens the search at the top center. It finds commands, bodies and sketches, forgives typos, understands
 English and German, and words from other programs (*pocket*, *pad*, *thread*, *fit*, *slicer*). **Enter** runs the
 first hit; the ones you used last are at the top.
+
+It also takes sentences: *4 holes M3 in the corners*, *edges 2 mm fillet*, *Box 40 x 30 x 10*, *Shell 2 mm*, *10 mm up*,
+in English or German; Enter opens the tool with those values and its preview. And you can ask: *Why is this red?*,
+*What depends on this?*
 
 ![Search](https://raw.githubusercontent.com/HanreichC/MyCAD/main/src/Gui/Shell/help/images/search.gif)
