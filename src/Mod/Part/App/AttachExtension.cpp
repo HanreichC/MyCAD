@@ -590,16 +590,20 @@ App::DocumentObjectExecReturn* AttachExtension::extensionExecute()
     if (this->isTouched_Mapping()) {
         try {
             // Nur wenn der Körper darunter sich geändert hat, nicht die Anheftung selbst (neu angeheftet, versetzt)
-            const bool keep = !AttachmentSupport.isTouched() && !AttachmentOffset.isTouched() && !MapMode.isTouched()
-                && !getExtendedObject()->isRestoring();
+            // Ein nur umbenannter Bezug (FreeCADs Namensverfolgung setzt "Face29" -> "Face28", dasselbe Objekt) zählt nicht
+            // als Änderung: er zeigte in ConceptKey auf die gegenüberliegende Wand, Skizze001 sprang dorthin
+            const bool keep = (!AttachmentSupport.isTouched() || AttachmentSupport.getValues() == lastSupport)
+                && !AttachmentOffset.isTouched() && !MapMode.isTouched() && !getExtendedObject()->isRestoring();
             bool turned = false;
             if (keep && refindFace(true, &turned)) {
+                lastSupport = AttachmentSupport.getValues();
                 return App::DocumentObjectExtension::extensionExecute();
             }
             if (turned && keepPlace("the face it was attached to now points elsewhere")) {
                 return App::DocumentObjectExtension::extensionExecute();
             }
             positionBySupport();
+            lastSupport = AttachmentSupport.getValues();
             if (warning && std::string(warning->getValue()) == faceLost) {
                 warning->setValue("");  // Fläche wieder da
             }
@@ -623,8 +627,13 @@ void AttachExtension::extensionOnChanged(const App::Property* prop)
     if (!getExtendedObject()->isRestoring()) {
         // If we change anything that affects our position, update it immediately so you can see it
         // interactively.
+        // MyCAD: nur umbenannt (dieselben Objekte, FreeCADs Namensverfolgung nach einer Änderung weiter vorn): nicht sofort
+        // springen, das Rechnen prüft, ob die Fläche noch in der Ebene liegt (extensionExecute). Sonst galt die falsche
+        // Wand schon als letzte Lage, bevor geprüft wurde (ConceptKey: Skizze001 an der gegenüberliegenden Wand)
+        const bool renamedOnly = prop == &AttachmentSupport && !lastSupport.empty()
+            && AttachmentSupport.getValues() == lastSupport;
         if ((prop == &AttachmentSupport || prop == &MapMode || prop == &MapPathParameter
-             || prop == &MapReversed || prop == &AttachmentOffset)) {
+             || prop == &MapReversed || prop == &AttachmentOffset) && !renamedOnly) {
             bool bAttached = false;
             try {
                 bAttached = positionBySupport();
@@ -895,6 +904,7 @@ void AttachExtension::handleLegacyTangentPlaneOrientation()
 
 void AttachExtension::onExtendedDocumentRestored()
 {
+    lastSupport = AttachmentSupport.getValues();  // MyCAD: Stand aus der Datei (siehe extensionExecute)
     try {
         initBase(false);
         if (_baseProps.attachment) {
