@@ -1586,10 +1586,9 @@ bool DrawSketchHandler::filterRedundantAutoConstraints(
     sketchobject->diagnoseAdditionalConstraints(constraints);
 
     if (sketchobject->getLastHasRedundancies()) {
-        Base::Console().message(
-            sketchobject->getFullLabel(),
-            QT_TRANSLATE_NOOP("Notifications", "Autoconstraints cause redundancy. Removing them") "\n"
-        );
+        // MyCAD: nur ins Protokoll, nicht als Hinweis oben rechts: beim freien Zeichnen kam er bei jedem Klick, und was
+        // MyCAD selbst bereinigt, muss niemand wissen
+        Base::Console().log("{}: Autoconstraints cause redundancy. Removing them\n", sketchobject->getFullLabel());
 
         auto lastsketchconstraintindex = sketchobject->Constraints.getSize() - 1;
 
