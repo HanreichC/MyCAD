@@ -72,6 +72,9 @@ def _start_clips():
 
     def keys(w, text, enter=True):
         """w=None: echtes Tippen ans Fenster, die Taste geht wohin der Fokus gerade ist (wie tests/gui/test_sketch_tools.py)"""
+        modal = QtWidgets.QApplication.activeModalWidget()
+        if w is None and modal is not None:  # Maßfeld der Skizze: eigenes modales Fenster, das Hauptfenster bekäme nichts
+            w = modal.focusWidget() or modal
         if w is None:
             QtWidgets.QApplication.setActiveWindow(mw)
             w = mw.windowHandle()
@@ -188,10 +191,9 @@ def _start_clips():
         b = [b for b in visible(QtWidgets.QPushButton) if b.text().replace("&", "") == "OK"][0]
         ring(b); b.click()
 
-    def drag_to(a, b, n=6):
-        """Maus ohne Taste von a nach b (Gummiband des Werkzeugs sichtbar)"""
-        for k in range(1, n + 1):
-            hover(a + (b - a) * k / n)
+    def drag_to(a, b, n=12):
+        """Maus ohne Taste von a nach b (Gummiband des Werkzeugs sichtbar); im Clip ein Bild je Schritt"""
+        harness.record_motion([lambda k=k: hover(a + (b - a) * k / n) for k in range(1, n + 1)], 60)
 
     def xy_pixel():
         """auf die Bodenebene (XY) klicken: mitten in die Pixel, die die Ebene treffen (die anderen Ebenen verdecken Teile)"""
@@ -416,6 +418,7 @@ def _start_clips():
         step("extrude", lambda: tool("Design_Extrude"))
         step("dist", lambda: type_expression(0, "Thickness"))
         step("ok", press_ok)
+        wait()  # erst wenn das Panel zu ist: ein Doppelklick während des Schließens öffnete keine Maßkarte
         # 3. Fläche antippen, Zahl ändern
         step("dclick top", lambda: dtap(center(plate(), top(plate()))))
         step("field", lambda: (L("  before: " + card_state()), field_click(card_fields()[0])))
@@ -447,6 +450,7 @@ def _start_clips():
         step("print view", lambda: (L("  after red pen=%s errors=%s" % (volumes(), errors())), fake_slicer(),
                                     [b.click() for b in visible(QtWidgets.QToolButton) if b.objectName() == "NoteClose"],
                                     tool("Design_PrintView")))
+        wait()  # die Legende mit Drucken erscheint erst nach dem Einfärben
         step("print", lambda: gclick([b for b in visible(QtWidgets.QPushButton) if b.text() == "Print"][0]))
 
     def ring_at(p):
@@ -582,7 +586,7 @@ def _start_clips():
         step("angle", lambda: (ring(field("Angle")), type_field("Angle", "60")))
         step("limits", lambda: check_box("Keep angle and distance within limits"))
         step("max", lambda: type_field("Angle max", "90"))
-        step("animate", lambda: (push("Animate"), QtCore.QTimer.singleShot(1500, lambda: push("Stop"))))
+        step("animate", lambda: (push("Animate"), harness.drive_timer(40, 36, 60, lambda: push("Stop"))))  # Tick für Tick
         step("park", lambda: type_field("Angle", "135"))  # vom Platz der zweiten Platte weg
         step("ok", lambda: (press_ok(), Gui.SendMsgToActiveView("ViewFit")))
         # 3. Zwei Teile verschrauben

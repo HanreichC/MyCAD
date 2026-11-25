@@ -133,7 +133,7 @@ def md_use(cmd):
 
 def md_later(make, n, ms=90):
     """make() liefert Aktionen, die im Abstand ms nacheinander laufen (Tippen, Ziehen); wartet mit, bis alle durch sind"""
-    step("animate", lambda: [QtCore.QTimer.singleShot((i + 1) * ms, a) for i, a in enumerate(make())])
+    step("animate", lambda: harness.record_motion(make(), ms))  # im Clip ein Bild je Schritt: flüssig
     wait(max(0, math.ceil(n * ms / 900.0)))
 
 

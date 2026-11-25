@@ -85,7 +85,7 @@ def _record_frame():
             and w.width() > 8 and w.height() > 8]
     if QtCore.QThread.currentThread().loopLevel() > 1 and not tops:
         return  # verschachtelte Schleife ohne Dialog: das Bild griffe mitten in einen Umbau der Szene (Absturz)
-    now = _rec["clock"]()
+    now = _rec["clock"]() + _rec.get("offset", 0.0)  # offset: Uhr des Clips nach einer Bewegung (record_motion)
     img = mw.grab().toImage().convertToFormat(QtGui.QImage.Format_RGB888)
     painter = QtGui.QPainter(img)
     painter.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -107,8 +107,68 @@ def _record_frame():
     painter.end()
     x0, w = _rec.get("crop") or (_rec["left"], img.width() - _rec["left"])
     _rec["frames"].append((img.copy(x0, 0, w, img.height()).scaledToWidth(_rec["width"], QtCore.Qt.SmoothTransformation), now))
-    _rec["busy"] += _rec["clock"]() - now
+    _rec["busy"] += _rec["clock"]() + _rec.get("offset", 0.0) - now
     _rec["at"] = _rec["clock"]()
+
+
+_motion = [0]  # laufende record_motion-Folgen: der nächste Schritt wartet, bis sie durch sind
+
+
+def record_motion(actions, ms=60):
+    """Bewegung im Clip flüssig: die Aktionen (Maus ziehen, Rad, Tippen) nacheinander, nach jeder genau ein Bild mit
+    festem Abstand ms im GIF, egal wie lange Zeichnen und Aufnehmen dauern. Im Takt der Uhr (unter Software-OpenGL
+    ~0,25 s je Bild) fehlten Zwischenstufen, Drehungen und Fahrten ruckelten. Ohne Aufnahme: im Abstand ms wie bisher."""
+    actions = list(actions)
+    if not _rec:
+        for i, a in enumerate(actions):
+            QtCore.QTimer.singleShot(i * ms, a)
+        return
+    _motion[0] += 1
+    _rec["timer"].stop()
+
+    def go(i):
+        if not _rec:
+            _motion[0] -= 1
+            return
+        if i < len(actions):
+            try:
+                actions[i]()
+            except Exception as e:
+                L("  exc in motion: %s: %s" % (type(e).__name__, e))
+            QtWidgets.QApplication.processEvents()  # MyCAD zeichnet den Schritt, bevor das Bild entsteht
+            frames = _rec["frames"]
+            n = len(frames)
+            prev = frames[-1][1] if frames else _rec["clock"]()
+            _record_frame()
+            if len(frames) == n + 1:
+                t = prev + ms / 1000.0
+                frames[-1] = (frames[-1][0], t)
+                _rec["offset"] = t - _rec["clock"]()  # die Uhr des Clips läuft ab hier weiter
+                _rec.setdefault("motion", set()).add(t)
+            QtCore.QTimer.singleShot(0, lambda: go(i + 1))
+        else:
+            _motion[0] -= 1
+            _rec["timer"].start()
+    go(0)
+
+
+def drive_timer(interval, ticks, ms=60, then=None):
+    """Animation von MyCAD (Gelenk: ein Schritt je Tick ihres Timers) im Clip flüssig: den laufenden Timer anhalten und
+    je Bild genau einen Tick auslösen. Frei laufend kamen unter Software-OpenGL nur ~4 Bilder/s mit großen Sprüngen"""
+    timers = [t for w in QtWidgets.QApplication.topLevelWidgets() for t in w.findChildren(QtCore.QTimer)
+              if t.isActive() and t.interval() == interval]
+    if not timers:
+        L("  drive_timer: no running %d ms timer" % interval)
+        return then and then()
+    t = timers[-1]
+    t.stop()
+    t.setSingleShot(True)  # start(0) feuert genau einmal, im processEvents von record_motion vor dem Bild
+
+    def done():
+        t.setSingleShot(False)
+        if then:
+            then()
+    record_motion([lambda: t.start(0)] * ticks + [done], ms)
 
 
 def _swatches():
@@ -166,6 +226,7 @@ def record_stop(hold=1.5, longest=1.2):
         last = raw
         frames.append(Image.frombuffer("RGB", (q.width(), q.height()), raw, "raw", "RGB", q.bytesPerLine(), 1))
         times.append(t)
+    motion = _rec.get("motion", set())
     times.append(_rec["frames"][-1][1])
     durations = [max(_rec["ms"], min(int((b - a) * 1000), int(longest * 1000))) for a, b in zip(times, times[1:])]
     durations[-1] += int(hold * 1000)
@@ -174,9 +235,10 @@ def record_stop(hold=1.5, longest=1.2):
     # Zwischenbilder fallen weg, wenn gleich danach wieder fast das ganze Bild wechselt (spart je ~100 KB)
     from PIL import ImageChops
     keep_f, keep_d = [frames[0]], [durations[0]]
-    for f, d in zip(frames[1:], durations[1:]):
+    for f, d, t in zip(frames[1:], durations[1:], times[1:]):
         b = ImageChops.difference(f, keep_f[-1]).getbbox()
-        if keep_d[-1] < 200 and len(keep_f) > 1 and b and (b[2] - b[0]) * (b[3] - b[1]) > w * h // 4:
+        # Bewegungsbilder (record_motion) bleiben alle: zusammengelegt ruckelte jede Drehung
+        if t not in motion and keep_d[-1] < 200 and len(keep_f) > 1 and b and (b[2] - b[0]) * (b[3] - b[1]) > w * h // 4:
             prev = ImageChops.difference(keep_f[-1], keep_f[-2]).getbbox()
             if prev and (prev[2] - prev[0]) * (prev[3] - prev[1]) > w * h // 4:
                 keep_f[-1] = f; keep_d[-1] += d
@@ -334,7 +396,9 @@ def _when_idle(fn, quiet=0.25, limit=10.0):
         # ponytail: feste 0,1 s statt gemessener Zeichenzeit; längere Arbeit (Neuberechnung) bleibt Unruhe
         if _rec.get("at", -1.0) >= before[0]:
             own += 0.1
-        if now - last - own > 0.045:  # Timer kam zu spät dran: es lief noch Arbeit (Neuberechnung, Zeichnen, Animation)
+        # Timer kam zu spät: es lief noch Arbeit; oder eine Clip-Bewegung läuft (außer sie wartet in einem modalen Feld,
+        # das ein Klick am Ende geöffnet hat: dann ist der nächste Schritt dran, er tippt hinein)
+        if now - last - own > 0.045 or (_motion[0] and not QtWidgets.QApplication.activeModalWidget()):
             calm = now
         before[0], last = last, now
         if now - calm >= quiet or now - start >= limit:

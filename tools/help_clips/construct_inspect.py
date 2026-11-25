@@ -96,9 +96,9 @@ def ci_tool(cmd, *setup):
 
 
 def ci_later(fns, ms=120):
-    """Teilschritte nacheinander im Abstand ms (z. B. Kamerafahrt, Ziehen) innerhalb eines Schritts"""
-    for k, fn in enumerate(fns):
-        QtCore.QTimer.singleShot(ms * (k + 1), fn)
+    """Teilschritte nacheinander im Abstand ms (z. B. Kamerafahrt, Ziehen) innerhalb eines Schritts; im Clip ein Bild je
+    Teilschritt (record_motion), sonst ruckelt die Fahrt unter Software-OpenGL"""
+    harness.record_motion(fns, ms)
 
 
 # --- Kamera ---------------------------------------------------------------------------------------------------------
@@ -126,7 +126,12 @@ def ci_look(d):
     """Kamera blickt aus Richtung d (vom Modell zur Kamera) auf das Modell, z bleibt oben"""
     z = V(*map(float, d)).normalize(); x = V(0.0, 0.0, 1.0).cross(z).normalize(); y = z.cross(x)
     m = App.Matrix(x.x, y.x, z.x, 0, x.y, y.y, z.y, 0, x.z, y.z, z.z, 0, 0, 0, 0, 1)
+    # ohne eigene Kamerafahrt: sonst unterbricht jeder Teilschritt von ci_turn die Fahrt des vorigen (3 statt 8 Bilder)
+    grp = App.ParamGet("User parameter:BaseApp/Preferences/View")
+    anim = grp.GetBool("UseNavigationAnimations", True)
+    grp.SetBool("UseNavigationAnimations", False)
     Gui.ActiveDocument.ActiveView.setCameraOrientation(App.Rotation(m))
+    grp.SetBool("UseNavigationAnimations", anim)
 
 
 def ci_turn(a, b, n=8, ms=110):
@@ -295,7 +300,7 @@ def ci_joint():
     def animate():
         b = [b for b in visible(QtWidgets.QPushButton) if b.text() == "Animate"][0]
         ci_ring_at(b); b.click()  # ein Klick auf die Bildschirmstelle schaltet den Knopf nicht um
-        QtCore.QTimer.singleShot(2600, lambda: (ci_ring_at(b), b.click()))
+        harness.drive_timer(40, 60, 60, lambda: (ci_ring_at(b), b.click()))  # Tick für Tick: flüssig im Clip
     step("animate", animate)
     wait()
     step("ok", ci_ok)
@@ -360,12 +365,12 @@ def ci_print_view():
     ci_model(build, 1.4, 40, CI_LOW)  # von unten: der Überhang ist die Unterseite der Platte
     step("Design_PrintView", lambda: use("Design_PrintView"))
     wait(3)
-    step("turn up", lambda: ci_turn(CI_LOW, CI_ISO, 1))
+    step("turn up", lambda: ci_turn(CI_LOW, CI_ISO))
     wait()
     ci_picks((0, 0, 23))  # die Oberseite der Platte soll aufs Bett
     step("bottom", lambda: ci_press([b for b in visible(QtWidgets.QPushButton) if b.text() == "Choose Bottom Face"][0]))
     wait(2)
-    step("turn down", lambda: ci_turn(CI_ISO, CI_LOW, 1))
+    step("turn down", lambda: ci_turn(CI_ISO, CI_LOW))
     wait(3)
 
 
@@ -449,7 +454,7 @@ def ci_fit_all():
     ci_model(CI_BOX, 1.7, 90)
 
     def away():  # wie hineingezoomt und verschoben: das Modell ist halb aus dem Bild
-        ci_later([lambda: (ci_zoom(0.88), ci_pan(-150, 50)) for _ in range(4)], 700)
+        ci_later([lambda: (ci_zoom(0.88 ** (1 / 3)), ci_pan(-50, 50 / 3)) for _ in range(12)], 90)  # gleitend statt in 4 Sprüngen
     step("away", away)
     wait(4)
 

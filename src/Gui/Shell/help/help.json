@@ -1076,7 +1076,16 @@
      "Jeder Schritt einer Vorlage ist ein normaler Schritt in der Zeitleiste: Bohrungen, Rundungen oder Text kommen dazu wie in jedem Design.",
      "Der Deckel der Box druckt mit dem Rand nach oben; zum Aufsetzen umdrehen."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "start_templates.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "start_from_fusion",
@@ -1146,7 +1155,16 @@
      "Unsicher, wo ein Fusion-Werkzeug ist? Tipp seinen Fusion-Namen in Strg+K: die Suche kennt auch die Wörter anderer CAD-Programme.",
      "STEP-Dateien aus Fusion öffnest du mit Einfügen, mit Farben, Namen und Komponenten."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "start_from_fusion.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "start_navigation",
@@ -1491,6 +1509,7 @@
    "tips": {
     "en": [
      "A red step has a problem; hold the mouse over it to read why. Where MyCAD knows a value that works (e.g. the largest possible radius), the panel and the right-click menu offer it as a button.",
+     "Like in Fusion, a red step is skipped: the body goes on without it and the steps after it compute normally. Fix the step or delete it.",
      "A step with a warning sign found its edges again after a change, but not by name. Right-click: Show Affected Edges, and Looks Right if they are.",
      "Suppress switches a step off without deleting it.",
      "Hold the mouse over a step and the body it changes lights up in the model. Select a body and the steps of all other bodies fade, so you see at once what belongs to it.",
@@ -1500,6 +1519,7 @@
     ],
     "de": [
      "Ein roter Schritt hat ein Problem; halte die Maus darüber, um den Grund zu lesen. Kennt MyCAD einen Wert, der geht (z. B. den größten möglichen Radius), bieten Panel und Rechtsklick-Menü ihn als Knopf an.",
+     "Wie in Fusion wird ein roter Schritt übersprungen: Der Körper geht ohne ihn weiter, und die Schritte danach rechnen normal. Korrigiere den Schritt oder lösche ihn.",
      "Ein Schritt mit Warnzeichen hat seine Kanten nach einer Änderung wiedergefunden, aber nicht über den Namen. Rechtsklick: Betroffene Kanten zeigen, und Stimmt so, wenn sie passen.",
      "Unterdrücken schaltet einen Schritt aus, ohne ihn zu löschen.",
      "Halte die Maus über einen Schritt, und der Körper, den er ändert, leuchtet im Modell auf. Wähle einen Körper, und die Schritte aller anderen Körper werden blass, so siehst du sofort, was zu ihm gehört.",
@@ -1570,7 +1590,7 @@
      "At the top stands the name of the design, below it folders such as Bodies and Sketches. The small arrow in front of a folder opens or closes it.",
      "Click an entry to select it in the view; Ctrl+click selects more than one.",
      "The eye in front of an entry shows or hides it in the view. A hidden body stays in the design and in the timeline.",
-     "Right-click an entry for Show / Hide, Rename, Move, Export and Delete (Move and Export for bodies).",
+     "Right-click an entry for Show / Hide, Rename, Duplicate, Move, Export and Delete (Duplicate for sketches, Move and Export for bodies).",
      "Double-click a sketch to edit it, a note or a scribble to open it again, a component to make it active.",
      "Click the design name at the top to rename the design (a pencil shows when you point at it). Its file and project folder get the new name too.",
      "“Saved” with a tick at the bottom right of the browser shows that the current state of the design is on disk. Point at it to see where."
@@ -1579,7 +1599,7 @@
      "Oben steht der Name des Designs, darunter Ordner wie Körper und Skizzen. Der kleine Pfeil vor einem Ordner klappt ihn auf oder zu.",
      "Ein Klick auf einen Eintrag wählt ihn in der Ansicht aus; Strg+Klick wählt mehrere.",
      "Das Auge vor einem Eintrag blendet ihn in der Ansicht ein oder aus. Ein ausgeblendeter Körper bleibt im Design und in der Zeitleiste.",
-     "Rechtsklick auf einen Eintrag bietet Einblenden / Ausblenden, Umbenennen, Verschieben, Exportieren und Löschen (Verschieben und Exportieren bei Körpern).",
+     "Rechtsklick auf einen Eintrag bietet Einblenden / Ausblenden, Umbenennen, Duplizieren, Verschieben, Exportieren und Löschen (Duplizieren bei Skizzen, Verschieben und Exportieren bei Körpern).",
      "Doppelklick auf eine Skizze bearbeitet sie, auf eine Notiz oder ein Scribble öffnet sie wieder, auf eine Komponente macht sie aktiv.",
      "Ein Klick auf den Designnamen oben benennt das Design um (beim Darüberfahren zeigt sich ein Stift). Datei und Projektordner heißen danach mit.",
      "„Gesichert“ mit Haken unten rechts im Browser zeigt, dass der aktuelle Stand des Designs gespeichert ist. Zeig darauf, um zu sehen, wo."
@@ -1858,11 +1878,13 @@
    "tips": {
     "en": [
      "Choose the projects folder in Settings → General → Projects folder; new designs get their own folder there.",
-     "Closing never asks whether to save: everything is saved already."
+     "Closing never asks whether to save: everything is saved already.",
+     "Opening a large design, exporting or the print view can take a moment: a note with a thin blue bar shows below the toolbar until it is done."
     ],
     "de": [
      "Den Projektordner wählst du in Einstellungen → Allgemein → Projektordner; neue Designs bekommen dort einen eigenen Ordner.",
-     "Beim Schließen fragt MyCAD nie nach dem Speichern: alles ist schon gesichert."
+     "Beim Schließen fragt MyCAD nie nach dem Speichern: alles ist schon gesichert.",
+     "Ein großes Design öffnen, Exportieren oder die Druckansicht kann einen Moment dauern: Bis es fertig ist, steht unter der Werkzeugleiste ein Hinweis mit einem dünnen blauen Balken."
     ]
    },
    "images": [
@@ -3424,7 +3446,16 @@
      "Schrauben haben kein Gewinde, sondern ihren Nenndurchmesser. Für ein gedrucktes Gewinde nimm Gewinde.",
      "Stückliste zählt jedes Normteil im Design."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_StandardPart.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Gear",
@@ -3533,7 +3564,16 @@
      "Gedruckte Räder brauchen Spiel: Flankenspiel macht die Zähne am Teilkreis dünner. Ein neues Rad nimmt das normale Spiel aus Einstellungen › 3D-Druck, so drehen zwei Räder im richtigen Abstand frei.",
      "Profilverschiebung schiebt die Zähne um x mal Modul nach außen: kleine Räder (unter 17 Zähnen) bekommen kräftigere Zähne ohne Unterschnitt. Gib dem Gegenrad die entgegengesetzte Verschiebung, dann bleibt der Abstand."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Gear.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Hinge",
@@ -3638,7 +3678,16 @@
     "de": [
      "Druck es so, wie es liegt: Der Stift läuft entlang des Betts. Klemmt es nach dem Druck, knick es einmal kräftig; beim nächsten Mal das Spiel um 0,05 mm erhöhen."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_Hinge.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_CodeStep",
@@ -3750,7 +3799,16 @@
      "Code ist ein Programm. Code aus einer Datei, die dir jemand schickt, läuft nie von selbst: der Schritt bleibt rot, bis du ihn öffnest, liest und Ausführen klickst. Deine Freigabe bleibt auf diesem Rechner, nicht in der Datei.",
      "Part und App aus FreeCAD sind auch da, für alles, was die kurzen Funktionen nicht abdecken."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_CodeStep.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_SnapHook",
@@ -3853,7 +3911,16 @@
      "Druck den Balken liegend, damit die Schichten entlang laufen; stehend bricht er zwischen den Schichten.",
      "Rastfenster (ERSTELLEN) schneidet das passende Fenster in das Teil über der Rastnase: Haken wählen, klicken. Das Fenster hat das Spiel aus deinem Druckerprofil und folgt dem Haken, wenn du ihn änderst."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_SnapHook.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_PartsList",
@@ -3905,7 +3972,16 @@
     "de": [
      "Kopien aus Muster oder Spiegeln zählen mit: vier Schrauben im Muster, gespiegelt, sind acht Schrauben."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_PartsList.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_Hole",
@@ -6370,7 +6446,16 @@
      "Eng ist 0,1 mm weniger Spiel als normal, locker 0,1 mm mehr. In den Feldern kannst du alle drei fein einstellen.",
      "Einstellungen › 3D-Druck › Testteil anlegen öffnet dasselbe Design."
     ]
-   }
+   },
+   "images": [
+    {
+     "file": "Design_PrinterTest.gif",
+     "caption": {
+      "en": "",
+      "de": ""
+     }
+    }
+   ]
   },
   {
    "id": "Design_CheckReferences",

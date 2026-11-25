@@ -65,9 +65,10 @@ def ut_press(w):
 
 
 def ut_anim(make, n, ms=80):
-    """make() liefert n Aktionen im Abstand ms (Tippen, Ziehen); danach so viele Warteschritte, dass der nächste
-    Schritt erst drankommt, wenn alle durch sind"""
-    step("animate", lambda: [QtCore.QTimer.singleShot(i * ms, a) for i, a in enumerate(make())])
+    """make() liefert n Aktionen im Abstand ms (Tippen, Ziehen); im Clip nach jeder genau ein Bild (record_motion:
+    flüssig, auch wenn das Aufnehmen länger dauert); danach so viele Warteschritte, dass der nächste Schritt erst
+    drankommt, wenn alle durch sind"""
+    step("animate", lambda: harness.record_motion(make(), ms))
     wait(max(0, math.ceil(n * ms / 900.0)))
 
 
@@ -401,8 +402,8 @@ def ut_note():
         off = top.mapTo(e, r.center()) - e.rect().center()
         record_click(ut_view().viewport().mapToGlobal((QtCore.QPointF(p) + QtCore.QPointF(off)).toPoint()))
     step("click line", to_wall)
-    step("animate", lambda: [QtCore.QTimer.singleShot(i * 120, a) for i, a in enumerate(
-        [lambda: QtTest.QTest.keyClick(ut_note_edit(), QtCore.Qt.Key_Backspace)] * 4 + [lambda c=c: QtTest.QTest.keyClicks(ut_note_edit(), c) for c in "3 mm"])])
+    step("animate", lambda: harness.record_motion(
+        [lambda: QtTest.QTest.keyClick(ut_note_edit(), QtCore.Qt.Key_Backspace)] * 4 + [lambda c=c: QtTest.QTest.keyClicks(ut_note_edit(), c) for c in "3 mm"], 120))
     wait()
     ut_click_view(0.62, 0.82)
     wait(2)
@@ -442,7 +443,19 @@ def ut_search():
     step("radius", lambda: type_into(0, "6"))
     wait()
     step("ok", accept)
-    step("check", lambda: L("  search: volumes=%s errors=%s" % (volumes(), errors())))
+    wait()
+    # ein Satz statt eines Befehls: Strg+K versteht, was gemeint ist, Enter öffnet die Bohrungen mit Vorschau
+    step("face again", lambda: select(st["b"], top(st["b"])))
+    step("ctrl+k 2", lambda: (ut_key("Ctrl + K"), ut_activate(), QtTest.QTest.keyClick(mw, QtCore.Qt.Key_K, QtCore.Qt.ControlModifier)))
+    wait()
+    ut_type(ut_search_field, "4 holes M3 in the corners", ms=110)
+    wait(2)
+    step("enter 2", lambda: (ut_key("Enter"), QtTest.QTest.keyClick(ut_search_field(), QtCore.Qt.Key_Return)))
+    wait(2)
+    step("ok 2", accept)
+    wait()
+    step("check", lambda: L("  search: volumes=%s errors=%s holes=%d" % (volumes(), errors(),
+                                                                       len([o for o in doc().Objects if o.TypeId == "Design::Hole"]))))
 
 
 scenario("search", ut_search, zoom=-1)
@@ -783,7 +796,40 @@ def ut_import():
     step("profile", lambda: select(*(lambda p: (p, ring_face(p)))([o for o in doc().Objects if o.TypeId == "Design::Profiles"][-1])))
     step("iso", ut_fit)
     feature("Design_Extrude", lambda: type_into(0, "5"))
-    step("check", lambda: L("  import: volumes=%s errors=%s" % (volumes(), errors())))
+    # STL zum Weiterbauen (Remix): eine Platte mit drei Löchern als Dreiecksnetz; eingefügt wird sie ein Körper mit
+    # echten Flächen, ein Klick auf ein Loch zeigt seinen Durchmesser
+    step("stl file", ut_write_stl)
+    step("Design_Import 2", lambda: (ut_modal("Insert", 150), use("Design_Import")))
+    ut_file_dialog("/tmp/remix", "bracket.stl", "Open")
+    step("iso 2", ut_fit)
+    wait()
+    step("hole", ut_pick_stl_hole)
+    wait(3)
+    step("check", lambda: L("  import: volumes=%s errors=%s faces=%s" % (
+        volumes(), errors(), [len(o.Shape.Faces) for o in doc().Objects if o.TypeId == "Design::Body"])))
+
+
+def ut_write_stl():
+    import Mesh
+    import MeshPart
+    s = Part.makeBox(50, 30, 6, V(0, 45, 0))
+    for x in (12, 25, 38):
+        s = s.cut(Part.makeCylinder(3, 6, V(x, 60, 0)))
+    os.makedirs("/tmp/remix", exist_ok=True)
+    MeshPart.meshFromShape(Shape=s, LinearDeflection=0.02, AngularDeflection=0.1).write("/tmp/remix/bracket.stl")
+
+
+def ut_pick_stl_hole():
+    """Lochwand des mittleren Lochs der eingefügten STL-Platte wählen (wie ein Klick): die Messkarte zeigt Ø6"""
+    b = [o for o in doc().Objects if o.TypeId == "Design::Body"][-1]
+    for i, f in enumerate(b.Shape.Faces, 1):
+        if f.Surface.TypeId == "Part::GeomCylinder" and abs(f.Surface.Radius - 3) < 0.05 and abs(f.Surface.Center.x - 25) < 0.1:
+            p = V(25 - 3 * 0.7071, 60 + 3 * 0.7071, 4)  # hintere Wand: die sieht man in der Iso-Ansicht
+            ut_ring_at(p)
+            Gui.Selection.clearSelection()
+            Gui.Selection.addSelection(doc().Name, b.Name, "Face%d" % i, p.x, p.y, p.z)
+            return
+    L("  import: no round hole in the inserted STL")
 
 
 scenario("Design_Import", ut_import, zoom=-1)
@@ -799,7 +845,7 @@ def ut_export():
     step("add", lambda: (ut_ring_at(App.Vector(20, 15, 30)), add_select(st["c"])))
     wait()
     step("Design_Export", lambda: (ut_modal("Export", 150), use("Design_Export")))
-    out = "/out/export" if os.path.isdir("/out") else "/tmp"
+    out = "/out/export" if os.path.isdir("/out") else "/tmp/clip-export"  # wird geleert: nie /tmp selbst (nahm das Protokoll mit)
 
     def types():
         d = visible(QtWidgets.QFileDialog)[0]
@@ -912,11 +958,11 @@ def ut_navigation():
     wait()
     step("cam", lambda: L("  nav before: %s" % Gui.ActiveDocument.ActiveView.getViewDirection()))
     step("rotate label", lambda: ut_key("Shift + middle drag: rotate", 6000))
-    ut_drag((0.55, 0.55), (0.63, 0.53), QtCore.Qt.MiddleButton, QtCore.Qt.ShiftModifier, n=12, ms=140)
+    ut_drag((0.55, 0.55), (0.63, 0.53), QtCore.Qt.MiddleButton, QtCore.Qt.ShiftModifier, n=14, ms=110)
     wait()
     step("cam", lambda: L("  nav after rotate: %s" % Gui.ActiveDocument.ActiveView.getViewDirection()))
     step("pan label", lambda: ut_key("Middle drag: pan", 6000))
-    ut_drag((0.62, 0.48), (0.45, 0.62), QtCore.Qt.MiddleButton, QtCore.Qt.NoModifier, n=12, ms=140)
+    ut_drag((0.62, 0.48), (0.45, 0.62), QtCore.Qt.MiddleButton, QtCore.Qt.NoModifier, n=14, ms=110)
     wait()
     step("zoom label", lambda: ut_key("Scroll wheel: zoom", 6000))
     ut_wheel(lambda: ut_screen(App.Vector(0, 0, 15)), None, 2, ms=500)  # über dem Modell: es wächst dort, wo die Maus steht

@@ -54,12 +54,9 @@ def sc_hover(p, buttons=QtCore.Qt.NoButton):
 def sc_glide(target, then=None, ms=400, n=8, buttons=QtCore.Qt.NoButton):
     """Maus in n Schritten zum Ziel (Vorschau und Vorauswahl laufen sichtbar mit), danach then()"""
     start = sc_mouse.get("p") or target + QtCore.QPoint(40, 30)
-    for i in range(1, n + 1):
-        q = start + (target - start) * (i / n)
-        QtCore.QTimer.singleShot(int(ms * i / n), sc_safe(lambda q=q: sc_hover(q, buttons)))
+    acts = [sc_safe(lambda q=start + (target - start) * (i / n): sc_hover(q, buttons)) for i in range(1, n + 1)]
     sc_mouse["p"] = target
-    if then:
-        QtCore.QTimer.singleShot(ms + 80, sc_safe(then))
+    harness.record_motion(acts + ([sc_safe(then)] if then else []), int(ms / n))  # im Clip ein Bild je Schritt
 
 
 def sc_click_at(p):

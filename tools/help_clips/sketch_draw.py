@@ -57,12 +57,9 @@ sd_mouse = {}
 def sd_glide(target, then=None, ms=480, n=8):
     """Maus in n Schritten zum Ziel, danach then(); so läuft die Vorschau des Werkzeugs sichtbar mit"""
     start = sd_mouse.get("p") or target - QtCore.QPoint(30, -20)
-    for i in range(1, n + 1):
-        q = start + (target - start) * (i / n)
-        QtCore.QTimer.singleShot(int(ms * i / n), lambda q=q: sd_hover(q))
+    acts = [lambda q=start + (target - start) * (i / n): sd_hover(q) for i in range(1, n + 1)]
     sd_mouse["p"] = target
-    if then:
-        QtCore.QTimer.singleShot(ms + 80, then)
+    harness.record_motion(acts + ([then] if then else []), int(ms / n))  # im Clip ein Bild je Schritt
 
 
 def sd_press(p, btn=QtCore.Qt.LeftButton):
@@ -417,6 +414,8 @@ def fillet():
     sd_open_sketch(*sd_rect_c(-30, -20, 30, 20))
     sd_tool("Sketcher_CreateFillet", "Sketcher_CompCreateFillets")
     sd_tap(16, 20); sd_tap(30, 6)
+    wait()
+    sc_type("6")  # seit 24.11. fragt die Rundung ihren Radius ab (Maßfeld); offen gelassen blieb es den ganzen Lauf modal
     sd_key("M", "M")  # Fase statt Rundung
     sd_tap(-16, -20); sd_tap(-30, -6)
     sd_esc_step()

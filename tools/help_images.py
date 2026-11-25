@@ -203,6 +203,17 @@ def scenario(article, build, view="iso", zoom=0, edit=None, fixed=False):
     SCENARIOS[article] = (build, view, zoom, edit, fixed)
 
 
+def _close_dialogs():
+    """ein vom Clip offen gelassener Dialog lief modal weiter: alle späteren Clips spielten in seiner Schleife (Tasten
+    kamen nicht an, am Ende Absturz). Schließen und melden, damit der Clip repariert wird"""
+    for _ in range(5):  # nur modale: die halten die Schleife fest; andere zu schließen brachte MyCAD zum Absturz
+        w = QtWidgets.QApplication.activeModalWidget()
+        if not isinstance(w, QtWidgets.QDialog):
+            return
+        L("FAIL dialog left open: %s %r" % (w.metaObject().className(), w.windowTitle()))
+        w.reject()
+
+
 def _expand(article, build, view, zoom, edit, fixed):
     step("new " + article, lambda: Gui.runCommand("Std_New"))
     wait()
@@ -220,6 +231,7 @@ def _expand(article, build, view, zoom, edit, fixed):
         shot(article, view, zoom, fixed)
         if GIF:
             step("stop", record_stop)
+    step("dialogs", _close_dialogs)
     step("close", lambda: [App.closeDocument(n) for n in list(App.listDocuments())])  # auch Kopien/Varianten, die der Clip öffnete
     wait()
 
