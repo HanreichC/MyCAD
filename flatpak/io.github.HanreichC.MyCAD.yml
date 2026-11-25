@@ -230,7 +230,8 @@ modules:
       - -DINSTALL_TO_SITEPACKAGES=OFF  # sonst nach /usr/lib/python3.x (schreibgeschützt); so unter /app/Ext
     # /app ist schreibgeschützt: ohne .pyc kompilierte MyCAD bei jedem Start alles aus dem Quelltext (pivy allein 0,25 s)
     post-install:
-      - python3 -m compileall -q -j0 --invalidation-mode unchecked-hash /app
+      # Vorlagen von PySide6 (deploy_lib, *.tmpl.py) sind kein gültiges Python; .pyc beschleunigen nur, nie ein Baufehler
+      - python3 -m compileall -q -j0 --invalidation-mode unchecked-hash -x '/deploy_lib/|\.tmpl\.py$' /app || true
     sources:
       - type: dir  # submission.sh ersetzt das durch Tag und Commit von github.com/HanreichC/MyCAD
         path: ..
