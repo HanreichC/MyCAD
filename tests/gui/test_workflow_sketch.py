@@ -186,9 +186,13 @@ def circle_leave():
 
 
 def make_l():
-    """Rechteck 40x20 -> L: zwei Linien schneiden die rechte obere Ecke 15x10 ab (das größere Teilprofil teilt die meisten
-    Kanten mit dem alten und bleibt das Profil des Extrudes)"""
+    """Rechteck 40x20 -> L: rechte und obere Seite gekürzt, zwei Linien schließen die Ecke 15x10 (die Flächennummern
+    verschieben sich). Nur Linien dazumalen ließe das Rechteck seit 24.11. ganz (beide Teile bleiben Profil)"""
     sk_ = S["base"]; doc().openTransaction("L")
+    g = sk_.Geometry
+    g[1] = Part.LineSegment(V(40, 0, 0), V(40, 10, 0))
+    g[2] = Part.LineSegment(V(25, 20, 0), V(0, 20, 0))
+    sk_.Geometry = g
     sk_.addGeometry(Part.LineSegment(V(25, 20, 0), V(25, 10, 0)))
     sk_.addGeometry(Part.LineSegment(V(25, 10, 0), V(40, 10, 0)))
     doc().recompute(); doc().commitTransaction()
