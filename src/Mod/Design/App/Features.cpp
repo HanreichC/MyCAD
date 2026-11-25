@@ -161,6 +161,9 @@ constexpr const char* ModelChanged =
     "The model changed under this step; check that it still uses the right edges or faces: ";
 constexpr const char* CutMisses = "This cut no longer touches the body and removes nothing; check the sketch or the "
                                   "distance";
+/// Join ganz im Körper (Skizze liegt im Material, z. B. die Grundskizze unter dem Rand): vorher passierte still nichts
+constexpr const char* JoinInside = "Adds nothing: the profile lies inside the body; set a start offset or extrude "
+                                   "from a face on top";
 
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Profile werden über ihre Signatur
@@ -4254,6 +4257,7 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& toolIn)
         }
         // 13.5: ein Schnitt, der (nach einer späteren Änderung davor) nichts mehr trifft, lief still ins Leere
         bool missesAll = op() == Op::Cut;
+        bool addsNothing = op() == Op::Join;
         const auto volume = [](const Part::TopoShape& s) {
             GProp_GProps props;
             BRepGProp::VolumeProperties(s.getShape(), props);
@@ -4270,6 +4274,8 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& toolIn)
             switch (op()) {
                 case Op::Join:
                     res.makeElementFuse({baseShape, tool});
+                    addsNothing = addsNothing && !res.isNull()
+                        && std::abs(volume(res) - volume(baseShape)) < Precision::Confusion();
                     break;
                 case Op::Cut:
                     res.makeElementCut({baseShape, tool});
@@ -4288,7 +4294,10 @@ App::DocumentObjectExecReturn* Feature::applyTool(const Part::TopoShape& toolIn)
         if (missesAll) {
             Warning.setValue(CutMisses);
         }
-        else if (std::string(Warning.getValue()) == CutMisses) {
+        else if (addsNothing) {
+            Warning.setValue(JoinInside);
+        }
+        else if (std::string(Warning.getValue()) == CutMisses || std::string(Warning.getValue()) == JoinInside) {
             Warning.setValue("");  // trifft wieder
         }
     }
@@ -8147,7 +8156,7 @@ App::DocumentObjectExecReturn* SplitFace::compute()
     }
     // Wie ein Schnitt, der nichts mehr trifft: nach einer Änderung weiter vorn Warnung und Körper durchreichen. Ein
     // Fehler hielt alles danach an (Teilung, neue Skizzen darauf erschienen nicht; ConceptKey)
-    static constexpr const char* misses = "The tool no longer crosses the selected faces; nothing is split";
+    static constexpr const char* misses = "Nothing split: the tool no longer crosses the selected faces";
     if (!added) {
         setResults({shape});
         Warning.setValue(misses);

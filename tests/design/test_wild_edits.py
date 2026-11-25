@@ -32,3 +32,15 @@ class WildEdits(DesignTest):
         self.assertNotIn("Invalid", hole.State)
         self.assertTrue(hole.Warning.startswith("Face gone"), hole.Warning)
         self.assertNotIn("Touched", pin.State, "steps after it still compute")
+
+    def test_a_join_inside_the_body_says_so(self):
+        """Grundskizze liegt im Material (ConceptKey: Versatz 1 mm in "Skizze" unter dem Rand): Verbinden fügt nichts hinzu
+        und sagt das, statt still nichts zu tun"""
+        _, b = box(self.doc, 40, 20, 10)  # z 0..10: das Band ab z = 0 liegt ganz im Körper
+        band = sketch(self.doc, rect(5, 5, 35, 6))
+        join, _ = extrude(self.doc, band, 3, op="Join", bodies=[b])
+        self.assertTrue(join.Warning.startswith("Adds nothing"), join.Warning)
+        join.StartOffset = 10  # von der Oberseite aus
+        self.doc.recompute()
+        self.assertEqual(join.Warning, "")
+        self.assertAlmostEqual(b.Shape.Volume, 40 * 20 * 10 + 30 * 1 * 3, places=3)
