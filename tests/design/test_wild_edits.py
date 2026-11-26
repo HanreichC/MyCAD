@@ -196,3 +196,21 @@ class ProjectedEdge(BackFromImpossible):
         self.set(base, "DistanceX", 100)  # der Schlitz wandert mit: 6 mm vom rechten Rand
         self.assertNoErrors()
         self.assertAlmostEqual(max(v.X for v in slot.Shape.Vertexes), 94, places=4)
+
+    def test_a_line_that_crosses_the_circle_once_does_not_split_its_rim(self):
+        """ein Ende im Kreis des Zapfens, eins draußen: der Kreis bleibt eine Kante (vorher zwei Bögen, die Fase am Rand
+        fand nur noch einen; Härtetest 2, 2026-11-26)"""
+        _, b = box(self.doc, 80, 50, 10)
+        boss = sketch(self.doc, [], support=(b, top_face(b)))
+        boss.addGeometry(Part.Circle(V(30, 28, 0), V(0, 0, 1), 9))
+        self.doc.recompute()
+        join, _ = extrude(self.doc, boss, 7, op="Join", bodies=[b])
+        ring = edge_where(b, lambda p: abs(p.z - 17) < 1e-6 and abs(p.x - 30) < 1e-3)
+        chamfer = dress(self.doc, "Design::Chamfer", b, [ring], Size=1.5)
+        volume, edges = b.Shape.Volume, len(join.Shape.Edges)
+        boss.addGeometry(Part.LineSegment(V(22, 34.54, 0), V(38, 31.8, 0)))
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertEqual(len(join.Shape.Edges), edges)
+        self.assertEqual(chamfer.Warning, "")
+        self.assertAlmostEqual(b.Shape.Volume, volume, places=3)

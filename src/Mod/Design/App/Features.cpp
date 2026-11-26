@@ -4127,7 +4127,7 @@ namespace
 /// Die Fläche ohne lose Kanten in ihrem Inneren. Eine offene Linie mitten in einem Profil (berührt den Rand nicht)
 /// lässt der Splitter als innere Kante in der Fläche stehen; jeder Körper daraus bekam eine Phantomkante auf Deck- und
 /// Bodenfläche, an der z. B. eine Fase am Rand scheiterte (Härtetest 2, 26.11.: Linie im Kreis eines Zapfens)
-TopoDS_Face withoutLooseEdges(const TopoDS_Face& face)
+TopoDS_Face withoutLooseEdges(const TopoDS_Face& face, bool* removed = nullptr)
 {
     const auto loose = [](const TopoDS_Shape& s) {
         return s.Orientation() == TopAbs_INTERNAL || s.Orientation() == TopAbs_EXTERNAL;
@@ -4162,7 +4162,28 @@ TopoDS_Face withoutLooseEdges(const TopoDS_Face& face)
         }
         builder.Add(clean, child);
     }
+    if (removed) {
+        *removed = dropped;
+    }
     return dropped ? TopoDS::Face(clean) : face;
+}
+
+/// Wo eine lose Linie den Rand traf, bleibt ein Punkt auf ihm zurück: ein Kreis ist dort in zwei Bögen zerlegt, eine
+/// gerade Kante in zwei Stücke. Stücke derselben Kurve wieder zu einer Kante (Härtetest 2, 26.11.: Linie schneidet den
+/// Kreis eines Zapfens einmal; die Fase an seinem Rand fand nur noch einen Bogen)
+TopoDS_Face withWholeEdges(const TopoDS_Face& face)
+{
+    try {
+        ShapeUpgrade_UnifySameDomain unify(face, true, false, false);
+        unify.Build();
+        const TopoDS_Shape result = unify.Shape();
+        if (!result.IsNull() && result.ShapeType() == TopAbs_FACE) {
+            return TopoDS::Face(result);
+        }
+    }
+    catch (const Standard_Failure&) {
+    }
+    return face;
 }
 }  // namespace
 
@@ -4230,7 +4251,8 @@ Profiles::Regions Profiles::computeRegions(const TopoDS_Shape& local)
                 || std::abs(p.Y() - y0) < tol || std::abs(p.Y() - y1) < tol;
         }
         if (!outer) {
-            const TopoDS_Face region = withoutLooseEdges(TopoDS::Face(ex.Current()));
+            bool hadLoose = false;
+            const TopoDS_Face region = withoutLooseEdges(TopoDS::Face(ex.Current()), &hadLoose);
             GProp_GProps props;
             BRepGProp::SurfaceProperties(region, props);
             std::set<int> ids;
@@ -4247,7 +4269,8 @@ Profiles::Regions Profiles::computeRegions(const TopoDS_Shape& local)
             for (int id : ids) {
                 signature += (signature.empty() ? "" : ",") + std::to_string(id);
             }
-            regions.push_back({region, props.CentreOfMass(), signature});
+            // die Signatur stammt von den Kantenstücken des Teilers; erst danach die Stücke wieder vereinen
+            regions.push_back({hadLoose ? withWholeEdges(region) : region, props.CentreOfMass(), signature});
         }
     }
     // Feste Reihenfolge (links nach rechts, unten nach oben); Extrude & Co. finden ihre Profile zusätzlich

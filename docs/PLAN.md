@@ -684,7 +684,9 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
     hatte; zurückgestellt lag an der gemerkten Stelle zufällig eine fremde Kante, ohne Warnung. Jetzt bleibt das
     Gedächtnis vom letzten Mal, als der Schritt rechnete (`Feature::execute`).
   - Lose Linie mitten in einem Profil (berührt den Rand nicht) blieb als innere Kante in der Profilfläche: der Körper
-    bekam eine Phantomkante, eine Fase am Rand des Zapfens scheiterte. Profilflächen jetzt ohne lose Kanten.
+    bekam eine Phantomkante, eine Fase am Rand des Zapfens scheiterte. Profilflächen jetzt ohne lose Kanten. Trifft die Linie den Rand
+    (ein Ende im Kreis, eins draußen), blieb dort ein Punkt: der Kreis in zwei Bögen, die Fase fand nur einen. Stücke
+    derselben Kurve werden wieder eine Kante.
   - Profil aus zusammengesetzten Teilflächen: die Kanten des Körpers heißen nur „Edge2“ (mit Anhang späterer
     Schritte), dem traute die Rundung und rutschte bei der nächsten Änderung still weiter. Jetzt gelten solche
     Nummern-Namen auch mit Anhang als unsicher und werden über die Lage geprüft.
@@ -701,7 +703,7 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
     und ändert sich dabei ein Maß, findet die Skizze die Kante einen Zwischenstand lang nicht; FreeCAD löscht dann die
     Verknüpfung (SketchObjectExternal „clean up geometry reference“), die Linie friert für immer ein, ohne Warnung.
     Nachstellen: `REPLAY="circle=base:0,50,3.8,D:65" … stress_edits.py`; Test `ProjectedEdge` (erwartet rot). Ein
-    Versuch (Verknüpfung behalten, Kante über die Lage wiederfinden) störte Zurückrollen und Unterdrücken, zurückgenommen.
+    Versuch (Verknüpfung behalten, Kante über die Lage wiederfinden) störte Zurückrollen und Unterdrücken, zurückgenommen. Zweiter Versuch an der Stelle, an der FreeCAD verwaiste Linien selbst wieder anhängt (rebuildExternalGeometry, „re-check for any missing geometry“): hängt wieder an, erzeugt aber eine zweite Linie, das Maß bleibt an der alten; der Schlüssel der Linie (externalGeoRef) muss mit umgeschrieben werden.
   - Offen: schneidet ein Kreis in der Grundskizze den Plattenrand und ändert man dabei ein Maß, sitzt die Rundung der
     Ecke im Zwischenstand an einem Teilstück der Kante (FreeCADs Namen für Teilstücke sind Nummern, sehen aber
     verfolgbar aus); nach dem Entfernen des Kreises stimmt das Teil, es bleibt die Warnung „bitte prüfen“.
