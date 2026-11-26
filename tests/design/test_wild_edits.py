@@ -86,3 +86,113 @@ class WildEdits(DesignTest):
         base.addGeometry(Part.Circle(V(80, 50, 0), V(0, 0, 1), 6))  # um die Ecke, ragt nach außen
         self.doc.recompute()
         self.assertAlmostEqual(b.Shape.Volume, full, places=3)
+
+
+class BackFromImpossible(DesignTest):
+    """Härtetest 2 (2026-11-26): ein Maß kurz unmöglich, dann zurück. Die Eckrundungen sitzen danach wieder an den
+    Ecken, an denen sie gewählt wurden, ohne Warnung."""
+
+    def plate(self):
+        import Sketcher
+        C = Sketcher.Constraint
+        base = sketch(self.doc, rect(0, 0, 80, 50))
+        for c in [C("Coincident", i, 2, (i + 1) % 4, 1) for i in range(4)] + [
+                C("Horizontal", 0), C("Horizontal", 2), C("Vertical", 1), C("Vertical", 3), C("Coincident", 0, 1, -1, 1),
+                C("DistanceX", 0, 1, 0, 2, 80), C("DistanceY", 1, 1, 1, 2, 50)]:
+            base.addConstraint(c)
+        self.doc.recompute()
+        _, b = extrude(self.doc, base, 10)
+        hole = sketch(self.doc, [], support=(b, top_face(b)))
+        hole.addGeometry(Part.Circle(V(15, 15, 0), V(0, 0, 1), 3))
+        hole.addConstraint(C("Radius", 0, 3)); hole.addConstraint(C("DistanceX", -1, 1, 0, 3, 15))
+        hole.addConstraint(C("DistanceY", -1, 1, 0, 3, 15))
+        self.doc.recompute()
+        extrude(self.doc, hole, 10, op="Cut", bodies=[b], Reversed=True)
+        self.fillets = [dress(self.doc, "Design::Fillet", b, [edge_where(
+            b, lambda p, x=x, y=y: abs(p.x - x) < 1e-6 and abs(p.y - y) < 1e-6)], Size=4)
+            for x, y in ((0, 0), (80, 0), (80, 50), (0, 50))]
+        return base, hole, b
+
+    def set(self, sk, kind, value):
+        i = [k for k, c in enumerate(sk.Constraints) if c.Type == kind][0]
+        sk.setDatum(i, App.Units.Quantity("%g mm" % value))
+        self.doc.recompute()
+
+    def assertAsBefore(self, b, volume):
+        self.assertNoErrors()
+        self.assertEqual([f.Warning for f in self.fillets], [""] * 4)
+        self.assertAlmostEqual(b.Shape.Volume, volume, places=3)
+
+    def test_a_hole_that_eats_the_corner_and_back(self):
+        """die Ecke war weg, die Rundung musste raten (Warnung); kommt die Ecke zurück, gilt wieder die gewählte Kante"""
+        base, hole, b = self.plate()
+        volume = b.Shape.Volume
+        self.set(hole, "Radius", 40)
+        self.set(hole, "Radius", 3)
+        self.assertAsBefore(b, volume)
+
+    def test_a_plate_as_narrow_as_the_fillet_and_back(self):
+        """alle Rundungen scheitern (Platte 4 mm breit); was sie sich gemerkt haben, bleibt vom letzten guten Stand"""
+        base, hole, b = self.plate()
+        volume = b.Shape.Volume
+        self.set(base, "DistanceX", 4)
+        self.set(base, "DistanceX", 80)
+        self.assertAsBefore(b, volume)
+
+
+class LooseLine(DesignTest):
+    def test_a_loose_line_inside_a_profile_leaves_no_edge_on_the_body(self):
+        """offene Linie mitten im Kreis eines Zapfens (berührt den Rand nicht): das Profil bleibt dasselbe, der Zapfen
+        bekommt keine Phantomkante, die Fase an seinem Rand rechnet weiter (Härtetest 2, 2026-11-26)"""
+        _, b = box(self.doc, 80, 50, 10)
+        boss = sketch(self.doc, [], support=(b, top_face(b)))
+        boss.addGeometry(Part.Circle(V(30, 28, 0), V(0, 0, 1), 8.6))
+        self.doc.recompute()
+        join, _ = extrude(self.doc, boss, 7, op="Join", bodies=[b])
+        ring = edge_where(b, lambda p: abs(p.z - 17) < 1e-6 and abs(p.x - 30) < 1e-3)
+        chamfer = dress(self.doc, "Design::Chamfer", b, [ring], Size=1.41)
+        volume, edges = b.Shape.Volume, len(join.Shape.Edges)
+        boss.addGeometry(Part.LineSegment(V(22, 27.54, 0), V(38, 26.6, 0)))
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertEqual(len(join.Shape.Edges), edges)
+        self.assertEqual(chamfer.Warning, "")
+        self.assertAlmostEqual(b.Shape.Volume, volume, places=3)
+
+
+class ProjectedEdge(BackFromImpossible):
+    @unittest.expectedFailure  # offen (PLAN 4.8): ein erster Versuch am 26.11. störte Zurückrollen und Unterdrücken
+    def test_a_projected_edge_that_was_lost_for_a_moment_is_linked_again(self):
+        """Schlitz mit Maß zur projizierten rechten Kante. Kreis um eine Ecke der Grundskizze, Tiefe ändern und zurück,
+        Kreis weg: zwischendurch findet die Skizze die Kante nicht. Danach hängt die Linie wieder an ihr, der Schlitz
+        folgt der Breite (vorher löschte die Skizze die Verknüpfung, die Linie fror für immer ein; Härtetest 2)"""
+        import Sketcher
+        C = Sketcher.Constraint
+        base, hole, b = self.plate()
+        top = face_where(b, lambda c, f: abs(c.z - 10) < 1e-6 and f.Area > 100)
+        slot = sketch(self.doc, [], support=(b, top))
+        slot.addExternal(b.Name, edge_where(b, lambda p: abs(p.x - 80) < 1e-6 and abs(p.z - 10) < 1e-6))
+        for g in rect(68, 10, 74, 20):
+            slot.addGeometry(g)
+        for c in [C("Coincident", i, 2, (i + 1) % 4, 1) for i in range(4)] + [
+                C("Horizontal", 0), C("Horizontal", 2), C("Vertical", 1), C("Vertical", 3),
+                C("DistanceX", 0, 1, 0, 2, 6), C("DistanceY", 1, 1, 1, 2, 10), C("DistanceY", -1, 1, 0, 1, 10),
+                C("DistanceX", 1, 1, -3, 1, 6)]:
+            slot.addConstraint(c)
+        self.doc.recompute()
+        extrude(self.doc, slot, 3, op="Cut", bodies=[b], Reversed=True)
+        volume = b.Shape.Volume
+        i = base.addGeometry(Part.Circle(V(0, 50, 0), V(0, 0, 1), 3.8))
+        self.doc.recompute()
+        self.set(base, "DistanceY", 65)
+        self.set(base, "DistanceY", 50)
+        base.delGeometry(i)
+        self.doc.recompute()
+        self.assertNoErrors()  # die Rundung an dieser Ecke darf noch "bitte prüfen" melden (offen, PLAN 4.8)
+        self.assertAlmostEqual(b.Shape.Volume, volume, places=3)
+        self.assertEqual(len(slot.ExternalGeometry), 1)
+        for f in self.fillets:
+            f.Warning = ""
+        self.set(base, "DistanceX", 100)  # der Schlitz wandert mit: 6 mm vom rechten Rand
+        self.assertNoErrors()
+        self.assertAlmostEqual(max(v.X for v in slot.Shape.Vertexes), 94, places=4)

@@ -222,6 +222,10 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
                 // (Projektion mit 15 statt 13 Linien, Bedingungen am Kreis widersprachen sich; Härtetest Seed 10)
                 ShapeUpgrade_UnifySameDomain unify(fused.getShape(), true, true, false);
                 unify.Build();
+                // Bewusst ohne Entstehungsgeschichte: die Namen der Teilflächen sind Nummern aus dem Flächenteiler und
+                // wechseln mit jeder Änderung. Mit Geschichte entstanden daraus Namen, die verfolgbar aussahen, es aber
+                // nicht waren; Projektionen auf Körperkanten verloren ihre Kante ganz (Härtetest 2, 26.11.). Schlichte
+                // Nummern gelten überall als unsicher und werden über die Lage geprüft
                 const Part::TopoShape merged(unify.Shape());
                 const auto mergedFaces = merged.getSubTopoShapes(TopAbs_FACE);
                 if (!mergedFaces.empty() && mergedFaces.size() < pieces.size()) {
@@ -4109,6 +4113,50 @@ bool Profiles::computingInBackground() const
     return background.valid() && background.wait_for(std::chrono::seconds(0)) != std::future_status::ready;
 }
 
+namespace
+{
+/// Die Fläche ohne lose Kanten in ihrem Inneren. Eine offene Linie mitten in einem Profil (berührt den Rand nicht)
+/// lässt der Splitter als innere Kante in der Fläche stehen; jeder Körper daraus bekam eine Phantomkante auf Deck- und
+/// Bodenfläche, an der z. B. eine Fase am Rand scheiterte (Härtetest 2, 26.11.: Linie im Kreis eines Zapfens)
+TopoDS_Face withoutLooseEdges(const TopoDS_Face& face)
+{
+    const auto loose = [](const TopoDS_Shape& s) {
+        return s.Orientation() == TopAbs_INTERNAL || s.Orientation() == TopAbs_EXTERNAL;
+    };
+    BRep_Builder builder;
+    TopoDS_Shape clean = face.EmptyCopied();
+    bool dropped = false;
+    for (TopoDS_Iterator it(face, Standard_False); it.More(); it.Next()) {
+        TopoDS_Shape child = it.Value();
+        if (loose(child)) {
+            dropped = true;
+            continue;
+        }
+        if (child.ShapeType() == TopAbs_WIRE) {
+            TopoDS_Wire wire;
+            builder.MakeWire(wire);
+            bool cut = false;
+            for (TopoDS_Iterator e(child, Standard_False); e.More(); e.Next()) {
+                if (loose(e.Value())) {
+                    cut = true;
+                }
+                else {
+                    builder.Add(wire, e.Value());
+                }
+            }
+            if (cut) {
+                dropped = true;
+                wire.Closed(Standard_True);
+                wire.Orientation(child.Orientation());
+                child = wire;
+            }
+        }
+        builder.Add(clean, child);
+    }
+    return dropped ? TopoDS::Face(clean) : face;
+}
+}  // namespace
+
 Profiles::Regions Profiles::computeRegions(const TopoDS_Shape& local)
 {
     TopTools_ListOfShape edges;
@@ -4137,6 +4185,11 @@ Profiles::Regions Profiles::computeRegions(const TopoDS_Shape& local)
     splitter.SetTools(edges);
     splitter.SetRunParallel(true);   // DXF-Importe bringen tausende Kanten mit
     splitter.SetNonDestructive(true);  // die Skizzenform nicht anfassen: der Hauptthread liest sie währenddessen
+    // Fast deckungsgleiche Linien (von Hand auf eine andere gezeichnet, 0,00002 mm daneben) gelten als eine. Ohne das
+    // entschied der Zufall: mal ein Spalt (Fläche 0), mal eine Linie, je nachdem, was sonst noch in der Skizze lag;
+    // eine neue Linie weit weg ließ die Trennung zwischen einer Lasche und der großen Innenfläche verschwinden, die
+    // Lasche wurde still zur ganzen Innenfläche (ConceptKey, Härtetest Seed 19, 26.11.: Basis 201 -> 773 cm³)
+    splitter.SetFuzzyValue(1e-4);
     splitter.Build();
     if (!splitter.IsDone()) {
         out.error = "Could not compute sketch profiles";
@@ -4168,10 +4221,11 @@ Profiles::Regions Profiles::computeRegions(const TopoDS_Shape& local)
                 || std::abs(p.Y() - y0) < tol || std::abs(p.Y() - y1) < tol;
         }
         if (!outer) {
+            const TopoDS_Face region = withoutLooseEdges(TopoDS::Face(ex.Current()));
             GProp_GProps props;
-            BRepGProp::SurfaceProperties(ex.Current(), props);
+            BRepGProp::SurfaceProperties(region, props);
             std::set<int> ids;
-            for (TopExp_Explorer ed(ex.Current(), TopAbs_EDGE); ed.More(); ed.Next()) {
+            for (TopExp_Explorer ed(region, TopAbs_EDGE); ed.More(); ed.Next()) {
                 const TopoDS_Shape forward = ed.Current().Oriented(TopAbs_FORWARD);
                 if (source.IsBound(forward)) {
                     ids.insert(source.Find(forward));
@@ -4184,7 +4238,7 @@ Profiles::Regions Profiles::computeRegions(const TopoDS_Shape& local)
             for (int id : ids) {
                 signature += (signature.empty() ? "" : ",") + std::to_string(id);
             }
-            regions.push_back({TopoDS::Face(ex.Current()), props.CentreOfMass(), signature});
+            regions.push_back({region, props.CentreOfMass(), signature});
         }
     }
     // Feste Reihenfolge (links nach rechts, unten nach oben); Extrude & Co. finden ihre Profile zusätzlich
@@ -4245,7 +4299,18 @@ App::DocumentObjectExecReturn* Feature::execute()
         setResults(results);
         return StdReturn;
     }
+    // Was ein Schritt sich über seine gewählten Kanten und Flächen merkt (Name, Lage), gilt vom letzten Mal, als er
+    // rechnete. Scheitert er, bleibt es dabei: in einem kaputten Zwischenstand (Platte kurz 4 mm breit, alle Rundungen
+    // rot) überschrieb er es sonst mit dem, was dort gerade lag, und fand nach dem Zurückstellen eine fremde Kante,
+    // die zufällig an der gemerkten Stelle lag, ohne Warnung (Härtetest 2, 26.11.)
+    auto dressUp = dynamic_cast<DressUp*>(this);
+    const std::vector<std::string> maps = dressUp ? dressUp->ElementMaps.getValues() : std::vector<std::string>();
+    const std::vector<std::string> hints = dressUp ? dressUp->ElementHints.getValues() : std::vector<std::string>();
     App::DocumentObjectExecReturn* result = compute();
+    if (dressUp && result && result != StdReturn) {
+        dressUp->ElementMaps.setValues(maps);
+        dressUp->ElementHints.setValues(hints);
+    }
     // Wie Fusion: ein Schritt, dessen Profil weggefallen ist, wird übersprungen (Warnung in der Timeline, Körper
     // unverändert) statt rot zu werden. Ein Fehler hielte das Neuberechnen aller späteren Schritte an, auch neue
     // Extrudes kämen nie an ("Sketch has no closed profile").
@@ -4748,6 +4813,8 @@ DressUp::DressUp()
                       "Traceable names of the selected elements");
     ADD_PROPERTY_TYPE(ElementHints, (), "DressUp", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
                       "Position and size of the selected elements");
+    ADD_PROPERTY_TYPE(WarnedMaps, (), "DressUp", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
+                      "Traceable names of the elements when the step last had to guess");
     ADD_PROPERTY_TYPE(WarnedHints, (), "DressUp", App::PropertyType(App::Prop_Output | App::Prop_Hidden),
                       "Where the selected elements were when they last had to be guessed");
     ADD_PROPERTY_TYPE(ElementBodies, (), "DressUp", App::Prop_Hidden, "Index in Bodies of each selected element");
@@ -4894,9 +4961,34 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
     maps.resize(names.size());
     hints.resize(names.size());
     const std::vector<std::string> before = hints;  // Lage vor diesem Durchgang (für WarnedHints)
+    const std::vector<std::string> beforeMaps = maps;
     if (!std::string(Warning.getValue()).starts_with(ModelChanged)) {
         WarnedHints.setValues(std::vector<std::string>());  // bestätigt ("Sieht richtig aus") oder nie gewarnt
+        WarnedMaps.setValues(std::vector<std::string>());
     }
+    // Solange die Warnung steht (es wurde geraten, niemand hat bestätigt), gilt weiter, was der Mensch gewählt hatte:
+    // ist das Element von damals wieder da (derselbe verfolgbare Name, oder genau eins unverändert an der alten Stelle),
+    // nimmt der Schritt es wieder. Vorher blieb er für immer bei der geratenen Ersatzkante (Härtetest 2, 26.11.: Bohrung
+    // kurz viel zu groß, die Ecke war weg; nach dem Zurückstellen saßen die Eckrundungen an fremden Kanten)
+    const std::vector<std::string> pickedHints = WarnedHints.getValues();
+    const std::vector<std::string> pickedMaps = WarnedMaps.getValues();
+    std::vector<bool> restored(names.size(), false);
+    // Ein "Name", der nur eine Nummer ist ("Edge2", auch mit Anhang späterer Schritte), ist nicht verfolgbar. Ein
+    // späterer Schritt (die Rundung davor) verpackt ihn in ein Kürzel ("#28d:1"), das verfolgbar aussieht: auspacken
+    const auto numberOnly = [&shape](const std::string& name) {
+        static const std::regex number("(Face|Edge|Vertex)[0-9]+(;.*)?");
+        if (std::regex_match(name, number)) {
+            return true;
+        }
+        bool found = false;  // die Entstehung zurückverfolgen: hieß es irgendwann nur nach seiner Nummer?
+        if (!shape.getElementMap().empty()) {
+            shape.traceElement(Data::MappedName(name), [&found](const Data::MappedName& step, int, long, long) {
+                found = std::regex_match(step.toString(), number);
+                return found;
+            });
+        }
+        return found;
+    };
     std::vector<std::string> uncertain;
     std::vector<std::vector<TopoDS_Shape>> extra(names.size());  ///< weitere Teilstücke einer geteilten Fläche
     App::DocumentObject* base = BaseFeatures.getSize() > int(body) ? BaseFeatures.getValues()[body] : nullptr;
@@ -4904,14 +4996,31 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
         if (!mine(i)) {
             continue;
         }
+        if (pickedHints.size() == names.size()) {
+            std::string picked;
+            const std::string old = i < pickedMaps.size() ? pickedMaps[i] : std::string();
+            const Data::IndexedName idx = old.empty() ? Data::IndexedName() : shape.getIndexedName(Data::MappedName(old));
+            if (idx && !numberOnly(old)) {
+                picked = idx.toString();
+            }
+            else {
+                bool exact = false;
+                const std::string at = closestElement(shape, names[i], pickedHints[i], {}, &exact);
+                picked = exact ? at : std::string();
+            }
+            if (!picked.empty()) {
+                names[i] = picked;
+                maps[i].clear();  // unten neu aus dem Element
+                restored[i] = true;
+            }
+        }
         if (!maps[i].empty()) {
             bool found = false;
             const Data::IndexedName idx = shape.getIndexedName(Data::MappedName(maps[i]));
             // Ein "Name", der nur die Nummer ist ("Face1": ohne verfolgte Entstehung), zeigt nach einer Änderung weiter vorn
             // oft auf ein anderes Element. Nur trauen, wenn es noch so aussieht wie gespeichert; sonst unten nach Lage und
             // Größe (ConceptKey: Drücken/Ziehen zog nach einer Linie in der Grundskizze eine fremde Fläche, Basis halbiert)
-            static const std::regex plain("(Face|Edge|Vertex)[0-9]+");
-            const bool trusted = idx && !std::regex_match(maps[i], plain);
+            const bool trusted = idx && !numberOnly(maps[i]);
             const auto looksSame = [&](const std::string& name) {
                 const TopoDS_Shape sub = shape.getSubShape(name.c_str(), true);
                 if (sub.IsNull() || hints[i].empty()) {
@@ -4998,6 +5107,7 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
         ErrorElements.setValues(uncertain);
         if (WarnedHints.getSize() == 0) {
             WarnedHints.setValues(before);  // wo der Mensch die Elemente gewählt hatte
+            WarnedMaps.setValues(beforeMaps);
         }
     }
     else if (WarnedHints.getSize() == int(hints.size())) {
@@ -5013,11 +5123,12 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
         const auto& warned = WarnedHints.getValues();
         bool back = true;
         for (size_t i = 0; i < hints.size(); ++i) {
-            back = back && (!mine(i) || near(hints[i], warned[i]));
+            back = back && (!mine(i) || restored[i] || near(hints[i], warned[i]));
         }
         if (back) {
             Warning.setValue("");
             WarnedHints.setValues(std::vector<std::string>());
+            WarnedMaps.setValues(std::vector<std::string>());
         }
     }
 

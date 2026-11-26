@@ -434,6 +434,7 @@ public:
     App::PropertyStringList ElementMaps;  ///< verfolgbare Namen zu Edges (topologische Benennung)
     App::PropertyStringList ElementHints;  ///< je Element "x y z Größe": wiederfinden, wenn der Name verloren geht
     App::PropertyStringList WarnedHints;   ///< wo die Elemente lagen, als zuletzt geraten werden musste (Warnung)
+    App::PropertyStringList WarnedMaps;    ///< ihre verfolgbaren Namen von damals: kommt das Element zurück, gilt es wieder
     App::PropertyIntegerList ElementBodies;  ///< je Element der Index in Bodies (leer: alle zu Bodies[0])
 
 protected:

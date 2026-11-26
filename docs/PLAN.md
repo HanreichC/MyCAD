@@ -674,6 +674,37 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
 - „Transparenz reduzieren“ war langsamer als das echte Glas (Schattenringe je Bild): jetzt einmal gezeichnet, 27,9 ->
   19,8 ms je Bild, der sparsamste Modus. Das GL-Glas kostet ~7 ms je Bild in Software.
 - Chaos-Tests `test_chaos_ui` bis `test_chaos4_ui` in der CI.
+- Härtetest 2 (26.11., `tests/design/stress_edits.py`): ein Halter wird zufällig bearbeitet und nach jeder Maßänderung
+  mit einem frisch gebauten Teil derselben Maße verglichen; was nichts ändern darf (Linie in alter Skizze,
+  Unterdrücken, Zurückrollen, Speichern/Laden, Rückgängig, ein unmögliches Maß und zurück), ändert nichts. Funde:
+  - Rundung verlor ihre Kante (Bohrung kurz so groß, dass die Ecke weg war) und blieb nach dem Zurückstellen bei der
+    geratenen Ersatzkante. Jetzt merkt sie sich beim Raten auch die Namen von damals (`WarnedMaps`) und nimmt die
+    gewählte Kante wieder, sobald sie zurück ist.
+  - Scheiterte ein Schritt (Platte kurz 4 mm breit), überschrieb er trotzdem, was er sich über seine Kanten gemerkt
+    hatte; zurückgestellt lag an der gemerkten Stelle zufällig eine fremde Kante, ohne Warnung. Jetzt bleibt das
+    Gedächtnis vom letzten Mal, als der Schritt rechnete (`Feature::execute`).
+  - Lose Linie mitten in einem Profil (berührt den Rand nicht) blieb als innere Kante in der Profilfläche: der Körper
+    bekam eine Phantomkante, eine Fase am Rand des Zapfens scheiterte. Profilflächen jetzt ohne lose Kanten.
+  - Profil aus zusammengesetzten Teilflächen: die Kanten des Körpers heißen nur „Edge2“ (mit Anhang späterer
+    Schritte), dem traute die Rundung und rutschte bei der nächsten Änderung still weiter. Jetzt gelten solche
+    Nummern-Namen auch mit Anhang als unsicher und werden über die Lage geprüft.
+  - ConceptKey, Härtetest 1 Seed 19: fast deckungsgleiche Linien (0,00002 mm daneben gezeichnet) trennte der
+    Flächenteiler mal, mal nicht, je nachdem, was sonst in der Skizze lag; eine neue Linie weit weg ließ eine Lasche
+    still zur ganzen Innenfläche werden (Basis 201 -> 773 cm³). Jetzt feste Unschärfe 0,0001 mm im Teiler.
+  - Offen: Skizze auf einer Fläche. Ändert sich die Höhe und heißt die Fläche im selben Schritt anders (Höhe kurz
+    0,6 mm und zurück, nach längerer Vorgeschichte: Seed 3), findet das Wiederfinden in der alten Ebene nichts, die
+    Skizze bleibt mit „Fläche weg“ auf der alten Höhe. Ein Versuch (die gleich gerichtete Fläche, über der die Skizze
+    liegt) ließ beim Zurückrollen eine Skizze vom Zapfen auf die Platte darunter springen, zurückgenommen.
+  - Offen (Zufall der Zahlen): liegt nach einer Änderung eine fremde Kante genau dort, wo die gewählte zuletzt lag
+    (Zapfen 6 mm hoch, Platte 6 mm niedriger: unterer statt oberer Zapfenrand), nimmt die Fase sie ohne Warnung.
+  - Offen: projizierte Körperkante (ein Schlitz hängt per Maß an ihr). Schneidet ein Kreis in der Grundskizze den Rand
+    und ändert sich dabei ein Maß, findet die Skizze die Kante einen Zwischenstand lang nicht; FreeCAD löscht dann die
+    Verknüpfung (SketchObjectExternal „clean up geometry reference“), die Linie friert für immer ein, ohne Warnung.
+    Nachstellen: `REPLAY="circle=base:0,50,3.8,D:65" … stress_edits.py`; Test `ProjectedEdge` (erwartet rot). Ein
+    Versuch (Verknüpfung behalten, Kante über die Lage wiederfinden) störte Zurückrollen und Unterdrücken, zurückgenommen.
+  - Offen: schneidet ein Kreis in der Grundskizze den Plattenrand und ändert man dabei ein Maß, sitzt die Rundung der
+    Ecke im Zwischenstand an einem Teilstück der Kante (FreeCADs Namen für Teilstücke sind Nummern, sehen aber
+    verfolgbar aus); nach dem Entfernen des Kreises stimmt das Teil, es bleibt die Warnung „bitte prüfen“.
 
 **Offen:**
 - „Alles einpassen“ animiert noch in eigener Ereignisschleife (jetzt fest 0,2 s statt bis 0,5 s, eine Fahrt statt
