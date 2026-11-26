@@ -690,7 +690,7 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
     Nummern-Namen auch mit Anhang als unsicher und werden über die Lage geprüft.
   - ConceptKey, Härtetest 1 Seed 19: fast deckungsgleiche Linien (0,00002 mm daneben gezeichnet) trennte der
     Flächenteiler mal, mal nicht, je nachdem, was sonst in der Skizze lag; eine neue Linie weit weg ließ eine Lasche
-    still zur ganzen Innenfläche werden (Basis 201 -> 773 cm³). Jetzt feste Unschärfe 0,0001 mm im Teiler.
+    still zur ganzen Innenfläche werden (Basis 201 -> 773 cm³). Jetzt feste Unschärfe 0,0001 mm im Teiler. Dadurch fallen Flächen mit Inhalt null weg und die Profilflächen zählen neu durch: „Lost reference: Face34“ an einem Schritt, der sein Profil über den Schlüssel längst gefunden hat, wird nicht mehr gemeldet.
   - Offen: Skizze auf einer Fläche. Ändert sich die Höhe und heißt die Fläche im selben Schritt anders (Höhe kurz
     0,6 mm und zurück, nach längerer Vorgeschichte: Seed 3), findet das Wiederfinden in der alten Ebene nichts, die
     Skizze bleibt mit „Fläche weg“ auf der alten Höhe. Ein Versuch (die gleich gerichtete Fläche, über der die Skizze

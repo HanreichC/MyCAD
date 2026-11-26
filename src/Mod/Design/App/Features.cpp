@@ -2728,6 +2728,15 @@ std::vector<Design::ReferenceIssue> Design::referenceIssues(App::Document* doc)
             if (!link) {
                 continue;
             }
+            // Profile findet ein Schritt über ihre Schlüssel (ProfileKeys), nicht über die Flächennummer: zählen die
+            // Profilflächen neu durch, ist die alte Nummer weg, das Profil aber da. Ein wirklich verlorenes Profil meldet
+            // der Schritt selbst (Warnung "Profile gone"). Sonst falscher Alarm "Lost reference: Face34" (26.11.)
+            if (std::string(prop->getName()) == "Profile") {
+                auto keys = freecad_cast<App::PropertyStringList*>(obj->getPropertyByName("ProfileKeys"));
+                if (keys && keys->getSize() > 0) {
+                    continue;
+                }
+            }
             std::vector<App::DocumentObject*> targets;
             std::vector<std::string> subs;
             link->getLinks(targets, true, &subs, false);  // alte Schreibweise: verlorene Elemente tragen "?"
