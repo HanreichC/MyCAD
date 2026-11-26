@@ -478,6 +478,7 @@ bool AttachExtension::refindFace(bool misplaced, bool* turned)
     };
     const auto sameWay = [&normal](const gp_Dir& d) { return d.IsEqual(normal, Precision::Angular()); };
     bool changed = false;
+    bool moved = false;  ///< über die Entstehungsgeschichte gefunden: das Objekt geht mit der Fläche, kein Ausgleich
     for (size_t i = 0; i < objs.size(); ++i) {
         auto support = dynamic_cast<Part::Feature*>(objs[i]);
         std::string sub = subs[i];
@@ -534,6 +535,28 @@ bool AttachExtension::refindFace(bool misplaced, bool* turned)
                 bestIndex = index;
             }
         }
+        // Name weg, und in der alten Ebene liegt keine Fläche mehr (Platte kurz 0,6 mm dünn und wieder 6,6: die Skizze ging
+        // mit nach unten, zurück heißt die Deckfläche anders und liegt wieder oben). Die Fläche nehmen, die laut
+        // Entstehungsgeschichte aus der alten hervorging, wenn es genau eine ist; die Skizze geht mit ihr wie sonst mit.
+        // Nicht einfach "die Fläche darunter": beim Zurückrollen sprang so eine Skizze vom Zapfen auf die Platte
+        // (Härtetest 2, 26.11.)
+        if (!bestIndex && !misplaced) {
+            const auto& shadows = AttachmentSupport.getShadowSubs();
+            const std::string mapped = i < shadows.size() ? Data::newElementName(shadows[i].newName.c_str()) : std::string();
+            if (!mapped.empty() && mapped != element) {
+                int faces = 0;
+                for (const auto& related : Part::Feature::getRelatedElements(support, mapped.c_str())) {
+                    if (std::string(related.index.getType()) == "Face") {
+                        ++faces;
+                        bestIndex = related.index.getIndex();
+                    }
+                }
+                if (faces != 1) {
+                    bestIndex = 0;
+                }
+                moved = moved || bestIndex > 0;
+            }
+        }
         // Name zeigt auf eine andere Fläche: nur eine Fläche nehmen, auf der das Objekt wirklich liegt (sonst ist der
         // Körper nur höher/tiefer geworden und das Objekt folgt der benannten Fläche wie bisher)
         if (!bestIndex || (misplaced && best > reach)) {
@@ -548,10 +571,12 @@ bool AttachExtension::refindFace(bool misplaced, bool* turned)
     try {
         AttachmentSupport.setValues(objs, subs);
         positionBySupport();
-        // An der neuen Fläche genau an den alten Platz: Versatz ausgleichen
-        const Base::Placement now = getPlacement().getValue();
-        AttachmentOffset.setValue(offset * now.inverse() * last);
-        positionBySupport();
+        if (!moved) {
+            // An der neuen Fläche genau an den alten Platz: Versatz ausgleichen
+            const Base::Placement now = getPlacement().getValue();
+            AttachmentOffset.setValue(offset * now.inverse() * last);
+            positionBySupport();
+        }
     }
     catch (...) {
         return false;

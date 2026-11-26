@@ -5442,8 +5442,18 @@ std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, Top
                     // Die Entstehungsgeschichte nannte ein Element, das ganz anders aussieht als gespeichert (ConceptKey:
                     // statt der Randfläche eine 57-mm²-Fläche weiter unten, still), und genau ein Element liegt unverändert
                     // an der alten Stelle: das ist es. Sonst gilt die Geschichte (die Fläche hat sich wirklich verändert)
+                    // Hat das Element der Geschichte aber dieselbe Größe wie gemerkt, ist es dasselbe, nur verschoben: dann
+                    // gilt die Geschichte. Sonst nahm eine Fase den Fußring des Zapfens, als die Platte kurz 0,6 mm dünn war
+                    // und die Oberkante dabei genau dort lag, wo vorher der Fuß war (Härtetest 2, 26.11.)
+                    const auto sameSize = [&](const std::string& name) {
+                        std::istringstream a(hints[i]), b(elementHint(shape.getSubShape(name.c_str(), true)));
+                        double x, y, z, s0 = 0, s1 = -1;
+                        return (a >> x >> y >> z >> s0) && (b >> x >> y >> z >> s1)
+                            && std::abs(s0 - s1) <= 1e-6 * std::max(1.0, s0);
+                    };
                     bool exact = false;
-                    const std::string same = looksSame(related) ? "" : closestElement(shape, names[i], hints[i], {}, &exact);
+                    const std::string same = looksSame(related) || sameSize(related)
+                        ? "" : closestElement(shape, names[i], hints[i], {}, &exact);
                     names[i] = exact ? same : related;  // gewachsene Oberseite nach Löschen einer Rundung: die Geschichte
                     found = true;
                 }

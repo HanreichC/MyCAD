@@ -261,6 +261,7 @@ def debug(when):
         e = d.getObject(names["ext"])
         print("  %s base extrude: volume %.2f faces %d keys %s subs %s" % (when, e.Shape.Volume, len(e.Shape.Faces), list(e.ProfileKeys), list(e.Profile[1])))
         sk = d.getObject(names["slot"])
+        print("  %s slot at z=%.3f support=%s warn=%r" % (when, sk.Placement.Base.z, [(o.Name, e) for o, e in sk.AttachmentSupport], getattr(sk, "Warning", "")[:30]))
         print("  %s slot external=%s lines=%s state=%s" % (when, [(o.Name, e) for o, e in sk.ExternalGeometry],
               [(round(g.StartPoint.x, 2), round(g.StartPoint.y, 2), round(g.EndPoint.x, 2), round(g.EndPoint.y, 2))
                for g in sk.ExternalGeo[2:] if isinstance(g, Part.LineSegment)], sk.State))

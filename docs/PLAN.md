@@ -693,12 +693,14 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
   - ConceptKey, Härtetest 1 Seed 19: fast deckungsgleiche Linien (0,00002 mm daneben gezeichnet) trennte der
     Flächenteiler mal, mal nicht, je nachdem, was sonst in der Skizze lag; eine neue Linie weit weg ließ eine Lasche
     still zur ganzen Innenfläche werden (Basis 201 -> 773 cm³). Jetzt feste Unschärfe 0,0001 mm im Teiler. Dadurch fallen Flächen mit Inhalt null weg und die Profilflächen zählen neu durch: „Lost reference: Face34“ an einem Schritt, der sein Profil über den Schlüssel längst gefunden hat, wird nicht mehr gemeldet.
-  - Offen: Skizze auf einer Fläche. Ändert sich die Höhe und heißt die Fläche im selben Schritt anders (Höhe kurz
-    0,6 mm und zurück, nach längerer Vorgeschichte: Seed 3), findet das Wiederfinden in der alten Ebene nichts, die
-    Skizze bleibt mit „Fläche weg“ auf der alten Höhe. Ein Versuch (die gleich gerichtete Fläche, über der die Skizze
-    liegt) ließ beim Zurückrollen eine Skizze vom Zapfen auf die Platte darunter springen, zurückgenommen.
-  - Offen (Zufall der Zahlen): liegt nach einer Änderung eine fremde Kante genau dort, wo die gewählte zuletzt lag
-    (Zapfen 6 mm hoch, Platte 6 mm niedriger: unterer statt oberer Zapfenrand), nimmt die Fase sie ohne Warnung.
+  - Platte kurz 0,6 statt 6,6 mm und zurück: eine Skizze auf der Deckfläche ging mit nach unten, zurück hieß die Fläche
+    anders und lag nicht mehr in der alten Ebene, die Skizze blieb mit „Fläche weg“ unten. Jetzt nimmt sie die Fläche, die
+    laut Entstehungsgeschichte aus der alten hervorging, wenn es genau eine ist (`AttachExtension::refindFace`; nicht
+    „die Fläche darunter“, das ließ beim Zurückrollen eine Skizze vom Zapfen auf die Platte springen).
+  - Dabei lag die Oberkante des Zapfens genau dort, wo vorher sein Fuß war, und die Fase nahm zurück still den Fußring:
+    eine Regel ließ ein unverändertes Element an der gemerkten Stelle die Entstehungsgeschichte überstimmen. Jetzt gilt
+    die Geschichte, wenn ihr Element dieselbe Größe hat (nur verschoben); die Regel bleibt für den ConceptKey-Fall, in dem
+    die Geschichte eine ganz andere Fläche nannte.
   - Umsortieren in der Zeitleiste: eine Rundung ließ sich vor den ersten Schritt ihres Körpers ziehen, eine Fase vor
     den Zapfen, an dessen Rand sie sitzt, der Zapfen hinter seine Fase (die Kette der Körperzustände wird neu
     verbunden und zählte nicht als Abhängigkeit). Folge: Fehler oder still eine fremde Kante, Skizzen danach verloren

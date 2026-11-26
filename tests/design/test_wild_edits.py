@@ -278,3 +278,24 @@ class CircleAtACorner(BackFromImpossible):
         self.assertEqual(at, [(0, 0), (0, 50), (89.72, 0), (89.72, 50)])
         self.set(base, "DistanceX", 80)
         self.assertAlmostEqual(ext.Shape.Volume, 80 * 50 * 10, places=3)
+
+
+class ThinForAMoment(MoveSteps):
+    def test_a_plate_thin_for_a_moment_keeps_its_chamfer_and_sketches(self):
+        """Platte kurz 4 statt 10 mm dick: die Oberkante des Zapfens liegt dann genau dort, wo vorher sein Fuß war, die
+        Skizze auf der Platte geht mit nach unten. Zurück auf 10 mm: die Fase sitzt wieder oben am Zapfen (nicht am
+        Fußring), die Skizze wieder auf der Deckfläche, ohne "Fläche weg" (Härtetest 2, 2026-11-26)"""
+        b, cut, fillet, join, chamfer = self.part()
+        ext = [o for o in self.doc.Objects if o.TypeId == "Design::Extrude"][0]
+        slot = sketch(self.doc, rect(60, 5, 70, 10), support=(b, face_where(b, lambda c, f: abs(c.z - 10) < 1e-6 and f.Area > 100)))
+        extrude(self.doc, slot, 2, op="Cut", bodies=[b], Reversed=True)
+        volume = b.Shape.Volume
+        ext.Distance = 4
+        self.doc.recompute()
+        ext.Distance = 10
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertEqual(getattr(slot, "Warning", ""), "")
+        self.assertAlmostEqual(slot.Placement.Base.z, 10, places=6)
+        self.assertAlmostEqual(float(chamfer.ElementHints[0].split()[2]), 16, places=4)
+        self.assertAlmostEqual(b.Shape.Volume, volume, places=3)
