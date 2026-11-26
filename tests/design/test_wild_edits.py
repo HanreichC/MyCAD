@@ -214,3 +214,48 @@ class ProjectedEdge(BackFromImpossible):
         self.assertEqual(len(join.Shape.Edges), edges)
         self.assertEqual(chamfer.Warning, "")
         self.assertAlmostEqual(b.Shape.Volume, volume, places=3)
+
+
+class MoveSteps(DesignTest):
+    """Umsortieren in der Zeitleiste (Härtetest 2, 2026-11-26): die Kette der Körperzustände wird neu verbunden und
+    zählte deshalb nicht als Abhängigkeit. Ein Schritt braucht trotzdem seinen Körper und die Kanten, an denen er sitzt."""
+
+    def part(self):
+        _, b = box(self.doc, 80, 50, 10)
+        hole = sketch(self.doc, circle(15, 15, 3), support=(b, top_face(b)))
+        cut, _ = extrude(self.doc, hole, 10, op="Cut", bodies=[b], Reversed=True)
+        fillet = dress(self.doc, "Design::Fillet", b, [edge_where(b, lambda p: abs(p.x) < 1e-6 and abs(p.y) < 1e-6)], Size=4)
+        boss = sketch(self.doc, circle(50, 25, 8), support=(b, face_where(b, lambda c, f: abs(c.z - 10) < 1e-6 and f.Area > 100)))
+        join, _ = extrude(self.doc, boss, 6, op="Join", bodies=[b])
+        ring = edge_where(b, lambda p: abs(p.z - 16) < 1e-6 and abs(p.x - 50) < 1e-3)
+        chamfer = dress(self.doc, "Design::Chamfer", b, [ring], Size=1)
+        return b, cut, fillet, join, chamfer
+
+    def at(self, f):
+        return Design.timeline(self.doc).index(f)
+
+    def test_a_fillet_cannot_go_before_the_first_step_of_its_body(self):
+        b, cut, fillet, join, chamfer = self.part()
+        volume = b.Shape.Volume
+        with self.assertRaisesRegex(ValueError, "It needs"):
+            Design.moveInTimeline(fillet, 0)
+        self.assertAlmostEqual(b.Shape.Volume, volume, places=6)
+
+    def test_a_chamfer_cannot_go_before_the_boss_it_sits_on(self):
+        b, cut, fillet, join, chamfer = self.part()
+        with self.assertRaisesRegex(ValueError, "It needs " + join.Label):
+            Design.moveInTimeline(chamfer, self.at(fillet))
+
+    def test_the_boss_cannot_go_behind_the_chamfer_on_its_rim(self):
+        b, cut, fillet, join, chamfer = self.part()
+        with self.assertRaisesRegex(ValueError, "It is needed by " + chamfer.Label):
+            Design.moveInTimeline(join, self.at(chamfer))
+
+    def test_a_fillet_may_go_before_a_hole_that_leaves_its_edge_alone(self):
+        b, cut, fillet, join, chamfer = self.part()
+        volume = b.Shape.Volume
+        Design.moveInTimeline(fillet, self.at(cut))
+        self.doc.recompute()
+        self.assertNoErrors()
+        self.assertLess(self.at(fillet), self.at(cut))
+        self.assertAlmostEqual(b.Shape.Volume, volume, places=3)

@@ -699,6 +699,11 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
     liegt) ließ beim Zurückrollen eine Skizze vom Zapfen auf die Platte darunter springen, zurückgenommen.
   - Offen (Zufall der Zahlen): liegt nach einer Änderung eine fremde Kante genau dort, wo die gewählte zuletzt lag
     (Zapfen 6 mm hoch, Platte 6 mm niedriger: unterer statt oberer Zapfenrand), nimmt die Fase sie ohne Warnung.
+  - Umsortieren in der Zeitleiste: eine Rundung ließ sich vor den ersten Schritt ihres Körpers ziehen, eine Fase vor
+    den Zapfen, an dessen Rand sie sitzt, der Zapfen hinter seine Fase (die Kette der Körperzustände wird neu
+    verbunden und zählte nicht als Abhängigkeit). Folge: Fehler oder still eine fremde Kante, Skizzen danach verloren
+    ihre Fläche, zurückschieben ging nicht immer. Jetzt sagt MyCAD „It needs …“ / „It is needed by …“: der Körper
+    muss an der neuen Stelle da sein, Kanten genau so, Flächen mindestens ihre Ebene (`DressUp::elementsIn`).
   - Offen: projizierte Körperkante (ein Schlitz hängt per Maß an ihr). Schneidet ein Kreis in der Grundskizze den Rand
     und ändert sich dabei ein Maß, findet die Skizze die Kante einen Zwischenstand lang nicht; FreeCAD löscht dann die
     Verknüpfung (SketchObjectExternal „clean up geometry reference“), die Linie friert für immer ein, ohne Warnung.
@@ -706,7 +711,7 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
     Versuch (Verknüpfung behalten, Kante über die Lage wiederfinden) störte Zurückrollen und Unterdrücken, zurückgenommen. Zweiter Versuch an der Stelle, an der FreeCAD verwaiste Linien selbst wieder anhängt (rebuildExternalGeometry, „re-check for any missing geometry“): hängt wieder an, erzeugt aber eine zweite Linie, das Maß bleibt an der alten; der Schlüssel der Linie (externalGeoRef) muss mit umgeschrieben werden.
   - Offen: schneidet ein Kreis in der Grundskizze den Plattenrand und ändert man dabei ein Maß, sitzt die Rundung der
     Ecke im Zwischenstand an einem Teilstück der Kante (FreeCADs Namen für Teilstücke sind Nummern, sehen aber
-    verfolgbar aus); nach dem Entfernen des Kreises stimmt das Teil, es bleibt die Warnung „bitte prüfen“.
+    verfolgbar aus); nach dem Entfernen des Kreises stimmt das Teil meist und es bleibt die Warnung „bitte prüfen“, in manchen Folgen sitzen zwei Eckrundungen danach falsch (eine rot: „already smooth“). Nachstellen: Härtetest 2 mit Maßänderung bei `vertexcircle` (im Zufallslauf abgeschaltet).
 
 **Offen:**
 - „Alles einpassen“ animiert noch in eigener Ereignisschleife (jetzt fest 0,2 s statt bis 0,5 s, eine Fahrt statt

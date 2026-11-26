@@ -435,6 +435,10 @@ public:
     App::PropertyStringList ElementHints;  ///< je Element "x y z Größe": wiederfinden, wenn der Name verloren geht
     App::PropertyStringList WarnedHints;   ///< wo die Elemente lagen, als zuletzt geraten werden musste (Warnung)
     App::PropertyStringList WarnedMaps;    ///< ihre verfolgbaren Namen von damals: kommt das Element zurück, gilt es wieder
+
+    /// Liegen die gewählten Elemente des Körpers Nummer body alle unverändert in shape (Lage und Größe wie gemerkt)?
+    /// Für das Umsortieren in der Zeitleiste: gäbe es sie an der neuen Stelle schon bzw. noch?
+    bool elementsIn(const Part::TopoShape& shape, size_t body) const;
     App::PropertyIntegerList ElementBodies;  ///< je Element der Index in Bodies (leer: alle zu Bodies[0])
 
 protected:

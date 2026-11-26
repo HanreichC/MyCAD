@@ -322,7 +322,9 @@ def op_scribble(fixed=None):
     if t1 != t0 or not same(mid, before):
         fail("drawing into an old sketch changed the part", before=before, after=mid, trouble=t1, was=t0)
     debug("with the extra geometry")
-    if meanwhile or (not fixed and rng.random() < 0.5):  # mit der neuen Geometrie darin auch noch ein Maß ändern und zurück
+    # mit der neuen Geometrie darin auch noch ein Maß ändern und zurück. Nicht beim Kreis um einen Eckpunkt: schneidet
+    # er danach den Rand, sitzen Rundungen an Teilstücken und projizierte Kanten gehen verloren (bekannt, PLAN 4.8)
+    if meanwhile or (not fixed and kind != "vertexcircle" and rng.random() < 0.5):
         Q = dict(P); k = rng.choice(["W", "D", "H"]); Q[k] = round(rng.uniform(*RANGE[k]), 2)
         if meanwhile:
             Q = dict(P); k = meanwhile[0]; Q[k] = meanwhile[1]
@@ -427,7 +429,54 @@ def op_undo(delete=None):
     check_model(d, "after undo")
 
 
-OPS = [(op_params, 6), (op_home, 1), (op_drastic, 2), (op_scribble, 4), (op_suppress, 2), (op_rollback, 2), (op_reload, 1),
+def op_reorder():
+    """einen Schritt in der Zeitleiste verschieben (wenn MyCAD es erlaubt) und zurück: wie vorher"""
+    before, t0 = shape_key(d, names), trouble(d)
+    items = Design.timeline(d)
+    f = rng.choice(features())
+    was, to = items.index(f), rng.randint(0, len(items) - 1)
+    d.openTransaction("move")
+    try:
+        Design.moveInTimeline(f, to)
+    except ValueError:
+        d.abortTransaction()
+        return  # hängt von etwas ab, das dann später käme: die Oberfläche sagt das auch nur
+    d.commitTransaction()
+    log.append("move %s from %d to %d and back" % (f.Label, was, to))
+    d.recompute()
+    check_model(d, "after moving a step")
+    try:
+        Design.moveInTimeline(f, was)
+    except ValueError:
+        # zurück geht nicht immer (eine Skizze hängt an einem Zustand, in dessen Kette der Schritt jetzt steckt): dann
+        # wie ein Mensch mit Rückgängig
+        log.append("  back by undo")
+        d.undo()
+    d.recompute()
+    after, t1 = shape_key(d, names), trouble(d)
+    if t1 != t0 or not same(after, before):
+        fail("moving a step and back changed the part", step=f.Label, to=to, before=before, after=after, trouble=t1, was=t0)
+
+
+def op_redo():
+    """Maß ändern, Rückgängig, Wiederholen: wie nach der Änderung; das Maß bleibt"""
+    global P
+    Q = dict(P); k = rng.choice(sorted(RANGE)); Q[k] = round(rng.uniform(*RANGE[k]), 2)
+    log.append("undo and redo of %s=%s" % (k, Q[k]))
+    d.openTransaction("change")
+    apply(d, names, Q)
+    d.commitTransaction()
+    changed, t0 = shape_key(d, names), trouble(d)
+    d.undo(); d.recompute()
+    d.redo(); d.recompute()
+    P = Q
+    after, t1 = shape_key(d, names), trouble(d)
+    if t1 != t0 or not same(after, changed):
+        fail("redo did not bring the change back", what=k, changed=changed, after=after, trouble=t1, was=t0)
+    check_model(d, "after redo")
+
+
+OPS = [(op_reorder, 2), (op_redo, 2), (op_params, 6), (op_home, 1), (op_drastic, 2), (op_scribble, 4), (op_suppress, 2), (op_rollback, 2), (op_reload, 1),
        (op_undo, 2)]
 # REPLAY="reload;drastic=hole;params=W:120,H:8;line=boss:22,27.5,38,26.6;home": einen Fund ohne Zufall nachstellen
 for trial, item in enumerate([i for i in os.environ.get("REPLAY", "").replace("+", ";").split(";") if i]):

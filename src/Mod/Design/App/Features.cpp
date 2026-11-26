@@ -1828,6 +1828,79 @@ bool Design::moveInTimeline(App::DocumentObject* obj, int to, std::string& error
             return false;
         }
     }
+    // Die Körper-Kette (BaseFeatures) wird beim Umsortieren neu verbunden und zählt oben nicht. Trotzdem braucht ein
+    // Schritt, der einen Körper verändert, dass es den Körper schon gibt, und eine Rundung, Fase, Wandstärke oder ein
+    // Drücken/Ziehen die Kanten und Flächen, an denen sie sitzt. Vorher ließ sich eine Rundung vor den ersten Schritt
+    // ihres Körpers ziehen und eine Fase vor den Zapfen, an dessen Rand sie saß: Fehler oder still eine fremde Kante,
+    // Skizzen danach verloren ihre Fläche, zurückschieben ging nicht immer (Härtetest 2, 26.11.)
+    {
+        const auto changes = [](App::DocumentObject* o, const App::DocumentObject* body) {
+            auto f = freecad_cast<Feature*>(o);
+            const auto& bodies = f ? f->Bodies.getValues() : std::vector<App::DocumentObject*>();
+            return std::ranges::find(bodies, body) != bodies.end() ? f : nullptr;
+        };
+        // Zustand des Körpers direkt vor Stelle at, ohne den Schritt skip
+        const auto stateBefore = [&](const App::DocumentObject* body, int at, const App::DocumentObject* skip) -> Feature* {
+            for (int i = at - 1; i >= 0; --i) {
+                if (items[i] != skip) {
+                    if (Feature* f = changes(items[i], body)) {
+                        return f;
+                    }
+                }
+            }
+            return nullptr;
+        };
+        const auto bodyIndex = [](const Feature* f, const App::DocumentObject* body) {
+            const auto& bodies = f->Bodies.getValues();
+            return size_t(std::ranges::find(bodies, body) - bodies.begin());
+        };
+        const auto creates = [&](const Feature* f, const App::DocumentObject* body) {
+            const size_t k = bodyIndex(f, body);
+            return int(k) >= f->BaseFeatures.getSize() || !f->BaseFeatures.getValues()[k];
+        };
+        auto moved = freecad_cast<Feature*>(obj);
+        for (auto body : moved ? moved->Bodies.getValues() : std::vector<App::DocumentObject*>()) {
+            if (to < from) {
+                if (creates(moved, body)) {
+                    continue;  // erzeugt den Körper selbst
+                }
+                // nach vorn: an der neuen Stelle muss es den Körper geben, und die gewählten Elemente
+                auto dress = freecad_cast<DressUp*>(obj);
+                Feature* state = stateBefore(body, to, obj);
+                const bool there = state && (!dress || dress->elementsIn(state->shapeFor(body), bodyIndex(moved, body)));
+                if (!there) {
+                    // der Schritt, ab dem es reicht: der erste dazwischen, nach dem Körper und Elemente da sind
+                    for (int i = to; i < from; ++i) {
+                        Feature* f = changes(items[i], body);
+                        if (f && (!dress || dress->elementsIn(f->shapeFor(body), bodyIndex(moved, body)))) {
+                            error = std::string("It needs ") + f->Label.getValue();
+                            return false;
+                        }
+                    }
+                    if (!state) {
+                        error = "It needs the first step of its body";
+                        return false;
+                    }
+                }
+            }
+            else {
+                // nach hinten: was dazwischen am selben Körper arbeitet, braucht den Körper und seine Elemente auch ohne
+                // diesen Schritt
+                Feature* state = stateBefore(body, from, obj);
+                for (int i = from + 1; i <= to; ++i) {
+                    Feature* other = changes(items[i], body);
+                    if (!other) {
+                        continue;
+                    }
+                    auto dress = freecad_cast<DressUp*>(other);
+                    if (!state || (dress && !dress->elementsIn(state->shapeFor(body), bodyIndex(other, body)))) {
+                        error = std::string("It is needed by ") + other->Label.getValue();
+                        return false;
+                    }
+                }
+            }
+        }
+    }
     // Ein Feature, das Bodies verändert, an der neuen Stelle in deren Kette einhängen
     auto feature = freecad_cast<Feature*>(obj);
     std::vector<Body*> bodies;
@@ -4979,6 +5052,48 @@ std::vector<TopoDS_Shape> splitPieces(const TopoDS_Shape& shape, const TopoDS_Fa
     return pieces;
 }
 }  // namespace
+
+bool DressUp::elementsIn(const Part::TopoShape& shape, size_t body) const
+{
+    if (shape.isNull()) {
+        return false;
+    }
+    const std::vector<long> owners = ElementBodies.getValues();
+    const auto& names = Edges.getValues();
+    const auto& hints = ElementHints.getValues();
+    for (size_t i = 0; i < names.size(); ++i) {
+        if ((i < owners.size() ? size_t(owners[i]) : 0) != body || i >= hints.size() || hints[i].empty()) {
+            continue;
+        }
+        if (names[i].rfind("Face", 0) == 0) {
+            // Flächen ändern Größe und Schwerpunkt mit jedem Loch darin: es reicht eine ebene Fläche in derselben Ebene
+            // (die Deckfläche des Zapfens gibt es vor dem Zapfen nicht, die der Platte auch vor ihren Bohrungen)
+            std::istringstream in(hints[i]);
+            double x = 0, y = 0, z = 0;
+            if (!(in >> x >> y >> z)) {
+                continue;
+            }
+            bool found = false, anyPlane = false;
+            for (TopExp_Explorer it(shape.getShape(), TopAbs_FACE); it.More() && !found; it.Next()) {
+                BRepAdaptor_Surface surface(TopoDS::Face(it.Current()));
+                if (surface.GetType() == GeomAbs_Plane) {
+                    anyPlane = true;
+                    found = surface.Plane().Distance(gp_Pnt(x, y, z)) < 1e-6;
+                }
+            }
+            if (anyPlane && !found) {
+                return false;
+            }
+            continue;
+        }
+        bool exact = false;
+        closestElement(shape, names[i], hints[i], {}, &exact);
+        if (!exact) {
+            return false;
+        }
+    }
+    return true;
+}
 
 std::vector<Part::TopoShape> DressUp::elements(const Part::TopoShape& shape, TopAbs_ShapeEnum type, size_t body)
 {
