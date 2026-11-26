@@ -258,6 +258,8 @@ def op_home():
 def debug(when):
     """DEBUG=1: was sich Rundungen und Fase gerade merken"""
     if os.environ.get("DEBUG"):
+        e = d.getObject(names["ext"])
+        print("  %s base extrude: volume %.2f faces %d keys %s subs %s" % (when, e.Shape.Volume, len(e.Shape.Faces), list(e.ProfileKeys), list(e.Profile[1])))
         sk = d.getObject(names["slot"])
         print("  %s slot external=%s lines=%s state=%s" % (when, [(o.Name, e) for o, e in sk.ExternalGeometry],
               [(round(g.StartPoint.x, 2), round(g.StartPoint.y, 2), round(g.EndPoint.x, 2), round(g.EndPoint.y, 2))
@@ -266,6 +268,15 @@ def debug(when):
             f = d.getObject(n)
             print("  %s %s: %s maps=%s hints=%s state=%s warn=%r" % (when, n, list(f.Edges), list(f.ElementMaps),
                   [" ".join("%.1f" % float(x) for x in h.split()) for h in f.ElementHints], f.State, f.Warning[:40]))
+            if os.environ.get("DEBUG") == "2" and f.ElementMaps and f.BaseFeatures and f.BaseFeatures[0]:
+                try:
+                    print("     history:", f.BaseFeatures[0].Shape.getElementHistory(f.ElementMaps[0]))
+                    import re
+                    for hid in re.findall(r"#([0-9a-f]+)", f.ElementMaps[0]):
+                        sid = d.Hasher.getID(int(hid, 16))
+                        print("     #%s =" % hid, sid.Data if sid else None, getattr(sid, "Related", ""))
+                except Exception as e:
+                    print("     history failed:", e)
 
 
 def op_drastic(k=None):
@@ -276,6 +287,8 @@ def op_drastic(k=None):
     Q[k] = {"W": 4.0, "D": 3.0, "H": 0.6, "fillet": 60.0, "hole": 40.0, "boss": 70.0, "chamfer": 30.0}[k]
     log.append("drastic %s=%s" % (k, Q[k]))
     debug("before")
+    if os.environ.get("DEBUG"):
+        print("  recompute order:", [o.Name for o in d.getObject(names["slot"]).OutListRecursive if o.TypeId.startswith("Design::E")])
     try:
         apply(d, names, Q)
     except Exception as e:
@@ -322,9 +335,8 @@ def op_scribble(fixed=None):
     if t1 != t0 or not same(mid, before):
         fail("drawing into an old sketch changed the part", before=before, after=mid, trouble=t1, was=t0)
     debug("with the extra geometry")
-    # mit der neuen Geometrie darin auch noch ein Maß ändern und zurück. Nicht beim Kreis um einen Eckpunkt: schneidet
-    # er danach den Rand, sitzen Rundungen an Teilstücken und projizierte Kanten gehen verloren (bekannt, PLAN 4.8)
-    if meanwhile or (not fixed and kind != "vertexcircle" and rng.random() < 0.5):
+    # mit der neuen Geometrie darin auch noch ein Maß ändern und zurück
+    if meanwhile or (not fixed and rng.random() < 0.5):
         Q = dict(P); k = rng.choice(["W", "D", "H"]); Q[k] = round(rng.uniform(*RANGE[k]), 2)
         if meanwhile:
             Q = dict(P); k = meanwhile[0]; Q[k] = meanwhile[1]
@@ -509,11 +521,7 @@ for trial in range(N):
     fn = rng.choices([o for o, _ in OPS], [w for _, w in OPS])[0]
     fn()
     if not d.getObject(names["slot"]).ExternalGeometry:
-        # bekannt und offen (PLAN 4.8): Kreis schneidet den Rand der Grundskizze und ein Maß ändert sich; die Skizze
-        # verliert die projizierte Kante für immer. Danach wäre jeder Vergleich falsch: hier aufhören
-        print("done seed %d: stopped at trial %d, the slot sketch lost its projected edge (known): %s" % (
-            SEED, trial, " | ".join(log[-2:])[:200]))
-        sys.exit(0)
+        fail("the slot sketch lost its link to the projected edge")
 trial = N
 op_home()
 print("done seed %d: %d trials ok, %d stale warnings %s" % (SEED, N, len(soft), soft[:2]))

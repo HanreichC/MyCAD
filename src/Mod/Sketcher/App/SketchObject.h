@@ -1230,6 +1230,10 @@ private:
     // Some external geometry may generate more than one projection
     std::map<std::string, std::vector<long>> externalGeoRefMap;
     bool updateGeoRef = false;
+    /// MyCAD: verwaiste projizierte Linien wieder an die Körperkante hängen, die unter ihnen liegt (siehe execute)
+    bool reattachOrphanedEdges();
+    /// MyCAD: gerade Körperkante unter einer verwaisten projizierten Linie (0: keine)
+    int edgeUnderOrphanedLine(App::DocumentObject* obj, const Part::Geometry* geo) const;
 
     // backup of ExternalGeometry in case of element reference change
     std::vector<std::string> externalGeoRef;

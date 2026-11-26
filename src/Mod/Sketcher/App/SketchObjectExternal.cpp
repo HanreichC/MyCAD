@@ -52,6 +52,7 @@
 #include <Geom_TrimmedCurve.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
@@ -2840,6 +2841,133 @@ void SketchObject::rebuildExternalGeometry(std::optional<ExternalToAdd> extToAdd
     if (hasError && this->isRecomputing()) {
         throw Base::RuntimeError("Missing external geometry reference");
     }
+}
+
+int SketchObject::edgeUnderOrphanedLine(App::DocumentObject* obj, const Part::Geometry* geo) const
+{
+    auto feature = freecad_cast<Part::Feature*>(obj);
+    auto line = freecad_cast<const Part::GeomLineSegment*>(geo);
+    if (!feature || !line) {
+        return 0;
+    }
+    const Base::Vector3d a = line->getStartPoint();
+    Base::Vector3d dir = line->getEndPoint() - a;
+    const double length = dir.Length();
+    if (length < 1e-6) {
+        return 0;
+    }
+    dir = dir / length;
+    const Base::Placement toSketch = Placement.getValue().inverse();
+    TopTools_IndexedMapOfShape edges;
+    TopExp::MapShapes(feature->Shape.getValue(), TopAbs_EDGE, edges);
+    int best = 0;
+    double bestScore = 1e300;
+    for (int i = 1; i <= edges.Extent(); ++i) {
+        BRepAdaptor_Curve curve(TopoDS::Edge(edges(i)));
+        if (curve.GetType() != GeomAbs_Line) {
+            continue;
+        }
+        const gp_Pnt p0 = curve.Value(curve.FirstParameter()), p1 = curve.Value(curve.LastParameter());
+        Base::Vector3d q0, q1;
+        toSketch.multVec(Base::Vector3d(p0.X(), p0.Y(), p0.Z()), q0);
+        toSketch.multVec(Base::Vector3d(p1.X(), p1.Y(), p1.Z()), q1);
+        const double depth = (std::abs(q0.z) + std::abs(q1.z)) / 2;  // von der Skizze aus gesehen: Tiefe weg
+        q0.z = q1.z = 0;
+        const auto beside = [&](const Base::Vector3d& q) {
+            const Base::Vector3d v = q - a;
+            return (v - dir * (v * dir)).Length();
+        };
+        if (beside(q0) > 1e-4 || beside(q1) > 1e-4) {
+            continue;
+        }
+        double t0 = (q0 - a) * dir, t1 = (q1 - a) * dir;
+        if (t0 > t1) {
+            std::swap(t0, t1);
+        }
+        const double other = t1 - t0;
+        const double overlap = std::min(t1, length) - std::max(t0, 0.0);
+        if (other < 1e-6 || overlap < 0.5 * std::min(length, other)) {
+            continue;
+        }
+        // die der Skizzenebene nächste, unter gleich nahen die gleich lange
+        const double score = depth + 1e-3 * std::abs(other - length);
+        if (score < bestScore) {
+            bestScore = score;
+            best = i;
+        }
+    }
+    return best;
+}
+
+/// MyCAD: Eine projizierte Kante, die einen Zwischenstand lang nicht zu finden war (ein Kreis in der Grundskizze schnitt
+/// den Rand, dabei änderte sich ein Maß), löscht FreeCAD aus der Verknüpfung; die Linie bleibt verwaist in der Skizze und
+/// friert ein, was per Maß an ihr hängt, folgt dem Körper nie mehr, ohne Warnung (Härtetest 2, 26.11.). Liegt wieder eine
+/// gerade Körperkante unter ihr, wird sie neu verknüpft, und die verwaiste Linie bekommt den neuen Schlüssel: der Neuaufbau
+/// aktualisiert dann genau diese Linie (gleiche Nummer, Maße bleiben dran) statt eine zweite anzulegen.
+bool SketchObject::reattachOrphanedEdges()
+{
+    std::map<std::string, std::vector<int>> orphans;  // alter Schlüssel -> Stellen in ExternalGeo
+    const std::set<std::string> linked(externalGeoRef.begin(), externalGeoRef.end());
+    const auto& geos = ExternalGeo.getValues();
+    for (int i = 2; i < int(geos.size()); ++i) {
+        auto egf = ExternalGeometryFacade::getFacade(geos[i]);
+        if (!egf->getRef().empty() && egf->testFlag(ExternalGeometryExtension::Missing)
+            && !linked.count(egf->getRef())) {
+            orphans[egf->getRef()].push_back(i);
+        }
+    }
+    if (orphans.empty()) {
+        return false;
+    }
+    auto objs = ExternalGeometry.getValues();
+    auto subs = ExternalGeometry.getSubValues();
+    if (objs.size() != externalGeoRef.size()) {
+        return false;
+    }
+    const size_t before = objs.size();
+    std::vector<std::string> renamed;  // alter Schlüssel je neuer Verknüpfung, in derselben Reihenfolge
+    for (const auto& [ref, places] : orphans) {
+        const auto dot = ref.find('.');
+        if (places.size() != 1 || dot == std::string::npos) {
+            continue;  // nur einzelne Kanten (eine Linie je Verknüpfung)
+        }
+        App::DocumentObject* obj = getDocument()->getObject(ref.substr(0, dot).c_str());
+        const int found = obj ? edgeUnderOrphanedLine(obj, geos[places.front()]) : 0;
+        if (!found) {
+            continue;
+        }
+        const std::string sub = "Edge" + std::to_string(found);
+        bool already = false;
+        for (size_t k = 0; k < objs.size() && !already; ++k) {
+            already = objs[k] == obj && Data::oldElementName(subs[k].c_str()) == sub;
+        }
+        if (already) {
+            continue;
+        }
+        objs.push_back(obj);
+        subs.push_back(sub);
+        renamed.push_back(ref);
+    }
+    if (renamed.empty()) {
+        return false;
+    }
+    ExternalGeometry.setValues(objs, subs);  // updateGeometryRefs: externalGeoRef bekommt die neuen Schlüssel
+    if (externalGeoRef.size() != objs.size()) {
+        return false;
+    }
+    auto changed = ExternalGeo.getValues();
+    for (size_t k = 0; k < renamed.size(); ++k) {
+        for (int place : orphans[renamed[k]]) {
+            Part::Geometry* copy = changed[place]->clone();
+            auto egf = ExternalGeometryFacade::getFacade(copy);
+            egf->setRef(externalGeoRef[before + k]);
+            egf->setFlag(ExternalGeometryExtension::Missing, false);  // sonst hängte FreeCAD sie ein zweites Mal an
+            changed[place] = copy;
+        }
+    }
+    ExternalGeo.setValues(std::move(changed));  // baut die Zuordnung Schlüssel -> Nummer neu auf
+    Base::Console().log("{}: projected edge linked again by its position\n", getFullName());
+    return true;
 }
 
 void SketchObject::fixMissingAxisInExternalGeo()

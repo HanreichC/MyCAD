@@ -183,6 +183,115 @@ constexpr const char* JoinInside = "Adds nothing: the profile lies inside the bo
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Leerer Vektor mit Fehlertext bei Problemen.
 /// Gewählte Profilflächen (leer = alle) und die zugehörige Skizze. Profile werden über ihre Signatur
 /// (begrenzende Skizzenkanten) wiedergefunden; keys hält die Signaturen der gewählten Profile aktuell.
+namespace
+{
+/// Profilfläche aus mehreren Teilen: Kanten und Ecken nach den Skizzenlinien benennen, auf denen sie liegen (Ecke =
+/// die beiden Linien, die sich dort treffen). Sonst hießen sie nach ihrer Reihenfolge in der zusammengesetzten Fläche,
+/// und die wechselt mit jeder Änderung: der Körper daraus bekam Namen, die verfolgbar aussahen, aber nach einer
+/// Breitenänderung still auf eine andere Ecke zeigten; Rundungen und Drücken/Ziehen wanderten mit (Härtetest 2, 26.11.:
+/// Kreis um eine Ecke der Grundskizze, Breite geändert)
+Part::TopoShape namedBySketch(const TopoDS_Shape& face, const Part::TopoShape& sketchShape, const App::StringHasherRef& hasher)
+{
+    Part::TopoShape res(0, hasher, face);
+    struct Line
+    {
+        TopoDS_Shape edge;
+        std::string name;
+        gp_Pnt start, end;
+    };
+    std::vector<Line> lines;
+    for (int i = 1; i <= sketchShape.countSubShapes(TopAbs_EDGE); ++i) {
+        const Data::MappedName mapped = sketchShape.getMappedName(Data::IndexedName::fromConst("Edge", i));
+        const TopoDS_Edge edge = TopoDS::Edge(sketchShape.getSubShape(TopAbs_EDGE, i));
+        BRepAdaptor_Curve curve(edge);
+        lines.push_back({edge, mapped ? mapped.toString() : "Edge" + std::to_string(i), curve.Value(curve.FirstParameter()),
+                         curve.Value(curve.LastParameter())});
+    }
+    const double tol = 1e-6 * std::max(1.0, Part::TopoShape(face).getBoundBox().CalcDiagonalLength());
+    const auto near = [tol](const gp_Pnt& p, const TopoDS_Shape& shape) {
+        BRepExtrema_DistShapeShape dist(BRepBuilderAPI_MakeVertex(p).Vertex(), shape);
+        return dist.IsDone() && dist.Value() < tol;
+    };
+    // Kante -> Name der Skizzenlinie unter ihrer Mitte. Ist die Linie in Stücke geteilt, heißt das Stück an ihrem Anfang
+    // wie sie, das an ihrem Ende "Ende", die dazwischen nach ihrem Abstand vom Anfang: so behält das Stück an einer Ecke
+    // seinen Namen, auch wenn dazwischen Teilungen hinzukommen oder wegfallen
+    std::vector<std::string> edgeNames(res.countSubShapes(TopAbs_EDGE) + 1);
+    std::map<int, std::vector<std::pair<double, int>>> pieces;  // Linie -> (Abstand vom Anfang, Kante)
+    for (int i = 1; i < int(edgeNames.size()); ++i) {
+        BRepAdaptor_Curve curve(TopoDS::Edge(res.getSubShape(TopAbs_EDGE, i)));
+        const gp_Pnt mid = curve.Value((curve.FirstParameter() + curve.LastParameter()) / 2);
+        int on = -1;
+        for (int k = 0; k < int(lines.size()) && on < 0; ++k) {
+            on = near(mid, lines[k].edge) ? k : -1;
+        }
+        if (on < 0) {
+            return Part::TopoShape(face);  // passt nicht zur Skizze: lieber gar keine Namen als falsche
+        }
+        pieces[on].emplace_back(mid.Distance(lines[on].start), i);
+    }
+    for (auto& [on, list] : pieces) {
+        std::ranges::sort(list);
+        const Line& line = lines[on];
+        for (size_t k = 0; k < list.size(); ++k) {
+            const TopoDS_Shape piece = res.getSubShape(TopAbs_EDGE, list[k].second);
+            const bool atStart = near(line.start, piece), atEnd = near(line.end, piece);
+            edgeNames[list[k].second] = atStart || list.size() == 1 ? line.name
+                : atEnd                                             ? line.name + ";:End"
+                                                                    : line.name + ";:P" + std::to_string(k);
+        }
+    }
+    res.resetElementMap(std::make_shared<Data::ElementMap>());
+    for (int i = 1; i < int(edgeNames.size()); ++i) {
+        res.setElementName(Data::IndexedName::fromConst("Edge", i), Data::MappedName(edgeNames[i]), res.Tag);
+    }
+    TopTools_IndexedDataMapOfShapeListOfShape edgesAt;
+    TopExp::MapShapesAndAncestors(face, TopAbs_VERTEX, TopAbs_EDGE, edgesAt);
+    TopTools_IndexedMapOfShape edgeIndex;
+    TopExp::MapShapes(face, TopAbs_EDGE, edgeIndex);
+    std::vector<std::pair<gp_Pnt, std::string>> points;  // Punkte der Skizze (Enden der Linien) mit ihren Namen
+    for (int i = 1; i <= sketchShape.countSubShapes(TopAbs_VERTEX); ++i) {
+        const Data::MappedName mapped = sketchShape.getMappedName(Data::IndexedName::fromConst("Vertex", i));
+        if (mapped) {
+            points.emplace_back(BRep_Tool::Pnt(TopoDS::Vertex(sketchShape.getSubShape(TopAbs_VERTEX, i))), mapped.toString());
+        }
+    }
+    for (int v = 1; v <= res.countSubShapes(TopAbs_VERTEX); ++v) {
+        // eine Ecke auf einem Punkt der Skizze heißt nach ihm (eine Ecke des Rechtecks bleibt dieselbe, wie viele Kreise auch
+        // ihre Linien teilen); sonst nach den Kanten, die sich dort treffen (Schnitt Kreis/Linie)
+        const gp_Pnt where = BRep_Tool::Pnt(TopoDS::Vertex(res.getSubShape(TopAbs_VERTEX, v)));
+        std::string point;
+        for (const auto& [p, name] : points) {
+            if (p.Distance(where) < tol && (point.empty() || name < point)) {
+                point = name;
+            }
+        }
+        if (!point.empty()) {
+            res.setElementName(Data::IndexedName::fromConst("Vertex", v), Data::MappedName("P(" + point + ")"), res.Tag);
+            continue;
+        }
+        const int at = edgesAt.FindIndex(res.getSubShape(TopAbs_VERTEX, v));
+        if (at == 0) {
+            continue;
+        }
+        std::set<std::string> names;
+        for (TopTools_ListIteratorOfListOfShape it(edgesAt(at)); it.More(); it.Next()) {
+            const int e = edgeIndex.FindIndex(it.Value());
+            if (e > 0 && e < int(edgeNames.size())) {
+                names.insert(edgeNames[e]);
+            }
+        }
+        std::string name;
+        for (const auto& n : names) {
+            name += (name.empty() ? "" : "|") + n;
+        }
+        if (!name.empty()) {
+            res.setElementName(Data::IndexedName::fromConst("Vertex", v), Data::MappedName("V(" + name + ")"), res.Tag);
+        }
+    }
+    return res;
+}
+}  // namespace
+
 std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, App::PropertyStringList& keys,
                                           Part::Feature*& sketch, const char*& error)
 {
@@ -207,6 +316,88 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
         BRepGProp::SurfaceProperties(shape, props);
         return props.Mass();
     };
+    // Zwei Teilflächen können dieselben Kanten haben (Kreis um eine Ecke: das Viertel innen und die drei Viertel außen
+    // grenzen beide an die untere und die rechte Linie und den Kreis). Im Schlüssel steht ein solches Teil dann mit seinem
+    // Schwerpunkt ("Kanten@x;y;z"), sonst griff der Schritt beim nächsten Rechnen das Stück außen und der Körper wurde
+    // größer (Härtetest 2, 26.11.: +17 mm² Profil, das halbe Kreisstück außerhalb der Platte)
+    const auto centre = [](const Part::TopoShape& shape, size_t k) {
+        GProp_GProps props;
+        BRepGProp::SurfaceProperties(shape.getSubShape(TopAbs_FACE, int(k) + 1), props);
+        return props.CentreOfMass();
+    };
+    const auto tagged = [&](size_t k) {
+        const std::string& sig = signatures[k];
+        if (std::ranges::count(signatures, sig) <= 1) {
+            return sig;
+        }
+        const gp_Pnt c = centre(all, k);
+        char buffer[96];
+        std::snprintf(buffer, sizeof buffer, "@%.3f;%.3f;%.3f", c.X(), c.Y(), c.Z());
+        return sig + buffer;
+    };
+    const auto fits = [&](const std::string& want, const std::vector<std::string>& sigs, const Part::TopoShape& shape,
+                          size_t k) {
+        const auto at = want.find('@');
+        if (at == std::string::npos) {
+            return sigs[k] == want;
+        }
+        if (sigs[k] != want.substr(0, at)) {
+            return false;
+        }
+        double x = 0, y = 0, z = 0;
+        return std::sscanf(want.c_str() + at + 1, "%lf;%lf;%lf", &x, &y, &z) == 3
+            && centre(shape, k).Distance(gp_Pnt(x, y, z)) < 2e-3;
+    };
+    // Das ursprüngliche Profil aus genau seinen eigenen Linien neu aufbauen (die neu gezeichneten weggelassen), so wie
+    // es mit den jetzigen Maßen wäre. Leer, wenn eine seiner Linien fehlt oder sich kein solcher Bereich ergibt
+    const auto rebuiltOriginal = [&](const std::string& sig) -> TopoDS_Shape {
+        std::set<std::string> want;
+        {
+            std::stringstream in(sig);
+            for (std::string t; std::getline(in, t, ',');) {
+                want.insert(t);
+            }
+        }
+        const Part::TopoShape sketchShape = sketch->Shape.getShape();
+        TopoDS_Compound lines;
+        BRep_Builder builder;
+        builder.MakeCompound(lines);
+        std::vector<std::string> tokenOf;
+        for (int e = 1; e <= sketchShape.countSubShapes(TopAbs_EDGE); ++e) {
+            const Data::MappedName mapped = sketchShape.getMappedName(Data::IndexedName::fromConst("Edge", e));
+            std::string id = mapped ? mapped.toString() : std::string();
+            id = id.substr(0, id.find(';'));
+            if (id.size() > 1 && id[0] == 'e' && std::isdigit(static_cast<unsigned char>(id[1]))) {
+                id = "x" + id.substr(1);
+            }
+            if (want.contains(id)) {
+                builder.Add(lines, sketchShape.getSubShape(TopAbs_EDGE, e).Located(TopLoc_Location()));
+                tokenOf.push_back(id);
+            }
+        }
+        if (want.empty() || std::set<std::string>(tokenOf.begin(), tokenOf.end()) != want) {
+            return {};
+        }
+        const Profiles::Regions regions = Profiles::computeRegions(lines);
+        TopoDS_Shape found;
+        for (size_t r = 0; r < regions.signatures.size(); ++r) {
+            std::set<std::string> have;
+            std::stringstream in(regions.signatures[r]);
+            for (std::string t; std::getline(in, t, ',');) {
+                const int idx = std::atoi(t.c_str());
+                if (idx >= 0 && idx < int(tokenOf.size())) {
+                    have.insert(tokenOf[idx]);
+                }
+            }
+            if (have == want) {
+                if (!found.IsNull()) {
+                    return {};  // mehrdeutig
+                }
+                found = regions.shape.getSubShape(TopAbs_FACE, int(r) + 1);
+            }
+        }
+        return found.IsNull() ? found : found.Located(sketchShape.getShape().Location());
+    };
     // Teile eines geteilten Profils wieder zu einer Fläche verschmolzen (sonst blieb ihre Naht als Kante im Körper, und
     // eine Skizze, die die Wand projiziert, bekam andere Linien: Härtetest Seed 3, Extrusion006 −4,7 mm³)
     const auto addPieces = [&](const std::vector<size_t>& ks) {
@@ -229,7 +420,10 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
                 const Part::TopoShape merged(unify.Shape());
                 const auto mergedFaces = merged.getSubTopoShapes(TopAbs_FACE);
                 if (!mergedFaces.empty() && mergedFaces.size() < pieces.size()) {
-                    pieces = mergedFaces;
+                    pieces.clear();
+                    for (const auto& face : mergedFaces) {
+                        pieces.push_back(namedBySketch(face.getShape(), sketch->Shape.getShape(), all.Hasher));
+                    }
                 }
             }
             catch (...) {
@@ -252,9 +446,10 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
             std::vector<std::string> wanted(split.begin() + 1, split.end()), have;
             std::vector<size_t> found;
             for (size_t k = 0; k < signatures.size(); ++k) {
-                if (std::ranges::find(wanted, signatures[k]) != wanted.end()) {
+                const auto hit = std::ranges::find_if(wanted, [&](const std::string& w) { return fits(w, signatures, all, k); });
+                if (hit != wanted.end()) {
                     found.push_back(k);
-                    have.push_back(signatures[k]);
+                    have.push_back(*hit);
                 }
             }
             std::ranges::sort(wanted);
@@ -266,6 +461,55 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
         }
         known[i] = original;
         const auto match = std::ranges::find(signatures, known[i]);
+        if ((known[i].starts_with("g") || known[i].starts_with("x")) && match == signatures.end()
+            && ![&] {
+                        // Neue Linien in einer alten Skizze ändern das Profil nicht: das Profil aus seinen eigenen Linien
+                        // nachbauen; Teil des Schritts ist, was darin liegt und mindestens eine seiner Linien berührt (eine
+                        // Insel nur aus neuen Linien bleibt ein Loch, wie Fusion). Vorher sammelte eine Regel Teilstücke
+                        // über ihre Kanten und nahm bei einem Kreis um eine Ecke auch die Hälfte außerhalb der Platte mit
+                        // (Härtetest 2, 26.11.: Grundkörper +173 mm³)
+                        const TopoDS_Shape original = rebuiltOriginal(known[i]);
+                        if (original.IsNull()) {
+                            return true;  // eine Linie fehlt: die Regeln unten
+                        }
+                        const double whole = area(original);
+                        std::set<std::string> own;
+                        {
+                            std::stringstream in(known[i]);
+                            for (std::string t; std::getline(in, t, ',');) {
+                                own.insert(t);
+                            }
+                        }
+                        std::vector<size_t> inside;
+                        double sum = 0;
+                        for (size_t k = 0; k < signatures.size(); ++k) {
+                            const TopoDS_Shape face = faceOf(all, k).getShape();
+                            const double a = area(face);
+                            if (a > 0 && area(BRepAlgoAPI_Common(face, original).Shape()) > 0.999 * a) {
+                                sum += a;
+                                std::stringstream in(signatures[k]);
+                                bool touches = false;
+                                for (std::string t; std::getline(in, t, ',') && !touches;) {
+                                    touches = own.contains(t);
+                                }
+                                if (touches) {
+                                    inside.push_back(k);
+                                }
+                            }
+                        }
+                        if (inside.empty() || std::abs(sum - whole) > 1e-6 * (1 + whole)) {
+                            return true;
+                        }
+                        std::string key = known[i];
+                        for (size_t k : inside) {
+                            key += "|" + tagged(k);
+                        }
+                        addPieces(inside);
+                        known[i] = inside.size() == 1 ? tagged(inside.front()) : key;
+                        return false;  // erledigt
+                    }()) {
+            continue;
+        }
         if (!known[i].empty() && match != signatures.end() && std::ranges::count(signatures, known[i]) == 1) {
             name = "Face" + std::to_string(match - signatures.begin() + 1);
         }
@@ -289,7 +533,7 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
             std::set<std::string> ownTokens;
             if (!previous.isNull()) {
                 for (size_t k = 0; k < before.size(); ++k) {
-                    if (std::ranges::find(oldSigs, before[k]) != oldSigs.end()) {
+                    if (std::ranges::any_of(oldSigs, [&](const std::string& w) { return fits(w, before, previous, k); })) {
                         const TopoDS_Shape face = faceOf(previous, k).getShape();
                         builder.Add(old, face);
                         oldArea += area(face);
@@ -327,10 +571,10 @@ std::vector<Part::TopoShape> profileFaces(const App::PropertyLinkSub& profile, A
                 if (!inside.empty() && std::abs(sum - oldArea) <= 1e-6 * (1 + oldArea)) {
                     std::string key = known[i];
                     for (size_t k : inside) {
-                        key += "|" + signatures[k];
+                        key += "|" + tagged(k);
                     }
                     addPieces(inside);
-                    known[i] = inside.size() == 1 ? signatures[inside.front()] : key;
+                    known[i] = inside.size() == 1 ? tagged(inside.front()) : key;
                     continue;
                 }
             }

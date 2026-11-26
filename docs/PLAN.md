@@ -704,16 +704,16 @@ Realistische Materialien ~2 ms, Achsenkreuz ~1,7 ms je Bild. Spürbare Hänger k
     verbunden und zählte nicht als Abhängigkeit). Folge: Fehler oder still eine fremde Kante, Skizzen danach verloren
     ihre Fläche, zurückschieben ging nicht immer. Jetzt sagt MyCAD „It needs …“ / „It is needed by …“: der Körper
     muss an der neuen Stelle da sein, Kanten genau so, Flächen mindestens ihre Ebene (`DressUp::elementsIn`).
-  - Offen: projizierte Körperkante (ein Schlitz hängt per Maß an ihr). Schneidet ein Kreis in der Grundskizze den Rand
-    und ändert sich dabei ein Maß, findet die Skizze die Kante einen Zwischenstand lang nicht; FreeCAD löscht dann die
-    Verknüpfung (SketchObjectExternal „clean up geometry reference“), die Linie friert für immer ein, ohne Warnung.
-    Nachstellen: `REPLAY="circle=base:0,50,3.8,D:65" … stress_edits.py`; Test `ProjectedEdge` (erwartet rot). Ein
-    Versuch (Verknüpfung behalten, Kante über die Lage wiederfinden) störte Zurückrollen und Unterdrücken, zurückgenommen. Zweiter Versuch an der Stelle, an der FreeCAD verwaiste Linien selbst wieder anhängt (rebuildExternalGeometry, „re-check for any missing geometry“): hängt wieder an, erzeugt aber eine zweite Linie, das Maß bleibt an der alten; der Schlüssel der Linie (externalGeoRef) muss mit umgeschrieben werden.
-  - Offen: schneidet ein Kreis in der Grundskizze den Plattenrand und ändert man dabei ein Maß, sitzt die Rundung der
-    Ecke im Zwischenstand an einem Teilstück der Kante (FreeCADs Namen für Teilstücke sind Nummern, sehen aber
-    verfolgbar aus); nach dem Entfernen des Kreises stimmt das Teil meist und es bleibt die Warnung „bitte prüfen“, in manchen Folgen sitzen zwei Eckrundungen danach falsch (eine rot: „already smooth“). Nachstellen: Härtetest 2 mit Maßänderung bei `vertexcircle` (im Zufallslauf abgeschaltet).
-
-**Offen:**
+  - Projizierte Körperkante (ein Schlitz hängt per Maß an ihr): war sie einen Zwischenstand lang nicht zu finden,
+    löschte FreeCAD die Verknüpfung, die Linie fror still ein. Jetzt hängt die Skizze verwaiste Linien wieder an die
+    gerade Körperkante, die unter ihnen liegt, und gibt der Linie den neuen Schlüssel: dieselbe Linie, das Maß bleibt
+    dran, keine zweite Linie (`SketchObject::reattachOrphanedEdges`, auch gleich nach einem Neuaufbau, der sie verlor).
+  - Kreis um eine Ecke der Grundskizze, dann Breite ändern: zwei Teilflächen hatten dieselbe Kennung (Viertel innen,
+    drei Viertel außen), und eine Regel sammelte Teilstücke über ihre Kanten: das Profil nahm die Kreishälfte außerhalb
+    der Platte mit (+173 mm³). Jetzt wird das ursprüngliche Profil aus genau seinen eigenen Linien nachgebaut, Teil
+    des Schritts ist, was darin liegt; mehrdeutige Teile stehen mit ihrem Schwerpunkt im Schlüssel. Die Kanten eines
+    zusammengesetzten Profils heißen nach den Skizzenlinien und -punkten statt nach ihrer Reihenfolge, so folgt eine
+    Eckrundung ihrer Ecke statt still an eine andere zu springen.
 - „Alles einpassen“ animiert noch in eigener Ereignisschleife (jetzt fest 0,2 s statt bis 0,5 s, eine Fahrt statt
   zwei). Ganz ohne Sperre ginge es nur mit einer nicht blockierenden Animation; Tests lesen die Kamera direkt danach.
 - Erstes Extrude-Panel der Sitzung ~0,2 s.

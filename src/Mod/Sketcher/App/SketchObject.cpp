@@ -492,8 +492,19 @@ App::DocumentObjectExecReturn* SketchObject::execute()
 
     // setup and diagnose the sketch
     try {
+        reattachOrphanedEdges();
         refindProjectedFaces();
-        rebuildExternalGeometry();
+        try {
+            rebuildExternalGeometry();
+        }
+        catch (const Base::Exception&) {
+            // im selben Durchgang verloren (der Körper hat sich gerade geändert; der Neuaufbau meldet das als Fehler)
+            // und gleich wieder auffindbar: nicht bis zum nächsten Neuberechnen warten, das es nicht immer gibt
+            if (!reattachOrphanedEdges()) {
+                throw;
+            }
+            rebuildExternalGeometry();
+        }
         Constraints.acceptGeometry(getCompleteGeometry());
     }
     catch (const Base::Exception&) {

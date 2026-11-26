@@ -161,7 +161,6 @@ class LooseLine(DesignTest):
 
 
 class ProjectedEdge(BackFromImpossible):
-    @unittest.expectedFailure  # offen (PLAN 4.8): ein erster Versuch am 26.11. störte Zurückrollen und Unterdrücken
     def test_a_projected_edge_that_was_lost_for_a_moment_is_linked_again(self):
         """Schlitz mit Maß zur projizierten rechten Kante. Kreis um eine Ecke der Grundskizze, Tiefe ändern und zurück,
         Kreis weg: zwischendurch findet die Skizze die Kante nicht. Danach hängt die Linie wieder an ihr, der Schlitz
@@ -259,3 +258,23 @@ class MoveSteps(DesignTest):
         self.assertNoErrors()
         self.assertLess(self.at(fillet), self.at(cut))
         self.assertAlmostEqual(b.Shape.Volume, volume, places=3)
+
+
+class CircleAtACorner(BackFromImpossible):
+    def test_a_circle_around_a_corner_does_not_change_the_plate_when_the_width_changes(self):
+        """Kreis um eine Ecke der Grundskizze (ragt halb hinaus), dann Breite ändern: der Körper ist genau die Platte der
+        neuen Breite, die Eckrundungen sitzen an den Ecken (vorher nahm das Profil die Kreishälfte außerhalb mit, und die
+        Kanten hießen nach ihrer Reihenfolge: eine Rundung sprang still an eine andere Ecke; Härtetest 2, 2026-11-26)"""
+        base, hole, b = self.plate()
+        ext = [o for o in self.doc.Objects if o.TypeId == "Design::Extrude"][0]
+        base.addGeometry(Part.Circle(V(80, 0, 0), V(0, 0, 1), 3.32))
+        self.doc.recompute()
+        self.set(base, "DistanceX", 89.72)
+        self.assertNoErrors()
+        self.assertAlmostEqual(ext.Shape.Volume, 89.72 * 50 * 10, places=3)
+        for f in self.fillets:
+            self.assertNotIn("Invalid", f.State, f.getStatusString())
+        at = sorted((round(float(h.split()[0]), 2), round(float(h.split()[1]), 2)) for f in self.fillets for h in f.ElementHints)
+        self.assertEqual(at, [(0, 0), (0, 50), (89.72, 0), (89.72, 50)])
+        self.set(base, "DistanceX", 80)
+        self.assertAlmostEqual(ext.Shape.Volume, 80 * 50 * 10, places=3)
