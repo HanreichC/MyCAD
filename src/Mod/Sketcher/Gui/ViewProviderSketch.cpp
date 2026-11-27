@@ -75,6 +75,7 @@
 #include <Gui/Utilities.h>
 #include <Gui/View3DInventor.h>
 #include <Gui/View3DInventorViewer.h>
+#include <Gui/Navigation/NavigationAnimation.h>
 #include <Mod/Part/App/Geometry.h>
 #include <Mod/Part/App/PartFeature.h>
 #include <Mod/Sketcher/App/ExternalGeometryFacade.h>
@@ -4763,10 +4764,11 @@ void ViewProviderSketch::setEditViewer(Gui::View3DInventorViewer* viewer, int Mo
     SbVec3f curdir;// current view direction
     camera->orientation.getValue().multVec(SbVec3f(0, 0, -1), curdir);
     camera->position.setValue(pivot - camera->focalDistance.getValue() * curdir);
-    viewer->setCameraOrientation(rot);
+    const auto turn = viewer->setCameraOrientation(rot);
     if (box.IsValid()) {
-        // Erst wenn die Sketch Palette rechts steht: sie verkleinert den freien Teil der Ansicht
-        QTimer::singleShot(0, viewer, [viewer, box, pivot] {
+        // Erst wenn die Sketch Palette rechts steht: sie verkleinert den freien Teil der Ansicht. Und nach der Drehung,
+        // einpassen bräche sie sonst ab
+        const auto fit = [viewer, box, pivot] {
             // viewBoundBox füllt mit der Umkugel der Box die kürzere Seite des freien Teils. Ein Würfel um die Mitte
             // mit der Kugel, bei der die Skizze in Breite und Höhe gerade hineinpasst (5 % Rand)
             SoCamera* camera = viewer->getSoRenderManager()->getCamera();
@@ -4782,7 +4784,15 @@ void ViewProviderSketch::setEditViewer(Gui::View3DInventorViewer* viewer, int Mo
             const double r = 1.05 * std::min(fw, fh) * std::max(box.LengthX() / fw, box.LengthY() / fh) / 2;
             const float half = float((r > 1e-6 ? r : 10.0) / std::sqrt(3.0));  // nur ein Punkt: 20 mm Bildhöhe
             viewer->viewBoundBox(SbBox3f(pivot - SbVec3f(half, half, half), pivot + SbVec3f(half, half, half)));
-        });
+        };
+        if (turn) {
+            for (const auto signal : {&Gui::NavigationAnimation::completed, &Gui::NavigationAnimation::interrupted}) {
+                QObject::connect(turn.get(), signal, viewer, [viewer, fit] { QTimer::singleShot(0, viewer, fit); });
+            }
+        }
+        else {
+            QTimer::singleShot(0, viewer, fit);
+        }
     }
     else if (getSketchObject()->Geometry.getSize() > 0 || getSketchObject()->ExternalGeometry.getSize() > 0) {
         std::vector<App::SubObjectT> objs;

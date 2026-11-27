@@ -86,6 +86,27 @@ private:
     void onStop(bool finished) override;
 };
 
+/// MyCAD: "Alles einpassen" gleitet um Lage und (orthografisch) Höhe der Kamera zu dem, was viewBoundingBox ausgerechnet
+/// hat, ohne die Oberfläche anzuhalten (vorher eine eigene Ereignisschleife, 0,2 s ohne Eingaben). In Schritten, nicht
+/// absolut: wer währenddessen zoomt (Mausrad, Skript), behält das
+class GuiExport FitAnimation: public NavigationAnimation
+{
+public:
+    FitAnimation(NavigationStyle* navigation, const SbVec3f& move, float grow, int duration);
+
+private:
+    SbVec3f move;
+    float grow;
+    float done = 0;
+
+    void initialize() override
+    {
+        done = 0;
+    }
+    void update(const QVariant& value) override;
+    void onStop(bool finished) override;
+};
+
 class GuiExport SpinningAnimation: public NavigationAnimation
 {
 public:

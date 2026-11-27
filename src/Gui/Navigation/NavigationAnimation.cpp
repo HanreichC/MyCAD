@@ -24,6 +24,7 @@
 
 #include "NavigationAnimation.h"
 #include <Inventor/nodes/SoCamera.h>
+#include <Inventor/nodes/SoOrthographicCamera.h>
 
 #include <numbers>
 
@@ -125,9 +126,14 @@ void FixedTimeAnimation::update(const QVariant& value)
 /**
  * @param finished True when the animation is finished, false when interrupted
  */
-void FixedTimeAnimation::onStop(bool finished)
+void FixedTimeAnimation::onStop([[maybe_unused]] bool finished)
 {
-    if (finished) {
+    // MyCAD: auch abgebrochen am Ziel (eine neue Kamerabewegung, "Alles einpassen" gleich nach "Isometrisch"): halb
+    // gedreht stehen zu bleiben passte weder zur einen noch zur anderen
+    if (!finished) {
+        update(1.0F);  // der Rest der Drehung um ihre Mitte
+    }
+    {
         SoCamera* camera = navigation->getCamera();
         if (!camera) {
             return;
@@ -141,6 +147,37 @@ void FixedTimeAnimation::onStop(bool finished)
         );
         camera->position = camera->position.getValue() + targetTranslation - prevTranslation;
     }
+}
+
+FitAnimation::FitAnimation(NavigationStyle* navigation, const SbVec3f& move, float grow, int duration)
+    : NavigationAnimation(navigation)
+    , move(move)
+    , grow(grow)
+{
+    setDuration(duration);
+    setStartValue(0.0);
+    setEndValue(1.0);
+    setEasingCurve(QEasingCurve::OutCubic);
+}
+
+void FitAnimation::update(const QVariant& value)
+{
+    SoCamera* camera = navigation->getCamera();
+    if (!camera) {
+        return;
+    }
+    const float step = value.toFloat() - done;
+    done += step;
+    camera->position = camera->position.getValue() + move * step;
+    if (camera->isOfType(SoOrthographicCamera::getClassTypeId())) {
+        auto& height = static_cast<SoOrthographicCamera*>(camera)->height;
+        height = height.getValue() + grow * step;
+    }
+}
+
+void FitAnimation::onStop([[maybe_unused]] bool finished)
+{
+    update(1.0F);  // auch abgebrochen (eine neue Kamerabewegung, Ziehen) am Ziel: sie setzt dort an, wie vorher
 }
 
 /**

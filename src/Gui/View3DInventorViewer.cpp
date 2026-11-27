@@ -4428,81 +4428,6 @@ bool View3DInventorViewer::getSceneBoundBox(SbBox3f& box) const
     return true;
 }
 
-void View3DInventorViewer::animatedViewAll(const SbBox3f& box, int steps, int ms)
-{
-    SoCamera* cam = this->getSoRenderManager()->getCamera();
-    if (!cam) {
-        return;
-    }
-
-    SbVec3f campos = cam->position.getValue();
-    SbRotation camrot = cam->orientation.getValue();
-    SbViewportRegion vp = this->getSoRenderManager()->getViewportRegion();
-
-    float aspectRatio = vp.getViewportAspectRatio();
-
-    SbSphere sphere;
-    sphere.circumscribe(box);
-    if (sphere.getRadius() == 0) {
-        return;
-    }
-
-    SbVec3f direction;
-    SbVec3f pos(0.0F, 0.0F, 0.0F);
-    camrot.multVec(SbVec3f(0, 0, -1), direction);
-
-    bool isOrthographic = false;
-    float height = 0;
-    float diff = 0;
-
-    if (cam->isOfType(SoOrthographicCamera::getClassTypeId())) {
-        isOrthographic = true;
-        height = static_cast<SoOrthographicCamera*>(cam)->height.getValue();  // NOLINT
-        if (aspectRatio < 1.0F) {
-            diff = sphere.getRadius() * 2 - height * aspectRatio;
-        }
-        else {
-            diff = sphere.getRadius() * 2 - height;
-        }
-        pos = (box.getCenter() - direction * sphere.getRadius());
-    }
-    else if (cam->isOfType(SoPerspectiveCamera::getClassTypeId())) {
-        // NOLINTBEGIN
-        float movelength = sphere.getRadius()
-            / float(tan(static_cast<SoPerspectiveCamera*>(cam)->heightAngle.getValue() / 2.0));
-        // NOLINTEND
-        pos = box.getCenter() - direction * movelength;
-    }
-
-    QEventLoop loop;
-    QTimer timer;
-    timer.setSingleShot(true);
-    QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
-
-    // MyCAD: feste Dauer statt fester Schrittzahl. Jeder Schritt zeichnet ein Bild; auf langsamer Grafik (Software-
-    // OpenGL, alte GPU) dauerten 10 Schritte nicht 200 ms, sondern über eine halbe Sekunde, in der MyCAD keine Eingaben
-    // annimmt. Jetzt gleich lang, dort mit weniger Zwischenbildern
-    const qint64 total = qint64(steps) * ms;
-    QElapsedTimer clock;
-    clock.start();
-    for (int i = 0; i < steps; i++) {
-        const float par = std::min(1.0F, float(clock.elapsed()) / float(std::max<qint64>(total, 1)));
-        if (par >= 1.0F) {
-            break;
-        }
-
-        if (isOrthographic) {
-            float camHeight = height + diff * par;
-            static_cast<SoOrthographicCamera*>(cam)->height.setValue(camHeight);  // NOLINT
-        }
-
-        SbVec3f curpos = campos * (1.0F - par) + pos * par;
-        cam->position.setValue(curpos);
-        timer.start(std::clamp<int>(ms, 0, 5000));  // NOLINT
-        loop.exec(QEventLoop::ExcludeUserInputEvents);
-    }
-}
-
 void View3DInventorViewer::boxZoom(const SbBox2s& box)
 {
     navigation->boxZoom(box);
@@ -4937,6 +4862,8 @@ void View3DInventorViewer::alignToSelection()
 
 void View3DInventorViewer::viewBoundBox(const SbBox3f& bounds)
 {
+    // MyCAD: eine laufende Kamerabewegung (Ansicht von oben, voriges Einpassen) springt ans Ziel, eingepasst wird dort
+    navigation->stopAnimating();
     SbBox3f box = bounds;
     // MyCAD: in den freien Teil der Ansicht einpassen (zwischen Seitenleiste und Panels rechts). Die Shell legt ihn als
     // Anteil der Ansicht in "freeArea" ab; eingepasst wird eine größere, verschobene Box, deren Mitte in der Mitte der
@@ -4961,14 +4888,16 @@ void View3DInventorViewer::viewBoundBox(const SbBox3f& bounds)
         box.setBounds(center - SbVec3f(half, half, half), center + SbVec3f(half, half, half));
     }
 
-    if (isAnimationEnabled()) {
-        animatedViewAll(box, 10, 20);
-    }
-
     SoCamera* cam = getSoRenderManager()->getCamera();
     if (!cam) {
         return;
     }
+    const auto height = [cam] {
+        return cam->isOfType(SoOrthographicCamera::getClassTypeId())
+            ? static_cast<SoOrthographicCamera*>(cam)->height.getValue() : 0.0F;
+    };
+    const SbVec3f fromPosition = cam->position.getValue();
+    const float fromHeight = height();
 
     float aspectratio = getSoRenderManager()->getViewportRegion().getViewportAspectRatio();
     switch (cam->viewportMapping.getValue()) {
@@ -4981,6 +4910,15 @@ void View3DInventorViewer::viewBoundBox(const SbBox3f& bounds)
             break;
     }
     cam->viewBoundingBox(box, aspectratio, 1.0);
+    // MyCAD: dorthin gleiten (0,2 s), ohne Eingaben anzuhalten
+    if (isAnimationEnabled() && !box.isEmpty()) {
+        auto fit = std::make_shared<FitAnimation>(navigation, cam->position.getValue() - fromPosition, height() - fromHeight, 200);
+        cam->position = fromPosition;  // ab hier; das Ende setzt das Ziel
+        if (cam->isOfType(SoOrthographicCamera::getClassTypeId())) {
+            static_cast<SoOrthographicCamera*>(cam)->height = fromHeight;
+        }
+        navigation->startAnimating(fit);
+    }
 }
 
 /**

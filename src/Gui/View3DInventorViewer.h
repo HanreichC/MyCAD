@@ -610,7 +610,6 @@ protected:
     void renderRubberbandOverlay();
     void renderFramebuffer();
     void renderGLImage();
-    void animatedViewAll(const SbBox3f& bbox, int steps, int ms);
     void actualRedraw() override;
     void setSeekMode(bool on) override;
     void afterRealizeHook() override;
