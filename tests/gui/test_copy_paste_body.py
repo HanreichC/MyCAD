@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """Strg+C / Strg+V an einem Körper wie in Fusion (Christopher 27.11.): kein FreeCAD-Dialog zu Abhängigkeiten, eingefügt
 wird ein fester Körper mit dem Material des Originals als Schritt in der Zeitleiste, Verschieben öffnet gleich. Die Kopie
-hängt nicht am Original; Rückgängig nimmt Verschieben und Einfügen zurück."""
+hängt nicht am Original. Strg+X nimmt den Körper weg, Strg+V bringt ihn unter seinem Namen zurück; Rückgängig nimmt
+beides zurück."""
 from harness import *
 import Design
 
@@ -80,6 +81,23 @@ def moved():
           and abs(S["body"].Shape.BoundBox.XMin) < 1e-6, "%s %s" % (c and c.Shape.BoundBox, S["body"].Shape.BoundBox))
 
 
+def delete_dialog():
+    """hängt etwas am Körper, fragt Löschen nach (wie Entf): bestätigen"""
+    for d in visible(QtWidgets.QDialog):
+        S["dialogs"].append(d.windowTitle())
+        btn = [b for b in d.findChildren(QtWidgets.QPushButton) if b.text().replace("&", "") == "Delete"]
+        click(btn[0]) if btn else d.reject()
+
+
+def back():
+    new = [o for o in bodies() if o.Label == "Plate"]
+    b = new[0] if new else None
+    check("Ctrl+V brings the cut body back under its name, walnut and 20 mm high", b is not None
+          and abs(b.Shape.Volume - 24000) < 1e-6 and rgb(b) == S["walnut"],
+          "%s %s" % ([o.Label for o in bodies()], b and (b.Shape.Volume, rgb(b))))
+    check("and Move is open for it", Gui.Control.activeDialog(), "no panel")
+
+
 def longer():
     S["ext"].Distance = 20
     doc().recompute()
@@ -94,7 +112,14 @@ run([("activate", activate), ("setup", setup), W, W,
      ("longer", longer), W,
      ("own", lambda: check("the copy does not follow the original", abs(S["copy"].Shape.Volume - 12000) < 1e-6
                            and abs(S["body"].Shape.Volume - 24000) < 1e-6, "%s %s" % (S["copy"].Shape.Volume, S["body"].Shape.Volume))),
-     ("undo", lambda: (Gui.runCommand("Std_Undo"), Gui.runCommand("Std_Undo"), Gui.runCommand("Std_Undo"))), W, W,
-     ("undone", lambda: check("Undo takes back the move and the paste", len(bodies()) == 1, str([o.Label for o in bodies()]))),
+     # Ausschneiden und wieder einfügen
+     ("select 3", select_body), ("cut", key(QtCore.Qt.Key_X)), W, W, ("delete dialog", delete_dialog), W,
+     ("gone", lambda: check("Ctrl+X takes the body away", not S["body"].isValid() or S["body"] not in bodies(),
+                            str([o.Label for o in bodies()]))),
+     ("paste 2", key(QtCore.Qt.Key_V)), W, W, ("no dialog 3", no_dialog), ("back", back), ("ok move 2", ok), W, W,
+     ("undo", lambda: Gui.runCommand("Std_Undo")), W, ("undo 2", lambda: Gui.runCommand("Std_Undo")), W,
+     ("undo 3", lambda: Gui.runCommand("Std_Undo")), W, W,
+     ("undone", lambda: check("Undo takes back the paste and the cut", sorted(o.Label for o in bodies()) == ["Plate", "Plate Copy"],
+                              str([o.Label for o in bodies()]))),
      ("errors", lambda: check("no errors", not errors(), str(errors()))),
      ])

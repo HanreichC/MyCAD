@@ -640,8 +640,8 @@
       "Undo / Redo"
      ],
      [
-      "Ctrl+C / Ctrl+V",
-      "Copy / paste the selected bodies (Move opens for the copy)"
+      "Ctrl+C / Ctrl+X / Ctrl+V",
+      "Copy / cut / paste the selected bodies (Move opens for the pasted ones)"
      ],
      [
       "Ctrl+N / Ctrl+O",
@@ -782,8 +782,8 @@
       "Rückgängig / Wiederholen"
      ],
      [
-      "Strg+C / Strg+V",
-      "Gewählte Körper kopieren / einfügen (Verschieben öffnet für die Kopie)"
+      "Strg+C / Strg+X / Strg+V",
+      "Gewählte Körper kopieren / ausschneiden / einfügen (Verschieben öffnet für die eingefügten)"
      ],
      [
       "Strg+N / Strg+O",

@@ -6576,10 +6576,11 @@ void Gui::Shell::install()
         state.inspector = new GlassPanel(tasks, Token::RadiusPanel, true);
     }
 
-    // Entf löscht Timeline-Einträge mit neu verbundener Kette, Strg+C/Strg+V kopieren Körper wie Fusion (die Design-Befehle
+    // Entf löscht Timeline-Einträge mit neu verbundener Kette, Strg+C/Strg+X/Strg+V kopieren Körper wie Fusion (die Design-Befehle
     // fallen ohne Körper bzw. Timeline-Eintrag auf die Std-Befehle zurück)
     for (const auto& [design, standard, key] : {std::tuple {"Design_Delete", "Std_Delete", QKeySequence::Delete},
                                                 std::tuple {"Design_Copy", "Std_Copy", QKeySequence::Copy},
+                                                std::tuple {"Design_Cut", "Std_Cut", QKeySequence::Cut},
                                                 std::tuple {"Design_Paste", "Std_Paste", QKeySequence::Paste}}) {
         if (QAction* own = commandAction(design)) {
             if (QAction* std = commandAction(standard)) {

@@ -954,6 +954,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Pasted %1", "Eingefügt: %1"},
         {"%1 Copy", "%1 Kopie"},
         {"Copy the selected bodies (Ctrl+V pastes them)", "Gewählte Körper kopieren (Strg+V fügt sie ein)"},
+        {"Cut the selected bodies (Ctrl+V pastes them)", "Gewählte Körper ausschneiden (Strg+V fügt sie ein)"},
         {"Paste copied bodies and move them", "Kopierte Körper einfügen und verschieben"},
         {"The file contains no triangles.", "Die Datei enthält keine Dreiecke."},
         {"The mesh has %1 triangles; MyCAD turns meshes of up to %2 into bodies. Reduce it in your slicer or mesh tool first.",

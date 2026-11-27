@@ -273,7 +273,7 @@ A("start_shortcuts", "start", "Std_ViewFitAll", ("Keyboard shortcuts", "Tastenk�
   options=[("Ctrl+K", "Search commands, bodies and sketches", "Strg+K", "Befehle, Körper und Skizzen suchen"),
            ("Ctrl+S", "Save Version (with a name)", "Strg+S", "Version sichern (mit Namen)"),
            ("Ctrl+Z / Ctrl+Shift+Z", "Undo / Redo", "Strg+Z / Strg+Umschalt+Z", "Rückgängig / Wiederholen"),
-           ("Ctrl+C / Ctrl+V", "Copy / paste the selected bodies (Move opens for the copy)", "Strg+C / Strg+V", "Gewählte Körper kopieren / einfügen (Verschieben öffnet für die Kopie)"),
+           ("Ctrl+C / Ctrl+X / Ctrl+V", "Copy / cut / paste the selected bodies (Move opens for the pasted ones)", "Strg+C / Strg+X / Strg+V", "Gewählte Körper kopieren / ausschneiden / einfügen (Verschieben öffnet für die eingefügten)"),
            ("Ctrl+N / Ctrl+O", "New design / Open", "Strg+N / Strg+O", "Neues Design / Öffnen"),
            ("S", "Create Sketch", "S", "Skizze erstellen"),
            ("E", "Extrude (in a scribble: eraser)", "E", "Extrudieren (im Scribble: Radierer)"),

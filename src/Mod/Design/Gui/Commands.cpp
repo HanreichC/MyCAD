@@ -1756,6 +1756,18 @@ void splitForPrinting(App::Document* doc)
     }
 }
 
+/// Aussehen vom Nutzer gewählt: ein anderes Körper-Material in den Einstellungen färbt nur Körper im Standard-Look um,
+/// auch wenn diese Wahl zufällig genauso aussieht (Shell::setBodyMaterial)
+void markAppearanceChosen(App::DocumentObject* obj)
+{
+    auto flag = freecad_cast<App::PropertyBool*>(obj->getPropertyByName("AppearanceChosen"));
+    if (!flag) {
+        flag = static_cast<App::PropertyBool*>(obj->addDynamicProperty(
+            "App::PropertyBool", "AppearanceChosen", "Design", "Appearance picked by the user", App::Prop_Hidden));
+    }
+    flag->setValue(true);
+}
+
 /// Ein Stück eines geteilten Körpers sieht aus wie der Körper und ist aus demselben Werkstoff, wie in Fusion. Vorher bekam
 /// es das Standard-Material (Nussbaum geteilt: ein Stück Nussbaum, eins Stahl; Christopher 27.11.). Einzeln gefärbte
 /// Flächen gehen nicht mit: die Flächen des Stücks sind andere, es bekommt das Material des Körpers
@@ -1775,12 +1787,7 @@ void copyLook(const Design::Body* from, Design::Body* to)
         dst->Transparency.setValue(src->Transparency.getValue());
     }
     if (auto chosen = freecad_cast<App::PropertyBool*>(from->getPropertyByName("AppearanceChosen")); chosen && chosen->getValue()) {
-        auto flag = freecad_cast<App::PropertyBool*>(to->getPropertyByName("AppearanceChosen"));
-        if (!flag) {
-            flag = static_cast<App::PropertyBool*>(to->addDynamicProperty(
-                "App::PropertyBool", "AppearanceChosen", "Design", "Appearance picked by the user", App::Prop_Hidden));
-        }
-        flag->setValue(true);
+        markAppearanceChosen(to);
     }
     const QString uuid = from->ShapeMaterial.getValue().getUUID();
     if (!uuid.isEmpty()) {
@@ -2069,68 +2076,117 @@ void startMirror(App::Document* doc)
     startEditing(feature, false, nullptr);
 }
 
-/// Strg+C / Strg+V an Körpern wie in Fusion (Christopher 27.11.): kopiert werden die gewählten Körper, eingefügt ihre
-/// Form als feste Körper (je Körper ein Schritt "Eingefügt", Material wie das Original), danach gleich Verschieben, die
-/// Kopie läge sonst genau auf dem Original. FreeCADs Kopieren fragte nach Abhängigkeiten, kopierte Skizzen, Schritte und
-/// Körper, an denen der Körper hing, und ließ die Kopie aus der Zeitleiste. Ohne gewählte Körper das gewohnte Kopieren.
-std::vector<App::DocumentObjectT> copiedBodies;
+/// Strg+C / Strg+X / Strg+V an Körpern wie in Fusion (Christopher 27.11.): kopiert bzw. ausgeschnitten werden die
+/// gewählten Körper, eingefügt ihre Form als feste Körper (je Körper ein Schritt "Eingefügt", Aussehen und Werkstoff wie
+/// das Original), danach gleich Verschieben, eine Kopie läge sonst genau auf dem Original. FreeCADs Kopieren fragte nach
+/// Abhängigkeiten, kopierte Skizzen, Schritte und Körper, an denen der Körper hing, und ließ die Kopie aus der Zeitleiste;
+/// Ausschneiden tat nichts. Ohne gewählte Körper das gewohnte Kopieren. Gemerkt wird alles beim Kopieren: nach dem
+/// Ausschneiden gibt es den Körper nicht mehr.
+struct CopiedBody
+{
+    Part::TopoShape shape;
+    std::string label;
+    std::vector<App::Material> look;
+    long transparency = 0;
+    bool lookChosen = false;
+    std::string material;  ///< Werkstoff (UUID)
+    bool materialChosen = false;
+};
+std::vector<CopiedBody> copiedBodies;
+bool copiedByCut = false;
 
-void copyBodies(App::Document*)
+bool copyBodies()
 {
     copiedBodies.clear();
     for (auto b : selectedBodies()) {
-        copiedBodies.emplace_back(b);
+        CopiedBody c {b->Shape.getShape(), b->Label.getValue()};
+        if (auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(b))) {
+            c.look = vp->ShapeAppearance.getValues();
+            c.transparency = vp->Transparency.getValue();
+        }
+        auto chosen = freecad_cast<App::PropertyBool*>(b->getPropertyByName("AppearanceChosen"));
+        c.lookChosen = chosen && chosen->getValue();
+        c.material = b->ShapeMaterial.getValue().getUUID().toStdString();
+        c.materialChosen = Design::physicalMaterialChosen(b);
+        copiedBodies.push_back(std::move(c));
     }
-    if (copiedBodies.empty()) {
+    copiedByCut = false;
+    return !copiedBodies.empty();
+}
+
+void copyCommand(App::Document*)
+{
+    if (!copyBodies()) {
         Gui::Application::Instance->commandManager().runCommandByName("Std_Copy");
     }
 }
 
+void deleteSelected(App::Document* doc);
+
+void cutCommand(App::Document* doc)
+{
+    if (!copyBodies()) {
+        Gui::Application::Instance->commandManager().runCommandByName("Std_Cut");
+        return;
+    }
+    copiedByCut = true;
+    deleteSelected(doc);  // wie Entf: hängt etwas daran, sagt die Rückfrage was
+}
+
 void pasteBodies(App::Document* doc)
 {
-    std::vector<Design::Body*> sources;
-    for (const auto& ref : copiedBodies) {
-        if (auto b = freecad_cast<Design::Body*>(ref.getObject()); b && !b->Shape.getShape().isNull()) {
-            sources.push_back(b);
-        }
-    }
-    if (sources.empty()) {
+    if (copiedBodies.empty()) {
         Gui::Application::Instance->commandManager().runCommandByName("Std_Paste");
         return;
     }
     App::Part* comp = activeContainer(doc);
     doc->openTransaction("Paste");
-    std::vector<Design::Body*> pasted;
-    for (auto source : sources) {
+    std::vector<std::pair<Design::Body*, const CopiedBody*>> pasted;
+    for (const auto& c : copiedBodies) {
         // eigene Kopie der Form: teilten sich Original und Kopie die Flächen, hielte MyCAD Flächen der Kopie für die des
         // Originals (Skizze auf einer Fläche, Ziel eines Extrudes)
-        const Part::TopoShape shape(BRepBuilderAPI_Copy(source->Shape.getShape().getShape()).Shape());
+        const Part::TopoShape shape(BRepBuilderAPI_Copy(c.shape.getShape()).Shape());
         const auto pieces = Design::Import::pieces(shape);
         if (pieces.empty()) {
             continue;
         }
+        const QString label = QString::fromUtf8(c.label.c_str());
         auto feature = static_cast<Design::Import*>(doc->addObject("Design::Import", "Import"));
-        feature->Label.setValue(T("Pasted %1").arg(QString::fromUtf8(source->Label.getValue())).toStdString());
+        feature->Label.setValue(T("Pasted %1").arg(label).toStdString());
         feature->Imported.setValue(shape);
         comp->addObject(feature);
         Design::addToTimeline(feature);
         std::vector<App::DocumentObject*> bodies;
         for (size_t i = 0; i < pieces.size(); ++i) {
             auto body = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
-            const QString name = T("%1 Copy").arg(QString::fromUtf8(source->Label.getValue()));
+            const QString name = copiedByCut ? label : T("%1 Copy").arg(label);  // ausgeschnitten: derselbe Körper
             body->Label.setValue((i == 0 ? name : name + QStringLiteral(" %1").arg(i + 1)).toStdString());
             Design::folder(comp, "Bodies")->addObject(body);
             body->Tip.setValue(feature);
-            copyLook(source, body);
             bodies.push_back(body);
-            pasted.push_back(body);
+            pasted.emplace_back(body, &c);
         }
         feature->Bodies.setValues(bodies);
     }
     doc->recompute();
+    for (const auto& [body, c] : pasted) {  // Aussehen erst jetzt: Material je Fläche braucht die Flächen
+        auto vp = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(body));
+        if (vp && !c->look.empty()) {
+            const bool perFace = c->look.size() > 1 && c->look.size() == body->Shape.getShape().countSubShapes(TopAbs_FACE);
+            perFace ? vp->ShapeAppearance.setValues(c->look) : vp->ShapeAppearance.setValue(c->look.front());
+            vp->Transparency.setValue(c->transparency);
+        }
+        if (c->lookChosen) {
+            markAppearanceChosen(body);
+        }
+        if (!c->material.empty()) {
+            Design::setPhysicalMaterial(body, c->material, c->materialChosen);
+        }
+    }
     doc->commitTransaction();
+    copiedByCut = false;  // ein zweites Einfügen ist eine Kopie
     Gui::Selection().clearSelection();
-    for (auto body : pasted) {
+    for (const auto& [body, c] : pasted) {
         Gui::Selection().addSelection(doc->getName(), body->getNameInDocument());
     }
     if (!pasted.empty()) {
@@ -4414,14 +4470,7 @@ void applyMaterial(App::DocumentObject* obj, const std::vector<int>& faces, App:
     }
     if (faces.empty() || !part) {
         vp->ShapeAppearance.setValue(material);
-        // eigene Wahl merken: ein anderes Körper-Material in den Einstellungen färbt nur Körper im Standard-Look um,
-        // auch wenn diese Wahl zufällig genauso aussieht (Shell::setBodyMaterial)
-        auto flag = freecad_cast<App::PropertyBool*>(obj->getPropertyByName("AppearanceChosen"));
-        if (!flag) {
-            flag = static_cast<App::PropertyBool*>(obj->addDynamicProperty(
-                "App::PropertyBool", "AppearanceChosen", "Design", "Appearance picked by the user", App::Prop_Hidden));
-        }
-        flag->setValue(true);
+        markAppearanceChosen(obj);  // eigene Wahl merken
         return;
     }
     material.imagePath.clear();
@@ -6286,7 +6335,9 @@ void CreateDesignCommands()
     mgr.addCommand(new DesignCommand("Design_Delete", "Delete", "Delete: remove features, sketches or bodies with their steps",
                                      "edit-delete", "", deleteSelected));
     mgr.addCommand(new DesignCommand("Design_Copy", "Copy", "Copy the selected bodies (Ctrl+V pastes them)",
-                                     "edit-copy", "", copyBodies));
+                                     "edit-copy", "", copyCommand));
+    mgr.addCommand(new DesignCommand("Design_Cut", "Cut", "Cut the selected bodies (Ctrl+V pastes them)",
+                                     "edit-cut", "", cutCommand));
     mgr.addCommand(new DesignCommand("Design_Paste", "Paste", "Paste copied bodies and move them",
                                      "edit-paste", "", pasteBodies));
     mgr.addCommand(new DesignCommand("Design_Duplicate", "Duplicate", "Duplicate: copy the selected sketches",
