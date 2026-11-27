@@ -94,9 +94,12 @@
 #include <Precision.hxx>
 #include <BRep_Builder.hxx>
 #include <GProp_GProps.hxx>
+#include <BRep_Tool.hxx>
+#include <Poly_Triangulation.hxx>
 #include <TopExp.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
+#include <gp_Pln.hxx>
 #include <TopoDS_Compound.hxx>
 
 #include <functional>
@@ -995,6 +998,9 @@ void ViewProviderBody::updateData(const App::Property* prop)
         return;  // der Werkstoff folgt dem Aussehen, nie umgekehrt (FreeCAD färbte den Körper sonst nach der Werkstoffkarte)
     }
     PartGui::ViewProviderPartExt::updateData(prop);
+    if (prop == &static_cast<Design::Body*>(getObject())->Shape) {
+        keepFaceMaterials();
+    }
     if (printViewOn && prop == &static_cast<Design::Body*>(getObject())->Shape) {
         refreshPrintOverlay();
         static bool pending = false;  // ein Neuberechnen ändert oft mehrere Körper: die Vorschläge einmal danach
@@ -1009,9 +1015,157 @@ void ViewProviderBody::updateData(const App::Property* prop)
     }
 }
 
+/// Material auf einzelnen Flächen (Aussehen mit gewählten Flächen; ein Klick in die Ansicht wählt eine Fläche) ist eine
+/// Liste je Fläche. Änderte ein Extrude oder Teilen die Zahl der Flächen, passte sie nicht mehr, FreeCAD zeigte den ganzen
+/// Körper im Material der ersten Fläche: das gewählte Material war weg (Christopher 27.11.). Jetzt bekommt jede neue Fläche
+/// das Material der alten Fläche, aus der sie entstand (Name oder dessen Geschichte), sonst der an derselben Stelle (die
+/// meisten Punkte ihres Netzes liegen auf ihr), sonst der verschwundenen, die sie verschoben hat (herausgezogene
+/// Deckfläche); alle anderen das, das der Körper überwiegend hat.
+// ponytail: ohne Namen bis zu 16 Punkte x alte Flächen Abstandsrechnungen je neuer Fläche, nur bei Körpern mit wirklich
+// verschiedenen Flächen-Materialien
+void ViewProviderBody::keepFaceMaterials()
+{
+    const Part::TopoShape nowNamed = static_cast<Design::Body*>(getObject())->Shape.getShape();
+    const std::vector<App::Material> list = ShapeAppearance.getValues();
+    const Part::TopoShape beforeNamed = std::exchange(facesBefore, nowNamed);
+    const TopoDS_Shape before = beforeNamed.getShape(), now = nowNamed.getShape();
+    if (list.size() <= 1 || before.IsNull() || now.IsNull() || before.IsSame(now)) {
+        return;
+    }
+    TopTools_IndexedMapOfShape oldFaces, newFaces;
+    TopExp::MapShapes(before, TopAbs_FACE, oldFaces);
+    TopExp::MapShapes(now, TopAbs_FACE, newFaces);
+    if (int(list.size()) != oldFaces.Extent()) {
+        return;  // passte schon vorher nicht (eben geladen): nichts erfinden
+    }
+    // das häufigste Material: der Körper
+    size_t base = 0, most = 0;
+    for (size_t i = 0; i < list.size(); ++i) {
+        const auto count = size_t(std::ranges::count(list, list[i]));
+        if (count > most) {
+            most = count;
+            base = i;
+        }
+    }
+    if (most == list.size()) {  // alle gleich: ein Material für den Körper
+        ShapeAppearance.setValue(list[base]);
+        return;
+    }
+    std::vector<Bnd_Box> boxes(oldFaces.Extent());
+    for (int j = 1; j <= oldFaces.Extent(); ++j) {
+        BRepBndLib::Add(oldFaces(j), boxes[j - 1]);
+        boxes[j - 1].Enlarge(1e-4);
+    }
+    std::vector<App::Material> out(newFaces.Extent(), list[base]);
+    // Fläche der alten Form mit diesem Namen (oder einem aus seiner Entstehungsgeschichte): eine bemalte Deckfläche, die
+    // man nach oben zieht, ist danach woanders, heißt aber noch nach ihr
+    const auto byName = [&](int i) {
+        Data::MappedName name = nowNamed.getMappedName(Data::IndexedName::fromConst("Face", i));
+        std::vector<Data::MappedName> history;
+        if (name) {
+            Data::MappedName original;
+            nowNamed.getElementHistory(name, &original, &history);
+            history.insert(history.begin(), name);
+            history.push_back(original);
+        }
+        for (const auto& n : history) {
+            const Data::IndexedName idx = n ? beforeNamed.getIndexedName(n) : Data::IndexedName();
+            if (idx && std::string(idx.getType()) == "Face" && idx.getIndex() >= 1 && idx.getIndex() <= int(list.size())) {
+                return idx.getIndex();
+            }
+        }
+        return 0;
+    };
+    // Punkte auf einer Fläche: Mitten von bis zu 16 Dreiecken ihres Netzes (für die Anzeige schon berechnet)
+    const auto samples = [](const TopoDS_Face& face) {
+        std::vector<gp_Pnt> points;
+        TopLoc_Location loc;
+        const Handle(Poly_Triangulation) mesh = BRep_Tool::Triangulation(face, loc);
+        if (mesh.IsNull()) {
+            return points;
+        }
+        const int n = mesh->NbTriangles();
+        for (int k = 1; k <= n; k += std::max(1, n / 16)) {
+            int a = 0, b = 0, c = 0;
+            mesh->Triangle(k).Get(a, b, c);
+            gp_Pnt p((mesh->Node(a).XYZ() + mesh->Node(b).XYZ() + mesh->Node(c).XYZ()) / 3);
+            points.push_back(p.Transformed(loc.Transformation()));
+        }
+        return points;
+    };
+    const auto distance = [&](const gp_Pnt& p, int j) {
+        BRepExtrema_DistShapeShape dist(BRepBuilderAPI_MakeVertex(p).Vertex(), oldFaces(j));
+        return dist.IsDone() ? dist.Value() : 1e100;
+    };
+    const auto plane = [](const TopoDS_Face& face) -> std::optional<gp_Pln> {
+        BRepAdaptor_Surface surface(face);
+        if (surface.GetType() != GeomAbs_Plane) {
+            return std::nullopt;
+        }
+        gp_Pln pln = surface.Plane();
+        if (face.Orientation() == TopAbs_REVERSED) {
+            pln.SetAxis(pln.Axis().Reversed());
+        }
+        return pln;
+    };
+    std::vector<bool> stays(oldFaces.Extent() + 1, false);  // eine neue Fläche liegt (teils) noch auf der alten
+    std::vector<int> moved;                                  // neue Flächen ohne alte unter sich
+    for (int i = 1; i <= newFaces.Extent(); ++i) {
+        if (const int j = byName(i)) {
+            out[i - 1] = list[j - 1];
+            stays[j] = true;
+            continue;
+        }
+        // über die Lage: die alte Fläche, auf der die meisten Punkte liegen
+        std::vector<int> votes(oldFaces.Extent() + 1, 0);
+        for (const gp_Pnt& p : samples(TopoDS::Face(newFaces(i)))) {
+            for (int j = 1; j <= oldFaces.Extent(); ++j) {
+                if (!boxes[j - 1].IsOut(p) && distance(p, j) < 1e-4) {
+                    ++votes[j];
+                    break;
+                }
+            }
+        }
+        const auto best = std::ranges::max_element(votes);
+        if (*best > 0) {
+            const int j = int(best - votes.begin());
+            out[i - 1] = list[j - 1];
+            stays[j] = true;
+        }
+        else {
+            moved.push_back(i);
+        }
+    }
+    // Eine Fläche, die man herauszieht oder hineindrückt, liegt danach woanders: eine neue ebene Fläche erbt von einer
+    // verschwundenen alten mit gleicher Richtung direkt darunter oder darüber
+    for (const int i : moved) {
+        const auto pln = plane(TopoDS::Face(newFaces(i)));
+        const std::vector<gp_Pnt> points = samples(TopoDS::Face(newFaces(i)));
+        if (!pln || points.empty()) {
+            continue;
+        }
+        double nearest = 1e100;
+        for (int j = 1; j <= oldFaces.Extent(); ++j) {
+            const auto old = plane(TopoDS::Face(oldFaces(j)));
+            if (stays[j] || !old || !old->Axis().Direction().IsEqual(pln->Axis().Direction(), 1e-6)) {
+                continue;
+            }
+            const double gap = old->Distance(points.front());
+            if (gap < nearest && distance(points.front(), j) - gap < 1e-4) {  // senkrecht über der Fläche, nicht daneben
+                nearest = gap;
+                out[i - 1] = list[j - 1];
+            }
+        }
+    }
+    ShapeAppearance.setValues(out);
+}
+
 void ViewProviderBody::onChanged(const App::Property* prop)
 {
     PartGui::ViewProviderPartExt::onChanged(prop);
+    if (prop == &ShapeAppearance && ShapeAppearance.getSize() > 1 && getObject()) {
+        facesBefore = static_cast<Design::Body*>(getObject())->Shape.getShape();  // die Liste gilt für diese Form
+    }
     if (prop == &Transparency || prop == &ShapeAppearance) {
         updateTransparentOffset();
     }

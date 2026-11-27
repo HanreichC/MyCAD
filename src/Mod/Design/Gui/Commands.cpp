@@ -1755,6 +1755,38 @@ void splitForPrinting(App::Document* doc)
     }
 }
 
+/// Ein Stück eines geteilten Körpers sieht aus wie der Körper und ist aus demselben Werkstoff, wie in Fusion. Vorher bekam
+/// es das Standard-Material (Nussbaum geteilt: ein Stück Nussbaum, eins Stahl; Christopher 27.11.). Einzeln gefärbte
+/// Flächen gehen nicht mit: die Flächen des Stücks sind andere, es bekommt das Material des Körpers
+void copyLook(const Design::Body* from, Design::Body* to)
+{
+    auto src = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(from));
+    auto dst = freecad_cast<Gui::ViewProviderGeometryObject*>(Gui::Application::Instance->getViewProvider(to));
+    if (src && dst && src->ShapeAppearance.getSize() > 0) {
+        auto srcBody = dynamic_cast<DesignGui::ViewProviderBody*>(src);
+        auto dstBody = dynamic_cast<DesignGui::ViewProviderBody*>(dst);
+        if (srcBody && dstBody && src->ShapeAppearance.getSize() > 1) {
+            dstBody->takeFaceMaterials(*srcBody);  // Material je Fläche: die Stücke bekommen es auf ihren Teil der Flächen
+        }
+        else {
+            dst->ShapeAppearance.setValue(src->ShapeAppearance[0]);
+        }
+        dst->Transparency.setValue(src->Transparency.getValue());
+    }
+    if (auto chosen = freecad_cast<App::PropertyBool*>(from->getPropertyByName("AppearanceChosen")); chosen && chosen->getValue()) {
+        auto flag = freecad_cast<App::PropertyBool*>(to->getPropertyByName("AppearanceChosen"));
+        if (!flag) {
+            flag = static_cast<App::PropertyBool*>(to->addDynamicProperty(
+                "App::PropertyBool", "AppearanceChosen", "Design", "Appearance picked by the user", App::Prop_Hidden));
+        }
+        flag->setValue(true);
+    }
+    const QString uuid = from->ShapeMaterial.getValue().getUUID();
+    if (!uuid.isEmpty()) {
+        Design::setPhysicalMaterial(to, uuid.toStdString(), Design::physicalMaterialChosen(from));
+    }
+}
+
 bool finishSplit(App::Document* doc, Design::Split* feature, Design::Body* body)
 {
     modifyBodies(feature, {body});
@@ -1766,6 +1798,7 @@ bool finishSplit(App::Document* doc, Design::Split* feature, Design::Body* body)
         piece->Label.setValue(std::string(body->Label.getValue()) + " (" + std::to_string(i + 1) + ")");
         Design::folder(Design::componentOf(body), "Bodies")->addObject(piece);
         piece->Tip.setValue(feature);
+        copyLook(body, piece);
         bodies.push_back(piece);
     }
     feature->Bodies.setValues(bodies);

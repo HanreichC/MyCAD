@@ -133,9 +133,18 @@ public:
     void onChanged(const App::Property* prop) override;
     /// Druckansicht dieses Körpers neu aufbauen bzw. ausblenden
     void refreshPrintOverlay();
+    /// Material je Fläche des Körpers, aus dem dieser entsteht (Teilen): gilt bis zur ersten eigenen Form für dessen Form
+    void takeFaceMaterials(const ViewProviderBody& from)
+    {
+        ShapeAppearance.setValues(from.ShapeAppearance.getValues());
+        facesBefore = from.facesBefore;
+    }
 
 private:
     void updateTransparentOffset();
+    /// Material je Fläche auf die Flächen der neuen Form übertragen (Extrude, Teilen …), siehe updateData
+    void keepFaceMaterials();
+    Part::TopoShape facesBefore;  ///< Form (mit Namen), zu der die Liste "Material je Fläche" zuletzt passte
     class SoSwitch* printSwitch = nullptr;
     SoPolygonOffset* transparentOffset = nullptr;  ///< durchsichtig: Flächen weiter nach hinten (attach)
 };

@@ -88,3 +88,5 @@ test_chaos2_ui.py
 test_chaos3_ui.py
 test_chaos4_ui.py
 test_chaos5_ui.py
+test_rename_f2.py
+test_material_kept.py
