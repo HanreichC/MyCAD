@@ -868,6 +868,7 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
         {"Qty", "Anzahl"},
         {"Part", "Teil"},
         {"Copy", "Kopieren"},
+        {"Paste", "Einfügen"},
         {"Duplicate", "Duplizieren"},
         {"Duplicate: copy the selected sketches", "Duplizieren: die gewählten Skizzen kopieren"},
         {"Select one or more sketches first.", "Wähle zuerst eine oder mehrere Skizzen."},
@@ -950,6 +951,10 @@ const std::unordered_map<std::string_view, const char*>& germanTexts()
          "MyCAD von Flathub kann den Zugriff nicht selbst einrichten. Im Terminal:"},
         // 12.1 Mesh-Brücke
         {"Inserted %1", "Eingefügt: %1"},
+        {"Pasted %1", "Eingefügt: %1"},
+        {"%1 Copy", "%1 Kopie"},
+        {"Copy the selected bodies (Ctrl+V pastes them)", "Gewählte Körper kopieren (Strg+V fügt sie ein)"},
+        {"Paste copied bodies and move them", "Kopierte Körper einfügen und verschieben"},
         {"The file contains no triangles.", "Die Datei enthält keine Dreiecke."},
         {"The mesh has %1 triangles; MyCAD turns meshes of up to %2 into bodies. Reduce it in your slicer or mesh tool first.",
          "Das Mesh hat %1 Dreiecke; MyCAD macht Meshes mit bis zu %2 zu Körpern. Verringere sie vorher in deinem Slicer oder Mesh-Programm."},

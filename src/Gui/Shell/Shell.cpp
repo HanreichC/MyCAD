@@ -6576,12 +6576,17 @@ void Gui::Shell::install()
         state.inspector = new GlassPanel(tasks, Token::RadiusPanel, true);
     }
 
-    // Entf löscht Timeline-Einträge mit neu verbundener Kette (Design_Delete fällt sonst auf Std_Delete zurück)
-    if (QAction* del = commandAction("Design_Delete")) {
-        if (QAction* std = commandAction("Std_Delete")) {
-            std->setShortcut(QKeySequence());
+    // Entf löscht Timeline-Einträge mit neu verbundener Kette, Strg+C/Strg+V kopieren Körper wie Fusion (die Design-Befehle
+    // fallen ohne Körper bzw. Timeline-Eintrag auf die Std-Befehle zurück)
+    for (const auto& [design, standard, key] : {std::tuple {"Design_Delete", "Std_Delete", QKeySequence::Delete},
+                                                std::tuple {"Design_Copy", "Std_Copy", QKeySequence::Copy},
+                                                std::tuple {"Design_Paste", "Std_Paste", QKeySequence::Paste}}) {
+        if (QAction* own = commandAction(design)) {
+            if (QAction* std = commandAction(standard)) {
+                std->setShortcut(QKeySequence());
+            }
+            own->setShortcut(key);
         }
-        del->setShortcut(QKeySequence::Delete);
     }
     // Wiederholen auch mit Strg+Y wie in Fusion (unter Linux/KDE ist dafür nur Strg+Umschalt+Z belegt)
     if (QAction* redo = commandAction("Std_Redo")) {

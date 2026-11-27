@@ -273,6 +273,7 @@ A("start_shortcuts", "start", "Std_ViewFitAll", ("Keyboard shortcuts", "Tastenk�
   options=[("Ctrl+K", "Search commands, bodies and sketches", "Strg+K", "Befehle, Körper und Skizzen suchen"),
            ("Ctrl+S", "Save Version (with a name)", "Strg+S", "Version sichern (mit Namen)"),
            ("Ctrl+Z / Ctrl+Shift+Z", "Undo / Redo", "Strg+Z / Strg+Umschalt+Z", "Rückgängig / Wiederholen"),
+           ("Ctrl+C / Ctrl+V", "Copy / paste the selected bodies (Move opens for the copy)", "Strg+C / Strg+V", "Gewählte Körper kopieren / einfügen (Verschieben öffnet für die Kopie)"),
            ("Ctrl+N / Ctrl+O", "New design / Open", "Strg+N / Strg+O", "Neues Design / Öffnen"),
            ("S", "Create Sketch", "S", "Skizze erstellen"),
            ("E", "Extrude (in a scribble: eraser)", "E", "Extrudieren (im Scribble: Radierer)"),
@@ -306,7 +307,7 @@ A("start_shortcuts", "start", "Std_ViewFitAll", ("Keyboard shortcuts", "Tastenk�
            ("Ctrl+,", "Settings", "Strg+,", "Einstellungen"),
            ("V, F", "Fit All: the whole model in view", "V, F", "Alles zeigen: das ganze Modell in der Ansicht"),
            ("F1", "Help for the tool under the mouse or the one in use", "F1", "Hilfe zum Werkzeug unter der Maus oder zum benutzten"),
-           ("F2", "Rename the entry selected in the browser", "F2", "Den im Browser gewählten Eintrag umbenennen")],
+           ("F2", "Rename the selected body, sketch or step (in the browser or the view)", "F2", "Gewählten Körper, Skizze oder Schritt umbenennen (im Browser oder in der Ansicht)")],
   tips=[("In a sketch, S, E, H and A are sketch keys (Symmetric, Equal, Horizontal, horizontal or vertical), not Sketch, Extrude, Hole and Appearance.",
          "In der Skizze sind S, E, H und A Skizzen-Tasten (Symmetrisch, Gleich, Horizontal, waagrecht oder senkrecht), nicht Skizze, Extrudieren, Bohrung und Darstellung.")],
   see=["start_overview", "start_navigation", "settings", "help"])

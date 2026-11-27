@@ -91,3 +91,4 @@ test_chaos5_ui.py
 test_rename_f2.py
 test_material_kept.py
 test_material_follows.py
+test_copy_paste_body.py

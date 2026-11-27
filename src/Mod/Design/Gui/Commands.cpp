@@ -37,6 +37,7 @@
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepBuilderAPI_Copy.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <TopoDS_Iterator.hxx>
 #include <Bnd_Box.hxx>
@@ -2066,6 +2067,75 @@ void startMirror(App::Document* doc)
     feature->Bodies.setValues(created);
     doc->recompute();
     startEditing(feature, false, nullptr);
+}
+
+/// Strg+C / Strg+V an Körpern wie in Fusion (Christopher 27.11.): kopiert werden die gewählten Körper, eingefügt ihre
+/// Form als feste Körper (je Körper ein Schritt "Eingefügt", Material wie das Original), danach gleich Verschieben, die
+/// Kopie läge sonst genau auf dem Original. FreeCADs Kopieren fragte nach Abhängigkeiten, kopierte Skizzen, Schritte und
+/// Körper, an denen der Körper hing, und ließ die Kopie aus der Zeitleiste. Ohne gewählte Körper das gewohnte Kopieren.
+std::vector<App::DocumentObjectT> copiedBodies;
+
+void copyBodies(App::Document*)
+{
+    copiedBodies.clear();
+    for (auto b : selectedBodies()) {
+        copiedBodies.emplace_back(b);
+    }
+    if (copiedBodies.empty()) {
+        Gui::Application::Instance->commandManager().runCommandByName("Std_Copy");
+    }
+}
+
+void pasteBodies(App::Document* doc)
+{
+    std::vector<Design::Body*> sources;
+    for (const auto& ref : copiedBodies) {
+        if (auto b = freecad_cast<Design::Body*>(ref.getObject()); b && !b->Shape.getShape().isNull()) {
+            sources.push_back(b);
+        }
+    }
+    if (sources.empty()) {
+        Gui::Application::Instance->commandManager().runCommandByName("Std_Paste");
+        return;
+    }
+    App::Part* comp = activeContainer(doc);
+    doc->openTransaction("Paste");
+    std::vector<Design::Body*> pasted;
+    for (auto source : sources) {
+        // eigene Kopie der Form: teilten sich Original und Kopie die Flächen, hielte MyCAD Flächen der Kopie für die des
+        // Originals (Skizze auf einer Fläche, Ziel eines Extrudes)
+        const Part::TopoShape shape(BRepBuilderAPI_Copy(source->Shape.getShape().getShape()).Shape());
+        const auto pieces = Design::Import::pieces(shape);
+        if (pieces.empty()) {
+            continue;
+        }
+        auto feature = static_cast<Design::Import*>(doc->addObject("Design::Import", "Import"));
+        feature->Label.setValue(T("Pasted %1").arg(QString::fromUtf8(source->Label.getValue())).toStdString());
+        feature->Imported.setValue(shape);
+        comp->addObject(feature);
+        Design::addToTimeline(feature);
+        std::vector<App::DocumentObject*> bodies;
+        for (size_t i = 0; i < pieces.size(); ++i) {
+            auto body = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
+            const QString name = T("%1 Copy").arg(QString::fromUtf8(source->Label.getValue()));
+            body->Label.setValue((i == 0 ? name : name + QStringLiteral(" %1").arg(i + 1)).toStdString());
+            Design::folder(comp, "Bodies")->addObject(body);
+            body->Tip.setValue(feature);
+            copyLook(source, body);
+            bodies.push_back(body);
+            pasted.push_back(body);
+        }
+        feature->Bodies.setValues(bodies);
+    }
+    doc->recompute();
+    doc->commitTransaction();
+    Gui::Selection().clearSelection();
+    for (auto body : pasted) {
+        Gui::Selection().addSelection(doc->getName(), body->getNameInDocument());
+    }
+    if (!pasted.empty()) {
+        startMove(doc);
+    }
 }
 
 /// Features und Skizzen aus der Timeline löschen (Kette wird neu verbunden), Bodies samt ihrer Schritte, alles andere
@@ -6215,6 +6285,10 @@ void CreateDesignCommands()
                                      "PartDesign_Mirrored", "", startMirror));
     mgr.addCommand(new DesignCommand("Design_Delete", "Delete", "Delete: remove features, sketches or bodies with their steps",
                                      "edit-delete", "", deleteSelected));
+    mgr.addCommand(new DesignCommand("Design_Copy", "Copy", "Copy the selected bodies (Ctrl+V pastes them)",
+                                     "edit-copy", "", copyBodies));
+    mgr.addCommand(new DesignCommand("Design_Paste", "Paste", "Paste copied bodies and move them",
+                                     "edit-paste", "", pasteBodies));
     mgr.addCommand(new DesignCommand("Design_Duplicate", "Duplicate", "Duplicate: copy the selected sketches",
                                      "Design_Duplicate", "", duplicateSketches));
     mgr.addCommand(new DesignCommand("Design_Export", "Export", "Export bodies as 3MF, STL or STEP, or sketches as DXF",

@@ -640,6 +640,10 @@
       "Undo / Redo"
      ],
      [
+      "Ctrl+C / Ctrl+V",
+      "Copy / paste the selected bodies (Move opens for the copy)"
+     ],
+     [
       "Ctrl+N / Ctrl+O",
       "New design / Open"
      ],
@@ -761,7 +765,7 @@
      ],
      [
       "F2",
-      "Rename the entry selected in the browser"
+      "Rename the selected body, sketch or step (in the browser or the view)"
      ]
     ],
     "de": [
@@ -776,6 +780,10 @@
      [
       "Strg+Z / Strg+Umschalt+Z",
       "Rückgängig / Wiederholen"
+     ],
+     [
+      "Strg+C / Strg+V",
+      "Gewählte Körper kopieren / einfügen (Verschieben öffnet für die Kopie)"
      ],
      [
       "Strg+N / Strg+O",
@@ -899,7 +907,7 @@
      ],
      [
       "F2",
-      "Den im Browser gewählten Eintrag umbenennen"
+      "Gewählten Körper, Skizze oder Schritt umbenennen (im Browser oder in der Ansicht)"
      ]
     ]
    },

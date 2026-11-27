@@ -417,6 +417,12 @@ Py::Object View3DInventorPy::getattribute(const char* attr)
     if (!getView3DInventorPtr()) {
         throw Py::RuntimeError("Cannot print representation of deleted object");
     }
+    // MyCAD: ein Skript sieht die Ansicht wie nach einer laufenden Kamerafahrt (Einpassen, Ansicht von oben gleiten,
+    // ohne die Oberfläche anzuhalten); "ViewFit" und gleich danach saveImage oder getCamera bekamen sonst den Anfang.
+    // Ein Drehschwung mit der Maus läuft weiter
+    if (auto viewer = getView3DInventorPtr()->getViewer(); viewer && viewer->isAnimating() && !viewer->isSpinning()) {
+        viewer->stopAnimating();
+    }
     std::string name(attr);
     if (name == "__dict__" || name == "__class__") {
         Py::Dict dict_self(BaseType::getattr("__dict__"));

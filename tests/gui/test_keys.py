@@ -12,8 +12,9 @@ S = {}
 def camera():
     d = Gui.ActiveDocument.ActiveView.getViewDirection()
     cam = Gui.ActiveDocument.ActiveView.getCamera()
-    pos = [l.strip() for l in cam.splitlines() if l.strip().startswith("position")][0]
-    return "dir=(%.2f, %.2f, %.2f) %s" % (d.x, d.y, d.z, pos)
+    pos = [float(v) for v in [l for l in cam.splitlines() if l.strip().startswith("position")][0].split()[1:4]]
+    # auf 1/100 mm: die gleitende Kamerafahrt landet in der letzten Stelle nicht immer gleich
+    return "dir=(%.2f, %.2f, %.2f) position (%.2f, %.2f, %.2f)" % (d.x, d.y, d.z, *pos)
 
 
 def drag(key, target):
