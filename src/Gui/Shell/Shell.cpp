@@ -4179,8 +4179,24 @@ protected:
             }
             return;
         }
+        const bool enter = event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter;
+        if (enter && !(event->modifiers() & Qt::ShiftModifier)) {
+            // Maß mitten in der Liste geändert ("Breite = 60 mm" -> 90, Enter): übernehmen und auf die nächste Zeile, wie in
+            // einer Tabelle. Vorher fügte Enter zusätzlich einen Zeilenumbruch ein, in jeder Vorlage blieb eine Leerzeile
+            // zurück. Am Ende der Notiz (neue Zeile schreiben) und mit Umschalt+Enter weiter ein Zeilenumbruch
+            const QTextCursor cursor = textCursor();
+            if (cursor.atBlockEnd() && cursor.block().next().isValid()
+                && NoteParameters::parse(cursor.block().text().toStdString()).definition) {
+                const int line = cursor.blockNumber();
+                finished();  // schreibt die Notiz womöglich neu (Wert hinter Formeln): danach die Zeile über ihre Nummer
+                QTextCursor next(document()->findBlockByNumber(line + 1));
+                next.movePosition(QTextCursor::EndOfBlock);
+                setTextCursor(next);
+                return;
+            }
+        }
         QPlainTextEdit::keyPressEvent(event);
-        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        if (enter) {
             finished();
             return;
         }
@@ -5197,6 +5213,47 @@ protected:
     void activated(int) override
     {
         showCommandSearch();
+    }
+};
+
+/// F2: den gewählten Eintrag umbenennen, wo der Fokus auch ist (wie Rechtsklick › Umbenennen). FreeCADs eigenes F2 hängt
+/// an einer Aktion, die MyCAD nirgends einhängt: mit der Auswahl aus der Ansicht passierte nichts, im Browser bearbeitete
+/// F2 den "aktuellen" Eintrag statt den gewählten, eine Skizze behielt ihren Namen (2026-11-27)
+class CmdRename: public Gui::Command
+{
+public:
+    CmdRename()
+        : Command("MyCAD_Rename")
+    {
+        sGroup = "Tools";
+        sMenuText = "Rename";
+        sToolTipText = "Rename the selected body, sketch or step";
+        sStatusTip = sToolTipText;
+        sWhatsThis = "MyCAD_Rename";
+        sAccel = "F2";
+        eType = 0;
+    }
+    const char* className() const override
+    {
+        return "CmdRename";
+    }
+
+protected:
+    void activated(int) override
+    {
+        if (!state.browser) {
+            return;
+        }
+        for (auto tree : state.browser->content()->findChildren<QTreeWidget*>()) {
+            const auto items = tree->selectedItems();
+            if (tree->isVisible() && items.size() == 1) {
+                tree->scrollToItem(items.front());
+                tree->setCurrentItem(items.front(), 0, QItemSelectionModel::NoUpdate);
+                tree->setFocus();
+                tree->editItem(items.front());
+                return;
+            }
+        }
     }
 };
 
@@ -6293,6 +6350,10 @@ void Gui::Shell::install()
     Application::Instance->activateWorkbench("DesignWorkbench");
     registerSettings();
     Application::Instance->commandManager().addCommand(new CmdSearch);  // vor der Toolbar, die ihn zeigt
+    // steht in keiner Leiste: am Hauptfenster einhängen, sonst gilt das Kürzel F2 nicht
+    auto rename = new CmdRename;
+    Application::Instance->commandManager().addCommand(rename);
+    rename->addTo(getMainWindow());
     // Idee 7: Speichern ist immer; Strg+S sichert eine benannte Version
     if (Command* save = Application::Instance->commandManager().getCommandByName("Std_Save")) {
         save->setAccel("");

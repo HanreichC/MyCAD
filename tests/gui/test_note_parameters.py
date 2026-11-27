@@ -41,6 +41,20 @@ def edit_first_line(text):
     e.setPlainText("\n".join([text] + lines[1:]))
 
 
+def middle_line():
+    """Ende der ersten Zeile ("Hoehe = 5 mm"), "5 mm" durch "6 mm" ersetzen, Enter"""
+    e = note_edit()
+    state["blocks"] = e.blockCount()
+    e.setFocus()
+    c = e.textCursor()
+    c.movePosition(QtGui.QTextCursor.Start)
+    c.movePosition(QtGui.QTextCursor.EndOfBlock)
+    e.setTextCursor(c)
+    for _ in range(4):
+        QtTest.QTest.keyClick(e, QtCore.Qt.Key_Backspace)
+    keys("6 mm\n")
+
+
 def dialog_source():
     def look():
         d = [w for w in visible(QtWidgets.QDialog) if w.windowTitle() == "Parameters"][0]
@@ -61,6 +75,14 @@ in_order([
                            repr(note_edit().toPlainText()))),
     ("cursor", lambda: check("typing goes on in the new line", note_edit().textCursor().blockNumber() == 2,
                              str(note_edit().textCursor().blockNumber()))),
+    # Maß mitten in der Liste ändern, Enter: übernimmt, keine Leerzeile, weiter auf der nächsten Zeile (wie eine Tabelle)
+    ("middle", middle_line),
+    ("middle applied", lambda: check("enter in the middle applies the value without an empty line",
+                                     abs(params().Hoehe.Value - 6) < 1e-9 and note_edit().blockCount() == state["blocks"]
+                                     and note_edit().textCursor().blockNumber() == 1,
+                                     "%s blocks %d (was %d) cursor in line %d %r" % (
+                                         params().Hoehe.Value, note_edit().blockCount(), state["blocks"],
+                                         note_edit().textCursor().blockNumber(), note_edit().toPlainText()))),
     ("bind", bind),
     ("shot", lambda: shot("note")),
     ("change", lambda: edit_first_line("Hoehe = 8 mm")),
