@@ -2056,6 +2056,7 @@ void startMirror(App::Document* doc)
         states.push_back(Design::stateAtMarker(b));
         auto copy = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
         copy->Label.setValue(std::string(b->Label.getValue()) + " Mirror");
+        copyLook(b, copy);  // die Kopie sieht aus wie das Original (war Standardgrau)
         Design::folder(Design::componentOf(b), "Bodies")->addObject(copy);
         copy->Tip.setValue(feature);
         created.push_back(copy);
@@ -3768,6 +3769,7 @@ void startPattern(App::Document* doc)
                 states.push_back(Design::stateAtMarker(b));
                 auto copy = static_cast<Design::Body*>(doc->addObject("Design::Body", "Body"));
                 copy->Label.setValue(std::string(b->Label.getValue()) + " Pattern");
+                copyLook(b, copy);  // die Kopie sieht aus wie das Original (war Standardgrau)
                 Design::folder(Design::componentOf(b), "Bodies")->addObject(copy);
                 copy->Tip.setValue(feature);
                 created.push_back(copy);

@@ -90,3 +90,4 @@ test_chaos4_ui.py
 test_chaos5_ui.py
 test_rename_f2.py
 test_material_kept.py
+test_material_follows.py
